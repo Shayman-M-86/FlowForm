@@ -6,7 +6,7 @@
 	],
 	"settings": {
 		"workbench.colorCustomizations": {
-			"statusBar.background": "#168b39"
+			"statusBar.background": "#088ea9"
 		},
 		// Python settings
 		"python.analysis.autoSearchPaths": true,
