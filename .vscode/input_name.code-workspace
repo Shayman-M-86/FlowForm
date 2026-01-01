@@ -25,7 +25,7 @@
 		"python.testing.autoTestDiscoverOnSaveEnabled": true,
 		// Code Runner settings
 		"code-runner.executorMap": {
-			"python": "source .venv/Scripts/activate && python $fullFileName"
+			"python": "source .venv/Scripts/activate ; python $fullFileName"
 		},
 		"code-runner.runInTerminal": true
 		
