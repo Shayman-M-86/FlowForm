@@ -171,6 +171,9 @@ def main():
     parser = argparse.ArgumentParser(description="Set up a templated project by replacing 'input_name' and syncing deps with `uv sync`.")
     parser.add_argument("--name", help="Project name (if omitted, you'll be prompted).")
     parser.add_argument("--dry-run", action="store_true", help="Show what would change without writing.")
+    parser.add_argument(
+        "--no-vscode", action="store_true", help="Do not open VS Code at the end."
+    )
     args = parser.parse_args()
 
     project_root = Path.cwd()
@@ -220,7 +223,7 @@ def main():
         sys.exit(code)
 
     # 5) Open VS Code workspace if we created/renamed it
-    if ws_old is not None:
+    if not args.no_vscode and ws_old is not None:
         ws_new = ws_old.with_name(f"{project_name}.code-workspace")
         if ws_new.exists():
             open_vscode(ws_new, dry_run=args.dry_run)
