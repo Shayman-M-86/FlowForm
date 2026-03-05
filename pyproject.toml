@@ -4,5 +4,15 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 dependencies = [
-    "numpy>=2.3.3",
 ]
+
+
+[tool.testing.pytest.ini_options]
+pythonpath = ["./src", "./tests"]
+
+[tool.ty.rules]
+unsupported-base = "ignore"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = []
