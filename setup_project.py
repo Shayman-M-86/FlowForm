@@ -8,12 +8,13 @@ Usage:
 """
 
 from __future__ import annotations
+
 import argparse
 import re
-import sys
-from pathlib import Path
 import shutil
 import subprocess
+import sys
+from pathlib import Path
 
 TOKEN = "input_name"
 
@@ -39,7 +40,8 @@ def validate_project_name(name: str) -> str:
         raise ValueError("Project name cannot contain spaces.")
     if not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]*$", name):
         raise ValueError(
-            "Invalid project name. Use letters/numbers and . _ - ; must start with a letter/number."
+            "Invalid project name. Use letters/numbers and . _ - ;"
+            " must start with a letter/number."
         )
     return name
 
@@ -49,7 +51,9 @@ def replace_token_in_text(text: str, token: str, replacement: str) -> str:
     return text.replace(token, replacement)
 
 
-def replace_token_in_file(path: Path, token: str, replacement: str, dry_run: bool = False) -> bool:
+def replace_token_in_file(
+    path: Path, token: str, replacement: str, dry_run: bool = False
+) -> bool:
     if not path.exists():
         print(f"  - Skipping missing file: {path}")
         return False
@@ -67,7 +71,9 @@ def replace_token_in_file(path: Path, token: str, replacement: str, dry_run: boo
         return False
 
 
-def update_pyproject_name_line(path: Path, new_name: str, dry_run: bool = False) -> bool:
+def update_pyproject_name_line(
+    path: Path, new_name: str, dry_run: bool = False
+) -> bool:
     """
     Optional helper: If the template didn't use TOKEN on the name line,
     also try to rewrite the [project] name line robustly.
@@ -114,7 +120,9 @@ def find_or_expect_workspace_file(vscode_dir: Path, expected_name: str) -> Path 
     return None
 
 
-def rename_workspace_file(old_path: Path, new_project_name: str, dry_run: bool = False) -> Path:
+def rename_workspace_file(
+    old_path: Path, new_project_name: str, dry_run: bool = False
+) -> Path:
     new_path = old_path.with_name(f"{new_project_name}.code-workspace")
     if old_path == new_path:
         print(f"  - Workspace filename already correct: {old_path.name}")
@@ -136,7 +144,9 @@ def run_uv_sync(dry_run: bool = False) -> int:
     print("\nRunning `uv sync`...")
     uv = shutil.which("uv")
     if uv is None:
-        print("  ! Could not find `uv` on PATH. Install it first: https://docs.astral.sh/uv/")
+        print(
+            "  ! Could not find `uv` on PATH. Install it first: https://docs.astral.sh/uv/"
+        )
         return 127
     cmd = [uv, "sync"]
     print(f"  > {' '.join(cmd)}")
@@ -154,10 +164,15 @@ def open_vscode(workspace_file: Path, dry_run: bool = False) -> int:
     print(f"\nOpening VS Code workspace: {workspace_file}")
     code = shutil.which("code")
     if code is None:
-        print("  ! Could not find `code` on PATH. Is VS Code installed and `code` command enabled?")
-        print("    See: https://code.visualstudio.com/docs/setup/setup-overview#_launching-from-command-line")
+        print(
+            "! Could not find `code` on PATH. Is VS Code installed and"
+            " `code` command enabled?"
+        )
+        print(
+            "    See: https://code.visualstudio.com/docs/setup/setup-overview#_launching-from-command-line"
+        )
         return 127
-    
+
     cmd = [code, str(workspace_file)]
     print(f"  > {' '.join(cmd)}")
     if dry_run:
@@ -166,11 +181,15 @@ def open_vscode(workspace_file: Path, dry_run: bool = False) -> int:
     return subprocess.call(cmd)
 
 
-
 def main():
-    parser = argparse.ArgumentParser(description="Set up a templated project by replacing 'input_name' and syncing deps with `uv sync`.")
+    parser = argparse.ArgumentParser(
+        description="Set up a templated project by replacing 'input_name'"
+        " and syncing deps with `uv sync`."
+    )
     parser.add_argument("--name", help="Project name (if omitted, you'll be prompted).")
-    parser.add_argument("--dry-run", action="store_true", help="Show what would change without writing.")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Show what would change without writing."
+    )
     parser.add_argument(
         "--no-vscode", action="store_true", help="Do not open VS Code at the end."
     )
@@ -195,12 +214,16 @@ def main():
     # 1) Replace TOKEN in the known files
     any_changes = False
     for f in FILES_TO_EDIT:
-        any_changes |= replace_token_in_file(f, TOKEN, project_name, dry_run=args.dry_run)
+        any_changes |= replace_token_in_file(
+            f, TOKEN, project_name, dry_run=args.dry_run
+        )
 
-    # 2) (Optional) Normalize pyproject name line even if template didn't use TOKEN there
+    # 2) Normalize pyproject name line even if template didn't use TOKEN there
     pyproject = Path("pyproject.toml")
     if pyproject.exists():
-        any_changes |= update_pyproject_name_line(pyproject, project_name, dry_run=args.dry_run)
+        any_changes |= update_pyproject_name_line(
+            pyproject, project_name, dry_run=args.dry_run
+        )
 
     # 3) Handle the .vscode workspace file rename + content replacement
     ws_old = find_or_expect_workspace_file(VSCODE_DIR, WORKSPACE_BASENAME)
@@ -209,7 +232,9 @@ def main():
     else:
         ws_new = rename_workspace_file(ws_old, project_name, dry_run=args.dry_run)
         # Replace token within the workspace file too
-        any_changes |= replace_token_in_file(ws_new, TOKEN, project_name, dry_run=args.dry_run)
+        any_changes |= replace_token_in_file(
+            ws_new, TOKEN, project_name, dry_run=args.dry_run
+        )
 
     if args.dry_run:
         print("\nDry-run complete. No files were modified.")
@@ -228,10 +253,12 @@ def main():
         if ws_new.exists():
             open_vscode(ws_new, dry_run=args.dry_run)
 
-
     print("\n✅ Done!")
     if not any_changes:
-        print("(Note: No token replacements were needed. Template might already be renamed.)")
+        print(
+            "(Note: No token replacements were needed."
+            " Template might already be renamed.)"
+        )
 
 
 if __name__ == "__main__":
