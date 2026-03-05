@@ -3,3 +3,6 @@ name = "input_name"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
+dependencies = [
+    "numpy>=2.3.3",
+]
