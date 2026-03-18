@@ -1,6 +1,7 @@
 # Flow Form — Security and Authentication Architecture Plan
 
 ## Purpose
+
 This document outlines the planned security and authentication approach for **Flow Form**.
 
 The goal is to use a modern, secure authentication model for a single page application while keeping the backend API protected and the user session experience smooth.
@@ -20,11 +21,13 @@ The goal is to use a modern, secure authentication model for a single page appli
 - Auth0
 
 **Session continuity**
+
 - Refresh Token Rotation
 
 ## High-Level Architecture
 
 ### Frontend
+
 - React single page application
 - Uses Auth0 Universal Login for sign-in
 - Starts login using Authorization Code Flow with PKCE
@@ -32,12 +35,14 @@ The goal is to use a modern, secure authentication model for a single page appli
 - Uses refresh token rotation to maintain the user session
 
 ### Backend
+
 - Flask API
 - Accepts bearer access tokens from the frontend
 - Validates JWT access tokens using Auth0 issuer, audience, signing keys, and expiry
 - Enforces authorization rules for protected endpoints
 
 ### Identity Provider
+
 - Auth0 manages login, logout, user identity, token issuance, and refresh token rotation
 
 ## Planned Authentication Flow
@@ -58,20 +63,25 @@ The goal is to use a modern, secure authentication model for a single page appli
 ## Token Strategy
 
 ### ID Token
+
 Used by the frontend to identify the authenticated user.
 
 ### Access Token
+
 Used to call the Flask API.
 
 Planned characteristics:
+
 - short-lived
 - audience set to the Flow Form API
 - validated by the backend on each protected request
 
 ### Refresh Token
+
 Used to keep the user signed in without forcing frequent reauthentication.
 
 Planned characteristics:
+
 - rotation enabled
 - old refresh tokens become invalid after use
 - reuse detection relied on through Auth0 controls
@@ -90,6 +100,7 @@ Planned characteristics:
 ## Backend Validation Requirements
 
 The Flask API should validate:
+
 - token signature
 - issuer
 - audience
@@ -98,6 +109,7 @@ The Flask API should validate:
 - permissions or roles where required
 
 The API should reject:
+
 - missing tokens
 - expired tokens
 - malformed tokens
@@ -107,18 +119,22 @@ The API should reject:
 ## Auth0 Configuration Plan
 
 ### Application
+
 - Create a **Single Page Application** in Auth0 for the React frontend
 
 ### API
+
 - Create an **API** in Auth0 for the Flask backend
 - Define an API identifier / audience
 
 ### Login Configuration
+
 - Configure allowed callback URLs
 - Configure allowed logout URLs
 - Configure allowed web origins
 
 ### Token Configuration
+
 - Enable **Authorization Code Flow with PKCE**
 - Enable **Refresh Token Rotation**
 - Use short-lived access tokens
@@ -134,6 +150,7 @@ The API should reject:
 ## Future Security Enhancements
 
 Planned later additions may include:
+
 - role-based access control (RBAC)
 - permission-based endpoint protection
 - audit logging for authentication events
@@ -168,6 +185,7 @@ Protected resources
 ## Summary
 
 Flow Form will use a modern SPA authentication architecture based on:
+
 - **OpenID Connect**
 - **OAuth 2.0 Authorization Code Grant with PKCE**
 - **Auth0 as the identity provider**
@@ -175,4 +193,3 @@ Flow Form will use a modern SPA authentication architecture based on:
 - **JWT bearer access tokens for the Flask API**
 
 This gives the project a strong modern starting point that is secure, standard, and well supported.
-

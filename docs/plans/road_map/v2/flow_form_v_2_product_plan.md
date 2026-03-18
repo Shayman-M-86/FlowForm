@@ -351,4 +351,3 @@ V2 turns it into a **real platform**:
 - analytics
 - collaboration
 - mature cloud infrastructure
-

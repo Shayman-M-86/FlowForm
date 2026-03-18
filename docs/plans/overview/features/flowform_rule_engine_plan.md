@@ -1,6 +1,7 @@
 # FlowForm — Rule Engine Plan
 
 ## Purpose
+
 The FlowForm Rule Engine controls dynamic behaviour in questionnaires, surveys, and quizzes. It allows a form to react to user answers using configurable logic rather than hard‑coded application code.
 
 Rules define how a form changes while it is being completed, such as showing questions, skipping sections, assigning scores, or ending the form early.
@@ -282,4 +283,3 @@ trigger → condition → action
 ```
 
 The first version intentionally supports a **small set of triggers, conditions, and actions** to keep the system simple, predictable, and easy to expand.
-
