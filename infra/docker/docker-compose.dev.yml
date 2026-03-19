@@ -1,0 +1,39 @@
+services:
+  backend:
+    build:
+      context: ../..
+      dockerfile: infra/docker/backend.Dockerfile
+    container_name: flowform-backend
+    environment:
+      FLASK_ENV: development
+      FLASK_DEBUG: "1"
+      FLOWFORM_ENV: dev
+      PYTHONUNBUFFERED: "1"
+    command: uv run flask --debug run --host 0.0.0.0 --port 5000
+    volumes:
+      - ../../backend:/app
+      - ../../backend/logs:/app/logs
+    ports:
+      - "5000:5000"
+
+#   frontend:
+#     build:
+#       context: ../..
+#       dockerfile: infra/docker/frontend.Dockerfile
+#     container_name: flowform-frontend
+#     working_dir: /app/frontend
+#     environment:
+#       VITE_API_BASE_URL: http://localhost:5000
+#       CHOKIDAR_USEPOLLING: "true"
+#     command: npm run dev -- --host 0.0.0.0 --port 5173
+#     volumes:
+#       - ../../frontend:/app/frontend
+#       - frontend_node_modules:/app/frontend/node_modules
+#     ports:
+#       - "5173:5173"
+#     depends_on:
+#       - backend
+
+# volumes:
+#   postgres_data:
+#   frontend_node_modules:

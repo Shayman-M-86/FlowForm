@@ -6,7 +6,7 @@ from functools import lru_cache
 from typing import Literal
 
 from flask import current_app, Flask
-from pydantic import BaseModel, SecretStr, ValidationError, model_validator
+from pydantic import BaseModel, SecretStr, ValidationError, model_validator, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core.error import ConfigError
@@ -15,6 +15,15 @@ logger = logging.getLogger(__name__)
 
 
 class DatabaseSettings(BaseModel):
+    """Database settings for the application.
+
+
+    Raises:
+        ValidationError: If the database URL is not provided and any required parts are missing.
+
+    Attributes:
+        url (str | None): The full database URL. If provided, it takes precedence over individual parts.
+    """
     url: str | None = None
 
     user: str | None = None
@@ -44,14 +53,16 @@ class DatabaseSettings(BaseModel):
                 f"Missing: {', '.join(missing)}"
             )
 
-        assert self.password is not None
 
         self.url = (
-            f"{self.scheme}://{self.user}:{self.password.get_secret_value()}"
+            f"{self.scheme}://{self.user}:{self.password.get_secret_value()}"  # type: ignore
             f"@{self.host}:{self.port}/{self.name}"
         )
         return self
 
+class ServerSettings(BaseModel):
+    host: str = "127.0.0.1"
+    port: int = 5000
 
 class Auth0Settings(BaseModel):
     domain: str
@@ -62,13 +73,23 @@ class AppSettings(BaseModel):
     debug: bool = False
     secret_key: SecretStr
 
+class RateLimitSettings(BaseModel):
+    enabled: bool = True
+    max_requests: int = 20
+    window_seconds: int = 5
+    ignored_paths: list[str] = Field(default_factory=lambda: ["/api/v1/health"])
+
 
 class LoggingSettings(BaseModel):
     level: str = "INFO"
     log_json: bool = False
     sqlalchemy_level: str = "WARNING"
-    werkzeug_level: str = "INFO"
+    werkzeug_level: str = "WARNING"
     log_file: str | None = None
+    log_file_backup_count: int = 5
+    log_file_max_bytes: int = 5 * 1024 * 1024 # 5 MB
+    requests: bool = True  # Whether to log HTTP requests
+    duration: bool = False  # Whether to log request duration
 
 
 class Settings(BaseSettings):
@@ -76,7 +97,9 @@ class Settings(BaseSettings):
     app: AppSettings
     database: DatabaseSettings
     auth0: Auth0Settings
-    logging: LoggingSettings
+    server: ServerSettings = Field(default_factory=ServerSettings)
+    rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
+    logging: LoggingSettings = Field(default_factory=LoggingSettings)
 
     model_config = SettingsConfigDict(
         env_prefix="FLOWFORM_",
@@ -98,14 +121,16 @@ def get_settings() -> Settings:
     env_file_map = {
         "dev": ".env.dev",
         "test": ".env.test",
-        "prod": ".env.prod",
+        "prod": None,  # No .env file for production, expect all values to come from environment variables or secrets manager
     }
 
     env = os.getenv("FLOWFORM_ENV")
     try:
         if env is None:
-            raise ConfigError("FLOWFORM_ENV is required")
+            raise ConfigError("FLOWFORM_ENV is required and must be one of: dev, test, prod. Example: export FLOWFORM_ENV=dev. \n"
+                              "If you want to use .env files, create one of .env.dev or .env.test with the necessary configuration values.")
 
+        env = env.lower()
         if env not in env_file_map:
             raise ConfigError("FLOWFORM_ENV must be one of: dev, test, prod")
 
@@ -120,7 +145,7 @@ def get_settings() -> Settings:
         return settings
 
     except ValidationError as e:
-        logger.critical("Invalid configuration", exc_info=e)
+        logger.critical("Configuration error: %s", e)
         raise ConfigError("Invalid application configuration") from e
     
     except ConfigError as e:
@@ -141,6 +166,8 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
         "SQLALCHEMY_DATABASE_URI": settings.database.url,
         "AUTH0_DOMAIN": settings.auth0.domain,
         "AUTH0_AUDIENCE": settings.auth0.audience,
+        "HOST": settings.server.host,
+        "PORT": settings.server.port,
     }
 
     for key, value in mapping.items():
@@ -153,4 +180,9 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
 
 
 def current_settings() -> Settings:
+    """Get the current application settings from the Flask app context.
+
+    Returns:
+        Settings: The current application settings.
+    """
     return current_app.extensions["settings"]

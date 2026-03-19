@@ -5,6 +5,17 @@ from flask import jsonify
 
 
 def success_response(data: Any = None, message: str = "ok", status_code: int = 200):
+    """Create a success response.
+
+    Args:
+        data (Any, optional): The data to include in the response. Defaults to None.
+        message (str, optional): The message to include in the response. Defaults to "ok".
+        status_code (int, optional): The HTTP status code for the response. Defaults to 200.
+
+
+    Returns:
+        tuple: A tuple containing the JSON response and the HTTP status code.
+    """
     response = {
         "success": True,
         "message": message,

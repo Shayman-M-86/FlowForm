@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: questionnaire-db
+    environment:
+      POSTGRES_USER: questionnaire
+      POSTGRES_PASSWORD: questionnaire
+      POSTGRES_DB: questionnaire
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ../..
+      dockerfile: infra/docker/backend.Dockerfile
+    container_name: FlowForm-Backend
+    environment:
+      FLASK_ENV: development
+      FLASK_DEBUG: "1"
+      FLOWFORM_ENV: dev
+    # depends_on:
+    #   - db
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: infra/docker/frontend.Dockerfile
+    container_name: questionnaire-frontend
+    environment:
+      VITE_API_BASE_URL: /api/v1
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: questionnaire-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      # - frontend
+
+volumes:
+  postgres_data:

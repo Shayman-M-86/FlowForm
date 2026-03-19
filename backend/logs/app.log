@@ -1,0 +1,31 @@
+2026-03-19 13:11:54,990 | DEBUG | app.core.extensions | Initializing database
+2026-03-19 13:11:54,992 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-19 13:11:54,993 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-19 13:11:54,993 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-19 13:11:54,994 | INFO | app.services.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-19 13:11:56,652 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev
+2026-03-19 13:11:56,763 | DEBUG | app.core.extensions | Initializing database
+2026-03-19 13:11:56,765 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-19 13:11:56,765 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-19 13:11:56,766 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-19 13:11:56,766 | INFO | app.services.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-19 13:11:56,794 | WARNING | werkzeug |  * Debugger is active!
+2026-03-19 13:12:08,819 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.22 ms)
+2026-03-19 13:12:09,295 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.15 ms)
+2026-03-19 13:12:09,723 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-19 13:12:10,153 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.15 ms)
+2026-03-19 13:12:10,580 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-19 13:12:10,937 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.14 ms)
+2026-03-19 13:12:11,256 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.15 ms)
+2026-03-19 13:12:11,495 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.12 ms)
+2026-03-19 13:12:11,693 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-19 13:12:11,911 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.12 ms)
+2026-03-19 13:12:12,126 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.12 ms)
+2026-03-19 13:12:12,343 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.12 ms)
+2026-03-19 13:12:12,549 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.12 ms)
+2026-03-19 13:12:12,745 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.17 ms)
+2026-03-19 13:12:12,946 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.16 ms)
+2026-03-19 13:12:13,145 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-19 13:12:13,341 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-19 13:12:13,548 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-19 13:12:13,755 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.12 ms)
