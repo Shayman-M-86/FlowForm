@@ -1,6 +1,6 @@
 # How I Use AI in the FlowForm Project
 
-## Purpose
+## Purpose 
 
 This document explains how I use AI while building FlowForm. I wanted to include this because AI tools are part of my workflow, but they are not building the project for me. I still design the architecture, write most of the code myself, and make sure I fully understand how everything works.
 
