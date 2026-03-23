@@ -180,6 +180,17 @@ API (Flask)
      │ verify JWT using JWKS
      ▼
 Protected resources
+
+Can you adapt this to my folder structure? 
+infra/
+  postgres/
+    init/
+      01-bootstrap-flowform.sh
+      flowform_core_db_schema_tightened.sql
+      flowform_response_db_schema_tightened.sql
+  docker/
+    docker-compose.p.yml
+    .env
 ```
 
 ## Summary

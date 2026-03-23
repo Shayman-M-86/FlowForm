@@ -1,0 +1,4 @@
+\set ON_ERROR_STOP on
+\connect ${FLOWFORM_CORE_DB}
+
+\i ${FLOWFORM_CORE_SCHEMA_FILE}

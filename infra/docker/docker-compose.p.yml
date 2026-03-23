@@ -1,0 +1,29 @@
+name: flowform
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+      FLOWFORM_CORE_DB: ${FLOWFORM_CORE_DB}
+      FLOWFORM_RESPONSE_DB: ${FLOWFORM_RESPONSE_DB}
+
+      FLOWFORM_CORE_APP_USER: ${FLOWFORM_CORE_APP_USER}
+      FLOWFORM_CORE_APP_PASSWORD: ${FLOWFORM_CORE_APP_PASSWORD}
+
+      FLOWFORM_RESPONSE_APP_USER: ${FLOWFORM_RESPONSE_APP_USER}
+      FLOWFORM_RESPONSE_APP_PASSWORD: ${FLOWFORM_RESPONSE_APP_PASSWORD}
+
+      FLOWFORM_CORE_SCHEMA_FILE: ${FLOWFORM_CORE_SCHEMA_FILE}
+      FLOWFORM_RESPONSE_SCHEMA_FILE: ${FLOWFORM_RESPONSE_SCHEMA_FILE}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - flowform_postgres_data:/var/lib/postgresql/data
+      - ../postgres/init:/docker-entrypoint-initdb.d
+
+volumes:
+  flowform_postgres_data:
