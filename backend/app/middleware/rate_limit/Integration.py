@@ -1,20 +1,16 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 from flask import Flask, request
 
-from app.services.rate_limit.service import RateLimitService, RateLimitConfig
-from app.utils.general import get_client_ip
 from app.core.config import Settings
 from app.core.responses import error_response
+from app.middleware.rate_limit.service import RateLimitConfig, RateLimitService
+from app.utils.general import get_client_ip
 
 logger = logging.getLogger(__name__)
-
-
-
-
 
 def rate_limiting(
     app: Flask,
@@ -22,6 +18,13 @@ def rate_limiting(
     *,
     ip_getter: Callable[[], str] = get_client_ip,
 ) -> None:
+    """Register rate limiting middleware on a Flask app.
+
+    Args:
+        app: Flask application instance.
+        service: Rate limiting service used to evaluate requests.
+        ip_getter: Callable that returns the client IP address.
+    """
     if app.extensions.get("rate_limiting_registered"):
         return
 
@@ -54,6 +57,12 @@ def rate_limiting(
 
 
 def register_rate_limiting(app: Flask, settings: Settings):
+    """Configure and register rate limiting based on application settings.
+
+    Args:
+        app: Flask application instance.
+        settings: Application settings containing rate limit config.
+    """
     if settings.rate_limit.enabled:
         max_requests = settings.rate_limit.max_requests
         window_seconds = settings.rate_limit.window_seconds

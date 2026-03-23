@@ -5,8 +5,8 @@ import os
 from functools import lru_cache
 from typing import Literal
 
-from flask import current_app, Flask
-from pydantic import BaseModel, SecretStr, ValidationError, model_validator, Field
+from flask import Flask, current_app
+from pydantic import BaseModel, Field, SecretStr, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core.error import ConfigError
@@ -15,15 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class DatabaseSettings(BaseModel):
-    """Database settings for the application.
-
-
-    Raises:
-        ValidationError: If the database URL is not provided and any required parts are missing.
-
-    Attributes:
-        url (str | None): The full database URL. If provided, it takes precedence over individual parts.
-    """
+    """Database connection settings for the application."""
     url: str | None = None
 
     user: str | None = None
@@ -35,6 +27,11 @@ class DatabaseSettings(BaseModel):
 
     @model_validator(mode="after")
     def validate_and_build_url(self) -> DatabaseSettings:
+        """Build a database URL from individual parts when ``url`` is not set.
+
+        Raises:
+            ValueError: If required connection parts are missing.
+        """
         if self.url:
             return self
 
@@ -49,10 +46,8 @@ class DatabaseSettings(BaseModel):
         missing = [key for key, value in required_parts.items() if value is None]
         if missing:
             raise ValueError(
-                "Provide either database.url or all database parts. "
-                f"Missing: {', '.join(missing)}"
+                f"Provide either database.url or all database parts. Missing: {', '.join(missing)}"
             )
-
 
         self.url = (
             f"{self.scheme}://{self.user}:{self.password.get_secret_value()}"  # type: ignore
@@ -60,20 +55,27 @@ class DatabaseSettings(BaseModel):
         )
         return self
 
+
 class ServerSettings(BaseModel):
+    """Server host and port settings."""
     host: str = "127.0.0.1"
     port: int = 5000
 
+
 class Auth0Settings(BaseModel):
+    """Auth0 configuration for authentication and authorization."""
     domain: str
     audience: str
 
 
 class AppSettings(BaseModel):
+    """High-level application behavior settings."""
     debug: bool = False
     secret_key: SecretStr
 
+
 class RateLimitSettings(BaseModel):
+    """Global rate limiting configuration."""
     enabled: bool = True
     max_requests: int = 20
     window_seconds: int = 5
@@ -81,18 +83,20 @@ class RateLimitSettings(BaseModel):
 
 
 class LoggingSettings(BaseModel):
+    """Logging configuration for the application and dependencies."""
     level: str = "INFO"
     log_json: bool = False
     sqlalchemy_level: str = "WARNING"
     werkzeug_level: str = "WARNING"
     log_file: str | None = None
     log_file_backup_count: int = 5
-    log_file_max_bytes: int = 5 * 1024 * 1024 # 5 MB
+    log_file_max_bytes: int = 5 * 1024 * 1024  # 5 MB
     requests: bool = True  # Whether to log HTTP requests
     duration: bool = False  # Whether to log request duration
 
 
 class Settings(BaseSettings):
+    """Top-level application settings loaded from environment variables."""
     env: Literal["dev", "test", "prod"]
     app: AppSettings
     database: DatabaseSettings
@@ -110,25 +114,29 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Get the application settings, loading them from the environment or .env files.
+    """Load application settings based on ``FLOWFORM_ENV`` and optional .env files.
 
     Raises:
-        ConfigError: If the configuration is invalid or missing required values.
+        ConfigError: If configuration is invalid or the environment name is unsupported.
 
     Returns:
-        Settings: The application settings.
+        Loaded application settings.
     """
     env_file_map = {
         "dev": ".env.dev",
         "test": ".env.test",
-        "prod": None,  # No .env file for production, expect all values to come from environment variables or secrets manager
+        "prod": None,  # No .env file for production, values come from environment variables
     }
 
     env = os.getenv("FLOWFORM_ENV")
     try:
         if env is None:
-            raise ConfigError("FLOWFORM_ENV is required and must be one of: dev, test, prod. Example: export FLOWFORM_ENV=dev. \n"
-                              "If you want to use .env files, create one of .env.dev or .env.test with the necessary configuration values.")
+            raise ConfigError(
+                "FLOWFORM_ENV is required and must be one of: dev, test, prod. "
+                "Example: export FLOWFORM_ENV=dev. \n"
+                "If you want to use .env files, create one of "
+                ".env.dev or .env.test with the necessary configuration values."
+            )
 
         env = env.lower()
         if env not in env_file_map:
@@ -136,28 +144,26 @@ def get_settings() -> Settings:
 
         env_file = env_file_map[env]
 
-        if env == "prod":
-            settings = Settings()  # type: ignore[call-arg]
-        else:
-            settings = Settings(_env_file=env_file)  # type: ignore[call-arg]
+        settings = Settings() if env == "prod" else Settings(_env_file=env_file)  # type: ignore[call-arg]
 
         logger.info("Settings loaded for env=%s", settings.env)
         return settings
 
-    except ValidationError as e:
-        logger.critical("Configuration error: %s", e)
-        raise ConfigError("Invalid application configuration") from e
-    
-    except ConfigError as e:
-        logger.critical("Configuration error: %s", e)
+    except ValidationError as exc:
+        logger.critical("Configuration error: %s", exc)
+        raise ConfigError("Invalid application configuration") from exc
+
+    except ConfigError as exc:
+        logger.critical("Configuration error: %s", exc)
         raise
 
+
 def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
-    """Apply the given settings to the Flask app.
+    """Apply loaded settings to a Flask application.
 
     Args:
-        app (Flask): The Flask application instance.
-        settings (Settings): The application settings.
+        app: Flask application instance.
+        settings: Application settings to apply.
     """
     mapping = {
         "ENV_NAME": settings.env,
@@ -174,15 +180,11 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
         if hasattr(value, "get_secret_value"):
             value = value.get_secret_value()
         app.config[key] = value
-        
+
     app.extensions["settings"] = settings
     app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
 
 
 def current_settings() -> Settings:
-    """Get the current application settings from the Flask app context.
-
-    Returns:
-        Settings: The current application settings.
-    """
+    """Return the current application settings from the Flask context."""
     return current_app.extensions["settings"]

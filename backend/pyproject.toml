@@ -1,7 +1,7 @@
 [project]
 name = "backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "FlowForm backend API"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
@@ -16,3 +16,111 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "sqlalchemy-utils>=0.42.1",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "coverage[toml]>=7.10.0",
+    "mypy>=1.18.0",
+    "pytest>=9.0.2",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.0",
+]
+test = [
+    "pytest>=9.0.2",
+    "pytest-cov>=6.2.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+filterwarnings = [
+    "error",
+]
+markers = [
+    "unit: Fast unit tests",
+    "integration: Tests that use external services or the database",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "SIM",
+    "C4",
+    "ARG",
+    "RUF",
+    "D",
+]
+ignore = [
+    "D100",
+    "D104",
+    "D105",
+    "D107",
+    "D203",
+    "D213",
+    "D102",
+    "D103",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D", "ARG001"]
+"migrations/**/*.py" = ["D"]
+"scripts/**/*.py" = ["D"]
+"**/__init__.py" = ["F401"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+docstring-code-format = true
+
+[tool.coverage.run]
+branch = true
+source = ["app"]
+omit = [
+    "tests/*",
+    "migrations/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+[tool.mypy]
+python_version = "3.14"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+strict_equality = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = [
+    "flask_migrate.*",
+    "sqlalchemy_utils.*",
+]
+ignore_missing_imports = true

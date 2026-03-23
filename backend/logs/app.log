@@ -29,3 +29,651 @@
 2026-03-19 13:12:13,341 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
 2026-03-19 13:12:13,548 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
 2026-03-19 13:12:13,755 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.12 ms)
+2026-03-20 09:53:15,082 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 09:53:15,084 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 09:53:15,085 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 09:53:15,085 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 09:53:15,085 | INFO | app.services.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 09:53:16,763 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev
+2026-03-20 09:53:16,879 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 09:53:16,881 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 09:53:16,882 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 09:53:16,882 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 09:53:16,883 | INFO | app.services.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 09:53:16,912 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 09:53:17,070 | WARNING | app.http | 172.18.0.1 | GET / -> 404 | (0.40 ms)
+2026-03-20 09:53:17,124 | WARNING | app.http | 172.18.0.1 | GET /favicon.ico -> 404 | (0.17 ms)
+2026-03-20 09:53:33,396 | WARNING | app.http | 172.18.0.1 | GET / -> 404 | (0.20 ms)
+2026-03-20 09:53:38,640 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.34 ms)
+2026-03-20 09:53:43,255 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.15 ms)
+2026-03-20 09:53:43,730 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.23 ms)
+2026-03-20 09:53:44,048 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-20 09:53:44,273 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-20 09:53:44,610 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.14 ms)
+2026-03-20 09:53:44,856 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-20 09:53:45,049 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-20 09:53:45,257 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.16 ms)
+2026-03-20 09:53:45,453 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-20 09:53:45,667 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.16 ms)
+2026-03-20 09:53:45,867 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-20 09:53:49,738 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.20 ms)
+2026-03-20 09:53:49,953 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.12 ms)
+2026-03-20 09:53:50,173 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-20 09:53:50,353 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-20 09:53:50,556 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-20 09:53:50,758 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-20 09:53:50,956 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.12 ms)
+2026-03-20 09:53:51,170 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.12 ms)
+2026-03-20 09:53:51,359 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-20 09:53:51,551 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200 | (0.13 ms)
+2026-03-20 09:57:31,685 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev
+2026-03-20 09:57:31,840 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 09:57:31,842 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 09:57:31,843 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 09:57:31,843 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 09:57:31,844 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 09:57:31,873 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 09:57:36,259 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev
+2026-03-20 09:57:36,384 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 09:57:36,385 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 09:57:36,386 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 09:57:36,386 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 09:57:36,387 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 09:57:36,412 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 09:57:48,802 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev
+2026-03-20 09:57:48,911 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 09:57:48,913 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 09:57:48,913 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 09:57:48,914 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 09:57:48,914 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 09:57:48,940 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:05:47,764 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:05:47,897 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:05:47,899 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:05:47,900 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:05:47,900 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:05:47,901 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:05:47,926 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:06:21,843 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:06:21,954 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:06:21,956 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:06:21,957 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:06:21,957 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:06:21,957 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:06:21,983 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:11:46,018 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:11:46,158 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:11:46,160 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:11:46,161 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:11:46,161 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:11:46,161 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:11:46,195 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:12:31,424 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:12:31,566 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:12:31,568 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:12:31,568 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:12:31,569 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:12:31,569 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:12:31,604 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:13:00,841 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:13:00,953 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:13:00,955 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:13:00,955 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:13:00,955 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:13:00,956 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:13:00,980 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:15:01,149 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:15:01,281 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:15:01,283 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:15:01,284 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:15:01,284 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:15:01,285 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:15:01,315 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:15:18,634 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:15:18,753 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:15:18,755 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:15:18,755 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:15:18,756 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:15:18,757 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:15:18,782 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:24:42,889 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:24:43,038 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:24:43,041 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:24:43,041 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:24:43,041 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:24:43,042 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:24:43,073 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:24:44,134 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:24:44,238 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:24:44,240 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:24:44,241 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:24:44,241 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:24:44,242 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:24:44,267 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:24:47,470 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:24:47,595 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:24:47,596 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:24:47,597 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:24:47,597 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:24:47,598 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:24:47,622 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:24:51,850 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:24:51,953 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:24:51,955 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:24:51,955 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:24:51,956 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:24:51,956 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:24:51,981 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:24:56,455 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:24:56,569 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:24:56,570 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:24:56,571 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:24:56,571 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:24:56,572 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:24:56,601 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:25:00,959 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:25:01,084 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:25:01,086 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:25:01,087 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:25:01,087 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:25:01,087 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:25:01,117 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:25:10,398 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:25:10,555 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:25:10,557 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:25:10,557 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:25:10,557 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:25:10,558 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:25:10,583 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:25:29,129 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:25:29,240 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:25:29,242 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:25:29,242 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:25:29,243 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:25:29,243 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:25:29,269 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:25:54,433 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:25:54,564 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:25:54,567 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:25:54,567 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:25:54,567 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:25:54,568 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:25:54,600 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:26:00,866 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:26:00,971 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:26:00,973 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:26:00,973 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:26:00,973 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:26:00,974 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:26:00,998 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:26:05,299 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:26:05,411 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:26:05,412 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:26:05,413 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:26:05,413 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:26:05,414 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:26:05,438 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:26:10,515 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:26:10,621 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:26:10,622 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:26:10,623 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:26:10,623 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:26:10,623 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:26:10,648 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:26:19,805 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:26:19,915 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:26:19,917 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:26:19,917 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:26:19,917 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:26:19,918 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:26:19,943 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:26:27,752 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:26:27,858 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:26:27,860 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:26:27,860 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:26:27,861 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:26:27,861 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:26:27,891 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:26:38,346 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:26:38,449 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:26:38,451 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:26:38,451 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:26:38,452 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:26:38,452 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:26:38,477 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:26:42,874 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:26:42,980 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:26:42,982 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:26:42,982 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:26:42,983 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:26:42,983 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:26:43,008 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:26:46,201 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:26:46,308 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:26:46,309 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:26:46,310 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:26:46,310 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:26:46,311 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:26:46,336 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:26:50,768 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:26:50,874 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:26:50,875 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:26:50,876 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:26:50,876 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:26:50,877 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:26:50,901 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:26:57,548 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:26:57,654 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:26:57,656 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:26:57,657 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:26:57,657 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:26:57,658 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:26:57,682 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:27:09,034 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:27:09,147 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:27:09,148 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:27:09,149 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:27:09,149 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:27:09,150 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:27:09,174 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:27:13,498 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:27:13,604 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:27:13,606 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:27:13,606 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:27:13,607 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:27:13,607 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:27:13,631 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:27:21,519 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:27:21,627 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:27:21,629 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:27:21,629 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:27:21,630 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:27:21,631 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:27:21,664 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:27:27,246 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:27:27,354 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:27:27,356 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:27:27,356 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:27:27,356 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:27:27,357 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:27:27,382 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:27:29,433 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:27:29,546 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:27:29,548 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:27:29,548 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:27:29,548 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:27:29,549 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:27:29,574 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:27:31,517 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:27:31,628 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:27:31,630 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:27:31,631 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:27:31,631 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:27:31,632 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:27:31,656 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:28:12,786 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:28:12,891 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:28:12,893 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:28:12,893 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:28:12,893 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:28:12,894 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:28:12,919 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:28:57,833 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:28:57,940 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:28:57,941 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:28:57,942 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:28:57,942 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:28:57,943 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:28:57,968 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:29:05,800 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:29:05,904 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:29:05,906 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:29:05,906 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:29:05,906 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:29:05,907 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:29:05,931 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:29:51,878 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:29:51,988 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:29:51,990 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:29:51,990 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:29:51,991 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:29:51,991 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:29:52,016 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:32:06,457 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:32:06,565 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:32:06,567 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:32:06,567 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:32:06,568 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:32:06,568 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:32:06,592 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:32:16,866 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:32:16,974 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:32:16,976 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:32:16,977 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:32:16,977 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:32:16,977 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:32:17,002 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:32:30,743 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:32:30,852 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:32:30,854 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:32:30,854 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:32:30,854 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:32:30,855 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:32:30,881 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:32:33,987 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:32:34,096 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:32:34,098 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:32:34,099 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:32:34,099 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:32:34,100 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:32:34,126 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:36:20,162 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:36:20,293 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:36:20,295 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:36:20,295 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:36:20,296 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:36:20,296 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:36:20,326 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:36:28,279 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:36:28,389 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:36:28,391 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:36:28,391 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:36:28,392 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:36:28,393 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:36:28,419 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:36:38,810 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:36:38,920 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:36:38,922 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:36:38,923 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:36:38,923 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:36:38,924 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:36:38,949 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:36:43,481 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:36:43,607 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:36:43,609 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:36:43,610 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:36:43,610 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:36:43,611 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:36:43,638 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:36:54,039 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:36:54,148 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:36:54,150 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:36:54,150 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:36:54,151 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:36:54,152 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:36:54,177 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:37:01,132 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:37:01,250 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:37:01,252 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:37:01,252 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:37:01,252 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:37:01,253 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:37:01,280 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:37:10,416 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:37:10,521 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:37:10,523 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:37:10,523 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:37:10,523 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:37:10,524 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:37:10,549 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:37:18,602 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:37:18,711 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:37:18,713 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:37:18,713 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:37:18,714 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:37:18,714 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:37:18,740 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:37:26,880 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:37:26,989 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:37:26,991 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:37:26,991 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:37:26,991 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:37:26,992 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:37:27,017 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:37:34,976 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:37:35,098 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:37:35,102 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:37:35,103 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:37:35,103 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:37:35,104 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:37:35,132 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:37:40,752 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:37:40,858 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:37:40,860 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:37:40,860 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:37:40,860 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:37:40,861 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:37:40,886 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:38:32,802 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:38:32,936 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:38:32,939 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:38:32,939 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:38:32,939 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:38:32,940 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:38:32,969 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:38:36,044 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:38:36,148 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:38:36,150 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:38:36,150 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:38:36,151 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:38:36,151 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:38:36,175 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:38:44,168 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:38:44,282 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:38:44,284 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:38:44,285 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:38:44,285 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:38:44,286 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:38:44,311 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:38:55,660 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:38:55,768 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:38:55,769 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:38:55,770 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:38:55,770 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:38:55,771 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:38:55,796 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:39:45,597 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:39:45,739 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:39:45,741 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:39:45,742 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:39:45,742 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:39:45,743 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:39:45,773 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:40:06,545 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:40:06,657 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:40:06,659 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:40:06,660 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:40:06,660 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:40:06,661 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:40:06,685 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:40:23,787 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:40:23,895 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:40:23,896 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:40:23,897 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:40:23,897 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:40:23,898 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:40:23,922 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:42:34,969 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:42:35,098 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:42:35,100 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:42:35,100 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:42:35,101 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:42:35,101 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:42:35,126 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:42:50,284 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:42:50,402 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:42:50,404 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:42:50,405 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:42:50,405 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:42:50,406 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:42:50,432 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:42:57,286 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:42:57,393 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:42:57,395 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:42:57,396 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:42:57,396 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:42:57,397 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:42:57,423 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:43:08,969 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:43:09,086 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:43:09,087 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:43:09,088 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:43:09,088 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:43:09,089 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:43:09,115 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:43:09,953 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:43:10,072 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:43:10,074 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:43:10,074 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:43:10,074 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:43:10,075 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:43:10,100 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:43:15,577 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:43:15,681 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:43:15,683 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:43:15,684 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:43:15,684 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:43:15,685 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:43:15,710 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:43:38,930 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:43:39,041 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:43:39,043 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:43:39,043 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:43:39,044 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:43:39,045 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:43:39,070 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:43:41,145 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:43:41,258 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:43:41,260 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:43:41,260 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:43:41,261 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:43:41,261 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:43:41,289 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:44:20,124 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:44:20,239 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:44:20,242 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:44:20,242 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:44:20,242 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:44:20,243 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:44:20,268 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:44:35,437 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:44:35,542 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:44:35,543 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:44:35,544 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:44:35,544 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:44:35,545 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:44:35,569 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:44:46,017 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:44:46,124 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:44:46,126 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:44:46,126 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:44:46,126 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:44:46,127 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:44:46,153 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:44:49,336 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:44:49,438 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:44:49,440 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:44:49,440 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:44:49,441 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:44:49,441 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:44:49,468 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:45:08,270 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:45:08,378 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:45:08,380 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:45:08,381 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:45:08,381 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:45:08,382 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:45:08,406 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:45:13,934 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:45:14,044 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:45:14,047 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:45:14,047 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:45:14,047 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:45:14,048 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:45:14,074 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:45:17,285 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:45:17,408 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:45:17,410 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:45:17,410 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:45:17,411 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:45:17,411 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:45:17,435 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:45:28,936 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:45:29,043 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:45:29,045 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:45:29,045 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:45:29,046 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:45:29,047 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:45:29,073 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:45:31,142 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:45:31,256 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:45:31,259 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:45:31,259 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:45:31,259 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:45:31,260 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:45:31,287 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:46:23,090 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:46:23,196 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:46:23,199 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:46:23,199 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:46:23,199 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:46:23,200 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:46:23,227 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:46:27,752 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:46:27,871 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:46:27,873 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:46:27,873 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:46:27,873 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:46:27,874 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:46:27,901 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:46:30,985 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:46:31,091 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:46:31,093 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:46:31,093 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:46:31,094 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:46:31,095 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:46:31,119 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:46:34,292 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:46:34,422 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:46:34,424 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:46:34,425 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:46:34,425 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:46:34,426 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:46:34,453 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:46:46,946 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:46:47,051 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:46:47,053 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:46:47,053 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:46:47,053 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:46:47,054 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:46:47,079 | WARNING | werkzeug |  * Debugger is active!
+2026-03-20 10:47:26,920 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-20 10:47:27,027 | DEBUG | app.core.extensions | Initializing database
+2026-03-20 10:47:27,028 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-20 10:47:27,029 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-20 10:47:27,029 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-20 10:47:27,029 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-20 10:47:27,054 | WARNING | werkzeug |  * Debugger is active!
+2026-03-21 04:12:59,562 | DEBUG | app.core.extensions | Initializing database
+2026-03-21 04:12:59,564 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-21 04:12:59,565 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-21 04:12:59,565 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-21 04:12:59,566 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-21 04:13:01,189 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-21 04:13:01,298 | DEBUG | app.core.extensions | Initializing database
+2026-03-21 04:13:01,301 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-21 04:13:01,301 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-21 04:13:01,301 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-21 04:13:01,302 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-21 04:13:01,328 | WARNING | werkzeug |  * Debugger is active!
+2026-03-21 04:13:24,282 | WARNING | app.http | 172.18.0.1 | GET / -> 404
+2026-03-21 04:13:24,435 | WARNING | app.http | 172.18.0.1 | GET /favicon.ico -> 404
+2026-03-21 04:13:31,667 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ -> 200
+2026-03-21 04:13:57,586 | DEBUG | app.startup | Running on http://127.0.0.1:5000 | Environment: dev | Debug: True
+2026-03-21 04:13:57,719 | DEBUG | app.core.extensions | Initializing database
+2026-03-21 04:13:57,721 | DEBUG | app.core.extensions | Database initialized with migration directory: /app/app/migrations
+2026-03-21 04:13:57,722 | DEBUG | app.core.extensions | CORS initialized with origins: *
+2026-03-21 04:13:57,722 | DEBUG | app.api.v1 | Registering blueprint health_v1 at /api/v1/health
+2026-03-21 04:13:57,723 | INFO | app.middleware.rate_limit.Integration | Enabling rate limiting: max_requests=20, window_seconds=5, ignored_paths=['/api/v1/health']
+2026-03-21 04:13:57,747 | WARNING | werkzeug |  * Debugger is active!
+2026-03-21 04:14:02,193 | DEBUG | app.http | 172.18.0.1 | GET /api/v1/health/ready -> 200

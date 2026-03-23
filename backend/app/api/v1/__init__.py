@@ -1,6 +1,6 @@
 import logging
 
-from flask import Flask, Blueprint
+from flask import Blueprint, Flask
 
 from app.api.v1.health import health_bp
 
@@ -14,6 +14,11 @@ ROUTES: list[Blueprint] = [
 
 
 def register_api_v1(app: Flask) -> None:
+    """Register all version 1 API blueprints on the Flask app.
+
+    Args:
+        app: Flask application instance.
+    """
     for bp in ROUTES:
         if not bp.name.endswith("_v1"):
             raise ValueError(f"Blueprint {bp.name} does not end with '_v1'")

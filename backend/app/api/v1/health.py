@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import Blueprint
 
@@ -8,4 +8,24 @@ health_bp = Blueprint("health_v1", __name__, url_prefix="/health")
 
 @health_bp.route("/", methods=["GET"])
 def health_check():
-    return success_response(data={"timestamp": datetime.now(timezone.utc).isoformat()}, message="Service is healthy")
+    """Return a simple health check response with the current UTC timestamp.
+
+    Returns:
+        JSON response indicating the service is healthy.
+    """
+    return success_response(
+        data={"timestamp": datetime.now(UTC).isoformat()},
+        message="Service is healthy",
+    )
+
+@health_bp.route("/ready", methods=["GET"])
+def readiness_check():
+    """Return a readiness check response indicating if the service is ready.
+
+    Returns:
+        JSON response indicating the service is ready.
+    """
+    return success_response(
+        data={"timestamp": datetime.now(UTC).isoformat()},
+        message="Service is ready",
+    )
