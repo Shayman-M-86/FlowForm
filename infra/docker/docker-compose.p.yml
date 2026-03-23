@@ -19,11 +19,29 @@ services:
 
       FLOWFORM_CORE_SCHEMA_FILE: ${FLOWFORM_CORE_SCHEMA_FILE}
       FLOWFORM_RESPONSE_SCHEMA_FILE: ${FLOWFORM_RESPONSE_SCHEMA_FILE}
+    command:
+      - postgres
+      - -c
+      - password_encryption=scram-sha-256 # Use SCRAM-SHA-256 for password encryption
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf # Use custom pg_hba.conf for authentication
+      - -c
+      - listen_addresses=* # Listen on all interfaces
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
       - flowform_postgres_data:/var/lib/postgresql/data
       - ../postgres/init:/docker-entrypoint-initdb.d
+      - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    networks:
+      - flowform_net
 
 volumes:
   flowform_postgres_data:
+
+networks:
+  flowform_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
