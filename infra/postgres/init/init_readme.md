@@ -67,4 +67,3 @@ FLOWFORM_CORE_APP_PASSWORD=core_password_here
 ```sql
 CREATE ROLE flowform_core_app LOGIN PASSWORD 'core_password_here';
 ```
-

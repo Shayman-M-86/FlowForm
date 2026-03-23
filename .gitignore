@@ -55,6 +55,7 @@ cover/
 
 *temp
 *env*
+*.log
 
 # Jupyter Notebook
 .ipynb_checkpoints

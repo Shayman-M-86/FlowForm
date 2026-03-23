@@ -1,4 +1,47 @@
+name: flowform
+
 services:
+  postgres:
+    image: postgres:17
+    container_name: flowform-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+      FLOWFORM_CORE_DB: ${FLOWFORM_CORE_DB}
+      FLOWFORM_RESPONSE_DB: ${FLOWFORM_RESPONSE_DB}
+
+      FLOWFORM_CORE_APP_USER: ${FLOWFORM_CORE_APP_USER}
+      FLOWFORM_CORE_APP_PASSWORD: ${FLOWFORM_CORE_APP_PASSWORD}
+
+      FLOWFORM_RESPONSE_APP_USER: ${FLOWFORM_RESPONSE_APP_USER}
+      FLOWFORM_RESPONSE_APP_PASSWORD: ${FLOWFORM_RESPONSE_APP_PASSWORD}
+
+      FLOWFORM_CORE_SCHEMA_FILE: ${FLOWFORM_CORE_SCHEMA_FILE}
+      FLOWFORM_RESPONSE_SCHEMA_FILE: ${FLOWFORM_RESPONSE_SCHEMA_FILE}
+    command:
+      - postgres
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+      - -c
+      - listen_addresses=*
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - flowform_postgres_data:/var/lib/postgresql/data
+      - ../postgres/init:/docker-entrypoint-initdb.d
+      - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    networks:
+      - flowform_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: ../..
@@ -9,31 +52,27 @@ services:
       FLASK_DEBUG: "1"
       FLOWFORM_ENV: dev
       PYTHONUNBUFFERED: "1"
+
+      FLOWFORM_CORE_DATABASE_URL: postgresql+psycopg://${FLOWFORM_CORE_APP_USER}:${FLOWFORM_CORE_APP_PASSWORD}@postgres:5432/${FLOWFORM_CORE_DB}
+      FLOWFORM_RESPONSE_DATABASE_URL: postgresql+psycopg://${FLOWFORM_RESPONSE_APP_USER}:${FLOWFORM_RESPONSE_APP_PASSWORD}@postgres:5432/${FLOWFORM_RESPONSE_DB}
     command: uv run flask --debug run --host 0.0.0.0 --port 5000
     volumes:
       - ../../backend:/app
       - ../../backend/logs:/app/logs
     ports:
       - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - flowform_net
 
-#   frontend:
-#     build:
-#       context: ../..
-#       dockerfile: infra/docker/frontend.Dockerfile
-#     container_name: flowform-frontend
-#     working_dir: /app/frontend
-#     environment:
-#       VITE_API_BASE_URL: http://localhost:5000
-#       CHOKIDAR_USEPOLLING: "true"
-#     command: npm run dev -- --host 0.0.0.0 --port 5173
-#     volumes:
-#       - ../../frontend:/app/frontend
-#       - frontend_node_modules:/app/frontend/node_modules
-#     ports:
-#       - "5173:5173"
-#     depends_on:
-#       - backend
+volumes:
+  flowform_postgres_data:
 
-# volumes:
-#   postgres_data:
-#   frontend_node_modules:
+networks:
+  flowform_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
