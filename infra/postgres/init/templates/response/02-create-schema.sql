@@ -1,7 +1,7 @@
 \set ON_ERROR_STOP on
 
 -- Switch into the response database.
-\connect ${FLOWFORM_RESPONSE_DB}
+\connect ${FF_PGDB_RESPONSE__DB_NAME}
 
 -- Create the dedicated application schema.
 CREATE SCHEMA IF NOT EXISTS response_app AUTHORIZATION flowform_owner;
@@ -16,7 +16,7 @@ REVOKE ALL ON SCHEMA response_app FROM PUBLIC;
 SET search_path TO response_app;
 
 -- Load the response schema file into the active search_path/schema.
-\i ${FLOWFORM_RESPONSE_SCHEMA_FILE}
+\i ${FF_PGDB_RESPONSE__SCHEMA_FILE}
 
 -- Reassert ownership on the schema.
 ALTER SCHEMA response_app OWNER TO flowform_owner;

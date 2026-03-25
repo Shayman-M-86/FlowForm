@@ -3,7 +3,8 @@ from __future__ import annotations
 import logging
 import os
 from functools import lru_cache
-from typing import Literal
+from pathlib import Path
+from typing import Any, Literal, cast
 
 from flask import Flask, current_app
 from pydantic import BaseModel, Field, SecretStr, ValidationError, model_validator
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class DatabaseSettings(BaseModel):
     """Database connection settings for the application."""
+
     url: str | None = None
 
     user: str | None = None
@@ -23,7 +25,25 @@ class DatabaseSettings(BaseModel):
     port: int | None = None
     name: str | None = None
     password: SecretStr | None = None
+    password_file: str | None = None
     scheme: str = "postgresql+psycopg"
+
+    @model_validator(mode="after")
+    def load_password_from_file(self) -> DatabaseSettings:
+        """Load the database password from a mounted secret file when provided.
+
+        Raises:
+            ValueError: If the password file is not found.
+        """
+        if self.password is not None or self.password_file is None:
+            return self
+
+        password_path = Path(self.password_file)
+        if not password_path.is_file():
+            raise ValueError(f"Database password file not found: {self.password_file}")
+
+        self.password = SecretStr(password_path.read_text(encoding="utf-8").strip())
+        return self
 
     @model_validator(mode="after")
     def validate_and_build_url(self) -> DatabaseSettings:
@@ -58,24 +78,28 @@ class DatabaseSettings(BaseModel):
 
 class ServerSettings(BaseModel):
     """Server host and port settings."""
+
     host: str = "127.0.0.1"
     port: int = 5000
 
 
 class Auth0Settings(BaseModel):
     """Auth0 configuration for authentication and authorization."""
+
     domain: str
     audience: str
 
 
 class AppSettings(BaseModel):
     """High-level application behavior settings."""
+
     debug: bool = False
     secret_key: SecretStr
 
 
 class RateLimitSettings(BaseModel):
     """Global rate limiting configuration."""
+
     enabled: bool = True
     max_requests: int = 20
     window_seconds: int = 5
@@ -84,6 +108,7 @@ class RateLimitSettings(BaseModel):
 
 class LoggingSettings(BaseModel):
     """Logging configuration for the application and dependencies."""
+
     level: str = "INFO"
     log_json: bool = False
     sqlalchemy_level: str = "WARNING"
@@ -97,9 +122,11 @@ class LoggingSettings(BaseModel):
 
 class Settings(BaseSettings):
     """Top-level application settings loaded from environment variables."""
+
     env: Literal["dev", "test", "prod"]
     app: AppSettings
     database: DatabaseSettings
+    response_database: DatabaseSettings | None = None
     auth0: Auth0Settings
     server: ServerSettings = Field(default_factory=ServerSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
@@ -114,7 +141,7 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Load application settings based on ``FLOWFORM_ENV`` and optional .env files.
+    """Load application settings from environment variables.
 
     Raises:
         ConfigError: If configuration is invalid or the environment name is unsupported.
@@ -122,29 +149,20 @@ def get_settings() -> Settings:
     Returns:
         Loaded application settings.
     """
-    env_file_map = {
-        "dev": ".env.dev",
-        "test": ".env.test",
-        "prod": None,  # No .env file for production, values come from environment variables
-    }
-
     env = os.getenv("FLOWFORM_ENV")
     try:
         if env is None:
             raise ConfigError(
                 "FLOWFORM_ENV is required and must be one of: dev, test, prod. "
-                "Example: export FLOWFORM_ENV=dev. \n"
-                "If you want to use .env files, create one of "
-                ".env.dev or .env.test with the necessary configuration values."
+                "This should be provided by the container environment."
             )
 
         env = env.lower()
-        if env not in env_file_map:
+        if env not in {"dev", "test", "prod"}:
             raise ConfigError("FLOWFORM_ENV must be one of: dev, test, prod")
 
-        env_file = env_file_map[env]
-
-        settings = Settings() if env == "prod" else Settings(_env_file=env_file)  # type: ignore
+        logger.info("Loading settings for env=%s from environment variables", env)
+        settings = cast(Any, Settings)()
 
         logger.info("Settings loaded for env=%s", settings.env)
         return settings
@@ -180,6 +198,9 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
         if isinstance(value, SecretStr):
             value = value.get_secret_value()
         app.config[key] = value
+
+    if settings.response_database and settings.response_database.url:
+        app.config["FLOWFORM_RESPONSE_DATABASE_URI"] = settings.response_database.url
 
     app.extensions["settings"] = settings
     app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)

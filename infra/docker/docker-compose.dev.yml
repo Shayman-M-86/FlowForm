@@ -1,25 +1,19 @@
 name: flowform
 
 services:
-  postgres:
+  postgres-core:
     image: postgres:17
-    container_name: flowform-postgres
+    container_name: flowform-postgres-core
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      FF_PGDB_INIT__TARGET: core
+      POSTGRES_USER: ${FF_PGDB_INIT__USER}
+      POSTGRES_PASSWORD_FILE: /run/secrets/FF_PGDB_INIT__PASSWORD
+      POSTGRES_DB: ${FF_PGDB_CORE__DB_NAME}
 
-      FLOWFORM_CORE_DB: ${FLOWFORM_CORE_DB}
-      FLOWFORM_RESPONSE_DB: ${FLOWFORM_RESPONSE_DB}
-
-      FLOWFORM_CORE_APP_USER: ${FLOWFORM_CORE_APP_USER}
-      FLOWFORM_CORE_APP_PASSWORD: ${FLOWFORM_CORE_APP_PASSWORD}
-
-      FLOWFORM_RESPONSE_APP_USER: ${FLOWFORM_RESPONSE_APP_USER}
-      FLOWFORM_RESPONSE_APP_PASSWORD: ${FLOWFORM_RESPONSE_APP_PASSWORD}
-
-      FLOWFORM_CORE_SCHEMA_FILE: ${FLOWFORM_CORE_SCHEMA_FILE}
-      FLOWFORM_RESPONSE_SCHEMA_FILE: ${FLOWFORM_RESPONSE_SCHEMA_FILE}
+      FF_PGDB_CORE__DB_NAME: ${FF_PGDB_CORE__DB_NAME}
+      FF_PGDB_CORE__APP_USER: ${FF_PGDB_CORE__APP_USER}
+      FF_PGDB_CORE__APP_PASSWORD_FILE: /run/secrets/FF_PGDB_CORE__APP_PASSWORD
+      FF_PGDB_CORE__SCHEMA_FILE: ${FF_PGDB_CORE__SCHEMA_FILE}
     command:
       - postgres
       - -c
@@ -29,15 +23,56 @@ services:
       - -c
       - listen_addresses=*
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${FF_PGDB_CORE_COMPOSE__PUBLISHED_PORT:-5432}:5432"
     volumes:
-      - flowform_postgres_data:/var/lib/postgresql/data
+      - flowform_postgres_core_data:/var/lib/postgresql/data
       - ../postgres/init:/docker-entrypoint-initdb.d
       - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    secrets:
+      - FF_PGDB_INIT__PASSWORD
+      - FF_PGDB_CORE__APP_PASSWORD
     networks:
       - flowform_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${FF_PGDB_INIT__USER} -d ${FF_PGDB_CORE__DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-response:
+    image: postgres:17
+    container_name: flowform-postgres-response
+    environment:
+      FF_PGDB_INIT__TARGET: response
+      POSTGRES_USER: ${FF_PGDB_INIT__USER}
+      POSTGRES_PASSWORD_FILE: /run/secrets/FF_PGDB_INIT__PASSWORD
+      POSTGRES_DB: ${FF_PGDB_RESPONSE__DB_NAME}
+
+      FF_PGDB_RESPONSE__DB_NAME: ${FF_PGDB_RESPONSE__DB_NAME}
+      FF_PGDB_RESPONSE__APP_USER: ${FF_PGDB_RESPONSE__APP_USER}
+      FF_PGDB_RESPONSE__APP_PASSWORD_FILE: /run/secrets/FF_PGDB_RESPONSE__APP_PASSWORD
+      FF_PGDB_RESPONSE__SCHEMA_FILE: ${FF_PGDB_RESPONSE__SCHEMA_FILE}
+    command:
+      - postgres
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+      - -c
+      - listen_addresses=*
+    ports:
+      - "127.0.0.1:${FF_PGDB_RESPONSE_COMPOSE__PUBLISHED_PORT:-5433}:5432"
+    volumes:
+      - flowform_postgres_response_data:/var/lib/postgresql/data
+      - ../postgres/init:/docker-entrypoint-initdb.d
+      - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    secrets:
+      - FF_PGDB_INIT__PASSWORD
+      - FF_PGDB_RESPONSE__APP_PASSWORD
+    networks:
+      - flowform_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${FF_PGDB_INIT__USER} -d ${FF_PGDB_RESPONSE__DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -47,14 +82,20 @@ services:
       context: ../..
       dockerfile: infra/docker/backend.Dockerfile
     container_name: flowform-backend
+    env_file:
+      - ./backend.dev.env
     environment:
-      FLASK_ENV: development
-      FLASK_DEBUG: "1"
-      FLOWFORM_ENV: dev
       PYTHONUNBUFFERED: "1"
-
-      FLOWFORM_CORE_DATABASE_URL: postgresql+psycopg://${FLOWFORM_CORE_APP_USER}:${FLOWFORM_CORE_APP_PASSWORD}@postgres:5432/${FLOWFORM_CORE_DB}
-      FLOWFORM_RESPONSE_DATABASE_URL: postgresql+psycopg://${FLOWFORM_RESPONSE_APP_USER}:${FLOWFORM_RESPONSE_APP_PASSWORD}@postgres:5432/${FLOWFORM_RESPONSE_DB}
+      FLOWFORM_DATABASE__USER: ${FF_PGDB_CORE__APP_USER}
+      FLOWFORM_DATABASE__HOST: ${FF_PGDB_CORE_COMPOSE__HOST:-postgres-core}
+      FLOWFORM_DATABASE__PORT: ${FF_PGDB_CORE_COMPOSE__PORT:-5432}
+      FLOWFORM_DATABASE__NAME: ${FF_PGDB_CORE__DB_NAME}
+      FLOWFORM_DATABASE__PASSWORD_FILE: /run/secrets/FF_PGDB_CORE__APP_PASSWORD
+      FLOWFORM_RESPONSE_DATABASE__USER: ${FF_PGDB_RESPONSE__APP_USER}
+      FLOWFORM_RESPONSE_DATABASE__HOST: ${FF_PGDB_RESPONSE_COMPOSE__HOST:-postgres-response}
+      FLOWFORM_RESPONSE_DATABASE__PORT: ${FF_PGDB_RESPONSE_COMPOSE__PORT:-5432}
+      FLOWFORM_RESPONSE_DATABASE__NAME: ${FF_PGDB_RESPONSE__DB_NAME}
+      FLOWFORM_RESPONSE_DATABASE__PASSWORD_FILE: /run/secrets/FF_PGDB_RESPONSE__APP_PASSWORD
     command: uv run flask --debug run --host 0.0.0.0 --port 5000
     volumes:
       - ../../backend:/app
@@ -62,13 +103,28 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      postgres:
+      postgres-core:
         condition: service_healthy
+      postgres-response:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - /app/scripts/healthcheck.py
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    secrets:
+      - FF_PGDB_CORE__APP_PASSWORD
+      - FF_PGDB_RESPONSE__APP_PASSWORD
     networks:
       - flowform_net
 
 volumes:
-  flowform_postgres_data:
+  flowform_postgres_core_data:
+  flowform_postgres_response_data:
 
 networks:
   flowform_net:
@@ -76,3 +132,11 @@ networks:
     ipam:
       config:
         - subnet: 172.30.0.0/16
+
+secrets:
+  FF_PGDB_INIT__PASSWORD:
+    file: ./secrets/FF_PGDB_INIT__PASSWORD.secret.txt
+  FF_PGDB_CORE__APP_PASSWORD:
+    file: ./secrets/FF_PGDB_CORE__APP_PASSWORD.secret.txt
+  FF_PGDB_RESPONSE__APP_PASSWORD:
+    file: ./secrets/FF_PGDB_RESPONSE__APP_PASSWORD.secret.txt

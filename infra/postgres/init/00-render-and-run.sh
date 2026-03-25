@@ -1,8 +1,10 @@
 #!/usr/bin/env sh
 set -eu
 
+INIT_DIR="/docker-entrypoint-initdb.d"
 TEMPLATE_DIR="/docker-entrypoint-initdb.d/templates"
 RENDER_DIR="/tmp/flowform-init"
+DB_TARGET="${FF_PGDB_INIT__TARGET:-all}"
 
 require_var() {
   var_name="$1"
@@ -13,22 +15,91 @@ require_var() {
   fi
 }
 
+resolve_init_path() {
+  input_path="$1"
+
+  case "$input_path" in
+    /*)
+      printf '%s\n' "$input_path"
+      ;;
+    *)
+      printf '%s/%s\n' "$INIT_DIR" "$input_path"
+      ;;
+  esac
+}
+
+read_secret_file() {
+  file_path="$1"
+
+  if [ ! -f "$file_path" ]; then
+    echo "ERROR: secret file not found: $file_path" >&2
+    exit 1
+  fi
+
+  tr -d '\r\n' < "$file_path"
+}
+
+read_value() {
+  var_name="$1"
+  file_var_name="${var_name}_FILE"
+
+  eval "file_path=\${$file_var_name:-}"
+  if [ -n "$file_path" ]; then
+    read_secret_file "$file_path"
+    return
+  fi
+
+  eval "var_value=\${$var_name:-}"
+  if [ -n "$var_value" ]; then
+    printf '%s\n' "$var_value"
+    return
+  fi
+
+  echo "ERROR: required environment variable '$var_name' or '$file_var_name' is not set." >&2
+  exit 1
+}
+
+validate_core_inputs() {
+  require_var FF_PGDB_CORE__DB_NAME
+  require_var FF_PGDB_CORE__APP_USER
+  require_var FF_PGDB_CORE__SCHEMA_FILE
+}
+
+validate_response_inputs() {
+  require_var FF_PGDB_RESPONSE__DB_NAME
+  require_var FF_PGDB_RESPONSE__APP_USER
+  require_var FF_PGDB_RESPONSE__SCHEMA_FILE
+}
+
 echo "Validating required environment variables..."
 
 require_var POSTGRES_USER
 require_var POSTGRES_DB
 
-require_var FLOWFORM_CORE_DB
-require_var FLOWFORM_RESPONSE_DB
-
-require_var FLOWFORM_CORE_APP_USER
-require_var FLOWFORM_CORE_APP_PASSWORD
-
-require_var FLOWFORM_RESPONSE_APP_USER
-require_var FLOWFORM_RESPONSE_APP_PASSWORD
-
-require_var FLOWFORM_CORE_SCHEMA_FILE
-require_var FLOWFORM_RESPONSE_SCHEMA_FILE
+case "$DB_TARGET" in
+  core)
+    validate_core_inputs
+    FF_PGDB_CORE__SCHEMA_FILE="$(resolve_init_path "$FF_PGDB_CORE__SCHEMA_FILE")"
+    FF_PGDB_CORE__APP_PASSWORD="$(read_value FF_PGDB_CORE__APP_PASSWORD)"
+    ;;
+  response)
+    validate_response_inputs
+    FF_PGDB_RESPONSE__SCHEMA_FILE="$(resolve_init_path "$FF_PGDB_RESPONSE__SCHEMA_FILE")"
+    FF_PGDB_RESPONSE__APP_PASSWORD="$(read_value FF_PGDB_RESPONSE__APP_PASSWORD)"
+    ;;
+  all)
+    validate_core_inputs
+    validate_response_inputs
+    FF_PGDB_CORE__SCHEMA_FILE="$(resolve_init_path "$FF_PGDB_CORE__SCHEMA_FILE")"
+    FF_PGDB_RESPONSE__SCHEMA_FILE="$(resolve_init_path "$FF_PGDB_RESPONSE__SCHEMA_FILE")"
+    FF_PGDB_CORE__APP_PASSWORD="$(read_value FF_PGDB_CORE__APP_PASSWORD)"
+    FF_PGDB_RESPONSE__APP_PASSWORD="$(read_value FF_PGDB_RESPONSE__APP_PASSWORD)"
+    ;;
+  *)
+    echo "ERROR: FF_PGDB_INIT__TARGET must be one of: core, response, all." >&2
+    exit 1
+    ;;
+esac
 
 mkdir -p "$RENDER_DIR"
 
@@ -37,14 +108,18 @@ if [ ! -d "$TEMPLATE_DIR" ]; then
   exit 1
 fi
 
-if [ ! -f "$FLOWFORM_CORE_SCHEMA_FILE" ]; then
-  echo "ERROR: core schema file not found: $FLOWFORM_CORE_SCHEMA_FILE" >&2
-  exit 1
+if [ "$DB_TARGET" = "core" ] || [ "$DB_TARGET" = "all" ]; then
+  if [ ! -f "$FF_PGDB_CORE__SCHEMA_FILE" ]; then
+    echo "ERROR: core schema file not found: $FF_PGDB_CORE__SCHEMA_FILE" >&2
+    exit 1
+  fi
 fi
 
-if [ ! -f "$FLOWFORM_RESPONSE_SCHEMA_FILE" ]; then
-  echo "ERROR: response schema file not found: $FLOWFORM_RESPONSE_SCHEMA_FILE" >&2
-  exit 1
+if [ "$DB_TARGET" = "response" ] || [ "$DB_TARGET" = "all" ]; then
+  if [ ! -f "$FF_PGDB_RESPONSE__SCHEMA_FILE" ]; then
+    echo "ERROR: response schema file not found: $FF_PGDB_RESPONSE__SCHEMA_FILE" >&2
+    exit 1
+  fi
 fi
 
 render() {
@@ -57,61 +132,71 @@ render() {
   fi
 
   sed \
-    -e "s|\${FLOWFORM_CORE_DB}|$FLOWFORM_CORE_DB|g" \
-    -e "s|\${FLOWFORM_RESPONSE_DB}|$FLOWFORM_RESPONSE_DB|g" \
-    -e "s|\${FLOWFORM_CORE_APP_USER}|$FLOWFORM_CORE_APP_USER|g" \
-    -e "s|\${FLOWFORM_CORE_APP_PASSWORD}|$FLOWFORM_CORE_APP_PASSWORD|g" \
-    -e "s|\${FLOWFORM_RESPONSE_APP_USER}|$FLOWFORM_RESPONSE_APP_USER|g" \
-    -e "s|\${FLOWFORM_RESPONSE_APP_PASSWORD}|$FLOWFORM_RESPONSE_APP_PASSWORD|g" \
-    -e "s|\${FLOWFORM_CORE_SCHEMA_FILE}|$FLOWFORM_CORE_SCHEMA_FILE|g" \
-    -e "s|\${FLOWFORM_RESPONSE_SCHEMA_FILE}|$FLOWFORM_RESPONSE_SCHEMA_FILE|g" \
+    -e "s|\${FF_PGDB_CORE__DB_NAME}|${FF_PGDB_CORE__DB_NAME:-}|g" \
+    -e "s|\${FF_PGDB_RESPONSE__DB_NAME}|${FF_PGDB_RESPONSE__DB_NAME:-}|g" \
+    -e "s|\${FF_PGDB_CORE__APP_USER}|${FF_PGDB_CORE__APP_USER:-}|g" \
+    -e "s|\${FF_PGDB_CORE__APP_PASSWORD}|${FF_PGDB_CORE__APP_PASSWORD:-}|g" \
+    -e "s|\${FF_PGDB_RESPONSE__APP_USER}|${FF_PGDB_RESPONSE__APP_USER:-}|g" \
+    -e "s|\${FF_PGDB_RESPONSE__APP_PASSWORD}|${FF_PGDB_RESPONSE__APP_PASSWORD:-}|g" \
+    -e "s|\${FF_PGDB_CORE__SCHEMA_FILE}|${FF_PGDB_CORE__SCHEMA_FILE:-}|g" \
+    -e "s|\${FF_PGDB_RESPONSE__SCHEMA_FILE}|${FF_PGDB_RESPONSE__SCHEMA_FILE:-}|g" \
     "$infile" > "$outfile"
 }
 
 echo "Rendering SQL templates..."
 
-for file in \
-  00-databases.sql \
-  01-roles.sql \
-  02-core-schema.sql \
-  03-response-schema.sql \
-  04-permissions.sql
-do
-  render "$TEMPLATE_DIR/$file" "$RENDER_DIR/$file"
-done
+rendered_files=""
+
+render_target_file() {
+  source_file="$1"
+  output_file="$2"
+  render "$TEMPLATE_DIR/$source_file" "$RENDER_DIR/$output_file"
+  rendered_files="$rendered_files $output_file"
+}
+
+case "$DB_TARGET" in
+  core)
+    render_target_file "core/01-create-role.sql" "01-create-role.sql"
+    render_target_file "core/02-create-schema.sql" "02-create-schema.sql"
+    render_target_file "core/03-grant-permissions.sql" "03-grant-permissions.sql"
+    ;;
+  response)
+    render_target_file "response/01-create-role.sql" "01-create-role.sql"
+    render_target_file "response/02-create-schema.sql" "02-create-schema.sql"
+    render_target_file "response/03-grant-permissions.sql" "03-grant-permissions.sql"
+    ;;
+  all)
+    render_target_file "shared/00-create-databases.sql" "00-create-databases.sql"
+    render_target_file "shared/01-create-roles.sql" "01-create-roles.sql"
+    render_target_file "core/02-create-schema.sql" "02-create-core-schema.sql"
+    render_target_file "response/02-create-schema.sql" "03-create-response-schema.sql"
+    render_target_file "core/03-grant-permissions.sql" "04-grant-core-permissions.sql"
+    render_target_file "response/03-grant-permissions.sql" "05-grant-response-permissions.sql"
+    ;;
+esac
 
 echo "Rendered files:"
 ls -1 "$RENDER_DIR"
 
-echo "----- BEGIN 00-databases.sql -----"
-cat "$RENDER_DIR/00-databases.sql"
-echo "----- END 00-databases.sql -----"
-
-echo "----- BEGIN 01-roles.sql (masked) -----"
-sed \
-  -e "s|$FLOWFORM_CORE_APP_PASSWORD|****|g" \
-  -e "s|$FLOWFORM_RESPONSE_APP_PASSWORD|****|g" \
-  "$RENDER_DIR/01-roles.sql"
-echo "----- END 01-roles.sql (masked) -----"
-
-echo "----- BEGIN 02-core-schema.sql -----"
-cat "$RENDER_DIR/02-core-schema.sql"
-echo "----- END 02-core-schema.sql -----"
-
-echo "----- BEGIN 03-response-schema.sql -----"
-cat "$RENDER_DIR/03-response-schema.sql"
-echo "----- END 03-response-schema.sql -----"
-
-echo "----- BEGIN 04-permissions.sql -----"
-cat "$RENDER_DIR/04-permissions.sql"
-echo "----- END 04-permissions.sql -----"
+for file in $rendered_files
+do
+  echo "----- BEGIN $file -----"
+  case "$file" in
+    01-create-roles.sql|01-create-role.sql)
+      echo "Role SQL rendered successfully (content suppressed because it contains credentials)."
+      ;;
+    *)
+      cat "$RENDER_DIR/$file"
+      ;;
+  esac
+  echo "----- END $file -----"
+done
 
 echo "Running rendered SQL..."
 
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f "$RENDER_DIR/00-databases.sql"
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f "$RENDER_DIR/01-roles.sql"
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f "$RENDER_DIR/02-core-schema.sql"
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f "$RENDER_DIR/03-response-schema.sql"
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f "$RENDER_DIR/04-permissions.sql"
+for file in $rendered_files
+do
+  psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f "$RENDER_DIR/$file"
+done
 
 echo "Flowform bootstrap complete."
