@@ -2,13 +2,9 @@
 
 This checklist can be used to track development progress for FlowForm V1.
 
-### Project Setup
+- [x] Project Setup 
 
-- 
-
-### Data Models
-
-- 
+- [x] Data Models
 
 ### Core API Endpoints
 

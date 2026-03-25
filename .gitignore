@@ -66,3 +66,4 @@ cover/
 /docs/doc_dis
 /docs/plans/doc_dis
 /docs/plans/overview/architecture/DataStructure/Ideas/Schema_Decision_Documents
+/backend/.pytest_cache
