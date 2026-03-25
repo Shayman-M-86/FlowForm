@@ -8,29 +8,5 @@
         "**/__pycache__": true,
         "**/.pytest_cache": true,
         "**/.mypy_cache": true
-    },
-    "hide-files.files": [],
-    
-        "files.watcherExclude": {
-            "**/.git/objects/**": true,
-            "**/.git/subtree-cache/**": true,
-            "**/.venv/**": true,
-            "**/venv/**": true,
-            "**/__pycache__/**": true,
-            "**/.pytest_cache/**": true,
-            "**/.mypy_cache/**": true,
-            "**/.ruff_cache/**": true,
-            "**/node_modules/**": true
-        },
-        "search.exclude": {
-            "**/.venv": true,
-            "**/venv": true,
-            "**/__pycache__": true,
-            "**/.pytest_cache": true,
-            "**/.mypy_cache": true,
-            "**/.ruff_cache": true,
-            "**/node_modules": true
-        },
-        
-    
+    }
 }

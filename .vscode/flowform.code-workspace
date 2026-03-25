@@ -28,15 +28,37 @@
             "tests"
         ],
         "python.terminal.activateEnvironment": true,
+        "task.allowAutomaticTasks": "on",
         "files.exclude": {
+            "**/.git": true,
+            "**/.svn": true,
+            "**/.hg": true,
+            "**/.DS_Store": true,
+            "**/Thumbs.db": true,
+            "**/__pycache__": true,
+            "**/.pytest_cache": true,
+            "**/.mypy_cache": true
+        },
+        "files.watcherExclude": {
+            "**/.git/objects/**": true,
+            "**/.git/subtree-cache/**": true,
+            "**/.venv/**": true,
+            "**/venv/**": true,
+            "**/__pycache__/**": true,
+            "**/.pytest_cache/**": true,
+            "**/.mypy_cache/**": true,
+            "**/.ruff_cache/**": true,
+            "**/node_modules/**": true
+        },
+        "search.exclude": {
+            "**/.venv": true,
+            "**/venv": true,
             "**/__pycache__": true,
             "**/.pytest_cache": true,
             "**/.mypy_cache": true,
+            "**/.ruff_cache": true,
+            "**/node_modules": true
         },
-        "explorer.autoRevealExclude": {
-            "backend": true,
-            "frontend": true
-        },
-        "hide-files.files": [],
+        "hide-files.files": []
     }
 }
