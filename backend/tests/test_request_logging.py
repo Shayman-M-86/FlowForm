@@ -1,5 +1,6 @@
 import logging
 import types
+from typing import Any
 
 import pytest
 from flask import Flask, g, make_response
@@ -27,7 +28,7 @@ def test_log_request_includes_expected_extra(monkeypatch):
         response = make_response("", 204)
         g.request_id = "req-123"
 
-        calls: dict[str, object] = {}
+        calls: dict[str, Any] = {}
 
         def fake_get_client_ip() -> str:
             return "1.2.3.4"
@@ -67,7 +68,7 @@ def test_log_request_omits_duration_when_not_provided(monkeypatch):
         response = make_response("", 200)
         g.request_id = "req-456"
 
-        captured: dict[str, object] = {}
+        captured: dict[str, Any] = {}
 
         def fake_get_client_ip() -> str:
             return "5.6.7.8"

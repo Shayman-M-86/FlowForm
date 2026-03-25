@@ -17,7 +17,7 @@
         "workbench.colorCustomizations": {
             "statusBar.background": "#088ea9"
         },
-        "python.defaultInterpreterPath": "${workspaceFolder:backend}/.venv/Scripts/python.exe",
+        "python.defaultInterpreterPath": "${workspaceFolder:backend}/.venv/bin/python",
         "python.envFile": "${workspaceFolder:backend}/.env.dev",
         "python.analysis.extraPaths": [
             "${workspaceFolder:backend}"
@@ -37,8 +37,6 @@
             "backend": true,
             "frontend": true
         },
-        "hide-files.files": [
-            "backend/README.md"
-        ],
+        "hide-files.files": [],
     }
 }

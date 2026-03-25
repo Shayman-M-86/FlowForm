@@ -1,0 +1,11 @@
+{
+    "recommendations": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "ms-python.black-formatter",
+    ],
+    "unwantedRecommendations": [
+        "ms-python.autopep8"
+    ]
+}

@@ -144,7 +144,7 @@ def get_settings() -> Settings:
 
         env_file = env_file_map[env]
 
-        settings = Settings() if env == "prod" else Settings(_env_file=env_file)  # type: ignore[call-arg]
+        settings = Settings() if env == "prod" else Settings(_env_file=env_file)  # type: ignore
 
         logger.info("Settings loaded for env=%s", settings.env)
         return settings
@@ -177,7 +177,7 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
     }
 
     for key, value in mapping.items():
-        if hasattr(value, "get_secret_value"):
+        if isinstance(value, SecretStr):
             value = value.get_secret_value()
         app.config[key] = value
 
