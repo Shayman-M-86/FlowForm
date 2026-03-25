@@ -4,10 +4,7 @@
         "**/.svn": true,
         "**/.hg": true,
         "**/.DS_Store": true,
-        "**/Thumbs.db": true,
-        "backend/__pycache__": true
+        "**/Thumbs.db": true
     },
-    "hide-files.files": [
-        "backend/__pycache__"
-    ]
+    "hide-files.files": []
 }
