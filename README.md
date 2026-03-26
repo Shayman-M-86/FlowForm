@@ -23,6 +23,8 @@ This project uses uv for dependency management.
 * Do not use `pip` directly
 * Use `uv` commands for installing and syncing dependencies
 
+[UV Python package manager](https://github.com/astral-sh/uv)
+
 ---
 
 ## Workspace
