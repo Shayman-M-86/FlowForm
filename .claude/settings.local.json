@@ -2,7 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(gh issue:*)",
-      "Bash(wc -l infra/postgres/init/schema/*.sql)"
+      "Bash(uv run:*)"
     ]
   }
 }

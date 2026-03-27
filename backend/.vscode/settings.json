@@ -4,7 +4,8 @@
         "**/.svn": true,
         "**/.hg": true,
         "**/.DS_Store": true,
-        "**/Thumbs.db": true
+        "**/Thumbs.db": true,
+        "**/.ruff_cache": true
     },
     "hide-files.files": []
 }

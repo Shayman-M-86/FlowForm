@@ -51,6 +51,7 @@ coverage.xml
 .hypothesis/
 pytest_cache/
 cover/
+**/.ruff_cache
 
 
 *temp
@@ -68,3 +69,6 @@ cover/
 /docs/plans/doc_dis
 /docs/plans/overview/architecture/DataStructure/Ideas/Schema_Decision_Documents
 /backend/.pytest_cache
+
+# Claude Code — ephemeral project status cache (regenerated on demand)
+.claude/project-status.md

@@ -20,12 +20,12 @@ class DatabaseSettings(BaseModel):
 
     url: str | None = None
 
-    user: str | None = None
+    app_user: str | None = None
     host: str | None = None
     port: int | None = None
     name: str | None = None
     password: SecretStr | None = None
-    password_file: str | None = None
+    app_password_file: str | None = None
     scheme: str = "postgresql+psycopg"
 
     @model_validator(mode="after")
@@ -35,12 +35,12 @@ class DatabaseSettings(BaseModel):
         Raises:
             ValueError: If the password file is not found.
         """
-        if self.password is not None or self.password_file is None:
+        if self.password is not None or self.app_password_file is None:
             return self
 
-        password_path = Path(self.password_file)
+        password_path = Path(self.app_password_file)
         if not password_path.is_file():
-            raise ValueError(f"Database password file not found: {self.password_file}")
+            raise ValueError(f"Database password file not found: {self.app_password_file}")
 
         self.password = SecretStr(password_path.read_text(encoding="utf-8").strip())
         return self
@@ -56,7 +56,7 @@ class DatabaseSettings(BaseModel):
             return self
 
         required_parts = {
-            "user": self.user,
+            "app_user": self.app_user,
             "password": self.password,
             "host": self.host,
             "port": self.port,
@@ -70,7 +70,7 @@ class DatabaseSettings(BaseModel):
             )
 
         self.url = (
-            f"{self.scheme}://{self.user}:{self.password.get_secret_value()}"  # type: ignore
+            f"{self.scheme}://{self.app_user}:{self.password.get_secret_value()}"  # type: ignore
             f"@{self.host}:{self.port}/{self.name}"
         )
         return self
@@ -125,15 +125,15 @@ class Settings(BaseSettings):
 
     env: Literal["dev", "test", "prod"]
     app: AppSettings
-    database: DatabaseSettings
-    response_database: DatabaseSettings | None = None
+    PGDB_core: DatabaseSettings
+    PGDB_response: DatabaseSettings
     auth0: Auth0Settings
     server: ServerSettings = Field(default_factory=ServerSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
 
     model_config = SettingsConfigDict(
-        env_prefix="FLOWFORM_",
+        env_prefix="FF_",
         env_nested_delimiter="__",
         extra="ignore",
     )
@@ -149,17 +149,17 @@ def get_settings() -> Settings:
     Returns:
         Loaded application settings.
     """
-    env = os.getenv("FLOWFORM_ENV")
+    env = os.getenv("FF_ENV")
     try:
         if env is None:
             raise ConfigError(
-                "FLOWFORM_ENV is required and must be one of: dev, test, prod. "
+                "FF_ENV is required and must be one of: dev, test, prod. "
                 "This should be provided by the container environment."
             )
 
         env = env.lower()
         if env not in {"dev", "test", "prod"}:
-            raise ConfigError("FLOWFORM_ENV must be one of: dev, test, prod")
+            raise ConfigError("FF_ENV must be one of: dev, test, prod")
 
         logger.info("Loading settings for env=%s from environment variables", env)
         settings = cast(Any, Settings)()
@@ -187,7 +187,7 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
         "ENV_NAME": settings.env,
         "DEBUG": settings.app.debug,
         "SECRET_KEY": settings.app.secret_key,
-        "SQLALCHEMY_DATABASE_URI": settings.database.url,
+        "SQLALCHEMY_DATABASE_URI": settings.PGDB_core.url,
         "AUTH0_DOMAIN": settings.auth0.domain,
         "AUTH0_AUDIENCE": settings.auth0.audience,
         "HOST": settings.server.host,
@@ -199,11 +199,12 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
             value = value.get_secret_value()
         app.config[key] = value
 
-    if settings.response_database and settings.response_database.url:
-        app.config["FLOWFORM_RESPONSE_DATABASE_URI"] = settings.response_database.url
+    if settings.PGDB_response and settings.PGDB_response.url:
+        app.config["SQLALCHEMY_BINDS"] = {"response": settings.PGDB_response.url}
 
     app.extensions["settings"] = settings
     app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
+    logger.info(f"SQLALCHEMY_BINDS: {app.config.get('SQLALCHEMY_BINDS')}")
 
 
 def current_settings() -> Settings:

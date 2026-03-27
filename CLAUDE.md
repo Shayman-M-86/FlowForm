@@ -13,25 +13,30 @@ FlowForm is a dynamic form platform for building adaptive surveys and quizzes wi
 All backend commands run from the `backend/` directory. This project uses **`uv`** — never use `pip` directly.
 
 ### Setup
+
 ```bash
 # Install dependencies (run from backend/)
 uv sync --extra dev --extra test
 ```
 
 ### Running the backend (local, no Docker)
+
 ```bash
 # From backend/
 uv run flask --debug run --host 0.0.0.0 --port 5000
 ```
 
 ### Docker (full dev environment)
+
 ```bash
 # From repo root — starts postgres-core, postgres-response, and backend
 docker-compose -f infra/docker/docker-compose.dev.yml up -d
 ```
+
 Docker secrets are read from `infra/docker/secrets/*.secret.txt` files (not committed).
 
 ### Testing
+
 ```bash
 # From backend/
 pytest tests                           # all tests
@@ -42,14 +47,16 @@ pytest tests/test_config.py            # single test file
 ```
 
 ### Linting & Type Checking
+
 ```bash
 # From backend/
 uv run ruff check .                    # lint
 uv run ruff format .                   # format
-uv run mypy app                        # type check
+uv run pyright
 ```
 
 ### Database Migrations (Flask-Migrate)
+
 ```bash
 # From backend/
 uv run flask db migrate -m "description"
@@ -57,6 +64,7 @@ uv run flask db upgrade
 ```
 
 ### Security Audit
+
 ```bash
 bash backend/scripts/pip-audit.sh
 ```
@@ -66,6 +74,7 @@ bash backend/scripts/pip-audit.sh
 ### Application Factory (`backend/app/core/factory.py`)
 
 `create_app()` runs in order:
+
 1. Bootstrap logging (before config)
 2. Load `Settings` from env vars via Pydantic
 3. Create Flask app, set up full logging
@@ -75,18 +84,18 @@ bash backend/scripts/pip-audit.sh
 
 ### Configuration (`backend/app/core/config.py`)
 
-Settings use **Pydantic-Settings** with prefix `FLOWFORM_` and `__` as nested delimiter. Key env vars:
+Settings use **Pydantic-Settings** with prefix `FF_` and `__` as nested delimiter. Key env vars:
 
-| Env Var | Purpose |
-|---|---|
-| `FLOWFORM_ENV` | Required: `dev`, `test`, or `prod` |
-| `FLOWFORM_APP__DEBUG` | Enable Flask debug mode |
-| `FLOWFORM_APP__SECRET_KEY` | Flask secret key |
-| `FLOWFORM_DATABASE__*` | Core DB connection (user, host, port, name, password or password_file) |
-| `FLOWFORM_RESPONSE_DATABASE__*` | Response DB connection (optional) |
-| `FLOWFORM_AUTH0__DOMAIN` / `__AUDIENCE` | Auth0 config |
-| `FLOWFORM_RATE_LIMIT__*` | Rate limiting settings |
-| `FLOWFORM_LOGGING__*` | Log levels, file output, JSON format |
+| Env Var                           | Purpose                                                                |
+| --------------------------------- | ---------------------------------------------------------------------- |
+| `FF_ENV`                          | Required: `dev`, `test`, or `prod`                                     |
+| `FF_APP__DEBUG`                   | Enable Flask debug mode                                                |
+| `FF_APP__SECRET_KEY`              | Flask secret key                                                       |
+| `FF_DATABASE__*`                  | Core DB connection (user, host, port, name, password or password_file) |
+| `FF_RESPONSE_DATABASE__*`         | Response DB connection (optional)                                      |
+| `FF_AUTH0__DOMAIN` / `__AUDIENCE` | Auth0 config                                                           |
+| `FF_RATE_LIMIT__*`                | Rate limiting settings                                                 |
+| `FF_LOGGING__*`                   | Log levels, file output, JSON format                                   |
 
 Settings are cached via `@lru_cache`. Use `current_settings()` inside Flask context or `get_settings()` outside.
 
@@ -107,6 +116,7 @@ All v1 blueprints register in `backend/app/api/v1/__init__.py`. The `register_ap
 To add a new resource, create `backend/app/api/v1/<resource>.py` with a blueprint named `<resource>_v1`, then add it to the `ROUTES` list in `__init__.py`.
 
 Current routes:
+
 - `GET /api/v1/health/` — liveness check
 - `GET /api/v1/health/ready` — readiness check
 
@@ -119,7 +129,7 @@ Current routes:
 
 ### Rate Limiting (`backend/app/middleware/rate_limit/`)
 
-In-memory, per-IP, sliding-window algorithm. Configured via `FLOWFORM_RATE_LIMIT__*`. Health endpoints are ignored by default.
+In-memory, per-IP, sliding-window algorithm. Configured via `FF_RATE_LIMIT__*`. Health endpoints are ignored by default.
 
 ## Testing Conventions
 

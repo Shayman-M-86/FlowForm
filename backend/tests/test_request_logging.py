@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 from flask import Flask, g, make_response
+from pytest import MonkeyPatch
 
 from app.logging import request_logging
 
@@ -20,7 +21,7 @@ def app() -> Flask:
     return app
 
 
-def test_log_request_includes_expected_extra(monkeypatch):
+def test_log_request_includes_expected_extra(monkeypatch: MonkeyPatch):
     """log_request logs all expected fields and computed duration_ms."""
     # Prepare a fake request and response within an app context
     flask_app = Flask(__name__)
@@ -61,7 +62,7 @@ def test_log_request_includes_expected_extra(monkeypatch):
         assert extra["duration_ms"] == pytest.approx(500.0)  # type: ignore[index]
 
 
-def test_log_request_omits_duration_when_not_provided(monkeypatch):
+def test_log_request_omits_duration_when_not_provided(monkeypatch: MonkeyPatch):
     """log_request does not include duration_ms when no duration is given."""
     flask_app = Flask(__name__)
     with flask_app.test_request_context("/no-duration", method="POST"):
@@ -98,7 +99,7 @@ def test_log_request_omits_duration_when_not_provided(monkeypatch):
         assert "duration_ms" not in extra  # type: ignore[operator]
 
 
-def test_register_request_logging_adds_header_and_duration(app, monkeypatch):
+def test_register_request_logging_adds_header_and_duration(app: Flask, monkeypatch: MonkeyPatch):
     """register_request_logging logs with a duration and sets X-Request-ID."""
     times = [1.0, 3.5]
 
