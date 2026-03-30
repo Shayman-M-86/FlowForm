@@ -45,4 +45,4 @@ uv python find
 
 - Run the Docker Compose command from the repository root.
 - The integration test environment is separate from your normal host test workflow.
-- This setup is mainly for tests that need access to services that are only available inside th
+- This setup is mainly for tests that need access to services that are only available inside the Compose network.
