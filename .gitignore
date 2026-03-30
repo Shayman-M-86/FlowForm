@@ -80,7 +80,3 @@ cover/
 
 # Secrets
 *.secret.txt
-backend/app/models/core
-backend/app/models/response
-backend/tests/integration
-backend/tests/unit/models

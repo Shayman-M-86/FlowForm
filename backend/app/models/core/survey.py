@@ -1,0 +1,133 @@
+from datetime import datetime
+from typing import TYPE_CHECKING
+
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    Text,
+    UniqueConstraint,
+    text,
+)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.core.extensions import db
+from app.models.base import TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.core.user import User
+
+
+class Survey(TimestampMixin, db.Model):
+    """A survey definition belonging to a project."""
+
+    __tablename__ = "surveys"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    project_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    visibility: Mapped[str] = mapped_column(Text, default="private", nullable=False)
+    allow_public_responses: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    public_slug: Mapped[str | None] = mapped_column(Text, unique=True, nullable=True)
+    default_response_store_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    published_version_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    created_by_user_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
+    __table_args__ = (
+        UniqueConstraint("project_id", "id", name="uq_surveys_project_id"),
+        ForeignKeyConstraint(
+            ["default_response_store_id"],
+            ["response_stores.id"],
+            ondelete="SET NULL",
+            name="fk_surveys_default_store",
+        ),
+        ForeignKeyConstraint(
+            ["project_id", "default_response_store_id"],
+            ["response_stores.project_id", "response_stores.id"],
+            name="fk_surveys_default_store_same_project",
+        ),
+        # Deferred — survey_versions table doesn't exist yet at Survey DDL time
+        ForeignKeyConstraint(
+            ["id", "published_version_id"],
+            ["survey_versions.survey_id", "survey_versions.id"],
+            ondelete="SET NULL",
+            name="fk_surveys_published_version_same_survey",
+            use_alter=True,
+        ),
+    )
+
+    # All versions of this survey
+    versions: Mapped[list[SurveyVersion]] = relationship(
+        "SurveyVersion",
+        primaryjoin="Survey.id == SurveyVersion.survey_id",
+        foreign_keys="[SurveyVersion.survey_id]",
+        back_populates="survey",
+    )
+
+    # The currently active published version — post_update defers the UPDATE
+    # until after both Survey and SurveyVersion INSERTs are flushed, breaking
+    # the insert-order cycle. Remove if integration tests show it's unnecessary.
+    published_version: Mapped[SurveyVersion | None] = relationship(
+        "SurveyVersion",
+        primaryjoin="Survey.published_version_id == SurveyVersion.id",
+        foreign_keys="[Survey.published_version_id]",
+        post_update=True,
+    )
+
+    created_by: Mapped[User | None] = relationship(
+        "User", foreign_keys="[Survey.created_by_user_id]"
+    )
+
+
+class SurveyVersion(TimestampMixin, db.Model):
+    """A versioned snapshot of a survey's questions and rules."""
+
+    __tablename__ = "survey_versions"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    survey_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False
+    )
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(Text, default="draft", nullable=False)
+    compiled_schema: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_by_user_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    __table_args__ = (
+        UniqueConstraint("survey_id", "id", name="uq_survey_versions_survey_id"),
+        UniqueConstraint("survey_id", "version_number", name="uq_survey_versions_version_number"),
+        Index(
+            "uq_survey_versions_one_published",
+            "survey_id",
+            unique=True,
+            postgresql_where=text("status = 'published' AND deleted_at IS NULL"),
+        ),
+    )
+
+    survey: Mapped[Survey] = relationship(
+        "Survey",
+        primaryjoin="SurveyVersion.survey_id == Survey.id",
+        foreign_keys="[SurveyVersion.survey_id]",
+        back_populates="versions",
+    )
+
+    created_by: Mapped[User | None] = relationship(
+        "User", foreign_keys="[SurveyVersion.created_by_user_id]"
+    )
