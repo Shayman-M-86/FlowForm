@@ -176,18 +176,25 @@ def configure_root_logger(
 ) -> None:
     """Configure the root logger and selected third-party loggers."""
     root = logging.getLogger()
-    root.handlers.clear()
+
+    for handler in root.handlers[:]:
+        if not getattr(handler, "_app_owned_handler", False):
+            continue
+
+        root.removeHandler(handler)
+        try:
+            handler.flush()
+        finally:
+            handler.close()
+
     root.setLevel(resolve_log_level(level))
 
     for handler in handlers or []:
+        setattr(handler, "_app_owned_handler", True)  # noqa: B010
         root.addHandler(handler)
 
-    logging.getLogger("sqlalchemy.engine").setLevel(
-        resolve_log_level(sqlalchemy_level, logging.WARNING)
-    )
-    logging.getLogger("werkzeug").setLevel(
-        resolve_log_level(werkzeug_level, logging.INFO)
-    )
+    logging.getLogger("sqlalchemy.engine").setLevel(resolve_log_level(sqlalchemy_level, logging.WARNING))
+    logging.getLogger("werkzeug").setLevel(resolve_log_level(werkzeug_level, logging.INFO))
 
 
 # =============================================================================

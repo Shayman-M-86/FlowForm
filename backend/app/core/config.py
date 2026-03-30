@@ -125,8 +125,8 @@ class Settings(BaseSettings):
 
     env: Literal["dev", "test", "prod"]
     app: AppSettings
-    PGDB_core: DatabaseSettings
-    PGDB_response: DatabaseSettings
+    pgdb_core: DatabaseSettings
+    pgdb_response: DatabaseSettings
     auth0: Auth0Settings
     server: ServerSettings = Field(default_factory=ServerSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
@@ -187,11 +187,12 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
         "ENV_NAME": settings.env,
         "DEBUG": settings.app.debug,
         "SECRET_KEY": settings.app.secret_key,
-        "SQLALCHEMY_DATABASE_URI": settings.PGDB_core.url,
+        "SQLALCHEMY_DATABASE_URI": settings.pgdb_core.url,
         "AUTH0_DOMAIN": settings.auth0.domain,
         "AUTH0_AUDIENCE": settings.auth0.audience,
         "HOST": settings.server.host,
         "PORT": settings.server.port,
+        "TESTING": settings.env == "test",
     }
 
     for key, value in mapping.items():
@@ -199,8 +200,8 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
             value = value.get_secret_value()
         app.config[key] = value
 
-    if settings.PGDB_response and settings.PGDB_response.url:
-        app.config["SQLALCHEMY_BINDS"] = {"response": settings.PGDB_response.url}
+    if settings.pgdb_response and settings.pgdb_response.url:
+        app.config["SQLALCHEMY_BINDS"] = {"response": settings.pgdb_response.url}
 
     app.extensions["settings"] = settings
     app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)

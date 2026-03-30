@@ -1,9 +1,9 @@
-name: flowform
+name: flowform-test-Environment
 
 services:
   postgres-core:
     image: postgres:17
-    container_name: flowform-postgres-core
+    container_name: flowform-postgres-core-test
     environment:
       FF_PGDB_INIT__TARGET: core
       POSTGRES_USER: ${FF_PGDB_INIT__USER}
@@ -22,11 +22,9 @@ services:
       - hba_file=/etc/postgresql/pg_hba.conf
       - -c
       - listen_addresses=*
-    ports:
-      - "127.0.0.1:${FF_PGDB_CORE_COMPOSE__PUBLISHED_PORT:-5432}:${FF_PGDB_CORE_COMPOSE__PORT:-5432}"
     volumes:
       - flowform_postgres_core_data:/var/lib/postgresql/data
-      - ../postgres/init:/docker-entrypoint-initdb.d
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
       - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     secrets:
       - FF_PGDB_INIT__PASSWORD
@@ -41,7 +39,7 @@ services:
 
   postgres-response:
     image: postgres:17
-    container_name: flowform-postgres-response
+    container_name: flowform-postgres-response-test
     environment:
       FF_PGDB_INIT__TARGET: response
       POSTGRES_USER: ${FF_PGDB_INIT__USER}
@@ -60,11 +58,9 @@ services:
       - hba_file=/etc/postgresql/pg_hba.conf
       - -c
       - listen_addresses=*
-    ports:
-      - "127.0.0.1:${FF_PGDB_RESPONSE_COMPOSE__PUBLISHED_PORT:-5433}:${FF_PGDB_RESPONSE_COMPOSE__PORT:-5432}"
     volumes:
       - flowform_postgres_response_data:/var/lib/postgresql/data
-      - ../postgres/init:/docker-entrypoint-initdb.d
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
       - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     secrets:
       - FF_PGDB_INIT__PASSWORD
@@ -77,40 +73,32 @@ services:
       timeout: 5s
       retries: 10
 
-  backend:
+  backend-test:
     build:
       context: ../..
       dockerfile: infra/docker/backend.Dockerfile
-    container_name: flowform-backend
+    working_dir: /app
+    init: true
     env_file:
       - ./.backend.env
+    container_name: flowform-backend-test
     environment:
       PYTHONUNBUFFERED: "1"
-      FF_ENV: dev
+      FF_ENV: test
       FF_PGDB_CORE__APP_USER: ${FF_PGDB_CORE__APP_USER}
       FF_PGDB_CORE__APP_PASSWORD_FILE: /run/secrets/FF_PGDB_CORE__APP_PASSWORD
       FF_PGDB_RESPONSE__APP_USER: ${FF_PGDB_RESPONSE__APP_USER}
       FF_PGDB_RESPONSE__APP_PASSWORD_FILE: /run/secrets/FF_PGDB_RESPONSE__APP_PASSWORD
-    command: uv run flask --debug run --host 0.0.0.0 --port 5000
+    command: ["sh", "-lc", "tail -f /dev/null"]
     volumes:
       - ../../backend:/app
       - ../../backend/logs:/app/logs
-    ports:
-      - "5000:5000"
+      - flowform_backend_test_venv:/app/.venv
     depends_on:
       postgres-core:
         condition: service_healthy
       postgres-response:
         condition: service_healthy
-    healthcheck:
-      test:
-        - CMD
-        - python
-        - /app/scripts/healthcheck.py
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     secrets:
       - FF_PGDB_CORE__APP_PASSWORD
       - FF_PGDB_RESPONSE__APP_PASSWORD
@@ -120,13 +108,14 @@ services:
 volumes:
   flowform_postgres_core_data:
   flowform_postgres_response_data:
+  flowform_backend_test_venv:
 
 networks:
   flowform_net:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.30.0.0/16
+        - subnet: 172.50.0.0/16
 
 secrets:
   FF_PGDB_INIT__PASSWORD:

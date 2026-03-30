@@ -1,74 +1,86 @@
-# Byte-compiled / optimized / DLL files
+# Python bytecode
 __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
+# Compiled extensions
 *.so
 
 # Distribution / packaging
 .Python
 build/
-develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
+develop-eggs/
 lib/
 lib64/
 parts/
 sdist/
 var/
 wheels/
-pip-wheel-metadata/
 share/python-wheels/
+pip-wheel-metadata/
+*.egg
 *.egg-info/
 .installed.cfg
-*.egg
 MANIFEST
 
-# Virtual environment directories
-*.env
-env/
+# Virtual environments
+.venv/
 venv/
+env/
 ENV/
 env.bak/
-venv.bak
-.venv/
+venv.bak/
 
+# Environment files
+*.env
+.env
+.env.*
 
-# Unit test / coverage reports
-htmlcov/
+# Testing / coverage / caches
 .tox/
 .nox/
 .coverage
 .coverage.*
-.cache
-nosetests.xml
+htmlcov/
 coverage.xml
+nosetests.xml
 *.cover
 *.py,cover
 .hypothesis/
+.pytest_cache/
 pytest_cache/
+.ruff_cache/
+.cache/
 cover/
-**/.ruff_cache
 
-
-*temp
-*env*
+# Logs / temp files
 *.log
-*.secret.txt
+*temp
 
-# Jupyter Notebook
-.ipynb_checkpoints
+# Jupyter
+.ipynb_checkpoints/
 
-# python version
+# Python version manager
 .python-version
 
+# Project-specific docs / generated files
 /docs/doc_dis
 /docs/plans/doc_dis
 /docs/plans/overview/architecture/DataStructure/Ideas/Schema_Decision_Documents
+
+# Project-specific caches
 /backend/.pytest_cache
 
-# Claude Code — ephemeral project status cache (regenerated on demand)
+# Claude Code ephemeral cache
 .claude/project-status.md
+
+# Secrets
+*.secret.txt
+backend/app/models/core
+backend/app/models/response
+backend/tests/integration
+backend/tests/unit/models

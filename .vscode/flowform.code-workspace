@@ -15,7 +15,7 @@
     ],
     "settings": {
         "workbench.colorCustomizations": {
-            "statusBar.background": "#088ea9"
+            "statusBar.background": "#be1635"
         },
         "python.defaultInterpreterPath": "${workspaceFolder:backend}/.venv/bin/python",
         "python.envFile": "${workspaceFolder:backend}/.env.dev",
@@ -28,7 +28,7 @@
             "tests"
         ],
         "python.terminal.activateEnvironment": true,
-        "task.allowAutomaticTasks": "on",
+        // "task.allowAutomaticTasks": "on",
         "files.exclude": {
             "**/.git": true,
             "**/.svn": true,
