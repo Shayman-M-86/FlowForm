@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
+    Identity,
     Index,
     Integer,
     Text,
@@ -28,10 +29,8 @@ class Survey(TimestampMixin, db.Model):
 
     __tablename__ = "surveys"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    project_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
-    )
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     visibility: Mapped[str] = mapped_column(Text, default="private", nullable=False)
     allow_public_responses: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -83,9 +82,7 @@ class Survey(TimestampMixin, db.Model):
         post_update=True,
     )
 
-    created_by: Mapped[User | None] = relationship(
-        "User", foreign_keys="[Survey.created_by_user_id]"
-    )
+    created_by: Mapped[User | None] = relationship("User", foreign_keys="[Survey.created_by_user_id]")
 
 
 class SurveyVersion(TimestampMixin, db.Model):
@@ -93,22 +90,16 @@ class SurveyVersion(TimestampMixin, db.Model):
 
     __tablename__ = "survey_versions"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    survey_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False
-    )
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    survey_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(Text, default="draft", nullable=False)
     compiled_schema: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    published_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by_user_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    deleted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
         UniqueConstraint("survey_id", "id", name="uq_survey_versions_survey_id"),
@@ -128,6 +119,4 @@ class SurveyVersion(TimestampMixin, db.Model):
         back_populates="versions",
     )
 
-    created_by: Mapped[User | None] = relationship(
-        "User", foreign_keys="[SurveyVersion.created_by_user_id]"
-    )
+    created_by: Mapped[User | None] = relationship("User", foreign_keys="[SurveyVersion.created_by_user_id]")

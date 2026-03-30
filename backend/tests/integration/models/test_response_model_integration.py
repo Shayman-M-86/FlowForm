@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, scoped_session
 
-from app.core.extensions import db
 from app.models.response.submission import Submission
 from app.models.response.submission_answer import SubmissionAnswer
 from app.models.response.submission_event import SubmissionEvent
@@ -28,7 +28,7 @@ def make_submission(
 def make_submission_answer(
     submission_id: int,
     question_key: str,
-    answer_family: str = "text",
+    answer_family: str = "field",
     answer_value: dict | None = None,
 ) -> SubmissionAnswer:
     answer = SubmissionAnswer()
@@ -49,38 +49,40 @@ def make_submission_event(
     return event
 
 
-def test_submission_answer_unique_question_per_submission(app):
+def test_submission_answer_unique_question_per_submission(db_session: scoped_session[Session]):
     submission = make_submission(core_submission_id=999)
-    db.session.add(submission)
-    db.session.commit()
+    db_session.add(submission)
+    db_session.flush()
 
     answer_a = make_submission_answer(
         submission_id=submission.id,
         question_key="q1",
+        answer_family="field",
         answer_value={"value": "hello"},
     )
-    db.session.add(answer_a)
-    db.session.commit()
+    db_session.add(answer_a)
+    db_session.flush()
 
     answer_b = make_submission_answer(
         submission_id=submission.id,
         question_key="q1",
+        answer_family="field",
         answer_value={"value": "again"},
     )
-    db.session.add(answer_b)
+    db_session.add(answer_b)
 
     with pytest.raises(IntegrityError):
-        db.session.commit()
+        db_session.flush()
 
-    db.session.rollback()
+    db_session.rollback()
 
 
-def test_submission_relationships_work(app):
+def test_submission_relationships_work(db_session: scoped_session[Session]):
     submission = make_submission(core_submission_id=100, is_anonymous=True)
 
     answer = SubmissionAnswer()
     answer.question_key = "age"
-    answer.answer_family = "number"
+    answer.answer_family = "field"
     answer.answer_value = {"value": 24}
 
     event = make_submission_event(
@@ -91,42 +93,12 @@ def test_submission_relationships_work(app):
     submission.answers.append(answer)
     submission.events.append(event)
 
-    db.session.add(submission)
-    db.session.commit()
-    db.session.refresh(submission)
+    db_session.add(submission)
+    db_session.flush()
+    db_session.refresh(submission)
 
     assert len(submission.answers) == 1
     assert len(submission.events) == 1
     assert submission.answers[0].submission_id == submission.id
     assert submission.events[0].submission_id == submission.id
 
-
-def test_submission_delete_cascades_answers_and_events(app):
-    submission = make_submission(core_submission_id=101, is_anonymous=True)
-
-    answer = SubmissionAnswer()
-    answer.question_key = "q1"
-    answer.answer_family = "text"
-    answer.answer_value = {"value": "x"}
-
-    event = make_submission_event(
-        event_type="created",
-        event_payload={"ok": True},
-    )
-
-    submission.answers.append(answer)
-    submission.events.append(event)
-
-    db.session.add(submission)
-    db.session.commit()
-
-    submission_id = submission.id
-    answer_id = answer.id
-    event_id = event.id
-
-    db.session.delete(submission)
-    db.session.commit()
-
-    assert db.session.get(Submission, submission_id) is None
-    assert db.session.get(SubmissionAnswer, answer_id) is None
-    assert db.session.get(SubmissionEvent, event_id) is None

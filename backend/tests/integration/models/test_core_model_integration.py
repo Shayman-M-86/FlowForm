@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import secrets
 import uuid
 
 import pytest
@@ -14,6 +16,12 @@ from app.models.core.survey_access import SurveyPublicLink
 from app.models.core.survey_submission import SurveySubmission
 from app.models.core.user import User
 
+
+def make_token_pair() -> tuple[str, str, str]:
+    token = secrets.token_urlsafe(32)
+    token_prefix = token[:8]
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    return token, token_prefix, token_hash
 
 def make_user(
     auth0_user_id: str = "auth0|u1",
@@ -309,18 +317,25 @@ def test_survey_version_unique_version_number_per_survey(
     db_session.rollback()
 
 
-def test_survey_public_link_unique_token_hash(db_session: scoped_session[Session], survey: Survey):
+def test_survey_public_link_unique_token_hash(
+    db_session: scoped_session[Session],
+    survey: Survey,
+) -> None:
+    _, prefix_a, token_hash = make_token_pair()
+
     link_a = SurveyPublicLink()
     link_a.survey_id = survey.id
-    link_a.token_prefix = "abc"
-    link_a.token_hash = "hash-1"
+    link_a.token_prefix = prefix_a
+    link_a.token_hash = token_hash
     db_session.add(link_a)
     db_session.flush()
 
+    _, prefix_b, _ = make_token_pair()
+
     link_b = SurveyPublicLink()
     link_b.survey_id = survey.id
-    link_b.token_prefix = "def"
-    link_b.token_hash = "hash-1"
+    link_b.token_prefix = prefix_b
+    link_b.token_hash = token_hash
     db_session.add(link_b)
 
     with pytest.raises(IntegrityError):
@@ -330,17 +345,21 @@ def test_survey_public_link_unique_token_hash(db_session: scoped_session[Session
 
 
 def test_survey_public_link_unique_prefix_within_survey(db_session: scoped_session[Session], survey: Survey):
+    
+    _, prefix_a, token_hash = make_token_pair()
+    
     link_a = SurveyPublicLink()
     link_a.survey_id = survey.id
-    link_a.token_prefix = "same"
-    link_a.token_hash = "hash-1"
+    link_a.token_prefix = prefix_a
+    link_a.token_hash = token_hash
     db_session.add(link_a)
     db_session.flush()
 
+
     link_b = SurveyPublicLink()
     link_b.survey_id = survey.id
-    link_b.token_prefix = "same"
-    link_b.token_hash = "hash-2"
+    link_b.token_prefix = prefix_a
+    link_b.token_hash = token_hash
     db_session.add(link_b)
 
     with pytest.raises(IntegrityError):

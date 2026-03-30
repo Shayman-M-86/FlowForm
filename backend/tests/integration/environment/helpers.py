@@ -27,12 +27,17 @@ def read_secret_file(env_name: str) -> str:
 
 
 def connect_for_prefix(prefix: str) -> Connection:
+    host = read_env(f"{prefix}__HOST")
+    port = int(read_env(f"{prefix}__PORT"))
+    dbname = read_env(f"{prefix}__NAME")
+    user = read_env(f"{prefix}__APP_USER")
+    password = read_secret_file(f"{prefix}__APP_PASSWORD_FILE")
     return psycopg.connect(
-        host=read_env(f"{prefix}__HOST"),
-        port=int(read_env(f"{prefix}__PORT")),
-        dbname=read_env(f"{prefix}__NAME"),
-        user=read_env(f"{prefix}__APP_USER"),
-        password=read_secret_file(f"{prefix}__APP_PASSWORD_FILE"),
+        host=host,
+        port=port,
+        dbname=dbname,
+        user=user,
+        password=password,
     )
 
 

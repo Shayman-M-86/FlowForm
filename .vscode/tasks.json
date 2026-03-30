@@ -4,9 +4,6 @@
         {
     "label": "Setup backend",
     "type": "shell",
-    "runOptions": {
-        "runOn": "folderOpen"
-    },
     "group": {
         "kind": "build",
         "isDefault": true
@@ -37,4 +34,34 @@
         "cwd": "${workspaceFolder}/backend"
     },
     "problemMatcher": []
-    } ] }
+    },
+    {
+        "label": "test-env: setup",
+        "type": "shell",
+        "command": "docker compose -f infra/docker/docker-compose.test.yml up -d --build && docker compose -f infra/docker/docker-compose.test.yml exec backend-test uv sync --extra dev --extra test && docker compose -f infra/docker/docker-compose.test.yml exec backend-test uv python find",
+        "options": {
+            "cwd": "${workspaceFolder}"
+        },
+        "problemMatcher": [],
+        "detail": "Start the integration test stack and set up the Python environment inside the backend test container."
+    },
+    {
+        "label": "test-env: up",
+        "type": "shell",
+        "command": "docker compose -f infra/docker/docker-compose.test.yml up -d --build",
+        "options": {
+            "cwd": "${workspaceFolder}"
+        },
+        "problemMatcher": []
+    },
+    {
+        "label": "test-env: down",
+        "type": "shell",
+        "command": "docker compose -f infra/docker/docker-compose.test.yml down",
+        "options": {
+            "cwd": "${workspaceFolder}"
+        },
+        "problemMatcher": []
+    }
+] 
+}

@@ -14,6 +14,8 @@ services:
       FF_PGDB_CORE__APP_USER: ${FF_PGDB_CORE__APP_USER}
       FF_PGDB_CORE__APP_PASSWORD_FILE: /run/secrets/FF_PGDB_CORE__APP_PASSWORD
       FF_PGDB_CORE__SCHEMA_FILE: ${FF_PGDB_CORE__SCHEMA_FILE}
+    ports:
+      - "127.0.0.1:${FF_PGDB_CORE_COMPOSE__PUBLISHED_PORT:-5432}:${FF_PGDB_CORE_COMPOSE__PORT:-5432}"
     command:
       - postgres
       - -c
@@ -50,6 +52,8 @@ services:
       FF_PGDB_RESPONSE__APP_USER: ${FF_PGDB_RESPONSE__APP_USER}
       FF_PGDB_RESPONSE__APP_PASSWORD_FILE: /run/secrets/FF_PGDB_RESPONSE__APP_PASSWORD
       FF_PGDB_RESPONSE__SCHEMA_FILE: ${FF_PGDB_RESPONSE__SCHEMA_FILE}
+    ports:
+      - "127.0.0.1:${FF_PGDB_RESPONSE_COMPOSE__PUBLISHED_PORT:-5433}:${FF_PGDB_RESPONSE_COMPOSE__PORT:-5432}"
     command:
       - postgres
       - -c
@@ -72,6 +76,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
 
   backend-test:
     build:
