@@ -85,7 +85,8 @@ def make_survey_version(survey_id: int, user_id: int, version_number: int = 1, s
 
 
 def make_core_submission_id() -> int:
-    return random.randint(1, 2**63 - 1)
+    """generate a random positive 64-bit integer to use as a core_submission_id in tests"""
+    return random.randint(1, 2**63 - 1) 
 
 
 def make_submission() -> Submission:

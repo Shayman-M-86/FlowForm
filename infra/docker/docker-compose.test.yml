@@ -81,7 +81,7 @@ services:
   backend-test:
     build:
       context: ../..
-      dockerfile: infra/docker/backend.Dockerfile
+      dockerfile: infra/docker/backend.test.Dockerfile
     working_dir: /app
     init: true
     env_file:
