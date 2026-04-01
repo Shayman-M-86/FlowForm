@@ -6,18 +6,17 @@ from sqlalchemy import BigInteger, Boolean, DateTime, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.extensions import db
+from app.db.base import ResponseBase
 
 if TYPE_CHECKING:
     from app.models.response.submission_answer import SubmissionAnswer
     from app.models.response.submission_event import SubmissionEvent
 
 
-class Submission(db.Model):
+class Submission(ResponseBase):
     """Raw submission payload stored in the isolated response database."""
 
     __tablename__ = "submissions"
-    __bind_key__ = "response"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     core_submission_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)

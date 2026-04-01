@@ -6,13 +6,13 @@ from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, ForeignKeyCons
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.extensions import db
+from app.db.base import CoreBase
 
 if TYPE_CHECKING:
     from app.models.core.user import User
 
 
-class SurveySubmission(db.Model):
+class SurveySubmission(CoreBase):
     """Registry entry for a survey submission — metadata only, no raw answers."""
 
     __tablename__ = "survey_submissions"

@@ -6,14 +6,14 @@ from sqlalchemy import BigInteger, DateTime, ForeignKey, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.extensions import db
+from app.db.base import CoreBase
 
 if TYPE_CHECKING:
     from app.models.core.project import Project
     from app.models.core.user import User
 
 
-class ResponseSubjectMapping(db.Model):
+class ResponseSubjectMapping(CoreBase):
     """Maps an authenticated user to a stable pseudonymous identifier per project."""
 
     __tablename__ = "response_subject_mappings"

@@ -5,13 +5,13 @@ from sqlalchemy import BigInteger, DateTime, ForeignKey, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.extensions import db
+from app.db.base import CoreBase
 
 if TYPE_CHECKING:
     from app.models.core.user import User
 
 
-class AuditLog(db.Model):
+class AuditLog(CoreBase):
     """Immutable record of a user action on a named entity."""
 
     __tablename__ = "audit_logs"

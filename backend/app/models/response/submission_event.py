@@ -5,17 +5,16 @@ from sqlalchemy import BigInteger, DateTime, ForeignKey, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.extensions import db
+from app.db.base import ResponseBase
 
 if TYPE_CHECKING:
     from app.models.response.submission import Submission
 
 
-class SubmissionEvent(db.Model):
+class SubmissionEvent(ResponseBase):
     """An event record for async delivery tracking on a submission."""
 
     __tablename__ = "submission_events"
-    __bind_key__ = "response"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     submission_id: Mapped[int] = mapped_column(

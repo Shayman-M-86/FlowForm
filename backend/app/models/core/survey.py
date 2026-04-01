@@ -17,14 +17,14 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.extensions import db
+from app.db.base import CoreBase
 from app.models.base import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.core.user import User
 
 
-class Survey(TimestampMixin, db.Model):
+class Survey(TimestampMixin, CoreBase):
     """A survey definition belonging to a project."""
 
     __tablename__ = "surveys"
@@ -85,7 +85,7 @@ class Survey(TimestampMixin, db.Model):
     created_by: Mapped[User | None] = relationship("User", foreign_keys="[Survey.created_by_user_id]")
 
 
-class SurveyVersion(TimestampMixin, db.Model):
+class SurveyVersion(TimestampMixin, CoreBase):
     """A versioned snapshot of a survey's questions and rules."""
 
     __tablename__ = "survey_versions"

@@ -38,21 +38,3 @@ def test_survey_version_cycle_relationships_resolve() -> None:
     assert "survey" in version_rel_names, "SurveyVersion.survey relationship missing"
 
 
-
-def test_response_models_have_bind_key() -> None:
-    """All response-database models declare __bind_key__ = 'response'."""
-    import app.models  # noqa: F401
-    from app.models.response import Submission, SubmissionAnswer, SubmissionEvent
-
-    for model in (Submission, SubmissionAnswer, SubmissionEvent):
-        assert getattr(model, "__bind_key__", None) == "response", f"{model.__name__} missing __bind_key__ = 'response'"
-
-
-
-def test_core_models_have_no_bind_key() -> None:
-    """Core models do not set __bind_key__ (they use the default engine)."""
-    import app.models  # noqa: F401
-    from app.models.core import Permission, Project, Survey, SurveyVersion, User
-
-    for model in (Survey, SurveyVersion, User, Project, Permission):
-        assert getattr(model, "__bind_key__", None) is None, f"{model.__name__} unexpectedly has __bind_key__ set"

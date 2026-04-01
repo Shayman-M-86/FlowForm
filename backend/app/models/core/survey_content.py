@@ -4,13 +4,13 @@ from sqlalchemy import BigInteger, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.extensions import db
+from app.db.base import CoreBase
 from app.models.base import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.core.survey import SurveyVersion
 
-class SurveyQuestion(TimestampMixin, db.Model):
+class SurveyQuestion(TimestampMixin, CoreBase):
     """A single question definition within a survey version."""
 
     __tablename__ = "survey_questions"
@@ -33,7 +33,7 @@ class SurveyQuestion(TimestampMixin, db.Model):
     )
 
 
-class SurveyRule(TimestampMixin, db.Model):
+class SurveyRule(TimestampMixin, CoreBase):
     """A branching or visibility rule attached to a survey version."""
 
     __tablename__ = "survey_rules"
@@ -54,7 +54,7 @@ class SurveyRule(TimestampMixin, db.Model):
     )
 
 
-class SurveyScoringRule(TimestampMixin, db.Model):
+class SurveyScoringRule(TimestampMixin, CoreBase):
     """A scoring rule attached to a survey version."""
 
     __tablename__ = "survey_scoring_rules"
