@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, scoped_session
 
 from app.models.core.project import Project, ProjectMembership
 from app.models.core.survey import Survey
-from app.models.core.survey_access import SurveyMembershipRole, SurveyRole
+from app.models.core.survey_access import SurveyMembershipRole
 from app.models.core.user import User
 from tests.integration.core.factories import make_project, make_survey, make_survey_role, make_user
 
