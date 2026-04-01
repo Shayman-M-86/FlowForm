@@ -25,9 +25,9 @@ class ResponseSubjectMapping(CoreBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("project_id", "id", name="uq_response_subject_mappings_project_id"),
-        UniqueConstraint("project_id", "user_id", name="uq_response_subject_mappings_project_user"),
-        UniqueConstraint("project_id", "pseudonymous_subject_id", name="uq_response_subject_mappings_project_subject"),
+        UniqueConstraint("project_id", "id", name="uq_response_subject_mappings_project_id_id"),
+        UniqueConstraint("project_id", "user_id", name="uq_response_subject_mappings_project_id_user_id"),
+        UniqueConstraint("project_id", "pseudonymous_subject_id", name="uq_response_subject_mappings_project_id_pseudonymous_subject_id"),
     )
 
     project: Mapped[Project] = relationship("Project", foreign_keys=[project_id])

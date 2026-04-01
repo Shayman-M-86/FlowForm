@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import BigInteger, CheckConstraint, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,9 +23,8 @@ class SurveyQuestion(TimestampMixin, CoreBase):
     question_schema: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
     __table_args__ = (
-        UniqueConstraint(
-            "survey_version_id", "question_key", name="uq_survey_questions_version_key"
-        ),
+        UniqueConstraint("survey_version_id", "question_key", name="uq_survey_questions_version_key"),
+        CheckConstraint("jsonb_typeof(question_schema) = 'object'", name="question_schema_is_object"),
     )
 
     survey_version: Mapped[SurveyVersion] = relationship(
@@ -47,6 +46,7 @@ class SurveyRule(TimestampMixin, CoreBase):
 
     __table_args__ = (
         UniqueConstraint("survey_version_id", "rule_key", name="uq_survey_rules_version_key"),
+        CheckConstraint("jsonb_typeof(rule_schema) = 'object'", name="rule_schema_is_object"),
     )
 
     survey_version: Mapped[SurveyVersion] = relationship(
@@ -67,9 +67,8 @@ class SurveyScoringRule(TimestampMixin, CoreBase):
     scoring_schema: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
     __table_args__ = (
-        UniqueConstraint(
-            "survey_version_id", "scoring_key", name="uq_survey_scoring_rules_version_key"
-        ),
+        UniqueConstraint("survey_version_id", "scoring_key", name="uq_survey_scoring_rules_version_key"),
+        CheckConstraint("jsonb_typeof(scoring_schema) = 'object'", name="scoring_schema_is_object"),
     )
 
     survey_version: Mapped[SurveyVersion] = relationship(

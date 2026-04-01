@@ -75,7 +75,8 @@ CREATE TABLE submissions (
     submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     metadata JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CHECK (metadata IS NULL OR jsonb_typeof(metadata) = 'object')
+    CONSTRAINT ck_submissions_metadata_is_object
+        CHECK (metadata IS NULL OR jsonb_typeof(metadata) = 'object')
 );
 
 -- =========================================
@@ -95,37 +96,50 @@ CREATE TABLE submission_answers (
     answer_family TEXT NOT NULL,
     answer_value JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CHECK (answer_family IN ('choice', 'field', 'matching', 'rating')),
-    CHECK (jsonb_typeof(answer_value) = 'object'),
-    CHECK (
-        answer_family <> 'choice'
-        OR (
-            jsonb_has_exact_keys(answer_value, ARRAY['selected_option_ids'])
-            AND jsonb_array_is_text_array(answer_value->'selected_option_ids')
-        )
-    ),
-    CHECK (
-        answer_family <> 'field'
-        OR (
-            jsonb_has_exact_keys(answer_value, ARRAY['value'])
-            AND jsonb_is_scalar_or_null(answer_value->'value')
-        )
-    ),
-    CHECK (
-        answer_family <> 'matching'
-        OR (
-            jsonb_has_exact_keys(answer_value, ARRAY['pairs'])
-            AND jsonb_matching_pairs_valid(answer_value->'pairs')
-        )
-    ),
-    CHECK (
-        answer_family <> 'rating'
-        OR (
-            jsonb_has_exact_keys(answer_value, ARRAY['value'])
-            AND jsonb_typeof(answer_value->'value') = 'number'
-        )
-    ),
-    UNIQUE (submission_id, question_key)
+    CONSTRAINT ck_submission_answers_answer_family_valid
+        CHECK (answer_family IN ('choice', 'field', 'matching', 'rating')),
+
+    CONSTRAINT ck_submission_answers_answer_value_is_object
+        CHECK (jsonb_typeof(answer_value) = 'object'),
+
+    CONSTRAINT ck_submission_answers_choice_shape_valid
+        CHECK (
+            answer_family <> 'choice'
+            OR (
+                jsonb_has_exact_keys(answer_value, ARRAY['selected_option_ids'])
+                AND jsonb_array_is_text_array(answer_value->'selected_option_ids')
+            )
+        ),
+
+    CONSTRAINT ck_submission_answers_field_shape_valid
+        CHECK (
+            answer_family <> 'field'
+            OR (
+                jsonb_has_exact_keys(answer_value, ARRAY['value'])
+                AND jsonb_is_scalar_or_null(answer_value->'value')
+            )
+        ),
+
+    CONSTRAINT ck_submission_answers_matching_shape_valid
+        CHECK (
+            answer_family <> 'matching'
+            OR (
+                jsonb_has_exact_keys(answer_value, ARRAY['pairs'])
+                AND jsonb_matching_pairs_valid(answer_value->'pairs')
+            )
+        ),
+
+    CONSTRAINT ck_submission_answers_rating_shape_valid
+        CHECK (
+            answer_family <> 'rating'
+            OR (
+                jsonb_has_exact_keys(answer_value, ARRAY['value'])
+                AND jsonb_typeof(answer_value->'value') = 'number'
+            )
+        ),
+
+    CONSTRAINT uq_submission_answers_question
+        UNIQUE (submission_id, question_key)
 );
 
 -- =========================================
@@ -139,7 +153,8 @@ CREATE TABLE submission_events (
     event_type TEXT NOT NULL,
     event_payload JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CHECK (event_payload IS NULL OR jsonb_typeof(event_payload) = 'object')
+    CONSTRAINT ck_submission_events_event_payload_is_object
+        CHECK (event_payload IS NULL OR jsonb_typeof(event_payload) = 'object')
 );
 
 -- =========================================

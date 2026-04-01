@@ -147,7 +147,7 @@ def test_project_membership_foreign_keys() -> None:
 
 def test_response_store_foreign_keys() -> None:
     names = foreign_key_constraint_names(ResponseStore)
-    assert "fk_response_stores_project" in names
+    assert "fk_response_stores_project_id__projects" in names
 
 
 def test_survey_foreign_keys() -> None:
@@ -188,15 +188,15 @@ def test_project_membership_unique_constraints() -> None:
 
 def test_response_subject_mapping_unique_constraints() -> None:
     names = unique_constraint_names(ResponseSubjectMapping)
-    assert "uq_response_subject_mappings_project_id" in names
-    assert "uq_response_subject_mappings_project_user" in names
-    assert "uq_response_subject_mappings_project_subject" in names
+    assert "uq_response_subject_mappings_project_id_id" in names
+    assert "uq_response_subject_mappings_project_id_user_id" in names
+    assert "uq_response_subject_mappings_project_id_pseudonymous_subject_id" in names
 
 
 def test_survey_version_constraints() -> None:
     names = unique_constraint_names(SurveyVersion)
-    assert "uq_survey_versions_survey_id" in names
-    assert "uq_survey_versions_version_number" in names
+    assert "uq_survey_versions_survey_id_id" in names
+    assert "uq_survey_versions_survey_id_version_number" in names
     assert "uq_survey_versions_one_published" in index_names(SurveyVersion)
 
 
@@ -208,15 +208,15 @@ def test_survey_content_unique_constraints() -> None:
 
 def test_survey_role_unique_constraints() -> None:
     names = unique_constraint_names(SurveyRole)
-    assert "uq_survey_roles_project_id" in names
-    assert "uq_survey_roles_project_name" in names
+    assert "uq_survey_roles_project_id_id" in names
+    assert "uq_survey_roles_project_id_name" in names
 
 
 def test_survey_public_link_unique_constraints() -> None:
     names = unique_constraint_names(SurveyPublicLink)
-    assert "uq_spl_token_hash" in names
-    assert "uq_spl_survey_id_token_prefix" in names
-    assert "uq_spl_survey_id_id" in names
+    assert "uq_survey_public_links_token_hash" in names
+    assert "uq_survey_public_links_survey_id_id" in names
+    assert "uq_survey_public_links_survey_id_token_prefix" in names
 
 
 def test_survey_submission_indexes() -> None:

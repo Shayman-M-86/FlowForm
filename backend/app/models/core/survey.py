@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -42,7 +43,17 @@ class Survey(TimestampMixin, CoreBase):
     )
 
     __table_args__ = (
-        UniqueConstraint("project_id", "id", name="uq_surveys_project_id"),
+        UniqueConstraint("project_id", "id", name="uq_surveys_project_id_id"),
+        CheckConstraint("visibility IN ('private', 'link_only', 'public')", name="visibility_valid"),
+        CheckConstraint(
+            "allow_public_responses = FALSE OR visibility IN ('link_only', 'public')",
+            name="public_responses_requires_public_visibility",
+        ),
+        CheckConstraint("visibility <> 'public' OR public_slug IS NOT NULL", name="public_requires_slug"),
+        CheckConstraint(
+            "public_slug IS NULL OR visibility IN ('link_only', 'public')",
+            name="slug_requires_public_visibility",
+        ),
         ForeignKeyConstraint(
             ["default_response_store_id"],
             ["response_stores.id"],
@@ -102,8 +113,14 @@ class SurveyVersion(TimestampMixin, CoreBase):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
-        UniqueConstraint("survey_id", "id", name="uq_survey_versions_survey_id"),
-        UniqueConstraint("survey_id", "version_number", name="uq_survey_versions_version_number"),
+        UniqueConstraint("survey_id", "id", name="uq_survey_versions_survey_id_id"),
+        UniqueConstraint("survey_id", "version_number", name="uq_survey_versions_survey_id_version_number"),
+        CheckConstraint("status IN ('draft', 'published', 'archived')", name="status_valid"),
+        CheckConstraint("version_number > 0", name="version_number_positive"),
+        CheckConstraint(
+            "status <> 'published' OR (compiled_schema IS NOT NULL AND published_at IS NOT NULL)",
+            name="published_requires_schema_and_timestamp",
+        ),
         Index(
             "uq_survey_versions_one_published",
             "survey_id",

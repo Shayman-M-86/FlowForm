@@ -54,8 +54,8 @@ class SurveyRole(CoreBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("project_id", "id", name="uq_survey_roles_project_id"),
-        UniqueConstraint("project_id", "name", name="uq_survey_roles_project_name"),
+        UniqueConstraint("project_id", "id", name="uq_survey_roles_project_id_id"),
+        UniqueConstraint("project_id", "name", name="uq_survey_roles_project_id_name"),
     )
 
     permissions: Mapped[list[Permission]] = relationship("Permission", secondary=survey_role_permissions)
@@ -107,11 +107,11 @@ class SurveyPublicLink(CoreBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("token_hash", name="uq_spl_token_hash"),
-        UniqueConstraint("survey_id", "token_prefix", name="uq_spl_survey_id_token_prefix"),
-        UniqueConstraint("survey_id", "id", name="uq_spl_survey_id_id"),
-        CheckConstraint("char_length(token_prefix) BETWEEN 8 AND 32", name="ck_spl_token_prefix_len"),
-        CheckConstraint("char_length(token_hash) >= 32", name="ck_spl_token_hash_len"),
+        UniqueConstraint("token_hash", name="uq_survey_public_links_token_hash"),
+        UniqueConstraint("survey_id", "id", name="uq_survey_public_links_survey_id_id"),
+        UniqueConstraint("survey_id", "token_prefix", name="uq_survey_public_links_survey_id_token_prefix"),
+        CheckConstraint("char_length(token_prefix) BETWEEN 8 AND 32", name="ck_survey_public_links_token_prefix_len"),
+        CheckConstraint("char_length(token_hash) >= 32", name="ck_survey_public_links_token_hash_len"),
     )
 
     survey: Mapped[Survey] = relationship("Survey")
