@@ -7,18 +7,18 @@ from app.core.config import Settings, get_settings
 logger = logging.getLogger("app.tests.integration.environment.test_environment_variables")
 
 
-def test_backend_env_override_ff_env() -> None:
-    assert read_env("FF_ENV") == "test"
+def test_backend_env_override_flowform_env() -> None:
+    assert read_env("FLOWFORM_ENV") == "test"
 
 
 def test_backend_env_file_values_present() -> None:
-    assert read_env("FF_PGDB_CORE__HOST") == "postgres-core"
-    assert read_env("FF_PGDB_RESPONSE__HOST") == "postgres-response"
+    assert read_env("DATABASE_CORE_HOST") == "postgres-core"
+    assert read_env("DATABASE_RESPONSE_HOST") == "postgres-response"
 
 
 def test_backend_secret_file_vars_present() -> None:
-    assert read_env("FF_PGDB_CORE__APP_PASSWORD_FILE") == "/run/secrets/FF_PGDB_CORE__APP_PASSWORD"
-    assert read_env("FF_PGDB_RESPONSE__APP_PASSWORD_FILE") == "/run/secrets/FF_PGDB_RESPONSE__APP_PASSWORD"
+    assert read_env("DATABASE_CORE_APP_PASSWORD_FILE") == "/run/secrets/DATABASE_CORE_APP_PASSWORD"
+    assert read_env("DATABASE_RESPONSE_APP_PASSWORD_FILE") == "/run/secrets/DATABASE_RESPONSE_APP_PASSWORD"
 
 
 def test_environment_variables_from_settings() -> None:

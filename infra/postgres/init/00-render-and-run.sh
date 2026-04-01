@@ -4,7 +4,7 @@ set -eu
 INIT_DIR="/docker-entrypoint-initdb.d"
 TEMPLATE_DIR="${INIT_DIR}/templates"
 RENDER_DIR="/tmp/flowform-init"
-DB_TARGET="${FF_PGDB_INIT__TARGET:-all}"
+DB_TARGET="${DATABASE_INIT_TARGET:-all}"
 
 fail() {
   echo "ERROR: $*" >&2
@@ -82,7 +82,7 @@ load_template_vars() {
     value="$(read_value "$var_name")"
 
     case "$var_name" in
-      *__SCHEMA_FILE)
+      *_SCHEMA_FILE)
         value="$(resolve_init_path "$value")"
         [ -f "$value" ] || fail "schema file not found: $value"
         ;;
@@ -154,7 +154,7 @@ case "$DB_TARGET" in
     render_target_file "response/03-grant-permissions.sql" "05-grant-response-permissions.sql"
     ;;
   *)
-    fail "FF_PGDB_INIT__TARGET must be one of: core, response, all."
+    fail "DATABASE_INIT_TARGET must be one of: core, response, all."
     ;;
 esac
 

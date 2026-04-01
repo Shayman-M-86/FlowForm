@@ -94,8 +94,9 @@ class AppSettings(BaseModel):
     """High-level application behavior settings."""
 
     debug: bool = False
-    secret_key_file: str
-    
+    secret_key: SecretStr | None = None
+    secret_key_file: str 
+
     @model_validator(mode="after")
     def load_secret_key_from_file(self) -> AppSettings:
         """Load the Flask secret key from a mounted secret file when provided.
@@ -104,6 +105,11 @@ class AppSettings(BaseModel):
             ValueError: If the secret key file is not found.
         """
         secret_key_path = Path(self.secret_key_file)
+        logger.critical(f"Loading secret key from file: {secret_key_path}")
+        logger.critical(f"Secret key file exists: {secret_key_path.is_file()}")
+        logger.critical(
+            f"Secret key file content preview: {secret_key_path.read_text(encoding='utf-8').strip()[:10]}..."
+        )  # type: ignore
         if not secret_key_path.is_file():
             raise ValueError(f"Secret key file not found: {self.secret_key_file}")
 
@@ -159,6 +165,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_nested_delimiter="_",
+        env_nested_max_split=2,
         extra="ignore",
     )
 
@@ -173,31 +180,31 @@ def get_settings() -> Settings:
     Returns:
         Loaded application settings.
     """
-    env = os.getenv("FF_ENV")
-    try:
-        if env is None:
-            raise ConfigError(
-                "FF_ENV is required and must be one of: dev, test, prod. "
-                "This should be provided by the container environment."
-            )
+    env = os.getenv("FLOWFORM_ENV")
+    # try:
+    if env is None:
+        raise ConfigError(
+            "FLOWFORM_ENV is required and must be one of: dev, test, prod. "
+            "This should be provided by the container environment."
+        )
 
-        env = env.lower()
-        if env not in {"dev", "test", "prod"}:
-            raise ConfigError("FF_ENV must be one of: dev, test, prod")
+    env = env.lower()
+    if env not in {"dev", "test", "prod"}:
+        raise ConfigError("FLOWFORM_ENV must be one of: dev, test, prod")
 
-        logger.info("Loading settings for env=%s from environment variables", env)
-        settings = cast(Any, Settings)()
+    logger.info("Loading settings for env=%s from environment variables", env)
+    settings = cast(Any, Settings)()
 
-        logger.info("Settings loaded for env=%s", settings.env)
-        return settings
+    logger.info("Settings loaded for env=%s", settings.flowform.env)
+    return settings
 
-    except ValidationError as exc:
-        logger.critical("Configuration error: %s", exc)
-        raise ConfigError("Invalid application configuration") from exc
+    # except ValidationError as exc:
+    #     logger.critical("Configuration error: %s", exc)
+    #     raise ConfigError(f"Invalid application configuration {exc}") from exc
 
-    except ConfigError as exc:
-        logger.critical("Configuration error: %s", exc)
-        raise
+    # except ConfigError as exc:
+    #     logger.critical("Configuration error: %s", exc)
+    #     raise
 
 
 def apply_settings_to_flask(app: Flask, settings: Settings) -> None:

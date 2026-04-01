@@ -10,17 +10,17 @@ from helpers import current_database_name, read_env
 logger = logging.getLogger("app.tests.integration.environment")
 
 REQUIRED_ENV_VARS = (
-    "FF_ENV",
-    "FF_PGDB_CORE__HOST",
-    "FF_PGDB_CORE__PORT",
-    "FF_PGDB_CORE__NAME",
-    "FF_PGDB_CORE__APP_USER",
-    "FF_PGDB_CORE__APP_PASSWORD_FILE",
-    "FF_PGDB_RESPONSE__HOST",
-    "FF_PGDB_RESPONSE__PORT",
-    "FF_PGDB_RESPONSE__NAME",
-    "FF_PGDB_RESPONSE__APP_USER",
-    "FF_PGDB_RESPONSE__APP_PASSWORD_FILE",
+    "FLOWFORM_ENV",
+    "DATABASE_CORE_HOST",
+    "DATABASE_CORE_PORT",
+    "DATABASE_CORE_NAME",
+    "DATABASE_CORE_APP_USER",
+    "DATABASE_CORE_APP_PASSWORD_FILE",
+    "DATABASE_RESPONSE_HOST",
+    "DATABASE_RESPONSE_PORT",
+    "DATABASE_RESPONSE_NAME",
+    "DATABASE_RESPONSE_APP_USER",
+    "DATABASE_RESPONSE_APP_PASSWORD_FILE",
 )
 
 
@@ -44,7 +44,7 @@ def validate_test_environment() -> None:
             returncode=1,
         )
 
-    for env_name in ("FF_PGDB_CORE__APP_PASSWORD_FILE", "FF_PGDB_RESPONSE__APP_PASSWORD_FILE"):
+    for env_name in ("DATABASE_CORE_APP_PASSWORD_FILE", "DATABASE_RESPONSE_APP_PASSWORD_FILE"):
         secret_path = Path(read_env(env_name))
         if not secret_path.is_file():
             pytest.exit(
@@ -55,7 +55,7 @@ def validate_test_environment() -> None:
 
 @pytest.fixture(scope="session", autouse=True)
 def wait_for_databases() -> None:
-    for prefix in ("FF_PGDB_CORE", "FF_PGDB_RESPONSE"):
+    for prefix in ("DATABASE_CORE", "DATABASE_RESPONSE"):
         _wait_for_database(prefix)
 
 

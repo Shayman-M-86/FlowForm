@@ -1,7 +1,7 @@
 \set ON_ERROR_STOP on
 
 -- Switch into the core database.
-\connect ${FF_PGDB_CORE__DB_NAME}
+\connect ${DATABASE_CORE_NAME}
 
 -- Create the dedicated application schema.
 CREATE SCHEMA IF NOT EXISTS core_app AUTHORIZATION flowform_owner;
@@ -16,7 +16,7 @@ REVOKE ALL ON SCHEMA core_app FROM PUBLIC;
 SET search_path TO core_app;
 
 -- Load the core schema file into the active search_path/schema.
-\i ${FF_PGDB_CORE__SCHEMA_FILE}
+\i ${DATABASE_CORE_SCHEMA_FILE}
 
 -- Reassert ownership on the schema.
 ALTER SCHEMA core_app OWNER TO flowform_owner;
