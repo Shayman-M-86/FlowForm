@@ -7,7 +7,8 @@ from app.models.core.audit_log import AuditLog
 from app.models.core.project import Project, ProjectRole
 from app.models.core.response_store import ResponseStore
 from app.models.core.survey import Survey, SurveyVersion
-from app.models.core.survey_content import SurveyQuestion
+from app.models.core.survey_access import SurveyPublicLink, SurveyRole
+from app.models.core.survey_content import SurveyQuestion, SurveyRule, SurveyScoringRule
 from app.models.core.user import User
 
 
@@ -74,6 +75,22 @@ def make_survey_version(survey_id: int, user_id: int, version_number: int = 1, s
     return version
 
 
+def make_survey_public_link(survey_id: int) -> SurveyPublicLink:
+    _, prefix, token_hash = make_token_pair()
+    link = SurveyPublicLink()
+    link.survey_id = survey_id
+    link.token_prefix = prefix
+    link.token_hash = token_hash
+    return link
+
+
+def make_survey_role(project_id: int, name: str = "reviewer") -> SurveyRole:
+    role = SurveyRole()
+    role.project_id = project_id
+    role.name = name
+    return role
+
+
 def make_audit_log(
     action: str = "created",
     entity_type: str = "survey",
@@ -89,6 +106,30 @@ def make_audit_log(
     if metadata is not None:
         log.log_metadata = metadata
     return log
+
+
+def make_survey_rule(
+    survey_version_id: int,
+    rule_key: str = "r1",
+    rule_schema: dict | None = None,
+) -> SurveyRule:
+    rule = SurveyRule()
+    rule.survey_version_id = survey_version_id
+    rule.rule_key = rule_key
+    rule.rule_schema = rule_schema or {"condition": "always"}
+    return rule
+
+
+def make_survey_scoring_rule(
+    survey_version_id: int,
+    scoring_key: str = "s1",
+    scoring_schema: dict | None = None,
+) -> SurveyScoringRule:
+    scoring_rule = SurveyScoringRule()
+    scoring_rule.survey_version_id = survey_version_id
+    scoring_rule.scoring_key = scoring_key
+    scoring_rule.scoring_schema = scoring_schema or {"formula": "sum"}
+    return scoring_rule
 
 
 def make_survey_question(
