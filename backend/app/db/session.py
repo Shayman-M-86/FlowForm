@@ -1,7 +1,7 @@
 from sqlalchemy.orm import sessionmaker
 
-from app.db.engine import core_engine, response_engine
 from app.db.base import CoreBase, ResponseBase
+from app.db.engine import core_engine, response_engine
 
 SessionLocal = sessionmaker()
 SessionLocal.configure(
