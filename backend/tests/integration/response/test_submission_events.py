@@ -19,6 +19,12 @@ def test_submission_relationships_events_work(db_session: scoped_session[Session
     db_session.flush()
     db_session.refresh(submission)
 
-    assert len(submission.events) == 1
-    assert submission.events[0].submission_id == submission.id
-    assert submission.events[0].event_type == "queued"
+    assert len(submission.events) == 1, (
+        f"Expected 1 event on submission, got {len(submission.events)}"
+    )
+    assert submission.events[0].submission_id == submission.id, (
+        f"event.submission_id={submission.events[0].submission_id!r}, expected {submission.id!r}"
+    )
+    assert submission.events[0].event_type == "queued", (
+        f"event.event_type={submission.events[0].event_type!r}, expected 'queued'"
+    )

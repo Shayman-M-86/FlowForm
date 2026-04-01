@@ -30,19 +30,27 @@ class SubmissionAnswer(ResponseBase):
         CheckConstraint("answer_family IN ('choice', 'field', 'matching', 'rating')", name="answer_family_valid"),
         CheckConstraint("jsonb_typeof(answer_value) = 'object'", name="answer_value_is_object"),
         CheckConstraint(
-            "answer_family <> 'choice' OR (jsonb_has_exact_keys(answer_value, ARRAY['selected_option_ids']) AND jsonb_array_is_text_array(answer_value->'selected_option_ids'))",
+            "answer_family <> 'choice'"
+            " OR (jsonb_has_exact_keys(answer_value, ARRAY['selected_option_ids'])"
+            " AND jsonb_array_is_text_array(answer_value->'selected_option_ids'))",
             name="choice_shape_valid",
         ),
         CheckConstraint(
-            "answer_family <> 'field' OR (jsonb_has_exact_keys(answer_value, ARRAY['value']) AND jsonb_is_scalar_or_null(answer_value->'value'))",
+            "answer_family <> 'field'"
+            " OR (jsonb_has_exact_keys(answer_value, ARRAY['value'])"
+            " AND jsonb_is_scalar_or_null(answer_value->'value'))",
             name="field_shape_valid",
         ),
         CheckConstraint(
-            "answer_family <> 'matching' OR (jsonb_has_exact_keys(answer_value, ARRAY['pairs']) AND jsonb_matching_pairs_valid(answer_value->'pairs'))",
+            "answer_family <> 'matching'"
+            " OR (jsonb_has_exact_keys(answer_value, ARRAY['pairs'])"
+            " AND jsonb_matching_pairs_valid(answer_value->'pairs'))",
             name="matching_shape_valid",
         ),
         CheckConstraint(
-            "answer_family <> 'rating' OR (jsonb_has_exact_keys(answer_value, ARRAY['value']) AND jsonb_typeof(answer_value->'value') = 'number')",
+            "answer_family <> 'rating'"
+            " OR (jsonb_has_exact_keys(answer_value, ARRAY['value'])"
+            " AND jsonb_typeof(answer_value->'value') = 'number')",
             name="rating_shape_valid",
         ),
     )

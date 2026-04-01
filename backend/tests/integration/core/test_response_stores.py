@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
+from psycopg.errors import UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
@@ -29,7 +32,14 @@ def test_response_store_unique_name_within_project(
     store_b.created_by_user_id = user.id
     db_session.add(store_b)
 
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IntegrityError) as exc_info:
         db_session.flush()
+
+    orig = cast(UniqueViolation, exc_info.value.orig)
+    constraint = orig.diag.constraint_name
+    assert constraint == "uq_response_stores_project_id_name", (
+        f"Expected constraint 'uq_response_stores_project_id_name', got '{constraint}'\n"
+        f"DB error: {exc_info.value}"
+    )
 
     db_session.rollback()

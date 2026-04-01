@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import uuid
+from typing import cast
 
 import pytest
+from psycopg.errors import UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
@@ -28,8 +30,15 @@ def test_response_subject_mapping_unique_project_user(
     mapping_b.pseudonymous_subject_id = uuid.uuid4()
     db_session.add(mapping_b)
 
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IntegrityError) as exc_info:
         db_session.flush()
+
+    orig = cast(UniqueViolation, exc_info.value.orig)
+    constraint = orig.diag.constraint_name
+    assert constraint == "uq_response_subject_mappings_project_id_user_id", (
+        f"Expected constraint 'uq_response_subject_mappings_project_id_user_id', got '{constraint}'\n"
+        f"DB error: {exc_info.value}"
+    )
 
     db_session.rollback()
 
@@ -56,7 +65,15 @@ def test_response_subject_mapping_unique_project_subject(
     mapping_b.pseudonymous_subject_id = subject_id
     db_session.add(mapping_b)
 
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IntegrityError) as exc_info:
         db_session.flush()
+
+    orig = cast(UniqueViolation, exc_info.value.orig)
+    constraint = orig.diag.constraint_name
+    assert constraint == "uq_response_subject_mappings_project_id_pseudonymous_subject_id", (
+        f"Expected constraint 'uq_response_subject_mappings_project_id_pseudonymous_subject_id',"
+        f" got '{constraint}'\n"
+        f"DB error: {exc_info.value}"
+    )
 
     db_session.rollback()

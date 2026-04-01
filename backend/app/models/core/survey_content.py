@@ -25,6 +25,10 @@ class SurveyQuestion(TimestampMixin, CoreBase):
     __table_args__ = (
         UniqueConstraint("survey_version_id", "question_key", name="uq_survey_questions_version_key"),
         CheckConstraint("jsonb_typeof(question_schema) = 'object'", name="question_schema_is_object"),
+        CheckConstraint(
+            "question_schema->>'type' IN ('choice', 'field', 'matching', 'rating')",
+            name="question_type_valid",
+        ),
     )
 
     survey_version: Mapped[SurveyVersion] = relationship(

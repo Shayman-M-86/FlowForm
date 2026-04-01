@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
+from psycopg.errors import NotNullViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
@@ -33,10 +36,16 @@ def test_survey_submission_can_be_created(
     db_session.flush()
 
     saved = db_session.get(SurveySubmission, submission.id)
-    assert saved is not None
-    assert saved.submitted_by_user_id == user.id
-    assert saved.submission_channel == "authenticated"
-    assert saved.status == "pending"
+    assert saved is not None, "Submission was not persisted"
+    assert saved.submitted_by_user_id == user.id, (
+        f"submitted_by_user_id={saved.submitted_by_user_id!r}, expected {user.id!r}"
+    )
+    assert saved.submission_channel == "authenticated", (
+        f"submission_channel={saved.submission_channel!r}, expected 'authenticated'"
+    )
+    assert saved.status == "pending", (
+        f"status={saved.status!r}, expected 'pending'"
+    )
 
 
 def test_survey_submission_requires_survey_version(
@@ -57,8 +66,15 @@ def test_survey_submission_requires_survey_version(
 
     db_session.add(submission)
 
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IntegrityError) as exc_info:
         db_session.flush()
+
+    orig = cast(NotNullViolation, exc_info.value.orig)
+    column = orig.diag.column_name
+    assert column == "survey_version_id", (
+        f"Expected NOT NULL violation on 'survey_version_id', got '{column}'\n"
+        f"DB error: {exc_info.value}"
+    )
 
     db_session.rollback()
 
@@ -82,7 +98,14 @@ def test_survey_submission_requires_submission_channel(
 
     db_session.add(submission)
 
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IntegrityError) as exc_info:
         db_session.flush()
+
+    orig = cast(NotNullViolation, exc_info.value.orig)
+    column = orig.diag.column_name
+    assert column == "submission_channel", (
+        f"Expected NOT NULL violation on 'submission_channel', got '{column}'\n"
+        f"DB error: {exc_info.value}"
+    )
 
     db_session.rollback()

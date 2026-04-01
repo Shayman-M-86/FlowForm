@@ -3,9 +3,11 @@ from __future__ import annotations
 import hashlib
 import secrets
 
+from app.models.core.audit_log import AuditLog
 from app.models.core.project import Project, ProjectRole
 from app.models.core.response_store import ResponseStore
 from app.models.core.survey import Survey, SurveyVersion
+from app.models.core.survey_content import SurveyQuestion
 from app.models.core.user import User
 
 
@@ -54,9 +56,7 @@ def make_response_store(project_id: int, user_id: int, name: str = "main-store")
     return store
 
 
-def make_survey(
-    project_id: int, response_store_id: int, user_id: int, title: str = "Customer Survey"
-) -> Survey:
+def make_survey(project_id: int, response_store_id: int, user_id: int, title: str = "Customer Survey") -> Survey:
     survey = Survey()
     survey.project_id = project_id
     survey.title = title
@@ -65,12 +65,39 @@ def make_survey(
     return survey
 
 
-def make_survey_version(
-    survey_id: int, user_id: int, version_number: int = 1, status: str = "draft"
-) -> SurveyVersion:
+def make_survey_version(survey_id: int, user_id: int, version_number: int = 1, status: str = "draft") -> SurveyVersion:
     version = SurveyVersion()
     version.survey_id = survey_id
     version.version_number = version_number
     version.status = status
     version.created_by_user_id = user_id
     return version
+
+
+def make_audit_log(
+    action: str = "created",
+    entity_type: str = "survey",
+    entity_id: int | None = None,
+    user_id: int | None = None,
+    metadata: dict | None = None,
+) -> AuditLog:
+    log = AuditLog()
+    log.action = action
+    log.entity_type = entity_type
+    log.entity_id = entity_id
+    log.user_id = user_id
+    if metadata is not None:
+        log.log_metadata = metadata
+    return log
+
+
+def make_survey_question(
+    survey_version_id: int,
+    question_key: str = "q1",
+    question_schema: dict | None = None,
+) -> SurveyQuestion:
+    question = SurveyQuestion()
+    question.survey_version_id = survey_version_id
+    question.question_key = question_key
+    question.question_schema = question_schema or {"type": "field", "label": "Question"}
+    return question

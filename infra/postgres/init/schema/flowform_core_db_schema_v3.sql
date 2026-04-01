@@ -300,6 +300,9 @@ CREATE TABLE survey_questions (
     CONSTRAINT ck_survey_questions_question_schema_is_object
         CHECK (jsonb_typeof(question_schema) = 'object'),
 
+    CONSTRAINT ck_survey_questions_question_type_valid
+        CHECK (question_schema->>'type' IN ('choice', 'field', 'matching', 'rating')),
+
     CONSTRAINT uq_survey_questions_version_key
         UNIQUE (survey_version_id, question_key)
 );

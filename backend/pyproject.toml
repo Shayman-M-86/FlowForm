@@ -40,6 +40,7 @@ addopts = [
     "-ra",
     "--strict-markers",
     "--strict-config",
+    "--tb=short",
 ]
 filterwarnings = [
     "error",

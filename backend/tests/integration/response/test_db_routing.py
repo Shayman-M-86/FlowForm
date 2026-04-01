@@ -13,11 +13,17 @@ def assert_model_uses_response_db(
     session: scoped_session[Session],
     model: type[ResponseBase],
 ) -> None:
-    assert issubclass(model, ResponseBase)
-    assert model.metadata is ResponseBase.metadata
+    assert issubclass(model, ResponseBase), (
+        f"{model.__name__} is not a subclass of ResponseBase"
+    )
+    assert model.metadata is ResponseBase.metadata, (
+        f"{model.__name__}.metadata is not the ResponseBase metadata"
+    )
 
     bind = session.get_bind(mapper=model.__mapper__)
-    assert str(bind.engine.url) == str(db.engines["response"].url)
+    assert str(bind.engine.url) == str(db.engines["response"].url), (
+        f"{model.__name__} bound to {bind.engine.url!r}, expected {db.engines['response'].url!r}"
+    )
 
     response_conn = session.connection(bind_arguments={"mapper": model.__mapper__})
     db_name, schema_name = response_conn.execute(text("select current_database(), current_schema()")).one()
