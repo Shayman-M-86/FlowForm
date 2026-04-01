@@ -1,0 +1,142 @@
+name: flowform-test-Environment
+
+services:
+  postgres-core:
+    image: postgres:17
+    container_name: flowform-postgres-core-test
+    env_file:
+      - ./.db.core.env
+    environment:
+      DATABASE_INIT_TARGET: core
+
+      POSTGRES_USER: ${DATABASE_CORE_INIT_USER}
+      POSTGRES_DB: ${DATABASE_CORE_INIT_DB}
+      POSTGRES_PASSWORD_FILE: /run/secrets/DATABASE_CORE_INIT_PASSWORD
+
+      DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+    ports:
+      - "127.0.0.1:5432:${DATABASE_CORE_PORT}"
+    command: [
+      "postgres", 
+      "-c", "password_encryption=scram-sha-256", 
+      "-c", "hba_file=/etc/postgresql/pg_hba.conf", 
+      "-c", "listen_addresses=*", 
+      "-c", "port=${DATABASE_CORE_PORT:-5432}"
+      ]
+    volumes:
+      - flowform_postgres_core_data:/var/lib/postgresql/data
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
+      - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    secrets:
+      - DATABASE_CORE_INIT_PASSWORD
+      - DATABASE_CORE_APP_PASSWORD
+    networks:
+      - flowform_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_CORE_INIT_USER} -d ${DATABASE_CORE_INIT_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-response:
+    image: postgres:17
+    container_name: flowform-postgres-response-test
+    env_file:
+      - ./.db.response.env
+    environment:
+      DATABASE_INIT_TARGET: response
+
+      POSTGRES_USER: ${DATABASE_CORE_INIT_USER}
+      POSTGRES_DB: ${DATABASE_CORE_INIT_DB}
+      POSTGRES_PASSWORD_FILE: /run/secrets/DATABASE_CORE_INIT_PASSWORD
+
+      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
+    ports:
+      - "127.0.0.1:5433:${DATABASE_RESPONSE_PORT}"
+    command: [
+      "postgres", 
+      "-c", "password_encryption=scram-sha-256", 
+      "-c", "hba_file=/etc/postgresql/pg_hba.conf", 
+      "-c", "listen_addresses=*", 
+      "-c", "port=${DATABASE_RESPONSE_PORT:-5432}"
+      ]
+    volumes:
+      - flowform_postgres_response_data:/var/lib/postgresql/data
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
+      - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    secrets:
+      - DATABASE_CORE_INIT_PASSWORD
+      - DATABASE_RESPONSE_APP_PASSWORD
+    networks:
+      - flowform_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_CORE_INIT_USER} -d ${DATABASE_RESPONSE_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  backend-test:
+    build:
+      context: ../..
+      dockerfile: infra/docker/backend.test.Dockerfile
+    working_dir: /app
+    init: true
+    container_name: flowform-backend-test
+    env_file:
+      - ./.backend.env
+      - ./.db.core.env
+      - ./.db.response.env
+    environment:
+      FLOWFORM_ENV: test
+      PYTHONUNBUFFERED: "1"
+
+      DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
+      FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
+
+      DATABASE_CORE_PORT: ${DATABASE_CORE_PORT}
+      DATABASE_RESPONSE_PORT: ${DATABASE_RESPONSE_PORT}
+
+    command: ["sh", "-lc", "tail -f /dev/null"]
+    volumes:
+      - ../../backend:/app
+      - ../../backend/logs:/app/logs
+      - flowform_backend_test_venv:/app/.venv
+    depends_on:
+      postgres-core:
+        condition: service_healthy
+      postgres-response:
+        condition: service_healthy
+    secrets:
+      - DATABASE_CORE_APP_PASSWORD
+      - DATABASE_RESPONSE_APP_PASSWORD
+      - FLOWFORM_APP_SECRET_KEY
+    networks:
+      - flowform_net
+
+volumes:
+  flowform_postgres_core_data:
+  flowform_postgres_response_data:
+  flowform_backend_test_venv:
+
+networks:
+  flowform_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.50.0.0/16
+
+secrets:
+  DATABASE_CORE_INIT_PASSWORD:
+    file: ./secrets/DATABASE_CORE_INIT_PASSWORD.test.secret.txt
+  DATABASE_CORE_APP_PASSWORD:
+    file: ./secrets/DATABASE_CORE_APP_PASSWORD.test.secret.txt
+
+  DATABASE_RESPONSE_INIT_PASSWORD:
+    file: ./secrets/DATABASE_RESPONSE_INIT_PASSWORD.test.secret.txt
+  DATABASE_RESPONSE_APP_PASSWORD:
+    file: ./secrets/DATABASE_RESPONSE_APP_PASSWORD.test.secret.txt
+
+  FLOWFORM_APP_SECRET_KEY:
+    file: ./secrets/FLOWFORM_APP_SECRET_KEY.test.secret.txt

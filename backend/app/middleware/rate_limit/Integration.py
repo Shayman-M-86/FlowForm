@@ -63,10 +63,10 @@ def register_rate_limiting(app: Flask, settings: Settings):
         app: Flask application instance.
         settings: Application settings containing rate limit config.
     """
-    if settings.rate_limit.enabled:
-        max_requests = settings.rate_limit.max_requests
-        window_seconds = settings.rate_limit.window_seconds
-        ignored_paths = settings.rate_limit.ignored_paths
+    if settings.flowform.rate_limit.enabled:
+        max_requests = settings.flowform.rate_limit.max_requests
+        window_seconds = settings.flowform.rate_limit.window_seconds
+        ignored_paths = settings.flowform.rate_limit.ignored_paths
 
         logger.info(
             "Enabling rate limiting: max_requests=%d, window_seconds=%d, ignored_paths=%s",

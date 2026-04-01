@@ -23,7 +23,7 @@ services:
       - -c
       - listen_addresses=*
     ports:
-      - "127.0.0.1:${FF_PGDB_CORE_COMPOSE__PUBLISHED_PORT:-5432}:${FF_PGDB_CORE_COMPOSE__PORT:-5432}"
+      - "127.0.0.1:${FF_PGDB_CORE_COMPOSE__PUBLISHED_PORT:-5432}:5432"
     volumes:
       - flowform_postgres_core_data:/var/lib/postgresql/data
       - ../postgres/init:/docker-entrypoint-initdb.d
@@ -61,7 +61,7 @@ services:
       - -c
       - listen_addresses=*
     ports:
-      - "127.0.0.1:${FF_PGDB_RESPONSE_COMPOSE__PUBLISHED_PORT:-5433}:${FF_PGDB_RESPONSE_COMPOSE__PORT:-5432}"
+      - "127.0.0.1:${FF_PGDB_RESPONSE_COMPOSE__PUBLISHED_PORT:-5433}:5432"
     volumes:
       - flowform_postgres_response_data:/var/lib/postgresql/data
       - ../postgres/init:/docker-entrypoint-initdb.d

@@ -23,15 +23,15 @@ def test_backend_secret_file_vars_present() -> None:
 
 def test_environment_variables_from_settings() -> None:
     settings: Settings = get_settings()
-    url = settings.pgdb_core.url
+    url = settings.database.core.url
     logger.info(f"Constructed database URL from settings: {url}")
 
-    assert settings.pgdb_core.host == "postgres-core"
-    assert settings.pgdb_response.host == "postgres-response"
+    assert settings.database.core.host == "postgres-core"
+    assert settings.database.response.host == "postgres-response"
 
 def test_response_database_environment_variables_from_settings() -> None:
     settings: Settings = get_settings()
-    url = settings.pgdb_response.url
+    url = settings.database.response.url
     logger.info(f"Constructed response database URL from settings: {url}")
 
-    assert settings.pgdb_response.host == "postgres-response"
+    assert settings.database.response.host == "postgres-response"

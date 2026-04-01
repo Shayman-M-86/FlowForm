@@ -2,17 +2,24 @@
 set -eu
 
 INIT_DIR="/docker-entrypoint-initdb.d"
-TEMPLATE_DIR="/docker-entrypoint-initdb.d/templates"
+TEMPLATE_DIR="${INIT_DIR}/templates"
 RENDER_DIR="/tmp/flowform-init"
 DB_TARGET="${FF_PGDB_INIT__TARGET:-all}"
 
+fail() {
+  echo "ERROR: $*" >&2
+  exit 1
+}
+
+get_var() {
+  var_name="$1"
+  eval "printf '%s' \"\${$var_name-}\""
+}
+
 require_var() {
   var_name="$1"
-  eval "var_value=\${$var_name:-}"
-  if [ -z "$var_value" ]; then
-    echo "ERROR: required environment variable '$var_name' is not set or is empty." >&2
-    exit 1
-  fi
+  var_value="$(get_var "$var_name")"
+  [ -n "$var_value" ] || fail "required environment variable '$var_name' is not set or is empty."
 }
 
 resolve_init_path() {
@@ -30,12 +37,7 @@ resolve_init_path() {
 
 read_secret_file() {
   file_path="$1"
-
-  if [ ! -f "$file_path" ]; then
-    echo "ERROR: secret file not found: $file_path" >&2
-    exit 1
-  fi
-
+  [ -f "$file_path" ] || fail "secret file not found: $file_path"
   tr -d '\r\n' < "$file_path"
 }
 
@@ -43,116 +45,94 @@ read_value() {
   var_name="$1"
   file_var_name="${var_name}_FILE"
 
-  eval "file_path=\${$file_var_name:-}"
+  file_path="$(get_var "$file_var_name")"
   if [ -n "$file_path" ]; then
     read_secret_file "$file_path"
     return
   fi
 
-  eval "var_value=\${$var_name:-}"
+  var_value="$(get_var "$var_name")"
   if [ -n "$var_value" ]; then
     printf '%s\n' "$var_value"
     return
   fi
 
-  echo "ERROR: required environment variable '$var_name' or '$file_var_name' is not set." >&2
-  exit 1
+  fail "required environment variable '$var_name' or '$file_var_name' is not set."
 }
 
-validate_core_inputs() {
-  require_var FF_PGDB_CORE__DB_NAME
-  require_var FF_PGDB_CORE__APP_USER
-  require_var FF_PGDB_CORE__SCHEMA_FILE
+list_template_vars() {
+  infile="$1"
+
+  awk '
+    {
+      line = $0
+      while (match(line, /\$\{[A-Za-z_][A-Za-z0-9_]*\}/)) {
+        var = substr(line, RSTART + 2, RLENGTH - 3)
+        print var
+        line = substr(line, RSTART + RLENGTH)
+      }
+    }
+  ' "$infile" | sort -u
 }
 
-validate_response_inputs() {
-  require_var FF_PGDB_RESPONSE__DB_NAME
-  require_var FF_PGDB_RESPONSE__APP_USER
-  require_var FF_PGDB_RESPONSE__SCHEMA_FILE
+load_template_vars() {
+  infile="$1"
+
+  for var_name in $(list_template_vars "$infile"); do
+    value="$(read_value "$var_name")"
+
+    case "$var_name" in
+      *__SCHEMA_FILE)
+        value="$(resolve_init_path "$value")"
+        [ -f "$value" ] || fail "schema file not found: $value"
+        ;;
+    esac
+
+    export "$var_name=$value"
+  done
 }
 
-echo "Validating required environment variables..."
-
-require_var POSTGRES_USER
-require_var POSTGRES_DB
-
-case "$DB_TARGET" in
-  core)
-    validate_core_inputs
-    FF_PGDB_CORE__SCHEMA_FILE="$(resolve_init_path "$FF_PGDB_CORE__SCHEMA_FILE")"
-    FF_PGDB_CORE__APP_PASSWORD="$(read_value FF_PGDB_CORE__APP_PASSWORD)"
-    ;;
-  response)
-    validate_response_inputs
-    FF_PGDB_RESPONSE__SCHEMA_FILE="$(resolve_init_path "$FF_PGDB_RESPONSE__SCHEMA_FILE")"
-    FF_PGDB_RESPONSE__APP_PASSWORD="$(read_value FF_PGDB_RESPONSE__APP_PASSWORD)"
-    ;;
-  all)
-    validate_core_inputs
-    validate_response_inputs
-    FF_PGDB_CORE__SCHEMA_FILE="$(resolve_init_path "$FF_PGDB_CORE__SCHEMA_FILE")"
-    FF_PGDB_RESPONSE__SCHEMA_FILE="$(resolve_init_path "$FF_PGDB_RESPONSE__SCHEMA_FILE")"
-    FF_PGDB_CORE__APP_PASSWORD="$(read_value FF_PGDB_CORE__APP_PASSWORD)"
-    FF_PGDB_RESPONSE__APP_PASSWORD="$(read_value FF_PGDB_RESPONSE__APP_PASSWORD)"
-    ;;
-  *)
-    echo "ERROR: FF_PGDB_INIT__TARGET must be one of: core, response, all." >&2
-    exit 1
-    ;;
-esac
-
-mkdir -p "$RENDER_DIR"
-
-if [ ! -d "$TEMPLATE_DIR" ]; then
-  echo "ERROR: template directory not found: $TEMPLATE_DIR" >&2
-  exit 1
-fi
-
-if [ "$DB_TARGET" = "core" ] || [ "$DB_TARGET" = "all" ]; then
-  if [ ! -f "$FF_PGDB_CORE__SCHEMA_FILE" ]; then
-    echo "ERROR: core schema file not found: $FF_PGDB_CORE__SCHEMA_FILE" >&2
-    exit 1
-  fi
-fi
-
-if [ "$DB_TARGET" = "response" ] || [ "$DB_TARGET" = "all" ]; then
-  if [ ! -f "$FF_PGDB_RESPONSE__SCHEMA_FILE" ]; then
-    echo "ERROR: response schema file not found: $FF_PGDB_RESPONSE__SCHEMA_FILE" >&2
-    exit 1
-  fi
-fi
-
-render() {
+render_template() {
   infile="$1"
   outfile="$2"
 
-  if [ ! -f "$infile" ]; then
-    echo "ERROR: template file not found: $infile" >&2
-    exit 1
-  fi
+  [ -f "$infile" ] || fail "template file not found: $infile"
 
-  sed \
-    -e "s|\${FF_PGDB_CORE__DB_NAME}|${FF_PGDB_CORE__DB_NAME:-}|g" \
-    -e "s|\${FF_PGDB_RESPONSE__DB_NAME}|${FF_PGDB_RESPONSE__DB_NAME:-}|g" \
-    -e "s|\${FF_PGDB_CORE__APP_USER}|${FF_PGDB_CORE__APP_USER:-}|g" \
-    -e "s|\${FF_PGDB_CORE__APP_PASSWORD}|${FF_PGDB_CORE__APP_PASSWORD:-}|g" \
-    -e "s|\${FF_PGDB_RESPONSE__APP_USER}|${FF_PGDB_RESPONSE__APP_USER:-}|g" \
-    -e "s|\${FF_PGDB_RESPONSE__APP_PASSWORD}|${FF_PGDB_RESPONSE__APP_PASSWORD:-}|g" \
-    -e "s|\${FF_PGDB_CORE__SCHEMA_FILE}|${FF_PGDB_CORE__SCHEMA_FILE:-}|g" \
-    -e "s|\${FF_PGDB_RESPONSE__SCHEMA_FILE}|${FF_PGDB_RESPONSE__SCHEMA_FILE:-}|g" \
-    "$infile" > "$outfile"
+  load_template_vars "$infile"
+
+  awk '
+    {
+      line = $0
+      while (match(line, /\$\{[A-Za-z_][A-Za-z0-9_]*\}/)) {
+        token = substr(line, RSTART, RLENGTH)
+        var   = substr(line, RSTART + 2, RLENGTH - 3)
+        value = ENVIRON[var]
+        line  = substr(line, 1, RSTART - 1) value substr(line, RSTART + RLENGTH)
+      }
+      print line
+    }
+  ' "$infile" > "$outfile"
 }
-
-echo "Rendering SQL templates..."
 
 rendered_files=""
 
 render_target_file() {
   source_file="$1"
   output_file="$2"
-  render "$TEMPLATE_DIR/$source_file" "$RENDER_DIR/$output_file"
-  rendered_files="$rendered_files $output_file"
+
+  render_template "$TEMPLATE_DIR/$source_file" "$RENDER_DIR/$output_file"
+  rendered_files="${rendered_files}${rendered_files:+ }$output_file"
 }
+
+echo "Validating bootstrap inputs..."
+
+require_var POSTGRES_USER
+require_var POSTGRES_DB
+
+[ -d "$TEMPLATE_DIR" ] || fail "template directory not found: $TEMPLATE_DIR"
+mkdir -p "$RENDER_DIR"
+
+echo "Rendering SQL templates for target: $DB_TARGET"
 
 case "$DB_TARGET" in
   core)
@@ -172,6 +152,9 @@ case "$DB_TARGET" in
     render_target_file "response/02-create-schema.sql" "03-create-response-schema.sql"
     render_target_file "core/03-grant-permissions.sql" "04-grant-core-permissions.sql"
     render_target_file "response/03-grant-permissions.sql" "05-grant-response-permissions.sql"
+    ;;
+  *)
+    fail "FF_PGDB_INIT__TARGET must be one of: core, response, all."
     ;;
 esac
 
@@ -196,7 +179,10 @@ echo "Running rendered SQL..."
 
 for file in $rendered_files
 do
-  psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f "$RENDER_DIR/$file"
+  psql -v ON_ERROR_STOP=1 \
+    --username "$POSTGRES_USER" \
+    --dbname "$POSTGRES_DB" \
+    -f "$RENDER_DIR/$file"
 done
 
 echo "Flowform bootstrap complete."

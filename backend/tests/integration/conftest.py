@@ -33,7 +33,7 @@ def settings():
     return base_settings.model_copy(
         update={
             "env": "test",
-            "app": base_settings.app.model_copy(
+            "flowform": base_settings.flowform.model_copy(
                 update={
                     "debug": False,
                     "secret_key": "test-secret",

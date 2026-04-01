@@ -207,14 +207,14 @@ def log_startup(app: Flask, settings: Settings) -> None:
     if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
         return
 
-    level = logging.INFO if settings.env == "prod" else logging.DEBUG
+    level = logging.INFO if settings.flowform.env == "prod" else logging.DEBUG
 
     STARTUP_LOGGER.log(
         level,
         "Running on http://%s:%s | Environment: %s | Debug: %s",
-        settings.server.host,
-        settings.server.port,
-        settings.env,
+        settings.flowform.server.host,
+        settings.flowform.server.port,
+        settings.flowform.env,
         app.debug,
     )
 
@@ -226,7 +226,7 @@ def log_startup(app: Flask, settings: Settings) -> None:
 
 def setup_logging(app: Flask, settings: Settings) -> None:
     """Configure root logging from application settings."""
-    log_config = settings.logging
+    log_config = settings.flowform.logging
     json_logs = log_config.log_json
 
     handlers: list[logging.Handler] = [
