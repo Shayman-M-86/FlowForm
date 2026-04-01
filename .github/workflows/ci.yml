@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create Docker secret files
+        run: |
+          mkdir -p infra/docker/secrets
+          printf '%s' "$FF_PGDB_INIT_PASSWORD"         > infra/docker/secrets/FF_PGDB_INIT__PASSWORD.secret.txt
+          printf '%s' "$FF_PGDB_CORE_APP_PASSWORD"     > infra/docker/secrets/FF_PGDB_CORE__APP_PASSWORD.secret.txt
+          printf '%s' "$FF_PGDB_RESPONSE_APP_PASSWORD" > infra/docker/secrets/FF_PGDB_RESPONSE__APP_PASSWORD.secret.txt
+        env:
+          FF_PGDB_INIT_PASSWORD: ${{ secrets.FF_PGDB_INIT_PASSWORD }}
+          FF_PGDB_CORE_APP_PASSWORD: ${{ secrets.FF_PGDB_CORE_APP_PASSWORD }}
+          FF_PGDB_RESPONSE_APP_PASSWORD: ${{ secrets.FF_PGDB_RESPONSE_APP_PASSWORD }}
+
+      - name: Create .env file
+        run: |
+          cat > infra/docker/.env << 'EOF'
+          FF_PGDB_INIT__USER="flowform-admin"
+
+          FF_PGDB_CORE_COMPOSE__HOST="postgres-core"
+          FF_PGDB_CORE_COMPOSE__PORT="5432"
+          FF_PGDB_CORE_COMPOSE__PUBLISHED_PORT="5432"
+
+          FF_PGDB_RESPONSE_COMPOSE__HOST="postgres-response"
+          FF_PGDB_RESPONSE_COMPOSE__PORT="5432"
+          FF_PGDB_RESPONSE_COMPOSE__PUBLISHED_PORT="5433"
+
+          FF_PGDB_CORE__DB_NAME="flowform_core"
+          FF_PGDB_RESPONSE__DB_NAME="flowform_response"
+
+          FF_PGDB_CORE__APP_USER="flowform_core_app"
+          FF_PGDB_RESPONSE__APP_USER="flowform_response_app"
+
+          FF_PGDB_CORE__SCHEMA_FILE="schema/flowform_core_db_schema_v3.sql"
+          FF_PGDB_RESPONSE__SCHEMA_FILE="schema/flowform_response_db_schema_v3.sql"
+          EOF
+
+      - name: Create .backend.env file
+        run: |
+          cat > infra/docker/.backend.env << EOF
+          FF_ENV=test
+
+          FF_APP__DEBUG=false
+          FF_APP__SECRET_KEY=${FF_APP_SECRET_KEY}
+
+          FF_AUTH0__DOMAIN=placeholder.auth0.com
+          FF_AUTH0__AUDIENCE=https://api.flowform.local
+
+          FF_LOGGING__LEVEL=INFO
+          FF_LOGGING__LOG_JSON=false
+          FF_LOGGING__LOG_FILE=logs/app.log
+          FF_LOGGING__REQUESTS=false
+          FF_LOGGING__DURATION=false
+
+          FF_PGDB_CORE__HOST=postgres-core
+          FF_PGDB_CORE__PORT=5432
+          FF_PGDB_CORE__NAME=flowform_core
+
+          FF_PGDB_RESPONSE__HOST=postgres-response
+          FF_PGDB_RESPONSE__PORT=5432
+          FF_PGDB_RESPONSE__NAME=flowform_response
+          EOF
+        env:
+          FF_APP_SECRET_KEY: ${{ secrets.FF_APP_SECRET_KEY }}
+
+      - name: Build and start test environment
+        run: docker compose -f infra/docker/docker-compose.test.yml up -d --build
+
+      - name: Wait for backend container
+        run: |
+          CONTAINER="flowform-backend-test"
+          WAIT_TIMEOUT=120
+          WAIT_ELAPSED=0
+
+          until [ "$(docker inspect -f '{{.State.Status}}' "${CONTAINER}" 2>/dev/null)" = "running" ]; do
+            STATUS="$(docker inspect -f '{{.State.Status}}' "${CONTAINER}" 2>/dev/null)"
+
+            if [ "${STATUS}" = "exited" ] || [ "${STATUS}" = "dead" ]; then
+              echo "ERROR: Container '${CONTAINER}' entered terminal state '${STATUS}'."
+              docker logs "${CONTAINER}" 2>&1 || true
+              exit 1
+            fi
+
+            if [ "${WAIT_ELAPSED}" -ge "${WAIT_TIMEOUT}" ]; then
+              echo "ERROR: Timed out after ${WAIT_TIMEOUT}s waiting for '${CONTAINER}' (state: '${STATUS}')."
+              docker logs "${CONTAINER}" 2>&1 || true
+              exit 1
+            fi
+
+            sleep 1
+            WAIT_ELAPSED=$((WAIT_ELAPSED + 1))
+          done
+
+      - name: Run tests
+        run: docker exec flowform-backend-test uv run pytest tests/ --cov --cov-report=xml
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: backend/coverage.xml
+          if-no-files-found: ignore
+
+      - name: Teardown
+        if: always()
+        run: docker compose -f infra/docker/docker-compose.test.yml down -v
