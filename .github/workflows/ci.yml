@@ -79,8 +79,18 @@ jobs:
         env:
           FF_APP_SECRET_KEY: ${{ secrets.FF_APP_SECRET_KEY }}
 
-      - name: Build and start test environment
-        run: docker compose -f infra/docker/docker-compose.test.yml up -d --build
+      - name: Build backend image (with layer cache)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/backend.test.Dockerfile
+          load: true
+          tags: flowform-backend-test:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start test environment
+        run: docker compose -f infra/docker/docker-compose.test.yml -f infra/docker/docker-compose.ci.yml up -d
 
       - name: Wait for backend container
         run: |
@@ -120,4 +130,4 @@ jobs:
 
       - name: Teardown
         if: always()
-        run: docker compose -f infra/docker/docker-compose.test.yml down -v
+        run: docker compose -f infra/docker/docker-compose.test.yml -f infra/docker/docker-compose.ci.yml down -v
