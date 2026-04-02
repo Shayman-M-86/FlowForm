@@ -93,8 +93,8 @@ jobs:
 
       - name: Generate env files
         run: |
-          chmod +x ./scripts/generate-env-files.sh
-          ./scripts/generate-env-files.sh
+          chmod +x ./infra/scripts/generate-env-files.sh
+          ./infra/scripts/generate-env-files.sh
 
       - name: Validate rendered Compose config
         run: docker compose -f "$COMPOSE_FILE" config > /tmp/docker-compose.rendered.yml
