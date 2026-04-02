@@ -55,8 +55,9 @@ jobs:
 
       - name: Export temp secret directory
         run: |
-          echo "FLOWFORM_SECRET_DIR=$RUNNER_TEMP/flowform-secrets" >> "$GITHUB_ENV"
-          mkdir -p "$RUNNER_TEMP/flowform-secrets"
+          SECRET_DIR="$RUNNER_TEMP/flowform-secrets"
+          echo "FLOWFORM_SECRET_DIR=$SECRET_DIR" >> "$GITHUB_ENV"
+          mkdir -p "$SECRET_DIR"
 
       - name: Export all vars
         env:
@@ -65,28 +66,36 @@ jobs:
           echo "$VARS_JSON" | jq -r 'to_entries[] | select(.value != "") | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
 
       - name: Generate test secret files
+        env:
+          DATABASE_CORE_INIT_PASSWORD: ${{ secrets.DATABASE_CORE_INIT_PASSWORD }}
+          DATABASE_CORE_APP_PASSWORD: ${{ secrets.DATABASE_CORE_APP_PASSWORD }}
+          DATABASE_RESPONSE_INIT_PASSWORD: ${{ secrets.DATABASE_RESPONSE_INIT_PASSWORD }}
+          DATABASE_RESPONSE_APP_PASSWORD: ${{ secrets.DATABASE_RESPONSE_APP_PASSWORD }}
+          FLOWFORM_APP_SECRET_KEY: ${{ secrets.FLOWFORM_APP_SECRET_KEY }}
         run: |
-          umask 077
+          set -eu
 
-          cat > "$FLOWFORM_SECRET_DIR/DATABASE_CORE_INIT_PASSWORD.test.secret.txt" <<'EOF'
-          ${{ secrets.DATABASE_CORE_INIT_PASSWORD }}
-          EOF
+          mkdir -p "$FLOWFORM_SECRET_DIR"
 
-          cat > "$FLOWFORM_SECRET_DIR/DATABASE_CORE_APP_PASSWORD.test.secret.txt" <<'EOF'
-          ${{ secrets.DATABASE_CORE_APP_PASSWORD }}
-          EOF
+          write_secret() {
+            name="$1"
+            value="$2"
+            file="$FLOWFORM_SECRET_DIR/${name}.test.secret.txt"
 
-          cat > "$FLOWFORM_SECRET_DIR/DATABASE_RESPONSE_INIT_PASSWORD.test.secret.txt" <<'EOF'
-          ${{ secrets.DATABASE_RESPONSE_INIT_PASSWORD }}
-          EOF
+            printf '%s' "$value" > "$file"
+          }
 
-          cat > "$FLOWFORM_SECRET_DIR/DATABASE_RESPONSE_APP_PASSWORD.test.secret.txt" <<'EOF'
-          ${{ secrets.DATABASE_RESPONSE_APP_PASSWORD }}
-          EOF
+          write_secret "DATABASE_CORE_INIT_PASSWORD" "$DATABASE_CORE_INIT_PASSWORD"
+          write_secret "DATABASE_CORE_APP_PASSWORD" "$DATABASE_CORE_APP_PASSWORD"
+          write_secret "DATABASE_RESPONSE_INIT_PASSWORD" "$DATABASE_RESPONSE_INIT_PASSWORD"
+          write_secret "DATABASE_RESPONSE_APP_PASSWORD" "$DATABASE_RESPONSE_APP_PASSWORD"
+          write_secret "FLOWFORM_APP_SECRET_KEY" "$FLOWFORM_APP_SECRET_KEY"
 
-          cat > "$FLOWFORM_SECRET_DIR/FLOWFORM_APP_SECRET_KEY.test.secret.txt" <<'EOF'
-          ${{ secrets.FLOWFORM_APP_SECRET_KEY }}
-          EOF
+          chmod 0444 "$FLOWFORM_SECRET_DIR"/*.secret.txt
+
+      - name: Debug secret file perms
+        run: |
+          ls -l "$FLOWFORM_SECRET_DIR"
 
       - name: Generate env files
         run: ./scripts/infra/generate-env-files.sh
