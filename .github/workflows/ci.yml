@@ -91,11 +91,16 @@ jobs:
           ${{ secrets.FLOWFORM_APP_SECRET_KEY }}
           EOF
 
+      - name: Make env generation script executable
+        run: chmod +x ./scripts/infra/generate-env-files.sh
+
+      - name: Generate env files
+        run: ./scripts/infra/generate-env-files.sh
 
       - name: Validate rendered Compose config
         run: docker compose -f infra/docker/docker-compose.test.yml config > /tmp/docker-compose.rendered.yml
 
-      - name: Make script executable
+      - name: Make test script executable
         run: chmod +x ./backend/scripts/run-tests-rebuild-teardown.sh
 
       - name: Run tests
