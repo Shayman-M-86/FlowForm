@@ -25,7 +25,8 @@ DB_RESPONSE_ENV="$DOCKER_DIR/.db.response.env"
 # ------------------------------------------------------------------
 BACKEND_VARS="
 FLOWFORM_ENV
-FLOWFORM_APP_SECRET_KEY_FILE
+
+
 FLOWFORM_AUTH0_DOMAIN
 FLOWFORM_AUTH0_AUDIENCE
 "
