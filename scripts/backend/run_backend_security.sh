@@ -5,12 +5,44 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 BACKEND_DIR="${PROJECT_ROOT}/backend"
 
+install_uv_if_missing() {
+  if command -v uv >/dev/null 2>&1; then
+    echo "==> uv already installed: $(uv --version)"
+    return
+  fi
+
+  echo "==> uv not found. Installing..."
+
+  export UV_UNMANAGED_INSTALL="${HOME}/.local/bin"
+  mkdir -p "${UV_UNMANAGED_INSTALL}"
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO- https://astral.sh/uv/install.sh | sh
+  else
+    echo "Error: neither curl nor wget is available, so uv cannot be installed." >&2
+    exit 1
+  fi
+
+  export PATH="${UV_UNMANAGED_INSTALL}:${PATH}"
+
+  if ! command -v uv >/dev/null 2>&1; then
+    echo "Error: uv installation completed, but uv is still not on PATH." >&2
+    exit 1
+  fi
+
+  echo "==> Installed uv: $(uv --version)"
+}
+
 cleanup() {
   echo "==> Uninstalling tools..."
   uv tool uninstall pip-audit bandit || true
 }
 
 trap cleanup EXIT
+
+install_uv_if_missing
 
 cd "${BACKEND_DIR}"
 
@@ -32,7 +64,6 @@ pip_audit_status=$?
 set -e
 
 echo "==> Running Bandit on app..."
-# Only report High severity + High confidence issues.
 set +e
 uvx bandit -r app -lll -iii
 bandit_app_status=$?
