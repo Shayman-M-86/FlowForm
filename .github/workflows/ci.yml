@@ -131,8 +131,7 @@ jobs:
           done
 
       - name: Run tests
-        run: docker exec "$BACKEND_CONTAINER" \
-          uv run pytest tests --cov=app --cov-report=xml:/app/coverage.xml
+        run: docker exec "$BACKEND_CONTAINER" uv run pytest tests --cov=app --cov-report=xml:/app/coverage.xml
 
       - name: Dump service logs
         if: failure()
