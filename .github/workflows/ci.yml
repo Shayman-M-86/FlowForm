@@ -30,9 +30,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Make security script executable
-        run: chmod +x ./scripts/backend/run_backend_security.sh
-
       - name: Run backend security checks
         run: ./scripts/backend/run_backend_security.sh
 
@@ -92,9 +89,7 @@ jobs:
           EOF
 
       - name: Generate env files
-        run: |
-          chmod +x ./infra/scripts/generate-env-files.sh
-          ./infra/scripts/generate-env-files.sh
+        run: ./scripts/infra/generate-env-files.sh
 
       - name: Validate rendered Compose config
         run: docker compose -f "$COMPOSE_FILE" config > /tmp/docker-compose.rendered.yml
