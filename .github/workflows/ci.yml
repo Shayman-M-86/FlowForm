@@ -59,12 +59,12 @@ jobs:
           echo "FLOWFORM_SECRET_DIR=$RUNNER_TEMP/flowform-secrets" >> "$GITHUB_ENV"
           mkdir -p "$RUNNER_TEMP/flowform-secrets"
 
-      - name: Export all vars
-        env:
-          VARS_JSON: ${{ toJSON(vars) }}
-        shell: bash
-        run: |
-          echo "$VARS_JSON" | jq -r 'to_entries[] | select(.value != "") | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
+      # - name: Export all vars
+      #   env:
+      #     VARS_JSON: ${{ toJSON(vars) }}
+      #   shell: bash
+      #   run: |
+      #     echo "$VARS_JSON" | jq -r 'to_entries[] | select(.value != "") | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
 
 
       - name: Generate test secret files
