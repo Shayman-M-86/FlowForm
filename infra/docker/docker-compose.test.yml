@@ -121,9 +121,6 @@ volumes:
 networks:
   flowform_net:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.50.0.0/16
 
 secrets:
   DATABASE_CORE_INIT_PASSWORD:
