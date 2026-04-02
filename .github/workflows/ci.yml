@@ -96,6 +96,12 @@ jobs:
 
       - name: Build and start test environment
         run: docker compose -f "$COMPOSE_FILE" up -d --build
+      
+      - name: Check coverage inside container
+        run: docker exec flowform-backend-test ls -lah /app
+      
+      - name: Find coverage files
+        run: docker exec flowform-backend-test find /app -name "*coverage*"
 
       - name: Wait for backend-test container
         run: |
@@ -116,7 +122,8 @@ jobs:
           done
 
       - name: Run tests
-        run: docker exec "$BACKEND_CONTAINER" uv run pytest tests/
+        run: docker exec "$BACKEND_CONTAINER" \
+          uv run pytest tests --cov=app --cov-report=xml:/app/coverage.xml
 
       - name: Dump service logs
         if: failure()
