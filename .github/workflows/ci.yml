@@ -66,13 +66,6 @@ jobs:
         run: |
           echo "$VARS_JSON" | jq -r 'to_entries[] | select(.value != "") | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
 
-      - name: Make scripts executable
-        run: |
-          chmod +x scripts/infra/scan-related-docs.sh
-          chmod +x backend/scripts/run-tests-fast.sh
-
-      - name: Scan related documents
-        run: bash scripts/infra/scan-related-docs.sh
 
       - name: Generate test secret files
         run: |
@@ -98,21 +91,15 @@ jobs:
           ${{ secrets.FLOWFORM_APP_SECRET_KEY }}
           EOF
 
-      - name: Build backend test image from cache
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: infra/docker/backend.test.Dockerfile
-          load: true
-          tags: flowform-backend-test:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Validate rendered Compose config
         run: docker compose -f infra/docker/docker-compose.test.yml config > /tmp/docker-compose.rendered.yml
 
+      - name: Make script executable
+        run: chmod +x ./backend/scripts/run-tests-rebuild-teardown.sh
+
       - name: Run tests
-        run: bash backend/scripts/run-tests-fast.sh
+        run: ./backend/scripts/run-tests-rebuild-teardown.sh
 
       - name: Upload coverage report
         if: always()
@@ -122,6 +109,16 @@ jobs:
           path: |
             backend/coverage.xml
             backend/.coverage
+          if-no-files-found: ignore
+
+      - name: Upload debug artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-debug-artifacts
+          path: |
+            /tmp/docker-compose.rendered.yml
+            backend/logs
           if-no-files-found: ignore
 
       - name: Upload debug artifacts on failure
