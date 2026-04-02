@@ -9,9 +9,43 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  security:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make security script executable
+        run: chmod +x ./scripts/backend/run_backend_security.sh
+
+      - name: Run backend security checks
+        run: ./scripts/backend/run_backend_security.sh
+
+
   test:
     runs-on: ubuntu-latest
+    needs: security
+    environment: test
+
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout
@@ -20,117 +54,86 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Create Docker secret files
+      - name: Export temp secret directory
         run: |
-          mkdir -p infra/docker/secrets
-          printf '%s' "$FF_PGDB_INIT_PASSWORD"         > infra/docker/secrets/FF_PGDB_INIT__PASSWORD.secret.txt
-          printf '%s' "$FF_PGDB_CORE_APP_PASSWORD"     > infra/docker/secrets/FF_PGDB_CORE__APP_PASSWORD.secret.txt
-          printf '%s' "$FF_PGDB_RESPONSE_APP_PASSWORD" > infra/docker/secrets/FF_PGDB_RESPONSE__APP_PASSWORD.secret.txt
+          echo "FLOWFORM_SECRET_DIR=$RUNNER_TEMP/flowform-secrets" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/flowform-secrets"
+
+      - name: Export all vars
         env:
-          FF_PGDB_INIT_PASSWORD: ${{ secrets.FF_PGDB_INIT_PASSWORD }}
-          FF_PGDB_CORE_APP_PASSWORD: ${{ secrets.FF_PGDB_CORE_APP_PASSWORD }}
-          FF_PGDB_RESPONSE_APP_PASSWORD: ${{ secrets.FF_PGDB_RESPONSE_APP_PASSWORD }}
-
-      - name: Create .env file
+          VARS_JSON: ${{ toJSON(vars) }}
+        shell: bash
         run: |
-          cat > infra/docker/.env << 'EOF'
-          FF_PGDB_INIT__USER="flowform-admin"
+          echo "$VARS_JSON" | jq -r 'to_entries[] | select(.value != "") | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
 
-          FF_PGDB_CORE_COMPOSE__HOST="postgres-core"
-          FF_PGDB_CORE_COMPOSE__PORT="5432"
-          FF_PGDB_CORE_COMPOSE__PUBLISHED_PORT="5432"
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/infra/scan-related-docs.sh
+          chmod +x backend/scripts/run-tests-fast.sh
 
-          FF_PGDB_RESPONSE_COMPOSE__HOST="postgres-response"
-          FF_PGDB_RESPONSE_COMPOSE__PORT="5432"
-          FF_PGDB_RESPONSE_COMPOSE__PUBLISHED_PORT="5433"
+      - name: Scan related documents
+        run: bash scripts/infra/scan-related-docs.sh
 
-          FF_PGDB_CORE__DB_NAME="flowform_core"
-          FF_PGDB_RESPONSE__DB_NAME="flowform_response"
+      - name: Generate test secret files
+        run: |
+          umask 077
 
-          FF_PGDB_CORE__APP_USER="flowform_core_app"
-          FF_PGDB_RESPONSE__APP_USER="flowform_response_app"
-
-          FF_PGDB_CORE__SCHEMA_FILE="schema/flowform_core_db_schema_v3.sql"
-          FF_PGDB_RESPONSE__SCHEMA_FILE="schema/flowform_response_db_schema_v3.sql"
+          cat > "$FLOWFORM_SECRET_DIR/DATABASE_CORE_INIT_PASSWORD.test.secret.txt" <<'EOF'
+          ${{ secrets.DATABASE_CORE_INIT_PASSWORD }}
           EOF
 
-      - name: Create .backend.env file
-        run: |
-          cat > infra/docker/.backend.env << EOF
-          FF_ENV=test
-
-          FF_APP__DEBUG=false
-          FF_APP__SECRET_KEY=${FF_APP_SECRET_KEY}
-
-          FF_AUTH0__DOMAIN=placeholder.auth0.com
-          FF_AUTH0__AUDIENCE=https://api.flowform.local
-
-          FF_LOGGING__LEVEL=INFO
-          FF_LOGGING__LOG_JSON=false
-          FF_LOGGING__LOG_FILE=logs/app.log
-          FF_LOGGING__REQUESTS=false
-          FF_LOGGING__DURATION=false
-
-          FF_PGDB_CORE__HOST=postgres-core
-          FF_PGDB_CORE__PORT=5432
-          FF_PGDB_CORE__NAME=flowform_core
-
-          FF_PGDB_RESPONSE__HOST=postgres-response
-          FF_PGDB_RESPONSE__PORT=5432
-          FF_PGDB_RESPONSE__NAME=flowform_response
+          cat > "$FLOWFORM_SECRET_DIR/DATABASE_CORE_APP_PASSWORD.test.secret.txt" <<'EOF'
+          ${{ secrets.DATABASE_CORE_APP_PASSWORD }}
           EOF
-        env:
-          FF_APP_SECRET_KEY: ${{ secrets.FF_APP_SECRET_KEY }}
 
-      - name: Build backend image (with layer cache)
+          cat > "$FLOWFORM_SECRET_DIR/DATABASE_RESPONSE_INIT_PASSWORD.test.secret.txt" <<'EOF'
+          ${{ secrets.DATABASE_RESPONSE_INIT_PASSWORD }}
+          EOF
+
+          cat > "$FLOWFORM_SECRET_DIR/DATABASE_RESPONSE_APP_PASSWORD.test.secret.txt" <<'EOF'
+          ${{ secrets.DATABASE_RESPONSE_APP_PASSWORD }}
+          EOF
+
+          cat > "$FLOWFORM_SECRET_DIR/FLOWFORM_APP_SECRET_KEY.test.secret.txt" <<'EOF'
+          ${{ secrets.FLOWFORM_APP_SECRET_KEY }}
+          EOF
+
+      - name: Build backend test image from cache
         uses: docker/build-push-action@v6
         with:
           context: .
           file: infra/docker/backend.test.Dockerfile
           load: true
-          tags: flowform-test-environment-backend-test:latest
+          tags: flowform-backend-test:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Start test environment
-        run: docker compose -f infra/docker/docker-compose.test.yml up -d
-
-      - name: Wait for backend container
-        run: |
-          CONTAINER="flowform-backend-test"
-          WAIT_TIMEOUT=120
-          WAIT_ELAPSED=0
-
-          until [ "$(docker inspect -f '{{.State.Status}}' "${CONTAINER}" 2>/dev/null)" = "running" ]; do
-            STATUS="$(docker inspect -f '{{.State.Status}}' "${CONTAINER}" 2>/dev/null)"
-
-            if [ "${STATUS}" = "exited" ] || [ "${STATUS}" = "dead" ]; then
-              echo "ERROR: Container '${CONTAINER}' entered terminal state '${STATUS}'."
-              docker logs "${CONTAINER}" 2>&1 || true
-              exit 1
-            fi
-
-            if [ "${WAIT_ELAPSED}" -ge "${WAIT_TIMEOUT}" ]; then
-              echo "ERROR: Timed out after ${WAIT_TIMEOUT}s waiting for '${CONTAINER}' (state: '${STATUS}')."
-              docker logs "${CONTAINER}" 2>&1 || true
-              exit 1
-            fi
-
-            sleep 1
-            WAIT_ELAPSED=$((WAIT_ELAPSED + 1))
-          done
+      - name: Validate rendered Compose config
+        run: docker compose -f infra/docker/docker-compose.test.yml config > /tmp/docker-compose.rendered.yml
 
       - name: Run tests
-        run: docker exec flowform-backend-test uv run pytest tests/ --cov --cov-report=xml
+        run: bash backend/scripts/run-tests-fast.sh
 
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: backend/coverage.xml
+          path: |
+            backend/coverage.xml
+            backend/.coverage
+          if-no-files-found: ignore
+
+      - name: Upload debug artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-debug-artifacts
+          path: |
+            /tmp/docker-compose.rendered.yml
+            backend/logs
           if-no-files-found: ignore
 
       - name: Teardown
         if: always()
-        run: docker compose -f infra/docker/docker-compose.test.yml down -v
+        run: docker compose -f infra/docker/docker-compose.test.yml down -v --remove-orphans

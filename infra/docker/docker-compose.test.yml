@@ -15,7 +15,7 @@ services:
 
       DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
     ports:
-      - "127.0.0.1:5432}:${DATABASE_CORE_PORT}"
+      - "127.0.0.1:5432:${DATABASE_CORE_PORT}"
     command: [
       "postgres", 
       "-c", "password_encryption=scram-sha-256", 
@@ -127,12 +127,12 @@ networks:
 
 secrets:
   DATABASE_CORE_INIT_PASSWORD:
-    file: ./secrets/DATABASE_CORE_INIT_PASSWORD.test.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_CORE_INIT_PASSWORD.test.secret.txt
   DATABASE_CORE_APP_PASSWORD:
-    file: ./secrets/DATABASE_CORE_APP_PASSWORD.test.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_CORE_APP_PASSWORD.test.secret.txt
   DATABASE_RESPONSE_INIT_PASSWORD:
-    file: ./secrets/DATABASE_RESPONSE_INIT_PASSWORD.test.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_INIT_PASSWORD.test.secret.txt
   DATABASE_RESPONSE_APP_PASSWORD:
-    file: ./secrets/DATABASE_RESPONSE_APP_PASSWORD.test.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_APP_PASSWORD.test.secret.txt
   FLOWFORM_APP_SECRET_KEY:
-    file: ./secrets/FLOWFORM_APP_SECRET_KEY.test.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_APP_SECRET_KEY.test.secret.txt

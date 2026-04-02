@@ -134,14 +134,12 @@ networks:
 
 secrets:
   DATABASE_CORE_INIT_PASSWORD:
-    file: ./secrets/DATABASE_CORE_INIT_PASSWORD.dev.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_CORE_INIT_PASSWORD.dev.secret.txt
   DATABASE_CORE_APP_PASSWORD:
-    file: ./secrets/DATABASE_CORE_APP_PASSWORD.dev.secret.txt
-
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_CORE_APP_PASSWORD.dev.secret.txt
   DATABASE_RESPONSE_INIT_PASSWORD:
-    file: ./secrets/DATABASE_RESPONSE_INIT_PASSWORD.dev.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_INIT_PASSWORD.dev.secret.txt
   DATABASE_RESPONSE_APP_PASSWORD:
-    file: ./secrets/DATABASE_RESPONSE_APP_PASSWORD.dev.secret.txt
-
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_APP_PASSWORD.dev.secret.txt
   FLOWFORM_APP_SECRET_KEY:
-    file: ./secrets/FLOWFORM_APP_SECRET_KEY.dev.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_APP_SECRET_KEY.dev.secret.txt
