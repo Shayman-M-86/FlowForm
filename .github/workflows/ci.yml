@@ -8,6 +8,8 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  COMPOSE_FILE: infra/docker/docker-compose.test.yml
+  BACKEND_CONTAINER: flowform-backend-test
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -62,10 +64,8 @@ jobs:
       - name: Export all vars
         env:
           VARS_JSON: ${{ toJSON(vars) }}
-        shell: bash
         run: |
           echo "$VARS_JSON" | jq -r 'to_entries[] | select(.value != "") | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
-
 
       - name: Generate test secret files
         run: |
@@ -91,20 +91,41 @@ jobs:
           ${{ secrets.FLOWFORM_APP_SECRET_KEY }}
           EOF
 
-      - name: Make env generation script executable
-        run: chmod +x ./scripts/infra/generate-env-files.sh
-
       - name: Generate env files
-        run: ./scripts/infra/generate-env-files.sh
+        run: |
+          chmod +x ./scripts/generate-env-files.sh
+          ./scripts/generate-env-files.sh
 
       - name: Validate rendered Compose config
-        run: docker compose -f infra/docker/docker-compose.test.yml config > /tmp/docker-compose.rendered.yml
+        run: docker compose -f "$COMPOSE_FILE" config > /tmp/docker-compose.rendered.yml
 
-      - name: Make test script executable
-        run: chmod +x ./backend/scripts/run-tests-rebuild-teardown.sh
+      - name: Build and start test environment
+        run: docker compose -f "$COMPOSE_FILE" up -d --build
+
+      - name: Wait for backend-test container
+        run: |
+          WAIT_TIMEOUT=120
+          WAIT_ELAPSED=0
+          until [ "$(docker inspect -f '{{.State.Status}}' "$BACKEND_CONTAINER" 2>/dev/null)" = "running" ]; do
+            STATUS="$(docker inspect -f '{{.State.Status}}' "$BACKEND_CONTAINER" 2>/dev/null)"
+            if [ "${STATUS}" = "exited" ] || [ "${STATUS}" = "dead" ]; then
+              echo "ERROR: Container '$BACKEND_CONTAINER' entered terminal state '${STATUS}'."
+              exit 1
+            fi
+            if [ "${WAIT_ELAPSED}" -ge "${WAIT_TIMEOUT}" ]; then
+              echo "ERROR: Timed out after ${WAIT_TIMEOUT}s waiting for '$BACKEND_CONTAINER' (state: '${STATUS}')."
+              exit 1
+            fi
+            sleep 1
+            WAIT_ELAPSED=$((WAIT_ELAPSED + 1))
+          done
 
       - name: Run tests
-        run: ./backend/scripts/run-tests-rebuild-teardown.sh
+        run: docker exec "$BACKEND_CONTAINER" uv run pytest tests/
+
+      - name: Dump service logs
+        if: failure()
+        run: docker compose -f "$COMPOSE_FILE" logs --no-color
 
       - name: Upload coverage report
         if: always()
@@ -116,17 +137,7 @@ jobs:
             backend/.coverage
           if-no-files-found: ignore
 
-      - name: Upload debug artifacts on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ci-debug-artifacts
-          path: |
-            /tmp/docker-compose.rendered.yml
-            backend/logs
-          if-no-files-found: ignore
-
-      - name: Upload debug artifacts on failure
+      - name: Upload debug artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -138,4 +149,4 @@ jobs:
 
       - name: Teardown
         if: always()
-        run: docker compose -f infra/docker/docker-compose.test.yml down -v --remove-orphans
+        run: docker compose -f "$COMPOSE_FILE" down -v --remove-orphans

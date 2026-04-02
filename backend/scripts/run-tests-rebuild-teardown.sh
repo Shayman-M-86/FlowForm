@@ -21,10 +21,20 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../" && pwd)"
 
 cd "${PROJECT_ROOT}"
 
+dump_all_logs() {
+  echo "==> Logs from all services:"
+  docker compose -f "${COMPOSE_FILE}" logs --no-color 2>&1 || true
+}
+
+_failed=0
 teardown() {
+  if [ "${_failed}" -eq 1 ]; then
+    dump_all_logs
+  fi
   echo "==> Tearing down test environment..."
   docker compose -f "${COMPOSE_FILE}" down -v
 }
+trap '_failed=1' ERR
 trap teardown EXIT
 
 echo "==> Starting test environment..."
@@ -37,14 +47,10 @@ until [ "$(docker inspect -f '{{.State.Status}}' "${CONTAINER}" 2>/dev/null)" = 
   STATUS="$(docker inspect -f '{{.State.Status}}' "${CONTAINER}" 2>/dev/null)"
   if [ "${STATUS}" = "exited" ] || [ "${STATUS}" = "dead" ]; then
     echo "ERROR: Container '${CONTAINER}' entered terminal state '${STATUS}'."
-    echo "==> Container logs:"
-    docker logs "${CONTAINER}" 2>&1 || true
     exit 1
   fi
   if [ "${WAIT_ELAPSED}" -ge "${WAIT_TIMEOUT}" ]; then
     echo "ERROR: Timed out after ${WAIT_TIMEOUT}s waiting for container '${CONTAINER}' to start (current state: '${STATUS}')."
-    echo "==> Container logs:"
-    docker logs "${CONTAINER}" 2>&1 || true
     exit 1
   fi
   sleep 1
