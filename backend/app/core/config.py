@@ -30,11 +30,7 @@ class DatabaseSettings(BaseModel):
 
     @model_validator(mode="after")
     def load_password_from_file(self) -> DatabaseSettings:
-        """Load the database password from a mounted secret file when provided.
-
-        Raises:
-            ValueError: If the password file is not found.
-        """
+        """Load the database password from a mounted secret file when provided."""
         if self.password is not None or self.app_password_file is None:
             return self
 
@@ -47,11 +43,7 @@ class DatabaseSettings(BaseModel):
 
     @model_validator(mode="after")
     def validate_and_build_url(self) -> DatabaseSettings:
-        """Build a database URL from individual parts when ``url`` is not set.
-
-        Raises:
-            ValueError: If required connection parts are missing.
-        """
+        """Build a database URL from individual parts when ``url`` is not set."""
         if self.url:
             return self
 
@@ -65,13 +57,10 @@ class DatabaseSettings(BaseModel):
 
         missing = [key for key, value in required_parts.items() if value is None]
         if missing:
-            raise ValueError(
-                f"Provide either database.url or all database parts. Missing: {', '.join(missing)}"
-            )
+            raise ValueError(f"Provide either database.url or all database parts. Missing: {', '.join(missing)}")
 
         self.url = (
-            f"{self.scheme}://{self.app_user}:{self.password.get_secret_value()}"  # type: ignore
-            f"@{self.host}:{self.port}/{self.name}"
+            f"{self.scheme}://{self.app_user}:{self.password.get_secret_value()}@{self.host}:{self.port}/{self.name}" # type: ignore
         )
         return self
 
@@ -95,7 +84,7 @@ class AppSettings(BaseModel):
 
     debug: bool = False
     secret_key: SecretStr | None = None
-    secret_key_file: str 
+    secret_key_file: str
 
     @model_validator(mode="after")
     def load_secret_key_from_file(self) -> AppSettings:
@@ -105,11 +94,7 @@ class AppSettings(BaseModel):
             ValueError: If the secret key file is not found.
         """
         secret_key_path = Path(self.secret_key_file)
-        logger.critical(f"Loading secret key from file: {secret_key_path}")
-        logger.critical(f"Secret key file exists: {secret_key_path.is_file()}")
-        logger.critical(
-            f"Secret key file content preview: {secret_key_path.read_text(encoding='utf-8').strip()[:10]}..."
-        )  # type: ignore
+
         if not secret_key_path.is_file():
             raise ValueError(f"Secret key file not found: {self.secret_key_file}")
 
@@ -149,19 +134,19 @@ class FlowForm(BaseModel):
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
 
+
 class DataBase(BaseModel):
     """Database configuration for the application."""
 
     core: DatabaseSettings = Field(default_factory=DatabaseSettings)
     response: DatabaseSettings = Field(default_factory=DatabaseSettings)
 
+
 class Settings(BaseSettings):
     """Top-level application settings loaded from environment variables."""
 
     flowform: FlowForm
     database: DataBase
-
-
 
     model_config = SettingsConfigDict(
         env_nested_delimiter="_",
@@ -170,18 +155,52 @@ class Settings(BaseSettings):
     )
 
 
+def _loc_to_path(loc: tuple[str | int, ...]) -> str:
+    """Convert a Pydantic error location to a readable dot path."""
+    path = ""
+
+    for i, part in enumerate(loc):
+        if isinstance(part, str):
+            if i > 0:
+                path += "."
+            path += part
+        else:
+            path += f"[{part}]"
+
+    return path
+
+
+def _loc_to_env_var(loc: tuple[str | int, ...]) -> str | None:
+    """Best-effort conversion of a nested location to its env var name."""
+    parts = [part.upper() for part in loc if isinstance(part, str)]
+    if not parts:
+        return None
+    return "_".join(parts)
+
+
+def _format_settings_validation_error(exc: ValidationError) -> str:
+    """Format settings validation errors into a clearer multi-line message."""
+    lines = ["Invalid application configuration:"]
+
+    for error in exc.errors():
+        loc = tuple(error.get("loc", ()))
+        path = _loc_to_path(loc)
+        env_var = _loc_to_env_var(loc)
+        msg = error.get("msg", "Invalid value")
+
+        if env_var:
+            lines.append(f"- {path}: {msg} (env: {env_var})")
+        else:
+            lines.append(f"- {path}: {msg}")
+
+    return "\n".join(lines)
+
+
 @lru_cache
 def get_settings() -> Settings:
-    """Load application settings from environment variables.
-
-    Raises:
-        ConfigError: If configuration is invalid or the environment name is unsupported.
-
-    Returns:
-        Loaded application settings.
-    """
+    """Load application settings from environment variables."""
     env = os.getenv("FLOWFORM_ENV")
-    # try:
+
     if env is None:
         raise ConfigError(
             "FLOWFORM_ENV is required and must be one of: dev, test, prod. "
@@ -193,27 +212,20 @@ def get_settings() -> Settings:
         raise ConfigError("FLOWFORM_ENV must be one of: dev, test, prod")
 
     logger.info("Loading settings for env=%s from environment variables", env)
-    settings = cast(Any, Settings)()
+
+    try:
+        settings = cast(Any, Settings)()
+    except ValidationError as exc:
+        formatted = _format_settings_validation_error(exc)
+        logger.critical(formatted)
+        raise ConfigError(formatted) from exc
 
     logger.info("Settings loaded for env=%s", settings.flowform.env)
     return settings
 
-    # except ValidationError as exc:
-    #     logger.critical("Configuration error: %s", exc)
-    #     raise ConfigError(f"Invalid application configuration {exc}") from exc
-
-    # except ConfigError as exc:
-    #     logger.critical("Configuration error: %s", exc)
-    #     raise
-
 
 def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
-    """Apply loaded settings to a Flask application.
-
-    Args:
-        app: Flask application instance.
-        settings: Application settings to apply.
-    """
+    """Apply loaded settings to a Flask application."""
     mapping = {
         "ENV_NAME": settings.flowform.env,
         "DEBUG": settings.flowform.app.debug,
@@ -236,7 +248,7 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
 
     app.extensions["settings"] = settings
     app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
-    logger.info(f"SQLALCHEMY_BINDS: {app.config.get('SQLALCHEMY_BINDS')}")
+    logger.info("SQLALCHEMY_BINDS: %s", app.config.get("SQLALCHEMY_BINDS"))
 
 
 def current_settings() -> Settings:

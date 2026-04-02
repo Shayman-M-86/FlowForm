@@ -79,4 +79,6 @@ cover/
 .claude/project-status.md
 
 # Secrets
-*.secret.txt
+*test.secret.txt
+*prod.secret.txt
+*dev.secret.txt
