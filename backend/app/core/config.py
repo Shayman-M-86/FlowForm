@@ -254,7 +254,6 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
         "ENV_NAME": settings.flowform.env,
         "DEBUG": settings.flowform.app.debug,
         "SECRET_KEY": settings.flowform.app.secret_key,
-        "SQLALCHEMY_DATABASE_URI": settings.database.core.url,
         "AUTH0_DOMAIN": settings.flowform.auth0.domain,
         "AUTH0_AUDIENCE": settings.flowform.auth0.audience,
         "HOST": settings.flowform.server.host,
@@ -267,12 +266,8 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
             value = value.get_secret_value()
         app.config[key] = value
 
-    if settings.database.response and settings.database.response.url:
-        app.config["SQLALCHEMY_BINDS"] = {"response": settings.database.response.url}
 
     app.extensions["settings"] = settings
-    app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
-    logger.info("SQLALCHEMY_BINDS: %s", app.config.get("SQLALCHEMY_BINDS"))
 
 
 def current_settings() -> Settings:

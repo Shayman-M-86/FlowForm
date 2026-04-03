@@ -18,6 +18,14 @@ class DatabaseManager:
         self._response_sessionmaker: sessionmaker[Session] | None = None
 
     def init_app(self, app: Flask) -> None:
+        """Initialize the database manager with the Flask application context.
+
+        This method sets up the database engines and sessionmakers for both
+        core and response databases based on the application's settings.
+
+        Raises:
+            InitializationError: If the settings are not properly configured.
+        """
         try:
             settings: Settings = app.extensions["settings"]
         except KeyError as err:
@@ -28,12 +36,10 @@ class DatabaseManager:
         self.core_engine = create_engine(
             settings.database.core.url,
             pool_pre_ping=True,
-            future=True,
         )
         self.response_engine = create_engine(
             settings.database.response.url,
             pool_pre_ping=True,
-            future=True,
         )
 
         self._core_sessionmaker = sessionmaker(
