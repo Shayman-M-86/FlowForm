@@ -7,8 +7,8 @@ from psycopg.errors import CheckViolation, ForeignKeyViolation, NotNullViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
-from app.models.core.project import Project, ProjectMembership, ProjectRole
-from app.models.core.user import User
+from app.schema.orm.core.project import Project, ProjectMembership, ProjectRole
+from app.schema.orm.core.user import User
 from tests.integration.core.factories import make_project, make_project_role, make_user
 
 # ---------------------------------------------------------------------------

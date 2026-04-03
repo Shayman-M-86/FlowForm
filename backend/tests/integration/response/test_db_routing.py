@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.extensions import db_manager
 from app.db.base import ResponseBase
-from app.models.response import Submission, SubmissionAnswer, SubmissionEvent
+from app.schema.orm.response import Submission, SubmissionAnswer, SubmissionEvent
 
 
 def assert_model_uses_response_db(

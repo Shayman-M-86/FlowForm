@@ -3,13 +3,13 @@ from __future__ import annotations
 import hashlib
 import secrets
 
-from app.models.core.audit_log import AuditLog
-from app.models.core.project import Project, ProjectRole
-from app.models.core.response_store import ResponseStore
-from app.models.core.survey import Survey, SurveyVersion
-from app.models.core.survey_access import SurveyPublicLink, SurveyRole
-from app.models.core.survey_content import SurveyQuestion, SurveyRule, SurveyScoringRule
-from app.models.core.user import User
+from app.schema.orm.core.audit_log import AuditLog
+from app.schema.orm.core.project import Project, ProjectRole
+from app.schema.orm.core.response_store import ResponseStore
+from app.schema.orm.core.survey import Survey, SurveyVersion
+from app.schema.orm.core.survey_access import SurveyPublicLink, SurveyRole
+from app.schema.orm.core.survey_content import SurveyQuestion, SurveyRule, SurveyScoringRule
+from app.schema.orm.core.user import User
 
 
 def make_token_pair() -> tuple[str, str, str]:

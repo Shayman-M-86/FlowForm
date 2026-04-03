@@ -7,8 +7,8 @@ from psycopg.errors import CheckViolation, NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
-from app.models.core.survey import SurveyVersion
-from app.models.core.survey_content import SurveyQuestion, SurveyRule, SurveyScoringRule
+from app.schema.orm.core.survey import SurveyVersion
+from app.schema.orm.core.survey_content import SurveyQuestion, SurveyRule, SurveyScoringRule
 from tests.integration.core.factories import (
     make_survey_question,
     make_survey_rule,

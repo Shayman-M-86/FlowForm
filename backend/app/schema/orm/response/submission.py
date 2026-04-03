@@ -9,8 +9,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import ResponseBase
 
 if TYPE_CHECKING:
-    from app.models.response.submission_answer import SubmissionAnswer
-    from app.models.response.submission_event import SubmissionEvent
+    from app.schema.orm.response.submission_answer import SubmissionAnswer
+    from app.schema.orm.response.submission_event import SubmissionEvent
 
 
 class Submission(ResponseBase):

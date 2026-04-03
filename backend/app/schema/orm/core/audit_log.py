@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import CoreBase
 
 if TYPE_CHECKING:
-    from app.models.core.user import User
+    from app.schema.orm.core.user import User
 
 
 class AuditLog(CoreBase):

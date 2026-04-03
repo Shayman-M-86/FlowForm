@@ -8,7 +8,7 @@ from psycopg.errors import CheckViolation, NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
-from app.models.response.submission import Submission
+from app.schema.orm.response.submission import Submission
 from tests.integration.response.factories import make_submission
 
 # ---------------------------------------------------------------------------

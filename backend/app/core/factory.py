@@ -32,6 +32,6 @@ def create_app(
     register_api_v1(app)
     register_rate_limiting(app, resolved_settings)
     
-    import app.models as _  # noqa: F401 - Ensure models are registered with SQLAlchemy before migrations
+    import app.schema.orm as _  # noqa: F401 - Ensure models are registered with SQLAlchemy before migrations
 
     return app

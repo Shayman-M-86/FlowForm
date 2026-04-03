@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from sqlalchemy.orm import Session, scoped_session
 
-from app.models.core import Project, ProjectRole, ResponseStore, Survey, SurveyVersion, User
+from app.schema.orm.core import Project, ProjectRole, ResponseStore, Survey, SurveyVersion, User
 from tests.integration.core.factories import (
     make_project,
     make_project_role,

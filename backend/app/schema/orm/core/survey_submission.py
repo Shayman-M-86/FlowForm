@@ -2,14 +2,25 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint, Index, Text, func, text
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Index,
+    Text,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 
 if TYPE_CHECKING:
-    from app.models.core.user import User
+    from app.schema.orm.core.user import User
 
 
 class SurveySubmission(CoreBase):
@@ -38,7 +49,9 @@ class SurveySubmission(CoreBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
-        CheckConstraint("submission_channel IN ('authenticated', 'public_link', 'system')", name="submission_channel_valid"),
+        CheckConstraint(
+            "submission_channel IN ('authenticated', 'public_link', 'system')", name="submission_channel_valid"
+        ),
         CheckConstraint("status IN ('pending', 'stored', 'failed')", name="status_valid"),
         CheckConstraint(
             "submitted_at IS NULL OR started_at IS NULL OR submitted_at >= started_at",
@@ -58,8 +71,12 @@ class SurveySubmission(CoreBase):
         ),
         CheckConstraint("NOT is_anonymous OR submitted_by_user_id IS NULL", name="anonymous_has_no_user"),
         CheckConstraint("NOT is_anonymous OR pseudonymous_subject_id IS NULL", name="anonymous_has_no_subject"),
-        CheckConstraint("submission_channel <> 'authenticated' OR public_link_id IS NULL", name="authenticated_has_no_link"),
-        CheckConstraint("submission_channel <> 'public_link' OR submitted_by_user_id IS NULL", name="public_link_has_no_user"),
+        CheckConstraint(
+            "submission_channel <> 'authenticated' OR public_link_id IS NULL", name="authenticated_has_no_link"
+        ),
+        CheckConstraint(
+            "submission_channel <> 'public_link' OR submitted_by_user_id IS NULL", name="public_link_has_no_user"
+        ),
         ForeignKeyConstraint(
             ["project_id", "survey_id"],
             ["surveys.project_id", "surveys.id"],

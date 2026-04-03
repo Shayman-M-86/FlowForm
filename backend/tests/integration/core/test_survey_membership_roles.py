@@ -7,10 +7,10 @@ from psycopg.errors import ForeignKeyViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
-from app.models.core.project import Project, ProjectMembership
-from app.models.core.survey import Survey
-from app.models.core.survey_access import SurveyMembershipRole
-from app.models.core.user import User
+from app.schema.orm.core.project import Project, ProjectMembership
+from app.schema.orm.core.survey import Survey
+from app.schema.orm.core.survey_access import SurveyMembershipRole
+from app.schema.orm.core.user import User
 from tests.integration.core.factories import make_project, make_survey, make_survey_role, make_user
 
 

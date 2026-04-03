@@ -4,7 +4,7 @@ from __future__ import annotations
 from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, inspect
 from sqlalchemy.orm import configure_mappers
 
-from app.models.core import (
+from app.schema.orm.core import (
     AuditLog,
     Project,
     ProjectMembership,
@@ -24,7 +24,7 @@ from app.models.core import (
     project_role_permissions,
     survey_role_permissions,
 )
-from app.models.response import Submission, SubmissionAnswer, SubmissionEvent
+from app.schema.orm.response import Submission, SubmissionAnswer, SubmissionEvent
 
 
 def get_relationship(model, name: str):

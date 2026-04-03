@@ -51,14 +51,14 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session, scoped_session
 
-from app.models.core.project import Project
-from app.models.core.response_store import ResponseStore
-from app.models.core.response_subject_mapping import ResponseSubjectMapping
-from app.models.core.survey import Survey, SurveyVersion
-from app.models.core.survey_submission import SurveySubmission
-from app.models.core.user import User
-from app.models.response.submission import Submission
-from app.models.response.submission_answer import SubmissionAnswer
+from app.schema.orm.core.project import Project
+from app.schema.orm.core.response_store import ResponseStore
+from app.schema.orm.core.response_subject_mapping import ResponseSubjectMapping
+from app.schema.orm.core.survey import Survey, SurveyVersion
+from app.schema.orm.core.survey_submission import SurveySubmission
+from app.schema.orm.core.user import User
+from app.schema.orm.response.submission import Submission
+from app.schema.orm.response.submission_answer import SubmissionAnswer
 
 
 def test_core_submission_links_to_response_submission(

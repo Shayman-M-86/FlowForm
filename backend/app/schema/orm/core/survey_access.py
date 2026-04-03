@@ -21,8 +21,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import CoreBase
 
 if TYPE_CHECKING:
-    from app.models.core.permission import Permission
-    from app.models.core.survey import Survey
+    from app.schema.orm.core.permission import Permission
+    from app.schema.orm.core.survey import Survey
 
 # Pure join table — no extra columns
 survey_role_permissions = Table(

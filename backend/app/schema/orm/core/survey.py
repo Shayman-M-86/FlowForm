@@ -19,10 +19,10 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
-from app.models.base import TimestampMixin
+from app.schema.orm.base import TimestampMixin
 
 if TYPE_CHECKING:
-    from app.models.core.user import User
+    from app.schema.orm.core.user import User
 
 
 class Survey(TimestampMixin, CoreBase):

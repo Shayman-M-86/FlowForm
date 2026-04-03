@@ -7,8 +7,8 @@ from psycopg.errors import CheckViolation, NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
-from app.models.core.survey import Survey
-from app.models.core.survey_access import SurveyPublicLink
+from app.schema.orm.core.survey import Survey
+from app.schema.orm.core.survey_access import SurveyPublicLink
 from tests.integration.core.factories import make_token_pair
 
 

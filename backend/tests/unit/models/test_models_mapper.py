@@ -12,7 +12,7 @@ from sqlalchemy.orm import Mapper, configure_mappers
 
 def test_configure_mappers_no_errors() -> None:
     """All models can be fully mapped without circular dependency errors."""
-    import app.models  # noqa: F401 — registers all mappers
+    import app.schema.orm  # noqa: F401 — registers all mappers
 
     # Raises if any relationship target is unresolvable or the mapper graph is broken
     configure_mappers()
@@ -21,11 +21,11 @@ def test_configure_mappers_no_errors() -> None:
 
 def test_survey_version_cycle_relationships_resolve() -> None:
     """Survey.versions, Survey.published_version, and SurveyVersion.survey all resolve."""
-    import app.models  # noqa: F401
+    import app.schema.orm  # noqa: F401
 
     configure_mappers()
 
-    from app.models import Survey, SurveyVersion
+    from app.schema.orm import Survey, SurveyVersion
 
     survey_mapper = cast(Mapper[Any], inspect(Survey))
     version_mapper = cast(Mapper[Any], inspect(SurveyVersion))

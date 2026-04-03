@@ -7,9 +7,9 @@ from psycopg.errors import NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
-from app.models.core.project import Project
-from app.models.core.survey_access import SurveyRole
-from app.models.core.user import User
+from app.schema.orm.core.project import Project
+from app.schema.orm.core.survey_access import SurveyRole
+from app.schema.orm.core.user import User
 from tests.integration.core.factories import make_project, make_survey_role
 
 

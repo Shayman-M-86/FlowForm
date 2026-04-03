@@ -6,10 +6,10 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
-from app.models.core.project import Project
-from app.models.core.survey import Survey, SurveyVersion
-from app.models.core.survey_content import SurveyQuestion
-from app.models.core.user import User
+from app.schema.orm.core.project import Project
+from app.schema.orm.core.survey import Survey, SurveyVersion
+from app.schema.orm.core.survey_content import SurveyQuestion
+from app.schema.orm.core.user import User
 from tests.integration.core.factories import make_survey_question
 
 

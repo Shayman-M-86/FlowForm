@@ -1,4 +1,4 @@
-from app.models.core import (
+from app.schema.orm.core import (
     AuditLog,
     Permission,
     Project,
@@ -19,7 +19,7 @@ from app.models.core import (
     project_role_permissions,
     survey_role_permissions,
 )
-from app.models.response import Submission, SubmissionAnswer, SubmissionEvent
+from app.schema.orm.response import Submission, SubmissionAnswer, SubmissionEvent
 
 __all__ = [
     "AuditLog",

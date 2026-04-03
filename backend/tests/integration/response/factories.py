@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 
-from app.models.response import Submission, SubmissionAnswer, SubmissionEvent
+from app.schema.orm.response import Submission, SubmissionAnswer, SubmissionEvent
 
 
 def make_submission(

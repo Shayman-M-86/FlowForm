@@ -9,8 +9,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import CoreBase
 
 if TYPE_CHECKING:
-    from app.models.core.project import Project
-    from app.models.core.user import User
+    from app.schema.orm.core.project import Project
+    from app.schema.orm.core.user import User
 
 
 class ResponseSubjectMapping(CoreBase):
@@ -27,7 +27,11 @@ class ResponseSubjectMapping(CoreBase):
     __table_args__ = (
         UniqueConstraint("project_id", "id", name="uq_response_subject_mappings_project_id_id"),
         UniqueConstraint("project_id", "user_id", name="uq_response_subject_mappings_project_id_user_id"),
-        UniqueConstraint("project_id", "pseudonymous_subject_id", name="uq_response_subject_mappings_project_id_pseudonymous_subject_id"),
+        UniqueConstraint(
+            "project_id",
+            "pseudonymous_subject_id",
+            name="uq_response_subject_mappings_project_id_pseudonymous_subject_id",
+        ),
     )
 
     project: Mapped[Project] = relationship("Project", foreign_keys=[project_id])
