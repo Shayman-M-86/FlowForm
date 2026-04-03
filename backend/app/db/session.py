@@ -25,10 +25,7 @@ def close_request_sessions(exception: Exception | None = None) -> None:
 
 def init_db_sessions(app) -> None:
     """Initialize database sessions for each request."""
-    @app.before_request
-    def _open_sessions() -> None:
-        open_request_sessions()
-    
-    @app.teardown_request
-    def _close_sessions(exception=None) -> None:
-        close_request_sessions(exception)
+    app.before_request(open_request_sessions)
+    app.teardown_request(close_request_sessions)
+
+    app.teardown_request(close_request_sessions)
