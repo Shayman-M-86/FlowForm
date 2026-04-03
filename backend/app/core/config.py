@@ -7,7 +7,15 @@ from pathlib import Path
 from typing import Any, Literal, cast
 
 from flask import Flask, current_app
-from pydantic import BaseModel, Field, SecretStr, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    SecretStr,
+    ValidationError,
+    computed_field,
+    model_validator,
+)
+from pydantic.networks import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core.error import ConfigError
@@ -18,11 +26,11 @@ logger = logging.getLogger(__name__)
 class DatabaseSettings(BaseModel):
     """Database connection settings for the application."""
 
-    url: str | None = None
+    url_value: PostgresDsn | None = Field(default=None, validation_alias="url")
 
     app_user: str | None = None
     host: str | None = None
-    port: int | None = 5432
+    port: int = 5432
     name: str | None = None
     password: SecretStr | None = None
     app_password_file: str | None = None
@@ -42,27 +50,43 @@ class DatabaseSettings(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def validate_and_build_url(self) -> DatabaseSettings:
-        """Build a database URL from individual parts when ``url`` is not set."""
-        if self.url:
+    def validate_database_config(self) -> DatabaseSettings:
+        """Require either a full URL or all URL parts."""
+        if self.url_value is not None:
             return self
 
         required_parts = {
             "app_user": self.app_user,
             "password": self.password,
             "host": self.host,
-            "port": self.port,
             "name": self.name,
         }
 
         missing = [key for key, value in required_parts.items() if value is None]
         if missing:
-            raise ValueError(f"Provide either database.url or all database parts. Missing: {', '.join(missing)}")
+            raise ValueError(
+                "Provide either database.url or all database parts. "
+                f"Missing: {', '.join(missing)}"
+            )
 
-        self.url = (
-            f"{self.scheme}://{self.app_user}:{self.password.get_secret_value()}@{self.host}:{self.port}/{self.name}" # type: ignore
-        )
         return self
+
+    @computed_field
+    @property
+    def dsn_url(self) -> PostgresDsn:
+        """Return the final validated database URL."""
+        if self.url_value is not None:
+            return self.url_value
+
+        return PostgresDsn(
+            f"{self.scheme}://"
+            f"{self.app_user}:{self.password.get_secret_value()}"  # type: ignore
+            f"@{self.host}:{self.port}/{self.name}"
+        )
+    
+    @property
+    def url(self) -> str:
+        return str(self.dsn_url)
 
 
 class ServerSettings(BaseModel):

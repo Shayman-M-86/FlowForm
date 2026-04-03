@@ -243,3 +243,9 @@ The application will use a relational database structure for core entities, whil
 Authentication will use **OAuth 2.0 Authorization Code Grant with PKCE**, **OpenID Connect**, **Auth0**, and **Refresh Token Rotation**.
 
 This architecture gives FlowForm a strong foundation for dynamic form execution, secure user authentication, and future expansion.
+
+## Note
+
+Also implementing service layer control mechanisms for split databases
+
+- saga / application-coordinated transaction
