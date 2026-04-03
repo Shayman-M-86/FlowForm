@@ -4,6 +4,53 @@
 
 FlowForm is a Flask backend for building and managing surveys. It uses **two separate PostgreSQL databases** — `core` and `response` — with strict separation of concerns between them.
 
+## Layer architecture
+
+Each layer has one job. When deciding where code belongs, follow this stack top to bottom:
+
+```
+schema/orm/       what the tables look like
+db/               how you talk to the database
+repositories/     reusable query helpers
+services/         application behavior
+schema/api/       what the API surface looks like
+api/routes/       thin HTTP handlers
+```
+
+### `schema/orm/` — table definitions
+
+Pure SQLAlchemy ORM models. Each class maps one table. No business logic, no cross-db relationships, no Pydantic. Split by database:
+
+- `schema/orm/core/` — tables that live in the core DB
+- `schema/orm/response/` — tables that live in the response DB
+
+### `db/` — database plumbing
+
+Engines, sessionmakers, declarative bases (`CoreBase`, `ResponseBase`), request-scoped session lifecycle, and transaction helpers (`commit_or_rollback`, `rollback_safely`). Nothing above this layer should import SQLAlchemy engine or connection objects directly.
+
+### `repositories/` — query helpers *(not yet implemented)*
+
+Reusable, DB-specific access patterns. A repository only talks to one database. It contains named query methods so that services stay readable and the same lookup is never written twice. Repositories do not coordinate across databases and do not contain workflow logic.
+
+### `services/` — application behavior
+
+The only layer that coordinates both databases. Services contain status transitions, cross-db saga workflows, pseudonymous identity handling, and anything that feels like a business decision. `SubmissionGateway` is the canonical example. Routes call services; services call repositories or ORM directly.
+
+### `schema/api/` — API surface shapes
+
+Pydantic models only. Split by direction:
+
+- `schema/api/requests/` — validate incoming payloads before any business logic runs
+- `schema/api/responses/` — define outgoing shapes; use `from_attributes=True` to map from ORM objects
+
+These models never import from `schema/orm/`. The conversion happens in services or routes via `ResponseModel.model_validate(orm_obj)`.
+
+### `api/routes/` — HTTP handlers *(thin)*
+
+Parse the request, call a service, return a response. No SQL, no session management, no business logic. Routes are the glue between HTTP and services — nothing more.
+
+---
+
 ## Running tests
 
 ```bash
