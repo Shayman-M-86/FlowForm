@@ -28,12 +28,8 @@ services:
       - ../postgres/init:/docker-entrypoint-initdb.d:ro
       - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     secrets:
-      - source: DATABASE_CORE_APP_PASSWORD
-        target: /run/secrets/DATABASE_CORE_APP_PASSWORD
-        mode: 0444
-      - source: DATABASE_CORE_INIT_PASSWORD
-        target: /run/secrets/DATABASE_CORE_INIT_PASSWORD
-        mode: 0444
+      - DATABASE_CORE_APP_PASSWORD
+      - DATABASE_CORE_INIT_PASSWORD
     networks:
       - flowform_net
     healthcheck:
@@ -126,6 +122,9 @@ volumes:
 networks:
   flowform_net:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.50.0.0/16
 
 secrets:
   DATABASE_CORE_INIT_PASSWORD:
