@@ -28,4 +28,3 @@ def init_db_sessions(app) -> None:
     app.before_request(open_request_sessions)
     app.teardown_request(close_request_sessions)
 
-    app.teardown_request(close_request_sessions)
