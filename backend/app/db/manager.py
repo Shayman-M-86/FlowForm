@@ -36,12 +36,10 @@ class DatabaseManager:
         self.core_engine = create_engine(
             settings.database.core.url,
             pool_pre_ping=True,
-            future=True,
         )
         self.response_engine = create_engine(
             settings.database.response.url,
             pool_pre_ping=True,
-            future=True,
         )
 
         self._core_sessionmaker = sessionmaker(
