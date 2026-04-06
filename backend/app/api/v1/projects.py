@@ -248,7 +248,7 @@ def create_public_link(project_id: int, survey_id: int):
         data=payload,
     )
     public_url = url_for(
-        "public.get_public_survey",  # use your real endpoint name here
+        "public_v1.resolve_link",  # use your real endpoint name here
         token=result.token,
         _external=True,
     )

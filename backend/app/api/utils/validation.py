@@ -34,6 +34,11 @@ def parse[TModel: BaseModel](model_cls: type[TModel], request_obj: Request) -> T
     return model_cls.model_validate(body)
 
 
+def parse_query[TModel: BaseModel](model_cls: type[TModel], request_obj: Request) -> TModel:
+    """Parse the query string into a Pydantic model."""
+    return model_cls.model_validate(request_obj.args.to_dict())
+
+
 def normalize_pydantic_errors(exc: ValidationError) -> list[dict[str, object]]:
     """Convert Pydantic validation errors into a consistent format for API responses."""
     normalized: list[dict[str, object]] = []

@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 
-from app.api.utils.validation import parse
+from app.api.utils.validation import parse, parse_query
 from app.db.context import get_core_db, get_response_db
 from app.schema.api.requests.submissions import PublicSubmissionRequest, ResolveTokenRequest
 from app.schema.api.responses.public_links import PublicLinkOut, ResolveLinkOut
@@ -32,7 +32,7 @@ def get_public_survey(public_slug: str):
 
 @public_bp.route("/links/resolve", methods=["POST"])
 def resolve_link():
-    payload = parse(ResolveTokenRequest, request)
+    payload = parse_query(ResolveTokenRequest, request)
 
     core_db = get_core_db()
 

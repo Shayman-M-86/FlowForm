@@ -104,21 +104,25 @@ def create_version(
 
 
 def publish_version(
-    db: Session, survey: Survey, version: SurveyVersion, compiled_schema: dict
+    db: Session,
+    survey: Survey,
+    version: SurveyVersion,
+    compiled_schema: dict,
 ) -> SurveyVersion:
-    if survey.published_version_id:
-        current = db.scalar(
-            select(SurveyVersion).where(SurveyVersion.id == survey.published_version_id)
-        )
-        if current:
+    if survey.published_version_id and survey.published_version_id != version.id:
+        current = db.get(SurveyVersion, survey.published_version_id)
+        if current is not None:
             current.status = "archived"
 
     version.status = "published"
     version.compiled_schema = compiled_schema
     version.published_at = datetime.now(UTC)
-    survey.published_version_id = version.id
 
+    db.flush()  # make sure version is published before survey points at it
+
+    survey.published_version_id = version.id
     db.flush()
+
     return version
 
 
