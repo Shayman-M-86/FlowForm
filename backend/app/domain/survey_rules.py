@@ -35,10 +35,19 @@ def ensure_found_by_slug(*, survey: Survey | None) -> Survey:
 
 def ensure_has_response_store(*, survey: Survey) -> int:
     if survey.default_response_store_id is None:
-        raise SurveyNoResponseStoreError()
+        raise SurveyNoResponseStoreError(message=f"Survey {survey.id} has no default response store configured")
     return survey.default_response_store_id
 
 
 def ensure_survey_belongs_to_project(*, survey_id: int, project_surveys_ids: list[int], project_id: int) -> None:
     if survey_id not in project_surveys_ids:
             raise SurveyNotFoundError(survey_id=survey_id, project_id=project_id)
+
+def ensure_default_response_store(
+    *,
+    survey: Survey,
+    default_response_store_id: int,
+) -> int:
+    if survey.default_response_store_id is None:
+        survey.default_response_store_id = default_response_store_id
+    return survey.default_response_store_id

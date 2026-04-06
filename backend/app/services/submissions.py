@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from logging import getLogger
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -16,6 +17,7 @@ from app.schema.api.requests.submissions import (
 from app.schema.orm.core.survey_submission import SurveySubmission
 from app.services.results import LinkedSubmissionResult
 
+logger = getLogger(__name__)
 _gateway = SubmissionGateway()
 
 
@@ -56,12 +58,14 @@ class SubmissionService:
             survey_id=survey_id,
             project_id=project_id,
         )
+        logger.info(f"Creating submission for survey_id={survey_id} in project_id={project_id}")
         survey_rules.ensure_is_published(
             survey=survey,
             survey_id=survey_id,
             project_id=project_id,
         )
         response_store_id = survey_rules.ensure_has_response_store(survey=survey)
+        logger.info(f"Survey {survey_id} in project {project_id} is published, proceeding with submission creation")
 
         pseudonymous_subject_id = None
         if payload.submitted_by_user_id is not None and not payload.is_anonymous:
@@ -69,6 +73,10 @@ class SubmissionService:
                 core_db,
                 project_id=project_id,
                 user_id=payload.submitted_by_user_id,
+            )
+            logger.info(
+                f"Created or retrieved subject mapping for user_id={payload.submitted_by_user_id} "
+                f"in project_id={project_id}"
             )
             pseudonymous_subject_id = mapping.pseudonymous_subject_id
 
@@ -142,6 +150,7 @@ class SubmissionService:
         *,
         context: SubmissionContext,
     ) -> LinkedSubmissionResult:
+        metadata = context.metadata or {}
         return _gateway.create_linked_submission(
             core_db,
             response_db,
@@ -157,7 +166,7 @@ class SubmissionService:
             started_at=context.started_at,
             submitted_at=context.submitted_at,
             answers=context.answers,
-            metadata=context.metadata,
+            metadata=metadata,
         )
 
     def list_submissions(
@@ -166,13 +175,15 @@ class SubmissionService:
         *,
         project_id: int,
         payload: ListSubmissionsRequest,
-    ) -> list[SurveySubmission]:
+    ) -> tuple[list[SurveySubmission], int]:
         return submissions_repo.list_submissions(
             db,
             project_id=project_id,
             survey_id=payload.survey_id,
             status=payload.status,
             submission_channel=payload.submission_channel,
+            page=payload.page,
+            page_size=payload.page_size,
         )
 
     def get_submission(

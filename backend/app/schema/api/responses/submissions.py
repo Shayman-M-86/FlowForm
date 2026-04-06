@@ -48,3 +48,10 @@ class ListSubmissionsRequest(BaseModel):
     survey_id: int | None = None
     status: str | None = None
     submission_channel: str | None = None
+
+class PaginatedSubmissionsOut(BaseModel):
+    """API response shape for a paginated list of submissions."""
+    items: list[CoreSubmissionOut]
+    total: int
+    page: int
+    page_size: int

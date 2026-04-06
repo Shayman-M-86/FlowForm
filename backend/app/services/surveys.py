@@ -8,6 +8,7 @@ from app.repositories import content_repo, surveys_repo
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 
+DEFAULT_RESPONSE_STORE_ID = 1  # TODO: This should be set to a real default response store ID
 
 class SurveyService:
     """Service for survey and survey version operations."""
@@ -92,6 +93,10 @@ class SurveyService:
             "rules": [{"key": r.rule_key, "schema": r.rule_schema} for r in rules],
             "scoring_rules": [{"key": s.scoring_key, "schema": s.scoring_schema} for s in scoring_rules],
         }
+        survey_rules.ensure_default_response_store(
+            survey=survey,
+            default_response_store_id=DEFAULT_RESPONSE_STORE_ID,
+        )
 
         result = surveys_repo.publish_version(db, survey, version, compiled)
         commit_or_rollback(db)

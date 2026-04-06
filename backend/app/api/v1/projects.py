@@ -1,6 +1,9 @@
+from logging import getLogger
+
 from flask import Blueprint, request, url_for
 
 from app.api.utils.validation import parse
+from app.api.v1.public import parse_query
 from app.db.context import get_core_db, get_response_db
 from app.repositories import surveys_repo as survey_svc
 from app.schema.api.requests.content import (
@@ -20,12 +23,15 @@ from app.schema.api.responses.submissions import (
     AnswerOut,
     CoreSubmissionOut,
     LinkedSubmissionOut,
+    PaginatedSubmissionsOut,
 )
 from app.schema.api.responses.surveys import SurveyOut, SurveyVersionOut
 from app.services.content import ContentService
 from app.services.public_links import PublicLinkService
 from app.services.submissions import SubmissionService
 from app.services.surveys import SurveyService
+
+logger = getLogger(__name__)
 
 projects_bp = Blueprint("projects_v1", __name__)
 
@@ -289,7 +295,6 @@ def create_submission(project_id: int, survey_id: int):
     payload = parse(CreateSubmissionRequest, request)
     core_db = get_core_db()
     response_db = get_response_db()
-
     linked = submission_service.create_project_submission(
         core_db,
         response_db,
@@ -308,24 +313,29 @@ def create_submission(project_id: int, survey_id: int):
 
 @projects_bp.route("/<int:project_id>/submissions", methods=["GET"])
 def list_submissions(project_id: int):
-    payload = parse(ListSubmissionsRequest, request)
+    payload = parse_query(ListSubmissionsRequest, request)
 
     core_db = get_core_db()
 
-    submissions = submission_service.list_submissions(
+    items, total = submission_service.list_submissions(
         core_db,
         project_id=project_id,
         payload=payload,
     )
 
-    response = [CoreSubmissionOut.model_validate(submission).model_dump(mode="json") for submission in submissions]
+    response = PaginatedSubmissionsOut(
+        items=[CoreSubmissionOut.model_validate(s) for s in items],
+        page=payload.page,
+        page_size=payload.page_size,
+        total=total,
+    )
 
-    return response, 200
+    return response.model_dump(mode="json"), 200
 
 
 @projects_bp.route("/<int:project_id>/submissions/<int:submission_id>", methods=["GET"])
 def get_submission(project_id: int, submission_id: int):
-    payload = parse(GetSubmissionRequest, request)
+    payload = parse_query(GetSubmissionRequest, request)
 
     core_db = get_core_db()
     response_db = get_response_db()

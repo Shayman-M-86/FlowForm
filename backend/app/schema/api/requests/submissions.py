@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AnswerIn(BaseModel):
@@ -17,10 +17,10 @@ class CreateSubmissionRequest(BaseModel):
     survey_version_id: int
     submitted_by_user_id: int | None = None  # TODO: replace with auth middleware
     is_anonymous: bool = False
-    answers: list[AnswerIn] = []
-    metadata: dict | None = None
-    started_at: datetime | None = None
-    submitted_at: datetime | None = None
+    started_at: datetime
+    submitted_at: datetime
+    answers: list[AnswerIn] = Field(default_factory=list)
+    metadata: dict = Field(default_factory=dict)
 
 
 class PublicSubmissionRequest(BaseModel):
@@ -45,6 +45,9 @@ class ListSubmissionsRequest(BaseModel):
     survey_id: int | None = None
     status: str | None = None
     submission_channel: str | None = None
+    
+    page: int = Field(default=1, ge=1)
+    page_size: int = Field(default=20, ge=1, le=100)
 
 class GetSubmissionRequest(BaseModel):
     """Request body for retrieving a specific submission by ID."""

@@ -1,3 +1,5 @@
+from logging import getLogger
+
 from flask import Blueprint, request
 
 from app.api.utils.validation import parse, parse_query
@@ -9,6 +11,8 @@ from app.schema.api.responses.surveys import PublicSurveyOut, SurveyOut, SurveyV
 from app.services.public_links import PublicLinkService
 from app.services.public_surveys import PublicSurveyService
 from app.services.submissions import SubmissionService
+
+logger = getLogger(__name__)
 
 public_bp = Blueprint("public_v1", __name__)
 
@@ -30,9 +34,13 @@ def get_public_survey(public_slug: str):
     return response.model_dump(mode="json"), 200
 
 
-@public_bp.route("/links/resolve", methods=["POST"])
+@public_bp.route("/links/resolve", methods=["GET"])
 def resolve_link():
-    payload = parse_query(ResolveTokenRequest, request)
+    try:
+        payload = parse_query(ResolveTokenRequest, request)
+    except Exception:
+        payload = parse(ResolveTokenRequest, request)
+    logger.info(f"Resolving public link with token: {payload.token}")
 
     core_db = get_core_db()
 

@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.schema.orm.core.survey_submission import SurveySubmission
@@ -11,16 +11,32 @@ def list_submissions(
     survey_id: int | None = None,
     status: str | None = None,
     submission_channel: str | None = None,
-) -> list[SurveySubmission]:
-    query = select(SurveySubmission).where(SurveySubmission.project_id == project_id)
+    page: int = 1,
+    page_size: int = 20,
+) -> tuple[list[SurveySubmission], int]:
+    filters = [SurveySubmission.project_id == project_id]
 
     if survey_id is not None:
-        query = query.where(SurveySubmission.survey_id == survey_id)
+        filters.append(SurveySubmission.survey_id == survey_id)
 
     if status is not None:
-        query = query.where(SurveySubmission.status == status)
+        filters.append(SurveySubmission.status == status)
 
     if submission_channel is not None:
-        query = query.where(SurveySubmission.submission_channel == submission_channel)
+        filters.append(SurveySubmission.submission_channel == submission_channel)
 
-    return list(db.scalars(query))
+    total = db.scalar(select(func.count()).select_from(SurveySubmission).where(*filters)) or 0
+
+    offset = (page - 1) * page_size
+
+    items = list(
+        db.scalars(
+            select(SurveySubmission)
+            .where(*filters)
+            .order_by(SurveySubmission.id.desc())
+            .limit(page_size)
+            .offset(offset)
+        )
+    )
+
+    return items, total

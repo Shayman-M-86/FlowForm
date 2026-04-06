@@ -85,6 +85,7 @@ class SurveyPublishError(AppError):
             status_code=409,
             code="SURVEY_PUBLISH_ERROR",
             message=message,
+            details={"validation_errors": message},
         )
 
 
@@ -102,11 +103,11 @@ class SurveyNotFoundBySlugError(AppError):
 class SurveyNoResponseStoreError(AppError):
     """Error raised when a survey has no default response store configured."""
 
-    def __init__(self) -> None:
+    def __init__(self, message: str) -> None:
         super().__init__(
             status_code=400,
             code="INVALID_REQUEST",
-            message="Survey has no default response store configured",
+            message=message,
         )
 
 
