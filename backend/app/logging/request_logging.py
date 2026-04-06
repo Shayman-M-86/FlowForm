@@ -4,6 +4,7 @@ import logging
 import time
 import uuid
 from typing import Any
+from venv import logger
 
 from flask import Flask, g, request
 
@@ -48,13 +49,15 @@ def register_request_logging(app: Flask, *, include_duration: bool) -> None:
     """
     if app.extensions.get("request_logging_registered"):
         return
-
+    
+    logger.debug(f"Registering before_request logging (include_duration={include_duration})")
     @app.before_request
     def before_request_logging() -> None:
         g.request_id = str(uuid.uuid4())
         if include_duration:
             g.request_started_at = time.perf_counter()
-
+    
+    logger.debug("Registering after request hook for request logging")
     @app.after_request
     def after_request_logging(response):
         duration_seconds: float | None = None

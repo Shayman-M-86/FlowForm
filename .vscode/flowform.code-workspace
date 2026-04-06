@@ -37,7 +37,9 @@
             "**/Thumbs.db": true,
             "**/__pycache__": true,
             "**/.pytest_cache": true,
-            "**/.mypy_cache": true
+            "**/.mypy_cache": true,
+            "**/.ruff_cache": true,
+            "**/.coverage": true,
         },
         "files.watcherExclude": {
             "**/.git/objects/**": true,
@@ -57,7 +59,7 @@
             "**/.pytest_cache": true,
             "**/.mypy_cache": true,
             "**/.ruff_cache": true,
-            "**/node_modules": true
+            "**/node_modules": true,
         },
         "hide-files.files": [],
     }

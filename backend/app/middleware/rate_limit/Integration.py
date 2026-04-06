@@ -30,6 +30,7 @@ def rate_limiting(
 
     app.extensions["rate_limiter"] = service
 
+    logger.debug("Registering rate limiting middleware")
     @app.before_request
     def enforce_rate_limit():
         if service.is_ignored_path(request.path):

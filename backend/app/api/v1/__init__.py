@@ -3,13 +3,17 @@ import logging
 from flask import Blueprint, Flask
 
 from app.api.v1.health import health_bp
+from app.api.v1.projects import projects_bp
+from app.api.v1.public import public_bp
 
 __all__ = ["register_api_v1"]
 
 LOGGER = logging.getLogger(__name__)
 
 ROUTES: list[Blueprint] = [
-    health_bp
+    health_bp,
+    projects_bp,
+    public_bp,
 ]
 
 

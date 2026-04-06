@@ -1,0 +1,1740 @@
+{
+  "info": {
+    "_postman_id": "50494d40-defd-4958-a97f-5c6b42626c0b",
+    "name": "FlowForm Local API",
+    "description": "Postman collection generated from the user's curl flow for surveys, versions, draft content, publish, public links, public endpoints, and submissions. Main flow is ordered so it can be run top-to-bottom without hitting destructive steps too early.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "project_id",
+      "value": "1"
+    },
+    {
+      "key": "user_id",
+      "value": "2"
+    },
+    {
+      "key": "survey_id",
+      "value": ""
+    },
+    {
+      "key": "survey_version_id",
+      "value": ""
+    },
+    {
+      "key": "question_1_id",
+      "value": ""
+    },
+    {
+      "key": "question_2_id",
+      "value": ""
+    },
+    {
+      "key": "rule_id",
+      "value": ""
+    },
+    {
+      "key": "scoring_rule_id",
+      "value": ""
+    },
+    {
+      "key": "public_link_id",
+      "value": ""
+    },
+    {
+      "key": "public_slug",
+      "value": "nps-q2"
+    },
+    {
+      "key": "public_token",
+      "value": ""
+    },
+    {
+      "key": "submission_id",
+      "value": ""
+    },
+    {
+      "key": "public_submission_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Surveys",
+      "item": [
+        {
+          "name": "List surveys",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test('Response payload is present', function () {",
+                  "    pm.expect(data).to.not.equal(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create survey",
+          "request": {
+            "method": "POST",
+            "description": "Creates a survey and stores survey_id for later requests.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Employee NPS Q2\",\n  \"visibility\": \"link_only\",\n  \"allow_public_responses\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200, 201]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test('Created survey has an id', function () {",
+                  "    pm.expect(data).to.be.an('object');",
+                  "    pm.expect(data.id).to.exist;",
+                  "});",
+                  "setVarIfPresent('survey_id', data && data.id);",
+                  "setVarIfPresent('public_slug', data && data.public_slug);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get survey",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test('Returned survey matches saved survey_id', function () {",
+                  "    pm.expect(String(data.id)).to.eql(pm.collectionVariables.get('survey_id'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update survey",
+          "request": {
+            "method": "PATCH",
+            "description": "Updates visibility and public_slug so the public survey endpoint can be tested.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Employee NPS Q2 — Updated\",\n  \"visibility\": \"public\",\n  \"public_slug\": \"nps-q2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test('Survey was updated to public visibility', function () {",
+                  "    pm.expect(data).to.be.an('object');",
+                  "    pm.expect(data.visibility).to.eql('public');",
+                  "});",
+                  "setVarIfPresent('public_slug', data && data.public_slug);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 Versions",
+      "item": [
+        {
+          "name": "List versions",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/versions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create draft version",
+          "request": {
+            "method": "POST",
+            "description": "Creates a draft version and stores survey_version_id.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/versions",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200, 201]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test('Created version has an id', function () {",
+                  "    pm.expect(data).to.be.an('object');",
+                  "    pm.expect(data.id).to.exist;",
+                  "});",
+                  "setVarIfPresent('survey_version_id', data && data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get version",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/versions/{{survey_version_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test('Returned version matches saved version id', function () {",
+                  "    pm.expect(String(data.id)).to.eql(pm.collectionVariables.get('survey_version_id'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 Draft content",
+      "item": [
+        {
+          "name": "List questions",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/versions/{{survey_version_id}}/questions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add question 1: rating",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/versions/{{survey_version_id}}/questions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_key\": \"recommend_score\",\n  \"question_schema\": {\n    \"type\": \"rating\",\n    \"label\": \"How likely are you to recommend us?\",\n    \"min\": 0,\n    \"max\": 10\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200, 201]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test('Question 1 was created', function () {",
+                  "    pm.expect(data).to.be.an('object');",
+                  "    pm.expect(data.question_key || data.key).to.exist;",
+                  "});",
+                  "setVarIfPresent('question_1_id', data && data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add question 2: field",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/versions/{{survey_version_id}}/questions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_key\": \"open_feedback\",\n  \"question_schema\": {\n    \"type\": \"field\",\n    \"label\": \"Any additional feedback?\",\n    \"optional\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200, 201]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "setVarIfPresent('question_2_id', data && data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update question 1",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/versions/{{survey_version_id}}/questions/{{question_1_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_schema\": {\n    \"type\": \"rating\",\n    \"label\": \"How likely are you to recommend us? (0–10)\",\n    \"min\": 0,\n    \"max\": 10\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test('Updated question label looks correct', function () {",
+                  "    if (data && data.question_schema) {",
+                  "        pm.expect(data.question_schema.label).to.include('0');",
+                  "    } else {",
+                  "        pm.expect(true).to.eql(true);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add branching rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/versions/{{survey_version_id}}/rules",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rule_key\": \"show_feedback_if_low\",\n  \"rule_schema\": {\n    \"condition\": {\n      \"question\": \"recommend_score\",\n      \"op\": \"lt\",\n      \"value\": 7\n    },\n    \"action\": {\n      \"show\": \"open_feedback\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200, 201]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "setVarIfPresent('rule_id', data && data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add scoring rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/versions/{{survey_version_id}}/scoring-rules",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scoring_key\": \"nps_category\",\n  \"scoring_schema\": {\n    \"source\": \"recommend_score\",\n    \"buckets\": [\n      {\n        \"range\": [\n          0,\n          6\n        ],\n        \"label\": \"detractor\"\n      },\n      {\n        \"range\": [\n          7,\n          8\n        ],\n        \"label\": \"passive\"\n      },\n      {\n        \"range\": [\n          9,\n          10\n        ],\n        \"label\": \"promoter\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200, 201]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "setVarIfPresent('scoring_rule_id', data && data.id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 Publish",
+      "item": [
+        {
+          "name": "Publish version",
+          "request": {
+            "method": "POST",
+            "description": "Run this after adding at least one question.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/versions/{{survey_version_id}}/publish",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test('Version is published or publish succeeded', function () {",
+                  "    pm.expect(data).to.not.equal(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 Public links",
+      "item": [
+        {
+          "name": "List public links",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/public-links"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create public link",
+          "request": {
+            "method": "POST",
+            "description": "Stores public_link_id and attempts to capture the one-time plaintext token.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/public-links",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"allow_response\": true,\n  \"expires_at\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200, 201]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test('Link creation returned something usable', function () {",
+                  "    pm.expect(data).to.be.an('object');",
+                  "});",
+                  "setVarIfPresent('public_link_id', data && data.id);",
+                  "setVarIfPresent('public_token', data && (data.token || data.public_token || data.bearer_token));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 Public endpoints",
+      "item": [
+        {
+          "name": "Load public survey by slug",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/public/surveys/{{public_slug}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test('Public survey response exists', function () {",
+                  "    pm.expect(data).to.not.equal(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resolve public token",
+          "request": {
+            "method": "POST",
+            "description": "Requires the plaintext token captured from Create public link.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/public/links/resolve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{public_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test('Token resolve returned a payload', function () {",
+                  "    pm.expect(data).to.not.equal(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 Submissions",
+      "item": [
+        {
+          "name": "Create authenticated submission",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/submissions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"survey_version_id\": \"{{survey_version_id}}\",\n  \"submitted_by_user_id\": \"{{user_id}}\",\n  \"answers\": [\n    {\n      \"question_key\": \"recommend_score\",\n      \"answer_family\": \"rating\",\n      \"answer_value\": {\n        \"value\": 9\n      }\n    },\n    {\n      \"question_key\": \"open_feedback\",\n      \"answer_family\": \"field\",\n      \"answer_value\": {\n        \"value\": \"Great product overall.\"\n      }\n    }\n  ],\n  \"started_at\": \"2026-04-04T10:00:00Z\",\n  \"submitted_at\": \"2026-04-04T10:03:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200, 201]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test('Authenticated submission returned an id or registry payload', function () {",
+                  "    pm.expect(data).to.not.equal(undefined);",
+                  "});",
+                  "setVarIfPresent('submission_id', data && (data.id || data.core_submission_id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create public-link submission",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/public/submissions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"public_token\": \"{{public_token}}\",\n  \"survey_version_id\": \"{{survey_version_id}}\",\n  \"is_anonymous\": true,\n  \"answers\": [\n    {\n      \"question_key\": \"recommend_score\",\n      \"answer_family\": \"rating\",\n      \"answer_value\": {\n        \"value\": 7\n      }\n    }\n  ],\n  \"submitted_at\": \"2026-04-04T11:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200, 201]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test('Public submission returned an id or registry payload', function () {",
+                  "    pm.expect(data).to.not.equal(undefined);",
+                  "});",
+                  "setVarIfPresent('public_submission_id', data && (data.id || data.core_submission_id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List submissions",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/submissions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List submissions filtered by survey_id",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/submissions?survey_id={{survey_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List submissions filtered by status",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/submissions?status=stored"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List submissions filtered by channel",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/submissions?submission_channel=authenticated"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get linked submission with answers and identity",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/submissions/{{submission_id}}?include_answers=true&resolve_identity=true"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test('Linked submission payload exists', function () {",
+                  "    pm.expect(data).to.not.equal(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get linked submission summary only",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/submissions/{{submission_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08 Negative / validation checks",
+      "item": [
+        {
+          "name": "Create survey validation failure",
+          "request": {
+            "method": "POST",
+            "description": "Useful for checking the request-parse / Pydantic validation path.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [400, 422]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "});",
+                  "pm.test('Validation error body exists', function () {",
+                  "    pm.expect(body).to.not.equal(null);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "99 Optional / destructive actions",
+      "item": [
+        {
+          "name": "Delete question 2 (run before publish only)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/versions/{{survey_version_id}}/questions/{{question_2_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200, 204]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Archive version",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/versions/{{survey_version_id}}/archive",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Disable public link",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/public-links/{{public_link_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete public link",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}/public-links/{{public_link_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200, 204]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete survey",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/api/v1/projects/{{project_id}}/surveys/{{survey_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function tryJson() {",
+                  "    const text = pm.response.text();",
+                  "    if (!text) return null;",
+                  "    try { return pm.response.json(); } catch (e) { return null; }",
+                  "}",
+                  "",
+                  "function payload(body) {",
+                  "    if (body && typeof body === 'object' && !Array.isArray(body) && Object.prototype.hasOwnProperty.call(body, 'data')) {",
+                  "        return body.data;",
+                  "    }",
+                  "    return body;",
+                  "}",
+                  "",
+                  "function setVarIfPresent(name, value) {",
+                  "    if (value !== undefined && value !== null && value !== '') {",
+                  "        pm.collectionVariables.set(name, String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "const body = tryJson();",
+                  "const data = payload(body);",
+                  "pm.test('Status code is one of [200, 204]', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
