@@ -84,3 +84,12 @@ class ParsingValidationError(ValidationError):
     """Error raised when parsing validation fails."""
 
     description = "A parsing validation error occurred."
+
+class RateLimitExceededError(AppError):
+    """Error raised when a user exceeds the allowed rate limit."""
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=429,
+            code="RATE_LIMIT_EXCEEDED",
+            message="Rate limit exceeded. Please try again later.",
+        )

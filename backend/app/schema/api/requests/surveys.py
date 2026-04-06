@@ -4,6 +4,12 @@ from pydantic import BaseModel, model_validator
 
 
 class CreateSurveyRequest(BaseModel):
+    """Request body for creating a new survey.
+
+    Raises:
+        ValueError: If visibility constraints are violated (e.g. public_slug missing for public visibility).
+    """
+
     title: str
     visibility: Literal["private", "link_only", "public"] = "private"
     allow_public_responses: bool = False
@@ -22,6 +28,8 @@ class CreateSurveyRequest(BaseModel):
 
 
 class UpdateSurveyRequest(BaseModel):
+    """Request body for partially updating a survey."""
+
     title: str | None = None
     visibility: Literal["private", "link_only", "public"] | None = None
     allow_public_responses: bool | None = None
@@ -30,4 +38,6 @@ class UpdateSurveyRequest(BaseModel):
 
 
 class CreateVersionRequest(BaseModel):
+    """Request body for creating a new survey version."""
+
     pass

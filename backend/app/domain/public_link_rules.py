@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from app.domain.errors import LinkExpiredError, LinkInactiveError, LinkNotFoundError
+from app.domain.errors import LinkExpiredError, LinkInactiveError, LinkNoResponseError, LinkNotFoundError
 from app.schema.orm.core.survey_access import SurveyPublicLink
 
 
@@ -24,4 +24,8 @@ def ensure_not_expired(*, link: SurveyPublicLink) -> None:
 
 def ensure_allows_response(*, link: SurveyPublicLink) -> None:
     if not link.allow_response:
-        raise LinkInactiveError()
+        raise LinkNoResponseError()
+
+def ensure_survey_id_matches(*, link: SurveyPublicLink, survey_id: int) -> None:
+    if link.survey_id != survey_id:
+        raise LinkNotFoundError()

@@ -9,7 +9,7 @@ from app.schema.orm.core.response_subject_mapping import ResponseSubjectMapping
 from app.schema.orm.core.survey_submission import SurveySubmission
 from app.schema.orm.response.submission import Submission
 from app.schema.orm.response.submission_answer import SubmissionAnswer
-from app.services.linked_submission import LinkedSubmission
+from app.services.results import LinkedSubmissionResult
 
 
 class SubmissionGateway:
@@ -56,7 +56,7 @@ class SubmissionGateway:
         submitted_at: datetime | None = None,
         answers: list[dict] | None = None,
         metadata: dict | None = None,
-    ) -> LinkedSubmission:
+    ) -> LinkedSubmissionResult:
         # Step 1-2: Create core registry row with pending status
         core_submission = SurveySubmission(
             project_id=project_id,
@@ -116,7 +116,7 @@ class SubmissionGateway:
         core_submission.status = "stored"
         core_db.commit()
 
-        return LinkedSubmission(
+        return LinkedSubmissionResult(
             core_submission=core_submission,
             response_submission=response_submission,
             subject_mapping=None,
@@ -132,7 +132,7 @@ class SubmissionGateway:
         core_submission_id: int,
         include_answers: bool = False,
         resolve_identity: bool = False,
-    ) -> LinkedSubmission | None:
+    ) -> LinkedSubmissionResult | None:
         from app.schema.orm.core.user import User
 
         core_submission = core_db.scalar(
@@ -174,7 +174,7 @@ class SubmissionGateway:
                     select(User).where(User.id == subject_mapping.user_id)
                 )
 
-        return LinkedSubmission(
+        return LinkedSubmissionResult(
             core_submission=core_submission,
             response_submission=response_submission,
             subject_mapping=subject_mapping,

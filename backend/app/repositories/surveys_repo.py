@@ -5,11 +5,13 @@ from sqlalchemy.orm import Session
 
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
-from app.schema.orm.core.survey_content import SurveyQuestion, SurveyRule, SurveyScoringRule
 
 
 def list_surveys(db: Session, project_id: int) -> list[Survey]:
     return list(db.scalars(select(Survey).where(Survey.project_id == project_id)))
+
+def list_surveys_ids(db: Session, project_id: int) -> list[int]:
+    return list(db.scalars(select(Survey.id).where(Survey.project_id == project_id)))
 
 
 def get_survey(db: Session, project_id: int, survey_id: int) -> Survey | None:
@@ -101,36 +103,9 @@ def create_version(
     return version
 
 
-def publish_version(db: Session, survey: Survey, version: SurveyVersion) -> SurveyVersion:
-    if version.status != "draft":
-        raise ValueError(f"Cannot publish a version with status '{version.status}'")
-
-    questions = list(
-        db.scalars(
-            select(SurveyQuestion).where(SurveyQuestion.survey_version_id == version.id)
-        )
-    )
-    if not questions:
-        raise ValueError("Cannot publish a version with no questions")
-
-    rules = list(
-        db.scalars(select(SurveyRule).where(SurveyRule.survey_version_id == version.id))
-    )
-    scoring_rules = list(
-        db.scalars(
-            select(SurveyScoringRule).where(SurveyScoringRule.survey_version_id == version.id)
-        )
-    )
-
-    compiled = {
-        "questions": [{"key": q.question_key, "schema": q.question_schema} for q in questions],
-        "rules": [{"key": r.rule_key, "schema": r.rule_schema} for r in rules],
-        "scoring_rules": [
-            {"key": s.scoring_key, "schema": s.scoring_schema} for s in scoring_rules
-        ],
-    }
-
-    # Archive the current published version before promoting this one
+def publish_version(
+    db: Session, survey: Survey, version: SurveyVersion, compiled_schema: dict
+) -> SurveyVersion:
     if survey.published_version_id:
         current = db.scalar(
             select(SurveyVersion).where(SurveyVersion.id == survey.published_version_id)
@@ -139,7 +114,7 @@ def publish_version(db: Session, survey: Survey, version: SurveyVersion) -> Surv
             current.status = "archived"
 
     version.status = "published"
-    version.compiled_schema = compiled
+    version.compiled_schema = compiled_schema
     version.published_at = datetime.now(UTC)
     survey.published_version_id = version.id
 
@@ -148,11 +123,15 @@ def publish_version(db: Session, survey: Survey, version: SurveyVersion) -> Surv
 
 
 def archive_version(db: Session, version: SurveyVersion) -> SurveyVersion:
-    if version.status == "archived":
-        raise ValueError("Version is already archived")
     version.status = "archived"
     db.flush()
     return version
+
+def get_by_public_slug(db: Session, public_slug: str) -> Survey | None:
+    return db.scalar(
+        select(Survey).where(Survey.public_slug == public_slug, Survey.visibility == "public")
+    )
+
 
 def get_published_version(db: Session, survey: Survey) -> SurveyVersion | None:
     if survey.published_version_id is None:

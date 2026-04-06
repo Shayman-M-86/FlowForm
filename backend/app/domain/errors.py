@@ -1,8 +1,11 @@
+from typing import Any
+
 from app.core.errors import AppError
 
 
 class LinkNotFoundError(AppError):
     """Error raised when a link cannot be found for a given token."""
+
     def __init__(self) -> None:
         super().__init__(
             status_code=404,
@@ -11,8 +14,16 @@ class LinkNotFoundError(AppError):
         )
 
 
+class PublicLinkNotFoundError(AppError):
+    """Error raised when a public link cannot be found by survey + link ID."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Public link not found")
+
+
 class LinkInactiveError(AppError):
     """Error raised when a link is found but is inactive."""
+
     def __init__(self) -> None:
         super().__init__(
             status_code=403,
@@ -20,8 +31,10 @@ class LinkInactiveError(AppError):
             message="This link is inactive",
         )
 
+
 class LinkExpiredError(AppError):
     """Error raised when a link is found but has expired."""
+
     def __init__(self) -> None:
         super().__init__(
             status_code=403,
@@ -29,9 +42,22 @@ class LinkExpiredError(AppError):
             message="This link has expired",
         )
 
+
+class LinkNoResponseError(AppError):
+    """Error raised when a link does not permit submissions."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="LINK_NO_RESPONSE",
+            message="This link does not allow submissions",
+        )
+
+
 # Survey publish errors
 class SurveyNotFoundError(AppError):
     """Error raised when a survey cannot be found for a given survey_id and project_id."""
+
     def __init__(self, survey_id: int, project_id: int) -> None:
         super().__init__(
             status_code=404,
@@ -42,6 +68,7 @@ class SurveyNotFoundError(AppError):
 
 class SurveyNotPublishedError(AppError):
     """Error raised when attempting to access a survey that has not been published."""
+
     def __init__(self, survey_id: int, project_id: int) -> None:
         super().__init__(
             status_code=404,
@@ -52,6 +79,7 @@ class SurveyNotPublishedError(AppError):
 
 class SurveyPublishError(AppError):
     """Error raised when a survey cannot be published due to validation issues."""
+
     def __init__(self, message: str) -> None:
         super().__init__(
             status_code=409,
@@ -60,5 +88,145 @@ class SurveyPublishError(AppError):
         )
 
 
+class SurveyNotFoundBySlugError(AppError):
+    """Error raised when no public survey matches the given slug."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=404,
+            code="NOT_FOUND",
+            message="Survey not found",
+        )
 
 
+class SurveyNoResponseStoreError(AppError):
+    """Error raised when a survey has no default response store configured."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=400,
+            code="INVALID_REQUEST",
+            message="Survey has no default response store configured",
+        )
+
+
+class SurveySlugConflictError(AppError):
+    """Error raised when a survey slug already exists within the project."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="CONFLICT",
+            message="Conflict — check slug uniqueness",
+        )
+
+
+class VersionNotFoundError(AppError):
+    """Error raised when a survey version cannot be found."""
+
+    def __init__(self, survey_id: int, version_id: int) -> None:
+        super().__init__(
+            status_code=404,
+            code="NOT_FOUND",
+            message=f"Version {version_id} was not found in survey {survey_id}.",
+        )
+
+
+class VersionAlreadyArchivedError(AppError):
+    """Error raised when attempting to archive a version that is already archived."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="VERSION_ALREADY_ARCHIVED",
+            message="Version is already archived",
+        )
+
+
+class VersionNotEditableError(AppError):
+    """Error raised when attempting to edit content on a non-draft version."""
+
+    def __init__(self, status: str) -> None:
+        super().__init__(
+            status_code=409,
+            code="VERSION_NOT_EDITABLE",
+            message=f"Version is '{status}' — content can only be edited on draft versions",
+        )
+
+
+class QuestionNotFoundError(AppError):
+    """Error raised when a question cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Question not found")
+
+
+class RuleNotFoundError(AppError):
+    """Error raised when a rule cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Rule not found")
+
+
+class ScoringRuleNotFoundError(AppError):
+    """Error raised when a scoring rule cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Scoring rule not found")
+
+
+class ContentKeyConflictError(AppError):
+    """Error raised when a content key already exists within a version."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(status_code=409, code="CONFLICT", message=message)
+
+
+class SubmissionInvalidError(AppError):
+    """Error raised when a submission is invalid for any reason."""
+
+    def __init__(
+        self,
+        message: str = "Submission is invalid.",
+        *,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(
+            status_code=400,
+            code="INVALID_SUBMISSION",
+            message=message,
+            details=details or {},
+        )
+
+
+class SubmissionInvalidTimestampsError(AppError):
+    """Error raised when a submission has invalid timestamps (e.g. started_at is after submitted_at)."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=400,
+            code="INVALID_SUBMISSION_TIMESTAMPS",
+            message="Submission timestamps are invalid.",
+        )
+
+
+class SubmissionAnswersRequiredError(AppError):
+    """Error raised when a submission is missing required answers."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=400,
+            code="SUBMISSION_ANSWERS_REQUIRED",
+            message="At least one answer is required.",
+        )
+
+
+class SubmissionNotFoundError(AppError):
+    """Error raised when a submission cannot be found."""
+
+    def __init__(self, submission_id: int) -> None:
+        super().__init__(
+            status_code=404,
+            code="SUBMISSION_NOT_FOUND",
+            message=f"Submission {submission_id} not found.",
+        )

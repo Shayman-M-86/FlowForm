@@ -4,6 +4,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 class AnswerOut(BaseModel):
+    """API response shape for a single submission answer."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -14,6 +16,8 @@ class AnswerOut(BaseModel):
 
 
 class CoreSubmissionOut(BaseModel):
+    """API response shape for a core submission record."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -32,7 +36,15 @@ class CoreSubmissionOut(BaseModel):
 
 
 class LinkedSubmissionOut(BaseModel):
+    """API response shape combining a core submission record with its answers."""
+
     model_config = ConfigDict(from_attributes=True)
-    
+
     core: CoreSubmissionOut
     answers: list[AnswerOut]
+
+class ListSubmissionsRequest(BaseModel):
+    """API request shape for listing submissions, supporting filtering by various criteria."""
+    survey_id: int | None = None
+    status: str | None = None
+    submission_channel: str | None = None

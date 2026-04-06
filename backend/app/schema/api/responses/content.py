@@ -4,6 +4,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 class QuestionOut(BaseModel):
+    """API response shape for a survey question."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -15,6 +17,8 @@ class QuestionOut(BaseModel):
 
 
 class RuleOut(BaseModel):
+    """API response shape for a survey rule."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -26,6 +30,8 @@ class RuleOut(BaseModel):
 
 
 class ScoringRuleOut(BaseModel):
+    """API response shape for a scoring rule."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int

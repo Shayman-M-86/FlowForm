@@ -12,18 +12,11 @@ from app.schema.api.requests.content import (
 from app.schema.orm.core.survey import SurveyVersion
 from app.schema.orm.core.survey_content import SurveyQuestion, SurveyRule, SurveyScoringRule
 
+# ── Questions ──────────────────────────────────────────────────────────────────
 
-def _assert_draft(version: SurveyVersion) -> None:
-    if version.status != "draft":
-        raise ValueError(f"Version is '{version.status}' — content can only be edited on draft versions")
-
-
-# ── Questions ─────────────────────────────────────────────────────────────────
 
 def list_questions(db: Session, version_id: int) -> list[SurveyQuestion]:
-    return list(
-        db.scalars(select(SurveyQuestion).where(SurveyQuestion.survey_version_id == version_id))
-    )
+    return list(db.scalars(select(SurveyQuestion).where(SurveyQuestion.survey_version_id == version_id)))
 
 
 def get_question(db: Session, version_id: int, question_id: int) -> SurveyQuestion | None:
@@ -35,10 +28,7 @@ def get_question(db: Session, version_id: int, question_id: int) -> SurveyQuesti
     )
 
 
-def create_question(
-    db: Session, version: SurveyVersion, data: CreateQuestionRequest
-) -> SurveyQuestion:
-    _assert_draft(version)
+def create_question(db: Session, version: SurveyVersion, data: CreateQuestionRequest) -> SurveyQuestion:
     question = SurveyQuestion(
         survey_version_id=version.id,
         question_key=data.question_key,
@@ -49,10 +39,7 @@ def create_question(
     return question
 
 
-def update_question(
-    db: Session, version: SurveyVersion, question: SurveyQuestion, data: UpdateQuestionRequest
-) -> SurveyQuestion:
-    _assert_draft(version)
+def update_question(db: Session, question: SurveyQuestion, data: UpdateQuestionRequest) -> SurveyQuestion:
     changed = data.model_fields_set
     if "question_key" in changed and data.question_key is not None:
         question.question_key = data.question_key
@@ -62,18 +49,16 @@ def update_question(
     return question
 
 
-def delete_question(db: Session, version: SurveyVersion, question: SurveyQuestion) -> None:
-    _assert_draft(version)
+def delete_question(db: Session, question: SurveyQuestion) -> None:
     db.delete(question)
     db.flush()
 
 
-# ── Rules ─────────────────────────────────────────────────────────────────────
+# ── Rules ──────────────────────────────────────────────────────────────────────
+
 
 def list_rules(db: Session, version_id: int) -> list[SurveyRule]:
-    return list(
-        db.scalars(select(SurveyRule).where(SurveyRule.survey_version_id == version_id))
-    )
+    return list(db.scalars(select(SurveyRule).where(SurveyRule.survey_version_id == version_id)))
 
 
 def get_rule(db: Session, version_id: int, rule_id: int) -> SurveyRule | None:
@@ -86,7 +71,6 @@ def get_rule(db: Session, version_id: int, rule_id: int) -> SurveyRule | None:
 
 
 def create_rule(db: Session, version: SurveyVersion, data: CreateRuleRequest) -> SurveyRule:
-    _assert_draft(version)
     rule = SurveyRule(
         survey_version_id=version.id,
         rule_key=data.rule_key,
@@ -97,10 +81,7 @@ def create_rule(db: Session, version: SurveyVersion, data: CreateRuleRequest) ->
     return rule
 
 
-def update_rule(
-    db: Session, version: SurveyVersion, rule: SurveyRule, data: UpdateRuleRequest
-) -> SurveyRule:
-    _assert_draft(version)
+def update_rule(db: Session, rule: SurveyRule, data: UpdateRuleRequest) -> SurveyRule:
     changed = data.model_fields_set
     if "rule_key" in changed and data.rule_key is not None:
         rule.rule_key = data.rule_key
@@ -110,20 +91,16 @@ def update_rule(
     return rule
 
 
-def delete_rule(db: Session, version: SurveyVersion, rule: SurveyRule) -> None:
-    _assert_draft(version)
+def delete_rule(db: Session, rule: SurveyRule) -> None:
     db.delete(rule)
     db.flush()
 
 
-# ── Scoring rules ─────────────────────────────────────────────────────────────
+# ── Scoring rules ──────────────────────────────────────────────────────────────
+
 
 def list_scoring_rules(db: Session, version_id: int) -> list[SurveyScoringRule]:
-    return list(
-        db.scalars(
-            select(SurveyScoringRule).where(SurveyScoringRule.survey_version_id == version_id)
-        )
-    )
+    return list(db.scalars(select(SurveyScoringRule).where(SurveyScoringRule.survey_version_id == version_id)))
 
 
 def get_scoring_rule(db: Session, version_id: int, scoring_rule_id: int) -> SurveyScoringRule | None:
@@ -135,10 +112,7 @@ def get_scoring_rule(db: Session, version_id: int, scoring_rule_id: int) -> Surv
     )
 
 
-def create_scoring_rule(
-    db: Session, version: SurveyVersion, data: CreateScoringRuleRequest
-) -> SurveyScoringRule:
-    _assert_draft(version)
+def create_scoring_rule(db: Session, version: SurveyVersion, data: CreateScoringRuleRequest) -> SurveyScoringRule:
     rule = SurveyScoringRule(
         survey_version_id=version.id,
         scoring_key=data.scoring_key,
@@ -149,13 +123,7 @@ def create_scoring_rule(
     return rule
 
 
-def update_scoring_rule(
-    db: Session,
-    version: SurveyVersion,
-    rule: SurveyScoringRule,
-    data: UpdateScoringRuleRequest,
-) -> SurveyScoringRule:
-    _assert_draft(version)
+def update_scoring_rule(db: Session, rule: SurveyScoringRule, data: UpdateScoringRuleRequest) -> SurveyScoringRule:
     changed = data.model_fields_set
     if "scoring_key" in changed and data.scoring_key is not None:
         rule.scoring_key = data.scoring_key
@@ -165,9 +133,6 @@ def update_scoring_rule(
     return rule
 
 
-def delete_scoring_rule(
-    db: Session, version: SurveyVersion, rule: SurveyScoringRule
-) -> None:
-    _assert_draft(version)
+def delete_scoring_rule(db: Session, rule: SurveyScoringRule) -> None:
     db.delete(rule)
     db.flush()

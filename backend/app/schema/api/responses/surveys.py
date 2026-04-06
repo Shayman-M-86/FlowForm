@@ -4,6 +4,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 class SurveyOut(BaseModel):
+    """API response shape for a survey."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -20,6 +22,8 @@ class SurveyOut(BaseModel):
 
 
 class SurveyVersionOut(BaseModel):
+    """API response shape for a survey version."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -31,3 +35,10 @@ class SurveyVersionOut(BaseModel):
     created_by_user_id: int | None
     created_at: datetime
     updated_at: datetime
+
+
+class PublicSurveyOut(BaseModel):
+    """API response shape for a publicly accessible survey with its published version."""
+
+    survey: SurveyOut
+    published_version: SurveyVersionOut | None = None
