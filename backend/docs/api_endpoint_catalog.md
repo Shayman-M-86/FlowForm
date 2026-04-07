@@ -433,13 +433,14 @@ curl -X POST http://localhost:5000/api/v1/projects/9/surveys/11/public-links \
 - Pagination applies only to `GET /api/v1/projects/<project_id>/submissions`.
 - Uses `page` and `page_size` query parameters.
 - Response includes `items`, `total`, `page`, and `page_size`.
+- Optional `status` filter values: `pending`, `stored`, `failed`.
 
 ### Example (list submissions)
 
 ```bash
 curl -G http://localhost:5000/api/v1/projects/9/submissions \
   --data-urlencode "survey_id=11" \
-  --data-urlencode "status=submitted" \
+  --data-urlencode "status=stored" \
   --data-urlencode "page=1" \
   --data-urlencode "page_size=20"
 ```
