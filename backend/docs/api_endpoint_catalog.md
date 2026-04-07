@@ -31,14 +31,14 @@ This is the canonical API reference for the currently implemented Flask v1 endpo
 
 ## 3) Common Validation and Error Behavior
 
-## Request parsing behavior
+### Request parsing behavior
 
 - JSON body endpoints require:
   - `Content-Type: application/json`
   - Body must be a **JSON object** (not an array/string/etc.)
 - Query-based endpoints parse query strings into typed Pydantic models.
 
-## Error shapes
+### Error shapes
 
 ### A) Domain/application error
 
