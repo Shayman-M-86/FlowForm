@@ -65,6 +65,15 @@ class SurveyNotFoundError(AppError):
             message=f"Survey {survey_id} was not found in project {project_id}.",
         )
 
+class SurveyDeletePublishedError(AppError):
+    """Error raised when attempting to delete a survey that has a published version."""
+
+    def __init__(self, survey_id: int) -> None:
+        super().__init__(
+            status_code=409,
+            code="SURVEY_HAS_PUBLISHED_VERSION",
+            message=f"Cannot delete survey {survey_id} because it has a published version.",
+        )
 
 class SurveyNotPublishedError(AppError):
     """Error raised when attempting to access a survey that has not been published."""

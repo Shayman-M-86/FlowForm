@@ -81,6 +81,7 @@ class Survey(TimestampMixin, CoreBase):
         primaryjoin="Survey.id == SurveyVersion.survey_id",
         foreign_keys="[SurveyVersion.survey_id]",
         back_populates="survey",
+        passive_deletes=True,
     )
 
     # The currently active published version — post_update defers the UPDATE

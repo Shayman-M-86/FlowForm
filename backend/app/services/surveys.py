@@ -43,6 +43,7 @@ class SurveyService:
 
     def delete_survey(self, db: Session, project_id: int, survey_id: int) -> None:
         survey = self.get_survey(db, project_id, survey_id)
+        survey_rules.ensure_can_delete_survey(survey)
         surveys_repo.delete_survey(db, survey)
         commit_or_rollback(db)
 
