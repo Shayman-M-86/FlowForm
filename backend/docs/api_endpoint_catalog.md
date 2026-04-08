@@ -296,7 +296,7 @@ Update allows either field to be omitted.
       "submitted_by_user_id": 101,
       "public_link_id": null,
       "is_anonymous": false,
-      "status": "submitted",
+      "status": "stored",
       "started_at": "2026-04-07T14:01:00Z",
       "submitted_at": "2026-04-07T14:03:30Z",
       "created_at": "2026-04-07T14:03:31Z"
