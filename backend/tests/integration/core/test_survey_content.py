@@ -23,9 +23,8 @@ from tests.integration.core.factories import (
 
 def test_survey_question_can_be_created(db_session: scoped_session[Session], survey_version: SurveyVersion) -> None:
     """All fields are persisted and server defaults populate created_at and updated_at."""
-    question = make_survey_question(
-        survey_version.id, question_key="q1", question_schema={"type": "field", "label": "Name"}
-    )
+    schema = {"family": "field", "label": "Name", "schema": {"field_type": "text"}, "ui": {}}
+    question = make_survey_question(survey_version.id, question_key="q1", question_schema=schema)
     db_session.add(question)
     db_session.flush()
 
@@ -35,7 +34,7 @@ def test_survey_question_can_be_created(db_session: scoped_session[Session], sur
         f"survey_version_id={saved.survey_version_id!r}, expected {survey_version.id!r}"
     )
     assert saved.question_key == "q1", f"question_key={saved.question_key!r}, expected 'q1'"
-    assert saved.question_schema == {"type": "field", "label": "Name"}, f"question_schema={saved.question_schema!r}"
+    assert saved.question_schema == schema, f"question_schema={saved.question_schema!r}"
     assert saved.created_at is not None, "created_at was not set by the server default"
     assert saved.updated_at is not None, "updated_at was not set by the server default"
 
@@ -56,8 +55,8 @@ def test_survey_question_unique_key_within_version(
 
     orig = cast(UniqueViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
-    assert constraint == "uq_survey_questions_version_key", (
-        f"Expected constraint 'uq_survey_questions_version_key', got '{constraint}'\nDB error: {exc_info.value}"
+    assert constraint == "uq_survey_questions_survey_version_id_question_key", (
+        f"Expected constraint 'uq_survey_questions_survey_version_id_question_key', got '{constraint}'\nDB error: {exc_info.value}"
     )
 
     db_session.rollback()
@@ -124,8 +123,11 @@ def test_survey_question_rejects_non_object_schema(
 def test_survey_question_rejects_invalid_type(
     db_session: scoped_session[Session], survey_version: SurveyVersion
 ) -> None:
-    """question_schema->>'type' must be one of: choice, field, matching, rating."""
-    question = make_survey_question(survey_version.id, question_schema={"type": "text", "label": "Bad"})
+    """question_schema->>'family' must be one of: choice, field, matching, rating."""
+    question = make_survey_question(
+        survey_version.id,
+        question_schema={"family": "text", "label": "Bad", "schema": {}, "ui": {}},
+    )
     db_session.add(question)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -133,8 +135,8 @@ def test_survey_question_rejects_invalid_type(
 
     orig = cast(CheckViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
-    assert constraint == "ck_survey_questions_question_type_valid", (
-        f"Expected constraint 'ck_survey_questions_question_type_valid', got '{constraint}'\nDB error: {exc_info.value}"
+    assert constraint == "ck_survey_questions_question_family_valid", (
+        f"Expected constraint 'ck_survey_questions_question_family_valid', got '{constraint}'\nDB error: {exc_info.value}"
     )
 
     db_session.rollback()
@@ -165,7 +167,8 @@ def test_survey_question_cascades_on_version_delete(
 
 def test_survey_rule_can_be_created(db_session: scoped_session[Session], survey_version: SurveyVersion) -> None:
     """All fields are persisted and server defaults populate created_at and updated_at."""
-    rule = make_survey_rule(survey_version.id, rule_key="r1", rule_schema={"condition": "always"})
+    schema = {"target": "q1", "condition": {}, "effects": {}}
+    rule = make_survey_rule(survey_version.id, rule_key="r1", rule_schema=schema)
     db_session.add(rule)
     db_session.flush()
 
@@ -175,7 +178,7 @@ def test_survey_rule_can_be_created(db_session: scoped_session[Session], survey_
         f"survey_version_id={saved.survey_version_id!r}, expected {survey_version.id!r}"
     )
     assert saved.rule_key == "r1", f"rule_key={saved.rule_key!r}, expected 'r1'"
-    assert saved.rule_schema == {"condition": "always"}, f"rule_schema={saved.rule_schema!r}"
+    assert saved.rule_schema == schema, f"rule_schema={saved.rule_schema!r}"
     assert saved.created_at is not None, "created_at was not set by the server default"
     assert saved.updated_at is not None, "updated_at was not set by the server default"
 
@@ -196,8 +199,8 @@ def test_survey_rule_unique_key_within_version(
 
     orig = cast(UniqueViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
-    assert constraint == "uq_survey_rules_version_key", (
-        f"Expected constraint 'uq_survey_rules_version_key', got '{constraint}'\nDB error: {exc_info.value}"
+    assert constraint == "uq_survey_rules_survey_version_id_rule_key", (
+        f"Expected constraint 'uq_survey_rules_survey_version_id_rule_key', got '{constraint}'\nDB error: {exc_info.value}"
     )
 
     db_session.rollback()
@@ -251,8 +254,11 @@ def test_survey_rule_rejects_non_object_schema(
 
     orig = cast(CheckViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
-    assert constraint == "ck_survey_rules_rule_schema_is_object", (
-        f"Expected constraint 'ck_survey_rules_rule_schema_is_object', got '{constraint}'\nDB error: {exc_info.value}"
+    assert constraint in (
+        "ck_survey_rules_rule_schema_is_object",
+        "ck_survey_rules_rule_condition_is_object",
+    ), (
+        f"Expected a rule_schema shape constraint, got '{constraint}'\nDB error: {exc_info.value}"
     )
 
     db_session.rollback()
@@ -283,7 +289,8 @@ def test_survey_rule_cascades_on_version_delete(
 
 def test_survey_scoring_rule_can_be_created(db_session: scoped_session[Session], survey_version: SurveyVersion) -> None:
     """All fields are persisted and server defaults populate created_at and updated_at."""
-    scoring_rule = make_survey_scoring_rule(survey_version.id, scoring_key="s1", scoring_schema={"formula": "sum"})
+    schema = {"target": "q1", "bucket": "total", "strategy": "rating_direct", "config": {}}
+    scoring_rule = make_survey_scoring_rule(survey_version.id, scoring_key="s1", scoring_schema=schema)
     db_session.add(scoring_rule)
     db_session.flush()
 
@@ -293,7 +300,7 @@ def test_survey_scoring_rule_can_be_created(db_session: scoped_session[Session],
         f"survey_version_id={saved.survey_version_id!r}, expected {survey_version.id!r}"
     )
     assert saved.scoring_key == "s1", f"scoring_key={saved.scoring_key!r}, expected 's1'"
-    assert saved.scoring_schema == {"formula": "sum"}, f"scoring_schema={saved.scoring_schema!r}"
+    assert saved.scoring_schema == schema, f"scoring_schema={saved.scoring_schema!r}"
     assert saved.created_at is not None, "created_at was not set by the server default"
     assert saved.updated_at is not None, "updated_at was not set by the server default"
 
@@ -314,8 +321,8 @@ def test_survey_scoring_rule_unique_key_within_version(
 
     orig = cast(UniqueViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
-    assert constraint == "uq_survey_scoring_rules_version_key", (
-        f"Expected constraint 'uq_survey_scoring_rules_version_key', got '{constraint}'\nDB error: {exc_info.value}"
+    assert constraint == "uq_survey_scoring_rules_survey_version_id_scoring_key", (
+        f"Expected constraint 'uq_survey_scoring_rules_survey_version_id_scoring_key', got '{constraint}'\nDB error: {exc_info.value}"
     )
 
     db_session.rollback()

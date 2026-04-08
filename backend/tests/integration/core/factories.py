@@ -116,7 +116,7 @@ def make_survey_rule(
     rule = SurveyRule()
     rule.survey_version_id = survey_version_id
     rule.rule_key = rule_key
-    rule.rule_schema = rule_schema or {"condition": "always"}
+    rule.rule_schema = rule_schema or {"target": "q1", "condition": {}, "effects": {}}
     return rule
 
 
@@ -128,7 +128,12 @@ def make_survey_scoring_rule(
     scoring_rule = SurveyScoringRule()
     scoring_rule.survey_version_id = survey_version_id
     scoring_rule.scoring_key = scoring_key
-    scoring_rule.scoring_schema = scoring_schema or {"formula": "sum"}
+    scoring_rule.scoring_schema = scoring_schema or {
+        "target": "q1",
+        "bucket": "total",
+        "strategy": "rating_direct",
+        "config": {},
+    }
     return scoring_rule
 
 
@@ -140,5 +145,10 @@ def make_survey_question(
     question = SurveyQuestion()
     question.survey_version_id = survey_version_id
     question.question_key = question_key
-    question.question_schema = question_schema or {"type": "field", "label": "Question"}
+    question.question_schema = question_schema or {
+        "family": "field",
+        "label": "Question",
+        "schema": {"field_type": "text"},
+        "ui": {},
+    }
     return question

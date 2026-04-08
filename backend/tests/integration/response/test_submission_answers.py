@@ -177,9 +177,9 @@ def test_submission_answer_rejects_invalid_answer_family(db_session: scoped_sess
 @pytest.mark.parametrize(
     "answer_family,answer_value",
     [
-        ("choice", {"selected_option_ids": ["opt_a", "opt_b"]}),
+        ("choice", {"selected": ["opt_a", "opt_b"]}),
         ("field", {"value": "hello"}),
-        ("matching", {"pairs": [{"left_id": "x", "right_id": "y"}]}),
+        ("matching", {"matches": [{"left_id": "x", "right_id": "y"}]}),
         ("rating", {"value": 4}),
     ],
 )

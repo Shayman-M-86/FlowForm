@@ -201,9 +201,9 @@ def test_survey_version_constraints() -> None:
 
 
 def test_survey_content_unique_constraints() -> None:
-    assert "uq_survey_questions_version_key" in unique_constraint_names(SurveyQuestion)
-    assert "uq_survey_rules_version_key" in unique_constraint_names(SurveyRule)
-    assert "uq_survey_scoring_rules_version_key" in unique_constraint_names(SurveyScoringRule)
+    assert "uq_survey_questions_survey_version_id_question_key" in unique_constraint_names(SurveyQuestion)
+    assert "uq_survey_rules_survey_version_id_rule_key" in unique_constraint_names(SurveyRule)
+    assert "uq_survey_scoring_rules_survey_version_id_scoring_key" in unique_constraint_names(SurveyScoringRule)
 
 
 def test_survey_role_unique_constraints() -> None:

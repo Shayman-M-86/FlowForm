@@ -25,14 +25,25 @@ def test_user_project_survey_questions_chain(
     version, and the version has questions. Assert the full chain is
     persisted and navigable.
     """
-    q1 = make_survey_question(survey_version.id, question_key="q1", question_schema={"type": "field", "label": "Name"})
+    q1 = make_survey_question(
+        survey_version.id,
+        question_key="q1",
+        question_schema={"family": "field", "label": "Name", "schema": {"field_type": "text"}, "ui": {}},
+    )
     q2 = make_survey_question(
         survey_version.id,
         question_key="q2",
-        question_schema={"type": "choice", "label": "Colour", "options": ["red", "blue"]},
+        question_schema={
+            "family": "choice",
+            "label": "Colour",
+            "schema": {"options": [], "min_selected": 0, "max_selected": 1},
+            "ui": {},
+        },
     )
     q3 = make_survey_question(
-        survey_version.id, question_key="q3", question_schema={"type": "rating", "label": "Score", "max": 10}
+        survey_version.id,
+        question_key="q3",
+        question_schema={"family": "rating", "label": "Score", "schema": {"min": 0, "max": 10}, "ui": {}},
     )
 
     db_session.add_all([q1, q2, q3])
@@ -86,32 +97,40 @@ def test_user_project_survey_questions_chain(
     assert keys == {"q1", "q2", "q3"}, f"Expected questions {{q1, q2, q3}}, got {keys!r}"
 
 
+_VALID_QUESTION_SCHEMAS: dict[str, dict] = {
+    "choice": {"family": "choice", "label": "Test", "schema": {"options": [], "min_selected": 0, "max_selected": 1}, "ui": {}},
+    "field": {"family": "field", "label": "Test", "schema": {"field_type": "text"}, "ui": {}},
+    "matching": {"family": "matching", "label": "Test", "schema": {"left_items": [], "right_items": []}, "ui": {}},
+    "rating": {"family": "rating", "label": "Test", "schema": {"min": 0, "max": 10}, "ui": {}},
+}
+
+
 @pytest.mark.parametrize("question_type", ["choice", "field", "matching", "rating"])
 def test_survey_question_accepts_valid_type(
     db_session: scoped_session[Session],
     survey_version: SurveyVersion,
     question_type: str,
 ) -> None:
-    """Each of the four known question types is accepted by the constraint."""
+    """Each of the four known question families is accepted by the constraint."""
     question = make_survey_question(
         survey_version.id,
         question_key=question_type,
-        question_schema={"type": question_type, "label": "Test"},
+        question_schema=_VALID_QUESTION_SCHEMAS[question_type],
     )
     db_session.add(question)
     db_session.flush()
-    assert question.id is not None, f"Question with type={question_type!r} was not persisted"
+    assert question.id is not None, f"Question with family={question_type!r} was not persisted"
 
 
 def test_survey_question_rejects_invalid_type(
     db_session: scoped_session[Session],
     survey_version: SurveyVersion,
 ) -> None:
-    """question_schema->>'type' must be one of the four known question families."""
+    """question_schema->>'family' must be one of the four known question families."""
     bad = make_survey_question(
         survey_version.id,
         question_key="bad",
-        question_schema={"type": "text", "label": "Unsupported"},
+        question_schema={"family": "text", "label": "Unsupported", "schema": {}, "ui": {}},
     )
     db_session.add(bad)
 
@@ -123,8 +142,8 @@ def test_survey_question_rejects_invalid_type(
         f"DB error: {exc_info.value}"
     )
     constraint = exc_info.value.orig.diag.constraint_name
-    assert constraint == "ck_survey_questions_question_type_valid", (
-        f"Expected constraint 'ck_survey_questions_question_type_valid', got '{constraint}'\n"
+    assert constraint == "ck_survey_questions_question_family_valid", (
+        f"Expected constraint 'ck_survey_questions_question_family_valid', got '{constraint}'\n"
         f"DB error: {exc_info.value}"
     )
 
