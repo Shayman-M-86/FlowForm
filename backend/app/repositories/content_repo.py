@@ -32,7 +32,7 @@ def create_question(db: Session, version: SurveyVersion, data: CreateQuestionReq
     question = SurveyQuestion(
         survey_version_id=version.id,
         question_key=data.question_key,
-        question_schema=data.question_schema,
+        question_schema=data.question_schema.model_dump(by_alias=True, mode="json"),
     )
     db.add(question)
     db.flush()
@@ -44,7 +44,10 @@ def update_question(db: Session, question: SurveyQuestion, data: UpdateQuestionR
     if "question_key" in changed and data.question_key is not None:
         question.question_key = data.question_key
     if "question_schema" in changed and data.question_schema is not None:
-        question.question_schema = data.question_schema
+        question.question_schema = data.question_schema.model_dump(
+            by_alias=True,
+            mode="json",
+        )
     db.flush()
     return question
 
@@ -74,7 +77,7 @@ def create_rule(db: Session, version: SurveyVersion, data: CreateRuleRequest) ->
     rule = SurveyRule(
         survey_version_id=version.id,
         rule_key=data.rule_key,
-        rule_schema=data.rule_schema,
+        rule_schema=data.rule_schema.model_dump(by_alias=True, mode="json"),
     )
     db.add(rule)
     db.flush()
@@ -86,7 +89,7 @@ def update_rule(db: Session, rule: SurveyRule, data: UpdateRuleRequest) -> Surve
     if "rule_key" in changed and data.rule_key is not None:
         rule.rule_key = data.rule_key
     if "rule_schema" in changed and data.rule_schema is not None:
-        rule.rule_schema = data.rule_schema
+        rule.rule_schema = data.rule_schema.model_dump(by_alias=True, mode="json")
     db.flush()
     return rule
 
@@ -116,7 +119,7 @@ def create_scoring_rule(db: Session, version: SurveyVersion, data: CreateScoring
     rule = SurveyScoringRule(
         survey_version_id=version.id,
         scoring_key=data.scoring_key,
-        scoring_schema=data.scoring_schema,
+        scoring_schema=data.scoring_schema.model_dump(by_alias=True, mode="json"),
     )
     db.add(rule)
     db.flush()
@@ -128,7 +131,7 @@ def update_scoring_rule(db: Session, rule: SurveyScoringRule, data: UpdateScorin
     if "scoring_key" in changed and data.scoring_key is not None:
         rule.scoring_key = data.scoring_key
     if "scoring_schema" in changed and data.scoring_schema is not None:
-        rule.scoring_schema = data.scoring_schema
+        rule.scoring_schema = data.scoring_schema.model_dump(by_alias=True, mode="json")
     db.flush()
     return rule
 

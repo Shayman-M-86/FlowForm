@@ -297,14 +297,61 @@ CREATE TABLE survey_questions (
     question_schema JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT uq_survey_questions_survey_version_id_question_key 
+        UNIQUE (survey_version_id, question_key),
+
     CONSTRAINT ck_survey_questions_question_schema_is_object
         CHECK (jsonb_typeof(question_schema) = 'object'),
 
-    CONSTRAINT ck_survey_questions_question_type_valid
-        CHECK (question_schema->>'type' IN ('choice', 'field', 'matching', 'rating')),
+    CONSTRAINT ck_survey_questions_question_schema_top_level_shape_valid
+        CHECK (jsonb_has_exact_keys(question_schema, ARRAY['family', 'label', 'schema', 'ui'])),
 
-    CONSTRAINT uq_survey_questions_version_key
-        UNIQUE (survey_version_id, question_key)
+    CONSTRAINT ck_survey_questions_question_family_valid
+        CHECK (question_schema->>'family' IN ('choice', 'field', 'matching', 'rating')),
+
+    CONSTRAINT ck_survey_questions_question_label_valid
+        CHECK (jsonb_typeof(question_schema->'label') = 'string' AND btrim(question_schema->>'label') <> ''),
+
+    CONSTRAINT ck_survey_questions_question_schema_inner_is_object
+        CHECK (jsonb_typeof(question_schema->'schema') = 'object'),
+
+    CONSTRAINT ck_survey_questions_question_ui_is_object
+        CHECK (jsonb_typeof(question_schema->'ui') = 'object'),
+
+    CONSTRAINT ck_survey_questions_question_choice_schema_valid
+        CHECK (
+            question_schema->>'family' <> 'choice' OR (
+                jsonb_has_exact_keys(question_schema->'schema', ARRAY['options', 'min_selected', 'max_selected'])
+                AND jsonb_typeof(question_schema->'schema'->'options') = 'array'
+                AND jsonb_typeof(question_schema->'schema'->'min_selected') = 'number'
+                AND jsonb_typeof(question_schema->'schema'->'max_selected') = 'number'
+            )
+        ),
+    CONSTRAINT ck_survey_questions_question_field_schema_valid
+        CHECK (
+            question_schema->>'family' <> 'field' OR (
+                jsonb_has_exact_keys(question_schema->'schema', ARRAY['field_type'])
+                AND question_schema->'schema'->>'field_type' IN ('text', 'email', 'number', 'date', 'phone')
+            )
+        ),
+    CONSTRAINT ck_survey_questions_question_matching_schema_valid
+        CHECK (
+            question_schema->>'family' <> 'matching' OR (
+                jsonb_has_exact_keys(question_schema->'schema', ARRAY['left_items', 'right_items'])
+                AND jsonb_typeof(question_schema->'schema'->'left_items') = 'array'
+                AND jsonb_typeof(question_schema->'schema'->'right_items') = 'array'
+            )
+        ),
+    CONSTRAINT ck_survey_questions_question_rating_schema_valid
+        CHECK (
+            question_schema->>'family' <> 'rating' OR (
+                jsonb_has_exact_keys(question_schema->'schema', ARRAY['min', 'max'])
+                AND jsonb_typeof(question_schema->'schema'->'min') = 'number'
+                AND jsonb_typeof(question_schema->'schema'->'max') = 'number'
+                AND (question_schema->'schema'->>'max')::numeric > (question_schema->'schema'->>'min')::numeric
+            )
+        )
 );
 
 -- =========================================
@@ -318,11 +365,42 @@ CREATE TABLE survey_rules (
     rule_schema JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT uq_survey_rules_survey_version_id_rule_key
+        UNIQUE (survey_version_id, rule_key),
+
     CONSTRAINT ck_survey_rules_rule_schema_is_object
         CHECK (jsonb_typeof(rule_schema) = 'object'),
 
-    CONSTRAINT uq_survey_rules_version_key
-        UNIQUE (survey_version_id, rule_key)
+    CONSTRAINT ck_survey_rules_rule_schema_top_level_shape_valid
+        CHECK (
+            jsonb_has_exact_keys(rule_schema, ARRAY['target', 'condition', 'effects'])
+            OR jsonb_has_exact_keys(rule_schema, ARRAY['target', 'sort_order', 'condition', 'effects'])
+        ),
+
+    CONSTRAINT ck_survey_rules_rule_target_valid
+        CHECK (
+            jsonb_typeof(rule_schema->'target') = 'string'
+            AND btrim(rule_schema->>'target') <> ''
+        ),
+
+    CONSTRAINT ck_survey_rules_rule_condition_is_object
+        CHECK (
+            rule_schema->'condition' IS NOT NULL
+            AND jsonb_typeof(rule_schema->'condition') = 'object'
+        ),
+
+    CONSTRAINT ck_survey_rules_rule_effects_is_object
+        CHECK (
+            rule_schema->'effects' IS NOT NULL
+            AND jsonb_typeof(rule_schema->'effects') = 'object'
+        ),
+
+    CONSTRAINT ck_survey_rules_rule_sort_order_valid
+        CHECK (
+            (rule_schema ? 'sort_order') = FALSE
+            OR jsonb_typeof(rule_schema->'sort_order') = 'number'
+        )
 );
 
 -- =========================================
@@ -336,11 +414,48 @@ CREATE TABLE survey_scoring_rules (
     scoring_schema JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT uq_survey_scoring_rules_survey_version_id_scoring_key
+        UNIQUE (survey_version_id, scoring_key),
+
     CONSTRAINT ck_survey_scoring_rules_scoring_schema_is_object
         CHECK (jsonb_typeof(scoring_schema) = 'object'),
 
-    CONSTRAINT uq_survey_scoring_rules_version_key
-        UNIQUE (survey_version_id, scoring_key)
+    CONSTRAINT ck_survey_scoring_rules_scoring_schema_required_keys_present
+        CHECK (scoring_schema ?& ARRAY['target', 'bucket', 'strategy', 'config']),
+
+    CONSTRAINT ck_survey_scoring_rules_scoring_target_valid
+        CHECK (
+            jsonb_typeof(scoring_schema->'target') = 'string'
+            AND btrim(scoring_schema->>'target') <> ''
+        ),
+
+    CONSTRAINT ck_survey_scoring_rules_scoring_bucket_valid
+        CHECK (
+            jsonb_typeof(scoring_schema->'bucket') = 'string'
+            AND btrim(scoring_schema->>'bucket') <> ''
+        ),
+
+    CONSTRAINT ck_survey_scoring_rules_scoring_strategy_valid
+        CHECK (
+            scoring_schema->>'strategy' IN (
+                'choice_option_map',
+                'matching_answer_key',
+                'rating_direct',
+                'field_numeric_ranges'
+            )
+        ),
+
+    CONSTRAINT ck_survey_scoring_rules_scoring_config_is_object
+        CHECK (
+            jsonb_typeof(scoring_schema->'config') = 'object'
+        ),
+
+    CONSTRAINT ck_survey_scoring_rules_scoring_condition_is_object
+        CHECK (
+            (scoring_schema ? 'condition') = FALSE
+            OR jsonb_typeof(scoring_schema->'condition') = 'object'
+        )
 );
 
 -- =========================================
@@ -352,6 +467,7 @@ CREATE TABLE survey_roles (
     project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
     CONSTRAINT uq_survey_roles_project_id_id
         UNIQUE (project_id, id),
 

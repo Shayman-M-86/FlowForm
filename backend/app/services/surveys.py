@@ -10,6 +10,7 @@ from app.schema.orm.core.survey import Survey, SurveyVersion
 
 DEFAULT_RESPONSE_STORE_ID = 1  # TODO: This should be set to a real default response store ID
 
+
 class SurveyService:
     """Service for survey and survey version operations."""
 
@@ -30,9 +31,7 @@ class SurveyService:
             project_id=project_id,
         )
 
-    def update_survey(
-        self, db: Session, project_id: int, survey_id: int, data: UpdateSurveyRequest
-    ) -> Survey:
+    def update_survey(self, db: Session, project_id: int, survey_id: int, data: UpdateSurveyRequest) -> Survey:
         survey = self.get_survey(db, project_id, survey_id)
         try:
             updated = surveys_repo.update_survey(db, survey, data)
@@ -55,29 +54,21 @@ class SurveyService:
             raise VersionNotFoundError(survey_id=survey_id, version_id=version_id)
         return version
 
-    def list_versions(
-        self, db: Session, project_id: int, survey_id: int
-    ) -> list[SurveyVersion]:
+    def list_versions(self, db: Session, project_id: int, survey_id: int) -> list[SurveyVersion]:
         self.get_survey(db, project_id, survey_id)
         return surveys_repo.list_versions(db, survey_id)
 
-    def get_version(
-        self, db: Session, project_id: int, survey_id: int, version_id: int
-    ) -> SurveyVersion:
+    def get_version(self, db: Session, project_id: int, survey_id: int, version_id: int) -> SurveyVersion:
         self.get_survey(db, project_id, survey_id)
         return self._get_version(db, survey_id, version_id)
 
-    def create_version(
-        self, db: Session, project_id: int, survey_id: int
-    ) -> SurveyVersion:
+    def create_version(self, db: Session, project_id: int, survey_id: int) -> SurveyVersion:
         self.get_survey(db, project_id, survey_id)
         version = surveys_repo.create_version(db, survey_id)
         commit_or_rollback(db)
         return version
 
-    def publish_version(
-        self, db: Session, project_id: int, survey_id: int, version_id: int
-    ) -> SurveyVersion:
+    def publish_version(self, db: Session, project_id: int, survey_id: int, version_id: int) -> SurveyVersion:
         survey = self.get_survey(db, project_id, survey_id)
         version = self._get_version(db, survey_id, version_id)
 
@@ -90,9 +81,13 @@ class SurveyService:
         scoring_rules = content_repo.list_scoring_rules(db, version.id)
 
         compiled = {
-            "questions": [{"id": q.id, "question_key": q.question_key, "question_schema": q.question_schema} for q in questions],
+            "questions": [
+                {"id": q.id, "question_key": q.question_key, "question_schema": q.question_schema} for q in questions
+            ],
             "rules": [{"id": r.id, "rule_key": r.rule_key, "rule_schema": r.rule_schema} for r in rules],
-            "scoring_rules": [{"id": s.id, "scoring_key": s.scoring_key, "scoring_schema": s.scoring_schema} for s in scoring_rules],
+            "scoring_rules": [
+                {"id": s.id, "scoring_key": s.scoring_key, "scoring_schema": s.scoring_schema} for s in scoring_rules
+            ],
         }
         survey_rules.ensure_default_response_store(
             survey=survey,
@@ -103,9 +98,7 @@ class SurveyService:
         commit_or_rollback(db)
         return result
 
-    def archive_version(
-        self, db: Session, project_id: int, survey_id: int, version_id: int
-    ) -> SurveyVersion:
+    def archive_version(self, db: Session, project_id: int, survey_id: int, version_id: int) -> SurveyVersion:
         self.get_survey(db, project_id, survey_id)
         version = self._get_version(db, survey_id, version_id)
         version_rules.ensure_can_archive(version=version)

@@ -142,6 +142,20 @@ CREATE TABLE submission_answers (
     CONSTRAINT uq_submission_answers_question
         UNIQUE (submission_id, question_key)
 );
+-- =========================================
+-- SUBMISSION EVENTS
+-- =========================================
+-- Useful for debugging async delivery / write failures / retries.
+
+CREATE TABLE submission_events (
+    id BIGSERIAL PRIMARY KEY,
+    submission_id BIGINT NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+    event_type TEXT NOT NULL,
+    event_payload JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_submission_events_event_payload_is_object
+        CHECK (event_payload IS NULL OR jsonb_typeof(event_payload) = 'object')
+);
 
 -- =========================================
 -- INDEXES

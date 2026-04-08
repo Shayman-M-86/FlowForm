@@ -506,3 +506,49 @@ Effects should focus on UI state in v1.
 
 This keeps the rule model flexible, understandable, and well aligned with a dynamic survey builder.
 
+Recommended semantics
+
+Use:
+
+{
+  "target": "q3",
+  "sort_order": 20,
+  "condition": { ... },
+  "effects": {
+    "visible": false,
+    "required": true
+  }
+}
+
+Then the engine does:
+
+start from base question defaults
+find matching rules for that target
+sort by sort_order
+merge effects
+later rule overrides earlier rule only for the keys it sets
+
+So this:
+
+rule 1 -> { "visible": true }
+rule 2 -> { "required": true }
+
+becomes:
+
+{ "visible": true, "required": true }
+
+But this:
+
+rule 1 -> { "visible": true }
+rule 2 -> { "visible": false }
+
+becomes:
+
+{ "visible": false }
+Best v1 choice
+
+I’d use:
+
+sort_order
+last match wins
+tie-breaker by rule_key if two rules have the same order
