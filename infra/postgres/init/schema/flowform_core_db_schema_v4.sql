@@ -88,6 +88,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
+CREATE OR REPLACE FUNCTION jsonb_has_exact_keys(doc jsonb, expected_keys text[])
+RETURNS boolean
+LANGUAGE sql
+IMMUTABLE
+STRICT
+AS $$
+    SELECT
+        jsonb_typeof(doc) = 'object'
+        AND doc ?& expected_keys
+        AND (
+            SELECT count(*)
+            FROM jsonb_object_keys(doc)
+        ) = (
+            SELECT count(DISTINCT k)
+            FROM unnest(expected_keys) AS t(k)
+        );
+$$;
 -- =========================================
 -- USERS
 -- =========================================
