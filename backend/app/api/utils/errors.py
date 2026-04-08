@@ -13,6 +13,22 @@ logger = logging.getLogger(__name__)
 
 
 def register_error_handlers(app: Flask) -> None:
+    """Register JSON API error handlers for the Flask application.
+
+    The registered handlers convert exceptions into consistent JSON
+    responses:
+
+    - ``AppError`` returns ``code``, ``message``, and ``details`` using
+      the exception's ``status_code``.
+    - ``ValidationError`` returns a ``422`` response with a
+      ``VALIDATION_ERROR`` code, a fixed message, and normalized
+      validation ``errors``.
+    - ``HTTPException`` returns a response with a ``code`` derived from
+      the HTTP status (for example, ``HTTP_404``) and the exception
+      description as the message.
+    - Any other ``Exception`` is logged and transformed into a generic
+      ``500 INTERNAL_SERVER_ERROR`` response.
+    """
     @app.errorhandler(AppError)
     def handle_app_error(exc: AppError):
         return (

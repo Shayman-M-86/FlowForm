@@ -33,7 +33,7 @@ class DatabaseManager:
                 "Settings must be loaded and attached to the Flask app before initializing the database manager."
             ) from err
 
-        self.core_engine = create_engine(
+        self.core_engine = create_engine(  # Todo - Add ability to configure settings via the config settings object.
             settings.database.core.url,
             pool_size=10,
             max_overflow=20,

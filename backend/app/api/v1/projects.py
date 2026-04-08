@@ -2,8 +2,7 @@ from logging import getLogger
 
 from flask import Blueprint, request, url_for
 
-from app.api.utils.validation import parse
-from app.api.v1.public import parse_query
+from app.api.utils.validation import parse, parse_query
 from app.db.context import get_core_db, get_response_db
 from app.repositories import surveys_repo as survey_svc
 from app.schema.api.requests.content import (
