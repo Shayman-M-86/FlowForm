@@ -26,7 +26,6 @@ class SubmissionContext:
     """Context object containing all necessary information to create a submission, passed to the gateway layer."""
 
     project_id: int
-    project_id: int
     survey_id: int
     survey_version_id: int
     response_store_id: int

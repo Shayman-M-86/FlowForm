@@ -43,11 +43,6 @@ class LinkedSubmissionOut(BaseModel):
     core: CoreSubmissionOut
     answers: list[AnswerOut]
 
-class ListSubmissionsRequest(BaseModel):
-    """API request shape for listing submissions, supporting filtering by various criteria."""
-    survey_id: int | None = None
-    status: str | None = None
-    submission_channel: str | None = None
 
 class PaginatedSubmissionsOut(BaseModel):
     """API response shape for a paginated list of submissions."""

@@ -50,6 +50,7 @@ class AppError(Exception):
 
 class SurveyNotFoundError(AppError):
     """Error raised when a requested survey is not found in the database."""
+
     def __init__(self, survey_id: int, project_id: int) -> None:
         super().__init__(
             status_code=404,
@@ -60,6 +61,7 @@ class SurveyNotFoundError(AppError):
 
 class PermissionDeniedError(AppError):
     """Error raised when a user attempts to perform an action they do not have permission for."""
+
     def __init__(self, message: str = "Permission denied.") -> None:
         super().__init__(
             status_code=403,
@@ -70,12 +72,14 @@ class PermissionDeniedError(AppError):
 
 class SurveyPublishError(AppError):
     """Error raised when a survey cannot be published due to validation issues."""
+
     def __init__(self, message: str) -> None:
         super().__init__(
             status_code=409,
             code="SURVEY_PUBLISH_ERROR",
             message=message,
         )
+
 
 # ----------------------------------------------------------
 # API errors
@@ -85,11 +89,16 @@ class ParsingValidationError(ValidationError):
 
     description = "A parsing validation error occurred."
 
+
 class RateLimitExceededError(AppError):
     """Error raised when a user exceeds the allowed rate limit."""
-    def __init__(self) -> None:
+
+    def __init__(self, retry_after_seconds: int | None = None) -> None:
         super().__init__(
             status_code=429,
             code="RATE_LIMIT_EXCEEDED",
-            message="Rate limit exceeded. Please try again later.",
+            message=f"Rate limit exceeded. Please retry after {retry_after_seconds} seconds."
+            if retry_after_seconds is not None
+            else "Rate limit exceeded. Please retry after some time.",
         )
+        self.retry_after_seconds = retry_after_seconds

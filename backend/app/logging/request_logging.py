@@ -4,13 +4,13 @@ import logging
 import time
 import uuid
 from typing import Any
-from venv import logger
 
 from flask import Flask, g, request
 
 from app.utils.general import get_client_ip, get_log_level
 
 HTTP_LOGGER = logging.getLogger("app.http")
+logger = logging.getLogger(__name__)
 
 
 def log_request(response, duration_seconds: float | None = None) -> None:

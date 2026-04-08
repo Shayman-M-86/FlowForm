@@ -42,7 +42,7 @@ def rate_limiting(
         if decision.allowed:
             return None
 
-        raise RateLimitExceededError
+        raise RateLimitExceededError(decision.retry_after_seconds)
 
 
 
