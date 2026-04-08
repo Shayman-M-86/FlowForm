@@ -31,35 +31,31 @@ def readiness_check():
     Returns:
         JSON response indicating the service is ready.
     """
+    db_status, status_code = db_check()
     return jsonify(
         data={"timestamp": datetime.now(UTC).isoformat()},
-        message="Service is ready",
-    ), 200
+        message=db_status,
+    ), status_code
 
 
-@health_bp.route("/db", methods=["GET"])
-def database_check():
-    """Return a database connectivity check response.
 
-    Returns:
-        JSON response indicating if the database connection is healthy.
-    """
+def db_check():
     try:
         db = get_core_db()
         db.execute(text("SELECT 1"))
-        core_db = "Core DB connected successfully."
+        core_db = None
     except Exception as e:
         logger.error(f"Connection to core database failed: {e!s}")
         core_db = "Core DB connection failed."
+    
     try:
         db = get_response_db()
         db.execute(text("SELECT 1"))
-        response_db = "Response DB connected successfully."
+        response_db = None
     except Exception as e:
         logger.error(f"Connection to response database failed: {e!s}")
         response_db = "Response DB connection failed."
-
-    return jsonify(
-        data={"timestamp": datetime.now(UTC).isoformat()},
-        message=f"Database connectivity check: {core_db} {response_db}",
-    ), 200
+    
+    if core_db or response_db:
+        return f"Database connectivity Failed: {core_db or ''} {response_db or ''}", 503
+    return "Service is ready", 200

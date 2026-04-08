@@ -1,0 +1,60 @@
+.auth-gate {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: #111827;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 480px;
+    padding: 32px;
+    border: 1px solid #374151;
+    border-radius: 16px;
+    background: #1f2937;
+    color: #f9fafb;
+}
+
+.auth-eyebrow {
+    margin: 0 0 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.auth-card h1 {
+    margin: 0 0 12px;
+    font-size: 1.9rem;
+    line-height: 1.2;
+}
+
+.auth-card p {
+    margin: 0;
+    color: #d1d5db;
+    line-height: 1.6;
+}
+
+.auth-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.auth-actions button {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    background: #2563eb;
+    color: white;
+}
+
+.auth-actions .secondary {
+    background: transparent;
+    color: #f9fafb;
+    border: 1px solid #4b5563; }

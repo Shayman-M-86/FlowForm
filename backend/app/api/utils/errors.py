@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from werkzeug.exceptions import HTTPException
 
 from app.api.utils.validation import normalize_pydantic_errors
-from app.core.errors import AppError
+from app.core.errors import AppError, AuthError
 
 logger = logging.getLogger(__name__)
 
@@ -81,3 +81,18 @@ def register_error_handlers(app: Flask) -> None:
             ),
             500,
         )
+
+
+    @app.errorhandler(AuthError)
+    def handle_auth_error(exc: AuthError):
+        response = jsonify(
+            {
+                "code": exc.code,
+                "message": exc.message,
+                "details": exc.details,
+            }
+        )
+        response.status_code = exc.status_code or 401
+        for header_name, header_value in exc.headers.items():
+            response.headers[header_name] = header_value
+        return response

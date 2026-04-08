@@ -1,0 +1,11 @@
+.surveys-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 640px) {
+  .surveys-grid {
+    grid-template-columns: 1fr;
+  }
+}

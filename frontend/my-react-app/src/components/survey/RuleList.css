@@ -1,0 +1,29 @@
+.rule-schema-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rule-schema-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.rule-schema-textarea {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--code-bg);
+  color: var(--text-h);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.rule-schema-textarea:focus {
+  border-color: var(--accent);
+}

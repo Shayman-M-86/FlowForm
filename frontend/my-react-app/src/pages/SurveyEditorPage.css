@@ -1,0 +1,55 @@
+.editor-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.editor-header__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.editor-title {
+  font-size: 22px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 1px dashed transparent;
+  transition: border-color 0.15s;
+  margin: 0;
+}
+
+.editor-title:hover {
+  border-bottom-color: var(--border);
+}
+
+.editor-title-input {
+  font-size: 22px;
+  font-weight: 600;
+  font-family: var(--heading);
+  color: var(--text-h);
+  border: none;
+  border-bottom: 2px solid var(--accent);
+  outline: none;
+  background: transparent;
+  padding: 0;
+  min-width: 200px;
+}
+
+.editor-header__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.editor-readonly-banner {
+  background: var(--muted-bg);
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}

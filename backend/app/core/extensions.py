@@ -5,11 +5,13 @@ from flask_cors import CORS
 
 # from flask_jwt_extended import JWTManager
 from app.db.manager import DatabaseManager
+from app.middleware.auth import AuthExtension
 
 logger = getLogger(__name__)
 
 
 db_manager = DatabaseManager()
+auth = AuthExtension()
 cors = CORS()
 
 
@@ -21,6 +23,7 @@ def init_extensions(app: Flask) -> None:
     """
     logger.debug("Initializing core database")
     db_manager.init_app(app)
+    auth.init_app(app)
 
 
     # jwt_manager.init_app(app)

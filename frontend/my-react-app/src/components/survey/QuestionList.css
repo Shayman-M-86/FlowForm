@@ -1,0 +1,14 @@
+.question-key {
+  display: inline-block;
+  margin-right: 10px;
+  font-size: 13px;
+}
+
+.question-label {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.question-list__add {
+  margin-top: 14px;
+}

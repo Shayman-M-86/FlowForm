@@ -1,0 +1,96 @@
+.submissions-scope {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.submissions-filters {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.submissions-filters__btn {
+  padding-bottom: 0;
+  align-self: flex-end;
+}
+
+.submission-row {
+  cursor: pointer;
+  user-select: none;
+}
+
+.submission-row--expanded {
+  background: var(--bg-subtle);
+}
+
+.submission-row__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.submission-id {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+  font-family: var(--mono);
+}
+
+.submission-row__meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.submission-survey {
+  color: var(--muted);
+}
+
+.submission-expand-icon {
+  font-size: 10px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.submission-answers {
+  padding: 14px 20px;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.submission-answer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.answer-key {
+  font-size: 13px;
+  min-width: 120px;
+}
+
+.answer-value {
+  font-size: 13px;
+  color: var(--text-h);
+  flex: 1;
+}
+
+.submission-no-answers {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.pagination__total {
+  color: var(--muted);
+  margin-left: auto;
+}

@@ -1,0 +1,39 @@
+.qe-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qe-section-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.qe-option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qe-option-row .input-field {
+  flex: 1;
+}
+
+.qe-pair-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qe-pair-row .input-field {
+  flex: 1;
+}
+
+.qe-pair-arrow {
+  color: var(--muted);
+  flex-shrink: 0;
+  font-size: 14px;
+}

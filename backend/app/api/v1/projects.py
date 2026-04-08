@@ -29,7 +29,7 @@ from app.services.content import ContentService
 from app.services.public_links import PublicLinkService
 from app.services.submissions import SubmissionService
 from app.services.surveys import SurveyService
-
+from app.core.extensions import auth
 logger = getLogger(__name__)
 
 projects_bp = Blueprint("projects_v1", __name__)
@@ -44,6 +44,7 @@ submission_service = SubmissionService()
 
 
 @projects_bp.route("/<int:project_id>/surveys", methods=["GET"])
+@auth.require_auth()
 def list_surveys(project_id: int):
     db = get_core_db()
     surveys = survey_svc.list_surveys(db, project_id)
@@ -51,6 +52,7 @@ def list_surveys(project_id: int):
 
 
 @projects_bp.route("/<int:project_id>/surveys", methods=["POST"])
+@auth.require_auth()
 def create_survey(project_id: int):
     payload = parse(CreateSurveyRequest, request)
     db = get_core_db()
@@ -59,6 +61,7 @@ def create_survey(project_id: int):
 
 
 @projects_bp.route("/<int:project_id>/surveys/<int:survey_id>", methods=["GET"])
+@auth.require_auth()
 def get_survey(project_id: int, survey_id: int):
     db = get_core_db()
     survey = survey_service.get_survey(db, project_id, survey_id)
@@ -66,6 +69,7 @@ def get_survey(project_id: int, survey_id: int):
 
 
 @projects_bp.route("/<int:project_id>/surveys/<int:survey_id>", methods=["PATCH"])
+@auth.require_auth()
 def update_survey(project_id: int, survey_id: int):
     payload = parse(UpdateSurveyRequest, request)
     db = get_core_db()

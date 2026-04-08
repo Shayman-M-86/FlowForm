@@ -102,3 +102,19 @@ class RateLimitExceededError(AppError):
             else "Rate limit exceeded. Please retry after some time.",
         )
         self.retry_after_seconds = retry_after_seconds
+
+
+class AuthError(AppError):
+    """Base auth error that flows through the normal AppError handler."""
+
+    def __init__(
+        self,
+        *,
+        message: str,
+        code: str = "AUTH_ERROR",
+        status_code: int = 401,
+        details: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> None:
+        super().__init__(message=message, code=code, status_code=status_code, details=details or {})
+        self.headers = headers or {}
