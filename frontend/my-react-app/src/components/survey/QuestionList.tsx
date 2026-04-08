@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { createQuestion, deleteQuestion, listQuestions, updateQuestion } from "../../api/content";
+import { useApi } from "../../api/useApi";
 import type { QuestionOut } from "../../api/types";
 import { useFetch } from "../../hooks/useFetch";
 import { Badge } from "../ui/Badge";
@@ -17,9 +17,10 @@ interface QuestionListProps {
 }
 
 export function QuestionList({ projectId, surveyId, versionId, readOnly }: QuestionListProps) {
+  const api = useApi();
   const fetcher = useCallback(
-    () => listQuestions(projectId, surveyId, versionId),
-    [projectId, surveyId, versionId],
+    () => api.listQuestions(projectId, surveyId, versionId),
+    [api, projectId, surveyId, versionId],
   );
   const { data: questions, loading, error, refetch } = useFetch(fetcher);
 
@@ -29,18 +30,18 @@ export function QuestionList({ projectId, surveyId, versionId, readOnly }: Quest
   function openAdd() { setEditing(null); setEditorOpen(true); }
   function openEdit(q: QuestionOut) { setEditing(q); setEditorOpen(true); }
 
-  async function handleSave(data: Parameters<typeof createQuestion>[3]) {
+  async function handleSave(data: Parameters<typeof api.createQuestion>[3]) {
     if (editing) {
-      await updateQuestion(projectId, surveyId, versionId, editing.id, data);
+      await api.updateQuestion(projectId, surveyId, versionId, editing.id, data);
     } else {
-      await createQuestion(projectId, surveyId, versionId, data);
+      await api.createQuestion(projectId, surveyId, versionId, data);
     }
     refetch();
   }
 
   async function handleDelete(q: QuestionOut) {
     if (!confirm(`Delete question "${q.question_key}"?`)) return;
-    await deleteQuestion(projectId, surveyId, versionId, q.id);
+    await api.deleteQuestion(projectId, surveyId, versionId, q.id);
     refetch();
   }
 

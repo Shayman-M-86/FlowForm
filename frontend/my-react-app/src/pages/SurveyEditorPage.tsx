@@ -1,13 +1,5 @@
 import { useCallback, useState } from "react";
 import { useParams } from "react-router-dom";
-// import {
-//   archiveVersion,
-//   createVersion,
-//   getSurvey,
-//   listVersions,
-//   publishVersion,
-//   updateSurvey,
-// } from "../api/surveys";
 import type { SurveyOut, SurveyVisibility, UpdateSurveyRequest } from "../api/types";
 import { PublicLinkList } from "../components/survey/PublicLinkList";
 import { QuestionList } from "../components/survey/QuestionList";
@@ -24,7 +16,7 @@ import { Toggle } from "../components/ui/Toggle";
 import { useFetch } from "../hooks/useFetch";
 import "../App.css";
 import "./SurveyEditorPage.css";
-import { useSurveysApi } from "../api/useSurveysApi";
+import { useApi } from "../api/useApi";
 
 type EditorTab = "questions" | "rules" | "scoring" | "links";
 
@@ -51,7 +43,7 @@ export function SurveyEditorPage() {
     publishVersion,
     archiveVersion,
     updateSurvey,
-  } = useSurveysApi();
+  } = useApi();
 
   const surveyFetcher = useCallback(() => getSurvey(pid, sid), [getSurvey, pid, sid]);
   const { data: survey, loading: surveyLoading, error: surveyError, refetch: refetchSurvey } =

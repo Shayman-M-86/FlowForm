@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 import { useParams } from "react-router-dom";
-// import { createSurvey, listSurveys } from "../api/surveys";
 import type { CreateSurveyRequest, SurveyVisibility } from "../api/types";
 import { SurveyCard } from "../components/survey/SurveyCard";
 import { Badge } from "../components/ui/Badge";
@@ -13,9 +12,8 @@ import { Toggle } from "../components/ui/Toggle";
 import { useFetch } from "../hooks/useFetch";
 import "../App.css";
 import "./SurveysPage.css";
-import { useSurveysApi } from "../api/useSurveysApi";
+import { useApi } from "../api/useApi";
 
-// const { listSurveys, createSurvey } = useSurveysApi();
 
 const VISIBILITY_OPTIONS = [
   { value: "private", label: "Private" },
@@ -24,7 +22,7 @@ const VISIBILITY_OPTIONS = [
 ];
 
 export function SurveysPage() {
-  const { listSurveys, createSurvey } = useSurveysApi();
+  const { listSurveys, createSurvey } = useApi();
   const { projectId } = useParams<{ projectId: string }>();
   const id = Number(projectId);
 

@@ -29,5 +29,9 @@ def init_extensions(app: Flask) -> None:
     # jwt_manager.init_app(app)
 
     origins = app.config.get("CORS_ORIGINS", "*")
-    cors.init_app(app, resources={r"/api/*": {"origins": origins}})
+    cors.init_app(app, resources={r"/api/*": {
+        "origins": origins,
+        "allow_headers": ["Content-Type", "Authorization"],
+        "methods": ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    }})
     logger.debug("CORS initialized with origins: %s", origins)

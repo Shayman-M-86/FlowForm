@@ -1,0 +1,31 @@
+.auth-user {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-user__email {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-user__logout {
+  all: unset;
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  box-sizing: border-box;
+}
+
+.auth-user__logout:hover {
+  background: var(--muted-bg);
+  color: var(--text-h);
+}

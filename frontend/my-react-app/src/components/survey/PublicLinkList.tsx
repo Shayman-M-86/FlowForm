@@ -1,10 +1,5 @@
 import { useCallback, useState } from "react";
-import {
-  createPublicLink,
-  deletePublicLink,
-  listPublicLinks,
-  updatePublicLink,
-} from "../../api/links";
+import { useApi } from "../../api/useApi";
 import type { CreatePublicLinkOut } from "../../api/types";
 import { useFetch } from "../../hooks/useFetch";
 import { Badge } from "../ui/Badge";
@@ -22,9 +17,10 @@ interface PublicLinkListProps {
 }
 
 export function PublicLinkList({ projectId, surveyId }: PublicLinkListProps) {
+  const api = useApi();
   const fetcher = useCallback(
-    () => listPublicLinks(projectId, surveyId),
-    [projectId, surveyId],
+    () => api.listPublicLinks(projectId, surveyId),
+    [api, projectId, surveyId],
   );
   const { data, loading, error, refetch } = useFetch(fetcher);
 
@@ -41,7 +37,7 @@ export function PublicLinkList({ projectId, surveyId }: PublicLinkListProps) {
     setCreating(true);
     setCreateError(null);
     try {
-      const result = await createPublicLink(projectId, surveyId, {
+      const result = await api.createPublicLink(projectId, surveyId, {
         allow_response: allowResponse,
         expires_at: expiresAt || null,
       });
@@ -56,13 +52,13 @@ export function PublicLinkList({ projectId, surveyId }: PublicLinkListProps) {
   }
 
   async function handleToggleActive(linkId: number, current: boolean) {
-    await updatePublicLink(projectId, surveyId, linkId, { is_active: !current });
+    await api.updatePublicLink(projectId, surveyId, linkId, { is_active: !current });
     refetch();
   }
 
   async function handleDelete(linkId: number) {
     if (!confirm("Delete this public link?")) return;
-    await deletePublicLink(projectId, surveyId, linkId);
+    await api.deletePublicLink(projectId, surveyId, linkId);
     refetch();
   }
 

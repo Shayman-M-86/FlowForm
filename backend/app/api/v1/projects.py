@@ -3,6 +3,7 @@ from logging import getLogger
 from flask import Blueprint, request, url_for
 
 from app.api.utils.validation import parse, parse_query
+from app.core.extensions import auth
 from app.db.context import get_core_db, get_response_db
 from app.repositories import surveys_repo as survey_svc
 from app.schema.api.requests.content import (
@@ -14,7 +15,8 @@ from app.schema.api.requests.content import (
     UpdateScoringRuleRequest,
 )
 from app.schema.api.requests.public_links import CreatePublicLinkRequest, UpdatePublicLinkRequest
-from app.schema.api.requests.submissions import CreateSubmissionRequest, GetSubmissionRequest, ListSubmissionsRequest
+from app.schema.api.requests.submissions.create import CreateSubmissionRequest
+from app.schema.api.requests.submissions.query import GetSubmissionRequest, ListSubmissionsRequest
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.api.responses.content import QuestionOut, RuleOut, ScoringRuleOut
 from app.schema.api.responses.public_links import CreatePublicLinkOut, ListPublicLinksOut, PublicLinkOut
@@ -29,7 +31,7 @@ from app.services.content import ContentService
 from app.services.public_links import PublicLinkService
 from app.services.submissions import SubmissionService
 from app.services.surveys import SurveyService
-from app.core.extensions import auth
+
 logger = getLogger(__name__)
 
 projects_bp = Blueprint("projects_v1", __name__)
@@ -78,6 +80,7 @@ def update_survey(project_id: int, survey_id: int):
 
 
 @projects_bp.route("/<int:project_id>/surveys/<int:survey_id>", methods=["DELETE"])
+@auth.require_auth()
 def delete_survey(project_id: int, survey_id: int):
     db = get_core_db()
     survey_service.delete_survey(db, project_id, survey_id)
@@ -88,6 +91,7 @@ def delete_survey(project_id: int, survey_id: int):
 
 
 @projects_bp.route("/<int:project_id>/surveys/<int:survey_id>/versions", methods=["GET"])
+@auth.require_auth()
 def list_versions(project_id: int, survey_id: int):
     db = get_core_db()
     versions = survey_service.list_versions(db, project_id, survey_id)
@@ -102,6 +106,7 @@ def create_version(project_id: int, survey_id: int):
 
 
 @projects_bp.route("/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_id>", methods=["GET"])
+@auth.require_auth()
 def get_version(project_id: int, survey_id: int, version_id: int):
     db = get_core_db()
     version = survey_service.get_version(db, project_id, survey_id, version_id)
@@ -112,6 +117,7 @@ def get_version(project_id: int, survey_id: int, version_id: int):
     "/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_id>/publish",
     methods=["POST"],
 )
+@auth.require_auth()
 def publish_version(project_id: int, survey_id: int, version_id: int):
     db = get_core_db()
     version = survey_service.publish_version(db, project_id, survey_id, version_id)
@@ -122,6 +128,7 @@ def publish_version(project_id: int, survey_id: int, version_id: int):
     "/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_id>/archive",
     methods=["POST"],
 )
+@auth.require_auth()
 def archive_version(project_id: int, survey_id: int, version_id: int):
     db = get_core_db()
     version = survey_service.archive_version(db, project_id, survey_id, version_id)
@@ -134,6 +141,7 @@ _QBASE = "/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_id>/qu
 
 
 @projects_bp.route(_QBASE, methods=["GET"])
+@auth.require_auth()
 def list_questions(project_id: int, survey_id: int, version_id: int):
     db = get_core_db()
     questions = content_svc.list_questions(db, project_id, survey_id, version_id)
@@ -141,6 +149,7 @@ def list_questions(project_id: int, survey_id: int, version_id: int):
 
 
 @projects_bp.route(_QBASE, methods=["POST"])
+@auth.require_auth()
 def create_question(project_id: int, survey_id: int, version_id: int):
     payload = parse(CreateQuestionRequest, request)
     db = get_core_db()
@@ -149,6 +158,7 @@ def create_question(project_id: int, survey_id: int, version_id: int):
 
 
 @projects_bp.route(f"{_QBASE}/<int:question_id>", methods=["PATCH"])
+@auth.require_auth()
 def update_question(project_id: int, survey_id: int, version_id: int, question_id: int):
     payload = parse(UpdateQuestionRequest, request)
     db = get_core_db()
@@ -157,6 +167,7 @@ def update_question(project_id: int, survey_id: int, version_id: int, question_i
 
 
 @projects_bp.route(f"{_QBASE}/<int:question_id>", methods=["DELETE"])
+@auth.require_auth()
 def delete_question(project_id: int, survey_id: int, version_id: int, question_id: int):
     db = get_core_db()
     content_svc.delete_question(db, project_id, survey_id, version_id, question_id)
@@ -169,6 +180,7 @@ _RBASE = "/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_id>/ru
 
 
 @projects_bp.route(_RBASE, methods=["GET"])
+@auth.require_auth()
 def list_rules(project_id: int, survey_id: int, version_id: int):
     db = get_core_db()
     rules = content_svc.list_rules(db, project_id, survey_id, version_id)
@@ -176,6 +188,7 @@ def list_rules(project_id: int, survey_id: int, version_id: int):
 
 
 @projects_bp.route(_RBASE, methods=["POST"])
+@auth.require_auth()
 def create_rule(project_id: int, survey_id: int, version_id: int):
     payload = parse(CreateRuleRequest, request)
     db = get_core_db()
@@ -184,6 +197,7 @@ def create_rule(project_id: int, survey_id: int, version_id: int):
 
 
 @projects_bp.route(f"{_RBASE}/<int:rule_id>", methods=["PATCH"])
+@auth.require_auth()
 def update_rule(project_id: int, survey_id: int, version_id: int, rule_id: int):
     payload = parse(UpdateRuleRequest, request)
     db = get_core_db()
@@ -192,6 +206,7 @@ def update_rule(project_id: int, survey_id: int, version_id: int, rule_id: int):
 
 
 @projects_bp.route(f"{_RBASE}/<int:rule_id>", methods=["DELETE"])
+@auth.require_auth()
 def delete_rule(project_id: int, survey_id: int, version_id: int, rule_id: int):
     db = get_core_db()
     content_svc.delete_rule(db, project_id, survey_id, version_id, rule_id)
@@ -204,6 +219,7 @@ _SBASE = "/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_id>/sc
 
 
 @projects_bp.route(_SBASE, methods=["GET"])
+@auth.require_auth()
 def list_scoring_rules(project_id: int, survey_id: int, version_id: int):
     db = get_core_db()
     rules = content_svc.list_scoring_rules(db, project_id, survey_id, version_id)
@@ -211,6 +227,7 @@ def list_scoring_rules(project_id: int, survey_id: int, version_id: int):
 
 
 @projects_bp.route(_SBASE, methods=["POST"])
+@auth.require_auth()
 def create_scoring_rule(project_id: int, survey_id: int, version_id: int):
     payload = parse(CreateScoringRuleRequest, request)
     db = get_core_db()
@@ -219,6 +236,7 @@ def create_scoring_rule(project_id: int, survey_id: int, version_id: int):
 
 
 @projects_bp.route(f"{_SBASE}/<int:scoring_rule_id>", methods=["PATCH"])
+@auth.require_auth()
 def update_scoring_rule(project_id: int, survey_id: int, version_id: int, scoring_rule_id: int):
     payload = parse(UpdateScoringRuleRequest, request)
     db = get_core_db()
@@ -227,6 +245,7 @@ def update_scoring_rule(project_id: int, survey_id: int, version_id: int, scorin
 
 
 @projects_bp.route(f"{_SBASE}/<int:scoring_rule_id>", methods=["DELETE"])
+@auth.require_auth()
 def delete_scoring_rule(project_id: int, survey_id: int, version_id: int, scoring_rule_id: int):
     db = get_core_db()
     content_svc.delete_scoring_rule(db, project_id, survey_id, version_id, scoring_rule_id)
@@ -239,6 +258,7 @@ _LBASE = "/<int:project_id>/surveys/<int:survey_id>/public-links"
 
 
 @projects_bp.route(_LBASE, methods=["GET"])
+@auth.require_auth()
 def list_public_links(project_id: int, survey_id: int):
     db = get_core_db()
     links = public_link_svc.list_links(db, project_id, survey_id)
@@ -246,6 +266,7 @@ def list_public_links(project_id: int, survey_id: int):
 
 
 @projects_bp.route(_LBASE, methods=["POST"])
+@auth.require_auth()
 def create_public_link(project_id: int, survey_id: int):
     payload = parse(CreatePublicLinkRequest, request)
     db = get_core_db()
@@ -270,6 +291,7 @@ def create_public_link(project_id: int, survey_id: int):
 
 
 @projects_bp.route(f"{_LBASE}/<int:link_id>", methods=["PATCH"])
+@auth.require_auth()
 def update_public_link(project_id: int, survey_id: int, link_id: int):
     payload = parse(UpdatePublicLinkRequest, request)
     db = get_core_db()
@@ -284,6 +306,7 @@ def update_public_link(project_id: int, survey_id: int, link_id: int):
 
 
 @projects_bp.route(f"{_LBASE}/<int:link_id>", methods=["DELETE"])
+@auth.require_auth()
 def delete_public_link(project_id: int, survey_id: int, link_id: int):
     db = get_core_db()
     public_link_svc.delete_link(db, survey_id=survey_id, project_id=project_id, link_id=link_id)
@@ -294,6 +317,7 @@ def delete_public_link(project_id: int, survey_id: int, link_id: int):
 
 
 @projects_bp.route("/<int:project_id>/surveys/<int:survey_id>/submissions", methods=["POST"])
+@auth.require_auth()
 def create_submission(project_id: int, survey_id: int):
     payload = parse(CreateSubmissionRequest, request)
     core_db = get_core_db()
@@ -315,6 +339,7 @@ def create_submission(project_id: int, survey_id: int):
 
 
 @projects_bp.route("/<int:project_id>/submissions", methods=["GET"])
+@auth.require_auth()
 def list_submissions(project_id: int):
     payload = parse_query(ListSubmissionsRequest, request)
 
@@ -337,6 +362,7 @@ def list_submissions(project_id: int):
 
 
 @projects_bp.route("/<int:project_id>/submissions/<int:submission_id>", methods=["GET"])
+@auth.require_auth()
 def get_submission(project_id: int, submission_id: int):
     payload = parse_query(GetSubmissionRequest, request)
 

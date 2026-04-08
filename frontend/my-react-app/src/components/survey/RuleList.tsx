@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { createRule, deleteRule, listRules, updateRule } from "../../api/content";
+import { useApi } from "../../api/useApi";
 import type { CreateRuleRequest, RuleOut } from "../../api/types";
 import { useFetch } from "../../hooks/useFetch";
 import { Button } from "../ui/Button";
@@ -17,9 +17,10 @@ interface RuleListProps {
 }
 
 export function RuleList({ projectId, surveyId, versionId, readOnly }: RuleListProps) {
+  const api = useApi();
   const fetcher = useCallback(
-    () => listRules(projectId, surveyId, versionId),
-    [projectId, surveyId, versionId],
+    () => api.listRules(projectId, surveyId, versionId),
+    [api, projectId, surveyId, versionId],
   );
   const { data: rules, loading, error, refetch } = useFetch(fetcher);
 
@@ -60,9 +61,9 @@ export function RuleList({ projectId, surveyId, versionId, readOnly }: RuleListP
     try {
       const data: CreateRuleRequest = { rule_key: ruleKey.trim(), rule_schema: schema };
       if (editing) {
-        await updateRule(projectId, surveyId, versionId, editing.id, data);
+        await api.updateRule(projectId, surveyId, versionId, editing.id, data);
       } else {
-        await createRule(projectId, surveyId, versionId, data);
+        await api.createRule(projectId, surveyId, versionId, data);
       }
       refetch();
       setEditorOpen(false);
@@ -75,7 +76,7 @@ export function RuleList({ projectId, surveyId, versionId, readOnly }: RuleListP
 
   async function handleDelete(r: RuleOut) {
     if (!confirm(`Delete rule "${r.rule_key}"?`)) return;
-    await deleteRule(projectId, surveyId, versionId, r.id);
+    await api.deleteRule(projectId, surveyId, versionId, r.id);
     refetch();
   }
 

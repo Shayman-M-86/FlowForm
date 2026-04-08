@@ -33,6 +33,8 @@ def rate_limiting(
     logger.debug("Registering rate limiting middleware")
     @app.before_request
     def enforce_rate_limit():
+        if request.method == "OPTIONS":
+            return None
         if service.is_ignored_path(request.path):
             return None
 

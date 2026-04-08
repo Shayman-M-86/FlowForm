@@ -1,10 +1,5 @@
 import { useCallback, useState } from "react";
-import {
-  createScoringRule,
-  deleteScoringRule,
-  listScoringRules,
-  updateScoringRule,
-} from "../../api/content";
+import { useApi } from "../../api/useApi";
 import type { CreateScoringRuleRequest, ScoringRuleOut } from "../../api/types";
 import { useFetch } from "../../hooks/useFetch";
 import { Button } from "../ui/Button";
@@ -27,9 +22,10 @@ export function ScoringRuleList({
   versionId,
   readOnly,
 }: ScoringRuleListProps) {
+  const api = useApi();
   const fetcher = useCallback(
-    () => listScoringRules(projectId, surveyId, versionId),
-    [projectId, surveyId, versionId],
+    () => api.listScoringRules(projectId, surveyId, versionId),
+    [api, projectId, surveyId, versionId],
   );
   const { data: rules, loading, error, refetch } = useFetch(fetcher);
 
@@ -73,9 +69,9 @@ export function ScoringRuleList({
         scoring_schema: schema,
       };
       if (editing) {
-        await updateScoringRule(projectId, surveyId, versionId, editing.id, data);
+        await api.updateScoringRule(projectId, surveyId, versionId, editing.id, data);
       } else {
-        await createScoringRule(projectId, surveyId, versionId, data);
+        await api.createScoringRule(projectId, surveyId, versionId, data);
       }
       refetch();
       setEditorOpen(false);
@@ -88,7 +84,7 @@ export function ScoringRuleList({
 
   async function handleDelete(r: ScoringRuleOut) {
     if (!confirm(`Delete scoring rule "${r.scoring_key}"?`)) return;
-    await deleteScoringRule(projectId, surveyId, versionId, r.id);
+    await api.deleteScoringRule(projectId, surveyId, versionId, r.id);
     refetch();
   }
 

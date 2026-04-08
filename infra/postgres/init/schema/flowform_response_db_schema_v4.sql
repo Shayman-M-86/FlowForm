@@ -46,7 +46,7 @@ RETURNS BOOLEAN AS $$
     SELECT jsonb_typeof(data) IN ('string', 'number', 'boolean', 'null');
 $$ LANGUAGE sql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION jsonb_matching_pairs_valid(data JSONB)
+CREATE OR REPLACE FUNCTION jsonb_matching_matches_valid(data JSONB)
 RETURNS BOOLEAN AS $$
     SELECT
         jsonb_typeof(data) = 'array'
@@ -84,9 +84,9 @@ CREATE TABLE submissions (
 -- =========================================
 -- answer_value is JSONB because answer shapes differ by question family.
 -- Examples:
--- choice:   {"selected_option_ids": ["a2"]}
+-- choice:   {"selected": ["a2"]}
 -- field:    {"value": "name@example.com"}
--- matching: {"pairs": [{"left_id": "c1", "right_id": "r1"}]}
+-- matching: {"matches": [{"left_id": "c1", "right_id": "r1"}]}
 -- rating:   {"value": 8}
 
 CREATE TABLE submission_answers (
@@ -96,6 +96,7 @@ CREATE TABLE submission_answers (
     answer_family TEXT NOT NULL,
     answer_value JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
     CONSTRAINT ck_submission_answers_answer_family_valid
         CHECK (answer_family IN ('choice', 'field', 'matching', 'rating')),
 
@@ -106,28 +107,28 @@ CREATE TABLE submission_answers (
         CHECK (
             answer_family <> 'choice'
             OR (
-                jsonb_has_exact_keys(answer_value, ARRAY['selected_option_ids'])
-                AND jsonb_array_is_text_array(answer_value->'selected_option_ids')
+                jsonb_has_exact_keys(answer_value, ARRAY['selected'])
+                AND jsonb_array_is_text_array(answer_value->'selected')
             )
         ),
 
-    CONSTRAINT ck_submission_answers_field_shape_valid
+    CONSTRAINT ck_submission_answers_field_shape_valid 
         CHECK (
             answer_family <> 'field'
             OR (
-                jsonb_has_exact_keys(answer_value, ARRAY['value'])
-                AND jsonb_is_scalar_or_null(answer_value->'value')
+                jsonb_has_exact_keys (answer_value, ARRAY['value'])
+                AND jsonb_is_scalar_or_null (answer_value -> 'value')
             )
         ),
 
     CONSTRAINT ck_submission_answers_matching_shape_valid
-        CHECK (
-            answer_family <> 'matching'
-            OR (
-                jsonb_has_exact_keys(answer_value, ARRAY['pairs'])
-                AND jsonb_matching_pairs_valid(answer_value->'pairs')
-            )
-        ),
+    CHECK (
+        answer_family <> 'matching'
+        OR (
+            jsonb_has_exact_keys(answer_value, ARRAY['matches'])
+            AND jsonb_matching_matches_valid(answer_value->'matches')
+        )
+    ),
 
     CONSTRAINT ck_submission_answers_rating_shape_valid
         CHECK (
@@ -140,21 +141,6 @@ CREATE TABLE submission_answers (
 
     CONSTRAINT uq_submission_answers_question
         UNIQUE (submission_id, question_key)
-);
-
--- =========================================
--- OPTIONAL SUBMISSION EVENTS
--- =========================================
--- Useful for debugging async delivery / write failures / retries.
-
-CREATE TABLE submission_events (
-    id BIGSERIAL PRIMARY KEY,
-    submission_id BIGINT NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
-    event_type TEXT NOT NULL,
-    event_payload JSONB,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT ck_submission_events_event_payload_is_object
-        CHECK (event_payload IS NULL OR jsonb_typeof(event_payload) = 'object')
 );
 
 -- =========================================

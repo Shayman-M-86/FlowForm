@@ -90,9 +90,9 @@ class SurveyService:
         scoring_rules = content_repo.list_scoring_rules(db, version.id)
 
         compiled = {
-            "questions": [{"key": q.question_key, "schema": q.question_schema} for q in questions],
-            "rules": [{"key": r.rule_key, "schema": r.rule_schema} for r in rules],
-            "scoring_rules": [{"key": s.scoring_key, "schema": s.scoring_schema} for s in scoring_rules],
+            "questions": [{"id": q.id, "question_key": q.question_key, "question_schema": q.question_schema} for q in questions],
+            "rules": [{"id": r.id, "rule_key": r.rule_key, "rule_schema": r.rule_schema} for r in rules],
+            "scoring_rules": [{"id": s.id, "scoring_key": s.scoring_key, "scoring_schema": s.scoring_schema} for s in scoring_rules],
         }
         survey_rules.ensure_default_response_store(
             survey=survey,

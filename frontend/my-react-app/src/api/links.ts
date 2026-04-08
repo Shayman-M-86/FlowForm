@@ -1,5 +1,5 @@
-import { del, get, patch, post } from "./client";
 import type {
+  ApiExecutor,
   CreatePublicLinkOut,
   CreatePublicLinkRequest,
   ListPublicLinksOut,
@@ -11,33 +11,37 @@ const base = (p: number, s: number) =>
   `/api/v1/projects/${p}/surveys/${s}/public-links`;
 
 export function listPublicLinks(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
 ): Promise<ListPublicLinksOut> {
-  return get(base(projectId, surveyId));
+  return api.get<ListPublicLinksOut>(base(projectId, surveyId));
 }
 
 export function createPublicLink(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   data: CreatePublicLinkRequest,
 ): Promise<CreatePublicLinkOut> {
-  return post(base(projectId, surveyId), data);
+  return api.post<CreatePublicLinkOut>(base(projectId, surveyId), data);
 }
 
 export function updatePublicLink(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   linkId: number,
   data: UpdatePublicLinkRequest,
 ): Promise<PublicLinkOut> {
-  return patch(`${base(projectId, surveyId)}/${linkId}`, data);
+  return api.patch<PublicLinkOut>(`${base(projectId, surveyId)}/${linkId}`, data);
 }
 
 export function deletePublicLink(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   linkId: number,
 ): Promise<void> {
-  return del(`${base(projectId, surveyId)}/${linkId}`);
+  return api.del(`${base(projectId, surveyId)}/${linkId}`);
 }

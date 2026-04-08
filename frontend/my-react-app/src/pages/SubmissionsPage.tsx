@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getSubmission, listSubmissions } from "../api/submissions";
+import { useApi } from "../api/useApi";
 import type {
   AnswerOut,
   CoreSubmissionOut,
@@ -28,6 +28,7 @@ const CHANNEL_BADGE: Record<SubmissionChannel, "muted" | "accent"> = {
 };
 
 export function SubmissionsPage() {
+  const api = useApi();
   const { projectId, surveyId } = useParams<{
     projectId: string;
     surveyId?: string;
@@ -46,14 +47,14 @@ export function SubmissionsPage() {
 
   const fetcher = useCallback(
     () =>
-      listSubmissions(pid, {
+      api.listSubmissions(pid, {
         survey_id: sid,
         status: status || undefined,
         submission_channel: (channel as SubmissionChannel) || undefined,
         page,
         page_size: pageSize,
       }),
-    [pid, sid, status, channel, page],
+    [api, pid, sid, status, channel, page],
   );
   const { data, loading, error, refetch } = useFetch(fetcher);
 
@@ -67,7 +68,7 @@ export function SubmissionsPage() {
     setExpandedAnswers(null);
     setExpandedLoading(true);
     try {
-      const result = await getSubmission(pid, sub.id, true);
+      const result = await api.getSubmission(pid, sub.id, true);
       setExpandedAnswers(result.answers);
     } finally {
       setExpandedLoading(false);

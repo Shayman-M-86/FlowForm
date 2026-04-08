@@ -253,6 +253,19 @@ export interface ResolveLinkOut {
   published_version: SurveyVersionOut | null;
 }
 
+// ── Api executor ─────────────────────────────────────────────────────────────
+
+export interface ApiExecutor {
+  get<T>(path: string): Promise<T>;
+  post<T>(path: string, body?: unknown): Promise<T>;
+  patch<T>(path: string, body: unknown): Promise<T>;
+  del(path: string): Promise<void>;
+  getWithQuery<T>(
+    path: string,
+    params: Record<string, string | number | boolean | undefined>,
+  ): Promise<T>;
+}
+
 // ── Errors ────────────────────────────────────────────────────────────────────
 
 export interface ValidationErrorDetail {

@@ -4,7 +4,8 @@ from flask import Blueprint, request
 
 from app.api.utils.validation import parse, parse_query
 from app.db.context import get_core_db, get_response_db
-from app.schema.api.requests.submissions import PublicSubmissionRequest, ResolveTokenRequest
+from app.schema.api.requests.public_links import ResolveTokenRequest
+from app.schema.api.requests.submissions.create import PublicSubmissionRequest
 from app.schema.api.responses.public_links import PublicLinkOut, ResolveLinkOut
 from app.schema.api.responses.submissions import AnswerOut, CoreSubmissionOut, LinkedSubmissionOut
 from app.schema.api.responses.surveys import PublicSurveyOut, SurveyOut, SurveyVersionOut

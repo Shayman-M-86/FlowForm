@@ -1,5 +1,5 @@
-import { del, get, patch, post } from "./client";
 import type {
+  ApiExecutor,
   CreateSurveyRequest,
   SurveyOut,
   SurveyVersionOut,
@@ -8,109 +8,94 @@ import type {
 
 // ── Surveys ───────────────────────────────────────────────────────────────────
 
-export function listSurveys(
-  projectId: number,
-  headers?: HeadersInit,
-): Promise<SurveyOut[]> {
-  return get(`/api/v1/projects/${projectId}/surveys`, headers);
+export function listSurveys(api: ApiExecutor, projectId: number): Promise<SurveyOut[]> {
+  return api.get<SurveyOut[]>(`/api/v1/projects/${projectId}/surveys`);
 }
 
 export function getSurvey(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  headers?: HeadersInit,
 ): Promise<SurveyOut> {
-  return get(`/api/v1/projects/${projectId}/surveys/${surveyId}`, headers);
+  return api.get<SurveyOut>(`/api/v1/projects/${projectId}/surveys/${surveyId}`);
 }
 
 export function createSurvey(
+  api: ApiExecutor,
   projectId: number,
   data: CreateSurveyRequest,
-  headers?: HeadersInit,
 ): Promise<SurveyOut> {
-  return post(`/api/v1/projects/${projectId}/surveys`, data, headers);
+  return api.post<SurveyOut>(`/api/v1/projects/${projectId}/surveys`, data);
 }
 
 export function updateSurvey(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   data: UpdateSurveyRequest,
-  headers?: HeadersInit,
 ): Promise<SurveyOut> {
-  return patch(
-    `/api/v1/projects/${projectId}/surveys/${surveyId}`,
-    data,
-    headers,
-  );
+  return api.patch<SurveyOut>(`/api/v1/projects/${projectId}/surveys/${surveyId}`, data);
 }
 
 export function deleteSurvey(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  headers?: HeadersInit,
 ): Promise<void> {
-  return del(`/api/v1/projects/${projectId}/surveys/${surveyId}`, headers);
+  return api.del(`/api/v1/projects/${projectId}/surveys/${surveyId}`);
 }
 
 // ── Versions ──────────────────────────────────────────────────────────────────
 
 export function listVersions(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  headers?: HeadersInit,
 ): Promise<SurveyVersionOut[]> {
-  return get(
+  return api.get<SurveyVersionOut[]>(
     `/api/v1/projects/${projectId}/surveys/${surveyId}/versions`,
-    headers,
   );
 }
 
 export function getVersion(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
-  headers?: HeadersInit,
 ): Promise<SurveyVersionOut> {
-  return get(
+  return api.get<SurveyVersionOut>(
     `/api/v1/projects/${projectId}/surveys/${surveyId}/versions/${versionId}`,
-    headers,
   );
 }
 
 export function createVersion(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  headers?: HeadersInit,
 ): Promise<SurveyVersionOut> {
-  return post(
+  return api.post<SurveyVersionOut>(
     `/api/v1/projects/${projectId}/surveys/${surveyId}/versions`,
-    undefined,
-    headers,
   );
 }
 
 export function publishVersion(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
-  headers?: HeadersInit,
 ): Promise<SurveyVersionOut> {
-  return post(
+  return api.post<SurveyVersionOut>(
     `/api/v1/projects/${projectId}/surveys/${surveyId}/versions/${versionId}/publish`,
-    undefined,
-    headers,
   );
 }
 
 export function archiveVersion(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
-  headers?: HeadersInit,
 ): Promise<SurveyVersionOut> {
-  return post(
+  return api.post<SurveyVersionOut>(
     `/api/v1/projects/${projectId}/surveys/${surveyId}/versions/${versionId}/archive`,
-    undefined,
-    headers,
   );
 }

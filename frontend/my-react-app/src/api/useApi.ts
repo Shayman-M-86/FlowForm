@@ -1,65 +1,183 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import * as client from "./client";
+import * as surveysApi from "./surveys";
+import * as contentApi from "./content";
+import * as linksApi from "./links";
+import * as submissionsApi from "./submissions";
+import type {
+  ApiExecutor,
+  CreatePublicLinkRequest,
+  CreateQuestionRequest,
+  CreateRuleRequest,
+  CreateScoringRuleRequest,
+  CreateSubmissionRequest,
+  CreateSurveyRequest,
+  ListSubmissionsParams,
+  UpdatePublicLinkRequest,
+  UpdateQuestionRequest,
+  UpdateRuleRequest,
+  UpdateScoringRuleRequest,
+  UpdateSurveyRequest,
+} from "./types";
 
 export function useApi() {
-    const { getAccessTokenSilently } = useAuth0();
+  const { getAccessTokenSilently } = useAuth0();
 
-    const getAuthHeaders = useCallback(async (): Promise<HeadersInit> => {
-        const token = await getAccessTokenSilently();
-        return {
-            Authorization: `Bearer ${token}`,
-        };
-    }, [getAccessTokenSilently]);
+  const getAuthHeaders = useCallback(async (): Promise<HeadersInit> => {
+    const token = await getAccessTokenSilently({
+      authorizationParams: { audience: import.meta.env.VITE_AUTH0_AUDIENCE },
+    });
+    return { Authorization: `Bearer ${token}` };
+  }, [getAccessTokenSilently]);
 
-    const get = useCallback(
-        async <T,>(path: string): Promise<T> => {
-            const headers = await getAuthHeaders();
-            return client.get<T>(path, headers);
-        },
-        [getAuthHeaders],
-    );
+  const executor = useMemo(
+    (): ApiExecutor => ({
+      get: <T,>(path: string) => getAuthHeaders().then((h) => client.get<T>(path, h)),
+      post: <T,>(path: string, body?: unknown) =>
+        getAuthHeaders().then((h) => client.post<T>(path, body, h)),
+      patch: <T,>(path: string, body: unknown) =>
+        getAuthHeaders().then((h) => client.patch<T>(path, body, h)),
+      del: (path: string) => getAuthHeaders().then((h) => client.del(path, h)),
+      getWithQuery: <T,>(
+        path: string,
+        params: Record<string, string | number | boolean | undefined>,
+      ) => getAuthHeaders().then((h) => client.getWithQuery<T>(path, params, h)),
+    }),
+    [getAuthHeaders],
+  );
 
-    const post = useCallback(
-        async <T,>(path: string, body?: unknown): Promise<T> => {
-            const headers = await getAuthHeaders();
-            return client.post<T>(path, body, headers);
-        },
-        [getAuthHeaders],
-    );
+  return useMemo(
+    () => ({
+      // ── Surveys ──────────────────────────────────────────────────────────────
+      listSurveys: (projectId: number) =>
+        surveysApi.listSurveys(executor, projectId),
+      getSurvey: (projectId: number, surveyId: number) =>
+        surveysApi.getSurvey(executor, projectId, surveyId),
+      createSurvey: (projectId: number, data: CreateSurveyRequest) =>
+        surveysApi.createSurvey(executor, projectId, data),
+      updateSurvey: (projectId: number, surveyId: number, data: UpdateSurveyRequest) =>
+        surveysApi.updateSurvey(executor, projectId, surveyId, data),
+      deleteSurvey: (projectId: number, surveyId: number) =>
+        surveysApi.deleteSurvey(executor, projectId, surveyId),
 
-    const patch = useCallback(
-        async <T,>(path: string, body: unknown): Promise<T> => {
-            const headers = await getAuthHeaders();
-            return client.patch<T>(path, body, headers);
-        },
-        [getAuthHeaders],
-    );
+      // ── Versions ─────────────────────────────────────────────────────────────
+      listVersions: (projectId: number, surveyId: number) =>
+        surveysApi.listVersions(executor, projectId, surveyId),
+      getVersion: (projectId: number, surveyId: number, versionId: number) =>
+        surveysApi.getVersion(executor, projectId, surveyId, versionId),
+      createVersion: (projectId: number, surveyId: number) =>
+        surveysApi.createVersion(executor, projectId, surveyId),
+      publishVersion: (projectId: number, surveyId: number, versionId: number) =>
+        surveysApi.publishVersion(executor, projectId, surveyId, versionId),
+      archiveVersion: (projectId: number, surveyId: number, versionId: number) =>
+        surveysApi.archiveVersion(executor, projectId, surveyId, versionId),
 
-    const del = useCallback(
-        async (path: string): Promise<void> => {
-            const headers = await getAuthHeaders();
-            return client.del(path, headers);
-        },
-        [getAuthHeaders],
-    );
+      // ── Questions ────────────────────────────────────────────────────────────
+      listQuestions: (projectId: number, surveyId: number, versionId: number) =>
+        contentApi.listQuestions(executor, projectId, surveyId, versionId),
+      createQuestion: (
+        projectId: number,
+        surveyId: number,
+        versionId: number,
+        data: CreateQuestionRequest,
+      ) => contentApi.createQuestion(executor, projectId, surveyId, versionId, data),
+      updateQuestion: (
+        projectId: number,
+        surveyId: number,
+        versionId: number,
+        questionId: number,
+        data: UpdateQuestionRequest,
+      ) => contentApi.updateQuestion(executor, projectId, surveyId, versionId, questionId, data),
+      deleteQuestion: (
+        projectId: number,
+        surveyId: number,
+        versionId: number,
+        questionId: number,
+      ) => contentApi.deleteQuestion(executor, projectId, surveyId, versionId, questionId),
 
-    const getWithQuery = useCallback(
-        async <T,>(
-            path: string,
-            params: Record<string, string | number | boolean | undefined>,
-        ): Promise<T> => {
-            const headers = await getAuthHeaders();
-            return client.getWithQuery<T>(path, params, headers);
-        },
-        [getAuthHeaders],
-    );
+      // ── Rules ────────────────────────────────────────────────────────────────
+      listRules: (projectId: number, surveyId: number, versionId: number) =>
+        contentApi.listRules(executor, projectId, surveyId, versionId),
+      createRule: (
+        projectId: number,
+        surveyId: number,
+        versionId: number,
+        data: CreateRuleRequest,
+      ) => contentApi.createRule(executor, projectId, surveyId, versionId, data),
+      updateRule: (
+        projectId: number,
+        surveyId: number,
+        versionId: number,
+        ruleId: number,
+        data: UpdateRuleRequest,
+      ) => contentApi.updateRule(executor, projectId, surveyId, versionId, ruleId, data),
+      deleteRule: (
+        projectId: number,
+        surveyId: number,
+        versionId: number,
+        ruleId: number,
+      ) => contentApi.deleteRule(executor, projectId, surveyId, versionId, ruleId),
 
-    return {
-        get,
-        post,
-        patch,
-        del,
-        getWithQuery,
-    };
+      // ── Scoring Rules ────────────────────────────────────────────────────────
+      listScoringRules: (projectId: number, surveyId: number, versionId: number) =>
+        contentApi.listScoringRules(executor, projectId, surveyId, versionId),
+      createScoringRule: (
+        projectId: number,
+        surveyId: number,
+        versionId: number,
+        data: CreateScoringRuleRequest,
+      ) => contentApi.createScoringRule(executor, projectId, surveyId, versionId, data),
+      updateScoringRule: (
+        projectId: number,
+        surveyId: number,
+        versionId: number,
+        scoringRuleId: number,
+        data: UpdateScoringRuleRequest,
+      ) =>
+        contentApi.updateScoringRule(
+          executor,
+          projectId,
+          surveyId,
+          versionId,
+          scoringRuleId,
+          data,
+        ),
+      deleteScoringRule: (
+        projectId: number,
+        surveyId: number,
+        versionId: number,
+        scoringRuleId: number,
+      ) => contentApi.deleteScoringRule(executor, projectId, surveyId, versionId, scoringRuleId),
+
+      // ── Public Links ─────────────────────────────────────────────────────────
+      listPublicLinks: (projectId: number, surveyId: number) =>
+        linksApi.listPublicLinks(executor, projectId, surveyId),
+      createPublicLink: (
+        projectId: number,
+        surveyId: number,
+        data: CreatePublicLinkRequest,
+      ) => linksApi.createPublicLink(executor, projectId, surveyId, data),
+      updatePublicLink: (
+        projectId: number,
+        surveyId: number,
+        linkId: number,
+        data: UpdatePublicLinkRequest,
+      ) => linksApi.updatePublicLink(executor, projectId, surveyId, linkId, data),
+      deletePublicLink: (projectId: number, surveyId: number, linkId: number) =>
+        linksApi.deletePublicLink(executor, projectId, surveyId, linkId),
+
+      // ── Submissions ──────────────────────────────────────────────────────────
+      listSubmissions: (projectId: number, params?: ListSubmissionsParams) =>
+        submissionsApi.listSubmissions(executor, projectId, params),
+      getSubmission: (projectId: number, submissionId: number, includeAnswers?: boolean) =>
+        submissionsApi.getSubmission(executor, projectId, submissionId, includeAnswers),
+      createSubmission: (
+        projectId: number,
+        surveyId: number,
+        data: CreateSubmissionRequest,
+      ) => submissionsApi.createSubmission(executor, projectId, surveyId, data),
+    }),
+    [executor],
+  );
 }

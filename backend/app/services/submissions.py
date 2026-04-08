@@ -8,12 +8,8 @@ from sqlalchemy.orm import Session
 from app.domain import public_link_rules, submission_rules, survey_rules
 from app.gateway.submission_gateway import SubmissionGateway
 from app.repositories import public_link_repo, submissions_repo, surveys_repo
-from app.schema.api.requests.submissions import (
-    CreateSubmissionRequest,
-    GetSubmissionRequest,
-    ListSubmissionsRequest,
-    PublicSubmissionRequest,
-)
+from app.schema.api.requests.submissions.create import CreateSubmissionRequest, PublicSubmissionRequest
+from app.schema.api.requests.submissions.query import GetSubmissionRequest, ListSubmissionsRequest
 from app.schema.orm.core.survey_submission import SurveySubmission
 from app.services.results import LinkedSubmissionResult
 

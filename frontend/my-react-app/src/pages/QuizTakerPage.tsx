@@ -21,6 +21,7 @@ interface QuestionRendererProps {
 }
 
 function QuestionRenderer({ schema, questionKey, value, onChange }: QuestionRendererProps) {
+  if (!schema) return null;
   const type = schema.type as string;
   const label = (schema.label as string) ?? questionKey;
   const required = Boolean(schema.required);
@@ -136,23 +137,25 @@ function QuizForm({ survey, token }: QuizFormProps) {
     setSubmitting(true);
     setSubmitError(null);
 
-    const answerList: AnswerIn[] = questions.map((q) => {
-      const val = answers[q.question_key];
-      const type = (q.question_schema.type as string) ?? "field";
-      let family = "text";
-      if (type === "choice") family = "choice";
-      else if (type === "rating") family = "number";
-      else if (type === "matching") family = "matching";
-      else {
-        const ft = (q.question_schema.field_type as string) ?? "text";
-        family = ft === "number" ? "number" : "text";
-      }
-      return {
-        question_key: q.question_key,
-        answer_family: family,
-        answer_value: { value: val },
-      };
-    });
+    const answerList: AnswerIn[] = questions
+      .filter((q) => q.question_key && q.question_schema)
+      .map((q) => {
+        const val = answers[q.question_key];
+        const type = (q.question_schema.type as string) ?? "field";
+        let family = "text";
+        if (type === "choice") family = "choice";
+        else if (type === "rating") family = "number";
+        else if (type === "matching") family = "matching";
+        else {
+          const ft = (q.question_schema.field_type as string) ?? "text";
+          family = ft === "number" ? "number" : "text";
+        }
+        return {
+          question_key: q.question_key,
+          answer_family: family,
+          answer_value: { value: val },
+        };
+      });
 
     try {
       await createPublicSubmission({
@@ -197,7 +200,7 @@ function QuizForm({ survey, token }: QuizFormProps) {
       ) : (
         questions.map((q) => (
           <QuestionRenderer
-            key={q.question_key}
+            key={q.id}
             schema={q.question_schema}
             questionKey={q.question_key}
             value={answers[q.question_key]}

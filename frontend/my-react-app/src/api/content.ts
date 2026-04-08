@@ -1,5 +1,5 @@
-import { del, get, patch, post } from "./client";
 import type {
+  ApiExecutor,
   CreateQuestionRequest,
   CreateRuleRequest,
   CreateScoringRuleRequest,
@@ -17,124 +17,137 @@ const vBase = (p: number, s: number, v: number) =>
 // ── Questions ─────────────────────────────────────────────────────────────────
 
 export function listQuestions(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
 ): Promise<QuestionOut[]> {
-  return get(`${vBase(projectId, surveyId, versionId)}/questions`);
+  return api.get<QuestionOut[]>(`${vBase(projectId, surveyId, versionId)}/questions`);
 }
 
 export function createQuestion(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
   data: CreateQuestionRequest,
 ): Promise<QuestionOut> {
-  return post(`${vBase(projectId, surveyId, versionId)}/questions`, data);
+  return api.post<QuestionOut>(`${vBase(projectId, surveyId, versionId)}/questions`, data);
 }
 
 export function updateQuestion(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
   questionId: number,
   data: UpdateQuestionRequest,
 ): Promise<QuestionOut> {
-  return patch(
+  return api.patch<QuestionOut>(
     `${vBase(projectId, surveyId, versionId)}/questions/${questionId}`,
     data,
   );
 }
 
 export function deleteQuestion(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
   questionId: number,
 ): Promise<void> {
-  return del(`${vBase(projectId, surveyId, versionId)}/questions/${questionId}`);
+  return api.del(`${vBase(projectId, surveyId, versionId)}/questions/${questionId}`);
 }
 
 // ── Rules ─────────────────────────────────────────────────────────────────────
 
 export function listRules(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
 ): Promise<RuleOut[]> {
-  return get(`${vBase(projectId, surveyId, versionId)}/rules`);
+  return api.get<RuleOut[]>(`${vBase(projectId, surveyId, versionId)}/rules`);
 }
 
 export function createRule(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
   data: CreateRuleRequest,
 ): Promise<RuleOut> {
-  return post(`${vBase(projectId, surveyId, versionId)}/rules`, data);
+  return api.post<RuleOut>(`${vBase(projectId, surveyId, versionId)}/rules`, data);
 }
 
 export function updateRule(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
   ruleId: number,
   data: UpdateRuleRequest,
 ): Promise<RuleOut> {
-  return patch(
+  return api.patch<RuleOut>(
     `${vBase(projectId, surveyId, versionId)}/rules/${ruleId}`,
     data,
   );
 }
 
 export function deleteRule(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
   ruleId: number,
 ): Promise<void> {
-  return del(`${vBase(projectId, surveyId, versionId)}/rules/${ruleId}`);
+  return api.del(`${vBase(projectId, surveyId, versionId)}/rules/${ruleId}`);
 }
 
 // ── Scoring Rules ─────────────────────────────────────────────────────────────
 
 export function listScoringRules(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
 ): Promise<ScoringRuleOut[]> {
-  return get(`${vBase(projectId, surveyId, versionId)}/scoring-rules`);
+  return api.get<ScoringRuleOut[]>(`${vBase(projectId, surveyId, versionId)}/scoring-rules`);
 }
 
 export function createScoringRule(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
   data: CreateScoringRuleRequest,
 ): Promise<ScoringRuleOut> {
-  return post(`${vBase(projectId, surveyId, versionId)}/scoring-rules`, data);
+  return api.post<ScoringRuleOut>(
+    `${vBase(projectId, surveyId, versionId)}/scoring-rules`,
+    data,
+  );
 }
 
 export function updateScoringRule(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
   scoringRuleId: number,
   data: UpdateScoringRuleRequest,
 ): Promise<ScoringRuleOut> {
-  return patch(
+  return api.patch<ScoringRuleOut>(
     `${vBase(projectId, surveyId, versionId)}/scoring-rules/${scoringRuleId}`,
     data,
   );
 }
 
 export function deleteScoringRule(
+  api: ApiExecutor,
   projectId: number,
   surveyId: number,
   versionId: number,
   scoringRuleId: number,
 ): Promise<void> {
-  return del(
-    `${vBase(projectId, surveyId, versionId)}/scoring-rules/${scoringRuleId}`,
-  );
+  return api.del(`${vBase(projectId, surveyId, versionId)}/scoring-rules/${scoringRuleId}`);
 }

@@ -1,22 +1,13 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
-import { getStoredProjectId } from "./components/layout/ProjectSelector";
+import { HomePage } from "./pages/HomePage";
 import { SurveysPage } from "./pages/SurveysPage";
 import { SurveyEditorPage } from "./pages/SurveyEditorPage";
 import { SubmissionsPage } from "./pages/SubmissionsPage";
+import { TakeSurveyPage } from "./pages/TakeSurveyPage";
 import { QuizTakerPage } from "./pages/QuizTakerPage";
 import { ProtectedApp } from "./components/auth/ProtectedApp";
 import "./App.css";
-
-function DefaultRedirect() {
-  const id = getStoredProjectId();
-
-  return id ? (
-    <Navigate to={`/projects/${id}/surveys`} replace />
-  ) : (
-    <Navigate to="/projects/1/surveys" replace />
-  );
-}
 
 export default function App() {
   return (
@@ -34,7 +25,8 @@ export default function App() {
             </ProtectedApp>
           }
         >
-          <Route path="/" element={<DefaultRedirect />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/take" element={<TakeSurveyPage />} />
           <Route path="/projects/:projectId/surveys" element={<SurveysPage />} />
           <Route path="/projects/:projectId/surveys/:surveyId" element={<SurveyEditorPage />} />
           <Route path="/projects/:projectId/surveys/:surveyId/submissions" element={<SubmissionsPage />} />
