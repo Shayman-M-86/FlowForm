@@ -6,7 +6,7 @@ from collections.abc import Callable
 from flask import Flask, request
 
 from app.core.config import Settings
-from app.core.responses import error_response
+from app.core.errors import RateLimitExceededError
 from app.middleware.rate_limit.service import RateLimitConfig, RateLimitService
 from app.utils.general import get_client_ip
 
@@ -30,6 +30,7 @@ def rate_limiting(
 
     app.extensions["rate_limiter"] = service
 
+    logger.debug("Registering rate limiting middleware")
     @app.before_request
     def enforce_rate_limit():
         if service.is_ignored_path(request.path):
@@ -41,17 +42,9 @@ def rate_limiting(
         if decision.allowed:
             return None
 
+        raise RateLimitExceededError(decision.retry_after_seconds)
 
-        response, status_code = error_response(
-            "Too many requests. Please try again later.",
-            error_code="rate_limit_exceeded",
-            status_code=429,
-        )
 
-        if decision.retry_after_seconds is not None:
-            response.headers["Retry-After"] = str(decision.retry_after_seconds)
-
-        return response, status_code
 
     app.extensions["rate_limiting_registered"] = True
 

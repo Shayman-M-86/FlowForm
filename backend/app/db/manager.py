@@ -5,7 +5,7 @@ from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import Settings
-from app.core.error import InitializationError
+from app.core.errors import InitializationError
 
 
 class DatabaseManager:
@@ -33,13 +33,21 @@ class DatabaseManager:
                 "Settings must be loaded and attached to the Flask app before initializing the database manager."
             ) from err
 
-        self.core_engine = create_engine(
+        self.core_engine = create_engine(  # Todo - Add ability to configure settings via the config settings object.
             settings.database.core.url,
+            pool_size=10,
+            max_overflow=20,
+            pool_timeout=30,
             pool_pre_ping=True,
+            pool_recycle=1800,
         )
         self.response_engine = create_engine(
             settings.database.response.url,
+            pool_size=10,
+            max_overflow=20,
+            pool_timeout=30,
             pool_pre_ping=True,
+            pool_recycle=1800,
         )
 
         self._core_sessionmaker = sessionmaker(

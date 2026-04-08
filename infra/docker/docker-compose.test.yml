@@ -113,6 +113,8 @@ services:
       - FLOWFORM_APP_SECRET_KEY
     networks:
       - flowform_net
+    ports:
+      - "5000:5000"
 
 volumes:
   flowform_postgres_core_data:

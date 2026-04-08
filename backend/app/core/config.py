@@ -18,7 +18,7 @@ from pydantic import (
 from pydantic.networks import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.core.error import ConfigError
+from app.core.errors import ConfigError
 
 logger = logging.getLogger(__name__)
 

@@ -31,7 +31,7 @@ services:
       - DATABASE_CORE_INIT_PASSWORD
       - DATABASE_CORE_APP_PASSWORD
     networks:
-      - flowform_net
+      - flowform_net_dev
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DATABASE_CORE_INIT_USER} -d ${DATABASE_CORE_INIT_DB}"]
       interval: 5s
@@ -68,7 +68,7 @@ services:
       - DATABASE_RESPONSE_INIT_PASSWORD
       - DATABASE_RESPONSE_APP_PASSWORD
     networks:
-      - flowform_net
+      - flowform_net_dev
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DATABASE_RESPONSE_INIT_USER} -d ${DATABASE_RESPONSE_INIT_DB}"]
       interval: 5s
@@ -119,14 +119,14 @@ services:
       - DATABASE_RESPONSE_APP_PASSWORD
       - FLOWFORM_APP_SECRET_KEY
     networks:
-      - flowform_net
+      - flowform_net_dev
 
 volumes:
   flowform_postgres_core_data:
   flowform_postgres_response_data:
 
 networks:
-  flowform_net:
+  flowform_net_dev:
     driver: bridge
     ipam:
       config:
