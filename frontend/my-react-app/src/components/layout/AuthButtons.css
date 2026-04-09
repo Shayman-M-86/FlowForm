@@ -1,38 +1,31 @@
 .auth-user {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .auth-user__email {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 0.78rem;
+  color: var(--muted);
 }
 
 .auth-user__logout {
-  all: unset;
-  display: block;
   width: 100%;
-  padding: 7px 10px;
-  border-radius: 2px;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--cream-dim);
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
-  box-sizing: border-box;
-  border: 1px solid transparent;
+  text-align: left;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
 .auth-user__logout:hover {
-  background: var(--cream-ghost);
-  color: var(--cream);
-  border-color: var(--rule);
+  background: var(--muted-bg);
+  border-color: var(--border-strong);
+  color: var(--text-h);
 }

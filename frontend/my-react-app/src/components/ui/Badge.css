@@ -1,49 +1,41 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
-  border-radius: 2px;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  line-height: 1.6;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  line-height: 1;
   white-space: nowrap;
 }
 
-.badge--default {
+.badge--default,
+.badge--muted {
   background: var(--muted-bg);
-  color: var(--cream-dim);
-  border: 1px solid var(--rule);
+  border-color: var(--border);
+  color: var(--text-soft);
 }
 
 .badge--success {
   background: var(--success-bg);
+  border-color: rgba(136, 179, 155, 0.26);
   color: var(--success);
-  border: 1px solid rgba(74, 158, 107, 0.3);
 }
 
 .badge--danger {
   background: var(--danger-bg);
+  border-color: rgba(212, 139, 139, 0.26);
   color: var(--danger);
-  border: 1px solid rgba(196, 75, 58, 0.3);
 }
 
 .badge--warning {
   background: var(--warning-bg);
+  border-color: rgba(199, 177, 139, 0.26);
   color: var(--warning);
-  border: 1px solid rgba(212, 149, 42, 0.3);
 }
 
 .badge--accent {
-  background: var(--gold-dim);
-  color: var(--gold-bright);
-  border: 1px solid var(--gold-border);
-}
-
-.badge--muted {
-  background: transparent;
-  color: var(--muted);
-  border: 1px solid var(--rule);
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--accent-strong);
 }

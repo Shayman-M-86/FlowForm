@@ -1,4 +1,5 @@
 import { useAuth0 } from "@auth0/auth0-react";
+import { getAuthReturnTo } from "../../auth/redirect";
 import "./AuthButtons.css";
 
 export function AuthButtons() {
@@ -19,7 +20,14 @@ export function AuthButtons() {
   }
 
   return (
-    <button className="auth-user__logout" onClick={() => loginWithRedirect()}>
+    <button
+      className="auth-user__logout"
+      onClick={() =>
+        loginWithRedirect({
+          appState: { returnTo: getAuthReturnTo() },
+        })
+      }
+    >
       Log in
     </button>
   );

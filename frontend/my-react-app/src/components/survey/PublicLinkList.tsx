@@ -106,7 +106,7 @@ export function PublicLinkList({ projectId, surveyId }: PublicLinkListProps) {
         </div>
       )}
 
-      <div style={{ marginTop: 14 }}>
+      <div className="stack-actions">
         <Button variant="secondary" onClick={() => setCreateOpen(true)}>
           + Create Link
         </Button>

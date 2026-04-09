@@ -4,141 +4,89 @@
   height: 100vh;
   position: sticky;
   top: 0;
-  border-right: 1px solid var(--rule);
   display: flex;
   flex-direction: column;
-  background: var(--ink);
-  overflow: hidden;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
 }
 
-/* Brand / Logo area */
 .sidebar__brand {
-  padding: 28px 20px 20px;
-  border-bottom: 1px solid var(--rule);
-  position: relative;
-}
-
-/* Decorative accent bar on left edge */
-.sidebar__brand::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: linear-gradient(180deg, var(--gold-bright), var(--gold) 60%, transparent);
+  padding: 24px 20px 18px;
+  border-bottom: 1px solid var(--border);
 }
 
 .sidebar__logo {
-  font-family: var(--serif);
-  font-size: 22px;
-  font-weight: 900;
-  font-style: italic;
-  color: var(--cream);
-  letter-spacing: -0.02em;
   display: block;
-  line-height: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-h);
+  letter-spacing: -0.02em;
 }
 
 .sidebar__logo-mark {
   display: block;
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 500;
-  font-style: normal;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--gold);
   margin-top: 4px;
-  opacity: 0.9;
+  font-size: 0.76rem;
+  color: var(--muted);
 }
 
-/* Nav area */
 .sidebar__nav {
   flex: 1;
-  padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  padding: 18px 12px;
   overflow-y: auto;
 }
 
-/* Section labels */
 .sidebar__section-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
+  padding: 12px 10px 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   color: var(--muted);
-  padding: 16px 10px 6px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
-.sidebar__section-label::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--rule);
-}
-
-/* Nav links */
 .sidebar__link {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: 3px;
-  font-family: var(--sans);
-  font-size: 13.5px;
-  font-weight: 400;
-  color: var(--cream-dim);
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--text);
   text-decoration: none;
-  transition: background 0.1s, color 0.1s;
-  border-left: 2px solid transparent;
-  position: relative;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
 .sidebar__link:hover {
-  background: var(--cream-ghost);
-  color: var(--cream);
-  text-decoration: none;
-  border-left-color: var(--rule-mid);
+  background: var(--muted-bg);
+  color: var(--text-h);
 }
 
 .sidebar__link--active {
-  background: var(--gold-dim);
-  color: var(--gold-bright);
-  border-left-color: var(--gold);
-  font-weight: 500;
+  background: var(--bg-raised);
+  border-color: var(--border);
+  color: var(--text-h);
 }
 
-.sidebar__link--active:hover {
-  background: var(--gold-dim);
-  color: var(--gold-bright);
-  text-decoration: none;
-}
-
-/* Footer */
 .sidebar__footer {
-  padding: 16px 20px;
-  border-top: 1px solid var(--rule);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  background: var(--ink-2);
+  gap: 12px;
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--border);
 }
 
-/* Version stamp at very bottom */
-.sidebar__stamp {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  text-align: right;
-  padding-top: 4px;
-  opacity: 0.5;
+@media (max-width: 900px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar__nav {
+    padding-top: 12px;
+  }
 }

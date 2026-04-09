@@ -1,0 +1,11 @@
+.builder-page {
+  min-height: 100vh;
+  padding: 48px 24px;
+  background: var(--bg-subtle);
+}
+
+.builder-page__inner {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+}

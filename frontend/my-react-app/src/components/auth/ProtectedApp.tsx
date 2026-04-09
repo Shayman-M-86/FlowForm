@@ -1,5 +1,7 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useApi } from "../../api/useApi";
+import { getAuthReturnTo } from "../../auth/redirect";
 import "./ProtectedApp.css";
 
 type ProtectedAppProps = {
@@ -7,7 +9,67 @@ type ProtectedAppProps = {
 };
 
 export function ProtectedApp({ children }: ProtectedAppProps) {
-    const { isLoading, isAuthenticated, loginWithRedirect, error } = useAuth0();
+    const { isLoading, isAuthenticated, getIdTokenClaims, loginWithRedirect, error, user } = useAuth0();
+    const { bootstrapCurrentUser } = useApi();
+    const [bootstrapReady, setBootstrapReady] = useState(false);
+    const [bootstrapError, setBootstrapError] = useState<string | null>(null);
+    const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
+
+    useEffect(() => {
+        if (isLoading || !isAuthenticated) {
+            setBootstrapReady(false);
+            setBootstrapError(null);
+            return;
+        }
+
+        const userSub = user?.sub;
+        if (!userSub) {
+            setBootstrapReady(false);
+            setBootstrapError("Authenticated user did not include a subject claim.");
+            return;
+        }
+
+        const markerKey = `flowform:user-bootstrapped:${userSub}`;
+        if (window.localStorage.getItem(markerKey) === "true") {
+            setBootstrapReady(true);
+            setBootstrapError(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        setBootstrapReady(false);
+        setBootstrapError(null);
+
+        void (async () => {
+            try {
+                const claims = await getIdTokenClaims();
+                const idToken = claims?.__raw;
+
+                if (!idToken) {
+                    throw new Error("Auth0 did not return a raw ID token.");
+                }
+
+                await bootstrapCurrentUser(idToken);
+                window.localStorage.setItem(markerKey, "true");
+
+                if (!cancelled) {
+                    setBootstrapReady(true);
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    setBootstrapReady(false);
+                    setBootstrapError(
+                        err instanceof Error ? err.message : "Failed to finish account setup.",
+                    );
+                }
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [bootstrapAttempt, bootstrapCurrentUser, getIdTokenClaims, isAuthenticated, isLoading, user?.sub]);
 
     if (isLoading) {
         return (
@@ -26,7 +88,15 @@ export function ProtectedApp({ children }: ProtectedAppProps) {
                 <div className="auth-card">
                     <h1>Authentication error</h1>
                     <p>{error.message}</p>
-                    <button onClick={() => loginWithRedirect()}>Try again</button>
+                    <button
+                        onClick={() =>
+                            loginWithRedirect({
+                                appState: { returnTo: getAuthReturnTo() },
+                            })
+                        }
+                    >
+                        Try again
+                    </button>
                 </div>
             </div>
         );
@@ -43,11 +113,20 @@ export function ProtectedApp({ children }: ProtectedAppProps) {
                     </p>
 
                     <div className="auth-actions">
-                        <button onClick={() => loginWithRedirect()}>Log in</button>
+                        <button
+                            onClick={() =>
+                                loginWithRedirect({
+                                    appState: { returnTo: getAuthReturnTo() },
+                                })
+                            }
+                        >
+                            Log in
+                        </button>
                         <button
                             className="secondary"
                             onClick={() =>
                                 loginWithRedirect({
+                                    appState: { returnTo: getAuthReturnTo() },
                                     authorizationParams: { screen_hint: "signup" },
                                 })
                             }
@@ -55,6 +134,24 @@ export function ProtectedApp({ children }: ProtectedAppProps) {
                             Create account
                         </button>
                     </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!bootstrapReady) {
+        return (
+            <div className="auth-gate">
+                <div className="auth-card">
+                    <h1>{bootstrapError ? "Account setup failed" : "Setting up your account"}</h1>
+                    <p>
+                        {bootstrapError ?? "Finishing your FlowForm account before opening the workspace."}
+                    </p>
+                    {bootstrapError && (
+                        <button onClick={() => setBootstrapAttempt((current) => current + 1)}>
+                            Retry
+                        </button>
+                    )}
                 </div>
             </div>
         );

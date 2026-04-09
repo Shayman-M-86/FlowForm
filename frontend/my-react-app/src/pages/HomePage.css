@@ -1,185 +1,111 @@
-/* ── HomePage ─────────────────────────────────── */
-
 .home-page {
-  padding: 56px 48px;
-  max-width: 760px;
-  min-height: 100vh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  position: relative;
+  gap: 32px;
+  padding: 56px 32px;
+  max-width: 920px;
 }
-
-/* ── Hero ──────────────────────────────────────── */
 
 .home-hero {
-  margin-bottom: 56px;
-  position: relative;
-  padding-left: 24px;
-}
-
-/* Thick gold rule on left */
-.home-hero::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 4px;
-  bottom: 4px;
-  width: 3px;
-  background: var(--gold);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .home-hero__eyebrow {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--gold);
-  margin-bottom: 14px;
-  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 
 .home-hero__title {
-  font-family: var(--serif);
-  font-size: clamp(40px, 5vw, 58px);
-  font-weight: 900;
-  font-style: italic;
-  color: var(--cream);
-  margin: 0 0 16px;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
+  font-size: clamp(2.6rem, 6vw, 4.5rem);
+  font-weight: 600;
+  line-height: 0.98;
 }
 
 .home-hero__title em {
   font-style: normal;
-  color: var(--gold-bright);
+  color: var(--text);
 }
 
 .home-hero__subtitle {
-  font-family: var(--sans);
-  font-size: 15px;
-  font-weight: 300;
-  color: var(--cream-dim);
+  max-width: 560px;
+  color: var(--text-soft);
+  font-size: 1rem;
   line-height: 1.65;
-  margin: 0;
-  max-width: 460px;
 }
 
-/* ── Cards ─────────────────────────────────────── */
-
 .home-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 1px; /* gap becomes the "rule" between cards */
-  background: var(--rule); /* so the gap shows as a line */
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  overflow: hidden;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .home-card {
-  all: unset;
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  padding: 28px 32px;
-  background: var(--ink-3);
-  cursor: pointer;
-  transition: background 0.15s;
-  box-sizing: border-box;
   width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--bg-raised);
+  color: inherit;
   text-align: left;
-  position: relative;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
 }
 
 .home-card:hover {
-  background: var(--ink-4);
-}
-
-/* Left-edge accent that appears on hover */
-.home-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--gold);
-  transform: scaleY(0);
-  transform-origin: bottom;
-  transition: transform 0.2s ease;
-}
-
-.home-card:hover::before {
-  transform: scaleY(1);
+  background: var(--surface);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
 }
 
 .home-card__number {
-  font-family: var(--mono);
-  font-size: 28px;
-  font-weight: 300;
-  color: var(--rule-mid);
+  font-size: 0.8rem;
+  color: var(--muted);
   flex-shrink: 0;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  min-width: 36px;
-  transition: color 0.15s;
-}
-
-.home-card:hover .home-card__number {
-  color: var(--gold-dim);
 }
 
 .home-card__body {
   flex: 1;
-  min-width: 0;
 }
 
 .home-card__title {
-  font-family: var(--serif);
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--cream);
-  margin: 0 0 6px;
-  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .home-card__desc {
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 300;
-  color: var(--cream-dim);
+  color: var(--text-soft);
   line-height: 1.6;
-  margin: 0;
 }
 
 .home-card__arrow {
-  font-family: var(--mono);
-  font-size: 14px;
-  color: var(--rule-mid);
-  flex-shrink: 0;
-  transition: color 0.15s, transform 0.2s;
-  letter-spacing: -0.05em;
-}
-
-.home-card:hover .home-card__arrow {
-  color: var(--gold);
-  transform: translateX(5px);
-}
-
-/* ── Decoration ────────────────────────────────── */
-
-/* Bottom ruled caption */
-.home-footer-note {
-  margin-top: 40px;
-  padding-top: 20px;
-  border-top: 1px solid var(--rule);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
   color: var(--muted);
+  font-size: 1rem;
+}
+
+.home-footer-note {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 720px) {
+  .home-page {
+    padding: 36px 20px;
+  }
+
+  .home-cards {
+    grid-template-columns: 1fr;
+  }
 }

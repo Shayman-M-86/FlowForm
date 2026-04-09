@@ -1,30 +1,25 @@
 .input-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .input-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--cream-dim);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-soft);
 }
 
 .input-control {
-  padding: 9px 12px;
-  border: 1px solid var(--rule-mid);
-  border-radius: 2px;
-  font-size: 14px;
-  font-family: var(--sans);
-  font-weight: 300;
-  color: var(--cream);
-  background: var(--ink-3);
-  outline: none;
-  transition: border-color 0.12s, background 0.12s;
   width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-h);
+  outline: none;
+  transition: border-color 0.16s ease, background 0.16s ease;
 }
 
 .input-control::placeholder {
@@ -32,23 +27,23 @@
 }
 
 .input-control:focus {
-  border-color: var(--gold);
-  background: var(--ink-4);
+  border-color: var(--accent-border);
+  background: var(--bg-subtle);
 }
 
 .input-control--error {
-  border-color: var(--red);
+  border-color: rgba(212, 139, 139, 0.5);
+}
+
+.input-hint,
+.input-error {
+  font-size: 0.8rem;
 }
 
 .input-hint {
-  font-family: var(--mono);
-  font-size: 11px;
   color: var(--muted);
-  letter-spacing: 0.02em;
 }
 
 .input-error {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--red);
+  color: var(--danger);
 }

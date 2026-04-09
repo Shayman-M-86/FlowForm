@@ -253,6 +253,24 @@ export interface ResolveLinkOut {
   published_version: SurveyVersionOut | null;
 }
 
+// ── Auth ─────────────────────────────────────────────────────────────────────
+
+export interface CurrentUserOut {
+  id: number;
+  auth0_user_id: string;
+  email: string;
+  display_name: string | null;
+}
+
+export interface BootstrapUserRequest {
+  id_token: string;
+}
+
+export interface BootstrapUserOut {
+  created: boolean;
+  user: CurrentUserOut;
+}
+
 // ── Api executor ─────────────────────────────────────────────────────────────
 
 export interface ApiExecutor {

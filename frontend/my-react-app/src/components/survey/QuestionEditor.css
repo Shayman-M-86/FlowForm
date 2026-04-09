@@ -1,50 +1,42 @@
 .qe-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .qe-section-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
+  font-size: 0.78rem;
   color: var(--muted);
 }
 
-.qe-option-row {
+.qe-option-row,
+.qe-pair-row,
+.qe-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-.qe-option-row .input-field {
-  flex: 1;
-}
-
-.qe-pair-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.qe-pair-row .input-field {
+.qe-option-row .input-field,
+.qe-pair-row .input-field,
+.qe-row .input-field {
   flex: 1;
 }
 
 .qe-pair-arrow {
-  font-family: var(--mono);
-  color: var(--rule-mid);
+  color: var(--muted);
   flex-shrink: 0;
-  font-size: 14px;
+  align-self: flex-end;
+  padding-bottom: 10px;
 }
 
-.qe-row {
-  display: flex;
-  gap: 12px;
-}
+@media (max-width: 640px) {
+  .qe-option-row,
+  .qe-pair-row,
+  .qe-row {
+    flex-direction: column;
+  }
 
-.qe-row .input-field {
-  flex: 1;
+  .qe-pair-arrow {
+    display: none;
+  }
 }

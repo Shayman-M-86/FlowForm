@@ -416,7 +416,7 @@ export function RuleList({ projectId, surveyId, versionId, readOnly }: RuleListP
       )}
 
       {!readOnly && (
-        <div style={{ marginTop: 14 }}>
+        <div className="stack-actions">
           <Button variant="secondary" onClick={openAdd}>+ Add Rule</Button>
         </div>
       )}

@@ -268,7 +268,7 @@ function QuizForm({ survey, token }: QuizFormProps) {
       )}
 
       {submitError && (
-        <div style={{ color: "var(--danger)", fontSize: 13 }}>{submitError}</div>
+        <div className="quiz-inline-error">{submitError}</div>
       )}
 
       {token ? (
@@ -276,7 +276,7 @@ function QuizForm({ survey, token }: QuizFormProps) {
           {submitting ? "Submitting…" : "Submit"}
         </Button>
       ) : (
-        <p style={{ fontSize: 13, color: "var(--muted)" }}>
+        <p className="quiz-preview-note">
           Preview mode — submission requires a public link token.
         </p>
       )}

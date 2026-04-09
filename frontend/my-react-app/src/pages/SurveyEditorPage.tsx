@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import type { SurveyOut, SurveyVisibility, UpdateSurveyRequest } from "../api/types";
 import { PublicLinkList } from "../components/survey/PublicLinkList";
@@ -19,6 +19,11 @@ import "./SurveyEditorPage.css";
 import { useApi } from "../api/useApi";
 
 type EditorTab = "questions" | "rules" | "scoring" | "links";
+type MountedPanel = {
+  key: string;
+  tab: EditorTab;
+  versionId: number | null;
+};
 
 const TABS: { id: EditorTab; label: string }[] = [
   { id: "questions", label: "Questions" },
@@ -58,6 +63,7 @@ export function SurveyEditorPage() {
 
   const [selectedVersionId, setSelectedVersionId] = useState<number | null>(null);
   const [tab, setTab] = useState<EditorTab>("questions");
+  const [mountedPanels, setMountedPanels] = useState<MountedPanel[]>([]);
   const [versionBusy, setVersionBusy] = useState(false);
 
   // Inline title edit
@@ -77,6 +83,76 @@ export function SurveyEditorPage() {
 
   const selectedVersion = versions?.find((v) => v.id === resolvedVersionId) ?? null;
   const isReadOnly = selectedVersion?.status !== "draft";
+  const activePanel: MountedPanel | null =
+    tab === "links"
+      ? { key: `${pid}:${sid}:links`, tab: "links", versionId: null }
+      : resolvedVersionId === null
+        ? null
+        : {
+            key: `${pid}:${sid}:${tab}:${resolvedVersionId}`,
+            tab,
+            versionId: resolvedVersionId,
+          };
+
+  useEffect(() => {
+    setMountedPanels([]);
+  }, [pid, sid]);
+
+  useEffect(() => {
+    if (!activePanel) return;
+    setMountedPanels((current) =>
+      current.some((panel) => panel.key === activePanel.key)
+        ? current
+        : [...current, activePanel],
+    );
+  }, [activePanel]);
+
+  const renderedPanels =
+    activePanel && !mountedPanels.some((panel) => panel.key === activePanel.key)
+      ? [...mountedPanels, activePanel]
+      : mountedPanels;
+
+  function renderPanel(panel: MountedPanel) {
+    const panelIsReadOnly =
+      panel.versionId === null
+        ? isReadOnly
+        : (versions?.find((version) => version.id === panel.versionId)?.status ?? "draft") !== "draft";
+
+    switch (panel.tab) {
+      case "questions":
+        if (panel.versionId === null) return null;
+        return (
+          <QuestionList
+            projectId={pid}
+            surveyId={sid}
+            versionId={panel.versionId}
+            readOnly={panelIsReadOnly}
+          />
+        );
+      case "rules":
+        if (panel.versionId === null) return null;
+        return (
+          <RuleList
+            projectId={pid}
+            surveyId={sid}
+            versionId={panel.versionId}
+            readOnly={panelIsReadOnly}
+          />
+        );
+      case "scoring":
+        if (panel.versionId === null) return null;
+        return (
+          <ScoringRuleList
+            projectId={pid}
+            surveyId={sid}
+            versionId={panel.versionId}
+            readOnly={panelIsReadOnly}
+          />
+        );
+      case "links":
+        return <PublicLinkList projectId={pid} surveyId={sid} />;
+    }
+  }
 
   async function handleNewDraft() {
     setVersionBusy(true);
@@ -147,7 +223,7 @@ export function SurveyEditorPage() {
 
   if (surveyLoading || versionsLoading) {
     return (
-      <div className="page" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div className="page page--loading">
         <Spinner /> Loading…
       </div>
     );
@@ -233,33 +309,21 @@ export function SurveyEditorPage() {
           </div>
 
           {/* Tab content */}
-          {tab === "questions" && (
-            <QuestionList
-              projectId={pid}
-              surveyId={sid}
-              versionId={resolvedVersionId}
-              readOnly={isReadOnly}
-            />
-          )}
-          {tab === "rules" && (
-            <RuleList
-              projectId={pid}
-              surveyId={sid}
-              versionId={resolvedVersionId}
-              readOnly={isReadOnly}
-            />
-          )}
-          {tab === "scoring" && (
-            <ScoringRuleList
-              projectId={pid}
-              surveyId={sid}
-              versionId={resolvedVersionId}
-              readOnly={isReadOnly}
-            />
-          )}
-          {tab === "links" && (
-            <PublicLinkList projectId={pid} surveyId={sid} />
-          )}
+          <div className="tab-panels">
+            {renderedPanels.map((panel) => {
+              const isActivePanel = panel.key === activePanel?.key;
+
+              return (
+                <div
+                  key={panel.key}
+                  className={`tab-panel ${isActivePanel ? "" : "tab-panel--hidden"}`}
+                  hidden={!isActivePanel}
+                >
+                  {renderPanel(panel)}
+                </div>
+              );
+            })}
+          </div>
         </>
       )}
 

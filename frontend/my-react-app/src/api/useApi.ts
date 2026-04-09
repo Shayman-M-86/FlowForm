@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import * as authApi from "./auth";
 import * as client from "./client";
 import * as surveysApi from "./surveys";
 import * as contentApi from "./content";
@@ -49,6 +50,10 @@ export function useApi() {
 
   return useMemo(
     () => ({
+      // ── Auth ─────────────────────────────────────────────────────────────────
+      bootstrapCurrentUser: (idToken: string) =>
+        authApi.bootstrapCurrentUser(executor, idToken),
+
       // ── Surveys ──────────────────────────────────────────────────────────────
       listSurveys: (projectId: number) =>
         surveysApi.listSurveys(executor, projectId),

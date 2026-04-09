@@ -449,7 +449,7 @@ export function ScoringRuleList({ projectId, surveyId, versionId, readOnly }: Sc
       )}
 
       {!readOnly && (
-        <div style={{ marginTop: 14 }}>
+        <div className="stack-actions">
           <Button variant="secondary" onClick={openAdd}>+ Add Scoring Rule</Button>
         </div>
       )}

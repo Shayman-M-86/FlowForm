@@ -6,20 +6,20 @@
 }
 
 .link-prefix {
-  font-size: 13px;
+  font-size: 0.85rem;
 }
 
 .link-expires {
-  font-size: 12px;
+  font-size: 0.82rem;
   color: var(--muted);
 }
 
 .link-reveal__warning {
-  font-size: 13px;
-  color: var(--warning);
+  padding: 12px 14px;
+  border: 1px solid rgba(199, 177, 139, 0.26);
+  border-radius: var(--radius-sm);
   background: var(--warning-bg);
-  border-radius: 6px;
-  padding: 10px 12px;
+  color: var(--warning);
 }
 
 .link-reveal__field {
@@ -30,21 +30,21 @@
 }
 
 .link-reveal__label {
-  font-size: 13px;
-  font-weight: 500;
+  min-width: 44px;
   color: var(--text-h);
-  min-width: 50px;
+  font-weight: 500;
 }
 
 .link-reveal__value {
   flex: 1;
+  min-width: 0;
   word-break: break-all;
-  font-size: 12px;
-  padding: 6px 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   background: var(--code-bg);
-  border-radius: 4px;
 }
 
 .link-reveal__value--url {
-  font-size: 11px;
+  font-size: 0.8rem;
 }

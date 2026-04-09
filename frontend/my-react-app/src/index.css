@@ -1,72 +1,67 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
-
-/* ─────────────────────────────────────────────
-   DESIGN TOKENS — Typographic Instrument theme
-   Dark ink, amber gold, cream, ruled precision
-   ───────────────────────────────────────────── */
 :root {
-  /* Core palette */
-  --ink:          #0d0d0e;
-  --ink-2:        #171719;
-  --ink-3:        #1f1f22;
-  --ink-4:        #2a2a2e;
-  --rule:         #2e2e33;
-  --rule-mid:     #3d3d44;
+  --bg: #111315;
+  --bg-subtle: #16191d;
+  --bg-raised: #1b1f24;
+  --bg-overlay: rgba(7, 9, 11, 0.72);
+  --surface: #20252b;
+  --surface-hover: #252b31;
+  --surface-strong: #2a3139;
+  --border: #2c333c;
+  --border-strong: #39424d;
 
-  --cream:        #f0ebe0;
-  --cream-2:      #e4ddd0;
-  --cream-dim:    #a09080;
-  --cream-ghost:  rgba(240, 235, 224, 0.06);
+  --text-h: #f2f4f6;
+  --text: #c2c8ce;
+  --text-soft: #a2aab3;
+  --muted: #7d8792;
+  --muted-bg: rgba(255, 255, 255, 0.04);
 
-  --gold:         #d4952a;
-  --gold-bright:  #f0b344;
-  --gold-dim:     rgba(212, 149, 42, 0.18);
-  --gold-border:  rgba(212, 149, 42, 0.4);
+  --accent: #8ea4ba;
+  --accent-strong: #a9bfd3;
+  --accent-bg: rgba(142, 164, 186, 0.16);
+  --accent-border: rgba(142, 164, 186, 0.34);
 
-  --red:          #c44b3a;
-  --red-bg:       rgba(196, 75, 58, 0.12);
-  --green:        #4a9e6b;
-  --green-bg:     rgba(74, 158, 107, 0.12);
-  --amber:        #d4952a;
-  --amber-bg:     rgba(212, 149, 42, 0.12);
+  --success: #88b39b;
+  --success-bg: rgba(136, 179, 155, 0.16);
+  --danger: #d48b8b;
+  --danger-bg: rgba(212, 139, 139, 0.16);
+  --warning: #c7b18b;
+  --warning-bg: rgba(199, 177, 139, 0.16);
 
-  /* Semantic aliases that components use */
-  --bg:           var(--ink);
-  --bg-subtle:    var(--ink-2);
-  --bg-raised:    var(--ink-3);
-  --border:       var(--rule);
-  --border-mid:   var(--rule-mid);
+  --shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.16);
+  --shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
+  --focus-ring: 0 0 0 3px rgba(169, 191, 211, 0.18);
 
-  --text:         var(--cream-dim);
-  --text-h:       var(--cream);
-  --muted:        #5c5c66;
-  --muted-bg:     rgba(255,255,255,0.05);
+  --sans: "SF Pro Text", "SF Pro Display", "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: "SFMono-Regular", "Cascadia Code", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --heading: var(--sans);
+  --sidebar-w: 232px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
 
-  --accent:       var(--gold);
-  --accent-bg:    var(--gold-dim);
-  --accent-border:var(--gold-border);
+  /* Legacy aliases kept to avoid a broad refactor while the palette shifts. */
+  --ink: var(--bg);
+  --ink-2: var(--bg-subtle);
+  --ink-3: var(--bg-raised);
+  --ink-4: var(--surface);
+  --rule: var(--border);
+  --rule-mid: var(--border-strong);
+  --cream: var(--text-h);
+  --cream-2: var(--text);
+  --cream-dim: var(--text);
+  --cream-ghost: var(--muted-bg);
+  --gold: var(--accent);
+  --gold-bright: var(--accent-strong);
+  --gold-dim: var(--accent-bg);
+  --gold-border: var(--accent-border);
+  --red: var(--danger);
+  --red-bg: var(--danger-bg);
+  --green: var(--success);
+  --green-bg: var(--success-bg);
+  --amber: var(--warning);
+  --amber-bg: var(--warning-bg);
+  --code-bg: #161a1f;
 
-  --success:      var(--green);
-  --success-bg:   var(--green-bg);
-  --danger:       var(--red);
-  --danger-bg:    var(--red-bg);
-  --warning:      var(--amber);
-  --warning-bg:   var(--amber-bg);
-
-  --shadow:       0 4px 24px rgba(0,0,0,0.5);
-  --shadow-sm:    0 2px 8px rgba(0,0,0,0.4);
-
-  /* Typography */
-  --sans:    'IBM Plex Sans', system-ui, sans-serif;
-  --serif:   'Playfair Display', Georgia, serif;
-  --mono:    'IBM Plex Mono', ui-monospace, monospace;
-  --heading: var(--serif);
-
-  /* Sidebar */
-  --sidebar-w: 240px;
-
-  font: 15px/1.55 var(--sans);
-  letter-spacing: 0.01em;
+  font: 15px/1.5 var(--sans);
   color-scheme: dark;
   color: var(--text);
   background: var(--bg);
@@ -82,9 +77,14 @@
   box-sizing: border-box;
 }
 
+html {
+  background: var(--bg);
+}
+
 body {
   margin: 0;
-  background: var(--ink);
+  min-width: 320px;
+  background: var(--bg);
 }
 
 #root {
@@ -93,13 +93,24 @@ body {
   flex-direction: column;
 }
 
-/* Headings use serif */
-h1, h2, h3, h4 {
-  font-family: var(--serif);
-  font-weight: 700;
-  color: var(--text-h);
+body,
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+h1,
+h2,
+h3,
+h4 {
   margin: 0;
+  font-family: var(--heading);
+  font-weight: 600;
+  color: var(--text-h);
   line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
 p {
@@ -109,36 +120,46 @@ p {
 code {
   font-family: var(--mono);
   font-size: 12px;
-  line-height: 1.4;
-  padding: 2px 7px;
-  background: var(--ink-3);
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  color: var(--gold-bright);
+  line-height: 1.45;
+  padding: 2px 6px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-h);
 }
 
 a {
-  color: var(--gold);
+  color: var(--accent-strong);
   text-decoration: none;
 }
 
 a:hover {
-  color: var(--gold-bright);
-  text-decoration: underline;
+  color: var(--text-h);
 }
 
-/* Scrollbar */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
+
 ::-webkit-scrollbar-track {
-  background: var(--ink-2);
+  background: var(--bg-subtle);
 }
+
 ::-webkit-scrollbar-thumb {
-  background: var(--rule-mid);
-  border-radius: 3px;
+  background: var(--border-strong);
+  border-radius: 999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--cream-dim);
+  background: var(--muted);
 }

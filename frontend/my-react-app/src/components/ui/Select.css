@@ -1,49 +1,43 @@
 .select-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .select-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--cream-dim);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-soft);
 }
 
 .select-control {
-  padding: 9px 32px 9px 12px;
-  border: 1px solid var(--rule-mid);
-  border-radius: 2px;
-  font-size: 14px;
-  font-family: var(--sans);
-  font-weight: 300;
-  color: var(--cream);
-  background: var(--ink-3);
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 38px 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg);
+  color: var(--text-h);
   outline: none;
   cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
+  transition: border-color 0.16s ease, background 0.16s ease;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%235c5c66' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%237d8792' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 12px center;
-  width: 100%;
+  background-position: right 14px center;
 }
 
 .select-control:focus {
-  border-color: var(--gold);
-  background: var(--ink-4);
+  border-color: var(--accent-border);
+  background-color: var(--bg-subtle);
 }
 
 .select-control option {
-  background: var(--ink-3);
-  color: var(--cream);
+  background: var(--bg);
+  color: var(--text-h);
 }
 
 .select-hint {
-  font-family: var(--mono);
-  font-size: 11px;
+  font-size: 0.8rem;
   color: var(--muted);
 }

@@ -1,80 +1,70 @@
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  border-radius: 2px;
-  font-family: var(--mono);
-  font-weight: 500;
-  cursor: pointer;
   border: 1px solid transparent;
-  transition: background 0.12s, color 0.12s, border-color 0.12s, opacity 0.12s;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
   white-space: nowrap;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-size: 11px;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, opacity 0.16s ease;
 }
 
 .btn:disabled {
-  opacity: 0.35;
+  opacity: 0.46;
   cursor: not-allowed;
 }
 
 .btn--md {
-  font-size: 11px;
-  padding: 9px 18px;
+  min-height: 40px;
+  padding: 0 16px;
 }
 
 .btn--sm {
-  font-size: 10px;
-  padding: 5px 12px;
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 0.86rem;
 }
 
-/* Primary — gold fill */
 .btn--primary {
-  background: var(--gold);
-  color: var(--ink);
-  border-color: var(--gold);
+  background: var(--accent);
+  color: #0d1013;
+  border-color: transparent;
   font-weight: 600;
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: var(--gold-bright);
-  border-color: var(--gold-bright);
+  background: var(--accent-strong);
 }
 
-/* Secondary — outlined */
 .btn--secondary {
-  background: transparent;
-  color: var(--cream);
-  border-color: var(--rule-mid);
+  background: var(--bg-raised);
+  border-color: var(--border);
+  color: var(--text-h);
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background: var(--cream-ghost);
-  border-color: var(--cream-dim);
+  background: var(--surface);
+  border-color: var(--border-strong);
 }
 
-/* Danger */
 .btn--danger {
   background: transparent;
-  color: var(--red);
-  border-color: var(--red);
-  opacity: 0.8;
+  border-color: rgba(212, 139, 139, 0.3);
+  color: var(--danger);
 }
 
 .btn--danger:hover:not(:disabled) {
-  background: var(--red-bg);
-  opacity: 1;
+  background: var(--danger-bg);
 }
 
-/* Ghost — minimal */
 .btn--ghost {
   background: transparent;
-  color: var(--cream-dim);
   border-color: transparent;
+  color: var(--text-soft);
 }
 
 .btn--ghost:hover:not(:disabled) {
-  background: var(--cream-ghost);
-  color: var(--cream);
+  background: var(--muted-bg);
+  color: var(--text-h);
 }

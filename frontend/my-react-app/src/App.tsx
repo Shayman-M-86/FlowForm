@@ -7,6 +7,7 @@ import { SubmissionsPage } from "./pages/SubmissionsPage";
 import { TakeSurveyPage } from "./pages/TakeSurveyPage";
 import { QuizTakerPage } from "./pages/QuizTakerPage";
 import { ProtectedApp } from "./components/auth/ProtectedApp";
+import { BuilderPage } from "./pages/Builder";
 import "./App.css";
 
 export default function App() {
@@ -16,7 +17,7 @@ export default function App() {
         {/* Public routes */}
         <Route path="/quiz/:publicSlug" element={<QuizTakerPage mode="slug" />} />
         <Route path="/quiz/resolve" element={<QuizTakerPage mode="token" />} />
-
+        <Route path="/builder" element={<BuilderPage />} />
         {/* Protected app routes */}
         <Route
           element={

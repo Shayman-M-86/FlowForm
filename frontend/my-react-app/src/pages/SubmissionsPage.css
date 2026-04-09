@@ -1,22 +1,18 @@
 .submissions-scope {
-  font-family: var(--mono);
-  font-weight: 400;
-  font-style: normal;
   color: var(--muted);
-  font-size: 14px;
-  letter-spacing: 0.04em;
+  font-size: 1rem;
+  font-weight: 400;
 }
 
 .submissions-filters {
   display: flex;
-  gap: 12px;
   align-items: flex-end;
+  gap: 12px;
   margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
 .submissions-filters__btn {
-  padding-bottom: 0;
   align-self: flex-end;
 }
 
@@ -26,7 +22,7 @@
 }
 
 .submission-row--expanded {
-  background: var(--ink-3);
+  background: var(--surface);
 }
 
 .submission-row__top {
@@ -37,41 +33,31 @@
 }
 
 .submission-id {
-  font-family: var(--mono);
-  font-size: 13px;
+  color: var(--text-h);
   font-weight: 600;
-  color: var(--gold-bright);
-  letter-spacing: 0.04em;
 }
 
 .submission-row__meta {
   display: flex;
   gap: 12px;
-  font-family: var(--mono);
-  font-size: 11px;
+  margin-top: 6px;
+  flex-wrap: wrap;
   color: var(--muted);
-  margin-top: 4px;
-  letter-spacing: 0.04em;
+  font-size: 0.85rem;
 }
 
-.submission-survey {
-  color: var(--muted);
-}
-
+.submission-survey,
 .submission-expand-icon {
-  font-family: var(--mono);
-  font-size: 10px;
   color: var(--muted);
-  flex-shrink: 0;
 }
 
 .submission-answers {
-  padding: 16px 20px;
-  background: var(--ink-2);
-  border-bottom: 1px solid var(--rule);
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 16px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
 }
 
 .submission-answer {
@@ -82,29 +68,16 @@
 }
 
 .answer-key {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
   min-width: 130px;
 }
 
 .answer-value {
-  font-family: var(--sans);
-  font-size: 13px;
-  color: var(--cream);
   flex: 1;
+  min-width: 0;
+  color: var(--text-h);
 }
 
-.submission-no-answers {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: 0.06em;
-}
-
+.submission-no-answers,
 .pagination__total {
   color: var(--muted);
-  margin-left: auto;
 }
