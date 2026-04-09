@@ -101,6 +101,7 @@ class Auth0Settings(BaseModel):
 
     domain: str
     audience: str
+    client_id: str | None = None
 
 
 class AppSettings(BaseModel):
@@ -256,6 +257,7 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
         "SECRET_KEY": settings.flowform.app.secret_key,
         "AUTH0_DOMAIN": settings.flowform.auth0.domain,
         "AUTH0_AUDIENCE": settings.flowform.auth0.audience,
+        "AUTH0_CLIENT_ID": settings.flowform.auth0.client_id,
         "HOST": settings.flowform.server.host,
         "PORT": settings.flowform.server.port,
         "TESTING": settings.flowform.env == "test",

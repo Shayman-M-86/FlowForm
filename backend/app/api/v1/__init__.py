@@ -2,6 +2,7 @@ import logging
 
 from flask import Blueprint, Flask
 
+from app.api.v1.auth import auth_bp
 from app.api.v1.health import health_bp
 from app.api.v1.projects import projects_bp
 from app.api.v1.public import public_bp
@@ -11,6 +12,7 @@ __all__ = ["register_api_v1"]
 LOGGER = logging.getLogger(__name__)
 
 ROUTES: list[Blueprint] = [
+    auth_bp,
     health_bp,
     projects_bp,
     public_bp,
@@ -32,4 +34,3 @@ def register_api_v1(app: Flask) -> None:
 
         LOGGER.debug(f"Registering blueprint {bp.name} at {prefix}")
         app.register_blueprint(bp, url_prefix=prefix)
-

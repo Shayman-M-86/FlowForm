@@ -43,3 +43,11 @@ class ResolveLinkResult:
     link: SurveyPublicLink
     survey: Survey
     published_version: SurveyVersion
+
+
+@dataclass(slots=True)
+class BootstrapCurrentUserResult:
+    """Result of bootstrapping the authenticated local user."""
+
+    user: User
+    created: bool

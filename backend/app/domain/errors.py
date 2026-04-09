@@ -1,6 +1,39 @@
 from typing import Any
 
-from app.core.errors import AppError
+from app.core.errors import AppError, AuthError
+
+
+class InvalidIdTokenSubjectError(AuthError):
+    """Error raised when an ID token does not contain a valid subject."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            message="ID token did not contain a valid subject.",
+            code="INVALID_ID_TOKEN",
+            status_code=401,
+        )
+
+
+class TokenSubjectMismatchError(AuthError):
+    """Error raised when access-token and ID-token subjects do not match."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            message="ID token subject did not match the access token subject.",
+            code="TOKEN_SUBJECT_MISMATCH",
+            status_code=401,
+        )
+
+
+class MissingEmailClaimError(AuthError):
+    """Error raised when an ID token does not contain a usable email claim."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            message="ID token did not contain an email claim.",
+            code="MISSING_EMAIL_CLAIM",
+            status_code=400,
+        )
 
 
 class LinkNotFoundError(AppError):
@@ -128,6 +161,17 @@ class ProjectSlugConflictError(AppError):
             status_code=409,
             code="CONFLICT",
             message="Conflict — a project with that slug already exists",
+        )
+
+
+class UserBootstrapConflictError(AppError):
+    """Error raised when user bootstrap conflicts with an existing local identity."""
+
+    def __init__(self, *, email: str) -> None:
+        super().__init__(
+            status_code=409,
+            code="CONFLICT",
+            message=f"Conflict — a user with email '{email}' already exists",
         )
 
 
