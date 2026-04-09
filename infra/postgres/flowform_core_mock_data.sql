@@ -9,6 +9,8 @@
 -- Notes:
 -- - uses explicit IDs so the response DB seed can line up with survey_submissions.id
 -- - inserts survey version parts while versions are still draft, then publishes them
+-- - question_schema / rule_schema / scoring_schema now follow the v1 JSON shape spec
+-- - compiled_schema mirrors the same shapes so published artifacts resemble the stored inputs
 -- - resets sequences at the end so later inserts continue cleanly
 --
 -- Safe to run on an empty schema.
@@ -212,102 +214,18 @@ INSERT INTO survey_versions (
 -- =========================================
 
 INSERT INTO survey_questions (id, survey_version_id, question_key, question_schema, created_at, updated_at) VALUES
-    (
-        1,
-        1,
-        'engagement_score',
-        '{"type":"rating","label":"How engaged do you feel at work?","scale":{"min":1,"max":10}}'::jsonb,
-        NOW() - INTERVAL '27 days',
-        NOW() - INTERVAL '27 days'
-    ),
-    (
-        2,
-        1,
-        'team_support',
-        '{"type":"choice","label":"How supported do you feel by your team?","options":[{"id":"very_supported","label":"Very supported"},{"id":"somewhat_supported","label":"Somewhat supported"},{"id":"not_supported","label":"Not supported"}]}'::jsonb,
-        NOW() - INTERVAL '27 days',
-        NOW() - INTERVAL '27 days'
-    ),
-    (
-        3,
-        2,
-        'engagement_score',
-        '{"type":"rating","label":"How engaged do you feel at work?","scale":{"min":1,"max":10}}'::jsonb,
-        NOW() - INTERVAL '7 days',
-        NOW() - INTERVAL '7 days'
-    ),
-    (
-        4,
-        2,
-        'team_support',
-        '{"type":"choice","label":"How supported do you feel by your team?","options":[{"id":"very_supported","label":"Very supported"},{"id":"somewhat_supported","label":"Somewhat supported"},{"id":"not_supported","label":"Not supported"}]}'::jsonb,
-        NOW() - INTERVAL '7 days',
-        NOW() - INTERVAL '7 days'
-    ),
-    (
-        5,
-        2,
-        'manager_feedback',
-        '{"type":"field","label":"What is one thing your manager could do better?","field":{"kind":"textarea"}}'::jsonb,
-        NOW() - INTERVAL '7 days',
-        NOW() - INTERVAL '7 days'
-    ),
-    (
-        6,
-        3,
-        'clarity_rating',
-        '{"type":"rating","label":"My manager sets clear expectations","scale":{"min":1,"max":5}}'::jsonb,
-        NOW() - INTERVAL '17 days',
-        NOW() - INTERVAL '17 days'
-    ),
-    (
-        7,
-        3,
-        'coaching_examples',
-        '{"type":"field","label":"Share an example of good coaching","field":{"kind":"textarea"}}'::jsonb,
-        NOW() - INTERVAL '17 days',
-        NOW() - INTERVAL '17 days'
-    ),
-    (
-        8,
-        4,
-        'signup_ease',
-        '{"type":"rating","label":"How easy was signup?","scale":{"min":1,"max":10}}'::jsonb,
-        NOW() - INTERVAL '13 days',
-        NOW() - INTERVAL '13 days'
-    ),
-    (
-        9,
-        4,
-        'feature_interest',
-        '{"type":"matching","label":"Match each persona to the feature they cared about most","left_items":[{"id":"founder","label":"Founder"},{"id":"marketer","label":"Marketer"}],"right_items":[{"id":"automation","label":"Automation"},{"id":"analytics","label":"Analytics"}]}'::jsonb,
-        NOW() - INTERVAL '13 days',
-        NOW() - INTERVAL '13 days'
-    ),
-    (
-        10,
-        5,
-        'signup_ease',
-        '{"type":"rating","label":"How easy was signup?","scale":{"min":1,"max":10}}'::jsonb,
-        NOW() - INTERVAL '3 days',
-        NOW() - INTERVAL '3 days'
-    ),
-    (
-        11,
-        5,
-        'feature_interest',
-        '{"type":"matching","label":"Match each persona to the feature they cared about most","left_items":[{"id":"founder","label":"Founder"},{"id":"marketer","label":"Marketer"}],"right_items":[{"id":"automation","label":"Automation"},{"id":"analytics","label":"Analytics"}]}'::jsonb,
-        NOW() - INTERVAL '3 days',
-        NOW() - INTERVAL '3 days'
-    ),
-    (
-        12,
-        5,
-        'followup_email',
-        '{"type":"field","label":"Leave your email if you want follow-up","field":{"kind":"email","optional":true}}'::jsonb,
-        NOW() - INTERVAL '3 days',
-        NOW() - INTERVAL '3 days'
-    );
+    (1, 1, 'engagement_score', '{"family":"rating","label":"How engaged do you feel at work?","schema":{"min":1,"max":10},"ui":{"style":"slider"}}'::jsonb, NOW() - INTERVAL '27 days', NOW() - INTERVAL '27 days'),
+    (2, 1, 'team_support', '{"family":"choice","label":"How supported do you feel by your team?","schema":{"options":[{"id":"very_supported","label":"Very supported"},{"id":"somewhat_supported","label":"Somewhat supported"},{"id":"not_supported","label":"Not supported"}],"min_selected":1,"max_selected":1},"ui":{"style":"radio"}}'::jsonb, NOW() - INTERVAL '27 days', NOW() - INTERVAL '27 days'),
+    (3, 2, 'engagement_score', '{"family":"rating","label":"How engaged do you feel at work?","schema":{"min":1,"max":10},"ui":{"style":"slider"}}'::jsonb, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
+    (4, 2, 'team_support', '{"family":"choice","label":"How supported do you feel by your team?","schema":{"options":[{"id":"very_supported","label":"Very supported"},{"id":"somewhat_supported","label":"Somewhat supported"},{"id":"not_supported","label":"Not supported"}],"min_selected":1,"max_selected":1},"ui":{"style":"radio"}}'::jsonb, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
+    (5, 2, 'manager_feedback', '{"family":"field","label":"What is one thing your manager could do better?","schema":{"field_type":"text"},"ui":{"style":"textarea","placeholder":"Share one practical improvement"}}'::jsonb, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
+    (6, 3, 'clarity_rating', '{"family":"rating","label":"My manager sets clear expectations","schema":{"min":1,"max":5},"ui":{"style":"slider"}}'::jsonb, NOW() - INTERVAL '17 days', NOW() - INTERVAL '17 days'),
+    (7, 3, 'coaching_examples', '{"family":"field","label":"Share an example of good coaching","schema":{"field_type":"text"},"ui":{"style":"textarea","placeholder":"Describe a specific example"}}'::jsonb, NOW() - INTERVAL '17 days', NOW() - INTERVAL '17 days'),
+    (8, 4, 'signup_ease', '{"family":"rating","label":"How easy was signup?","schema":{"min":1,"max":10},"ui":{"style":"slider"}}'::jsonb, NOW() - INTERVAL '13 days', NOW() - INTERVAL '13 days'),
+    (9, 4, 'feature_interest', '{"family":"matching","label":"Match each persona to the feature they cared about most","schema":{"left_items":[{"id":"founder","label":"Founder"},{"id":"marketer","label":"Marketer"}],"right_items":[{"id":"automation","label":"Automation"},{"id":"analytics","label":"Analytics"}]},"ui":{"style":"drag_match"}}'::jsonb, NOW() - INTERVAL '13 days', NOW() - INTERVAL '13 days'),
+    (10, 5, 'signup_ease', '{"family":"rating","label":"How easy was signup?","schema":{"min":1,"max":10},"ui":{"style":"slider"}}'::jsonb, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
+    (11, 5, 'feature_interest', '{"family":"matching","label":"Match each persona to the feature they cared about most","schema":{"left_items":[{"id":"founder","label":"Founder"},{"id":"marketer","label":"Marketer"}],"right_items":[{"id":"automation","label":"Automation"},{"id":"analytics","label":"Analytics"}]},"ui":{"style":"drag_match"}}'::jsonb, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
+    (12, 5, 'followup_email', '{"family":"field","label":"Leave your email if you want follow-up","schema":{"field_type":"email"},"ui":{"placeholder":"name@example.com"}}'::jsonb, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days');
 
 -- =========================================
 -- SURVEY RULES
@@ -318,7 +236,7 @@ INSERT INTO survey_rules (id, survey_version_id, rule_key, rule_schema, created_
         1,
         2,
         'show_manager_feedback_low_score',
-        '{"if":{"question_key":"engagement_score","operator":"lte","value":6},"then":{"show":["manager_feedback"]}}'::jsonb,
+        '{"target":"manager_feedback","sort_order":20,"condition":{"fact":"answers.engagement_score","operator":"lte","value":6},"effects":{"visible":true,"required":true}}'::jsonb,
         NOW() - INTERVAL '7 days',
         NOW() - INTERVAL '7 days'
     ),
@@ -326,7 +244,7 @@ INSERT INTO survey_rules (id, survey_version_id, rule_key, rule_schema, created_
         2,
         5,
         'show_followup_email_high_ease',
-        '{"if":{"question_key":"signup_ease","operator":"gte","value":8},"then":{"show":["followup_email"]}}'::jsonb,
+        '{"target":"followup_email","sort_order":20,"condition":{"fact":"answers.signup_ease","operator":"gte","value":8},"effects":{"visible":true,"required":false}}'::jsonb,
         NOW() - INTERVAL '3 days',
         NOW() - INTERVAL '3 days'
     );
@@ -339,16 +257,32 @@ INSERT INTO survey_scoring_rules (id, survey_version_id, scoring_key, scoring_sc
     (
         1,
         2,
-        'engagement_index',
-        '{"method":"weighted_average","inputs":[{"question_key":"engagement_score","weight":0.7},{"question_key":"team_support","weight":0.3}]}'::jsonb,
+        'engagement_score_direct',
+        '{"target":"engagement_score","bucket":"engagement","strategy":"rating_direct","config":{"multiplier":1}}'::jsonb,
         NOW() - INTERVAL '7 days',
         NOW() - INTERVAL '7 days'
     ),
     (
         2,
+        2,
+        'team_support_option_map',
+        '{"target":"team_support","bucket":"engagement","strategy":"choice_option_map","config":{"option_scores":{"very_supported":10,"somewhat_supported":6,"not_supported":2},"combine":"max"}}'::jsonb,
+        NOW() - INTERVAL '7 days',
+        NOW() - INTERVAL '7 days'
+    ),
+    (
+        3,
         5,
-        'signup_quality',
-        '{"method":"direct","inputs":[{"question_key":"signup_ease","weight":1.0}]}'::jsonb,
+        'signup_ease_direct',
+        '{"target":"signup_ease","bucket":"total","strategy":"rating_direct","config":{"multiplier":1}}'::jsonb,
+        NOW() - INTERVAL '3 days',
+        NOW() - INTERVAL '3 days'
+    ),
+    (
+        4,
+        5,
+        'feature_interest_answer_key',
+        '{"target":"feature_interest","bucket":"total","strategy":"matching_answer_key","config":{"correct_pairs":[{"left_id":"founder","right_id":"automation"},{"left_id":"marketer","right_id":"analytics"}],"points_per_correct":1,"penalty_per_incorrect":0,"max_score":2}}'::jsonb,
         NOW() - INTERVAL '3 days',
         NOW() - INTERVAL '3 days'
     );
@@ -571,19 +505,7 @@ INSERT INTO audit_logs (id, user_id, action, entity_type, entity_id, metadata, c
 UPDATE survey_versions
 SET
     status = 'published',
-    compiled_schema = '{
-      "questions": [
-        {"key":"engagement_score","type":"rating"},
-        {"key":"team_support","type":"choice"},
-        {"key":"manager_feedback","type":"field"}
-      ],
-      "rules": [
-        {"key":"show_manager_feedback_low_score"}
-      ],
-      "scoring": [
-        {"key":"engagement_index"}
-      ]
-    }'::jsonb,
+    compiled_schema = '{"questions":[{"question_key":"engagement_score","question_schema":{"family":"rating","label":"How engaged do you feel at work?","schema":{"min":1,"max":10},"ui":{"style":"slider"}}},{"question_key":"team_support","question_schema":{"family":"choice","label":"How supported do you feel by your team?","schema":{"options":[{"id":"very_supported","label":"Very supported"},{"id":"somewhat_supported","label":"Somewhat supported"},{"id":"not_supported","label":"Not supported"}],"min_selected":1,"max_selected":1},"ui":{"style":"radio"}}},{"question_key":"manager_feedback","question_schema":{"family":"field","label":"What is one thing your manager could do better?","schema":{"field_type":"text"},"ui":{"style":"textarea","placeholder":"Share one practical improvement"}}}],"rules":[{"rule_key":"show_manager_feedback_low_score","rule_schema":{"target":"manager_feedback","sort_order":20,"condition":{"fact":"answers.engagement_score","operator":"lte","value":6},"effects":{"visible":true,"required":true}}}],"scoring":[{"scoring_key":"engagement_score_direct","scoring_schema":{"target":"engagement_score","bucket":"engagement","strategy":"rating_direct","config":{"multiplier":1}}},{"scoring_key":"team_support_option_map","scoring_schema":{"target":"team_support","bucket":"engagement","strategy":"choice_option_map","config":{"option_scores":{"very_supported":10,"somewhat_supported":6,"not_supported":2},"combine":"max"}}}]}'::jsonb,
     published_at = NOW() - INTERVAL '6 days',
     updated_at = NOW() - INTERVAL '6 days'
 WHERE id = 2;
@@ -591,19 +513,7 @@ WHERE id = 2;
 UPDATE survey_versions
 SET
     status = 'published',
-    compiled_schema = '{
-      "questions": [
-        {"key":"signup_ease","type":"rating"},
-        {"key":"feature_interest","type":"matching"},
-        {"key":"followup_email","type":"field"}
-      ],
-      "rules": [
-        {"key":"show_followup_email_high_ease"}
-      ],
-      "scoring": [
-        {"key":"signup_quality"}
-      ]
-    }'::jsonb,
+    compiled_schema = '{"questions":[{"question_key":"signup_ease","question_schema":{"family":"rating","label":"How easy was signup?","schema":{"min":1,"max":10},"ui":{"style":"slider"}}},{"question_key":"feature_interest","question_schema":{"family":"matching","label":"Match each persona to the feature they cared about most","schema":{"left_items":[{"id":"founder","label":"Founder"},{"id":"marketer","label":"Marketer"}],"right_items":[{"id":"automation","label":"Automation"},{"id":"analytics","label":"Analytics"}]},"ui":{"style":"drag_match"}}},{"question_key":"followup_email","question_schema":{"family":"field","label":"Leave your email if you want follow-up","schema":{"field_type":"email"},"ui":{"placeholder":"name@example.com"}}}],"rules":[{"rule_key":"show_followup_email_high_ease","rule_schema":{"target":"followup_email","sort_order":20,"condition":{"fact":"answers.signup_ease","operator":"gte","value":8},"effects":{"visible":true,"required":false}}}],"scoring":[{"scoring_key":"signup_ease_direct","scoring_schema":{"target":"signup_ease","bucket":"total","strategy":"rating_direct","config":{"multiplier":1}}},{"scoring_key":"feature_interest_answer_key","scoring_schema":{"target":"feature_interest","bucket":"total","strategy":"matching_answer_key","config":{"correct_pairs":[{"left_id":"founder","right_id":"automation"},{"left_id":"marketer","right_id":"analytics"}],"points_per_correct":1,"penalty_per_incorrect":0,"max_score":2}}}]}'::jsonb,
     published_at = NOW() - INTERVAL '2 days',
     updated_at = NOW() - INTERVAL '2 days'
 WHERE id = 5;

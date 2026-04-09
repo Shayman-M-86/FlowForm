@@ -2,68 +2,79 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border-radius: 6px;
-  font-family: var(--sans);
+  border-radius: 2px;
+  font-family: var(--mono);
   font-weight: 500;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: opacity 0.15s, background 0.15s;
+  transition: background 0.12s, color 0.12s, border-color 0.12s, opacity 0.12s;
   white-space: nowrap;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 11px;
 }
 
 .btn:disabled {
-  opacity: 0.45;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .btn--md {
-  font-size: 14px;
-  padding: 7px 14px;
+  font-size: 11px;
+  padding: 9px 18px;
 }
 
 .btn--sm {
-  font-size: 13px;
-  padding: 4px 10px;
+  font-size: 10px;
+  padding: 5px 12px;
 }
 
+/* Primary — gold fill */
 .btn--primary {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
+  background: var(--gold);
+  color: var(--ink);
+  border-color: var(--gold);
+  font-weight: 600;
 }
 
 .btn--primary:hover:not(:disabled) {
-  opacity: 0.88;
+  background: var(--gold-bright);
+  border-color: var(--gold-bright);
 }
 
+/* Secondary — outlined */
 .btn--secondary {
-  background: var(--bg);
-  color: var(--text-h);
-  border-color: var(--border);
+  background: transparent;
+  color: var(--cream);
+  border-color: var(--rule-mid);
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background: var(--bg-subtle);
+  background: var(--cream-ghost);
+  border-color: var(--cream-dim);
 }
 
+/* Danger */
 .btn--danger {
-  background: var(--danger-bg);
-  color: var(--danger);
-  border-color: transparent;
+  background: transparent;
+  color: var(--red);
+  border-color: var(--red);
+  opacity: 0.8;
 }
 
 .btn--danger:hover:not(:disabled) {
-  background: var(--danger);
-  color: #fff;
+  background: var(--red-bg);
+  opacity: 1;
 }
 
+/* Ghost — minimal */
 .btn--ghost {
   background: transparent;
-  color: var(--text);
+  color: var(--cream-dim);
   border-color: transparent;
 }
 
 .btn--ghost:hover:not(:disabled) {
-  background: var(--muted-bg);
-  color: var(--text-h);
+  background: var(--cream-ghost);
+  color: var(--cream);
 }

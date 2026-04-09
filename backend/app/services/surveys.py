@@ -1,3 +1,4 @@
+from psycopg.errors import UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -20,8 +21,10 @@ class SurveyService:
         try:
             survey = surveys_repo.create_survey(db, project_id, data)
             commit_or_rollback(db)
-        except IntegrityError:
-            raise SurveySlugConflictError() from None
+        except IntegrityError as exc:
+            if isinstance(exc.orig, UniqueViolation) and "public_slug" in (exc.orig.diag.constraint_name or ""):
+                raise SurveySlugConflictError() from None
+            raise
         return survey
 
     def get_survey(self, db: Session, project_id: int, survey_id: int) -> Survey:
@@ -36,8 +39,10 @@ class SurveyService:
         try:
             updated = surveys_repo.update_survey(db, survey, data)
             commit_or_rollback(db)
-        except IntegrityError:
-            raise SurveySlugConflictError() from None
+        except IntegrityError as exc:
+            if isinstance(exc.orig, UniqueViolation) and "public_slug" in (exc.orig.diag.constraint_name or ""):
+                raise SurveySlugConflictError() from None
+            raise
         return updated
 
     def delete_survey(self, db: Session, project_id: int, survey_id: int) -> None:

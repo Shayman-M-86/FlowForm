@@ -9,10 +9,15 @@ export function HomePage() {
   return (
     <div className="home-page">
       <div className="home-hero">
-        <h1 className="home-hero__title">FlowForm</h1>
+        <span className="home-hero__eyebrow">FlowForm Platform</span>
+        <h1 className="home-hero__title">
+          Build.<br />
+          <em>Distribute.</em><br />
+          Analyse.
+        </h1>
         <p className="home-hero__subtitle">
-          Build surveys and quizzes, share them via public or private links,
-          and review responses — all in one place.
+          Create surveys and quizzes, share them via public or private links,
+          and review responses — all from a single instrument.
         </p>
       </div>
 
@@ -21,7 +26,7 @@ export function HomePage() {
           className="home-card"
           onClick={() => navigate(`/projects/${projectId}/surveys`)}
         >
-          <div className="home-card__icon">📋</div>
+          <span className="home-card__number">01</span>
           <div className="home-card__body">
             <h2 className="home-card__title">Build</h2>
             <p className="home-card__desc">
@@ -36,7 +41,7 @@ export function HomePage() {
           className="home-card"
           onClick={() => navigate("/take")}
         >
-          <div className="home-card__icon">✏️</div>
+          <span className="home-card__number">02</span>
           <div className="home-card__body">
             <h2 className="home-card__title">Take</h2>
             <p className="home-card__desc">
@@ -46,6 +51,11 @@ export function HomePage() {
           </div>
           <span className="home-card__arrow">→</span>
         </button>
+      </div>
+
+      <div className="home-footer-note">
+        <span>FlowForm — Survey Builder</span>
+        <span>v1.0</span>
       </div>
     </div>
   );

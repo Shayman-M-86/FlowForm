@@ -11,7 +11,10 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
-        <span className="sidebar__logo">FlowForm</span>
+        <span className="sidebar__logo">
+          FlowForm
+          <span className="sidebar__logo-mark">Survey Builder</span>
+        </span>
       </div>
 
       <nav className="sidebar__nav">

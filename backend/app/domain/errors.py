@@ -120,6 +120,17 @@ class SurveyNoResponseStoreError(AppError):
         )
 
 
+class ProjectSlugConflictError(AppError):
+    """Error raised when a project slug is already taken."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="CONFLICT",
+            message="Conflict — a project with that slug already exists",
+        )
+
+
 class SurveySlugConflictError(AppError):
     """Error raised when a survey slug already exists within the project."""
 

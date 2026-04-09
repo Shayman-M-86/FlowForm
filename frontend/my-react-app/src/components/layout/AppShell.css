@@ -1,11 +1,26 @@
 .app-shell {
   display: flex;
   min-height: 100vh;
+  background: var(--ink);
 }
 
 .app-shell__main {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  background: var(--bg-subtle);
+  background: var(--ink-2);
+  /* Subtle grain texture overlay */
+  background-image:
+    radial-gradient(ellipse at 0% 0%, rgba(212,149,42,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 100% 100%, rgba(212,149,42,0.02) 0%, transparent 60%);
+  position: relative;
+}
+
+/* Decorative ruled line at top of main area */
+.app-shell__main::before {
+  content: '';
+  display: block;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--gold-bright) 30%, transparent 100%);
+  opacity: 0.35;
 }

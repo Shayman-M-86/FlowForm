@@ -2,41 +2,47 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   gap: 12px;
 }
 
 .editor-header__title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .editor-title {
-  font-size: 22px;
-  font-weight: 600;
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 700;
+  font-style: italic;
   cursor: pointer;
   border-bottom: 1px dashed transparent;
   transition: border-color 0.15s;
   margin: 0;
+  color: var(--cream);
+  letter-spacing: -0.02em;
 }
 
 .editor-title:hover {
-  border-bottom-color: var(--border);
+  border-bottom-color: var(--rule-mid);
 }
 
 .editor-title-input {
-  font-size: 22px;
-  font-weight: 600;
-  font-family: var(--heading);
-  color: var(--text-h);
+  font-size: 24px;
+  font-weight: 700;
+  font-style: italic;
+  font-family: var(--serif);
+  color: var(--cream);
   border: none;
-  border-bottom: 2px solid var(--accent);
+  border-bottom: 2px solid var(--gold);
   outline: none;
   background: transparent;
   padding: 0;
   min-width: 200px;
+  letter-spacing: -0.02em;
 }
 
 .editor-header__actions {
@@ -48,8 +54,13 @@
 .editor-readonly-banner {
   background: var(--muted-bg);
   color: var(--muted);
-  border-radius: 6px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--rule-mid);
+  border-radius: 2px;
   padding: 8px 14px;
-  font-size: 13px;
-  margin-bottom: 16px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
 }

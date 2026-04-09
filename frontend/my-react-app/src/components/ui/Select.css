@@ -1,38 +1,49 @@
 .select-field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .select-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-h);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
 }
 
 .select-control {
-  padding: 8px 11px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  padding: 9px 32px 9px 12px;
+  border: 1px solid var(--rule-mid);
+  border-radius: 2px;
   font-size: 14px;
   font-family: var(--sans);
-  color: var(--text-h);
-  background: var(--bg);
+  font-weight: 300;
+  color: var(--cream);
+  background: var(--ink-3);
   outline: none;
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: border-color 0.12s, background 0.12s;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%235c5c66' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 10px center;
-  padding-right: 30px;
+  background-position: right 12px center;
+  width: 100%;
 }
 
 .select-control:focus {
-  border-color: var(--accent);
+  border-color: var(--gold);
+  background: var(--ink-4);
+}
+
+.select-control option {
+  background: var(--ink-3);
+  color: var(--cream);
 }
 
 .select-hint {
-  font-size: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
   color: var(--muted);
 }

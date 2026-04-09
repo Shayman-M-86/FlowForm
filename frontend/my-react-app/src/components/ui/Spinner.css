@@ -4,9 +4,9 @@
 
 .spinner {
   display: inline-block;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
+  border: 2px solid var(--rule-mid);
+  border-top-color: var(--gold);
   border-radius: 50%;
-  animation: spin 0.65s linear infinite;
+  animation: spin 0.7s linear infinite;
   flex-shrink: 0;
 }

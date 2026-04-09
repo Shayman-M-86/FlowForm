@@ -1,62 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+/* ─────────────────────────────────────────────
+   DESIGN TOKENS — Typographic Instrument theme
+   Dark ink, amber gold, cream, ruled precision
+   ───────────────────────────────────────────── */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --bg-subtle: #f9f9fb;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --shadow: rgba(0, 0, 0, 0.08) 0 2px 8px;
+  /* Core palette */
+  --ink:          #0d0d0e;
+  --ink-2:        #171719;
+  --ink-3:        #1f1f22;
+  --ink-4:        #2a2a2e;
+  --rule:         #2e2e33;
+  --rule-mid:     #3d3d44;
 
-  --success: #22c55e;
-  --success-bg: rgba(34, 197, 94, 0.1);
-  --danger: #ef4444;
-  --danger-bg: rgba(239, 68, 68, 0.1);
-  --warning: #f59e0b;
-  --warning-bg: rgba(245, 158, 11, 0.1);
-  --muted: #9ca3af;
-  --muted-bg: rgba(156, 163, 175, 0.12);
+  --cream:        #f0ebe0;
+  --cream-2:      #e4ddd0;
+  --cream-dim:    #a09080;
+  --cream-ghost:  rgba(240, 235, 224, 0.06);
 
-  --sidebar-w: 220px;
+  --gold:         #d4952a;
+  --gold-bright:  #f0b344;
+  --gold-dim:     rgba(212, 149, 42, 0.18);
+  --gold-border:  rgba(212, 149, 42, 0.4);
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --red:          #c44b3a;
+  --red-bg:       rgba(196, 75, 58, 0.12);
+  --green:        #4a9e6b;
+  --green-bg:     rgba(74, 158, 107, 0.12);
+  --amber:        #d4952a;
+  --amber-bg:     rgba(212, 149, 42, 0.12);
 
-  font: 16px/150% var(--sans);
-  letter-spacing: 0.1px;
-  color-scheme: light dark;
+  /* Semantic aliases that components use */
+  --bg:           var(--ink);
+  --bg-subtle:    var(--ink-2);
+  --bg-raised:    var(--ink-3);
+  --border:       var(--rule);
+  --border-mid:   var(--rule-mid);
+
+  --text:         var(--cream-dim);
+  --text-h:       var(--cream);
+  --muted:        #5c5c66;
+  --muted-bg:     rgba(255,255,255,0.05);
+
+  --accent:       var(--gold);
+  --accent-bg:    var(--gold-dim);
+  --accent-border:var(--gold-border);
+
+  --success:      var(--green);
+  --success-bg:   var(--green-bg);
+  --danger:       var(--red);
+  --danger-bg:    var(--red-bg);
+  --warning:      var(--amber);
+  --warning-bg:   var(--amber-bg);
+
+  --shadow:       0 4px 24px rgba(0,0,0,0.5);
+  --shadow-sm:    0 2px 8px rgba(0,0,0,0.4);
+
+  /* Typography */
+  --sans:    'IBM Plex Sans', system-ui, sans-serif;
+  --serif:   'Playfair Display', Georgia, serif;
+  --mono:    'IBM Plex Mono', ui-monospace, monospace;
+  --heading: var(--serif);
+
+  /* Sidebar */
+  --sidebar-w: 240px;
+
+  font: 15px/1.55 var(--sans);
+  letter-spacing: 0.01em;
+  color-scheme: dark;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --bg-subtle: #1c1d26;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --shadow: rgba(0, 0, 0, 0.3) 0 2px 8px;
-
-    --success: #4ade80;
-    --success-bg: rgba(74, 222, 128, 0.1);
-    --danger: #f87171;
-    --danger-bg: rgba(248, 113, 113, 0.1);
-    --warning: #fbbf24;
-    --warning-bg: rgba(251, 191, 36, 0.1);
-    --muted-bg: rgba(156, 163, 175, 0.08);
-  }
 }
 
 *,
@@ -67,6 +84,7 @@
 
 body {
   margin: 0;
+  background: var(--ink);
 }
 
 #root {
@@ -75,13 +93,13 @@ body {
   flex-direction: column;
 }
 
-h1,
-h2,
-h3 {
-  font-family: var(--heading);
-  font-weight: 500;
+/* Headings use serif */
+h1, h2, h3, h4 {
+  font-family: var(--serif);
+  font-weight: 700;
   color: var(--text-h);
   margin: 0;
+  line-height: 1.15;
 }
 
 p {
@@ -90,19 +108,37 @@ p {
 
 code {
   font-family: var(--mono);
-  font-size: 13px;
-  line-height: 135%;
-  padding: 2px 6px;
-  background: var(--code-bg);
-  border-radius: 4px;
-  color: var(--text-h);
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 2px 7px;
+  background: var(--ink-3);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--gold-bright);
 }
 
 a {
-  color: var(--accent);
+  color: var(--gold);
   text-decoration: none;
 }
 
 a:hover {
+  color: var(--gold-bright);
   text-decoration: underline;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ink-2);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--rule-mid);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cream-dim);
 }

@@ -19,7 +19,7 @@ services:
       "-c", "password_encryption=scram-sha-256", 
       "-c", "hba_file=/etc/postgresql/pg_hba.conf", 
       "-c", "listen_addresses=*", 
-      "-c", "port=${DATABASE_RESPONSE_PORT}"
+      "-c", "port=${DATABASE_CORE_PORT}"
       ]
     ports:
       - "127.0.0.1:5432:${DATABASE_CORE_PORT}"

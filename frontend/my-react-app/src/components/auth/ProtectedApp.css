@@ -1,60 +1,86 @@
 .auth-gate {
-    min-height: 100vh;
-    display: grid;
-    place-items: center;
-    padding: 24px;
-    background: #111827;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--ink);
+  background-image:
+    radial-gradient(ellipse at 20% 30%, rgba(212,149,42,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(212,149,42,0.03) 0%, transparent 50%);
 }
 
 .auth-card {
-    width: 100%;
-    max-width: 480px;
-    padding: 32px;
-    border: 1px solid #374151;
-    border-radius: 16px;
-    background: #1f2937;
-    color: #f9fafb;
+  width: 100%;
+  max-width: 520px;
+  padding: 48px;
+  border: 1px solid var(--rule-mid);
+  border-top: 3px solid var(--gold);
+  border-radius: 2px;
+  background: var(--ink-3);
+  color: var(--cream);
 }
 
 .auth-eyebrow {
-    margin: 0 0 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #9ca3af;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
 }
 
 .auth-card h1 {
-    margin: 0 0 12px;
-    font-size: 1.9rem;
-    line-height: 1.2;
+  font-family: var(--serif);
+  margin: 0 0 14px;
+  font-size: 2rem;
+  font-style: italic;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--cream);
 }
 
 .auth-card p {
-    margin: 0;
-    color: #d1d5db;
-    line-height: 1.6;
+  margin: 0;
+  color: var(--cream-dim);
+  font-family: var(--sans);
+  font-weight: 300;
+  line-height: 1.65;
+  font-size: 14px;
 }
 
 .auth-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 24px;
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
 }
 
 .auth-actions button {
-    border: none;
-    border-radius: 10px;
-    padding: 10px 16px;
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-    background: #2563eb;
-    color: white;
+  border: none;
+  border-radius: 2px;
+  padding: 11px 20px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: var(--gold);
+  color: var(--ink);
+  transition: background 0.12s;
+}
+
+.auth-actions button:hover {
+  background: var(--gold-bright);
 }
 
 .auth-actions .secondary {
-    background: transparent;
-    color: #f9fafb;
-    border: 1px solid #4b5563; }
+  background: transparent;
+  color: var(--cream);
+  border: 1px solid var(--rule-mid);
+}
+
+.auth-actions .secondary:hover {
+  background: var(--cream-ghost);
+  border-color: var(--cream-dim);
+}

@@ -6,6 +6,7 @@ from app.api.utils.validation import parse, parse_query
 from app.core.extensions import auth
 from app.db.context import get_core_db, get_response_db
 from app.repositories import surveys_repo as survey_svc
+from app.schema.api.requests.projects import CreateProjectRequest
 from app.schema.api.requests.content import (
     CreateQuestionRequest,
     CreateRuleRequest,
@@ -19,6 +20,7 @@ from app.schema.api.requests.submissions.create import CreateSubmissionRequest
 from app.schema.api.requests.submissions.query import GetSubmissionRequest, ListSubmissionsRequest
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.api.responses.content import QuestionOut, RuleOut, ScoringRuleOut
+from app.schema.api.responses.projects import ProjectOut
 from app.schema.api.responses.public_links import CreatePublicLinkOut, ListPublicLinksOut, PublicLinkOut
 from app.schema.api.responses.submissions import (
     AnswerOut,
@@ -28,6 +30,7 @@ from app.schema.api.responses.submissions import (
 )
 from app.schema.api.responses.surveys import SurveyOut, SurveyVersionOut
 from app.services.content import ContentService
+from app.services.projects import ProjectService
 from app.services.public_links import PublicLinkService
 from app.services.submissions import SubmissionService
 from app.services.surveys import SurveyService
@@ -37,9 +40,22 @@ logger = getLogger(__name__)
 projects_bp = Blueprint("projects_v1", __name__)
 
 content_svc = ContentService()
+project_service = ProjectService()
 public_link_svc = PublicLinkService()
 survey_service = SurveyService()
 submission_service = SubmissionService()
+
+
+# ── Projects ──────────────────────────────────────────────────────────────────
+
+
+@projects_bp.route("", methods=["POST"])
+@auth.require_auth()
+def create_project():
+    payload = parse(CreateProjectRequest, request)
+    db = get_core_db()
+    project = project_service.create_project(db, payload)
+    return ProjectOut.model_validate(project).model_dump(mode="json"), 201
 
 
 # ── Surveys ───────────────────────────────────────────────────────────────────

@@ -1,0 +1,41 @@
+.scoring-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--ink-2);
+}
+
+.scoring-section-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+
+.scoring-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scoring-row .input-field {
+  flex: 1;
+}
+
+.scoring-row--triple .input-field {
+  flex: 1;
+}
+
+.scoring-inline {
+  display: flex;
+  gap: 12px;
+}
+
+.scoring-inline .input-field {
+  flex: 1;
+}

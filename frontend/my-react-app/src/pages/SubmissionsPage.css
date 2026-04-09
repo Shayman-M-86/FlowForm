@@ -1,14 +1,17 @@
 .submissions-scope {
+  font-family: var(--mono);
   font-weight: 400;
+  font-style: normal;
   color: var(--muted);
-  font-size: 16px;
+  font-size: 14px;
+  letter-spacing: 0.04em;
 }
 
 .submissions-filters {
   display: flex;
   gap: 12px;
   align-items: flex-end;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
@@ -23,7 +26,7 @@
 }
 
 .submission-row--expanded {
-  background: var(--bg-subtle);
+  background: var(--ink-3);
 }
 
 .submission-row__top {
@@ -34,18 +37,21 @@
 }
 
 .submission-id {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-h);
   font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-bright);
+  letter-spacing: 0.04em;
 }
 
 .submission-row__meta {
   display: flex;
   gap: 12px;
-  font-size: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
   color: var(--muted);
   margin-top: 4px;
+  letter-spacing: 0.04em;
 }
 
 .submission-survey {
@@ -53,18 +59,19 @@
 }
 
 .submission-expand-icon {
+  font-family: var(--mono);
   font-size: 10px;
   color: var(--muted);
   flex-shrink: 0;
 }
 
 .submission-answers {
-  padding: 14px 20px;
-  background: var(--bg-subtle);
-  border-bottom: 1px solid var(--border);
+  padding: 16px 20px;
+  background: var(--ink-2);
+  border-bottom: 1px solid var(--rule);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .submission-answer {
@@ -75,19 +82,26 @@
 }
 
 .answer-key {
-  font-size: 13px;
-  min-width: 120px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  min-width: 130px;
 }
 
 .answer-value {
+  font-family: var(--sans);
   font-size: 13px;
-  color: var(--text-h);
+  color: var(--cream);
   flex: 1;
 }
 
 .submission-no-answers {
-  font-size: 13px;
+  font-family: var(--mono);
+  font-size: 11px;
   color: var(--muted);
+  letter-spacing: 0.06em;
 }
 
 .pagination__total {

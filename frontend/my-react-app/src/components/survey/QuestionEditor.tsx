@@ -3,7 +3,6 @@ import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Modal } from "../ui/Modal";
 import { Select } from "../ui/Select";
-import { Toggle } from "../ui/Toggle";
 import type { CreateQuestionRequest, QuestionOut, QuestionType } from "../../api/types";
 import "./QuestionEditor.css";
 
@@ -14,7 +13,7 @@ interface QuestionEditorProps {
   initial?: QuestionOut;
 }
 
-const TYPE_OPTIONS = [
+const FAMILY_OPTIONS = [
   { value: "choice", label: "Choice (multiple choice)" },
   { value: "field", label: "Field (text / number)" },
   { value: "rating", label: "Rating (scale)" },
@@ -28,66 +27,130 @@ const FIELD_TYPE_OPTIONS = [
   { value: "date", label: "Date" },
 ];
 
-function defaultSchema(type: QuestionType) {
-  switch (type) {
+const CHOICE_STYLE_OPTIONS = [
+  { value: "radio", label: "Radio (single select)" },
+  { value: "checkbox", label: "Checkbox (multi select)" },
+];
+
+const RATING_STYLE_OPTIONS = [
+  { value: "slider", label: "Slider" },
+  { value: "stars", label: "Stars" },
+  { value: "buttons", label: "Buttons" },
+];
+
+interface OptionItem { id: string; label: string }
+interface MatchItem  { id: string; label: string }
+
+function defaultQuestionSchema(family: QuestionType): Record<string, unknown> {
+  switch (family) {
     case "choice":
-      return { type, label: "", required: false, options: [""] };
+      return {
+        family: "choice",
+        label: "",
+        schema: { options: [{ id: "a1", label: "" }], min_selected: 1, max_selected: 1 },
+        ui: { style: "radio" },
+      };
     case "field":
-      return { type, label: "", required: false, field_type: "text" };
+      return {
+        family: "field",
+        label: "",
+        schema: { field_type: "text" },
+        ui: { placeholder: "" },
+      };
     case "rating":
-      return { type, label: "", required: false, max: 5 };
+      return {
+        family: "rating",
+        label: "",
+        schema: { min: 1, max: 5 },
+        ui: { style: "slider" },
+      };
     case "matching":
-      return { type, label: "", required: false, pairs: [{ left: "", right: "" }] };
+      return {
+        family: "matching",
+        label: "",
+        schema: {
+          left_items:  [{ id: "c1", label: "" }],
+          right_items: [{ id: "r1", label: "" }],
+        },
+        ui: { style: "drag_match" },
+      };
   }
 }
 
 export function QuestionEditor({ open, onClose, onSave, initial }: QuestionEditorProps) {
-  const initType: QuestionType =
-    (initial?.question_schema?.type as QuestionType) ?? "choice";
+  const initFamily: QuestionType =
+    (initial?.question_schema?.family as QuestionType) ?? "choice";
 
-  const [key, setKey] = useState(initial?.question_key ?? "");
-  const [type, setType] = useState<QuestionType>(initType);
+  const [key,    setKey]    = useState(initial?.question_key ?? "");
+  const [family, setFamily] = useState<QuestionType>(initFamily);
   const [schema, setSchema] = useState<Record<string, unknown>>(
-    initial?.question_schema ?? defaultSchema(initType),
+    initial?.question_schema ?? defaultQuestionSchema(initFamily),
   );
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error,  setError]  = useState<string | null>(null);
 
-  function changeType(t: QuestionType) {
-    setType(t);
-    setSchema(defaultSchema(t));
+  function changeFamily(f: QuestionType) {
+    setFamily(f);
+    setSchema(defaultQuestionSchema(f));
   }
 
-  function setField<K extends keyof typeof schema>(k: K, v: unknown) {
+  function setTopField(k: string, v: unknown) {
     setSchema((prev) => ({ ...prev, [k]: v }));
   }
+  function setInnerSchema(k: string, v: unknown) {
+    setSchema((prev) => ({
+      ...prev,
+      schema: { ...(prev.schema as Record<string, unknown>), [k]: v },
+    }));
+  }
+  function setUi(k: string, v: unknown) {
+    setSchema((prev) => ({
+      ...prev,
+      ui: { ...(prev.ui as Record<string, unknown>), [k]: v },
+    }));
+  }
 
-  // Options management (for choice type)
-  const options = (schema.options as string[]) ?? [];
-  function setOption(i: number, v: string) {
-    const next = [...options];
-    next[i] = v;
-    setField("options", next);
+  // Derived sub-objects
+  const inner = (schema.schema as Record<string, unknown>) ?? {};
+  const ui    = (schema.ui    as Record<string, unknown>) ?? {};
+
+  // ── Choice options ────────────────────────────────────────────────────────
+  const options = (inner.options as OptionItem[]) ?? [];
+  function setOption(i: number, field: keyof OptionItem, v: string) {
+    const next = [...options]; next[i] = { ...next[i], [field]: v };
+    setInnerSchema("options", next);
   }
   function addOption() {
-    setField("options", [...options, ""]);
+    setInnerSchema("options", [...options, { id: `a${options.length + 1}`, label: "" }]);
   }
   function removeOption(i: number) {
-    setField("options", options.filter((_, idx) => idx !== i));
+    setInnerSchema("options", options.filter((_, idx) => idx !== i));
   }
 
-  // Pairs management (for matching type)
-  const pairs = (schema.pairs as { left: string; right: string }[]) ?? [];
-  function setPair(i: number, side: "left" | "right", v: string) {
-    const next = [...pairs];
-    next[i] = { ...next[i], [side]: v };
-    setField("pairs", next);
+  // ── Matching items ────────────────────────────────────────────────────────
+  const leftItems  = (inner.left_items  as MatchItem[]) ?? [];
+  const rightItems = (inner.right_items as MatchItem[]) ?? [];
+
+  function setLeftItem(i: number, field: keyof MatchItem, v: string) {
+    const next = [...leftItems]; next[i] = { ...next[i], [field]: v };
+    setInnerSchema("left_items", next);
   }
-  function addPair() {
-    setField("pairs", [...pairs, { left: "", right: "" }]);
+  function addLeftItem() {
+    setInnerSchema("left_items", [...leftItems, { id: `c${leftItems.length + 1}`, label: "" }]);
   }
-  function removePair(i: number) {
-    setField("pairs", pairs.filter((_, idx) => idx !== i));
+  function removeLeftItem(i: number) {
+    setInnerSchema("left_items", leftItems.filter((_, idx) => idx !== i));
+  }
+
+  function setRightItem(i: number, field: keyof MatchItem, v: string) {
+    const next = [...rightItems]; next[i] = { ...next[i], [field]: v };
+    setInnerSchema("right_items", next);
+  }
+  function addRightItem() {
+    setInnerSchema("right_items", [...rightItems, { id: `r${rightItems.length + 1}`, label: "" }]);
+  }
+  function removeRightItem(i: number) {
+    setInnerSchema("right_items", rightItems.filter((_, idx) => idx !== i));
   }
 
   async function handleSave() {
@@ -109,7 +172,7 @@ export function QuestionEditor({ open, onClose, onSave, initial }: QuestionEdito
       open={open}
       onClose={onClose}
       title={initial ? "Edit Question" : "Add Question"}
-      width={520}
+      width={560}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
@@ -125,94 +188,169 @@ export function QuestionEditor({ open, onClose, onSave, initial }: QuestionEdito
         label="Question key"
         value={key}
         onChange={(e) => setKey(e.target.value)}
-        placeholder="q_name"
+        placeholder="q_favourite_colour"
         hint="Snake_case identifier, unique per version."
         disabled={!!initial}
       />
 
       <Select
-        label="Type"
-        options={TYPE_OPTIONS}
-        value={type}
-        onChange={(e) => changeType(e.target.value as QuestionType)}
+        label="Family"
+        options={FAMILY_OPTIONS}
+        value={family}
+        onChange={(e) => changeFamily(e.target.value as QuestionType)}
       />
 
       <Input
         label="Label"
         value={(schema.label as string) ?? ""}
-        onChange={(e) => setField("label", e.target.value)}
-        placeholder="What is your name?"
+        onChange={(e) => setTopField("label", e.target.value)}
+        placeholder="What is your favourite colour?"
       />
 
-      <Toggle
-        label="Required"
-        checked={(schema.required as boolean) ?? false}
-        onChange={(v) => setField("required", v)}
-      />
+      {/* ── Choice ── */}
+      {family === "choice" && (
+        <>
+          <div className="qe-section">
+            <div className="qe-section-label">Options</div>
+            {options.map((opt, i) => (
+              <div key={i} className="qe-option-row">
+                <Input
+                  placeholder={`ID (e.g. a${i + 1})`}
+                  value={opt.id}
+                  onChange={(e) => setOption(i, "id", e.target.value)}
+                />
+                <Input
+                  placeholder="Label (e.g. Red)"
+                  value={opt.label}
+                  onChange={(e) => setOption(i, "label", e.target.value)}
+                />
+                {options.length > 1 && (
+                  <Button size="sm" variant="ghost" onClick={() => removeOption(i)}>✕</Button>
+                )}
+              </div>
+            ))}
+            <Button size="sm" variant="secondary" onClick={addOption}>+ Add option</Button>
+          </div>
 
-      {/* Type-specific fields */}
-      {type === "choice" && (
-        <div className="qe-section">
-          <div className="qe-section-label">Options</div>
-          {options.map((opt, i) => (
-            <div key={i} className="qe-option-row">
-              <Input
-                value={opt}
-                onChange={(e) => setOption(i, e.target.value)}
-                placeholder={`Option ${i + 1}`}
-              />
-              {options.length > 1 && (
-                <Button size="sm" variant="ghost" onClick={() => removeOption(i)}>✕</Button>
-              )}
-            </div>
-          ))}
-          <Button size="sm" variant="secondary" onClick={addOption}>+ Add option</Button>
-        </div>
+          <div className="qe-row">
+            <Input
+              label="Min selected"
+              type="number"
+              min={0}
+              value={String((inner.min_selected as number) ?? 1)}
+              onChange={(e) => setInnerSchema("min_selected", Number(e.target.value))}
+            />
+            <Input
+              label="Max selected"
+              type="number"
+              min={1}
+              value={String((inner.max_selected as number) ?? 1)}
+              onChange={(e) => setInnerSchema("max_selected", Number(e.target.value))}
+            />
+          </div>
+
+          <Select
+            label="Display style"
+            options={CHOICE_STYLE_OPTIONS}
+            value={(ui.style as string) ?? "radio"}
+            onChange={(e) => setUi("style", e.target.value)}
+          />
+        </>
       )}
 
-      {type === "field" && (
-        <Select
-          label="Field type"
-          options={FIELD_TYPE_OPTIONS}
-          value={(schema.field_type as string) ?? "text"}
-          onChange={(e) => setField("field_type", e.target.value)}
-        />
+      {/* ── Field ── */}
+      {family === "field" && (
+        <>
+          <Select
+            label="Field type"
+            options={FIELD_TYPE_OPTIONS}
+            value={(inner.field_type as string) ?? "text"}
+            onChange={(e) => setInnerSchema("field_type", e.target.value)}
+          />
+          <Input
+            label="Placeholder"
+            value={(ui.placeholder as string) ?? ""}
+            onChange={(e) => setUi("placeholder", e.target.value)}
+            placeholder="e.g. name@example.com"
+          />
+        </>
       )}
 
-      {type === "rating" && (
-        <Input
-          label="Max rating"
-          type="number"
-          min={2}
-          max={10}
-          value={String((schema.max as number) ?? 5)}
-          onChange={(e) => setField("max", Number(e.target.value))}
-        />
+      {/* ── Rating ── */}
+      {family === "rating" && (
+        <>
+          <div className="qe-row">
+            <Input
+              label="Min"
+              type="number"
+              value={String((inner.min as number) ?? 1)}
+              onChange={(e) => setInnerSchema("min", Number(e.target.value))}
+            />
+            <Input
+              label="Max"
+              type="number"
+              min={2}
+              max={10}
+              value={String((inner.max as number) ?? 5)}
+              onChange={(e) => setInnerSchema("max", Number(e.target.value))}
+            />
+          </div>
+          <Select
+            label="Display style"
+            options={RATING_STYLE_OPTIONS}
+            value={(ui.style as string) ?? "slider"}
+            onChange={(e) => setUi("style", e.target.value)}
+          />
+        </>
       )}
 
-      {type === "matching" && (
-        <div className="qe-section">
-          <div className="qe-section-label">Pairs</div>
-          {pairs.map((pair, i) => (
-            <div key={i} className="qe-pair-row">
-              <Input
-                value={pair.left}
-                onChange={(e) => setPair(i, "left", e.target.value)}
-                placeholder="Left"
-              />
-              <span className="qe-pair-arrow">→</span>
-              <Input
-                value={pair.right}
-                onChange={(e) => setPair(i, "right", e.target.value)}
-                placeholder="Right"
-              />
-              {pairs.length > 1 && (
-                <Button size="sm" variant="ghost" onClick={() => removePair(i)}>✕</Button>
-              )}
-            </div>
-          ))}
-          <Button size="sm" variant="secondary" onClick={addPair}>+ Add pair</Button>
-        </div>
+      {/* ── Matching ── */}
+      {family === "matching" && (
+        <>
+          <div className="qe-section">
+            <div className="qe-section-label">Left items (prompts)</div>
+            {leftItems.map((item, i) => (
+              <div key={i} className="qe-option-row">
+                <Input
+                  placeholder={`ID (e.g. c${i + 1})`}
+                  value={item.id}
+                  onChange={(e) => setLeftItem(i, "id", e.target.value)}
+                />
+                <Input
+                  placeholder="Label (e.g. Australia)"
+                  value={item.label}
+                  onChange={(e) => setLeftItem(i, "label", e.target.value)}
+                />
+                {leftItems.length > 1 && (
+                  <Button size="sm" variant="ghost" onClick={() => removeLeftItem(i)}>✕</Button>
+                )}
+              </div>
+            ))}
+            <Button size="sm" variant="secondary" onClick={addLeftItem}>+ Add left item</Button>
+          </div>
+
+          <div className="qe-section">
+            <div className="qe-section-label">Right items (answers)</div>
+            {rightItems.map((item, i) => (
+              <div key={i} className="qe-option-row">
+                <Input
+                  placeholder={`ID (e.g. r${i + 1})`}
+                  value={item.id}
+                  onChange={(e) => setRightItem(i, "id", e.target.value)}
+                />
+                <Input
+                  placeholder="Label (e.g. Canberra)"
+                  value={item.label}
+                  onChange={(e) => setRightItem(i, "label", e.target.value)}
+                />
+                {rightItems.length > 1 && (
+                  <Button size="sm" variant="ghost" onClick={() => removeRightItem(i)}>✕</Button>
+                )}
+              </div>
+            ))}
+            <Button size="sm" variant="secondary" onClick={addRightItem}>+ Add right item</Button>
+          </div>
+        </>
       )}
     </Modal>
   );

@@ -5,10 +5,11 @@
 }
 
 .qe-section-label {
-  font-size: 12px;
+  font-family: var(--mono);
+  font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.16em;
   color: var(--muted);
 }
 
@@ -33,7 +34,17 @@
 }
 
 .qe-pair-arrow {
-  color: var(--muted);
+  font-family: var(--mono);
+  color: var(--rule-mid);
   flex-shrink: 0;
   font-size: 14px;
+}
+
+.qe-row {
+  display: flex;
+  gap: 12px;
+}
+
+.qe-row .input-field {
+  flex: 1;
 }

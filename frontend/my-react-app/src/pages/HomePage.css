@@ -1,60 +1,134 @@
+/* ── HomePage ─────────────────────────────────── */
+
 .home-page {
-  padding: 48px 32px;
-  max-width: 720px;
+  padding: 56px 48px;
+  max-width: 760px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
 }
 
+/* ── Hero ──────────────────────────────────────── */
+
 .home-hero {
-  margin-bottom: 40px;
+  margin-bottom: 56px;
+  position: relative;
+  padding-left: 24px;
+}
+
+/* Thick gold rule on left */
+.home-hero::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  background: var(--gold);
+}
+
+.home-hero__eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 14px;
+  display: block;
 }
 
 .home-hero__title {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-h);
-  margin: 0 0 10px;
-  letter-spacing: -0.5px;
+  font-family: var(--serif);
+  font-size: clamp(40px, 5vw, 58px);
+  font-weight: 900;
+  font-style: italic;
+  color: var(--cream);
+  margin: 0 0 16px;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.home-hero__title em {
+  font-style: normal;
+  color: var(--gold-bright);
 }
 
 .home-hero__subtitle {
+  font-family: var(--sans);
   font-size: 15px;
-  color: var(--text);
-  line-height: 1.6;
+  font-weight: 300;
+  color: var(--cream-dim);
+  line-height: 1.65;
   margin: 0;
-  max-width: 480px;
+  max-width: 460px;
 }
+
+/* ── Cards ─────────────────────────────────────── */
 
 .home-cards {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 1px; /* gap becomes the "rule" between cards */
+  background: var(--rule); /* so the gap shows as a line */
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .home-card {
   all: unset;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 20px 24px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg);
+  gap: 24px;
+  padding: 28px 32px;
+  background: var(--ink-3);
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  transition: background 0.15s;
   box-sizing: border-box;
   width: 100%;
   text-align: left;
+  position: relative;
 }
 
 .home-card:hover {
-  border-color: var(--accent);
-  background: var(--accent-bg);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: var(--ink-4);
 }
 
-.home-card__icon {
+/* Left-edge accent that appears on hover */
+.home-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--gold);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.2s ease;
+}
+
+.home-card:hover::before {
+  transform: scaleY(1);
+}
+
+.home-card__number {
+  font-family: var(--mono);
   font-size: 28px;
+  font-weight: 300;
+  color: var(--rule-mid);
   flex-shrink: 0;
   line-height: 1;
+  letter-spacing: -0.02em;
+  min-width: 36px;
+  transition: color 0.15s;
+}
+
+.home-card:hover .home-card__number {
+  color: var(--gold-dim);
 }
 
 .home-card__body {
@@ -63,27 +137,49 @@
 }
 
 .home-card__title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-h);
-  margin: 0 0 4px;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--cream);
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
 }
 
 .home-card__desc {
+  font-family: var(--sans);
   font-size: 13px;
-  color: var(--text);
-  line-height: 1.5;
+  font-weight: 300;
+  color: var(--cream-dim);
+  line-height: 1.6;
   margin: 0;
 }
 
 .home-card__arrow {
-  font-size: 18px;
-  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--rule-mid);
   flex-shrink: 0;
-  transition: color 0.15s, transform 0.15s;
+  transition: color 0.15s, transform 0.2s;
+  letter-spacing: -0.05em;
 }
 
 .home-card:hover .home-card__arrow {
-  color: var(--accent);
-  transform: translateX(3px);
+  color: var(--gold);
+  transform: translateX(5px);
+}
+
+/* ── Decoration ────────────────────────────────── */
+
+/* Bottom ruled caption */
+.home-footer-note {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
 }

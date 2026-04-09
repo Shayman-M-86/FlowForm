@@ -5,8 +5,10 @@
 }
 
 .auth-user__email {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -17,15 +19,20 @@
   display: block;
   width: 100%;
   padding: 7px 10px;
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--text);
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition: background 0.1s, color 0.1s;
   box-sizing: border-box;
+  border: 1px solid transparent;
 }
 
 .auth-user__logout:hover {
-  background: var(--muted-bg);
-  color: var(--text-h);
+  background: var(--cream-ghost);
+  color: var(--cream);
+  border-color: var(--rule);
 }

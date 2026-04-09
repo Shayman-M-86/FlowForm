@@ -9,7 +9,7 @@
 -- Notes:
 -- - insert this after the matching core mock data
 -- - no cross-database foreign keys exist, so linkage is by agreed IDs only
--- - includes examples for choice, field, matching, and rating answers
+-- - answer_value now follows the v1 JSON shape spec used by the tightened schema checks
 --
 -- Safe to run on an empty schema.
 
@@ -85,7 +85,7 @@ INSERT INTO submission_answers (
         1,
         'engagement_score',
         'rating',
-        '{"value": 8}'::jsonb,
+        '{"value":8}'::jsonb,
         NOW() - INTERVAL '4 days'
     ),
     (
@@ -93,7 +93,7 @@ INSERT INTO submission_answers (
         1,
         'team_support',
         'choice',
-        '{"selected_option_ids": ["very_supported"]}'::jsonb,
+        '{"selected":["very_supported"]}'::jsonb,
         NOW() - INTERVAL '4 days'
     ),
     (
@@ -101,7 +101,7 @@ INSERT INTO submission_answers (
         1,
         'manager_feedback',
         'field',
-        '{"value": "More frequent one-on-ones would help."}'::jsonb,
+        '{"value":"More frequent one-on-ones would help."}'::jsonb,
         NOW() - INTERVAL '4 days'
     ),
     (
@@ -109,7 +109,7 @@ INSERT INTO submission_answers (
         2,
         'engagement_score',
         'rating',
-        '{"value": 6}'::jsonb,
+        '{"value":6}'::jsonb,
         NOW() - INTERVAL '3 days'
     ),
     (
@@ -117,7 +117,7 @@ INSERT INTO submission_answers (
         2,
         'team_support',
         'choice',
-        '{"selected_option_ids": ["somewhat_supported"]}'::jsonb,
+        '{"selected":["somewhat_supported"]}'::jsonb,
         NOW() - INTERVAL '3 days'
     ),
     (
@@ -125,7 +125,7 @@ INSERT INTO submission_answers (
         2,
         'manager_feedback',
         'field',
-        '{"value": "Clearer priorities across the week."}'::jsonb,
+        '{"value":"Clearer priorities across the week."}'::jsonb,
         NOW() - INTERVAL '3 days'
     ),
     (
@@ -133,7 +133,7 @@ INSERT INTO submission_answers (
         3,
         'signup_ease',
         'rating',
-        '{"value": 9}'::jsonb,
+        '{"value":9}'::jsonb,
         NOW() - INTERVAL '18 hours'
     ),
     (
@@ -141,7 +141,7 @@ INSERT INTO submission_answers (
         3,
         'feature_interest',
         'matching',
-        '{"pairs": [{"left_id": "founder", "right_id": "automation"}, {"left_id": "marketer", "right_id": "analytics"}]}'::jsonb,
+        '{"matches":[{"left_id":"founder","right_id":"automation"},{"left_id":"marketer","right_id":"analytics"}]}'::jsonb,
         NOW() - INTERVAL '18 hours'
     ),
     (
@@ -149,7 +149,7 @@ INSERT INTO submission_answers (
         3,
         'followup_email',
         'field',
-        '{"value": "interested.user@example.test"}'::jsonb,
+        '{"value":"interested.user@example.test"}'::jsonb,
         NOW() - INTERVAL '18 hours'
     );
 
