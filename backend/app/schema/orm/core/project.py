@@ -23,8 +23,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import CoreBase
 
 if TYPE_CHECKING:
-    from app.schema.orm.core.permission import Permission
-    from app.schema.orm.core.user import User
+    from app.schema.orm.core import Permission, Project, ProjectMembership, ProjectRole, SurveyMembershipRole, User
+
 
 # Pure join table — no extra columns
 project_role_permissions = Table(
@@ -59,6 +59,11 @@ class Project(CoreBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     created_by: Mapped[User | None] = relationship("User", foreign_keys=[created_by_user_id])
+    
+    memberships: Mapped[list[ProjectMembership]] = relationship(
+    "ProjectMembership",
+    back_populates="project",
+)
 
 
 class ProjectRole(CoreBase):
@@ -128,6 +133,12 @@ class ProjectMembership(CoreBase):
         ),
     )
 
-    user: Mapped[User] = relationship("User", foreign_keys=[user_id])
-    project: Mapped[Project] = relationship("Project", foreign_keys=[project_id])
+    user: Mapped[User] = relationship("User", foreign_keys=[user_id], back_populates="project_memberships")
+    project: Mapped[Project] = relationship("Project", foreign_keys=[project_id], back_populates="memberships")
     role: Mapped[ProjectRole | None] = relationship("ProjectRole", foreign_keys=[role_id])
+    
+    survey_roles: Mapped[list[SurveyMembershipRole]] = relationship(
+    "SurveyMembershipRole",
+    back_populates="membership",
+    overlaps="survey,role,membership_roles",
+)

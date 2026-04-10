@@ -14,6 +14,7 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/DATABASE_CORE_INIT_PASSWORD
 
       DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+
     command: [
       "postgres", 
       "-c", "password_encryption=scram-sha-256", 

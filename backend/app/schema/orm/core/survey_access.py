@@ -22,6 +22,7 @@ from app.db.base import CoreBase
 
 if TYPE_CHECKING:
     from app.schema.orm.core.permission import Permission
+    from app.schema.orm.core.project import ProjectMembership
     from app.schema.orm.core.survey import Survey
 
 # Pure join table — no extra columns
@@ -59,6 +60,12 @@ class SurveyRole(CoreBase):
     )
 
     permissions: Mapped[list[Permission]] = relationship("Permission", secondary=survey_role_permissions)
+    
+    membership_roles: Mapped[list[SurveyMembershipRole]] = relationship(
+    "SurveyMembershipRole",
+    back_populates="role",
+    overlaps="survey,membership",
+)
 
 
 class SurveyMembershipRole(CoreBase):
@@ -73,7 +80,8 @@ class SurveyMembershipRole(CoreBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
-        ForeignKeyConstraint(["project_id", "survey_id"],
+        ForeignKeyConstraint(
+            ["project_id", "survey_id"],
             ["surveys.project_id", "surveys.id"],
             ondelete="CASCADE",
             name="fk_survey_membership_roles_survey_same_project",
@@ -91,10 +99,27 @@ class SurveyMembershipRole(CoreBase):
             name="fk_survey_membership_roles_role_same_project",
         ),
     )
+    survey: Mapped[Survey] = relationship(
+    "Survey",
+    overlaps="membership,role,membership_roles,survey_roles",
+    )
+
+    membership: Mapped[ProjectMembership] = relationship(
+    "ProjectMembership",
+    back_populates="survey_roles",
+    overlaps="survey,role,membership_roles",
+    )
+
+    role: Mapped[SurveyRole] = relationship(
+    "SurveyRole",
+    back_populates="membership_roles",
+    overlaps="survey,membership,survey_roles",
+    )
 
 
 class SurveyPublicLink(CoreBase):
     """A bearer-token link granting public access to a survey."""
+
     __tablename__ = "survey_public_links"
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)

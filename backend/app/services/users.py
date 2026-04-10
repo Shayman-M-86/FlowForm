@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.transaction import commit_or_rollback
+from app.domain import user_rules
 from app.domain.errors import UserBootstrapConflictError
 from app.repositories import users_repo
 from app.schema.orm.core.user import User
@@ -44,9 +45,9 @@ class UserService:
             constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", "") or ""
 
             if isinstance(exc.orig, UniqueViolation) and "auth0_user_id" in constraint:
-                user = users_repo.get_user_by_auth0_user_id(db, auth0_user_id)
-                if user is None:
-                    raise
+                user = user_rules.ensure_user_exists(
+                    auth0_user_id=auth0_user_id, user=users_repo.get_user_by_auth0_user_id(db, auth0_user_id)
+                )
                 users_repo.update_user(user, email=email, display_name=display_name)
                 commit_or_rollback(db)
                 return user, False
@@ -57,3 +58,10 @@ class UserService:
             raise
 
         return user, created
+
+    def get_user_by_sub(self, db: Session, auth0_user_id: str) -> User:
+        """Get a user by their Auth0 user ID."""
+        user = user_rules.ensure_user_exists(
+            auth0_user_id=auth0_user_id, user=users_repo.get_user_by_auth0_user_id(db, auth0_user_id)
+        )
+        return user

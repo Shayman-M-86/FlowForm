@@ -36,3 +36,7 @@ class AuthService:
             display_name=display_name,
         )
         return BootstrapCurrentUserResult(user=user, created=created)
+    
+    def require_authorization(self, access_token_sub: str, required_scope: str | None = None) -> None:
+        """Ensure the current user is authenticated and optionally has the required scope."""
+        

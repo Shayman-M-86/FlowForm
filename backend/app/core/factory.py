@@ -9,7 +9,7 @@ from app.core.extensions import init_extensions
 from app.db.session import init_db_sessions
 from app.logging.logging_config import setup_bootstrap_logging, setup_logging
 from app.middleware.rate_limit import register_rate_limiting
-
+from app.services.access.permissions_service import init_seed_data
 
 def create_app(
     *,
@@ -36,5 +36,5 @@ def create_app(
     register_error_handlers(app)
     
     import app.schema.orm as _  # noqa: F401 - Ensure models are registered with SQLAlchemy before migrations
-
+    init_seed_data(app)
     return app

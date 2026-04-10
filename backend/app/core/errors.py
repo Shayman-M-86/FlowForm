@@ -118,3 +118,13 @@ class AuthError(AppError):
     ) -> None:
         super().__init__(message=message, code=code, status_code=status_code, details=details or {})
         self.headers = headers or {}
+
+class ForbiddenError(AppError):
+    """Error raised when a user attempts to access a resource they do not have permission for."""
+
+    def __init__(self, message: str = "You do not have permission to access this resource.") -> None:
+        super().__init__(
+            status_code=403,
+            code="FORBIDDEN",
+            message=message,
+        )

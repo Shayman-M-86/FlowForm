@@ -71,11 +71,14 @@ def list_versions(db: Session, survey_id: int) -> list[SurveyVersion]:
     )
 
 
-def get_version(db: Session, survey_id: int, version_id: int) -> SurveyVersion | None:
+def get_version(db: Session, project_id: int, survey_id: int, version_number: int) -> SurveyVersion | None:
     return db.scalar(
-        select(SurveyVersion).where(
+        select(SurveyVersion)
+        .join(Survey, Survey.id == SurveyVersion.survey_id)
+        .where(
+            Survey.project_id == project_id,
             SurveyVersion.survey_id == survey_id,
-            SurveyVersion.id == version_id,
+            SurveyVersion.version_number == version_number,
             SurveyVersion.deleted_at.is_(None),
         )
     )

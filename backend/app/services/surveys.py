@@ -4,10 +4,16 @@ from sqlalchemy.orm import Session
 
 from app.db.transaction import commit_or_rollback
 from app.domain import survey_rules, version_rules
-from app.domain.errors import SurveySlugConflictError, VersionNotFoundError
+from app.domain.errors import SurveySlugConflictError
 from app.repositories import content_repo, surveys_repo
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
+from app.schema.orm.core.user import User
+from app.services.access import (
+    PERMISSIONS,
+    require_project_permission,
+    require_survey_permission,
+)
 
 DEFAULT_RESPONSE_STORE_ID = 1  # TODO: This should be set to a real default response store ID
 
@@ -16,8 +22,12 @@ class SurveyService:
     """Service for survey and survey version operations."""
 
     # ── Surveys ───────────────────────────────────────────────────────────────
+    @require_project_permission(PERMISSIONS.survey.view)
+    def list_surveys(self, db: Session, *, project_id: int, actor: User) -> list[Survey]:  # noqa: ARG002
+        return surveys_repo.list_surveys(db, project_id)
 
-    def create_survey(self, db: Session, project_id: int, data: CreateSurveyRequest) -> Survey:
+    @require_project_permission(PERMISSIONS.survey.create)
+    def create_survey(self, db: Session, *, project_id: int, data: CreateSurveyRequest, actor: User) -> Survey:  # noqa: ARG002
         try:
             survey = surveys_repo.create_survey(db, project_id, data)
             commit_or_rollback(db)
@@ -27,15 +37,31 @@ class SurveyService:
             raise
         return survey
 
-    def get_survey(self, db: Session, project_id: int, survey_id: int) -> Survey:
+    @require_survey_permission(PERMISSIONS.survey.view)
+    def get_survey(self, db: Session, *, project_id: int, survey_id: int, actor: User) -> Survey:  # noqa: ARG002
         return survey_rules.ensure_not_none(
             survey=surveys_repo.get_survey(db, project_id, survey_id),
             survey_id=survey_id,
             project_id=project_id,
         )
 
-    def update_survey(self, db: Session, project_id: int, survey_id: int, data: UpdateSurveyRequest) -> Survey:
-        survey = self.get_survey(db, project_id, survey_id)
+    def _get_survey(self, db: Session, project_id: int, survey_id: int) -> Survey:
+        return survey_rules.ensure_not_none(
+            survey=surveys_repo.get_survey(db, project_id, survey_id),
+            survey_id=survey_id,
+            project_id=project_id,
+        )
+
+    @require_survey_permission(PERMISSIONS.survey.edit)
+    def update_survey(
+        self,
+        db: Session,
+        project_id: int,
+        survey_id: int,
+        data: UpdateSurveyRequest,
+        actor: User,  # noqa: ARG002
+    ) -> Survey:
+        survey = self._get_survey(db, project_id, survey_id)
         try:
             updated = surveys_repo.update_survey(db, survey, data)
             commit_or_rollback(db)
@@ -45,37 +71,46 @@ class SurveyService:
             raise
         return updated
 
-    def delete_survey(self, db: Session, project_id: int, survey_id: int) -> None:
-        survey = self.get_survey(db, project_id, survey_id)
+    @require_survey_permission(PERMISSIONS.survey.delete)
+    def delete_survey(self, db: Session, project_id: int, survey_id: int, actor: User) -> None:  # noqa: ARG002
+        survey = self._get_survey(db, project_id, survey_id)
         survey_rules.ensure_can_delete_survey(survey)
         surveys_repo.delete_survey(db, survey)
         commit_or_rollback(db)
 
     # ── Survey versions ───────────────────────────────────────────────────────
 
-    def _get_version(self, db: Session, survey_id: int, version_id: int) -> SurveyVersion:
-        version = surveys_repo.get_version(db, survey_id, version_id)
-        if version is None:
-            raise VersionNotFoundError(survey_id=survey_id, version_id=version_id)
+    def _get_version(self, db: Session, project_id: int, survey_id: int, version_number: int) -> SurveyVersion:
+        version = version_rules.ensure_not_none(
+            version=surveys_repo.get_version(db, project_id, survey_id, version_number),
+            version_number=version_number,
+            survey_id=survey_id,
+        )
         return version
 
-    def list_versions(self, db: Session, project_id: int, survey_id: int) -> list[SurveyVersion]:
-        self.get_survey(db, project_id, survey_id)
+    @require_survey_permission(PERMISSIONS.survey.view)
+    def list_versions(self, db: Session, project_id: int, survey_id: int, actor: User) -> list[SurveyVersion]:  # noqa: ARG002
+        self._get_survey(db, project_id, survey_id)
         return surveys_repo.list_versions(db, survey_id)
 
-    def get_version(self, db: Session, project_id: int, survey_id: int, version_id: int) -> SurveyVersion:
-        self.get_survey(db, project_id, survey_id)
-        return self._get_version(db, survey_id, version_id)
+    @require_survey_permission(PERMISSIONS.survey.view)
+    def get_version(self, db: Session, project_id: int, survey_id: int, version_number: int, actor: User) -> SurveyVersion:  # noqa: ARG002
+        self._get_survey(db, project_id, survey_id)
+        return self._get_version(db, project_id, survey_id, version_number)
 
-    def create_version(self, db: Session, project_id: int, survey_id: int) -> SurveyVersion:
-        self.get_survey(db, project_id, survey_id)
+    @require_survey_permission(PERMISSIONS.survey.create)
+    def create_version(self, db: Session, project_id: int, survey_id: int, actor: User) -> SurveyVersion:  # noqa: ARG002
+        self._get_survey(db, project_id, survey_id)
         version = surveys_repo.create_version(db, survey_id)
         commit_or_rollback(db)
         return version
 
-    def publish_version(self, db: Session, project_id: int, survey_id: int, version_id: int) -> SurveyVersion:
-        survey = self.get_survey(db, project_id, survey_id)
-        version = self._get_version(db, survey_id, version_id)
+    @require_survey_permission(PERMISSIONS.survey.publish)
+    def publish_version(
+        self, db: Session, project_id: int, survey_id: int, version_number: int, actor: User # noqa: ARG002
+    ) -> SurveyVersion:
+        survey = self._get_survey(db, project_id, survey_id)
+        version = self._get_version(db, project_id, survey_id, version_number)
 
         version_rules.ensure_is_draft(version=version)
 
@@ -103,9 +138,12 @@ class SurveyService:
         commit_or_rollback(db)
         return result
 
-    def archive_version(self, db: Session, project_id: int, survey_id: int, version_id: int) -> SurveyVersion:
-        self.get_survey(db, project_id, survey_id)
-        version = self._get_version(db, survey_id, version_id)
+    @require_survey_permission(PERMISSIONS.survey.archive)
+    def archive_version(
+        self, db: Session, project_id: int, survey_id: int, version_number: int, actor: User # noqa: ARG002
+    ) -> SurveyVersion:
+        self._get_survey(db, project_id, survey_id)
+        version = self._get_version(db, project_id, survey_id, version_number)
         version_rules.ensure_can_archive(version=version)
         result = surveys_repo.archive_version(db, version)
         commit_or_rollback(db)

@@ -1,12 +1,10 @@
 from logging import getLogger
 
-from flask import Blueprint, request, url_for
+from flask import Blueprint, request
 
 from app.api.utils.validation import parse, parse_query
 from app.core.extensions import auth
 from app.db.context import get_core_db, get_response_db
-from app.repositories import surveys_repo as survey_svc
-from app.schema.api.requests.projects import CreateProjectRequest
 from app.schema.api.requests.content import (
     CreateQuestionRequest,
     CreateRuleRequest,
@@ -15,6 +13,7 @@ from app.schema.api.requests.content import (
     UpdateRuleRequest,
     UpdateScoringRuleRequest,
 )
+from app.schema.api.requests.projects import CreateProjectRequest
 from app.schema.api.requests.public_links import CreatePublicLinkRequest, UpdatePublicLinkRequest
 from app.schema.api.requests.submissions.create import CreateSubmissionRequest
 from app.schema.api.requests.submissions.query import GetSubmissionRequest, ListSubmissionsRequest
@@ -29,16 +28,19 @@ from app.schema.api.responses.submissions import (
     PaginatedSubmissionsOut,
 )
 from app.schema.api.responses.surveys import SurveyOut, SurveyVersionOut
+from app.schema.orm.core.user import User
 from app.services.content import ContentService
 from app.services.projects import ProjectService
 from app.services.public_links import PublicLinkService
 from app.services.submissions import SubmissionService
 from app.services.surveys import SurveyService
+from app.services.users import UserService
 
 logger = getLogger(__name__)
 
 projects_bp = Blueprint("projects_v1", __name__)
 
+users_service = UserService()
 content_svc = ContentService()
 project_service = ProjectService()
 public_link_svc = PublicLinkService()
@@ -65,7 +67,8 @@ def create_project():
 @auth.require_auth()
 def list_surveys(project_id: int):
     db = get_core_db()
-    surveys = survey_svc.list_surveys(db, project_id)
+    user: User = users_service.get_user_by_sub(db, auth.get_current_user_sub())
+    surveys = survey_service.list_surveys(db, project_id=project_id, actor=user)
     return [SurveyOut.model_validate(s).model_dump(mode="json") for s in surveys], 200
 
 
@@ -74,7 +77,8 @@ def list_surveys(project_id: int):
 def create_survey(project_id: int):
     payload = parse(CreateSurveyRequest, request)
     db = get_core_db()
-    survey = survey_service.create_survey(db, project_id, payload)
+    user: User = users_service.get_user_by_sub(db, auth.get_current_user_sub())
+    survey = survey_service.create_survey(db, project_id=project_id, data=payload, actor=user)
     return SurveyOut.model_validate(survey).model_dump(mode="json"), 201
 
 
@@ -82,7 +86,8 @@ def create_survey(project_id: int):
 @auth.require_auth()
 def get_survey(project_id: int, survey_id: int):
     db = get_core_db()
-    survey = survey_service.get_survey(db, project_id, survey_id)
+    user: User = users_service.get_user_by_sub(db, auth.get_current_user_sub())
+    survey = survey_service.get_survey(db, project_id=project_id, survey_id=survey_id, actor=user)
     return SurveyOut.model_validate(survey).model_dump(mode="json"), 200
 
 
@@ -91,7 +96,8 @@ def get_survey(project_id: int, survey_id: int):
 def update_survey(project_id: int, survey_id: int):
     payload = parse(UpdateSurveyRequest, request)
     db = get_core_db()
-    survey = survey_service.update_survey(db, project_id, survey_id, payload)
+    user: User = users_service.get_user_by_sub(db, auth.get_current_user_sub())
+    survey = survey_service.update_survey(db, project_id=project_id, survey_id=survey_id, data=payload, actor=user)
     return SurveyOut.model_validate(survey).model_dump(mode="json"), 200
 
 
@@ -99,7 +105,8 @@ def update_survey(project_id: int, survey_id: int):
 @auth.require_auth()
 def delete_survey(project_id: int, survey_id: int):
     db = get_core_db()
-    survey_service.delete_survey(db, project_id, survey_id)
+    user: User = users_service.get_user_by_sub(db, auth.get_current_user_sub())
+    survey_service.delete_survey(db, project_id=project_id, survey_id=survey_id, actor=user)
     return {"message": "Survey deleted"}, 200
 
 
@@ -110,66 +117,72 @@ def delete_survey(project_id: int, survey_id: int):
 @auth.require_auth()
 def list_versions(project_id: int, survey_id: int):
     db = get_core_db()
-    versions = survey_service.list_versions(db, project_id, survey_id)
+    user: User = users_service.get_user_by_sub(db, auth.get_current_user_sub())
+    versions = survey_service.list_versions(db, project_id=project_id, survey_id=survey_id, actor=user)
     return [SurveyVersionOut.model_validate(v).model_dump(mode="json") for v in versions], 200
 
 
 @projects_bp.route("/<int:project_id>/surveys/<int:survey_id>/versions", methods=["POST"])
+@auth.require_auth()
 def create_version(project_id: int, survey_id: int):
     db = get_core_db()
-    version = survey_service.create_version(db, project_id, survey_id)
+    user: User = users_service.get_user_by_sub(db, auth.get_current_user_sub())
+    version = survey_service.create_version(db, project_id=project_id, survey_id=survey_id, actor=user)
     return SurveyVersionOut.model_validate(version).model_dump(mode="json"), 201
 
 
-@projects_bp.route("/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_id>", methods=["GET"])
+@projects_bp.route("/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_number>", methods=["GET"])
 @auth.require_auth()
-def get_version(project_id: int, survey_id: int, version_id: int):
+def get_version(project_id: int, survey_id: int, version_number: int):
     db = get_core_db()
-    version = survey_service.get_version(db, project_id, survey_id, version_id)
+    user: User = users_service.get_user_by_sub(db, auth.get_current_user_sub())
+    version = survey_service.get_version(db, project_id=project_id, survey_id=survey_id, version_number=version_number, actor=user)
     return SurveyVersionOut.model_validate(version).model_dump(mode="json"), 200
 
 
 @projects_bp.route(
-    "/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_id>/publish",
+    "/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_number>/publish",
     methods=["POST"],
 )
 @auth.require_auth()
-def publish_version(project_id: int, survey_id: int, version_id: int):
+def publish_version(project_id: int, survey_id: int, version_number: int):
     db = get_core_db()
-    version = survey_service.publish_version(db, project_id, survey_id, version_id)
+    user: User = users_service.get_user_by_sub(db, auth.get_current_user_sub())
+    version = survey_service.publish_version(db, project_id=project_id, survey_id=survey_id, version_number=version_number, actor=user)
     return SurveyVersionOut.model_validate(version).model_dump(mode="json"), 200
 
 
 @projects_bp.route(
-    "/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_id>/archive",
+    "/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_number>/archive",
     methods=["POST"],
 )
 @auth.require_auth()
-def archive_version(project_id: int, survey_id: int, version_id: int):
+def archive_version(project_id: int, survey_id: int, version_number: int):
     db = get_core_db()
-    version = survey_service.archive_version(db, project_id, survey_id, version_id)
+    user: User = users_service.get_user_by_sub(db, auth.get_current_user_sub())
+    version = survey_service.archive_version(db, project_id=project_id, survey_id=survey_id, version_number=version_number, actor=user)
     return SurveyVersionOut.model_validate(version).model_dump(mode="json"), 200
 
 
 # ── Questions ─────────────────────────────────────────────────────────────────
 
-_QBASE = "/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_id>/questions"
+_QBASE = "/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_number>/questions"
 
 
 @projects_bp.route(_QBASE, methods=["GET"])
 @auth.require_auth()
-def list_questions(project_id: int, survey_id: int, version_id: int):
+def list_questions(project_id: int, survey_id: int, version_number: int):
     db = get_core_db()
-    questions = content_svc.list_questions(db, project_id, survey_id, version_id)
+    questions = content_svc.list_questions(db, project_id, survey_id, version_number)
     return [QuestionOut.model_validate(q).model_dump(mode="json") for q in questions], 200
 
 
 @projects_bp.route(_QBASE, methods=["POST"])
 @auth.require_auth()
-def create_question(project_id: int, survey_id: int, version_id: int):
+def create_question(project_id: int, survey_id: int, version_number: int):
     payload = parse(CreateQuestionRequest, request)
     db = get_core_db()
-    question = content_svc.create_question(db, project_id, survey_id, version_id, payload)
+    question = content_svc.create_question(db, project_id, survey_id, version_number, payload)
     return QuestionOut.model_validate(question).model_dump(mode="json"), 201
 
 
@@ -286,6 +299,7 @@ def list_public_links(project_id: int, survey_id: int):
 def create_public_link(project_id: int, survey_id: int):
     payload = parse(CreatePublicLinkRequest, request)
     db = get_core_db()
+    user = users_service.get_user_by_sub(db, auth.get_current_user_sub())
 
     result = public_link_svc.create_link(
         db,
@@ -293,11 +307,7 @@ def create_public_link(project_id: int, survey_id: int):
         project_id=project_id,
         data=payload,
     )
-    public_url = url_for(
-        "public_v1.resolve_link",  # use your real endpoint name here
-        token=result.token,
-        _external=True,
-    )
+    public_url = f"http://localhost:5173/quiz/resolve?token={result.token}"  # todo: construct URL based on config
     response = CreatePublicLinkOut(
         link=PublicLinkOut.model_validate(result.link),
         token=result.token,

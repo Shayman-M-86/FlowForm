@@ -189,11 +189,11 @@ class SurveySlugConflictError(AppError):
 class VersionNotFoundError(AppError):
     """Error raised when a survey version cannot be found."""
 
-    def __init__(self, survey_id: int, version_id: int) -> None:
+    def __init__(self, survey_id: int, version_number: int) -> None:
         super().__init__(
             status_code=404,
             code="NOT_FOUND",
-            message=f"Version {version_id} was not found in survey {survey_id}.",
+            message=f"Version {version_number} was not found in survey {survey_id}.",
         )
 
 
@@ -294,4 +294,14 @@ class SubmissionNotFoundError(AppError):
             status_code=404,
             code="SUBMISSION_NOT_FOUND",
             message=f"Submission {submission_id} not found.",
+        )
+
+class UserNotFoundError(AppError):
+    """Error raised when a user cannot be found."""
+
+    def __init__(self, user_id: str) -> None:
+        super().__init__(
+            status_code=404,
+            code="USER_NOT_FOUND",
+            message=f"User {user_id} not found.",
         )

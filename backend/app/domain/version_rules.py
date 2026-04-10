@@ -1,6 +1,9 @@
-from __future__ import annotations
-
-from app.domain.errors import SurveyPublishError, VersionAlreadyArchivedError, VersionNotEditableError
+from app.domain.errors import (
+    SurveyPublishError,
+    VersionAlreadyArchivedError,
+    VersionNotEditableError,
+    VersionNotFoundError,
+)
 from app.schema.orm.core.survey import SurveyVersion
 from app.schema.orm.core.survey_content import SurveyQuestion
 
@@ -23,3 +26,9 @@ def ensure_can_archive(*, version: SurveyVersion) -> None:
 def ensure_is_editable(*, version: SurveyVersion) -> None:
     if version.status != "draft":
         raise VersionNotEditableError(status=version.status)
+
+
+def ensure_not_none(*, version: SurveyVersion | None, version_number: int, survey_id: int) -> SurveyVersion:
+    if version is None:
+        raise VersionNotFoundError(survey_id=survey_id, version_number=version_number)
+    return version
