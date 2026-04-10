@@ -6,13 +6,18 @@ from app.repositories import public_link_repo, surveys_repo
 from app.schema.api.requests.public_links import CreatePublicLinkRequest, ResolveTokenRequest, UpdatePublicLinkRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyPublicLink
+from app.schema.orm.core.user import User
+from app.services.access import (
+    PERMISSIONS,
+    require_survey_permission,
+)
 from app.services.results import CreatePublicLinkResult, ResolveLinkResult
 
 
 class PublicLinkService:
     """Service for handling operations related to public links."""
 
-    def resolve_link(self, db: Session, *, payload: ResolveTokenRequest) -> ResolveLinkResult:
+    def resolve_link(self, db: Session, payload: ResolveTokenRequest) -> ResolveLinkResult:
         """Resolves a public link token to its associated survey and published version.
 
         Ensures the link is valid and active.
@@ -48,13 +53,21 @@ class PublicLinkService:
             published_version=published_version_orm,
         )
 
-    def list_links(self, db: Session, project_id: int, survey_id: int) -> list[SurveyPublicLink]:
+    @require_survey_permission(PERMISSIONS.survey.view)
+    def list_links(self, db: Session, project_id: int, survey_id: int, actor: User) -> list[SurveyPublicLink]:  # noqa: ARG002
         """Lists all public links for a given survey."""
         self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
         return list(public_link_repo.list_links(db, survey_id=survey_id))
 
+    @require_survey_permission(PERMISSIONS.survey.edit)
     def create_link(
-        self, db: Session, survey_id: int, project_id: int, data: CreatePublicLinkRequest
+        self,
+        db: Session,
+        *,
+        survey_id: int,
+        project_id: int,
+        data: CreatePublicLinkRequest,
+        actor: User,  # noqa: ARG002
     ) -> CreatePublicLinkResult:
         """Creates a new public link for a survey."""
         self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
@@ -64,14 +77,15 @@ class PublicLinkService:
         commit_or_rollback(db)
         return CreatePublicLinkResult(link=link, token=token)
 
+    @require_survey_permission(PERMISSIONS.survey.edit)
     def update_link(
         self,
         db: Session,
-        *,
         survey_id: int,
         project_id: int,
         link_id: int,
         payload: UpdatePublicLinkRequest,
+        actor: User,  # noqa: ARG002
     ) -> SurveyPublicLink:
         """Updates an existing public link."""
         self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
@@ -87,7 +101,8 @@ class PublicLinkService:
 
         return updated_link
 
-    def delete_link(self, db: Session, *, survey_id: int, project_id: int, link_id: int) -> None:
+    @require_survey_permission(PERMISSIONS.survey.edit)
+    def delete_link(self, db: Session, survey_id: int, project_id: int, link_id: int, actor: User) -> None:  # noqa: ARG002
         """Deletes a public link."""
         self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
         link = self._get_link_invalidate(db, survey_id=survey_id, link_id=link_id)

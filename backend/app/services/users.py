@@ -41,7 +41,6 @@ class UserService:
 
             commit_or_rollback(db)
         except IntegrityError as exc:
-            db.rollback()
             constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", "") or ""
 
             if isinstance(exc.orig, UniqueViolation) and "auth0_user_id" in constraint:

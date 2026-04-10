@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.db.error_handling import flush_with_err_handle
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 
@@ -10,14 +11,13 @@ from app.schema.orm.core.survey import Survey, SurveyVersion
 def list_surveys(db: Session, project_id: int) -> list[Survey]:
     return list(db.scalars(select(Survey).where(Survey.project_id == project_id)))
 
+
 def list_surveys_ids(db: Session, project_id: int) -> list[int]:
     return list(db.scalars(select(Survey.id).where(Survey.project_id == project_id)))
 
 
 def get_survey(db: Session, project_id: int, survey_id: int) -> Survey | None:
-    return db.scalar(
-        select(Survey).where(Survey.project_id == project_id, Survey.id == survey_id)
-    )
+    return db.scalar(select(Survey).where(Survey.project_id == project_id, Survey.id == survey_id))
 
 
 def create_survey(
@@ -36,7 +36,7 @@ def create_survey(
         created_by_user_id=created_by_user_id,
     )
     db.add(survey)
-    db.flush()
+    flush_with_err_handle(db, contexts=[survey])
     return survey
 
 
@@ -52,13 +52,13 @@ def update_survey(db: Session, survey: Survey, data: UpdateSurveyRequest) -> Sur
         survey.public_slug = data.public_slug
     if "default_response_store_id" in changed:
         survey.default_response_store_id = data.default_response_store_id
-    db.flush()
+    flush_with_err_handle(db, contexts=[survey])
     return survey
 
 
 def delete_survey(db: Session, survey: Survey) -> None:
     db.delete(survey)
-    db.flush()
+    flush_with_err_handle(db, contexts=[survey])
 
 
 def list_versions(db: Session, survey_id: int) -> list[SurveyVersion]:
@@ -84,17 +84,8 @@ def get_version(db: Session, project_id: int, survey_id: int, version_number: in
     )
 
 
-def create_version(
-    db: Session, survey_id: int, created_by_user_id: int | None = None
-) -> SurveyVersion:
-    max_num = (
-        db.scalar(
-            select(func.max(SurveyVersion.version_number)).where(
-                SurveyVersion.survey_id == survey_id
-            )
-        )
-        or 0
-    )
+def create_version(db: Session, survey_id: int, created_by_user_id: int | None = None) -> SurveyVersion:
+    max_num = db.scalar(select(func.max(SurveyVersion.version_number)).where(SurveyVersion.survey_id == survey_id)) or 0
     version = SurveyVersion(
         survey_id=survey_id,
         version_number=max_num + 1,
@@ -102,7 +93,7 @@ def create_version(
         created_by_user_id=created_by_user_id,
     )
     db.add(version)
-    db.flush()
+    flush_with_err_handle(db, contexts=[version])
     return version
 
 
@@ -121,23 +112,22 @@ def publish_version(
     version.compiled_schema = compiled_schema
     version.published_at = datetime.now(UTC)
 
-    db.flush()  # make sure version is published before survey points at it
+    flush_with_err_handle(db, contexts=[version])  # make sure version is published before survey points at it
 
     survey.published_version_id = version.id
-    db.flush()
+    flush_with_err_handle(db, contexts=[survey])
 
     return version
 
 
 def archive_version(db: Session, version: SurveyVersion) -> SurveyVersion:
     version.status = "archived"
-    db.flush()
+    flush_with_err_handle(db, contexts=[version])
     return version
 
+
 def get_by_public_slug(db: Session, public_slug: str) -> Survey | None:
-    return db.scalar(
-        select(Survey).where(Survey.public_slug == public_slug, Survey.visibility == "public")
-    )
+    return db.scalar(select(Survey).where(Survey.public_slug == public_slug, Survey.visibility == "public"))
 
 
 def get_published_version(db: Session, survey: Survey) -> SurveyVersion | None:

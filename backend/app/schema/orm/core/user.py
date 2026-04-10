@@ -1,13 +1,13 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Text, func, Identity, BigInteger
+from sqlalchemy import BigInteger, Boolean, DateTime, Identity, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 
 if TYPE_CHECKING:
-    from app.schema.orm.core.project import ProjectMembership, Project
+    from app.schema.orm.core.project import Project, ProjectMembership
 
 
 class User(CoreBase):
@@ -27,8 +27,7 @@ class User(CoreBase):
         back_populates="user",
     )
     owned_projects: Mapped[list[Project]] = relationship(
-    "Project",
-    foreign_keys="[Project.created_by_user_id]",
-    back_populates="created_by",
-)
-    
+        "Project",
+        foreign_keys="[Project.created_by_user_id]",
+        back_populates="created_by",
+    )

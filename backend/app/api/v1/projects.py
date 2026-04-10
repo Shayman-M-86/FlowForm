@@ -173,7 +173,8 @@ _QBASE = "/<int:project_id>/surveys/<int:survey_id>/versions/<int:version_number
 @auth.require_auth()
 def list_questions(project_id: int, survey_id: int, version_number: int):
     db = get_core_db()
-    questions = content_svc.list_questions(db, project_id, survey_id, version_number)
+    user: User = users_service.get_user_by_sub(db, auth.get_current_user_sub())
+    questions = content_svc.list_questions(db, project_id, survey_id, version_number, actor=user)
     return [QuestionOut.model_validate(q).model_dump(mode="json") for q in questions], 200
 
 
@@ -290,7 +291,8 @@ _LBASE = "/<int:project_id>/surveys/<int:survey_id>/public-links"
 @auth.require_auth()
 def list_public_links(project_id: int, survey_id: int):
     db = get_core_db()
-    links = public_link_svc.list_links(db, project_id, survey_id)
+    user = users_service.get_user_by_sub(db, auth.get_current_user_sub())
+    links = public_link_svc.list_links(db, project_id, survey_id, actor=user)
     return ListPublicLinksOut(links=[PublicLinkOut.model_validate(link) for link in links]).model_dump(mode="json"), 200
 
 
@@ -300,12 +302,14 @@ def create_public_link(project_id: int, survey_id: int):
     payload = parse(CreatePublicLinkRequest, request)
     db = get_core_db()
     user = users_service.get_user_by_sub(db, auth.get_current_user_sub())
-
+    
     result = public_link_svc.create_link(
         db,
         survey_id=survey_id,
         project_id=project_id,
         data=payload,
+        actor=user,
+
     )
     public_url = f"http://localhost:5173/quiz/resolve?token={result.token}"  # todo: construct URL based on config
     response = CreatePublicLinkOut(

@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.user import User
 
 
@@ -23,7 +24,7 @@ def create_user(
         display_name=display_name,
     )
     db.add(user)
-    db.flush()
+    flush_with_err_handle(db)
     return user
 
 

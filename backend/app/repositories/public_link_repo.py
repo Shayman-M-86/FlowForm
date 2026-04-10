@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.survey_access import SurveyPublicLink
 
 _TOKEN_BYTES = 32
@@ -54,7 +55,7 @@ def create_link(
         expires_at=expires_at,
     )
     db.add(link)
-    db.flush()
+    flush_with_err_handle(db, contexts=[link])
     return link, token
 
 
@@ -75,13 +76,13 @@ def update_link(
     if not isinstance(expires_at, _UnsetType):
         link.expires_at = expires_at
 
-    db.flush()
+    flush_with_err_handle(db, contexts=[link])
     return link
 
 
 def delete_link(db: Session, link: SurveyPublicLink) -> None:
     db.delete(link)
-    db.flush()
+    flush_with_err_handle(db, contexts=[link])
 
 
 def resolve_token(db: Session, token: str) -> SurveyPublicLink | None:

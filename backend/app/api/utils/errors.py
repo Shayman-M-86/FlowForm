@@ -8,6 +8,7 @@ from werkzeug.exceptions import HTTPException
 
 from app.api.utils.validation import normalize_pydantic_errors
 from app.core.errors import AppError, AuthError
+from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -95,4 +96,16 @@ def register_error_handlers(app: Flask) -> None:
         response.status_code = exc.status_code or 401
         for header_name, header_value in exc.headers.items():
             response.headers[header_name] = header_value
+        return response
+    
+    @app.errorhandler(IntegrityError)
+    def handle_integrity_error(exc: IntegrityError):
+        logger.error(f"Database integrity error: {exc}")
+        response = jsonify(
+                {
+                    "code": "UNHANDLED_INTEGRITY_ERROR",
+                    "message": "A database integrity error occurred.",
+                }
+            )
+        response.status_code = 409
         return response

@@ -94,7 +94,9 @@ class SurveyService:
         return surveys_repo.list_versions(db, survey_id)
 
     @require_survey_permission(PERMISSIONS.survey.view)
-    def get_version(self, db: Session, project_id: int, survey_id: int, version_number: int, actor: User) -> SurveyVersion:  # noqa: ARG002
+    def get_version(
+        self, db: Session, project_id: int, survey_id: int, version_number: int, actor: User # noqa: ARG002
+    ) -> SurveyVersion:
         self._get_survey(db, project_id, survey_id)
         return self._get_version(db, project_id, survey_id, version_number)
 
@@ -107,7 +109,12 @@ class SurveyService:
 
     @require_survey_permission(PERMISSIONS.survey.publish)
     def publish_version(
-        self, db: Session, project_id: int, survey_id: int, version_number: int, actor: User # noqa: ARG002
+        self,
+        db: Session,
+        project_id: int,
+        survey_id: int,
+        version_number: int,
+        actor: User,  # noqa: ARG002
     ) -> SurveyVersion:
         survey = self._get_survey(db, project_id, survey_id)
         version = self._get_version(db, project_id, survey_id, version_number)
@@ -140,7 +147,12 @@ class SurveyService:
 
     @require_survey_permission(PERMISSIONS.survey.archive)
     def archive_version(
-        self, db: Session, project_id: int, survey_id: int, version_number: int, actor: User # noqa: ARG002
+        self,
+        db: Session,
+        project_id: int,
+        survey_id: int,
+        version_number: int,
+        actor: User,  # noqa: ARG002
     ) -> SurveyVersion:
         self._get_survey(db, project_id, survey_id)
         version = self._get_version(db, project_id, survey_id, version_number)
