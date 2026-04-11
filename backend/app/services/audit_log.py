@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.audit_log import AuditLog
 
 
@@ -25,5 +26,5 @@ class AuditLogService:
             log_metadata=metadata,
         )
         db.add(log)
-        db.flush()
+        flush_with_err_handle(db)
         return log

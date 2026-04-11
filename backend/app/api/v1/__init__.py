@@ -4,7 +4,7 @@ from flask import Blueprint, Flask
 
 from app.api.v1.auth import auth_bp
 from app.api.v1.health import health_bp
-from app.api.v1.projects import projects_bp
+from app.api.v1.projects import projects_bp  # triggers sub-module route registration
 from app.api.v1.public import public_bp
 
 __all__ = ["register_api_v1"]

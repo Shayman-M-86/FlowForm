@@ -1,16 +1,14 @@
 from sqlalchemy.orm import Session
 
-from app.db.transaction import commit_or_rollback
+from app.db.error_handling import commit_with_err_handle
 from app.domain import public_link_rules, survey_rules
+from app.domain.permissions import PERMISSIONS
 from app.repositories import public_link_repo, surveys_repo
 from app.schema.api.requests.public_links import CreatePublicLinkRequest, ResolveTokenRequest, UpdatePublicLinkRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyPublicLink
 from app.schema.orm.core.user import User
-from app.services.access import (
-    PERMISSIONS,
-    require_survey_permission,
-)
+from app.services.access.access_service import require_survey_permission
 from app.services.results import CreatePublicLinkResult, ResolveLinkResult
 
 
@@ -74,7 +72,7 @@ class PublicLinkService:
         link, token = public_link_repo.create_link(
             db, survey_id=survey_id, allow_response=data.allow_response, expires_at=data.expires_at
         )
-        commit_or_rollback(db)
+        commit_with_err_handle(db, contexts=[link])
         return CreatePublicLinkResult(link=link, token=token)
 
     @require_survey_permission(PERMISSIONS.survey.edit)
@@ -97,7 +95,7 @@ class PublicLinkService:
             allow_response=payload.allow_response,
             expires_at=payload.expires_at,
         )
-        commit_or_rollback(db)
+        commit_with_err_handle(db, contexts=[updated_link])
 
         return updated_link
 
@@ -107,7 +105,7 @@ class PublicLinkService:
         self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
         link = self._get_link_invalidate(db, survey_id=survey_id, link_id=link_id)
         public_link_repo.delete_link(db, link=link)
-        commit_or_rollback(db)
+        commit_with_err_handle(db, contexts=[link])
 
     def _ensure_survey_and_public_id_match(self, db: Session, survey_id: int, project_id: int) -> Survey:
         """Ensures that the survey ID and public link ID match."""

@@ -6,6 +6,21 @@ export type SubmissionStatus = "pending" | "stored" | "failed";
 export type SubmissionChannel = "authenticated" | "public_link" | "system";
 export type QuestionType = "choice" | "field" | "matching" | "rating";
 
+// ── Projects ──────────────────────────────────────────────────────────────────
+
+export interface ProjectOut {
+  id: number;
+  name: string;
+  slug: string;
+  created_by_user_id: number | null;
+  created_at: string;
+}
+
+export interface CreateProjectRequest {
+  name: string;
+  slug: string;
+}
+
 // ── Survey ───────────────────────────────────────────────────────────────────
 
 export interface SurveyOut {

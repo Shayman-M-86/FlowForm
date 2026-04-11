@@ -28,6 +28,16 @@ export function Sidebar() {
           Home
         </NavLink>
 
+        <NavLink
+          to="/projects"
+          className={({ isActive }) =>
+            `sidebar__link ${isActive ? "sidebar__link--active" : ""}`
+          }
+          end
+        >
+          Projects
+        </NavLink>
+
         <div className="sidebar__section-label">Build</div>
 
         <NavLink

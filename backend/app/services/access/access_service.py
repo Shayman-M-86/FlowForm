@@ -210,13 +210,16 @@ def require_project_permission(permission: str) -> Callable[[Callable[P, R]], Ca
         @wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             
-            actor = cast("User", kwargs["actor"])
-            db = cast(Session, kwargs["db"])
-            project_id = cast(int, kwargs["project_id"])
-
+            actor = cast("User", kwargs.get("actor"))
+            db = cast(Session, kwargs.get("db"))
+            project_id = cast(int, kwargs.get("project_id"))
+            
             if actor.platform_admin:
                 return func(*args, **kwargs)
-
+            
+            if db is None and len(args) >= 2:
+                db: Session = args[1]
+                
             access = access_service.get_project_access(
                 db=db,
                 project_id=project_id,

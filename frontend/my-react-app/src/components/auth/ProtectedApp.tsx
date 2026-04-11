@@ -25,17 +25,8 @@ export function ProtectedApp({ children }: ProtectedAppProps) {
             return;
         }
 
-        const userSub = user?.sub;
-        if (!userSub) {
+        if (!user?.sub) {
             setBootstrapReady(false);
-            setBootstrapError(null);
-            setBootstrapErrorCode(null);
-            return;
-        }
-
-        const markerKey = `flowform:user-bootstrapped:${userSub}`;
-        if (window.localStorage.getItem(markerKey) === "true") {
-            setBootstrapReady(true);
             setBootstrapError(null);
             setBootstrapErrorCode(null);
             return;
@@ -57,7 +48,6 @@ export function ProtectedApp({ children }: ProtectedAppProps) {
                 }
 
                 await bootstrapCurrentUser(idToken);
-                window.localStorage.setItem(markerKey, "true");
 
                 if (!cancelled) {
                     setBootstrapReady(true);

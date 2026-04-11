@@ -9,6 +9,7 @@ from app.db.error_handling.error_translation import (
 )
 from app.domain.errors import AppError
 from app.schema.orm.core import (
+    Project,
     ProjectMembership,
     ProjectRole,
     ResponseSubjectMapping,
@@ -23,7 +24,8 @@ from app.schema.orm.core import (
 )
 
 type RuleContext = (
-    Survey
+    Project
+    | Survey
     | SurveyVersion
     | SurveyPublicLink
     | ResponseSubjectMapping
@@ -38,6 +40,7 @@ type RuleContext = (
 allowed_parameters = {
     "survey_id",
     "project_id",
+    "slug",
     "visibility",
     "has_published_version",
     "version_number",
@@ -56,6 +59,14 @@ allowed_parameters = {
     "name",
     "role_id",
 }
+
+
+def _project_ctx(project: Project) -> dict[str, object]:
+    return {
+        "project_id": project.id,
+        "name": project.name,
+        "slug": project.slug,
+    }
 
 
 def _survey_ctx(survey: Survey) -> dict[str, object]:
@@ -145,6 +156,18 @@ def _survey_membership_role_ctx(membership_role: SurveyMembershipRole) -> dict[s
         "role_id": membership_role.role_id,
     }
 
+
+PROJECT_RULES: tuple[DbErrorRule, ...] = (
+    unique_rule(
+        "projects_slug_key",
+        lambda ctx, _exc: AppError(
+            409,
+            "PROJECT_SLUG_CONFLICT",
+            f"Project slug {ctx['slug']!r} is already in use.",
+        ),
+        extractor=_project_ctx,
+    ),
+)
 
 SURVEY_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
@@ -505,6 +528,7 @@ SURVEY_MEMBERSHIP_ROLE_RULES: tuple[DbErrorRule, ...] = (
 )
 
 RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
+    Project: PROJECT_RULES,
     Survey: SURVEY_RULES,
     SurveyVersion: SURVEY_VERSION_RULES,
     SurveyPublicLink: SURVEY_PUBLIC_LINK_RULES,

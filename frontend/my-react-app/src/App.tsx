@@ -8,6 +8,7 @@ import { TakeSurveyPage } from "./pages/TakeSurveyPage";
 import { QuizTakerPage } from "./pages/QuizTakerPage";
 import { ProtectedApp } from "./components/auth/ProtectedApp";
 import { BuilderPage } from "./pages/Builder";
+import { ProjectsPage } from "./pages/ProjectsPage";
 import "./App.css";
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
           }
         >
           <Route path="/" element={<HomePage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/take" element={<TakeSurveyPage />} />
           <Route path="/projects/:projectId/surveys" element={<SurveysPage />} />
           <Route path="/projects/:projectId/surveys/:surveyId" element={<SurveyEditorPage />} />

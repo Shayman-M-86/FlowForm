@@ -82,7 +82,6 @@ def commit_with_err_handle(db: Session, *, contexts: Iterable[RuleContext] | Non
                     "matched_context": summarize_context(matched_context) if matched_context is not None else None,
                     **summarize_contexts(context_list),
                 },
-                exc_info=exc,
             )
             raise mapped from None
 
@@ -130,7 +129,6 @@ def flush_with_err_handle(db: Session, *, contexts: Iterable[RuleContext] | None
                     "matched_context": summarize_context(matched_context) if matched_context is not None else None,
                     **summarize_contexts(context_list),
                 },
-                exc_info=exc,
             )
             raise mapped from None
 

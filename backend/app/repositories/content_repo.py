@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.db.error_handling import flush_with_err_handle
 from app.schema.api.requests.content import (
     CreateQuestionRequest,
     CreateRuleRequest,
@@ -35,7 +36,7 @@ def create_question(db: Session, version: SurveyVersion, data: CreateQuestionReq
         question_schema=data.question_schema.model_dump(by_alias=True, mode="json"),
     )
     db.add(question)
-    db.flush()
+    flush_with_err_handle(db, contexts=[question])
     return question
 
 
@@ -48,13 +49,13 @@ def update_question(db: Session, question: SurveyQuestion, data: UpdateQuestionR
             by_alias=True,
             mode="json",
         )
-    db.flush()
+    flush_with_err_handle(db, contexts=[question])
     return question
 
 
 def delete_question(db: Session, question: SurveyQuestion) -> None:
     db.delete(question)
-    db.flush()
+    flush_with_err_handle(db, contexts=[question])
 
 
 # ── Rules ──────────────────────────────────────────────────────────────────────
@@ -80,7 +81,7 @@ def create_rule(db: Session, version: SurveyVersion, data: CreateRuleRequest) ->
         rule_schema=data.rule_schema.model_dump(by_alias=True, mode="json"),
     )
     db.add(rule)
-    db.flush()
+    flush_with_err_handle(db, contexts=[rule])
     return rule
 
 
@@ -90,13 +91,13 @@ def update_rule(db: Session, rule: SurveyRule, data: UpdateRuleRequest) -> Surve
         rule.rule_key = data.rule_key
     if "rule_schema" in changed and data.rule_schema is not None:
         rule.rule_schema = data.rule_schema.model_dump(by_alias=True, mode="json")
-    db.flush()
+    flush_with_err_handle(db, contexts=[rule])
     return rule
 
 
 def delete_rule(db: Session, rule: SurveyRule) -> None:
     db.delete(rule)
-    db.flush()
+    flush_with_err_handle(db, contexts=[rule])
 
 
 # ── Scoring rules ──────────────────────────────────────────────────────────────
@@ -122,7 +123,7 @@ def create_scoring_rule(db: Session, version: SurveyVersion, data: CreateScoring
         scoring_schema=data.scoring_schema.model_dump(by_alias=True, mode="json"),
     )
     db.add(rule)
-    db.flush()
+    flush_with_err_handle(db, contexts=[rule])
     return rule
 
 
@@ -132,10 +133,10 @@ def update_scoring_rule(db: Session, rule: SurveyScoringRule, data: UpdateScorin
         rule.scoring_key = data.scoring_key
     if "scoring_schema" in changed and data.scoring_schema is not None:
         rule.scoring_schema = data.scoring_schema.model_dump(by_alias=True, mode="json")
-    db.flush()
+    flush_with_err_handle(db, contexts=[rule])
     return rule
 
 
 def delete_scoring_rule(db: Session, rule: SurveyScoringRule) -> None:
     db.delete(rule)
-    db.flush()
+    flush_with_err_handle(db, contexts=[rule])

@@ -1,19 +1,13 @@
-from psycopg.errors import UniqueViolation
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db.transaction import commit_or_rollback
+from app.db.error_handling import commit_with_err_handle
 from app.domain import survey_rules, version_rules
-from app.domain.errors import SurveySlugConflictError
+from app.domain.permissions import PERMISSIONS
 from app.repositories import content_repo, surveys_repo
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.user import User
-from app.services.access import (
-    PERMISSIONS,
-    require_project_permission,
-    require_survey_permission,
-)
+from app.services.access.access_service import require_project_permission, require_survey_permission
 
 DEFAULT_RESPONSE_STORE_ID = 1  # TODO: This should be set to a real default response store ID
 
@@ -28,13 +22,9 @@ class SurveyService:
 
     @require_project_permission(PERMISSIONS.survey.create)
     def create_survey(self, db: Session, *, project_id: int, data: CreateSurveyRequest, actor: User) -> Survey:  # noqa: ARG002
-        try:
-            survey = surveys_repo.create_survey(db, project_id, data)
-            commit_or_rollback(db)
-        except IntegrityError as exc:
-            if isinstance(exc.orig, UniqueViolation) and "public_slug" in (exc.orig.diag.constraint_name or ""):
-                raise SurveySlugConflictError() from None
-            raise
+
+        survey = surveys_repo.create_survey(db, project_id, data)
+        commit_with_err_handle(db, contexts=[survey])
         return survey
 
     @require_survey_permission(PERMISSIONS.survey.view)
@@ -62,13 +52,9 @@ class SurveyService:
         actor: User,  # noqa: ARG002
     ) -> Survey:
         survey = self._get_survey(db, project_id, survey_id)
-        try:
-            updated = surveys_repo.update_survey(db, survey, data)
-            commit_or_rollback(db)
-        except IntegrityError as exc:
-            if isinstance(exc.orig, UniqueViolation) and "public_slug" in (exc.orig.diag.constraint_name or ""):
-                raise SurveySlugConflictError() from None
-            raise
+
+        updated = surveys_repo.update_survey(db, survey, data)
+        commit_with_err_handle(db, contexts=[updated])
         return updated
 
     @require_survey_permission(PERMISSIONS.survey.delete)
@@ -76,7 +62,7 @@ class SurveyService:
         survey = self._get_survey(db, project_id, survey_id)
         survey_rules.ensure_can_delete_survey(survey)
         surveys_repo.delete_survey(db, survey)
-        commit_or_rollback(db)
+        commit_with_err_handle(db, contexts=[survey])
 
     # ── Survey versions ───────────────────────────────────────────────────────
 
@@ -95,7 +81,12 @@ class SurveyService:
 
     @require_survey_permission(PERMISSIONS.survey.view)
     def get_version(
-        self, db: Session, project_id: int, survey_id: int, version_number: int, actor: User # noqa: ARG002
+        self,
+        db: Session,
+        project_id: int,
+        survey_id: int,
+        version_number: int,
+        actor: User,  # noqa: ARG002
     ) -> SurveyVersion:
         self._get_survey(db, project_id, survey_id)
         return self._get_version(db, project_id, survey_id, version_number)
@@ -104,7 +95,7 @@ class SurveyService:
     def create_version(self, db: Session, project_id: int, survey_id: int, actor: User) -> SurveyVersion:  # noqa: ARG002
         self._get_survey(db, project_id, survey_id)
         version = surveys_repo.create_version(db, survey_id)
-        commit_or_rollback(db)
+        commit_with_err_handle(db, contexts=[version])
         return version
 
     @require_survey_permission(PERMISSIONS.survey.publish)
@@ -142,7 +133,7 @@ class SurveyService:
         )
 
         result = surveys_repo.publish_version(db, survey, version, compiled)
-        commit_or_rollback(db)
+        commit_with_err_handle(db, contexts=[result, survey, version])
         return result
 
     @require_survey_permission(PERMISSIONS.survey.archive)
@@ -158,5 +149,5 @@ class SurveyService:
         version = self._get_version(db, project_id, survey_id, version_number)
         version_rules.ensure_can_archive(version=version)
         result = surveys_repo.archive_version(db, version)
-        commit_or_rollback(db)
+        commit_with_err_handle(db, contexts=[result, version])
         return result

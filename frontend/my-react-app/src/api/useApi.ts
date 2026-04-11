@@ -2,12 +2,14 @@ import { useCallback, useMemo } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import * as authApi from "./auth";
 import * as client from "./client";
+import * as projectsApi from "./projects";
 import * as surveysApi from "./surveys";
 import * as contentApi from "./content";
 import * as linksApi from "./links";
 import * as submissionsApi from "./submissions";
 import type {
   ApiExecutor,
+  CreateProjectRequest,
   CreatePublicLinkRequest,
   CreateQuestionRequest,
   CreateRuleRequest,
@@ -53,6 +55,12 @@ export function useApi() {
       // ── Auth ─────────────────────────────────────────────────────────────────
       bootstrapCurrentUser: (idToken: string) =>
         authApi.bootstrapCurrentUser(executor, idToken),
+
+      // ── Projects ─────────────────────────────────────────────────────────────
+      listProjects: () =>
+        projectsApi.listProjects(executor),
+      createProject: (data: CreateProjectRequest) =>
+        projectsApi.createProject(executor, data),
 
       // ── Surveys ──────────────────────────────────────────────────────────────
       listSurveys: (projectId: number) =>

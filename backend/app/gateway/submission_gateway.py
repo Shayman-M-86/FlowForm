@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.db.error_handling import commit_with_err_handle, flush_with_err_handle
 from app.db.transaction import rollback_safely
 from app.schema.orm.core.response_subject_mapping import ResponseSubjectMapping
 from app.schema.orm.core.survey_submission import SurveySubmission
@@ -35,7 +36,7 @@ class SubmissionGateway:
                 pseudonymous_subject_id=uuid.uuid4(),
             )
             core_db.add(mapping)
-            core_db.flush()
+            flush_with_err_handle(core_db, contexts=[mapping])
         return mapping
 
     def create_linked_submission(
@@ -75,7 +76,7 @@ class SubmissionGateway:
         core_db.add(core_submission)
 
         # Step 3: Flush to obtain the shared ID before writing to response DB
-        core_db.flush()
+        flush_with_err_handle(core_db, contexts=[core_submission])
         core_submission_id = core_submission.id
 
         # Steps 4-6: Write to response DB; on failure roll back and mark core failed
@@ -91,7 +92,7 @@ class SubmissionGateway:
                 submission_metadata=metadata,
             )
             response_db.add(response_submission)
-            response_db.flush()
+            flush_with_err_handle(response_db)
 
             submission_answers: list[SubmissionAnswer] = []
             for ans in answers or []:
@@ -104,17 +105,17 @@ class SubmissionGateway:
                 response_db.add(sa)
                 submission_answers.append(sa)
 
-            response_db.commit()
+            commit_with_err_handle(response_db)
 
         except Exception:
             rollback_safely(response_db)
             core_submission.status = "failed"
-            core_db.commit()
+            commit_with_err_handle(core_db, contexts=[core_submission])
             raise
 
         # Steps 7-8: Mark core as stored and commit
         core_submission.status = "stored"
-        core_db.commit()
+        commit_with_err_handle(core_db, contexts=[core_submission])
 
         return LinkedSubmissionResult(
             core_submission=core_submission,
@@ -135,9 +136,7 @@ class SubmissionGateway:
     ) -> LinkedSubmissionResult | None:
         from app.schema.orm.core.user import User
 
-        core_submission = core_db.scalar(
-            select(SurveySubmission).where(SurveySubmission.id == core_submission_id)
-        )
+        core_submission = core_db.scalar(select(SurveySubmission).where(SurveySubmission.id == core_submission_id))
         if core_submission is None:
             return None
 
@@ -149,9 +148,7 @@ class SubmissionGateway:
         if include_answers and response_submission is not None:
             answers = list(
                 response_db.scalars(
-                    select(SubmissionAnswer).where(
-                        SubmissionAnswer.submission_id == response_submission.id
-                    )
+                    select(SubmissionAnswer).where(SubmissionAnswer.submission_id == response_submission.id)
                 )
             )
 
@@ -165,14 +162,11 @@ class SubmissionGateway:
             subject_mapping = core_db.scalar(
                 select(ResponseSubjectMapping).where(
                     ResponseSubjectMapping.project_id == core_submission.project_id,
-                    ResponseSubjectMapping.pseudonymous_subject_id
-                    == response_submission.pseudonymous_subject_id,
+                    ResponseSubjectMapping.pseudonymous_subject_id == response_submission.pseudonymous_subject_id,
                 )
             )
             if subject_mapping is not None:
-                user = core_db.scalar(
-                    select(User).where(User.id == subject_mapping.user_id)
-                )
+                user = core_db.scalar(select(User).where(User.id == subject_mapping.user_id))
 
         return LinkedSubmissionResult(
             core_submission=core_submission,

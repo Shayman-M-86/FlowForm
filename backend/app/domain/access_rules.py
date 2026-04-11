@@ -1,10 +1,11 @@
-
-
-
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from app.core.errors import ForbiddenError
-from app.services.access.access_service import ProjectAccess, SurveyAccess
+
+if TYPE_CHECKING:
+    from app.services.access.access_service import ProjectAccess, SurveyAccess
 
 
 def ensure_project_member(access: ProjectAccess) -> None:
@@ -17,7 +18,6 @@ def ensure_project_permission(access: ProjectAccess, permission: str) -> None:
 
     if permission not in access.permissions:
         raise ForbiddenError(message=f"Missing permission: {permission}")
-
 
 
 def ensure_survey_member(access: SurveyAccess) -> None:

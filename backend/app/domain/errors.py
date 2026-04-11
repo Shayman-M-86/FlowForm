@@ -153,6 +153,18 @@ class SurveyNoResponseStoreError(AppError):
         )
 
 
+class ProjectNotFoundError(AppError):
+    """Error raised when a project cannot be found."""
+
+    def __init__(self, *, project_id: int | None = None, project_slug: str | None = None) -> None:
+        ref = f"slug={project_slug!r}" if project_slug is not None else f"id={project_id}"
+        super().__init__(
+            status_code=404,
+            code="NOT_FOUND",
+            message=f"Project {ref} not found.",
+        )
+
+
 class ProjectSlugConflictError(AppError):
     """Error raised when a project slug is already taken."""
 
