@@ -40,6 +40,22 @@ def create_question(db: Session, version: SurveyVersion, data: CreateQuestionReq
     return question
 
 
+def clone_questions(db: Session, source_version: SurveyVersion, target_version: SurveyVersion) -> list[SurveyQuestion]:
+    questions = list_questions(db, source_version.id)
+    clones: list[SurveyQuestion] = []
+    for source in questions:
+        clone = SurveyQuestion(
+            survey_version_id=target_version.id,
+            question_key=source.question_key,
+            question_schema=source.question_schema,
+        )
+        db.add(clone)
+        clones.append(clone)
+    if clones:
+        flush_with_err_handle(db, contexts=clones)
+    return clones
+
+
 def update_question(db: Session, question: SurveyQuestion, data: UpdateQuestionRequest) -> SurveyQuestion:
     changed = data.model_fields_set
     if "question_key" in changed and data.question_key is not None:
@@ -85,6 +101,22 @@ def create_rule(db: Session, version: SurveyVersion, data: CreateRuleRequest) ->
     return rule
 
 
+def clone_rules(db: Session, source_version: SurveyVersion, target_version: SurveyVersion) -> list[SurveyRule]:
+    rules = list_rules(db, source_version.id)
+    clones: list[SurveyRule] = []
+    for source in rules:
+        clone = SurveyRule(
+            survey_version_id=target_version.id,
+            rule_key=source.rule_key,
+            rule_schema=source.rule_schema,
+        )
+        db.add(clone)
+        clones.append(clone)
+    if clones:
+        flush_with_err_handle(db, contexts=clones)
+    return clones
+
+
 def update_rule(db: Session, rule: SurveyRule, data: UpdateRuleRequest) -> SurveyRule:
     changed = data.model_fields_set
     if "rule_key" in changed and data.rule_key is not None:
@@ -125,6 +157,26 @@ def create_scoring_rule(db: Session, version: SurveyVersion, data: CreateScoring
     db.add(rule)
     flush_with_err_handle(db, contexts=[rule])
     return rule
+
+
+def clone_scoring_rules(
+    db: Session,
+    source_version: SurveyVersion,
+    target_version: SurveyVersion,
+) -> list[SurveyScoringRule]:
+    rules = list_scoring_rules(db, source_version.id)
+    clones: list[SurveyScoringRule] = []
+    for source in rules:
+        clone = SurveyScoringRule(
+            survey_version_id=target_version.id,
+            scoring_key=source.scoring_key,
+            scoring_schema=source.scoring_schema,
+        )
+        db.add(clone)
+        clones.append(clone)
+    if clones:
+        flush_with_err_handle(db, contexts=clones)
+    return clones
 
 
 def update_scoring_rule(db: Session, rule: SurveyScoringRule, data: UpdateScoringRuleRequest) -> SurveyScoringRule:

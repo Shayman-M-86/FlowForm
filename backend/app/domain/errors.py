@@ -220,6 +220,28 @@ class VersionAlreadyArchivedError(AppError):
         )
 
 
+class VersionNotPublishedError(AppError):
+    """Error raised when an operation requires a published version."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="VERSION_NOT_PUBLISHED",
+            message="Version is not published",
+        )
+
+
+class VersionIsActivePublishedError(AppError):
+    """Error raised when attempting to archive the active published version directly."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="VERSION_IS_ACTIVE_PUBLISHED",
+            message="Cannot archive the active published version directly; unpublish it first",
+        )
+
+
 class VersionNotEditableError(AppError):
     """Error raised when attempting to edit content on a non-draft version."""
 

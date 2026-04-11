@@ -26,6 +26,25 @@ def create_version(project_ref: str, survey_id: int):
     return SurveyVersionOut.model_validate(version).model_dump(mode="json"), 201
 
 
+@projects_bp.route(
+    "/<project_ref>/surveys/<int:survey_id>/versions/<int:version_number>/copy-to-draft",
+    methods=["POST"],
+)
+@auth.require_auth()
+def copy_version_to_draft(project_ref: str, survey_id: int, version_number: int):
+    db = get_core_db()
+    user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
+    project_id = resolve_project_ref(db, project_ref, user).id
+    version = survey_service.copy_version_to_draft(
+        db=db,
+        project_id=project_id,
+        survey_id=survey_id,
+        version_number=version_number,
+        actor=user,
+    )
+    return SurveyVersionOut.model_validate(version).model_dump(mode="json"), 201
+
+
 @projects_bp.route("/<project_ref>/surveys/<int:survey_id>/versions/<int:version_number>", methods=["GET"])
 @auth.require_auth()
 def get_version(project_ref: str, survey_id: int, version_number: int):

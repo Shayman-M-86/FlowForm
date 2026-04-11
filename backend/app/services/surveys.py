@@ -50,7 +50,7 @@ class SurveyService:
         return surveys_repo.list_surveys(db, project_id)
 
     @require_project_permission(PERMISSIONS.survey.create)
-    def create_survey(self, db: Session, *, project_id: int, data: CreateSurveyRequest, actor: User) -> Survey:  # noqa: ARG002
+    def create_survey(self, db: Session, *, project_id: int, data: CreateSurveyRequest, actor: User) -> Survey:
 
         if data.default_response_store_id is None:
             data = data.model_copy(
@@ -137,6 +137,26 @@ class SurveyService:
         commit_with_err_handle(db, contexts=[version])
         return version
 
+    @require_survey_permission(PERMISSIONS.survey.create)
+    def copy_version_to_draft(
+        self,
+        db: Session,
+        project_id: int,
+        survey_id: int,
+        version_number: int,
+        actor: User,
+    ) -> SurveyVersion:
+        self._get_survey(db, project_id, survey_id)
+        source_version = self._get_version(db, project_id, survey_id, version_number)
+
+        draft = surveys_repo.create_version(db, survey_id, created_by_user_id=actor.id)
+        content_repo.clone_questions(db, source_version, draft)
+        content_repo.clone_rules(db, source_version, draft)
+        content_repo.clone_scoring_rules(db, source_version, draft)
+
+        commit_with_err_handle(db, contexts=[draft])
+        return draft
+
     @require_survey_permission(PERMISSIONS.survey.publish)
     def publish_version(
         self,
@@ -144,7 +164,7 @@ class SurveyService:
         project_id: int,
         survey_id: int,
         version_number: int,
-        actor: User,  # noqa: ARG002
+        actor: User,
     ) -> SurveyVersion:
         survey = self._get_survey(db, project_id, survey_id)
         version = self._get_version(db, project_id, survey_id, version_number)
@@ -185,9 +205,16 @@ class SurveyService:
         version_number: int,
         actor: User,  # noqa: ARG002
     ) -> SurveyVersion:
-        self._get_survey(db, project_id, survey_id)
+        survey = self._get_survey(db, project_id, survey_id)
         version = self._get_version(db, project_id, survey_id, version_number)
         version_rules.ensure_can_archive(version=version)
+        if survey.published_version_id == version.id:
+            version_rules.ensure_is_published(version=version)
+            result = surveys_repo.unpublish_version(db, survey, version)
+            commit_with_err_handle(db, contexts=[result, version, survey])
+            return result
+
+        version_rules.ensure_is_not_active_published(survey=survey, version=version)
         result = surveys_repo.archive_version(db, version)
-        commit_with_err_handle(db, contexts=[result, version])
+        commit_with_err_handle(db, contexts=[result, version, survey])
         return result

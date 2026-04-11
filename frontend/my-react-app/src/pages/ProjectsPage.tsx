@@ -31,7 +31,7 @@ export function ProjectsPage() {
   const navigate = useNavigate();
 
   const fetcher = useCallback(() => listProjects(), [listProjects]);
-  const { data: projects, loading, error, refetch } = useFetch(fetcher);
+  const { data: projects, loading, error, refetch } = useFetch(fetcher, []);
 
   const [showCreate, setShowCreate] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);

@@ -27,7 +27,7 @@ export function SurveysPage() {
   const id = Number(projectId);
 
   const fetcher = useCallback(() => listSurveys(id), [id]);
-  const { data: surveys, loading, error, refetch } = useFetch(fetcher);
+  const { data: surveys, loading, error, refetch } = useFetch(fetcher, [id]);
 
   const [showCreate, setShowCreate] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);

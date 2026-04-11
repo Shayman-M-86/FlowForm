@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type DependencyList } from "react";
 import { ApiRequestError } from "../api/client";
 
 export interface FetchState<T> {
@@ -10,18 +10,25 @@ export interface FetchState<T> {
 
 export function useFetch<T>(
   fetcher: (() => Promise<T>) | null,
+  deps?: DependencyList,
 ): FetchState<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const counterRef = useRef(0);
+  const fetcherRef = useRef(fetcher);
+
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  }, [fetcher]);
 
   const run = useCallback(() => {
-    if (!fetcher) return;
+    const currentFetcher = fetcherRef.current;
+    if (!currentFetcher) return;
     const id = ++counterRef.current;
     setLoading(true);
     setError(null);
-    fetcher()
+    currentFetcher()
       .then((result) => {
         if (id === counterRef.current) {
           setData(result);
@@ -40,11 +47,11 @@ export function useFetch<T>(
           setLoading(false);
         }
       });
-  }, [fetcher]);
+  }, []);
 
   useEffect(() => {
     run();
-  }, [run]);
+  }, [run, ...(deps ?? [fetcher])]);
 
   return { data, loading, error, refetch: run };
 }

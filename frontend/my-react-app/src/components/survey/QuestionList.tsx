@@ -27,7 +27,11 @@ export function QuestionList({
     () => api.listQuestions(projectId, surveyId, versionNumber),
     [api, projectId, surveyId, versionNumber],
   );
-  const { data: questions, loading, error, refetch } = useFetch(fetcher);
+  const { data: questions, loading, error, refetch } = useFetch(fetcher, [
+    projectId,
+    surveyId,
+    versionNumber,
+  ]);
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<QuestionOut | null>(null);

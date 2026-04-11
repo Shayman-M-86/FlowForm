@@ -106,7 +106,10 @@ def publish_version(
     if survey.published_version_id and survey.published_version_id != version.id:
         current = db.get(SurveyVersion, survey.published_version_id)
         if current is not None:
+            survey.published_version_id = None
+            flush_with_err_handle(db, contexts=[survey, current])
             current.status = "archived"
+            flush_with_err_handle(db, contexts=[current, survey])
 
     version.status = "published"
     version.compiled_schema = compiled_schema
@@ -125,6 +128,15 @@ def publish_version(
 def archive_version(db: Session, version: SurveyVersion) -> SurveyVersion:
     version.status = "archived"
     flush_with_err_handle(db, contexts=[version])
+    return version
+
+
+def unpublish_version(db: Session, survey: Survey, version: SurveyVersion) -> SurveyVersion:
+    survey.published_version_id = None
+    flush_with_err_handle(db, contexts=[survey, version])
+
+    version.status = "archived"
+    flush_with_err_handle(db, contexts=[version, survey])
     return version
 
 

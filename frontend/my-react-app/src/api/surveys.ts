@@ -78,6 +78,17 @@ export function createVersion(
   );
 }
 
+export function copyVersionToDraft(
+  api: ApiExecutor,
+  projectId: number,
+  surveyId: number,
+  versionNumber: number,
+): Promise<SurveyVersionOut> {
+  return api.post<SurveyVersionOut>(
+    `/api/v1/projects/${projectId}/surveys/${surveyId}/versions/${versionNumber}/copy-to-draft`,
+  );
+}
+
 export function publishVersion(
   api: ApiExecutor,
   projectId: number,

@@ -84,6 +84,7 @@ def _survey_ctx(survey: Survey) -> dict[str, object]:
 
 def _survey_version_ctx(version: SurveyVersion) -> dict[str, object]:
     return {
+        "survey_version_id": version.id,
         "survey_id": version.survey_id,
         "version_number": version.version_number,
         "status": version.status,

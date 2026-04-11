@@ -288,7 +288,7 @@ function QuizForm({ survey, token }: QuizFormProps) {
 
 function SlugQuizPage({ slug }: { slug: string }) {
   const fetcher = useCallback(() => getPublicSurvey(slug), [slug]);
-  const { data, loading, error } = useFetch(fetcher);
+  const { data, loading, error } = useFetch(fetcher, [slug]);
 
   if (loading) return <div className="quiz-loading"><Spinner /></div>;
   if (error)   return <div className="quiz-error">{error}</div>;
@@ -307,7 +307,7 @@ function TokenQuizPage() {
     () => (token ? resolveToken(token) : Promise.reject(new Error("No token provided."))),
     [token],
   );
-  const { data, loading, error } = useFetch(token ? fetcher : null);
+  const { data, loading, error } = useFetch(token ? fetcher : null, [token]);
 
   if (!token) return <div className="quiz-error">No token provided in URL (?token=…).</div>;
   if (loading) return <div className="quiz-loading"><Spinner /></div>;

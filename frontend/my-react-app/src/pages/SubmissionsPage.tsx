@@ -56,7 +56,13 @@ export function SubmissionsPage() {
       }),
     [api, pid, sid, status, channel, page],
   );
-  const { data, loading, error, refetch } = useFetch(fetcher);
+  const { data, loading, error, refetch } = useFetch(fetcher, [
+    pid,
+    sid,
+    status,
+    channel,
+    page,
+  ]);
 
   async function toggleExpand(sub: CoreSubmissionOut) {
     if (expandedId === sub.id) {

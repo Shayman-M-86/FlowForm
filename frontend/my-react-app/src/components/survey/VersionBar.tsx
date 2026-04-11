@@ -8,6 +8,7 @@ interface VersionBarProps {
   selectedVersionNumber: number | null;
   onSelect: (versionNumber: number) => void;
   onNewDraft: () => void;
+  onCopyToDraft: (versionNumber: number) => void;
   onPublish: (versionNumber: number) => void;
   onArchive: (versionNumber: number) => void;
   busy: boolean;
@@ -24,6 +25,7 @@ export function VersionBar({
   selectedVersionNumber,
   onSelect,
   onNewDraft,
+  onCopyToDraft,
   onPublish,
   onArchive,
   busy,
@@ -54,6 +56,16 @@ export function VersionBar({
         <Button size="sm" variant="secondary" onClick={onNewDraft} disabled={busy}>
           New Draft
         </Button>
+        {(selected?.status === "published" || selected?.status === "archived") && (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => onCopyToDraft(selected.version_number)}
+            disabled={busy}
+          >
+            Create Draft Copy
+          </Button>
+        )}
         {selected?.status === "draft" && (
           <Button
             size="sm"
@@ -71,7 +83,7 @@ export function VersionBar({
             onClick={() => onArchive(selected.version_number)}
             disabled={busy}
           >
-            Archive
+            Unpublish & Archive
           </Button>
         )}
       </div>

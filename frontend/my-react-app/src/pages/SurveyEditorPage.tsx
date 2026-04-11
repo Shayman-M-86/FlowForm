@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useParams } from "react-router-dom";
 import type { SurveyOut, SurveyVisibility, UpdateSurveyRequest } from "../api/types";
 import { PublicLinkList } from "../components/survey/PublicLinkList";
@@ -45,6 +45,7 @@ export function SurveyEditorPage() {
     getSurvey,
     listVersions,
     createVersion,
+    copyVersionToDraft,
     publishVersion,
     archiveVersion,
     updateSurvey,
@@ -52,18 +53,17 @@ export function SurveyEditorPage() {
 
   const surveyFetcher = useCallback(() => getSurvey(pid, sid), [getSurvey, pid, sid]);
   const { data: survey, loading: surveyLoading, error: surveyError, refetch: refetchSurvey } =
-    useFetch(surveyFetcher);
+    useFetch(surveyFetcher, [pid, sid]);
 
   const versionsFetcher = useCallback(
     () => listVersions(pid, sid),
     [listVersions, pid, sid],
   );
   const { data: versions, loading: versionsLoading, refetch: refetchVersions } =
-    useFetch(versionsFetcher);
+    useFetch(versionsFetcher, [pid, sid]);
 
   const [selectedVersionNumber, setSelectedVersionNumber] = useState<number | null>(null);
   const [tab, setTab] = useState<EditorTab>("questions");
-  const [mountedPanels, setMountedPanels] = useState<MountedPanel[]>([]);
   const [versionBusy, setVersionBusy] = useState(false);
 
   // Inline title edit
@@ -94,24 +94,6 @@ export function SurveyEditorPage() {
             tab,
             versionNumber: resolvedVersionNumber,
           };
-
-  useEffect(() => {
-    setMountedPanels([]);
-  }, [pid, sid]);
-
-  useEffect(() => {
-    if (!activePanel) return;
-    setMountedPanels((current) =>
-      current.some((panel) => panel.key === activePanel.key)
-        ? current
-        : [...current, activePanel],
-    );
-  }, [activePanel]);
-
-  const renderedPanels =
-    activePanel && !mountedPanels.some((panel) => panel.key === activePanel.key)
-      ? [...mountedPanels, activePanel]
-      : mountedPanels;
 
   function renderPanel(panel: MountedPanel) {
     const panelIsReadOnly =
@@ -178,11 +160,24 @@ export function SurveyEditorPage() {
     }
   }
 
+  async function handleCopyToDraft(versionNumber: number) {
+    setVersionBusy(true);
+    try {
+      const version = await copyVersionToDraft(pid, sid, versionNumber);
+      refetchVersions();
+      setSelectedVersionNumber(version.version_number);
+      setTab("questions");
+    } finally {
+      setVersionBusy(false);
+    }
+  }
+
   async function handleArchive(versionNumber: number) {
     setVersionBusy(true);
     try {
       await archiveVersion(pid, sid, versionNumber);
       refetchVersions();
+      refetchSurvey();
     } finally {
       setVersionBusy(false);
     }
@@ -279,6 +274,7 @@ export function SurveyEditorPage() {
           selectedVersionNumber={resolvedVersionNumber}
           onSelect={setSelectedVersionNumber}
           onNewDraft={handleNewDraft}
+          onCopyToDraft={handleCopyToDraft}
           onPublish={handlePublish}
           onArchive={handleArchive}
           busy={versionBusy}
@@ -312,19 +308,11 @@ export function SurveyEditorPage() {
 
           {/* Tab content */}
           <div className="tab-panels">
-            {renderedPanels.map((panel) => {
-              const isActivePanel = panel.key === activePanel?.key;
-
-              return (
-                <div
-                  key={panel.key}
-                  className={`tab-panel ${isActivePanel ? "" : "tab-panel--hidden"}`}
-                  hidden={!isActivePanel}
-                >
-                  {renderPanel(panel)}
-                </div>
-              );
-            })}
+            {activePanel && (
+              <div key={activePanel.key} className="tab-panel">
+                {renderPanel(activePanel)}
+              </div>
+            )}
           </div>
         </>
       )}

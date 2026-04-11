@@ -81,6 +81,8 @@ export function useApi() {
         surveysApi.getVersion(executor, projectId, surveyId, versionNumber),
       createVersion: (projectId: number, surveyId: number) =>
         surveysApi.createVersion(executor, projectId, surveyId),
+      copyVersionToDraft: (projectId: number, surveyId: number, versionNumber: number) =>
+        surveysApi.copyVersionToDraft(executor, projectId, surveyId, versionNumber),
       publishVersion: (projectId: number, surveyId: number, versionNumber: number) =>
         surveysApi.publishVersion(executor, projectId, surveyId, versionNumber),
       archiveVersion: (projectId: number, surveyId: number, versionNumber: number) =>

@@ -322,7 +322,11 @@ export function RuleList({ projectId, surveyId, versionNumber, readOnly }: RuleL
     () => api.listRules(projectId, surveyId, versionNumber),
     [api, projectId, surveyId, versionNumber],
   );
-  const { data: rules, loading, error, refetch } = useFetch(fetcher);
+  const { data: rules, loading, error, refetch } = useFetch(fetcher, [
+    projectId,
+    surveyId,
+    versionNumber,
+  ]);
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing,    setEditing]    = useState<RuleOut | null>(null);

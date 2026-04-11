@@ -22,7 +22,7 @@ export function PublicLinkList({ projectId, surveyId }: PublicLinkListProps) {
     () => api.listPublicLinks(projectId, surveyId),
     [api, projectId, surveyId],
   );
-  const { data, loading, error, refetch } = useFetch(fetcher);
+  const { data, loading, error, refetch } = useFetch(fetcher, [projectId, surveyId]);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [allowResponse, setAllowResponse] = useState(true);
