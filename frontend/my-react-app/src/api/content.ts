@@ -20,31 +20,31 @@ export function listQuestions(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
 ): Promise<QuestionOut[]> {
-  return api.get<QuestionOut[]>(`${vBase(projectId, surveyId, versionId)}/questions`);
+  return api.get<QuestionOut[]>(`${vBase(projectId, surveyId, versionNumber)}/questions`);
 }
 
 export function createQuestion(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
   data: CreateQuestionRequest,
 ): Promise<QuestionOut> {
-  return api.post<QuestionOut>(`${vBase(projectId, surveyId, versionId)}/questions`, data);
+  return api.post<QuestionOut>(`${vBase(projectId, surveyId, versionNumber)}/questions`, data);
 }
 
 export function updateQuestion(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
   questionId: number,
   data: UpdateQuestionRequest,
 ): Promise<QuestionOut> {
   return api.patch<QuestionOut>(
-    `${vBase(projectId, surveyId, versionId)}/questions/${questionId}`,
+    `${vBase(projectId, surveyId, versionNumber)}/questions/${questionId}`,
     data,
   );
 }
@@ -53,10 +53,10 @@ export function deleteQuestion(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
   questionId: number,
 ): Promise<void> {
-  return api.del(`${vBase(projectId, surveyId, versionId)}/questions/${questionId}`);
+  return api.del(`${vBase(projectId, surveyId, versionNumber)}/questions/${questionId}`);
 }
 
 // ── Rules ─────────────────────────────────────────────────────────────────────
@@ -65,31 +65,31 @@ export function listRules(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
 ): Promise<RuleOut[]> {
-  return api.get<RuleOut[]>(`${vBase(projectId, surveyId, versionId)}/rules`);
+  return api.get<RuleOut[]>(`${vBase(projectId, surveyId, versionNumber)}/rules`);
 }
 
 export function createRule(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
   data: CreateRuleRequest,
 ): Promise<RuleOut> {
-  return api.post<RuleOut>(`${vBase(projectId, surveyId, versionId)}/rules`, data);
+  return api.post<RuleOut>(`${vBase(projectId, surveyId, versionNumber)}/rules`, data);
 }
 
 export function updateRule(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
   ruleId: number,
   data: UpdateRuleRequest,
 ): Promise<RuleOut> {
   return api.patch<RuleOut>(
-    `${vBase(projectId, surveyId, versionId)}/rules/${ruleId}`,
+    `${vBase(projectId, surveyId, versionNumber)}/rules/${ruleId}`,
     data,
   );
 }
@@ -98,10 +98,10 @@ export function deleteRule(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
   ruleId: number,
 ): Promise<void> {
-  return api.del(`${vBase(projectId, surveyId, versionId)}/rules/${ruleId}`);
+  return api.del(`${vBase(projectId, surveyId, versionNumber)}/rules/${ruleId}`);
 }
 
 // ── Scoring Rules ─────────────────────────────────────────────────────────────
@@ -110,20 +110,20 @@ export function listScoringRules(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
 ): Promise<ScoringRuleOut[]> {
-  return api.get<ScoringRuleOut[]>(`${vBase(projectId, surveyId, versionId)}/scoring-rules`);
+  return api.get<ScoringRuleOut[]>(`${vBase(projectId, surveyId, versionNumber)}/scoring-rules`);
 }
 
 export function createScoringRule(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
   data: CreateScoringRuleRequest,
 ): Promise<ScoringRuleOut> {
   return api.post<ScoringRuleOut>(
-    `${vBase(projectId, surveyId, versionId)}/scoring-rules`,
+    `${vBase(projectId, surveyId, versionNumber)}/scoring-rules`,
     data,
   );
 }
@@ -132,12 +132,12 @@ export function updateScoringRule(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
   scoringRuleId: number,
   data: UpdateScoringRuleRequest,
 ): Promise<ScoringRuleOut> {
   return api.patch<ScoringRuleOut>(
-    `${vBase(projectId, surveyId, versionId)}/scoring-rules/${scoringRuleId}`,
+    `${vBase(projectId, surveyId, versionNumber)}/scoring-rules/${scoringRuleId}`,
     data,
   );
 }
@@ -146,8 +146,8 @@ export function deleteScoringRule(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
   scoringRuleId: number,
 ): Promise<void> {
-  return api.del(`${vBase(projectId, surveyId, versionId)}/scoring-rules/${scoringRuleId}`);
+  return api.del(`${vBase(projectId, surveyId, versionNumber)}/scoring-rules/${scoringRuleId}`);
 }

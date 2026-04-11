@@ -312,15 +312,15 @@ function RuleEditorForm({ state, onChange }: RuleEditorFormProps) {
 interface RuleListProps {
   projectId: number;
   surveyId:  number;
-  versionId: number;
+  versionNumber: number;
   readOnly?: boolean;
 }
 
-export function RuleList({ projectId, surveyId, versionId, readOnly }: RuleListProps) {
+export function RuleList({ projectId, surveyId, versionNumber, readOnly }: RuleListProps) {
   const api = useApi();
   const fetcher = useCallback(
-    () => api.listRules(projectId, surveyId, versionId),
-    [api, projectId, surveyId, versionId],
+    () => api.listRules(projectId, surveyId, versionNumber),
+    [api, projectId, surveyId, versionNumber],
   );
   const { data: rules, loading, error, refetch } = useFetch(fetcher);
 
@@ -365,9 +365,9 @@ export function RuleList({ projectId, surveyId, versionId, readOnly }: RuleListP
         rule_schema: buildRuleSchema(editorState),
       };
       if (editing) {
-        await api.updateRule(projectId, surveyId, versionId, editing.id, data);
+        await api.updateRule(projectId, surveyId, versionNumber, editing.id, data);
       } else {
-        await api.createRule(projectId, surveyId, versionId, data);
+        await api.createRule(projectId, surveyId, versionNumber, data);
       }
       refetch();
       setEditorOpen(false);
@@ -380,7 +380,7 @@ export function RuleList({ projectId, surveyId, versionId, readOnly }: RuleListP
 
   async function handleDelete(r: RuleOut) {
     if (!confirm(`Delete rule "${r.rule_key}"?`)) return;
-    await api.deleteRule(projectId, surveyId, versionId, r.id);
+    await api.deleteRule(projectId, surveyId, versionNumber, r.id);
     refetch();
   }
 

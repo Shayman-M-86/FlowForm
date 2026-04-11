@@ -341,15 +341,20 @@ function ConfigEditor({ state, onChange }: ConfigEditorProps) {
 interface ScoringRuleListProps {
   projectId: number;
   surveyId:  number;
-  versionId: number;
+  versionNumber: number;
   readOnly?: boolean;
 }
 
-export function ScoringRuleList({ projectId, surveyId, versionId, readOnly }: ScoringRuleListProps) {
+export function ScoringRuleList({
+  projectId,
+  surveyId,
+  versionNumber,
+  readOnly,
+}: ScoringRuleListProps) {
   const api = useApi();
   const fetcher = useCallback(
-    () => api.listScoringRules(projectId, surveyId, versionId),
-    [api, projectId, surveyId, versionId],
+    () => api.listScoringRules(projectId, surveyId, versionNumber),
+    [api, projectId, surveyId, versionNumber],
   );
   const { data: rules, loading, error, refetch } = useFetch(fetcher);
 
@@ -396,9 +401,9 @@ export function ScoringRuleList({ projectId, surveyId, versionId, readOnly }: Sc
         scoring_schema: buildScoringSchema(editorState),
       };
       if (editing) {
-        await api.updateScoringRule(projectId, surveyId, versionId, editing.id, data);
+        await api.updateScoringRule(projectId, surveyId, versionNumber, editing.id, data);
       } else {
-        await api.createScoringRule(projectId, surveyId, versionId, data);
+        await api.createScoringRule(projectId, surveyId, versionNumber, data);
       }
       refetch();
       setEditorOpen(false);
@@ -411,7 +416,7 @@ export function ScoringRuleList({ projectId, surveyId, versionId, readOnly }: Sc
 
   async function handleDelete(r: ScoringRuleOut) {
     if (!confirm(`Delete scoring rule "${r.scoring_key}"?`)) return;
-    await api.deleteScoringRule(projectId, surveyId, versionId, r.id);
+    await api.deleteScoringRule(projectId, surveyId, versionNumber, r.id);
     refetch();
   }
 

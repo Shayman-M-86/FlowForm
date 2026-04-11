@@ -5,11 +5,11 @@ import "./VersionBar.css";
 
 interface VersionBarProps {
   versions: SurveyVersionOut[];
-  selectedId: number | null;
-  onSelect: (id: number) => void;
+  selectedVersionNumber: number | null;
+  onSelect: (versionNumber: number) => void;
   onNewDraft: () => void;
-  onPublish: (versionId: number) => void;
-  onArchive: (versionId: number) => void;
+  onPublish: (versionNumber: number) => void;
+  onArchive: (versionNumber: number) => void;
   busy: boolean;
 }
 
@@ -21,14 +21,14 @@ const STATUS_BADGE: Record<VersionStatus, "muted" | "success" | "warning"> = {
 
 export function VersionBar({
   versions,
-  selectedId,
+  selectedVersionNumber,
   onSelect,
   onNewDraft,
   onPublish,
   onArchive,
   busy,
 }: VersionBarProps) {
-  const selected = versions.find((v) => v.id === selectedId);
+  const selected = versions.find((v) => v.version_number === selectedVersionNumber);
 
   return (
     <div className="version-bar">
@@ -36,13 +36,13 @@ export function VersionBar({
         <span className="version-bar__label">Version</span>
         <select
           className="version-bar__select"
-          value={selectedId ?? ""}
+          value={selectedVersionNumber ?? ""}
           onChange={(e) => onSelect(Number(e.target.value))}
           disabled={versions.length === 0}
         >
           {versions.length === 0 && <option value="">No versions</option>}
           {versions.map((v) => (
-            <option key={v.id} value={v.id}>
+            <option key={v.version_number} value={v.version_number}>
               v{v.version_number} — {v.status}
             </option>
           ))}
@@ -58,7 +58,7 @@ export function VersionBar({
           <Button
             size="sm"
             variant="primary"
-            onClick={() => onPublish(selected.id)}
+            onClick={() => onPublish(selected.version_number)}
             disabled={busy}
           >
             Publish
@@ -68,7 +68,7 @@ export function VersionBar({
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => onArchive(selected.id)}
+            onClick={() => onArchive(selected.version_number)}
             disabled={busy}
           >
             Archive

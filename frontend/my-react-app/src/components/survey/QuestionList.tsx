@@ -12,15 +12,20 @@ import "./QuestionList.css";
 interface QuestionListProps {
   projectId: number;
   surveyId: number;
-  versionId: number;
+  versionNumber: number;
   readOnly?: boolean;
 }
 
-export function QuestionList({ projectId, surveyId, versionId, readOnly }: QuestionListProps) {
+export function QuestionList({
+  projectId,
+  surveyId,
+  versionNumber,
+  readOnly,
+}: QuestionListProps) {
   const api = useApi();
   const fetcher = useCallback(
-    () => api.listQuestions(projectId, surveyId, versionId),
-    [api, projectId, surveyId, versionId],
+    () => api.listQuestions(projectId, surveyId, versionNumber),
+    [api, projectId, surveyId, versionNumber],
   );
   const { data: questions, loading, error, refetch } = useFetch(fetcher);
 
@@ -32,16 +37,16 @@ export function QuestionList({ projectId, surveyId, versionId, readOnly }: Quest
 
   async function handleSave(data: Parameters<typeof api.createQuestion>[3]) {
     if (editing) {
-      await api.updateQuestion(projectId, surveyId, versionId, editing.id, data);
+      await api.updateQuestion(projectId, surveyId, versionNumber, editing.id, data);
     } else {
-      await api.createQuestion(projectId, surveyId, versionId, data);
+      await api.createQuestion(projectId, surveyId, versionNumber, data);
     }
     refetch(); // only reached if the API call succeeded
   }
 
   async function handleDelete(q: QuestionOut) {
     if (!confirm(`Delete question "${q.question_key}"?`)) return;
-    await api.deleteQuestion(projectId, surveyId, versionId, q.id);
+    await api.deleteQuestion(projectId, surveyId, versionNumber, q.id);
     refetch();
   }
 

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.error_handling import flush_with_err_handle
 from app.domain.permissions import PERMISSIONS
 from app.repositories.permissions_repo import get_permissions_by_names
+from app.repositories.response_stores_repo import get_or_create_platform_primary_store
 from app.schema.api.requests.projects import CreateProjectRequest, UpdateProjectRequest
 from app.schema.orm.core.project import Project, ProjectMembership, ProjectRole
 
@@ -60,6 +61,12 @@ def create_project(
     )
     db.add(project)
     flush_with_err_handle(db, contexts=[project])
+
+    get_or_create_platform_primary_store(
+        db,
+        project.id,
+        created_by_user_id=created_by_user_id,
+    )
 
     # Create the Owner system role with all permissions for this project.
     owner_role = ProjectRole(

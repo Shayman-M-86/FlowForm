@@ -61,10 +61,10 @@ export function getVersion(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
 ): Promise<SurveyVersionOut> {
   return api.get<SurveyVersionOut>(
-    `/api/v1/projects/${projectId}/surveys/${surveyId}/versions/${versionId}`,
+    `/api/v1/projects/${projectId}/surveys/${surveyId}/versions/${versionNumber}`,
   );
 }
 
@@ -82,10 +82,10 @@ export function publishVersion(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
 ): Promise<SurveyVersionOut> {
   return api.post<SurveyVersionOut>(
-    `/api/v1/projects/${projectId}/surveys/${surveyId}/versions/${versionId}/publish`,
+    `/api/v1/projects/${projectId}/surveys/${surveyId}/versions/${versionNumber}/publish`,
   );
 }
 
@@ -93,9 +93,9 @@ export function archiveVersion(
   api: ApiExecutor,
   projectId: number,
   surveyId: number,
-  versionId: number,
+  versionNumber: number,
 ): Promise<SurveyVersionOut> {
   return api.post<SurveyVersionOut>(
-    `/api/v1/projects/${projectId}/surveys/${surveyId}/versions/${versionId}/archive`,
+    `/api/v1/projects/${projectId}/surveys/${surveyId}/versions/${versionNumber}/archive`,
   );
 }

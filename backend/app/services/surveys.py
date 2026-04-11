@@ -3,17 +3,46 @@ from sqlalchemy.orm import Session
 from app.db.error_handling import commit_with_err_handle
 from app.domain import survey_rules, version_rules
 from app.domain.permissions import PERMISSIONS
-from app.repositories import content_repo, surveys_repo
+from app.repositories import content_repo, response_stores_repo, surveys_repo
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.user import User
 from app.services.access.access_service import require_project_permission, require_survey_permission
 
-DEFAULT_RESPONSE_STORE_ID = 1  # TODO: This should be set to a real default response store ID
-
 
 class SurveyService:
     """Service for survey and survey version operations."""
+
+    def _ensure_project_default_response_store_id(
+        self,
+        db: Session,
+        *,
+        project_id: int,
+        created_by_user_id: int | None,
+    ) -> int:
+        store = response_stores_repo.get_or_create_platform_primary_store(
+            db,
+            project_id,
+            created_by_user_id=created_by_user_id,
+        )
+        return store.id
+
+    def _ensure_survey_default_response_store(
+        self,
+        db: Session,
+        *,
+        survey: Survey,
+        created_by_user_id: int | None,
+    ) -> int:
+        default_response_store_id = self._ensure_project_default_response_store_id(
+            db,
+            project_id=survey.project_id,
+            created_by_user_id=created_by_user_id,
+        )
+        return survey_rules.ensure_default_response_store(
+            survey=survey,
+            default_response_store_id=default_response_store_id,
+        )
 
     # ── Surveys ───────────────────────────────────────────────────────────────
     @require_project_permission(PERMISSIONS.survey.view)
@@ -23,6 +52,16 @@ class SurveyService:
     @require_project_permission(PERMISSIONS.survey.create)
     def create_survey(self, db: Session, *, project_id: int, data: CreateSurveyRequest, actor: User) -> Survey:  # noqa: ARG002
 
+        if data.default_response_store_id is None:
+            data = data.model_copy(
+                update={
+                    "default_response_store_id": self._ensure_project_default_response_store_id(
+                        db,
+                        project_id=project_id,
+                        created_by_user_id=actor.id,
+                    )
+                }
+            )
         survey = surveys_repo.create_survey(db, project_id, data)
         commit_with_err_handle(db, contexts=[survey])
         return survey
@@ -127,9 +166,10 @@ class SurveyService:
                 {"id": s.id, "scoring_key": s.scoring_key, "scoring_schema": s.scoring_schema} for s in scoring_rules
             ],
         }
-        survey_rules.ensure_default_response_store(
+        self._ensure_survey_default_response_store(
+            db,
             survey=survey,
-            default_response_store_id=DEFAULT_RESPONSE_STORE_ID,
+            created_by_user_id=actor.id,
         )
 
         result = surveys_repo.publish_version(db, survey, version, compiled)

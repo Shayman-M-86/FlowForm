@@ -22,7 +22,7 @@ type EditorTab = "questions" | "rules" | "scoring" | "links";
 type MountedPanel = {
   key: string;
   tab: EditorTab;
-  versionId: number | null;
+  versionNumber: number | null;
 };
 
 const TABS: { id: EditorTab; label: string }[] = [
@@ -61,7 +61,7 @@ export function SurveyEditorPage() {
   const { data: versions, loading: versionsLoading, refetch: refetchVersions } =
     useFetch(versionsFetcher);
 
-  const [selectedVersionId, setSelectedVersionId] = useState<number | null>(null);
+  const [selectedVersionNumber, setSelectedVersionNumber] = useState<number | null>(null);
   const [tab, setTab] = useState<EditorTab>("questions");
   const [mountedPanels, setMountedPanels] = useState<MountedPanel[]>([]);
   const [versionBusy, setVersionBusy] = useState(false);
@@ -77,21 +77,22 @@ export function SurveyEditorPage() {
   const [settingsError, setSettingsError] = useState<string | null>(null);
 
   // Resolve selected version (prefer the one selected; fall back to latest)
-  const resolvedVersionId =
-    selectedVersionId ??
-    (versions && versions.length > 0 ? versions[versions.length - 1].id : null);
+  const resolvedVersionNumber =
+    selectedVersionNumber ??
+    (versions && versions.length > 0 ? versions[versions.length - 1].version_number : null);
 
-  const selectedVersion = versions?.find((v) => v.id === resolvedVersionId) ?? null;
+  const selectedVersion =
+    versions?.find((version) => version.version_number === resolvedVersionNumber) ?? null;
   const isReadOnly = selectedVersion?.status !== "draft";
   const activePanel: MountedPanel | null =
     tab === "links"
-      ? { key: `${pid}:${sid}:links`, tab: "links", versionId: null }
-      : resolvedVersionId === null
+      ? { key: `${pid}:${sid}:links`, tab: "links", versionNumber: null }
+      : resolvedVersionNumber === null
         ? null
         : {
-            key: `${pid}:${sid}:${tab}:${resolvedVersionId}`,
+            key: `${pid}:${sid}:${tab}:${resolvedVersionNumber}`,
             tab,
-            versionId: resolvedVersionId,
+            versionNumber: resolvedVersionNumber,
           };
 
   useEffect(() => {
@@ -114,38 +115,39 @@ export function SurveyEditorPage() {
 
   function renderPanel(panel: MountedPanel) {
     const panelIsReadOnly =
-      panel.versionId === null
+      panel.versionNumber === null
         ? isReadOnly
-        : (versions?.find((version) => version.id === panel.versionId)?.status ?? "draft") !== "draft";
+        : (versions?.find((version) => version.version_number === panel.versionNumber)?.status ??
+            "draft") !== "draft";
 
     switch (panel.tab) {
       case "questions":
-        if (panel.versionId === null) return null;
+        if (panel.versionNumber === null) return null;
         return (
           <QuestionList
             projectId={pid}
             surveyId={sid}
-            versionId={panel.versionId}
+            versionNumber={panel.versionNumber}
             readOnly={panelIsReadOnly}
           />
         );
       case "rules":
-        if (panel.versionId === null) return null;
+        if (panel.versionNumber === null) return null;
         return (
           <RuleList
             projectId={pid}
             surveyId={sid}
-            versionId={panel.versionId}
+            versionNumber={panel.versionNumber}
             readOnly={panelIsReadOnly}
           />
         );
       case "scoring":
-        if (panel.versionId === null) return null;
+        if (panel.versionNumber === null) return null;
         return (
           <ScoringRuleList
             projectId={pid}
             surveyId={sid}
-            versionId={panel.versionId}
+            versionNumber={panel.versionNumber}
             readOnly={panelIsReadOnly}
           />
         );
@@ -159,16 +161,16 @@ export function SurveyEditorPage() {
     try {
       const v = await createVersion(pid, sid);
       refetchVersions();
-      setSelectedVersionId(v.id);
+      setSelectedVersionNumber(v.version_number);
     } finally {
       setVersionBusy(false);
     }
   }
 
-  async function handlePublish(versionId: number) {
+  async function handlePublish(versionNumber: number) {
     setVersionBusy(true);
     try {
-      await publishVersion(pid, sid, versionId);
+      await publishVersion(pid, sid, versionNumber);
       refetchVersions();
       refetchSurvey();
     } finally {
@@ -176,10 +178,10 @@ export function SurveyEditorPage() {
     }
   }
 
-  async function handleArchive(versionId: number) {
+  async function handleArchive(versionNumber: number) {
     setVersionBusy(true);
     try {
-      await archiveVersion(pid, sid, versionId);
+      await archiveVersion(pid, sid, versionNumber);
       refetchVersions();
     } finally {
       setVersionBusy(false);
@@ -274,8 +276,8 @@ export function SurveyEditorPage() {
       {versions && (
         <VersionBar
           versions={versions}
-          selectedId={resolvedVersionId}
-          onSelect={setSelectedVersionId}
+          selectedVersionNumber={resolvedVersionNumber}
+          onSelect={setSelectedVersionNumber}
           onNewDraft={handleNewDraft}
           onPublish={handlePublish}
           onArchive={handleArchive}
@@ -283,7 +285,7 @@ export function SurveyEditorPage() {
         />
       )}
 
-      {resolvedVersionId === null ? (
+      {resolvedVersionNumber === null ? (
         <div className="empty-state">
           No versions yet. Create a draft to start adding questions.
         </div>

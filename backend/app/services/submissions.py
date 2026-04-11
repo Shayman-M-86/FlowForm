@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.domain import public_link_rules, submission_rules, survey_rules
 from app.gateway.submission_gateway import SubmissionGateway
-from app.repositories import public_link_repo, submissions_repo, surveys_repo
+from app.repositories import public_link_repo, response_stores_repo, submissions_repo, surveys_repo
+from app.schema.orm.core.survey import Survey
 from app.schema.api.requests.submissions.create import CreateSubmissionRequest, PublicSubmissionRequest
 from app.schema.api.requests.submissions.query import GetSubmissionRequest, ListSubmissionsRequest
 from app.schema.orm.core.survey_submission import SurveySubmission
@@ -39,6 +40,24 @@ class SubmissionContext:
 class SubmissionService:
     """Service layer handling survey submissions, both from authenticated users and via public links."""
 
+    def _ensure_survey_response_store(
+        self,
+        core_db: Session,
+        *,
+        survey: Survey,
+        created_by_user_id: int | None = None,
+    ) -> int:
+        if survey.default_response_store_id is not None:
+            return survey.default_response_store_id
+
+        store = response_stores_repo.get_or_create_platform_primary_store(
+            core_db,
+            survey.project_id,
+            created_by_user_id=created_by_user_id,
+        )
+        survey.default_response_store_id = store.id
+        return store.id
+
     def create_project_submission(
         self,
         core_db: Session,
@@ -59,7 +78,11 @@ class SubmissionService:
             survey_id=survey_id,
             project_id=project_id,
         )
-        response_store_id = survey_rules.ensure_has_response_store(survey=survey)
+        response_store_id = self._ensure_survey_response_store(
+            core_db,
+            survey=survey,
+            created_by_user_id=payload.submitted_by_user_id,
+        )
         logger.info(f"Survey {survey_id} in project {project_id} is published, proceeding with submission creation")
 
         pseudonymous_subject_id = None
@@ -116,7 +139,11 @@ class SubmissionService:
             survey_id=survey.id,
             project_id=survey.project_id,
         )
-        response_store_id = survey_rules.ensure_has_response_store(survey=survey)
+        response_store_id = self._ensure_survey_response_store(
+            core_db,
+            survey=survey,
+            created_by_user_id=survey.created_by_user_id,
+        )
 
         context = SubmissionContext(
             project_id=survey.project_id,
