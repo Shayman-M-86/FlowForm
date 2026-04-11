@@ -22,7 +22,7 @@ BEGIN;
 -- =========================================
 
 INSERT INTO users (id, auth0_user_id, email, display_name, created_at) VALUES
-    (7, 'auth0|flowform-admin',   'alex@flowform.dev',   'Alex Carter',   NOW() - INTERVAL '40 days'),
+    (1, 'auth0|flowform-admin',   'alex@flowform.dev',   'Alex Carter',   NOW() - INTERVAL '40 days'),
     (2, 'auth0|project-owner',    'maya@acme.dev',       'Maya Singh',    NOW() - INTERVAL '35 days'),
     (3, 'auth0|project-editor',   'liam@acme.dev',       'Liam Turner',   NOW() - INTERVAL '30 days'),
     (4, 'auth0|project-viewer',   'zoe@acme.dev',        'Zoe Walker',    NOW() - INTERVAL '28 days'),
@@ -41,15 +41,6 @@ INSERT INTO projects (id, name, slug, created_by_user_id, created_at) VALUES
 -- PERMISSIONS
 -- =========================================
 
-INSERT INTO permissions (id, name) VALUES
-    (1, 'project:read'),
-    (2, 'project:update'),
-    (3, 'survey:read'),
-    (4, 'survey:update'),
-    (5, 'survey:publish'),
-    (6, 'survey:submit'),
-    (7, 'submission:read'),
-    (8, 'submission:manage');
 
 -- =========================================
 -- PROJECT ROLES
@@ -62,12 +53,47 @@ INSERT INTO project_roles (id, project_id, name, is_system_role, created_at) VAL
     (4, 2, 'Owner',  TRUE,  NOW() - INTERVAL '22 days'),
     (5, 2, 'Analyst', TRUE, NOW() - INTERVAL '21 days');
 
-INSERT INTO project_role_permissions (role_id, permission_id) VALUES
-    (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8),
-    (2, 1), (2, 3), (2, 4), (2, 6), (2, 7),
-    (3, 1), (3, 3), (3, 7),
-    (4, 1), (4, 2), (4, 3), (4, 4), (4, 5), (4, 6), (4, 7), (4, 8),
-    (5, 1), (5, 3), (5, 7);
+INSERT INTO project_role_permissions (role_id, permission_id)
+SELECT r.role_id, p.id
+FROM (VALUES
+    -- Owner (role 1): all permissions
+    (1, 'project:edit'),
+    (1, 'project:delete'),
+    (1, 'project:manage_members'),
+    (1, 'project:manage_roles'),
+    (1, 'survey:view'),
+    (1, 'survey:create'),
+    (1, 'survey:edit'),
+    (1, 'survey:delete'),
+    (1, 'survey:publish'),
+    (1, 'survey:archive'),
+    (1, 'submission:view'),
+    -- Editor (role 2)
+    (2, 'survey:view'),
+    (2, 'survey:create'),
+    (2, 'survey:edit'),
+    (2, 'survey:publish'),
+    (2, 'submission:view'),
+    -- Viewer (role 3)
+    (3, 'survey:view'),
+    (3, 'submission:view'),
+    -- Owner (role 4): all permissions
+    (4, 'project:edit'),
+    (4, 'project:delete'),
+    (4, 'project:manage_members'),
+    (4, 'project:manage_roles'),
+    (4, 'survey:view'),
+    (4, 'survey:create'),
+    (4, 'survey:edit'),
+    (4, 'survey:delete'),
+    (4, 'survey:publish'),
+    (4, 'survey:archive'),
+    (4, 'submission:view'),
+    -- Analyst (role 5)
+    (5, 'survey:view'),
+    (5, 'submission:view')
+) AS r(role_id, perm_name)
+JOIN permissions p ON p.name = r.perm_name;
 
 -- =========================================
 -- PROJECT MEMBERSHIPS
@@ -296,10 +322,25 @@ INSERT INTO survey_roles (id, project_id, name, created_at) VALUES
     (2, 1, 'Survey Reviewer', NOW() - INTERVAL '28 days'),
     (3, 2, 'Research Lead', NOW() - INTERVAL '13 days');
 
-INSERT INTO survey_role_permissions (role_id, permission_id) VALUES
-    (1, 3), (1, 4), (1, 5), (1, 7), (1, 8),
-    (2, 3), (2, 7),
-    (3, 3), (3, 4), (3, 5), (3, 7);
+INSERT INTO survey_role_permissions (role_id, permission_id)
+SELECT r.role_id, p.id
+FROM (VALUES
+    -- Survey Admin (role 1)
+    (1, 'survey:edit'),
+    (1, 'survey:delete'),
+    (1, 'survey:publish'),
+    (1, 'survey:archive'),
+    (1, 'submission:view'),
+    -- Survey Reviewer (role 2)
+    (2, 'survey:view'),
+    (2, 'submission:view'),
+    -- Research Lead (role 3)
+    (3, 'survey:view'),
+    (3, 'survey:edit'),
+    (3, 'survey:publish'),
+    (3, 'submission:view')
+) AS r(role_id, perm_name)
+JOIN permissions p ON p.name = r.perm_name;
 
 INSERT INTO survey_membership_roles (project_id, survey_id, membership_id, role_id, created_at) VALUES
     (1, 1, 1, 1, NOW() - INTERVAL '26 days'),

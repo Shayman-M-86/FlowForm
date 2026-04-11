@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import "./Modal.css";
 
 interface ModalProps {
@@ -11,6 +11,8 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children, footer, width = 480 }: ModalProps) {
+  const mouseDownInsideRef = useRef(false);
+
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -23,14 +25,19 @@ export function Modal({ open, onClose, title, children, footer, width = 480 }: M
   if (!open) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div
+      className="modal-backdrop"
+      onMouseDown={() => { mouseDownInsideRef.current = false; }}
+      onMouseUp={() => { if (!mouseDownInsideRef.current) onClose(); }}
+    >
       <div
         className="modal-panel"
         style={{ width }}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => { mouseDownInsideRef.current = true; e.stopPropagation(); }}
+        onMouseUp={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>

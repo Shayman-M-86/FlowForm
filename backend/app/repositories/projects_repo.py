@@ -2,8 +2,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
+from app.domain.permissions import PERMISSIONS
+from app.repositories.permissions_repo import get_permissions_by_names
 from app.schema.api.requests.projects import CreateProjectRequest, UpdateProjectRequest
-from app.schema.orm.core.project import Project, ProjectMembership
+from app.schema.orm.core.project import Project, ProjectMembership, ProjectRole
+
+# The hardcoded name for the system owner role created on every new project.
+OWNER_ROLE_NAME = "Owner"
 
 
 def list_projects(db: Session, user_id: int) -> list[Project]:
@@ -46,7 +51,7 @@ def get_project_by_id(db: Session, project_id: int) -> Project | None:
 def create_project(
     db: Session,
     data: CreateProjectRequest,
-    created_by_user_id: int | None = None,
+    created_by_user_id: int,
 ) -> Project:
     project = Project(
         name=data.name,
@@ -56,9 +61,22 @@ def create_project(
     db.add(project)
     flush_with_err_handle(db, contexts=[project])
 
-    if created_by_user_id is not None:
-        membership = ProjectMembership(user_id=created_by_user_id, project_id=project.id)
-        db.add(membership)
+    # Create the Owner system role with all permissions for this project.
+    owner_role = ProjectRole(
+        project_id=project.id,
+        name=OWNER_ROLE_NAME,
+        is_system_role=True,
+    )
+    owner_role.permissions = get_permissions_by_names(db, list(PERMISSIONS.all()))
+    db.add(owner_role)
+    db.flush()
+
+    membership = ProjectMembership(
+        user_id=created_by_user_id,
+        project_id=project.id,
+        role_id=owner_role.id,
+    )
+    db.add(membership)
 
     return project
 

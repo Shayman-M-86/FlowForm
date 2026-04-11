@@ -12,6 +12,16 @@ export class ApiRequestError extends Error {
     this.status = status;
     this.error = error;
   }
+
+  /** Human-readable message, preferring per-field validation details over the generic top-level message. */
+  get displayMessage(): string {
+    if (this.error.errors && this.error.errors.length > 0) {
+      return this.error.errors
+        .map((e) => (e.field ? `${e.field}: ${e.message}` : e.message))
+        .join("\n");
+    }
+    return this.error.message;
+  }
 }
 
 export interface RequestOptions {

@@ -39,17 +39,44 @@ def parse_query[TModel: BaseModel](model_cls: type[TModel], request_obj: Request
     return model_cls.model_validate(request_obj.args.to_dict())
 
 
+# Fields whose Python name differs from their JSON alias.
+_ALIAS_MAP = {"schema_": "schema"}
+
+
+# Discriminator values injected by Pydantic into error locs for discriminated unions.
+# These are never present in the request JSON and should be stripped from field paths.
+_UNION_TAGS: frozenset[str] = frozenset({"choice", "field", "matching", "rating"})
+
+
+def _loc_to_field(loc: tuple) -> str:
+    """Convert a Pydantic error loc tuple to a dot-separated JSON field path.
+
+    Pydantic discriminated union errors inject the matched discriminator value
+    (e.g. ``"choice"``) as an extra segment into the loc. We strip known
+    discriminator values so the path reflects the actual request JSON structure.
+    """
+    cleaned = [part for part in loc if part not in _UNION_TAGS]
+    return ".".join(_ALIAS_MAP.get(str(p), str(p)) for p in cleaned)
+
+
+_PYDANTIC_MSG_PREFIXES = ("Value error, ", "Assertion failed, ")
+
+
+def _clean_message(msg: str) -> str:
+    """Strip Pydantic internal prefixes from validator messages."""
+    for prefix in _PYDANTIC_MSG_PREFIXES:
+        if msg.startswith(prefix):
+            return msg[len(prefix):]
+    return msg
+
+
 def normalize_pydantic_errors(exc: ValidationError) -> list[dict[str, object]]:
     """Convert Pydantic validation errors into a consistent format for API responses."""
-    normalized: list[dict[str, object]] = []
-
-    for err in exc.errors():
-        normalized.append(
-            {
-                "field": ".".join(str(part) for part in err.get("loc", [])),
-                "message": err.get("msg"),
-                "type": err.get("type"),
-            }
-        )
-
-    return normalized
+    return [
+        {
+            "field": _loc_to_field(err.get("loc", ())),
+            "message": _clean_message(err.get("msg", "")),
+            "type": err.get("type"),
+        }
+        for err in exc.errors(include_url=False)
+    ]

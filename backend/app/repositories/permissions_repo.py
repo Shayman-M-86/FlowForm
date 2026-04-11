@@ -10,6 +10,11 @@ def list_permission_names(db: Session) -> set[str]:
     return set(db.scalars(select(Permission.name)))
 
 
+def get_permissions_by_names(db: Session, names: list[str]) -> list[Permission]:
+    """Fetch Permission rows for the given names."""
+    return list(db.scalars(select(Permission).where(Permission.name.in_(names))))
+
+
 def create_permissions(db: Session, names: list[str]) -> list[Permission]:
     """Create permission rows for the given names."""
     permissions = [Permission(name=name) for name in names]

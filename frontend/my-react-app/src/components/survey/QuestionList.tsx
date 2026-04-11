@@ -36,7 +36,7 @@ export function QuestionList({ projectId, surveyId, versionId, readOnly }: Quest
     } else {
       await api.createQuestion(projectId, surveyId, versionId, data);
     }
-    refetch();
+    refetch(); // only reached if the API call succeeded
   }
 
   async function handleDelete(q: QuestionOut) {

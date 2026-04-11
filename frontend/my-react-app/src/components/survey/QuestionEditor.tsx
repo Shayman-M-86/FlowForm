@@ -3,6 +3,7 @@ import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Modal } from "../ui/Modal";
 import { Select } from "../ui/Select";
+import { ApiRequestError } from "../../api/client";
 import type { CreateQuestionRequest, QuestionOut, QuestionType } from "../../api/types";
 import "./QuestionEditor.css";
 
@@ -11,6 +12,30 @@ interface QuestionEditorProps {
   onClose: () => void;
   onSave: (data: CreateQuestionRequest) => Promise<void>;
   initial?: QuestionOut;
+}
+
+const FIELD_LABELS: Record<string, string> = {
+  "question_schema.label":                  "Question label",
+  "question_schema.schema.max_selected":    "Max selected",
+  "question_schema.schema.min_selected":    "Min selected",
+  "question_schema.schema.field_type":      "Field type",
+  "question_schema.schema.max":             "Max",
+  "question_schema.schema.min":             "Min",
+  "question_schema.schema.options":         "Options",
+  "question_schema.schema.left_items":      "Left items",
+  "question_schema.schema.right_items":     "Right items",
+  "question_schema":                        "Question schema",
+  "question_key":                           "Question key",
+};
+
+function friendlyError(field: string, message: string): string {
+  // option/item label: question_schema.schema.options.N.label
+  if (/^question_schema\.schema\.options\.\d+\.label$/.test(field)) return `Option label: ${message}`;
+  if (/^question_schema\.schema\.options\.\d+\.id$/.test(field))    return `Option ID: ${message}`;
+  if (/^question_schema\.schema\.left_items\.\d+/.test(field))      return `Left item: ${message}`;
+  if (/^question_schema\.schema\.right_items\.\d+/.test(field))     return `Right item: ${message}`;
+  const label = FIELD_LABELS[field];
+  return label ? `${label}: ${message}` : message;
 }
 
 const FAMILY_OPTIONS = [
@@ -87,7 +112,7 @@ export function QuestionEditor({ open, onClose, onSave, initial }: QuestionEdito
     initial?.question_schema ?? defaultQuestionSchema(initFamily),
   );
   const [saving, setSaving] = useState(false);
-  const [error,  setError]  = useState<string | null>(null);
+  const [error,  setError]  = useState<string | string[] | null>(null);
 
   function changeFamily(f: QuestionType) {
     setFamily(f);
@@ -161,7 +186,11 @@ export function QuestionEditor({ open, onClose, onSave, initial }: QuestionEdito
       await onSave({ question_key: key.trim(), question_schema: schema });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save question.");
+      if (err instanceof ApiRequestError && err.error.errors?.length) {
+        setError(err.error.errors.map((e) => friendlyError(e.field ?? "", e.message)));
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to save question.");
+      }
     } finally {
       setSaving(false);
     }
@@ -182,7 +211,13 @@ export function QuestionEditor({ open, onClose, onSave, initial }: QuestionEdito
         </>
       }
     >
-      {error && <div className="error-banner">{error}</div>}
+      {error && (
+        <div className="error-banner">
+          {Array.isArray(error)
+            ? error.map((msg, i) => <div key={i}>{msg}</div>)
+            : error}
+        </div>
+      )}
 
       <Input
         label="Question key"

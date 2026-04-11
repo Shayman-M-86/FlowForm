@@ -112,10 +112,12 @@ def publish_version(
     version.compiled_schema = compiled_schema
     version.published_at = datetime.now(UTC)
 
-    flush_with_err_handle(db, contexts=[version])  # make sure version is published before survey points at it
+    # SQLAlchemy flushes all dirty session objects together, so pass both as
+    # contexts so any integrity error on either is correctly translated.
+    flush_with_err_handle(db, contexts=[version, survey])
 
     survey.published_version_id = version.id
-    flush_with_err_handle(db, contexts=[survey])
+    flush_with_err_handle(db, contexts=[survey, version])
 
     return version
 

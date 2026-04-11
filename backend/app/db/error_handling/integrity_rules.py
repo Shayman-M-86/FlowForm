@@ -58,6 +58,8 @@ allowed_parameters = {
     "project_role_id",
     "name",
     "role_id",
+    "default_response_store_id",
+    "published_version_id",
 }
 
 
@@ -75,6 +77,8 @@ def _survey_ctx(survey: Survey) -> dict[str, object]:
         "project_id": survey.project_id,
         "visibility": survey.visibility,
         "has_published_version": survey.published_version_id is not None,
+        "published_version_id": survey.published_version_id,
+        "default_response_store_id": survey.default_response_store_id,
     }
 
 
@@ -213,7 +217,7 @@ SURVEY_RULES: tuple[DbErrorRule, ...] = (
             409,
             "SURVEY_PUBLISHED_VERSION_INVALID",
             f"Published version id={ctx['published_version_id']} must be a"
-            " published, non-deleted version of survey id={ctx['survey_id']}.",
+            f" published, non-deleted version of survey id={ctx['survey_id']}.",
         ),
         extractor=_survey_ctx,
     ),
