@@ -4,7 +4,7 @@ from pydantic import BaseModel, field_validator
 
 
 def _validate_expires_at(value: datetime | None) -> datetime | None:
-    if value is not None and value <= datetime.now(tz=UTC):
+    if value is not None and value <= datetime.now():
         raise ValueError("expires_at must be a future datetime.")
     return value
 
