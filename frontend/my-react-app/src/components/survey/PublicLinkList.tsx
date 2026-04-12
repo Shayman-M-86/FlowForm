@@ -39,7 +39,7 @@ export function PublicLinkList({ projectId, surveyId }: PublicLinkListProps) {
     try {
       const result = await api.createPublicLink(projectId, surveyId, {
         allow_response: allowResponse,
-        expires_at: expiresAt || null,
+        expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
       });
       refetch();
       setCreateOpen(false);

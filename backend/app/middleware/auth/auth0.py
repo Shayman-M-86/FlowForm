@@ -14,7 +14,8 @@ from authlib.jose import JsonWebKey, JsonWebToken
 from flask import Flask, g, request
 
 from app.core.config import Settings
-from app.core.errors import AuthError
+
+from . import auth_errors
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -45,52 +46,41 @@ class AuthExtension:
         parts = auth_header.split()
 
         if not parts:
-            raise AuthError(
-                message="Authorization header is expected.",
-                code="MISSING_AUTHORIZATION_HEADER",
-                status_code=401,
-            )
+            raise auth_errors.missing_authorization_header()
 
         if parts[0].lower() != "bearer":
-            raise AuthError(
-                message="Authorization header must start with Bearer.",
-                code="INVALID_AUTHORIZATION_HEADER",
-                status_code=401,
-            )
+            raise auth_errors.invalid_authorization_header_scheme()
 
         if len(parts) != 2:
-            raise AuthError(
-                message="Authorization header must be Bearer <token>.",
-                code="INVALID_AUTHORIZATION_HEADER",
-                status_code=401,
-            )
+            raise auth_errors.invalid_authorization_header()
 
         return parts[1]
+
+    def _clear_auth_context(self) -> None:
+        """Clear any authenticated user context from the current request."""
+        g.user_claims = None
+        g.user_sub = None
+
+    def _store_auth_context(self, claims: dict[str, Any]) -> None:
+        """Store verified token claims on the current request context."""
+        g.user_claims = claims
+        g.user_sub = claims.get("sub")
 
     def _verify_access_token(self, token: str) -> dict[str, Any]:
         """Verify an Auth0 access token and return its claims."""
         if self.api_client is None:
-            raise AuthError(
-                message="AuthExtension is not initialized with an API client.",
-                code="AUTH_EXTENSION_NOT_INITIALIZED",
-                status_code=500,
-            )
+            raise auth_errors.auth_extension_not_initialized()
         try:
             claims = asyncio.run(self.api_client.verify_access_token(token))
         except BaseAuthError as exc:
-            raise AuthError(
-                message=str(exc),
-                code="INVALID_ACCESS_TOKEN",
+            raise auth_errors.invalid_access_token(
+                str(exc),
                 status_code=exc.get_status_code(),
                 headers=exc.get_headers() or {},
             ) from exc
 
         if not isinstance(claims, dict):
-            raise AuthError(
-                message="Token claims payload was not an object.",
-                code="INVALID_ACCESS_TOKEN_CLAIMS",
-                status_code=401,
-            )
+            raise auth_errors.invalid_access_token_claims()
 
         return claims
 
@@ -105,11 +95,7 @@ class AuthExtension:
             metadata = response.json()
 
             if not isinstance(metadata, dict):
-                raise AuthError(
-                    message="OIDC metadata response was not an object.",
-                    code="INVALID_OIDC_METADATA",
-                    status_code=500,
-                )
+                raise auth_errors.invalid_oidc_metadata_response()
 
             self._oidc_metadata = metadata
 
@@ -122,22 +108,14 @@ class AuthExtension:
             jwks_uri = metadata.get("jwks_uri")
 
             if not isinstance(jwks_uri, str) or not jwks_uri:
-                raise AuthError(
-                    message="OIDC metadata did not contain a JWKS URI.",
-                    code="INVALID_OIDC_METADATA",
-                    status_code=500,
-                )
+                raise auth_errors.invalid_oidc_metadata_missing_jwks_uri()
 
             response = requests.get(jwks_uri, timeout=10)
             response.raise_for_status()
             jwks_data = response.json()
 
             if not isinstance(jwks_data, dict) or not isinstance(jwks_data.get("keys"), list):
-                raise AuthError(
-                    message="JWKS response was invalid.",
-                    code="INVALID_JWKS",
-                    status_code=500,
-                )
+                raise auth_errors.invalid_jwks()
 
             self._jwks_data = jwks_data
 
@@ -146,29 +124,17 @@ class AuthExtension:
     def verify_id_token(self, id_token: str) -> dict[str, Any]:
         """Verify an Auth0 ID token and return its claims."""
         if not id_token:
-            raise AuthError(
-                message="ID token is required.",
-                code="MISSING_ID_TOKEN",
-                status_code=400,
-            )
+            raise auth_errors.missing_id_token()
 
         expected_client_id = self.settings.flowform.auth0.client_id
         if not expected_client_id:
-            raise AuthError(
-                message="Auth0 client ID is not configured.",
-                code="AUTH0_CLIENT_ID_NOT_CONFIGURED",
-                status_code=500,
-            )
+            raise auth_errors.auth0_client_id_not_configured()
 
         try:
             header = get_unverified_header(id_token)
             kid = header["kid"]
         except Exception as exc:
-            raise AuthError(
-                message=f"Failed to parse ID token header: {exc}",
-                code="INVALID_ID_TOKEN",
-                status_code=401,
-            ) from exc
+            raise auth_errors.invalid_id_token(f"Failed to parse ID token header: {exc}") from exc
 
         jwks_data = self._load_jwks()
         matching_key_dict = next(
@@ -177,11 +143,7 @@ class AuthExtension:
         )
 
         if matching_key_dict is None:
-            raise AuthError(
-                message=f"No matching key found for ID token kid: {kid}",
-                code="INVALID_ID_TOKEN",
-                status_code=401,
-            )
+            raise auth_errors.invalid_id_token(f"No matching key found for ID token kid: {kid}")
 
         public_key = JsonWebKey.import_key(matching_key_dict)
 
@@ -190,50 +152,26 @@ class AuthExtension:
             # does not include it even though the runtime accepts it.
             claims = self._id_token_jwt.decode(id_token, cast(Any, public_key))
         except Exception as exc:
-            raise AuthError(
-                message=f"ID token signature verification failed: {exc}",
-                code="INVALID_ID_TOKEN",
-                status_code=401,
-            ) from exc
+            raise auth_errors.invalid_id_token(f"ID token signature verification failed: {exc}") from exc
 
         metadata = self._discover_oidc_metadata()
         issuer = metadata.get("issuer")
         if claims.get("iss") != issuer:
-            raise AuthError(
-                message="ID token issuer mismatch.",
-                code="INVALID_ID_TOKEN",
-                status_code=401,
-            )
+            raise auth_errors.invalid_id_token("ID token issuer mismatch.")
 
         actual_aud = claims.get("aud")
         if isinstance(actual_aud, list):
             if expected_client_id not in actual_aud:
-                raise AuthError(
-                    message="ID token audience mismatch.",
-                    code="INVALID_ID_TOKEN",
-                    status_code=401,
-                )
+                raise auth_errors.invalid_id_token("ID token audience mismatch.")
         elif actual_aud != expected_client_id:
-            raise AuthError(
-                message="ID token audience mismatch.",
-                code="INVALID_ID_TOKEN",
-                status_code=401,
-            )
+            raise auth_errors.invalid_id_token("ID token audience mismatch.")
 
         now = int(time.time())
         if "exp" not in claims or now >= claims["exp"]:
-            raise AuthError(
-                message="ID token is expired.",
-                code="INVALID_ID_TOKEN",
-                status_code=401,
-            )
+            raise auth_errors.invalid_id_token("ID token is expired.")
 
         if "iat" not in claims:
-            raise AuthError(
-                message="ID token is missing the issued-at claim.",
-                code="INVALID_ID_TOKEN",
-                status_code=401,
-            )
+            raise auth_errors.invalid_id_token("ID token is missing the issued-at claim.")
 
         return dict(claims)
 
@@ -242,12 +180,7 @@ class AuthExtension:
         token_scopes = set(str(claims.get("scope", "")).split())
 
         if required_scope not in token_scopes:
-            raise AuthError(
-                message=f"Missing required scope: {required_scope}",
-                code="INSUFFICIENT_SCOPE",
-                status_code=403,
-                details={"required_scope": required_scope},
-            )
+            raise auth_errors.insufficient_scope(required_scope)
 
     def require_auth(self, required_scope: str | None = None) -> Callable[[F], F]:
         """Protect a Flask route with Auth0 access-token verification."""
@@ -255,14 +188,14 @@ class AuthExtension:
         def decorator(fn: F) -> F:
             @wraps(fn)
             def wrapper(*args: Any, **kwargs: Any):
+                self._clear_auth_context()
                 token = self._extract_bearer_token()
                 claims = self._verify_access_token(token)
 
                 if required_scope is not None:
                     self._require_scope(claims, required_scope)
 
-                g.user_claims = claims
-                g.user_sub = claims.get("sub")
+                self._store_auth_context(claims)
 
                 return fn(*args, **kwargs)
 
@@ -270,29 +203,56 @@ class AuthExtension:
 
         return decorator
 
+    def optional_auth(self) -> Callable[[F], F]:
+        """Allow anonymous access while populating auth context when a valid token is present."""
+
+        def decorator(fn: F) -> F:
+            @wraps(fn)
+            def wrapper(*args: Any, **kwargs: Any):
+                self._clear_auth_context()
+
+                if not request.headers.get("Authorization", "").strip():
+                    return fn(*args, **kwargs)
+
+                token = self._extract_bearer_token()
+                claims = self._verify_access_token(token)
+                self._store_auth_context(claims)
+
+                return fn(*args, **kwargs)
+
+            return cast(F, wrapper)
+
+        return decorator
+
+    def get_optional_current_claims(self) -> dict[str, Any] | None:
+        """Return verified claims for this request, or None when anonymous."""
+        claims = getattr(g, "user_claims", None)
+        return claims if isinstance(claims, dict) else None
+
+    def get_optional_current_user_sub(self) -> str | None:
+        """Return the current Auth0 subject claim, or None when anonymous."""
+        claims = self.get_optional_current_claims()
+
+        if claims is None:
+            return None
+
+        sub = claims.get("sub")
+        return sub if isinstance(sub, str) and sub else None
+
     def get_current_claims(self) -> dict[str, Any]:
         """Return the verified claims stored on flask.g for this request."""
-        claims = getattr(g, "user_claims", None)
+        claims = self.get_optional_current_claims()
 
         if not isinstance(claims, dict):
-            raise AuthError(
-                message="Authenticated user claims were not found on the request context.",
-                code="MISSING_AUTH_CONTEXT",
-                status_code=401,
-            )
+            raise auth_errors.missing_auth_context()
 
         return claims
 
     def get_current_user_sub(self) -> str:
         """Return the Auth0 subject claim for the current request."""
-        claims = self.get_current_claims()
-        sub = claims.get("sub")
+        sub = self.get_optional_current_user_sub()
 
         if not isinstance(sub, str) or not sub:
-            raise AuthError(
-                message="Authenticated token did not contain a valid subject.",
-                code="MISSING_SUB_CLAIM",
-                status_code=401,
-            )
+            raise auth_errors.missing_sub_claim()
 
         return sub

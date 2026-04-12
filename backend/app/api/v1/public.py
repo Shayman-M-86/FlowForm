@@ -12,11 +12,13 @@ from app.schema.api.responses.surveys import PublicSurveyOut, SurveyOut, SurveyV
 from app.services.public_links import PublicLinkService
 from app.services.public_surveys import PublicSurveyService
 from app.services.submissions import SubmissionService
+from app.services.users import UserService
 
 logger = getLogger(__name__)
 
 public_bp = Blueprint("public_v1", __name__)
 
+users_service = UserService()
 public_link_service = PublicLinkService()
 public_submission_service = SubmissionService()
 public_survey_service = PublicSurveyService()
@@ -25,6 +27,7 @@ public_survey_service = PublicSurveyService()
 @public_bp.route("/surveys/<string:public_slug>", methods=["GET"])
 def get_public_survey(public_slug: str):
     core_db = get_core_db()
+
     result = public_survey_service.get_public_survey(core_db, public_slug=public_slug)
     response = PublicSurveyOut(
         survey=SurveyOut.model_validate(result.survey),
@@ -37,11 +40,7 @@ def get_public_survey(public_slug: str):
 
 @public_bp.route("/links/resolve", methods=["GET"])
 def resolve_link():
-    try:
-        payload = parse_query(ResolveTokenRequest, request)
-    except Exception:
-        payload = parse(ResolveTokenRequest, request)
-    logger.info(f"Resolving public link with token: {payload.token}")
+    payload = parse_query(ResolveTokenRequest, request)
 
     core_db = get_core_db()
 

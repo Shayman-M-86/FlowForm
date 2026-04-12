@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.api.v1.projects import project_service
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.user import User
 
@@ -15,8 +16,6 @@ def resolve_project_ref(db: Session, ref: str, actor: User) -> Project:
     Returns the resolved Project so callers can use it directly rather than
     doing a second lookup.
     """
-    from app.api.v1.projects import project_service
-
     try:
         project_id = int(ref)
         return project_service.get_project(db, project_id=project_id, actor=actor)
