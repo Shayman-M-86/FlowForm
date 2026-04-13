@@ -12,7 +12,6 @@ import { Input } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
 import { Select } from "../components/ui/Select";
 import { Spinner } from "../components/ui/Spinner";
-import { Toggle } from "../components/ui/Toggle";
 import { useFetch } from "../hooks/useFetch";
 import "../App.css";
 import "./SurveyEditorPage.css";
@@ -134,7 +133,13 @@ export function SurveyEditorPage() {
           />
         );
       case "links":
-        return <PublicLinkList projectId={pid} surveyId={sid} />;
+        return (
+          <PublicLinkList
+            projectId={pid}
+            surveyId={sid}
+            surveyVisibility={survey?.visibility ?? "private"}
+          />
+        );
     }
   }
 
@@ -197,7 +202,6 @@ export function SurveyEditorPage() {
     setSettingsForm({
       title: s.title,
       visibility: s.visibility,
-      allow_public_responses: s.allow_public_responses,
       public_slug: s.public_slug,
     });
     setSettingsError(null);
@@ -348,20 +352,15 @@ export function SurveyEditorPage() {
               { value: "public", label: "Public" },
             ]}
             value={settingsForm.visibility ?? "private"}
-            onChange={(e) =>
-              setSettingsForm((p) => ({ ...p, visibility: e.target.value as SurveyVisibility }))
-            }
+            onChange={(e) => {
+              const visibility = e.target.value as SurveyVisibility;
+              setSettingsForm((p) => ({
+                ...p,
+                visibility,
+                public_slug: visibility === "public" ? p.public_slug : null,
+              }));
+            }}
           />
-          {(settingsForm.visibility === "link_only" ||
-            settingsForm.visibility === "public") && (
-            <Toggle
-              label="Allow public responses"
-              checked={settingsForm.allow_public_responses ?? false}
-              onChange={(v) =>
-                setSettingsForm((p) => ({ ...p, allow_public_responses: v }))
-              }
-            />
-          )}
           {settingsForm.visibility === "public" && (
             <Input
               label="Public slug"

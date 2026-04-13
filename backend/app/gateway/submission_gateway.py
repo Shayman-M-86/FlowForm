@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.orm import Session
 
 from app.db.error_handling import commit_with_err_handle, flush_with_err_handle
@@ -50,7 +51,7 @@ class SubmissionGateway:
         response_store_id: int,
         submission_channel: str,
         submitted_by_user_id: int | None = None,
-        public_link_id: int | None = None,
+        survey_link_id: int | None = None,
         pseudonymous_subject_id: uuid.UUID | None = None,
         is_anonymous: bool = False,
         started_at: datetime | None = None,
@@ -66,7 +67,7 @@ class SubmissionGateway:
             response_store_id=response_store_id,
             submission_channel=submission_channel,
             submitted_by_user_id=submitted_by_user_id,
-            public_link_id=public_link_id,
+            survey_link_id=survey_link_id,
             pseudonymous_subject_id=pseudonymous_subject_id,
             is_anonymous=is_anonymous,
             started_at=started_at,
@@ -136,7 +137,11 @@ class SubmissionGateway:
     ) -> LinkedSubmissionResult | None:
         from app.schema.orm.core.user import User
 
-        core_submission = core_db.scalar(select(SurveySubmission).where(SurveySubmission.id == core_submission_id))
+        core_submission = core_db.scalar(
+            select(SurveySubmission)
+            .options(selectinload(SurveySubmission.submitted_by))
+            .where(SurveySubmission.id == core_submission_id)
+        )
         if core_submission is None:
             return None
 
@@ -154,7 +159,9 @@ class SubmissionGateway:
 
         subject_mapping: ResponseSubjectMapping | None = None
         user: User | None = None
-        if (
+        if resolve_identity and core_submission.submitted_by_user_id is not None:
+            user = core_submission.submitted_by
+        elif (
             resolve_identity
             and response_submission is not None
             and response_submission.pseudonymous_subject_id is not None

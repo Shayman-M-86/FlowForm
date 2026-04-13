@@ -2,9 +2,16 @@ import { NavLink, useParams } from "react-router-dom";
 import { ProjectSelector } from "./ProjectSelector";
 import { AuthButtons } from "./AuthButtons";
 import { getStoredProjectId } from "./ProjectSelector";
+import { ModeToggle } from "./ModeToggle";
+import type { AppMode } from "../../hooks/useAppMode";
 import "./Sidebar.css";
 
-export function Sidebar() {
+interface SidebarProps {
+  mode: AppMode;
+  onModeSwitch: (m: AppMode) => void;
+}
+
+export function Sidebar({ mode, onModeSwitch }: SidebarProps) {
   const { projectId: paramProjectId } = useParams<{ projectId?: string }>();
   const projectId = paramProjectId ?? String(getStoredProjectId() ?? 1);
 
@@ -71,6 +78,7 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar__footer">
+        <ModeToggle mode={mode} onSwitch={onModeSwitch} />
         <ProjectSelector />
         <AuthButtons />
       </div>

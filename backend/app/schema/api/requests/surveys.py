@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schema.api.requests.helpers import validate_slug
 
@@ -19,7 +19,6 @@ class CreateSurveyRequest(BaseModel):
 
     title: str
     visibility: Literal["private", "link_only", "public"] = "private"
-    allow_public_responses: bool = False
     public_slug: str | None = None
     default_response_store_id: int | None = None
 
@@ -37,10 +36,8 @@ class CreateSurveyRequest(BaseModel):
     def check_visibility_constraints(self) -> CreateSurveyRequest:
         if self.visibility == "public" and not self.public_slug:
             raise ValueError("public_slug is required when visibility is 'public'")
-        if self.allow_public_responses and self.visibility not in ("link_only", "public"):
-            raise ValueError("allow_public_responses requires visibility 'link_only' or 'public'")
-        if self.public_slug and self.visibility not in ("link_only", "public"):
-            raise ValueError("public_slug requires visibility 'link_only' or 'public'")
+        if self.public_slug and self.visibility != "public":
+            raise ValueError("public_slug requires visibility 'public'")
         return self
 
 
@@ -49,7 +46,6 @@ class UpdateSurveyRequest(BaseModel):
 
     title: str | None = None
     visibility: Literal["private", "link_only", "public"] | None = None
-    allow_public_responses: bool | None = None
     public_slug: str | None = None
     default_response_store_id: int | None = None
 
@@ -68,3 +64,10 @@ class CreateVersionRequest(BaseModel):
     """Request body for creating a new survey version."""
 
     pass
+
+
+class ListPublicSurveysRequest(BaseModel):
+    """Query parameters for listing public surveys."""
+
+    page: int = Field(default=1, ge=1)
+    page_size: int = Field(default=20, ge=1, le=100)

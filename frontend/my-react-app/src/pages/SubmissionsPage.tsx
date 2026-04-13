@@ -22,8 +22,8 @@ const STATUS_BADGE: Record<SubmissionStatus, "warning" | "success" | "danger"> =
 };
 
 const CHANNEL_BADGE: Record<SubmissionChannel, "muted" | "accent"> = {
-  authenticated: "muted",
-  public_link: "accent",
+  link: "accent",
+  slug: "accent",
   system: "muted",
 };
 
@@ -112,8 +112,8 @@ export function SubmissionsPage() {
           label="Channel"
           options={[
             { value: "", label: "All channels" },
-            { value: "authenticated", label: "Authenticated" },
-            { value: "public_link", label: "Public link" },
+            { value: "link", label: "Link" },
+            { value: "slug", label: "Slug" },
             { value: "system", label: "System" },
           ]}
           value={channel}
@@ -150,6 +150,13 @@ export function SubmissionsPage() {
                         {sub.is_anonymous && <Badge variant="muted">anon</Badge>}
                       </div>
                       <div className="submission-row__meta">
+                        <span className="submission-submitter">
+                          {sub.submitter
+                            ? sub.submitter.display_name ?? sub.submitter.email
+                            : sub.is_anonymous
+                              ? "Anonymous"
+                              : "Unknown user"}
+                        </span>
                         {sub.submitted_at
                           ? new Date(sub.submitted_at).toLocaleString()
                           : "—"}

@@ -12,7 +12,6 @@ class SurveyOut(BaseModel):
     project_id: int
     title: str
     visibility: str
-    allow_public_responses: bool
     public_slug: str | None
     default_response_store_id: int | None
     published_version_id: int | None
@@ -42,3 +41,12 @@ class PublicSurveyOut(BaseModel):
 
     survey: SurveyOut
     published_version: SurveyVersionOut | None = None
+
+
+class PaginatedPublicSurveysOut(BaseModel):
+    """API response shape for a paginated list of public surveys."""
+
+    items: list[SurveyOut]
+    total: int
+    page: int
+    page_size: int

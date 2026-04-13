@@ -5,6 +5,7 @@ from app.domain import auth_rules
 from app.schema.api.requests.auth import BootstrapUserRequest
 from app.services.results import BootstrapCurrentUserResult
 from app.services.users import UserService
+from app.repositories import users_repo
 
 
 class AuthService:
@@ -21,6 +22,10 @@ class AuthService:
         payload: BootstrapUserRequest,
     ) -> BootstrapCurrentUserResult:
         """Verify the ID token and create or update the local user."""
+        user = users_repo.get_user_by_auth0_user_id(db, access_token_sub)
+        if user is not None:
+            return BootstrapCurrentUserResult(user=user, created=False)
+        
         id_token_claims = auth.verify_id_token(payload.id_token)
         id_token_sub = auth_rules.ensure_subject(claims=id_token_claims)
         auth_rules.ensure_subject_matches(

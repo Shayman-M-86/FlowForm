@@ -8,7 +8,6 @@ import { Input } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
 import { Select } from "../components/ui/Select";
 import { Spinner } from "../components/ui/Spinner";
-import { Toggle } from "../components/ui/Toggle";
 import { useFetch } from "../hooks/useFetch";
 import "../App.css";
 import "./SurveysPage.css";
@@ -36,7 +35,6 @@ export function SurveysPage() {
   const [form, setForm] = useState<CreateSurveyRequest>({
     title: "",
     visibility: "private",
-    allow_public_responses: false,
     public_slug: null,
   });
 
@@ -55,7 +53,7 @@ export function SurveysPage() {
       await createSurvey(id, form);
       refetch();
       setShowCreate(false);
-      setForm({ title: "", visibility: "private", allow_public_responses: false, public_slug: null });
+      setForm({ title: "", visibility: "private", public_slug: null });
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Failed to create survey.");
     } finally {
@@ -64,8 +62,6 @@ export function SurveysPage() {
   }
 
   const showSlug = form.visibility === "public";
-  const showPublicResponses = form.visibility === "link_only" || form.visibility === "public";
-
   return (
     <div className="page">
       <div className="page-header">
@@ -119,7 +115,14 @@ export function SurveysPage() {
           label="Visibility"
           options={VISIBILITY_OPTIONS}
           value={form.visibility}
-          onChange={(e) => updateForm("visibility", e.target.value as SurveyVisibility)}
+          onChange={(e) => {
+            const visibility = e.target.value as SurveyVisibility;
+            setForm((prev) => ({
+              ...prev,
+              visibility,
+              public_slug: visibility === "public" ? prev.public_slug : null,
+            }));
+          }}
         />
         {showSlug && (
           <Input
@@ -128,13 +131,6 @@ export function SurveysPage() {
             onChange={(e) => updateForm("public_slug", e.target.value || null)}
             placeholder="my-quiz"
             hint="Used in the public URL: /quiz/{slug}"
-          />
-        )}
-        {showPublicResponses && (
-          <Toggle
-            label="Allow public responses"
-            checked={form.allow_public_responses ?? false}
-            onChange={(v) => updateForm("allow_public_responses", v)}
           />
         )}
       </Modal>

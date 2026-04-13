@@ -51,7 +51,7 @@ class PublicLinkNotFoundError(AppError):
     """Error raised when a public link cannot be found by survey + link ID."""
 
     def __init__(self) -> None:
-        super().__init__(status_code=404, code="NOT_FOUND", message="Public link not found")
+        super().__init__(status_code=404, code="NOT_FOUND", message="Survey link not found")
 
 
 class LinkInactiveError(AppError):
@@ -84,6 +84,39 @@ class LinkNoResponseError(AppError):
             status_code=403,
             code="LINK_NO_RESPONSE",
             message="This link does not allow submissions",
+        )
+
+
+class LinkAssignmentMismatchError(AppError):
+    """Error raised when an authenticated user does not match an assigned link."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="LINK_ASSIGNED_TO_ANOTHER_USER",
+            message="This link is assigned to a different user.",
+        )
+
+
+class PrivateSurveyAssignedEmailRequiredError(AppError):
+    """Error raised when a private survey link is not assigned to a specific email."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=422,
+            code="ASSIGNED_EMAIL_REQUIRED",
+            message="Private surveys require links assigned to a specific email.",
+        )
+
+
+class NonPrivateSurveyAssignedEmailForbiddenError(AppError):
+    """Error raised when a non-private survey link is assigned to a specific email."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=422,
+            code="ASSIGNED_EMAIL_NOT_ALLOWED",
+            message="Only private surveys can use links assigned to a specific email.",
         )
 
 
@@ -139,6 +172,17 @@ class SurveyNotFoundBySlugError(AppError):
             status_code=404,
             code="NOT_FOUND",
             message="Survey not found",
+        )
+
+
+class SurveyNotAccessibleError(AppError):
+    """Error raised when a survey's visibility does not permit public access."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="SURVEY_NOT_ACCESSIBLE",
+            message="This survey is not accessible in this context.",
         )
 
 

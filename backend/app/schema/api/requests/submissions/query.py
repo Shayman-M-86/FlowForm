@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 SubmissionStatus = Literal["pending", "stored", "failed"]
-SubmissionChannel = Literal["authenticated", "public_link", "system"]
+SubmissionChannel = Literal["link", "slug", "system"]
 
 
 class ListSubmissionsRequest(BaseModel):

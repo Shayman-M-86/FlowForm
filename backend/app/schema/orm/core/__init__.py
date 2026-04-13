@@ -6,6 +6,7 @@ from app.schema.orm.core.response_subject_mapping import ResponseSubjectMapping
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import (
     SurveyMembershipRole,
+    SurveyLink,
     SurveyPublicLink,
     SurveyRole,
     survey_role_permissions,
@@ -23,6 +24,7 @@ __all__ = [
     "ResponseStore",
     "ResponseSubjectMapping",
     "Survey",
+    "SurveyLink",
     "SurveyMembershipRole",
     "SurveyPublicLink",
     "SurveyQuestion",

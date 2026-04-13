@@ -30,7 +30,6 @@ def create_survey(
         project_id=project_id,
         title=data.title,
         visibility=data.visibility,
-        allow_public_responses=data.allow_public_responses,
         public_slug=data.public_slug,
         default_response_store_id=data.default_response_store_id,
         created_by_user_id=created_by_user_id,
@@ -46,8 +45,6 @@ def update_survey(db: Session, survey: Survey, data: UpdateSurveyRequest) -> Sur
         survey.title = data.title
     if "visibility" in changed and data.visibility is not None:
         survey.visibility = data.visibility
-    if "allow_public_responses" in changed and data.allow_public_responses is not None:
-        survey.allow_public_responses = data.allow_public_responses
     if "public_slug" in changed:
         survey.public_slug = data.public_slug
     if "default_response_store_id" in changed:
@@ -138,6 +135,17 @@ def unpublish_version(db: Session, survey: Survey, version: SurveyVersion) -> Su
     version.status = "archived"
     flush_with_err_handle(db, contexts=[version, survey])
     return version
+
+
+def list_public_surveys(db: Session, *, page: int, page_size: int) -> tuple[list[Survey], int]:
+    base = select(Survey).where(Survey.visibility == "public")
+    total = db.scalar(select(func.count()).select_from(base.subquery())) or 0
+    surveys = list(
+        db.scalars(
+            base.order_by(Survey.id).offset((page - 1) * page_size).limit(page_size)
+        )
+    )
+    return surveys, total
 
 
 def get_by_public_slug(db: Session, public_slug: str) -> Survey | None:

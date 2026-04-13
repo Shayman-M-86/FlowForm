@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from app.domain.errors import (
     SurveyNoResponseStoreError,
+    SurveyNotAccessibleError,
     SurveyNotFoundBySlugError,
     SurveyNotFoundError,
     SurveyNotPublishedError,
@@ -22,6 +23,13 @@ def ensure_is_published(*, survey: SurveyVersion | None | Survey, survey_id: int
         survey = survey.published_version
     if survey is None or survey.status != "published":
         raise SurveyNotPublishedError(survey_id=survey_id, project_id=project_id)
+    return survey
+
+
+def ensure_is_publicly_accessible(*, survey: Survey) -> Survey:
+    """Raise if the survey is not publicly browsable."""
+    if survey.visibility != "public":
+        raise SurveyNotAccessibleError()
     return survey
 
 

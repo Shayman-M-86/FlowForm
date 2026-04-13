@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from logging import getLogger
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -8,19 +7,19 @@ from sqlalchemy.orm import Session
 from app.domain import public_link_rules, submission_rules, survey_rules
 from app.gateway.submission_gateway import SubmissionGateway
 from app.repositories import public_link_repo, response_stores_repo, submissions_repo, surveys_repo
-from app.schema.api.requests.submissions.create import CreateSubmissionRequest, PublicSubmissionRequest
+from app.schema.api.requests.submissions.create import LinkSubmissionRequest, SlugSubmissionRequest
 from app.schema.api.requests.submissions.query import GetSubmissionRequest, ListSubmissionsRequest
 from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.survey_submission import SurveySubmission
+from app.schema.orm.core.user import User
 from app.services.results import LinkedSubmissionResult
 
-logger = getLogger(__name__)
 _gateway = SubmissionGateway()
 
 
 @dataclass(slots=True)
 class SubmissionContext:
-    """Context object containing all necessary information to create a submission, passed to the gateway layer."""
+    """Context object containing all data required to create a submission."""
 
     project_id: int
     survey_id: int
@@ -28,7 +27,7 @@ class SubmissionContext:
     response_store_id: int
     submission_channel: str
     submitted_by_user_id: int | None = None
-    public_link_id: int | None = None
+    survey_link_id: int | None = None
     pseudonymous_subject_id: UUID | None = None
     is_anonymous: bool = False
     started_at: datetime | None = None
@@ -37,8 +36,8 @@ class SubmissionContext:
     metadata: dict | None = None
 
 
-class SubmissionService:
-    """Service layer handling survey submissions, both from authenticated users and via public links."""
+class SubmissionIntakeService:
+    """Respondent-facing submission intake service."""
 
     def _ensure_survey_response_store(
         self,
@@ -58,80 +57,36 @@ class SubmissionService:
         survey.default_response_store_id = store.id
         return store.id
 
-    def create_project_submission(
+    def _resolve_subject_id(
         self,
         core_db: Session,
-        response_db: Session,
         *,
         project_id: int,
-        survey_id: int,
-        payload: CreateSubmissionRequest,
-    ) -> LinkedSubmissionResult:
-        survey = survey_rules.ensure_not_none(
-            survey=surveys_repo.get_survey(core_db, project_id=project_id, survey_id=survey_id),
-            survey_id=survey_id,
-            project_id=project_id,
-        )
-        logger.info(f"Creating submission for survey_id={survey_id} in project_id={project_id}")
-        survey_rules.ensure_is_published(
-            survey=survey,
-            survey_id=survey_id,
-            project_id=project_id,
-        )
-        response_store_id = self._ensure_survey_response_store(
+        submitted_by_user_id: int | None,
+        is_anonymous: bool,
+    ) -> UUID | None:
+        if submitted_by_user_id is None or is_anonymous:
+            return None
+
+        mapping = _gateway.get_or_create_subject_mapping(
             core_db,
-            survey=survey,
-            created_by_user_id=payload.submitted_by_user_id,
-        )
-        logger.info(f"Survey {survey_id} in project {project_id} is published, proceeding with submission creation")
-
-        pseudonymous_subject_id = None
-        if payload.submitted_by_user_id is not None and not payload.is_anonymous:
-            mapping = _gateway.get_or_create_subject_mapping(
-                core_db,
-                project_id=project_id,
-                user_id=payload.submitted_by_user_id,
-            )
-            logger.info(
-                f"Created or retrieved subject mapping for user_id={payload.submitted_by_user_id} "
-                f"in project_id={project_id}"
-            )
-            pseudonymous_subject_id = mapping.pseudonymous_subject_id
-
-        context = SubmissionContext(
             project_id=project_id,
-            survey_id=survey_id,
-            survey_version_id=payload.survey_version_id,
-            response_store_id=response_store_id,
-            submission_channel=submission_rules.resolve_submission_channel(
-                submitted_by_user_id=payload.submitted_by_user_id,
-            ),
-            submitted_by_user_id=payload.submitted_by_user_id,
-            pseudonymous_subject_id=pseudonymous_subject_id,
-            is_anonymous=payload.is_anonymous,
-            started_at=payload.started_at,
-            submitted_at=payload.submitted_at,
-            answers=[a.model_dump() for a in payload.answers],
-            metadata=payload.metadata,
+            user_id=submitted_by_user_id,
         )
+        return mapping.pseudonymous_subject_id
 
-        return self._create_submission_from_context(
-            core_db,
-            response_db,
-            context=context,
-        )
-
-    def create_public_submission(
+    def create_link_submission(
         self,
         core_db: Session,
         response_db: Session,
         *,
-        payload: PublicSubmissionRequest,
+        payload: LinkSubmissionRequest,
+        actor: User,
     ) -> LinkedSubmissionResult:
-        link = public_link_rules.ensure_is_not_none(link=public_link_repo.resolve_token(core_db, payload.public_token))
+        link = public_link_rules.ensure_is_not_none(link=public_link_repo.resolve_token(core_db, payload.token))
         public_link_rules.ensure_is_active(link=link)
-        public_link_rules.ensure_allows_response(link=link)
         public_link_rules.ensure_not_expired(link=link)
+        public_link_rules.ensure_actor_matches_assignment(link=link, actor_email=actor.email)
 
         survey = link.survey
         survey_rules.ensure_is_published(
@@ -139,10 +94,11 @@ class SubmissionService:
             survey_id=survey.id,
             project_id=survey.project_id,
         )
+
         response_store_id = self._ensure_survey_response_store(
             core_db,
             survey=survey,
-            created_by_user_id=survey.created_by_user_id,
+            created_by_user_id=actor.id,
         )
 
         context = SubmissionContext(
@@ -150,20 +106,69 @@ class SubmissionService:
             survey_id=survey.id,
             survey_version_id=payload.survey_version_id,
             response_store_id=response_store_id,
-            submission_channel="public_link",
-            public_link_id=link.id,
-            is_anonymous=payload.is_anonymous,
+            submission_channel="link",
+            submitted_by_user_id=actor.id,
+            survey_link_id=link.id,
+            pseudonymous_subject_id=self._resolve_subject_id(
+                core_db,
+                project_id=survey.project_id,
+                submitted_by_user_id=actor.id,
+                is_anonymous=False,
+            ),
+            is_anonymous=False,
             started_at=payload.started_at,
             submitted_at=payload.submitted_at,
             answers=[a.model_dump() for a in payload.answers],
             metadata=payload.metadata,
         )
 
-        return self._create_submission_from_context(
-            core_db,
-            response_db,
-            context=context,
+        return self._create_submission_from_context(core_db, response_db, context=context)
+
+    def create_slug_submission(
+        self,
+        core_db: Session,
+        response_db: Session,
+        *,
+        payload: SlugSubmissionRequest,
+        submitted_by_user_id: int | None = None,
+    ) -> LinkedSubmissionResult:
+        survey = survey_rules.ensure_found_by_slug(
+            survey=surveys_repo.get_by_public_slug(core_db, payload.public_slug)
         )
+        survey_rules.ensure_is_published(
+            survey=survey,
+            survey_id=survey.id,
+            project_id=survey.project_id,
+        )
+
+        is_anonymous = submitted_by_user_id is None
+        response_store_id = self._ensure_survey_response_store(
+            core_db,
+            survey=survey,
+            created_by_user_id=submitted_by_user_id or survey.created_by_user_id,
+        )
+
+        context = SubmissionContext(
+            project_id=survey.project_id,
+            survey_id=survey.id,
+            survey_version_id=payload.survey_version_id,
+            response_store_id=response_store_id,
+            submission_channel="slug",
+            submitted_by_user_id=submitted_by_user_id,
+            pseudonymous_subject_id=self._resolve_subject_id(
+                core_db,
+                project_id=survey.project_id,
+                submitted_by_user_id=submitted_by_user_id,
+                is_anonymous=is_anonymous,
+            ),
+            is_anonymous=is_anonymous,
+            started_at=payload.started_at,
+            submitted_at=payload.submitted_at,
+            answers=[a.model_dump() for a in payload.answers],
+            metadata=payload.metadata,
+        )
+
+        return self._create_submission_from_context(core_db, response_db, context=context)
 
     def _create_submission_from_context(
         self,
@@ -182,7 +187,7 @@ class SubmissionService:
             response_store_id=context.response_store_id,
             submission_channel=context.submission_channel,
             submitted_by_user_id=context.submitted_by_user_id,
-            public_link_id=context.public_link_id,
+            survey_link_id=context.survey_link_id,
             pseudonymous_subject_id=context.pseudonymous_subject_id,
             is_anonymous=context.is_anonymous,
             started_at=context.started_at,
@@ -190,6 +195,10 @@ class SubmissionService:
             answers=context.answers,
             metadata=metadata,
         )
+
+
+class SubmissionQueryService:
+    """Project-facing submission review service."""
 
     def list_submissions(
         self,
@@ -237,3 +246,6 @@ class SubmissionService:
         )
 
         return linked
+
+
+SubmissionService = SubmissionIntakeService

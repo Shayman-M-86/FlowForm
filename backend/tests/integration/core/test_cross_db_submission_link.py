@@ -22,7 +22,7 @@ when reading.
 
 Privacy and pseudonymity
 ------------------------
-For authenticated submissions, the real user_id is deliberately NOT written into
+For identified submissions, the real user_id is deliberately NOT written into
 the response DB. Instead, a stable UUID is generated once per user+project and
 stored in core.response_subject_mappings. That UUID — pseudonymous_subject_id —
 is what gets written into response.submissions, keeping the answer payload store
@@ -36,7 +36,7 @@ The reverse lookup therefore goes:
     → core.users
 
 1. Creates a ResponseSubjectMapping in the core DB — the one-time UUID assignment for this user+project
-2. Creates an authenticated SurveySubmission in the core DB — this side holds the real user_id and the
+2. Creates an identified slug SurveySubmission in the core DB — this side holds the real user_id and the
 pseudonymous_subject_id
 3. Creates a Submission in the response DB — holds only pseudonymous_subject_id, never user_id
 4. Creates a SubmissionAnswer in the response DB
@@ -126,13 +126,13 @@ def test_answer_can_be_traced_back_to_user_via_pseudonymous_subject_id(
     db_session.add(mapping)
     db_session.flush()
 
-    # Write the core submission registry entry — authenticated channel records the real user_id
+    # Write the core submission registry entry — identified slug submissions record the real user_id
     core_submission = SurveySubmission()
     core_submission.project_id = project.id
     core_submission.survey_id = survey.id
     core_submission.survey_version_id = survey_version.id
     core_submission.response_store_id = response_store.id
-    core_submission.submission_channel = "authenticated"
+    core_submission.submission_channel = "slug"
     core_submission.submitted_by_user_id = user.id
     core_submission.pseudonymous_subject_id = mapping.pseudonymous_subject_id
     db_session.add(core_submission)

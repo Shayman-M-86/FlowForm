@@ -3,7 +3,7 @@
 export type SurveyVisibility = "private" | "link_only" | "public";
 export type VersionStatus = "draft" | "published" | "archived";
 export type SubmissionStatus = "pending" | "stored" | "failed";
-export type SubmissionChannel = "authenticated" | "public_link" | "system";
+export type SubmissionChannel = "link" | "slug" | "system";
 export type QuestionType = "choice" | "field" | "matching" | "rating";
 
 // ── Projects ──────────────────────────────────────────────────────────────────
@@ -28,7 +28,6 @@ export interface SurveyOut {
   project_id: number;
   title: string;
   visibility: SurveyVisibility;
-  allow_public_responses: boolean;
   public_slug: string | null;
   default_response_store_id: number | null;
   published_version_id: number | null;
@@ -40,7 +39,6 @@ export interface SurveyOut {
 export interface CreateSurveyRequest {
   title: string;
   visibility: SurveyVisibility;
-  allow_public_responses?: boolean;
   public_slug?: string | null;
   default_response_store_id?: number | null;
 }
@@ -48,7 +46,6 @@ export interface CreateSurveyRequest {
 export interface UpdateSurveyRequest {
   title?: string;
   visibility?: SurveyVisibility;
-  allow_public_responses?: boolean;
   public_slug?: string | null;
   default_response_store_id?: number | null;
 }
@@ -157,19 +154,19 @@ export interface PublicLinkOut {
   survey_id: number;
   token_prefix: string;
   is_active: boolean;
-  allow_response: boolean;
+  assigned_email: string | null;
   expires_at: string | null;
   created_at: string;
 }
 
 export interface CreatePublicLinkRequest {
-  allow_response?: boolean;
+  assigned_email?: string | null;
   expires_at?: string | null;
 }
 
 export interface UpdatePublicLinkRequest {
   is_active?: boolean;
-  allow_response?: boolean;
+  assigned_email?: string | null;
   expires_at?: string | null;
 }
 
@@ -198,10 +195,11 @@ export interface CoreSubmissionOut {
   project_id: number;
   survey_id: number;
   survey_version_id: number;
-  response_store_id: number | null;
+  response_store_id: number;
   submission_channel: SubmissionChannel;
   submitted_by_user_id: number | null;
-  public_link_id: number | null;
+  survey_link_id: number | null;
+  submitter: SubmitterOut | null;
   is_anonymous: boolean;
   status: SubmissionStatus;
   started_at: string | null;
@@ -227,20 +225,18 @@ export interface AnswerIn {
   answer_value: Record<string, unknown>;
 }
 
-export interface CreateSubmissionRequest {
+export interface LinkSubmissionRequest {
+  token: string;
   survey_version_id: number;
-  submitted_by_user_id?: number | null;
-  is_anonymous?: boolean;
-  started_at?: string;
-  submitted_at?: string;
   answers: AnswerIn[];
   metadata?: Record<string, unknown>;
+  started_at?: string;
+  submitted_at?: string;
 }
 
-export interface PublicSubmissionRequest {
-  public_token: string;
+export interface SlugSubmissionRequest {
+  public_slug: string;
   survey_version_id: number;
-  is_anonymous?: boolean;
   answers: AnswerIn[];
   metadata?: Record<string, unknown>;
   started_at?: string;
@@ -262,10 +258,23 @@ export interface PublicSurveyOut {
   published_version: SurveyVersionOut | null;
 }
 
+export interface SubmitterOut {
+  id: number;
+  email: string;
+  display_name: string | null;
+}
+
 export interface ResolveLinkOut {
   link: PublicLinkOut;
   survey: SurveyOut | null;
   published_version: SurveyVersionOut | null;
+}
+
+export interface PaginatedPublicSurveysOut {
+  items: SurveyOut[];
+  total: number;
+  page: number;
+  page_size: number;
 }
 
 // ── Auth ─────────────────────────────────────────────────────────────────────

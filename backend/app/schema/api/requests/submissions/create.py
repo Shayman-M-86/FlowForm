@@ -11,7 +11,6 @@ from app.schema.api.requests.submissions.answers import AnswerIn
 class SubmissionBaseRequest(BaseModel):
     """Base request body for survey submissions, containing common fields."""
 
-    is_anonymous: bool = False
     started_at: datetime | None = None
     submitted_at: datetime | None = None
     answers: list[AnswerIn] = Field(default_factory=list)
@@ -31,22 +30,33 @@ class SubmissionBaseRequest(BaseModel):
         return self
 
 
-class CreateSubmissionRequest(SubmissionBaseRequest):
-    """Request body for creating a new survey submission."""
+class LinkSubmissionRequest(SubmissionBaseRequest):
+    """Request body for creating a survey submission from an authenticated link."""
 
-    survey_version_id: int
-    submitted_by_user_id: int | None = None  # remove once auth is in place
-
-
-class PublicSubmissionRequest(SubmissionBaseRequest):
-    """Request body for creating a new public survey submission."""
-
-    public_token: str
+    token: str
     survey_version_id: int
 
-    @field_validator("public_token")
+    @field_validator("token")
     @classmethod
-    def validate_public_token(cls, value: str) -> str:
+    def validate_token(cls, value: str) -> str:
         if not value.strip():
-            raise ValueError("public_token must not be blank.")
+            raise ValueError("token must not be blank.")
         return value
+
+
+class SlugSubmissionRequest(SubmissionBaseRequest):
+    """Request body for creating a public-slug survey submission."""
+
+    public_slug: str
+    survey_version_id: int
+
+    @field_validator("public_slug")
+    @classmethod
+    def validate_public_slug(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("public_slug must not be blank.")
+        return value
+
+
+PublicSubmissionRequest = LinkSubmissionRequest
+AuthenticatedSubmissionRequest = LinkSubmissionRequest

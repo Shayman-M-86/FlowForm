@@ -37,7 +37,7 @@ class SurveySubmission(CoreBase):
     submitted_by_user_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    public_link_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    survey_link_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     pseudonymous_subject_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     external_submission_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(Text, default="pending", nullable=False)
@@ -49,33 +49,36 @@ class SurveySubmission(CoreBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
-        CheckConstraint(
-            "submission_channel IN ('authenticated', 'public_link', 'system')", name="submission_channel_valid"
-        ),
+        CheckConstraint("submission_channel IN ('link', 'slug', 'system')", name="submission_channel_valid"),
         CheckConstraint("status IN ('pending', 'stored', 'failed')", name="status_valid"),
         CheckConstraint(
             "submitted_at IS NULL OR started_at IS NULL OR submitted_at >= started_at",
             name="submitted_at_after_started_at",
         ),
         CheckConstraint(
-            "(submission_channel = 'authenticated') = (submitted_by_user_id IS NOT NULL)",
-            name="authenticated_requires_user",
+            "submission_channel <> 'link' OR survey_link_id IS NOT NULL",
+            name="link_requires_link_id",
         ),
         CheckConstraint(
-            "(submission_channel = 'public_link') = (public_link_id IS NOT NULL)",
-            name="public_link_requires_link_id",
+            "submission_channel <> 'link' OR submitted_by_user_id IS NOT NULL",
+            name="link_requires_user",
         ),
         CheckConstraint(
-            "submission_channel <> 'system' OR (submitted_by_user_id IS NULL AND public_link_id IS NULL)",
+            "submission_channel <> 'system' OR (submitted_by_user_id IS NULL AND survey_link_id IS NULL)",
             name="system_has_no_actor",
+        ),
+        CheckConstraint(
+            "submission_channel <> 'slug' OR survey_link_id IS NULL",
+            name="slug_has_no_link",
         ),
         CheckConstraint("NOT is_anonymous OR submitted_by_user_id IS NULL", name="anonymous_has_no_user"),
         CheckConstraint("NOT is_anonymous OR pseudonymous_subject_id IS NULL", name="anonymous_has_no_subject"),
         CheckConstraint(
-            "submission_channel <> 'authenticated' OR public_link_id IS NULL", name="authenticated_has_no_link"
+            "submission_channel <> 'link' OR NOT is_anonymous", name="link_is_not_anonymous"
         ),
         CheckConstraint(
-            "submission_channel <> 'public_link' OR submitted_by_user_id IS NULL", name="public_link_has_no_user"
+            "submission_channel <> 'slug' OR is_anonymous OR submitted_by_user_id IS NOT NULL",
+            name="identified_slug_requires_user",
         ),
         ForeignKeyConstraint(
             ["project_id", "survey_id"],
@@ -101,15 +104,15 @@ class SurveySubmission(CoreBase):
             name="fk_survey_submissions_store_same_project",
         ),
         ForeignKeyConstraint(
-            ["public_link_id"],
-            ["survey_public_links.id"],
+            ["survey_link_id"],
+            ["survey_links.id"],
             ondelete="SET NULL",
-            name="fk_survey_submissions_public_link",
+            name="fk_survey_submissions_survey_link",
         ),
         ForeignKeyConstraint(
-            ["survey_id", "public_link_id"],
-            ["survey_public_links.survey_id", "survey_public_links.id"],
-            name="fk_survey_submissions_public_link_same_survey",
+            ["survey_id", "survey_link_id"],
+            ["survey_links.survey_id", "survey_links.id"],
+            name="fk_survey_submissions_survey_link_same_survey",
         ),
         ForeignKeyConstraint(
             ["project_id", "pseudonymous_subject_id"],
@@ -130,3 +133,11 @@ class SurveySubmission(CoreBase):
     )
 
     submitted_by: Mapped[User | None] = relationship("User", foreign_keys=[submitted_by_user_id])
+
+    @property
+    def public_link_id(self) -> int | None:
+        return self.survey_link_id
+
+    @public_link_id.setter
+    def public_link_id(self, value: int | None) -> None:
+        self.survey_link_id = value

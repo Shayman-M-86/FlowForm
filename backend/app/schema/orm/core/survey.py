@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
-    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -34,7 +33,6 @@ class Survey(TimestampMixin, CoreBase):
     project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     visibility: Mapped[str] = mapped_column(Text, default="private", nullable=False)
-    allow_public_responses: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     public_slug: Mapped[str | None] = mapped_column(Text, unique=True, nullable=True)
     default_response_store_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     published_version_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
@@ -45,13 +43,9 @@ class Survey(TimestampMixin, CoreBase):
     __table_args__ = (
         UniqueConstraint("project_id", "id", name="uq_surveys_project_id_id"),
         CheckConstraint("visibility IN ('private', 'link_only', 'public')", name="visibility_valid"),
-        CheckConstraint(
-            "allow_public_responses = FALSE OR visibility IN ('link_only', 'public')",
-            name="public_responses_requires_public_visibility",
-        ),
         CheckConstraint("visibility <> 'public' OR public_slug IS NOT NULL", name="public_requires_slug"),
         CheckConstraint(
-            "public_slug IS NULL OR visibility IN ('link_only', 'public')",
+            "public_slug IS NULL OR visibility = 'public'",
             name="slug_requires_public_visibility",
         ),
         ForeignKeyConstraint(

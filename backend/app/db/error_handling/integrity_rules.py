@@ -14,8 +14,8 @@ from app.schema.orm.core import (
     ProjectRole,
     ResponseSubjectMapping,
     Survey,
+    SurveyLink,
     SurveyMembershipRole,
-    SurveyPublicLink,
     SurveyQuestion,
     SurveyRule,
     SurveyScoringRule,
@@ -27,7 +27,7 @@ type RuleContext = (
     Project
     | Survey
     | SurveyVersion
-    | SurveyPublicLink
+    | SurveyLink
     | ResponseSubjectMapping
     | SurveySubmission
     | SurveyQuestion
@@ -47,11 +47,16 @@ allowed_parameters = {
     "status",
     "is_published",
     "is_deleted",
-    "public_link_id",
+    "public_slug",
+    "survey_link_id",
+    "assigned_email",
     "user_id",
     "submission_id",
     "survey_version_id",
     "has_submitted_by_user",
+    "response_store_id",
+    "external_submission_id",
+    "pseudonymous_subject_id",
     "survey_question_id",
     "survey_rule_id",
     "survey_scoring_rule_id",
@@ -76,6 +81,7 @@ def _survey_ctx(survey: Survey) -> dict[str, object]:
         "survey_id": survey.id,
         "project_id": survey.project_id,
         "visibility": survey.visibility,
+        "public_slug": survey.public_slug,
         "has_published_version": survey.published_version_id is not None,
         "published_version_id": survey.published_version_id,
         "default_response_store_id": survey.default_response_store_id,
@@ -93,10 +99,11 @@ def _survey_version_ctx(version: SurveyVersion) -> dict[str, object]:
     }
 
 
-def _public_link_ctx(link: SurveyPublicLink) -> dict[str, object]:
+def _survey_link_ctx(link: SurveyLink) -> dict[str, object]:
     return {
-        "public_link_id": link.id,
+        "survey_link_id": link.id,
         "survey_id": link.survey_id,
+        "assigned_email": link.assigned_email,
     }
 
 
@@ -113,6 +120,10 @@ def _submission_ctx(submission: SurveySubmission) -> dict[str, object]:
         "project_id": submission.project_id,
         "survey_id": submission.survey_id,
         "survey_version_id": submission.survey_version_id,
+        "response_store_id": submission.response_store_id,
+        "survey_link_id": submission.survey_link_id,
+        "external_submission_id": submission.external_submission_id,
+        "pseudonymous_subject_id": submission.pseudonymous_subject_id,
         "status": submission.status,
         "has_submitted_by_user": submission.submitted_by_user_id is not None,
     }
@@ -223,20 +234,20 @@ SURVEY_RULES: tuple[DbErrorRule, ...] = (
         extractor=_survey_ctx,
     ),
     check_rule(
-        "ck_surveys_public_responses_requires_public_visibility",
-        lambda ctx, _exc: AppError(  # noqa: ARG005
-            422,
-            "SURVEY_PUBLIC_VISIBILITY_INVALID",
-            "A survey cannot allow public responses unless its visibility allows public access.",
-        ),
-        extractor=_survey_ctx,
-    ),
-    check_rule(
         "ck_surveys_public_requires_slug",
         lambda ctx, _exc: AppError(  # noqa: ARG005
             422,
             "SURVEY_SLUG_REQUIRED",
             "A public survey must have a public slug.",
+        ),
+        extractor=_survey_ctx,
+    ),
+    check_rule(
+        "ck_surveys_slug_requires_public_visibility",
+        lambda ctx, _exc: AppError(  # noqa: ARG005
+            422,
+            "SURVEY_SLUG_VISIBILITY_INVALID",
+            "A survey slug requires visibility public.",
         ),
         extractor=_survey_ctx,
     ),
@@ -291,24 +302,24 @@ SURVEY_VERSION_RULES: tuple[DbErrorRule, ...] = (
     ),
 )
 
-SURVEY_PUBLIC_LINK_RULES: tuple[DbErrorRule, ...] = (
+SURVEY_LINK_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
-        "uq_survey_public_links_token_hash",
+        "uq_survey_links_token_hash",
         lambda ctx, _exc: AppError(  # noqa: ARG005
             409,
             "LINK_TOKEN_CONFLICT",
-            "This public link token is already in use.",
+            "This survey link token is already in use.",
         ),
-        extractor=_public_link_ctx,
+        extractor=_survey_link_ctx,
     ),
     unique_rule(
-        "uq_survey_public_links_survey_id_token_prefix",
+        "uq_survey_links_survey_id_token_prefix",
         lambda ctx, _exc: AppError(
             409,
             "LINK_PREFIX_CONFLICT",
             f"Survey id={ctx['survey_id']} already has a link with this token prefix.",
         ),
-        extractor=_public_link_ctx,
+        extractor=_survey_link_ctx,
     ),
 )
 
@@ -362,11 +373,11 @@ SURVEY_SUBMISSION_RULES: tuple[DbErrorRule, ...] = (
         extractor=_submission_ctx,
     ),
     foreign_key_rule(
-        "fk_survey_submissions_public_link_same_survey",
+        "fk_survey_submissions_survey_link_same_survey",
         lambda ctx, _exc: AppError(
             409,
             "SUBMISSION_LINK_SURVEY_CONFLICT",
-            f"Public link id={ctx['public_link_id']} does not belong to survey id={ctx['survey_id']}.",
+            f"Survey link id={ctx['survey_link_id']} does not belong to survey id={ctx['survey_id']}.",
         ),
         extractor=_submission_ctx,
     ),
@@ -536,7 +547,7 @@ RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
     Project: PROJECT_RULES,
     Survey: SURVEY_RULES,
     SurveyVersion: SURVEY_VERSION_RULES,
-    SurveyPublicLink: SURVEY_PUBLIC_LINK_RULES,
+    SurveyLink: SURVEY_LINK_RULES,
     ResponseSubjectMapping: RESPONSE_SUBJECT_MAPPING_RULES,
     SurveySubmission: SURVEY_SUBMISSION_RULES,
     SurveyQuestion: SURVEY_QUESTION_RULES,

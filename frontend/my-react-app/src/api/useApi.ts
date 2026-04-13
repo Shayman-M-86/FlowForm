@@ -14,7 +14,6 @@ import type {
   CreateQuestionRequest,
   CreateRuleRequest,
   CreateScoringRuleRequest,
-  CreateSubmissionRequest,
   CreateSurveyRequest,
   ListSubmissionsParams,
   UpdatePublicLinkRequest,
@@ -202,11 +201,6 @@ export function useApi() {
         submissionsApi.listSubmissions(executor, projectId, params),
       getSubmission: (projectId: number, submissionId: number, includeAnswers?: boolean) =>
         submissionsApi.getSubmission(executor, projectId, submissionId, includeAnswers),
-      createSubmission: (
-        projectId: number,
-        surveyId: number,
-        data: CreateSubmissionRequest,
-      ) => submissionsApi.createSubmission(executor, projectId, surveyId, data),
     }),
     [executor],
   );

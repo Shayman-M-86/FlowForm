@@ -117,26 +117,29 @@ class SurveyMembershipRole(CoreBase):
     )
 
 
-class SurveyPublicLink(CoreBase):
-    """A bearer-token link granting public access to a survey."""
+class SurveyLink(CoreBase):
+    """A bearer-token link granting authenticated survey access."""
 
-    __tablename__ = "survey_public_links"
+    __tablename__ = "survey_links"
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     survey_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
     token_prefix: Mapped[str] = mapped_column(Text, nullable=False)
     token_hash: Mapped[str] = mapped_column(Text, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=text("true"), nullable=False)
-    allow_response: Mapped[bool] = mapped_column(Boolean, server_default=text("true"), nullable=False)
+    assigned_email: Mapped[str | None] = mapped_column(Text, nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("token_hash", name="uq_survey_public_links_token_hash"),
-        UniqueConstraint("survey_id", "id", name="uq_survey_public_links_survey_id_id"),
-        UniqueConstraint("survey_id", "token_prefix", name="uq_survey_public_links_survey_id_token_prefix"),
-        CheckConstraint("char_length(token_prefix) BETWEEN 8 AND 32", name="ck_survey_public_links_token_prefix_len"),
-        CheckConstraint("char_length(token_hash) >= 32", name="ck_survey_public_links_token_hash_len"),
+        UniqueConstraint("token_hash", name="uq_survey_links_token_hash"),
+        UniqueConstraint("survey_id", "id", name="uq_survey_links_survey_id_id"),
+        UniqueConstraint("survey_id", "token_prefix", name="uq_survey_links_survey_id_token_prefix"),
+        CheckConstraint("char_length(token_prefix) BETWEEN 8 AND 32", name="ck_survey_links_token_prefix_len"),
+        CheckConstraint("char_length(token_hash) >= 32", name="ck_survey_links_token_hash_len"),
     )
 
     survey: Mapped[Survey] = relationship("Survey")
+
+
+SurveyPublicLink = SurveyLink

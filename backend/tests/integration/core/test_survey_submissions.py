@@ -14,7 +14,7 @@ from app.schema.orm.core.project import Project
 from app.schema.orm.core.response_store import ResponseStore
 from app.schema.orm.core.response_subject_mapping import ResponseSubjectMapping
 from app.schema.orm.core.survey import Survey, SurveyVersion
-from app.schema.orm.core.survey_access import SurveyPublicLink
+from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.survey_submission import SurveySubmission
 from app.schema.orm.core.user import User
 from tests.integration.core.factories import (
@@ -31,7 +31,7 @@ from tests.integration.core.factories import (
 # ---------------------------------------------------------------------------
 
 
-def _authenticated(
+def _identified_slug(
     project: Project,
     survey: Survey,
     survey_version: SurveyVersion,
@@ -43,27 +43,46 @@ def _authenticated(
     sub.survey_id = survey.id
     sub.survey_version_id = survey_version.id
     sub.response_store_id = response_store.id
-    sub.submission_channel = "authenticated"
+    sub.submission_channel = "slug"
     sub.submitted_by_user_id = user.id
     sub.status = "pending"
     sub.is_anonymous = False
     return sub
 
 
-def _public_link(
+def _anonymous_slug(
     project: Project,
     survey: Survey,
     survey_version: SurveyVersion,
     response_store: ResponseStore,
-    link: SurveyPublicLink,
 ) -> SurveySubmission:
     sub = SurveySubmission()
     sub.project_id = project.id
     sub.survey_id = survey.id
     sub.survey_version_id = survey_version.id
     sub.response_store_id = response_store.id
-    sub.submission_channel = "public_link"
-    sub.public_link_id = link.id
+    sub.submission_channel = "slug"
+    sub.status = "pending"
+    sub.is_anonymous = True
+    return sub
+
+
+def _link(
+    project: Project,
+    survey: Survey,
+    survey_version: SurveyVersion,
+    response_store: ResponseStore,
+    link: SurveyLink,
+    user: User,
+) -> SurveySubmission:
+    sub = SurveySubmission()
+    sub.project_id = project.id
+    sub.survey_id = survey.id
+    sub.survey_version_id = survey_version.id
+    sub.response_store_id = response_store.id
+    sub.submission_channel = "link"
+    sub.survey_link_id = link.id
+    sub.submitted_by_user_id = user.id
     sub.status = "pending"
     sub.is_anonymous = False
     return sub
@@ -91,7 +110,7 @@ def _system(
 # ---------------------------------------------------------------------------
 
 
-def test_survey_submission_authenticated_can_be_created(
+def test_survey_submission_identified_slug_can_be_created(
     db_session: scoped_session[Session],
     project: Project,
     survey: Survey,
@@ -99,15 +118,15 @@ def test_survey_submission_authenticated_can_be_created(
     response_store: ResponseStore,
     user: User,
 ) -> None:
-    """An authenticated submission with all required fields is persisted correctly."""
-    sub = _authenticated(project, survey, survey_version, response_store, user)
+    """An identified slug submission with all required fields is persisted correctly."""
+    sub = _identified_slug(project, survey, survey_version, response_store, user)
     db_session.add(sub)
     db_session.flush()
 
     saved = db_session.get(SurveySubmission, sub.id)
     assert saved is not None, "SurveySubmission was not persisted"
-    assert saved.submission_channel == "authenticated", (
-        f"submission_channel={saved.submission_channel!r}, expected 'authenticated'"
+    assert saved.submission_channel == "slug", (
+        f"submission_channel={saved.submission_channel!r}, expected 'slug'"
     )
     assert saved.submitted_by_user_id == user.id, (
         f"submitted_by_user_id={saved.submitted_by_user_id!r}, expected {user.id!r}"
@@ -117,29 +136,53 @@ def test_survey_submission_authenticated_can_be_created(
     assert saved.created_at is not None, "created_at was not set by the server default"
 
 
-def test_survey_submission_public_link_can_be_created(
+def test_survey_submission_anonymous_slug_can_be_created(
     db_session: scoped_session[Session],
     project: Project,
     survey: Survey,
     survey_version: SurveyVersion,
     response_store: ResponseStore,
 ) -> None:
-    """A public_link submission with a valid link is persisted correctly."""
-    link = make_survey_public_link(survey.id)
-    db_session.add(link)
-    db_session.flush()
-
-    sub = _public_link(project, survey, survey_version, response_store, link)
+    """An anonymous slug submission with no actor is persisted correctly."""
+    sub = _anonymous_slug(project, survey, survey_version, response_store)
     db_session.add(sub)
     db_session.flush()
 
     saved = db_session.get(SurveySubmission, sub.id)
     assert saved is not None, "SurveySubmission was not persisted"
-    assert saved.submission_channel == "public_link", (
-        f"submission_channel={saved.submission_channel!r}, expected 'public_link'"
+    assert saved.submission_channel == "slug", (
+        f"submission_channel={saved.submission_channel!r}, expected 'slug'"
     )
-    assert saved.public_link_id == link.id, f"public_link_id={saved.public_link_id!r}, expected {link.id!r}"
     assert saved.submitted_by_user_id is None, f"submitted_by_user_id={saved.submitted_by_user_id!r}, expected None"
+    assert saved.is_anonymous is True, f"is_anonymous={saved.is_anonymous!r}, expected True"
+
+
+def test_survey_submission_link_can_be_created(
+    db_session: scoped_session[Session],
+    project: Project,
+    survey: Survey,
+    survey_version: SurveyVersion,
+    response_store: ResponseStore,
+    user: User,
+) -> None:
+    """A link submission with a valid link and actor is persisted correctly."""
+    link = make_survey_public_link(survey.id)
+    db_session.add(link)
+    db_session.flush()
+
+    sub = _link(project, survey, survey_version, response_store, link, user)
+    db_session.add(sub)
+    db_session.flush()
+
+    saved = db_session.get(SurveySubmission, sub.id)
+    assert saved is not None, "SurveySubmission was not persisted"
+    assert saved.submission_channel == "link", (
+        f"submission_channel={saved.submission_channel!r}, expected 'link'"
+    )
+    assert saved.survey_link_id == link.id, f"survey_link_id={saved.survey_link_id!r}, expected {link.id!r}"
+    assert saved.submitted_by_user_id == user.id, (
+        f"submitted_by_user_id={saved.submitted_by_user_id!r}, expected {user.id!r}"
+    )
 
 
 def test_survey_submission_system_can_be_created(
@@ -158,7 +201,7 @@ def test_survey_submission_system_can_be_created(
     assert saved is not None, "SurveySubmission was not persisted"
     assert saved.submission_channel == "system", f"submission_channel={saved.submission_channel!r}, expected 'system'"
     assert saved.submitted_by_user_id is None, f"submitted_by_user_id={saved.submitted_by_user_id!r}, expected None"
-    assert saved.public_link_id is None, f"public_link_id={saved.public_link_id!r}, expected None"
+    assert saved.survey_link_id is None, f"survey_link_id={saved.survey_link_id!r}, expected None"
 
 
 # ---------------------------------------------------------------------------
@@ -180,7 +223,7 @@ def test_survey_submission_cascades_on_survey_delete(
     bypassing SQLAlchemy's ORM relationship handling which would otherwise
     interfere with deletion ordering.
     """
-    sub = _authenticated(project, survey, survey_version, response_store, user)
+    sub = _identified_slug(project, survey, survey_version, response_store, user)
     db_session.add(sub)
     db_session.flush()
 
@@ -193,24 +236,24 @@ def test_survey_submission_cascades_on_survey_delete(
     )
 
 
-def test_survey_submission_authenticated_blocks_user_delete(
+def test_survey_submission_identified_slug_blocks_user_delete(
     db_session: scoped_session[Session],
     project: Project,
     survey: Survey,
     survey_version: SurveyVersion,
     response_store: ResponseStore,
 ) -> None:
-    """Deleting a user with authenticated submissions is blocked by a CheckViolation.
+    """Deleting a user with identified slug submissions is blocked by a CheckViolation.
 
     The FK uses ON DELETE SET NULL, but the CHECK constraint
-    authenticated_requires_user makes NULL impossible for the authenticated
+    identified_slug_requires_user makes NULL impossible for the identified slug
     channel — the two constraints together prevent hard-deleting such users.
     """
     submitter = make_user(auth0_user_id="auth0|sub-del", email="sub-del@example.com")
     db_session.add(submitter)
     db_session.flush()
 
-    sub = _authenticated(project, survey, survey_version, response_store, submitter)
+    sub = _identified_slug(project, survey, survey_version, response_store, submitter)
     db_session.add(sub)
     db_session.flush()
 
@@ -219,8 +262,8 @@ def test_survey_submission_authenticated_blocks_user_delete(
 
     orig = cast(CheckViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
-    assert constraint == "ck_survey_submissions_authenticated_requires_user", (
-        f"Expected constraint 'ck_survey_submissions_authenticated_requires_user', got '{constraint}'\n"
+    assert constraint == "ck_survey_submissions_identified_slug_requires_user", (
+        f"Expected constraint 'ck_survey_submissions_identified_slug_requires_user', got '{constraint}'\n"
         f"DB error: {exc_info.value}"
     )
 
@@ -244,7 +287,7 @@ def test_survey_submission_requires_survey_version_id(
     sub.project_id = project.id
     sub.survey_id = survey.id
     sub.response_store_id = response_store.id
-    sub.submission_channel = "authenticated"
+    sub.submission_channel = "slug"
     sub.submitted_by_user_id = user.id
     sub.status = "pending"
     sub.is_anonymous = False
@@ -307,7 +350,7 @@ def test_survey_submission_rejects_invalid_status(
     user: User,
 ) -> None:
     """status must be one of: pending, stored, failed."""
-    sub = _authenticated(project, survey, survey_version, response_store, user)
+    sub = _identified_slug(project, survey, survey_version, response_store, user)
     sub.status = "invalid"
     db_session.add(sub)
 
@@ -334,7 +377,7 @@ def test_survey_submission_accepts_all_valid_statuses(
     status: str,
 ) -> None:
     """Each of the three valid status values is accepted."""
-    sub = _authenticated(project, survey, survey_version, response_store, user)
+    sub = _identified_slug(project, survey, survey_version, response_store, user)
     sub.status = status
     db_session.add(sub)
     db_session.flush()
@@ -351,10 +394,10 @@ def test_survey_submission_rejects_invalid_channel(
     survey_version: SurveyVersion,
     response_store: ResponseStore,
 ) -> None:
-    """submission_channel must be one of: authenticated, public_link, system.
+    """submission_channel must be one of: link, slug, system.
 
-    No user or link is set so that authenticated_requires_user and
-    public_link_requires_link_id both pass, leaving only submission_channel_valid
+    No user or link is set so that link_requires_user and
+    link_requires_link_id both pass, leaving only submission_channel_valid
     to fire.
     """
     sub = SurveySubmission()
@@ -394,7 +437,7 @@ def test_survey_submission_rejects_submitted_before_started(
     user: User,
 ) -> None:
     """submitted_at must be >= started_at when both are set."""
-    sub = _authenticated(project, survey, survey_version, response_store, user)
+    sub = _identified_slug(project, survey, survey_version, response_store, user)
     sub.started_at = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC)
     sub.submitted_at = datetime(2024, 6, 1, 11, 0, 0, tzinfo=UTC)  # before started_at
     db_session.add(sub)
@@ -422,7 +465,7 @@ def test_survey_submission_accepts_submitted_equals_started(
 ) -> None:
     """submitted_at equal to started_at is a valid edge case (instant submission)."""
     ts = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC)
-    sub = _authenticated(project, survey, survey_version, response_store, user)
+    sub = _identified_slug(project, survey, survey_version, response_store, user)
     sub.started_at = ts
     sub.submitted_at = ts
     db_session.add(sub)
@@ -436,20 +479,20 @@ def test_survey_submission_accepts_submitted_equals_started(
 # ---------------------------------------------------------------------------
 
 
-def test_survey_submission_authenticated_requires_user(
+def test_survey_submission_identified_slug_requires_user(
     db_session: scoped_session[Session],
     project: Project,
     survey: Survey,
     survey_version: SurveyVersion,
     response_store: ResponseStore,
 ) -> None:
-    """authenticated channel must have submitted_by_user_id set."""
+    """An identified slug submission must have submitted_by_user_id set."""
     sub = SurveySubmission()
     sub.project_id = project.id
     sub.survey_id = survey.id
     sub.survey_version_id = survey_version.id
     sub.response_store_id = response_store.id
-    sub.submission_channel = "authenticated"
+    sub.submission_channel = "slug"
     # submitted_by_user_id intentionally omitted
     sub.status = "pending"
     sub.is_anonymous = False
@@ -460,29 +503,31 @@ def test_survey_submission_authenticated_requires_user(
 
     orig = cast(CheckViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
-    assert constraint == "ck_survey_submissions_authenticated_requires_user", (
-        f"Expected constraint 'ck_survey_submissions_authenticated_requires_user', got '{constraint}'\n"
+    assert constraint == "ck_survey_submissions_identified_slug_requires_user", (
+        f"Expected constraint 'ck_survey_submissions_identified_slug_requires_user', got '{constraint}'\n"
         f"DB error: {exc_info.value}"
     )
 
     db_session.rollback()
 
 
-def test_survey_submission_public_link_requires_link_id(
+def test_survey_submission_link_requires_link_id(
     db_session: scoped_session[Session],
     project: Project,
     survey: Survey,
     survey_version: SurveyVersion,
     response_store: ResponseStore,
+    user: User,
 ) -> None:
-    """public_link channel must have public_link_id set."""
+    """link channel must have survey_link_id set."""
     sub = SurveySubmission()
     sub.project_id = project.id
     sub.survey_id = survey.id
     sub.survey_version_id = survey_version.id
     sub.response_store_id = response_store.id
-    sub.submission_channel = "public_link"
-    # public_link_id intentionally omitted
+    sub.submission_channel = "link"
+    sub.submitted_by_user_id = user.id
+    # survey_link_id intentionally omitted
     sub.status = "pending"
     sub.is_anonymous = False
     db_session.add(sub)
@@ -492,8 +537,8 @@ def test_survey_submission_public_link_requires_link_id(
 
     orig = cast(CheckViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
-    assert constraint == "ck_survey_submissions_public_link_requires_link_id", (
-        f"Expected constraint 'ck_survey_submissions_public_link_requires_link_id', got '{constraint}'\n"
+    assert constraint == "ck_survey_submissions_link_requires_link_id", (
+        f"Expected constraint 'ck_survey_submissions_link_requires_link_id', got '{constraint}'\n"
         f"DB error: {exc_info.value}"
     )
 
@@ -508,7 +553,7 @@ def test_survey_submission_system_rejects_actor(
     response_store: ResponseStore,
     user: User,
 ) -> None:
-    """system channel must have no submitted_by_user_id or public_link_id."""
+    """system channel must have no submitted_by_user_id or survey_link_id."""
     sub = _system(project, survey, survey_version, response_store)
     sub.submitted_by_user_id = user.id  # not allowed on system
     db_session.add(sub)
@@ -519,7 +564,7 @@ def test_survey_submission_system_rejects_actor(
     db_session.rollback()
 
 
-def test_survey_submission_authenticated_rejects_link_id(
+def test_survey_submission_slug_rejects_link_id(
     db_session: scoped_session[Session],
     project: Project,
     survey: Survey,
@@ -527,40 +572,60 @@ def test_survey_submission_authenticated_rejects_link_id(
     response_store: ResponseStore,
     user: User,
 ) -> None:
-    """authenticated channel must not have public_link_id set."""
+    """slug channel must not have survey_link_id set."""
     link = make_survey_public_link(survey.id)
     db_session.add(link)
     db_session.flush()
 
-    sub = _authenticated(project, survey, survey_version, response_store, user)
-    sub.public_link_id = link.id  # not allowed on authenticated
+    sub = _identified_slug(project, survey, survey_version, response_store, user)
+    sub.survey_link_id = link.id  # not allowed on slug
     db_session.add(sub)
 
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IntegrityError) as exc_info:
         db_session.flush()
+
+    orig = cast(CheckViolation, exc_info.value.orig)
+    constraint = orig.diag.constraint_name
+    assert constraint == "ck_survey_submissions_slug_has_no_link", (
+        f"Expected constraint 'ck_survey_submissions_slug_has_no_link', got '{constraint}'\n"
+        f"DB error: {exc_info.value}"
+    )
 
     db_session.rollback()
 
 
-def test_survey_submission_public_link_rejects_user(
+def test_survey_submission_link_requires_user(
     db_session: scoped_session[Session],
     project: Project,
     survey: Survey,
     survey_version: SurveyVersion,
     response_store: ResponseStore,
-    user: User,
 ) -> None:
-    """public_link channel must not have submitted_by_user_id set."""
+    """link channel must have submitted_by_user_id set."""
     link = make_survey_public_link(survey.id)
     db_session.add(link)
     db_session.flush()
 
-    sub = _public_link(project, survey, survey_version, response_store, link)
-    sub.submitted_by_user_id = user.id  # not allowed on public_link
+    sub = SurveySubmission()
+    sub.project_id = project.id
+    sub.survey_id = survey.id
+    sub.survey_version_id = survey_version.id
+    sub.response_store_id = response_store.id
+    sub.submission_channel = "link"
+    sub.survey_link_id = link.id
+    sub.status = "pending"
+    sub.is_anonymous = False
     db_session.add(sub)
 
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IntegrityError) as exc_info:
         db_session.flush()
+
+    orig = cast(CheckViolation, exc_info.value.orig)
+    constraint = orig.diag.constraint_name
+    assert constraint == "ck_survey_submissions_link_requires_user", (
+        f"Expected constraint 'ck_survey_submissions_link_requires_user', got '{constraint}'\n"
+        f"DB error: {exc_info.value}"
+    )
 
     db_session.rollback()
 
@@ -579,8 +644,8 @@ def test_survey_submission_anonymous_has_no_user(
     user: User,
 ) -> None:
     """is_anonymous=True must not have submitted_by_user_id set."""
-    # authenticated satisfies authenticated_requires_user; then anonymous_has_no_user fires
-    sub = _authenticated(project, survey, survey_version, response_store, user)
+    # identified slug satisfies identified_slug_requires_user; then anonymous_has_no_user fires
+    sub = _identified_slug(project, survey, survey_version, response_store, user)
     sub.is_anonymous = True
     db_session.add(sub)
 
@@ -654,7 +719,7 @@ def test_survey_submission_survey_must_belong_to_project(
     db_session.add(other_project)
     db_session.flush()
 
-    sub = _authenticated(project, survey, survey_version, response_store, user)
+    sub = _identified_slug(project, survey, survey_version, response_store, user)
     sub.project_id = other_project.id  # mismatch: survey belongs to project, not other_project
     db_session.add(sub)
 
@@ -692,7 +757,7 @@ def test_survey_submission_version_must_belong_to_survey(
     db_session.add(other_version)
     db_session.flush()
 
-    sub = _authenticated(project, survey, survey_version, response_store, user)
+    sub = _identified_slug(project, survey, survey_version, response_store, user)
     sub.survey_version_id = other_version.id  # version belongs to other_survey
     db_session.add(sub)
 
@@ -726,7 +791,7 @@ def test_survey_submission_store_must_belong_to_project(
     db_session.add(store_in_other)
     db_session.flush()
 
-    sub = _authenticated(project, survey, survey_version, response_store, user)
+    sub = _identified_slug(project, survey, survey_version, response_store, user)
     sub.response_store_id = store_in_other.id  # store belongs to other_project
     db_session.add(sub)
 
@@ -743,14 +808,15 @@ def test_survey_submission_store_must_belong_to_project(
     db_session.rollback()
 
 
-def test_survey_submission_public_link_must_belong_to_survey(
+def test_survey_submission_link_must_belong_to_survey(
     db_session: scoped_session[Session],
     project: Project,
     survey: Survey,
     survey_version: SurveyVersion,
     response_store: ResponseStore,
+    user: User,
 ) -> None:
-    """Create a public link for Survey B, try to use it on a submission for Survey A,
+    """Create a link for Survey B, try to use it on a submission for Survey A,
     and assert the DB rejects it with the expected constraint."""
 
     pl_user = make_user(auth0_user_id="auth0|pl-user", email="pl-user@example.com")
@@ -769,7 +835,7 @@ def test_survey_submission_public_link_must_belong_to_survey(
     db_session.add(link_for_other)
     db_session.flush()
 
-    sub = _public_link(project, survey, survey_version, response_store, link_for_other)
+    sub = _link(project, survey, survey_version, response_store, link_for_other, user)
     # link belongs to other_survey but submission is for survey
     db_session.add(sub)
 
@@ -778,8 +844,8 @@ def test_survey_submission_public_link_must_belong_to_survey(
 
     orig = cast(ForeignKeyViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
-    assert constraint == "fk_survey_submissions_public_link_same_survey", (
-        f"Expected constraint 'fk_survey_submissions_public_link_same_survey', got '{constraint}'\n"
+    assert constraint == "fk_survey_submissions_survey_link_same_survey", (
+        f"Expected constraint 'fk_survey_submissions_survey_link_same_survey', got '{constraint}'\n"
         f"DB error: {exc_info.value}"
     )
 
@@ -800,7 +866,7 @@ def test_survey_submission_unique_external_id_within_store(
     user: User,
 ) -> None:
     """Two submissions cannot share an external_submission_id within the same store."""
-    sub_a = _authenticated(project, survey, survey_version, response_store, user)
+    sub_a = _identified_slug(project, survey, survey_version, response_store, user)
     sub_a.external_submission_id = "ext-001"
     db_session.add(sub_a)
     db_session.flush()
@@ -860,7 +926,7 @@ def test_survey_submission_same_external_id_allowed_across_stores(
     db_session.add(other_store)
     db_session.flush()
 
-    sub_a = _authenticated(project, survey, survey_version, response_store, user)
+    sub_a = _identified_slug(project, survey, survey_version, response_store, user)
     sub_a.external_submission_id = "ext-shared"
     db_session.add(sub_a)
     db_session.flush()

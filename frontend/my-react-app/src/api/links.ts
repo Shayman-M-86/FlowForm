@@ -8,7 +8,7 @@ import type {
 } from "./types";
 
 const base = (p: number, s: number) =>
-  `/api/v1/projects/${p}/surveys/${s}/public-links`;
+  `/api/v1/projects/${p}/surveys/${s}/links`;
 
 export function listPublicLinks(
   api: ApiExecutor,

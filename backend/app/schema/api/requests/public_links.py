@@ -15,11 +15,27 @@ def _validate_expires_at(value: AwareDatetime | None) -> AwareDatetime | None:
     return value_utc
 
 
-class CreatePublicLinkRequest(BaseModel):
-    """Request body for creating a public share link for a survey."""
+def _normalize_assigned_email(value: str | None) -> str | None:
+    if value is None:
+        return None
 
-    allow_response: bool = True
+    normalized = value.strip().lower()
+    if not normalized:
+        raise ValueError("assigned_email must not be blank.")
+
+    return normalized
+
+
+class CreatePublicLinkRequest(BaseModel):
+    """Request body for creating a survey link."""
+
+    assigned_email: str | None = None
     expires_at: AwareDatetime | None = None
+
+    @field_validator("assigned_email")
+    @classmethod
+    def validate_assigned_email(cls, value: str | None) -> str | None:
+        return _normalize_assigned_email(value)
 
     @field_validator("expires_at")
     @classmethod
@@ -28,11 +44,16 @@ class CreatePublicLinkRequest(BaseModel):
 
 
 class UpdatePublicLinkRequest(BaseModel):
-    """Request body for partially updating a public share link."""
+    """Request body for partially updating a survey link."""
 
     is_active: bool | None = None
-    allow_response: bool | None = None
+    assigned_email: str | None = None
     expires_at: AwareDatetime | None = None
+
+    @field_validator("assigned_email")
+    @classmethod
+    def validate_assigned_email(cls, value: str | None) -> str | None:
+        return _normalize_assigned_email(value)
 
     @field_validator("expires_at")
     @classmethod

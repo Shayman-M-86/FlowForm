@@ -6,7 +6,7 @@ from app.schema.api.responses.surveys import SurveyOut, SurveyVersionOut
 
 
 class PublicLinkOut(BaseModel):
-    """API response shape for a public link."""
+    """API response shape for a survey link."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -14,13 +14,13 @@ class PublicLinkOut(BaseModel):
     survey_id: int
     token_prefix: str
     is_active: bool
-    allow_response: bool
+    assigned_email: str | None
     expires_at: datetime | None
     created_at: datetime
 
 
 class PublicLinkCreatedOut(BaseModel):
-    """API response returned once when a public link is created, including the plaintext token."""
+    """API response returned once when a survey link is created, including the plaintext token."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -29,7 +29,7 @@ class PublicLinkCreatedOut(BaseModel):
     token: str  # plaintext — returned once only, never stored
     token_prefix: str
     is_active: bool
-    allow_response: bool
+    assigned_email: str | None
     expires_at: datetime | None
     created_at: datetime
 

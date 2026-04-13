@@ -150,16 +150,16 @@ def test_survey_accepts_valid_visibility_values(
     db_session.rollback()
 
 
-def test_survey_public_responses_requires_visible(
+def test_survey_link_only_rejects_public_slug(
     db_session: scoped_session[Session],
     project: Project,
     response_store: ResponseStore,
     user: User,
 ) -> None:
-    """allow_public_responses=True requires visibility to be link_only or public."""
+    """A survey with visibility='link_only' must not have a public_slug."""
     survey = make_survey(project.id, response_store.id, user.id)
-    survey.visibility = "private"
-    survey.allow_public_responses = True
+    survey.visibility = "link_only"
+    survey.public_slug = "link-only-slug"
     db_session.add(survey)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -167,8 +167,8 @@ def test_survey_public_responses_requires_visible(
 
     orig = cast(CheckViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
-    assert constraint == "ck_surveys_public_responses_requires_public_visibility", (
-        f"Expected constraint 'ck_surveys_public_responses_requires_public_visibility', got '{constraint}'\n"
+    assert constraint == "ck_surveys_slug_requires_public_visibility", (
+        f"Expected constraint 'ck_surveys_slug_requires_public_visibility', got '{constraint}'\n"
         f"DB error: {exc_info.value}"
     )
 
@@ -205,7 +205,7 @@ def test_survey_slug_requires_public_visibility(
     response_store: ResponseStore,
     user: User,
 ) -> None:
-    """A survey with a public_slug must have visibility link_only or public."""
+    """A survey with a public_slug must have visibility='public'."""
     survey = make_survey(project.id, response_store.id, user.id)
     survey.visibility = "private"
     survey.public_slug = "my-slug"
@@ -232,13 +232,13 @@ def test_survey_public_slug_is_unique(
 ) -> None:
     """Two surveys cannot share the same public_slug."""
     survey_a = make_survey(project.id, response_store.id, user.id, title="A")
-    survey_a.visibility = "link_only"
+    survey_a.visibility = "public"
     survey_a.public_slug = "shared-slug"
     db_session.add(survey_a)
     db_session.flush()
 
     survey_b = make_survey(project.id, response_store.id, user.id, title="B")
-    survey_b.visibility = "link_only"
+    survey_b.visibility = "public"
     survey_b.public_slug = "shared-slug"
     db_session.add(survey_b)
 

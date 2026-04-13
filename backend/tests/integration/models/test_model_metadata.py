@@ -12,8 +12,8 @@ from app.schema.orm.core import (
     ResponseStore,
     ResponseSubjectMapping,
     Survey,
+    SurveyLink,
     SurveyMembershipRole,
-    SurveyPublicLink,
     SurveyQuestion,
     SurveyRole,
     SurveyRule,
@@ -113,8 +113,8 @@ def test_survey_role_relationships() -> None:
     assert get_relationship(SurveyRole, "permissions").secondary is survey_role_permissions
 
 
-def test_survey_public_link_relationships() -> None:
-    assert get_relationship(SurveyPublicLink, "survey").mapper.class_ is Survey
+def test_survey_link_relationships() -> None:
+    assert get_relationship(SurveyLink, "survey").mapper.class_ is Survey
 
 
 def test_survey_submission_relationships() -> None:
@@ -170,8 +170,8 @@ def test_survey_submission_foreign_keys() -> None:
     assert "fk_survey_submissions_version_same_survey" in names
     assert "fk_survey_submissions_store" in names
     assert "fk_survey_submissions_store_same_project" in names
-    assert "fk_survey_submissions_public_link" in names
-    assert "fk_survey_submissions_public_link_same_survey" in names
+    assert "fk_survey_submissions_survey_link" in names
+    assert "fk_survey_submissions_survey_link_same_survey" in names
     assert "fk_survey_submissions_subject_same_project" in names
 
 
@@ -212,11 +212,11 @@ def test_survey_role_unique_constraints() -> None:
     assert "uq_survey_roles_project_id_name" in names
 
 
-def test_survey_public_link_unique_constraints() -> None:
-    names = unique_constraint_names(SurveyPublicLink)
-    assert "uq_survey_public_links_token_hash" in names
-    assert "uq_survey_public_links_survey_id_id" in names
-    assert "uq_survey_public_links_survey_id_token_prefix" in names
+def test_survey_link_unique_constraints() -> None:
+    names = unique_constraint_names(SurveyLink)
+    assert "uq_survey_links_token_hash" in names
+    assert "uq_survey_links_survey_id_id" in names
+    assert "uq_survey_links_survey_id_token_prefix" in names
 
 
 def test_survey_submission_indexes() -> None:

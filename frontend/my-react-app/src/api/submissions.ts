@@ -1,7 +1,6 @@
 import type {
   ApiExecutor,
   CoreSubmissionOut,
-  CreateSubmissionRequest,
   LinkedSubmissionOut,
   ListSubmissionsParams,
   PaginatedSubmissionsOut,
@@ -27,18 +26,6 @@ export function getSubmission(
   return api.getWithQuery<LinkedSubmissionOut>(
     `/api/v1/projects/${projectId}/submissions/${submissionId}`,
     { include_answers: includeAnswers },
-  );
-}
-
-export function createSubmission(
-  api: ApiExecutor,
-  projectId: number,
-  surveyId: number,
-  data: CreateSubmissionRequest,
-): Promise<LinkedSubmissionOut> {
-  return api.post<LinkedSubmissionOut>(
-    `/api/v1/projects/${projectId}/surveys/${surveyId}/submissions`,
-    data,
   );
 }
 

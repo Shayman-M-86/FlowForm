@@ -1,22 +1,22 @@
 import { useCallback, useState } from "react";
 import { useApi } from "../../api/useApi";
-import type { CreatePublicLinkOut } from "../../api/types";
+import type { CreatePublicLinkOut, SurveyVisibility } from "../../api/types";
 import { useFetch } from "../../hooks/useFetch";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Modal } from "../ui/Modal";
 import { Spinner } from "../ui/Spinner";
-import { Toggle } from "../ui/Toggle";
 import "../../App.css";
 import "./PublicLinkList.css";
 
 interface PublicLinkListProps {
   projectId: number;
   surveyId: number;
+  surveyVisibility: SurveyVisibility;
 }
 
-export function PublicLinkList({ projectId, surveyId }: PublicLinkListProps) {
+export function PublicLinkList({ projectId, surveyId, surveyVisibility }: PublicLinkListProps) {
   const api = useApi();
   const fetcher = useCallback(
     () => api.listPublicLinks(projectId, surveyId),
@@ -25,7 +25,7 @@ export function PublicLinkList({ projectId, surveyId }: PublicLinkListProps) {
   const { data, loading, error, refetch } = useFetch(fetcher, [projectId, surveyId]);
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [allowResponse, setAllowResponse] = useState(true);
+  const [assignedEmail, setAssignedEmail] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -34,15 +34,22 @@ export function PublicLinkList({ projectId, surveyId }: PublicLinkListProps) {
   const [revealResult, setRevealResult] = useState<CreatePublicLinkOut | null>(null);
 
   async function handleCreate() {
+    if (surveyVisibility === "private" && !assignedEmail.trim()) {
+      setCreateError("Assigned email is required for private surveys.");
+      return;
+    }
+
     setCreating(true);
     setCreateError(null);
     try {
       const result = await api.createPublicLink(projectId, surveyId, {
-        allow_response: allowResponse,
+        assigned_email: surveyVisibility === "private" ? assignedEmail.trim().toLowerCase() : null,
         expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
       });
       refetch();
       setCreateOpen(false);
+      setAssignedEmail("");
+      setExpiresAt("");
       setRevealResult(result);
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Failed to create link.");
@@ -70,7 +77,7 @@ export function PublicLinkList({ projectId, surveyId }: PublicLinkListProps) {
   return (
     <div>
       {links.length === 0 ? (
-        <div className="empty-state">No public links yet.</div>
+        <div className="empty-state">No links yet.</div>
       ) : (
         <div className="item-list">
           {links.map((link) => (
@@ -81,7 +88,7 @@ export function PublicLinkList({ projectId, surveyId }: PublicLinkListProps) {
                   <Badge variant={link.is_active ? "success" : "muted"}>
                     {link.is_active ? "active" : "inactive"}
                   </Badge>
-                  {link.allow_response && <Badge variant="accent">responses on</Badge>}
+                  {link.assigned_email && <Badge variant="accent">{link.assigned_email}</Badge>}
                   {link.expires_at && (
                     <span className="link-expires">
                       Expires {new Date(link.expires_at).toLocaleDateString()}
@@ -116,7 +123,7 @@ export function PublicLinkList({ projectId, surveyId }: PublicLinkListProps) {
       <Modal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        title="Create Public Link"
+        title="Create Link"
         footer={
           <>
             <Button variant="ghost" onClick={() => setCreateOpen(false)}>Cancel</Button>
@@ -127,12 +134,15 @@ export function PublicLinkList({ projectId, surveyId }: PublicLinkListProps) {
         }
       >
         {createError && <div className="error-banner">{createError}</div>}
-        <Toggle
-          label="Allow responses"
-          checked={allowResponse}
-          onChange={setAllowResponse}
-          hint="If off, the link resolves the survey but cannot submit answers."
-        />
+        {surveyVisibility === "private" && (
+          <Input
+            label="Assigned email"
+            value={assignedEmail}
+            onChange={(e) => setAssignedEmail(e.target.value)}
+            placeholder="person@example.com"
+            hint="Only this authenticated email can resolve and submit with the link."
+          />
+        )}
         <Input
           label="Expires at (optional)"
           type="datetime-local"

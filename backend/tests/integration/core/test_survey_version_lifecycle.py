@@ -9,9 +9,9 @@ from sqlalchemy.orm import Session, scoped_session
 from app.core.errors import AppError
 from app.repositories import surveys_repo
 from app.schema.api.requests.submissions.answers import FieldAnswerIn, FieldAnswerValue
-from app.schema.api.requests.submissions.create import CreateSubmissionRequest
+from app.schema.api.requests.submissions.create import SlugSubmissionRequest
 from app.schema.orm.core.survey_content import SurveyQuestion, SurveyRule, SurveyScoringRule
-from app.services.submissions import SubmissionService
+from app.services.submissions import SubmissionIntakeService
 from app.services.surveys import SurveyService
 from tests.integration.conftest import DbSessions
 from tests.integration.core.factories import (
@@ -204,6 +204,8 @@ def test_unpublished_survey_rejects_submission_after_unpublish(
     core_db.flush()
 
     survey = make_survey(project.id, store.id, user.id, title="Submit Survey")
+    survey.visibility = "public"
+    survey.public_slug = "submit-survey"
     core_db.add(survey)
     core_db.flush()
 
@@ -226,10 +228,10 @@ def test_unpublished_survey_rejects_submission_after_unpublish(
         actor=user,
     )
 
-    submission_service = SubmissionService()
-    payload = CreateSubmissionRequest(
+    submission_service = SubmissionIntakeService()
+    payload = SlugSubmissionRequest(
+        public_slug=survey.public_slug,
         survey_version_id=version.id,
-        submitted_by_user_id=user.id,
         answers=[
             FieldAnswerIn(
                 question_key="q1",
@@ -240,12 +242,11 @@ def test_unpublished_survey_rejects_submission_after_unpublish(
     )
 
     with pytest.raises(AppError) as exc_info:
-        submission_service.create_project_submission(
+        submission_service.create_slug_submission(
             core_db,
             response_db,
-            project_id=project.id,
-            survey_id=survey.id,
             payload=payload,
+            submitted_by_user_id=user.id,
         )
 
     assert exc_info.value.code == "SURVEY_NOT_PUBLISHED"

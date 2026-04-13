@@ -1,10 +1,17 @@
 import { useCallback, useState } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { createPublicSubmission, getPublicSurvey, resolveToken } from "../api/public";
+import {
+  createLinkSubmission,
+  createSlugSubmission,
+  getPublicSurvey,
+  resolveToken,
+} from "../api/public";
 import type { AnswerIn, PublicSurveyOut, ResolveLinkOut } from "../api/types";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
 import { useFetch } from "../hooks/useFetch";
+import { hasSubmitted, markSubmitted, surveyKey, tokenKey } from "../hooks/useSubmissionGuard";
 import "./QuizTakerPage.css";
 
 interface QuizTakerPageProps {
@@ -68,7 +75,6 @@ function QuestionRenderer({ schema, questionKey, value, onChange }: QuestionRend
           );
         }
 
-        // single-select radio
         return (
           <div className="quiz-choices">
             {opts.map((opt) => (
@@ -158,7 +164,6 @@ function buildAnswerValue(
 ): Record<string, unknown> {
   switch (family) {
     case "choice": {
-      // rawValue is string (single) or string[] (multi)
       const selected = Array.isArray(rawValue) ? rawValue : rawValue != null ? [rawValue] : [];
       return { selected };
     }
@@ -167,7 +172,6 @@ function buildAnswerValue(
     case "rating":
       return { value: rawValue ?? null };
     case "matching": {
-      // rawValue is Record<leftId, rightId>
       const matchMap = (rawValue as Record<string, string>) ?? {};
       const matches = Object.entries(matchMap)
         .filter(([, rightId]) => rightId)
@@ -183,10 +187,14 @@ function buildAnswerValue(
 
 interface QuizFormProps {
   survey: PublicSurveyOut | ResolveLinkOut;
-  token?: string;
+  guardKey: string;
+  /** Called with the built answer list; should return a promise that resolves on success. */
+  onSubmit: (answers: AnswerIn[], versionId: number) => Promise<void>;
+  /** Whether a submission mechanism is available (false = preview mode). */
+  canSubmit: boolean;
 }
 
-function QuizForm({ survey, token }: QuizFormProps) {
+function QuizForm({ survey, guardKey, onSubmit, canSubmit }: QuizFormProps) {
   const surveyData = "survey" in survey ? survey.survey : null;
   const version    = "published_version" in survey ? survey.published_version : null;
   const questions  = version?.compiled_schema?.questions ?? [];
@@ -194,7 +202,7 @@ function QuizForm({ survey, token }: QuizFormProps) {
   const [answers,     setAnswers]     = useState<Record<string, unknown>>({});
   const [submitting,  setSubmitting]  = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitted,   setSubmitted]   = useState(false);
+  const [submitted,   setSubmitted]   = useState(() => hasSubmitted(guardKey));
 
   function setAnswer(key: string, value: unknown) {
     setAnswers((prev) => ({ ...prev, [key]: value }));
@@ -202,7 +210,7 @@ function QuizForm({ survey, token }: QuizFormProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!version || !token) return;
+    if (!version) return;
     setSubmitting(true);
     setSubmitError(null);
 
@@ -211,23 +219,16 @@ function QuizForm({ survey, token }: QuizFormProps) {
       .map((q) => {
         const qSchema = q.question_schema as Record<string, unknown>;
         const family  = (qSchema.family as string) ?? "field";
-        const rawValue = answers[q.question_key];
         return {
           question_key: q.question_key,
           answer_family: family,
-          answer_value: buildAnswerValue(family, rawValue, qSchema),
+          answer_value: buildAnswerValue(family, answers[q.question_key], qSchema),
         };
       });
 
     try {
-      await createPublicSubmission({
-        public_token: token,
-        survey_version_id: version.id,
-        is_anonymous: true,
-        answers: answerList,
-        started_at: new Date().toISOString(),
-        submitted_at: new Date().toISOString(),
-      });
+      await onSubmit(answerList, version.id);
+      markSubmitted(guardKey);
       setSubmitted(true);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Submission failed.");
@@ -240,8 +241,8 @@ function QuizForm({ survey, token }: QuizFormProps) {
     return (
       <div className="quiz-thankyou">
         <div className="quiz-thankyou__icon">✓</div>
-        <h2>Response submitted!</h2>
-        <p>Thank you for completing {surveyData?.title ?? "this quiz"}.</p>
+        <h2>Already submitted</h2>
+        <p>You have already completed {surveyData?.title ?? "this survey"} in this browser.</p>
       </div>
     );
   }
@@ -271,7 +272,7 @@ function QuizForm({ survey, token }: QuizFormProps) {
         <div className="quiz-inline-error">{submitError}</div>
       )}
 
-      {token ? (
+      {canSubmit ? (
         <Button type="submit" variant="primary" disabled={submitting}>
           {submitting ? "Submitting…" : "Submit"}
         </Button>
@@ -284,32 +285,100 @@ function QuizForm({ survey, token }: QuizFormProps) {
   );
 }
 
-// ── Page: slug mode ───────────────────────────────────────────────────────────
+// ── Page: slug mode (no auth required) ───────────────────────────────────────
 
 function SlugQuizPage({ slug }: { slug: string }) {
+  const { isAuthenticated, getAccessTokenSilently } = useAuth0();
   const fetcher = useCallback(() => getPublicSurvey(slug), [slug]);
   const { data, loading, error } = useFetch(fetcher, [slug]);
+
+  const handleSubmit = useCallback(async (answers: AnswerIn[], versionId: number) => {
+    let authHeaders: HeadersInit | undefined;
+    if (isAuthenticated) {
+      const accessToken = await getAccessTokenSilently({
+        authorizationParams: { audience: import.meta.env.VITE_AUTH0_AUDIENCE },
+      });
+      authHeaders = { Authorization: `Bearer ${accessToken}` };
+    }
+
+    await createSlugSubmission({
+      public_slug: slug,
+      survey_version_id: versionId,
+      answers,
+      started_at: new Date().toISOString(),
+      submitted_at: new Date().toISOString(),
+    }, authHeaders);
+  }, [slug, isAuthenticated, getAccessTokenSilently]);
 
   if (loading) return <div className="quiz-loading"><Spinner /></div>;
   if (error)   return <div className="quiz-error">{error}</div>;
   if (!data)   return null;
 
-  return <QuizForm survey={data} />;
+  const canSubmit = data.published_version !== null;
+
+  return (
+    <QuizForm
+      survey={data}
+      guardKey={surveyKey(data.survey.id)}
+      onSubmit={handleSubmit}
+      canSubmit={canSubmit}
+    />
+  );
 }
 
-// ── Page: token mode ──────────────────────────────────────────────────────────
+// ── Page: token mode (auth required) ─────────────────────────────────────────
 
 function TokenQuizPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") ?? "";
+  const { isLoading, isAuthenticated, loginWithRedirect, getAccessTokenSilently } = useAuth0();
 
-  const fetcher = useCallback(
-    () => (token ? resolveToken(token) : Promise.reject(new Error("No token provided."))),
-    [token],
-  );
-  const { data, loading, error } = useFetch(token ? fetcher : null, [token]);
+  const fetcher = useCallback(async () => {
+    if (!token) throw new Error("No token provided.");
+    const accessToken = await getAccessTokenSilently({
+      authorizationParams: { audience: import.meta.env.VITE_AUTH0_AUDIENCE },
+    });
+    return resolveToken(token, { Authorization: `Bearer ${accessToken}` });
+  }, [token, getAccessTokenSilently]);
+
+  const { data, loading, error } = useFetch(isAuthenticated ? fetcher : null, [token, isAuthenticated]);
+
+  const handleSubmit = useCallback(async (answers: AnswerIn[], versionId: number) => {
+    const accessToken = await getAccessTokenSilently({
+      authorizationParams: { audience: import.meta.env.VITE_AUTH0_AUDIENCE },
+    });
+    await createLinkSubmission(
+      {
+        token,
+        survey_version_id: versionId,
+        answers,
+        started_at: new Date().toISOString(),
+        submitted_at: new Date().toISOString(),
+      },
+      { Authorization: `Bearer ${accessToken}` },
+    );
+  }, [token, getAccessTokenSilently]);
 
   if (!token) return <div className="quiz-error">No token provided in URL (?token=…).</div>;
+
+  if (isLoading) return <div className="quiz-loading"><Spinner /></div>;
+
+  if (!isAuthenticated) {
+    return (
+      <div className="quiz-auth-gate">
+        <p>You need to sign in to access this survey link.</p>
+        <Button
+          variant="primary"
+          onClick={() => loginWithRedirect({
+            appState: { returnTo: `${window.location.pathname}${window.location.search}` },
+          })}
+        >
+          Sign in to continue
+        </Button>
+      </div>
+    );
+  }
+
   if (loading) return <div className="quiz-loading"><Spinner /></div>;
   if (error)   return <div className="quiz-error">{error}</div>;
   if (!data)   return null;
@@ -318,10 +387,15 @@ function TokenQuizPage() {
     return <div className="quiz-error">This link is no longer active.</div>;
   if (data.link.expires_at && new Date(data.link.expires_at) < new Date())
     return <div className="quiz-error">This link has expired.</div>;
-  if (!data.link.allow_response)
-    return <div className="quiz-error">This link does not allow responses.</div>;
 
-  return <QuizForm survey={data} token={token} />;
+  return (
+    <QuizForm
+      survey={data}
+      guardKey={tokenKey(data.link.token_prefix)}
+      onSubmit={handleSubmit}
+      canSubmit={true}
+    />
+  );
 }
 
 // ── Top-level export ──────────────────────────────────────────────────────────

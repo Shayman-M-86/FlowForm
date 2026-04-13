@@ -1,4 +1,5 @@
 from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.orm import Session
 
 from app.schema.orm.core.survey_submission import SurveySubmission
@@ -32,6 +33,7 @@ def list_submissions(
     items = list(
         db.scalars(
             select(SurveySubmission)
+            .options(selectinload(SurveySubmission.submitted_by))
             .where(*filters)
             .order_by(SurveySubmission.id.desc())
             .limit(page_size)

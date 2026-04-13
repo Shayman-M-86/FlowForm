@@ -164,7 +164,6 @@ INSERT INTO surveys (
     project_id,
     title,
     visibility,
-    allow_public_responses,
     public_slug,
     default_response_store_id,
     published_version_id,
@@ -177,8 +176,7 @@ INSERT INTO surveys (
         1,
         'Employee Engagement Pulse',
         'link_only',
-        TRUE,
-        'employee-engagement-pulse',
+        NULL,
         1,
         NULL,
         2,
@@ -190,7 +188,6 @@ INSERT INTO surveys (
         1,
         'Manager Effectiveness Review',
         'private',
-        FALSE,
         NULL,
         2,
         NULL,
@@ -203,7 +200,6 @@ INSERT INTO surveys (
         2,
         'Beta Signup Experience',
         'public',
-        TRUE,
         'beta-signup-experience',
         3,
         NULL,
@@ -351,13 +347,13 @@ INSERT INTO survey_membership_roles (project_id, survey_id, membership_id, role_
 -- PUBLIC LINKS
 -- =========================================
 
-INSERT INTO survey_public_links (
+INSERT INTO survey_links (
     id,
     survey_id,
     token_prefix,
     token_hash,
     is_active,
-    allow_response,
+    assigned_email,
     expires_at,
     created_at
 ) VALUES
@@ -367,7 +363,7 @@ INSERT INTO survey_public_links (
         'acmepuls01',
         repeat('a', 64),
         TRUE,
-        TRUE,
+        NULL,
         NOW() + INTERVAL '30 days',
         NOW() - INTERVAL '5 days'
     ),
@@ -377,7 +373,7 @@ INSERT INTO survey_public_links (
         'betasign02',
         repeat('b', 64),
         TRUE,
-        TRUE,
+        NULL,
         NOW() + INTERVAL '14 days',
         NOW() - INTERVAL '2 days'
     );
@@ -409,7 +405,7 @@ INSERT INTO survey_submissions (
     response_store_id,
     submission_channel,
     submitted_by_user_id,
-    public_link_id,
+    survey_link_id,
     pseudonymous_subject_id,
     external_submission_id,
     status,
@@ -426,7 +422,7 @@ INSERT INTO survey_submissions (
         1,
         2,
         1,
-        'authenticated',
+        'slug',
         2,
         NULL,
         '11111111-1111-1111-1111-111111111111',
@@ -445,13 +441,13 @@ INSERT INTO survey_submissions (
         1,
         2,
         1,
-        'public_link',
-        NULL,
+        'link',
+        2,
         1,
-        NULL,
+        '11111111-1111-1111-1111-111111111111',
         'core-sub-0002',
         'stored',
-        TRUE,
+        FALSE,
         NOW() - INTERVAL '3 days 20 minutes',
         NOW() - INTERVAL '3 days',
         NOW() - INTERVAL '3 days',
@@ -470,7 +466,7 @@ INSERT INTO survey_submissions (
         NULL,
         'core-sub-0003',
         'failed',
-        TRUE,
+        FALSE,
         NOW() - INTERVAL '2 days 40 minutes',
         NOW() - INTERVAL '2 days',
         NOW() - INTERVAL '2 days',
@@ -483,13 +479,13 @@ INSERT INTO survey_submissions (
         3,
         5,
         3,
-        'public_link',
-        NULL,
+        'link',
+        5,
         2,
-        NULL,
+        '33333333-3333-3333-3333-333333333333',
         'core-sub-0004',
         'stored',
-        TRUE,
+        FALSE,
         NOW() - INTERVAL '18 hours 10 minutes',
         NOW() - INTERVAL '18 hours',
         NOW() - INTERVAL '18 hours',
@@ -587,7 +583,7 @@ SELECT setval('survey_questions_id_seq', COALESCE((SELECT MAX(id) FROM survey_qu
 SELECT setval('survey_rules_id_seq', COALESCE((SELECT MAX(id) FROM survey_rules), 1), true);
 SELECT setval('survey_scoring_rules_id_seq', COALESCE((SELECT MAX(id) FROM survey_scoring_rules), 1), true);
 SELECT setval('survey_roles_id_seq', COALESCE((SELECT MAX(id) FROM survey_roles), 1), true);
-SELECT setval('survey_public_links_id_seq', COALESCE((SELECT MAX(id) FROM survey_public_links), 1), true);
+SELECT setval('survey_links_id_seq', COALESCE((SELECT MAX(id) FROM survey_links), 1), true);
 SELECT setval('response_subject_mappings_id_seq', COALESCE((SELECT MAX(id) FROM response_subject_mappings), 1), true);
 SELECT setval('survey_submissions_id_seq', COALESCE((SELECT MAX(id) FROM survey_submissions), 1), true);
 SELECT setval('audit_logs_id_seq', COALESCE((SELECT MAX(id) FROM audit_logs), 1), true);
