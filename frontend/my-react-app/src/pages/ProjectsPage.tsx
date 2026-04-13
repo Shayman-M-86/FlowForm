@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CreateProjectRequest } from "../api/types";
+import { projectSurveysPath, setStoredProjectSelection } from "../components/layout/projectSelection";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
@@ -73,7 +74,8 @@ export function ProjectsPage() {
       refetch();
       setShowCreate(false);
       resetForm();
-      navigate(`/projects/${project.id}/surveys`);
+      setStoredProjectSelection(project);
+      navigate(projectSurveysPath(project));
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Failed to create project.");
     } finally {
@@ -102,7 +104,10 @@ export function ProjectsPage() {
               <div
                 key={p.id}
                 className="survey-card"
-                onClick={() => navigate(`/projects/${p.id}/surveys`)}
+                onClick={() => {
+                  setStoredProjectSelection(p);
+                  navigate(projectSurveysPath(p));
+                }}
                 style={{ cursor: "pointer" }}
               >
                 <div className="survey-card-title">{p.name}</div>

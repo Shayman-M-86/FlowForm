@@ -17,6 +17,22 @@ export function ProtectedApp({ children }: ProtectedAppProps) {
     const [bootstrapErrorCode, setBootstrapErrorCode] = useState<string | null>(null);
     const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
 
+    async function clearSiteDataAndLogout() {
+        try {
+            window.localStorage.clear();
+            window.sessionStorage.clear();
+
+            if ("caches" in window) {
+                const cacheKeys = await window.caches.keys();
+                await Promise.all(cacheKeys.map((key) => window.caches.delete(key)));
+            }
+        } finally {
+            await logout({
+                logoutParams: { returnTo: window.location.origin },
+            });
+        }
+    }
+
     useEffect(() => {
         if (isLoading || !isAuthenticated) {
             setBootstrapReady(false);
@@ -89,15 +105,20 @@ export function ProtectedApp({ children }: ProtectedAppProps) {
                 <div className="auth-card">
                     <h1>Authentication error</h1>
                     <p>{error.message}</p>
-                    <button
-                        onClick={() =>
-                            loginWithRedirect({
-                                appState: { returnTo: getAuthReturnTo() },
-                            })
-                        }
-                    >
-                        Try again
-                    </button>
+                    <div className="auth-actions">
+                        <button
+                            onClick={() =>
+                                loginWithRedirect({
+                                    appState: { returnTo: getAuthReturnTo() },
+                                })
+                            }
+                        >
+                            Try again
+                        </button>
+                        <button className="secondary" onClick={() => void clearSiteDataAndLogout()}>
+                            Log out
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -169,11 +190,7 @@ export function ProtectedApp({ children }: ProtectedAppProps) {
                             </button>
                             <button
                                 className="secondary"
-                                onClick={() =>
-                                    logout({
-                                        logoutParams: { returnTo: window.location.origin },
-                                    })
-                                }
+                                onClick={() => void clearSiteDataAndLogout()}
                             >
                                 Log out
                             </button>

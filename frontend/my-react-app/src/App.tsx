@@ -54,10 +54,10 @@ function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/take" element={<TakeSurveyPage />} />
-        <Route path="/projects/:projectId/surveys" element={<SurveysPage />} />
-        <Route path="/projects/:projectId/surveys/:surveyId" element={<SurveyEditorPage />} />
-        <Route path="/projects/:projectId/surveys/:surveyId/submissions" element={<SubmissionsPage />} />
-        <Route path="/projects/:projectId/submissions" element={<SubmissionsPage />} />
+        <Route path="/projects/:projectRef/surveys" element={<SurveysPage />} />
+        <Route path="/projects/:projectRef/surveys/:surveyId" element={<SurveyEditorPage />} />
+        <Route path="/projects/:projectRef/surveys/:surveyId/submissions" element={<SubmissionsPage />} />
+        <Route path="/projects/:projectRef/submissions" element={<SubmissionsPage />} />
       </Route>
 
       {/* Fallback */}

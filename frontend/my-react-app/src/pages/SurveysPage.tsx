@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import type { CreateSurveyRequest, SurveyVisibility } from "../api/types";
 import { SurveyCard } from "../components/survey/SurveyCard";
 import { Badge } from "../components/ui/Badge";
@@ -12,6 +12,8 @@ import { useFetch } from "../hooks/useFetch";
 import "../App.css";
 import "./SurveysPage.css";
 import { useApi } from "../api/useApi";
+import { projectSurveysPath } from "../components/layout/projectSelection";
+import { useProjectContext } from "../hooks/useProjectContext";
 
 
 const VISIBILITY_OPTIONS = [
@@ -22,11 +24,28 @@ const VISIBILITY_OPTIONS = [
 
 export function SurveysPage() {
   const { listSurveys, createSurvey } = useApi();
-  const { projectId } = useParams<{ projectId: string }>();
-  const id = Number(projectId);
+  const navigate = useNavigate();
+  const { projectRef: routeProjectRef } = useParams<{ projectRef: string }>();
+  const { currentProject, projectId, projectRef, loading: projectLoading, error: projectError } =
+    useProjectContext(routeProjectRef);
+  const id = projectId ?? 0;
 
-  const fetcher = useCallback(() => listSurveys(id), [id]);
-  const { data: surveys, loading, error, refetch } = useFetch(fetcher, [id]);
+  useEffect(() => {
+    if (
+      currentProject &&
+      routeProjectRef &&
+      routeProjectRef !== currentProject.slug &&
+      String(currentProject.id) === routeProjectRef
+    ) {
+      navigate(projectSurveysPath(currentProject), { replace: true });
+    }
+  }, [currentProject, navigate, routeProjectRef]);
+
+  const fetcher = useCallback(
+    () => (projectId ? listSurveys(projectId) : Promise.resolve([])),
+    [listSurveys, projectId],
+  );
+  const { data: surveys, loading, error, refetch } = useFetch(projectId ? fetcher : null, [projectId]);
 
   const [showCreate, setShowCreate] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -62,11 +81,15 @@ export function SurveysPage() {
   }
 
   const showSlug = form.visibility === "public";
+  if (projectLoading) return <div className="page"><Spinner /></div>;
+  if (projectError) return <div className="page"><div className="error-banner">{projectError}</div></div>;
+  if (!currentProject || !projectRef) return <div className="page"><div className="error-banner">Project not found.</div></div>;
+
   return (
     <div className="page">
       <div className="page-header">
         <h1 className="page-title">
-          Surveys <Badge variant="muted">{`Project ${String(id)}`}</Badge>
+          Surveys <Badge variant="muted">{currentProject.slug}</Badge>
         </h1>
         <Button variant="primary" onClick={() => setShowCreate(true)}>
           + New Survey
@@ -82,7 +105,7 @@ export function SurveysPage() {
         ) : (
           <div className="surveys-grid">
             {surveys.map((s) => (
-              <SurveyCard key={s.id} survey={s} projectId={id} />
+              <SurveyCard key={s.id} survey={s} projectRef={projectRef} />
             ))}
           </div>
         )

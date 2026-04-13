@@ -1,6 +1,7 @@
 import type {
   ApiExecutor,
   CreateSurveyRequest,
+  ProjectRef,
   SurveyOut,
   SurveyVersionOut,
   UpdateSurveyRequest,
@@ -8,13 +9,13 @@ import type {
 
 // ── Surveys ───────────────────────────────────────────────────────────────────
 
-export function listSurveys(api: ApiExecutor, projectId: number): Promise<SurveyOut[]> {
+export function listSurveys(api: ApiExecutor, projectId: ProjectRef): Promise<SurveyOut[]> {
   return api.get<SurveyOut[]>(`/api/v1/projects/${projectId}/surveys`);
 }
 
 export function getSurvey(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
 ): Promise<SurveyOut> {
   return api.get<SurveyOut>(`/api/v1/projects/${projectId}/surveys/${surveyId}`);
@@ -22,7 +23,7 @@ export function getSurvey(
 
 export function createSurvey(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   data: CreateSurveyRequest,
 ): Promise<SurveyOut> {
   return api.post<SurveyOut>(`/api/v1/projects/${projectId}/surveys`, data);
@@ -30,7 +31,7 @@ export function createSurvey(
 
 export function updateSurvey(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   data: UpdateSurveyRequest,
 ): Promise<SurveyOut> {
@@ -39,7 +40,7 @@ export function updateSurvey(
 
 export function deleteSurvey(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
 ): Promise<void> {
   return api.del(`/api/v1/projects/${projectId}/surveys/${surveyId}`);
@@ -49,7 +50,7 @@ export function deleteSurvey(
 
 export function listVersions(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
 ): Promise<SurveyVersionOut[]> {
   return api.get<SurveyVersionOut[]>(
@@ -59,7 +60,7 @@ export function listVersions(
 
 export function getVersion(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
 ): Promise<SurveyVersionOut> {
@@ -70,7 +71,7 @@ export function getVersion(
 
 export function createVersion(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
 ): Promise<SurveyVersionOut> {
   return api.post<SurveyVersionOut>(
@@ -80,7 +81,7 @@ export function createVersion(
 
 export function copyVersionToDraft(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
 ): Promise<SurveyVersionOut> {
@@ -91,7 +92,7 @@ export function copyVersionToDraft(
 
 export function publishVersion(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
 ): Promise<SurveyVersionOut> {
@@ -102,7 +103,7 @@ export function publishVersion(
 
 export function archiveVersion(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
 ): Promise<SurveyVersionOut> {

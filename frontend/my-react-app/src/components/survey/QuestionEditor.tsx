@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Modal } from "../ui/Modal";
@@ -103,16 +103,22 @@ function defaultQuestionSchema(family: QuestionType): Record<string, unknown> {
 }
 
 export function QuestionEditor({ open, onClose, onSave, initial }: QuestionEditorProps) {
-  const initFamily: QuestionType =
-    (initial?.question_schema?.family as QuestionType) ?? "choice";
-
-  const [key,    setKey]    = useState(initial?.question_key ?? "");
-  const [family, setFamily] = useState<QuestionType>(initFamily);
-  const [schema, setSchema] = useState<Record<string, unknown>>(
-    initial?.question_schema ?? defaultQuestionSchema(initFamily),
-  );
+  const [key,    setKey]    = useState("");
+  const [family, setFamily] = useState<QuestionType>("choice");
+  const [schema, setSchema] = useState<Record<string, unknown>>(defaultQuestionSchema("choice"));
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState<string | string[] | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const nextFamily = (initial?.question_schema?.family as QuestionType) ?? "choice";
+    setKey(initial?.question_key ?? "");
+    setFamily(nextFamily);
+    setSchema(initial?.question_schema ?? defaultQuestionSchema(nextFamily));
+    setError(null);
+    setSaving(false);
+  }, [initial, open]);
 
   function changeFamily(f: QuestionType) {
     setFamily(f);

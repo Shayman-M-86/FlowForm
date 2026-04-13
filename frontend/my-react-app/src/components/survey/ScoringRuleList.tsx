@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../../api/useApi";
 import type { CreateScoringRuleRequest, ScoringRuleOut } from "../../api/types";
 import { useFetch } from "../../hooks/useFetch";
@@ -371,19 +371,28 @@ export function ScoringRuleList({
 
   function openAdd() {
     setEditing(null);
-    setScoringKey("");
-    setEditorState(defaultEditorState());
-    setSaveError(null);
     setEditorOpen(true);
   }
 
   function openEdit(r: ScoringRuleOut) {
     setEditing(r);
-    setScoringKey(r.scoring_key);
-    setEditorState(parseEditorState(r.scoring_schema as Record<string, unknown>));
-    setSaveError(null);
     setEditorOpen(true);
   }
+
+  useEffect(() => {
+    if (!editorOpen) return;
+
+    if (editing) {
+      setScoringKey(editing.scoring_key);
+      setEditorState(parseEditorState(editing.scoring_schema as Record<string, unknown>));
+    } else {
+      setScoringKey("");
+      setEditorState(defaultEditorState());
+    }
+
+    setSaveError(null);
+    setSaving(false);
+  }, [editing, editorOpen]);
 
   async function handleSave() {
     if (!scoringKey.trim())      { setSaveError("Scoring key is required.");        return; }

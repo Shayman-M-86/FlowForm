@@ -3,16 +3,17 @@ import type {
   CreatePublicLinkOut,
   CreatePublicLinkRequest,
   ListPublicLinksOut,
+  ProjectRef,
   PublicLinkOut,
   UpdatePublicLinkRequest,
 } from "./types";
 
-const base = (p: number, s: number) =>
+const base = (p: ProjectRef, s: number) =>
   `/api/v1/projects/${p}/surveys/${s}/links`;
 
 export function listPublicLinks(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
 ): Promise<ListPublicLinksOut> {
   return api.get<ListPublicLinksOut>(base(projectId, surveyId));
@@ -20,7 +21,7 @@ export function listPublicLinks(
 
 export function createPublicLink(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   data: CreatePublicLinkRequest,
 ): Promise<CreatePublicLinkOut> {
@@ -29,7 +30,7 @@ export function createPublicLink(
 
 export function updatePublicLink(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   linkId: number,
   data: UpdatePublicLinkRequest,
@@ -39,7 +40,7 @@ export function updatePublicLink(
 
 export function deletePublicLink(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   linkId: number,
 ): Promise<void> {

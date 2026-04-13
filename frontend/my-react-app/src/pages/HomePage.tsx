@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { getStoredProjectId } from "../components/layout/ProjectSelector";
+import { getStoredProjectRef } from "../components/layout/projectSelection";
 import "./HomePage.css";
 
 export function HomePage() {
   const navigate = useNavigate();
-  const projectId = getStoredProjectId() ?? 1;
+  const projectRef = getStoredProjectRef();
 
   return (
     <div className="home-page">
@@ -24,7 +24,7 @@ export function HomePage() {
       <div className="home-cards">
         <button
           className="home-card"
-          onClick={() => navigate(`/projects/${projectId}/surveys`)}
+          onClick={() => navigate(projectRef ? `/projects/${projectRef}/surveys` : "/projects")}
         >
           <span className="home-card__number">01</span>
           <div className="home-card__body">

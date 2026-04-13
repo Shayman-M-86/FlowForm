@@ -5,7 +5,7 @@ import "./SurveyCard.css";
 
 interface SurveyCardProps {
   survey: SurveyOut;
-  projectId: number;
+  projectRef: string;
 }
 
 const VISIBILITY_BADGE: Record<string, "muted" | "accent" | "success"> = {
@@ -14,13 +14,13 @@ const VISIBILITY_BADGE: Record<string, "muted" | "accent" | "success"> = {
   public: "success",
 };
 
-export function SurveyCard({ survey, projectId }: SurveyCardProps) {
+export function SurveyCard({ survey, projectRef }: SurveyCardProps) {
   const navigate = useNavigate();
 
   return (
     <button
       className="survey-card"
-      onClick={() => navigate(`/projects/${projectId}/surveys/${survey.id}`)}
+      onClick={() => navigate(`/projects/${projectRef}/surveys/${survey.id}`)}
     >
       <div className="survey-card__top">
         <span className="survey-card__title">{survey.title}</span>

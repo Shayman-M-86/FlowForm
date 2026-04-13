@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import type { SurveyOut, SurveyVisibility, UpdateSurveyRequest } from "../api/types";
 import { PublicLinkList } from "../components/survey/PublicLinkList";
 import { QuestionList } from "../components/survey/QuestionList";
@@ -16,6 +16,8 @@ import { useFetch } from "../hooks/useFetch";
 import "../App.css";
 import "./SurveyEditorPage.css";
 import { useApi } from "../api/useApi";
+import { projectSurveyPath } from "../components/layout/projectSelection";
+import { useProjectContext } from "../hooks/useProjectContext";
 
 type EditorTab = "questions" | "rules" | "scoring" | "links";
 type MountedPanel = {
@@ -32,12 +34,15 @@ const TABS: { id: EditorTab; label: string }[] = [
 ];
 
 export function SurveyEditorPage() {
-  const { projectId, surveyId } = useParams<{
-    projectId: string;
+  const navigate = useNavigate();
+  const { projectRef: routeProjectRef, surveyId } = useParams<{
+    projectRef: string;
     surveyId: string;
   }>();
 
-  const pid = Number(projectId);
+  const { currentProject, projectId, projectRef, loading: projectLoading, error: projectError } =
+    useProjectContext(routeProjectRef);
+  const pid = projectId ?? 0;
   const sid = Number(surveyId);
 
   const {
@@ -50,16 +55,30 @@ export function SurveyEditorPage() {
     updateSurvey,
   } = useApi();
 
-  const surveyFetcher = useCallback(() => getSurvey(pid, sid), [getSurvey, pid, sid]);
+  const surveyFetcher = useCallback(
+    () => (projectRef ? getSurvey(projectRef, sid) : Promise.reject(new Error("Project not found."))),
+    [getSurvey, projectRef, sid],
+  );
   const { data: survey, loading: surveyLoading, error: surveyError, refetch: refetchSurvey } =
-    useFetch(surveyFetcher, [pid, sid]);
+    useFetch(projectRef ? surveyFetcher : null, [projectRef, sid]);
 
   const versionsFetcher = useCallback(
-    () => listVersions(pid, sid),
-    [listVersions, pid, sid],
+    () => (projectRef ? listVersions(projectRef, sid) : Promise.resolve([])),
+    [listVersions, projectRef, sid],
   );
   const { data: versions, loading: versionsLoading, refetch: refetchVersions } =
-    useFetch(versionsFetcher, [pid, sid]);
+    useFetch(projectRef ? versionsFetcher : null, [projectRef, sid]);
+
+  useEffect(() => {
+    if (
+      currentProject &&
+      routeProjectRef &&
+      routeProjectRef !== currentProject.slug &&
+      String(currentProject.id) === routeProjectRef
+    ) {
+      navigate(projectSurveyPath(currentProject, sid), { replace: true });
+    }
+  }, [currentProject, navigate, routeProjectRef, sid]);
 
   const [selectedVersionNumber, setSelectedVersionNumber] = useState<number | null>(null);
   const [tab, setTab] = useState<EditorTab>("questions");
@@ -146,7 +165,7 @@ export function SurveyEditorPage() {
   async function handleNewDraft() {
     setVersionBusy(true);
     try {
-      const v = await createVersion(pid, sid);
+      const v = await createVersion(projectRef!, sid);
       refetchVersions();
       setSelectedVersionNumber(v.version_number);
     } finally {
@@ -157,7 +176,7 @@ export function SurveyEditorPage() {
   async function handlePublish(versionNumber: number) {
     setVersionBusy(true);
     try {
-      await publishVersion(pid, sid, versionNumber);
+      await publishVersion(projectRef!, sid, versionNumber);
       refetchVersions();
       refetchSurvey();
     } finally {
@@ -168,7 +187,7 @@ export function SurveyEditorPage() {
   async function handleCopyToDraft(versionNumber: number) {
     setVersionBusy(true);
     try {
-      const version = await copyVersionToDraft(pid, sid, versionNumber);
+      const version = await copyVersionToDraft(projectRef!, sid, versionNumber);
       refetchVersions();
       setSelectedVersionNumber(version.version_number);
       setTab("questions");
@@ -180,7 +199,7 @@ export function SurveyEditorPage() {
   async function handleArchive(versionNumber: number) {
     setVersionBusy(true);
     try {
-      await archiveVersion(pid, sid, versionNumber);
+      await archiveVersion(projectRef!, sid, versionNumber);
       refetchVersions();
       refetchSurvey();
     } finally {
@@ -193,7 +212,7 @@ export function SurveyEditorPage() {
       setEditingTitle(false);
       return;
     }
-    await updateSurvey(pid, sid, { title: titleValue.trim() });
+    await updateSurvey(projectRef!, sid, { title: titleValue.trim() });
     refetchSurvey();
     setEditingTitle(false);
   }
@@ -212,7 +231,7 @@ export function SurveyEditorPage() {
     setSettingsSaving(true);
     setSettingsError(null);
     try {
-      await updateSurvey(pid, sid, settingsForm);
+      await updateSurvey(projectRef!, sid, settingsForm);
       refetchSurvey();
       setSettingsOpen(false);
     } catch (err) {
@@ -222,7 +241,7 @@ export function SurveyEditorPage() {
     }
   }
 
-  if (surveyLoading || versionsLoading) {
+  if (projectLoading || surveyLoading || versionsLoading) {
     return (
       <div className="page page--loading">
         <Spinner /> Loading…
@@ -230,8 +249,8 @@ export function SurveyEditorPage() {
     );
   }
 
-  if (surveyError) {
-    return <div className="page"><div className="error-banner">{surveyError}</div></div>;
+  if (projectError || surveyError || !currentProject || !projectRef) {
+    return <div className="page"><div className="error-banner">{projectError ?? surveyError ?? "Project not found."}</div></div>;
   }
 
   return (
@@ -260,6 +279,7 @@ export function SurveyEditorPage() {
               {survey?.title ?? "—"}
             </h1>
           )}
+          {survey && <Badge variant="muted">{currentProject.slug}</Badge>}
           {survey && <Badge variant="muted">{survey.visibility.replace("_", " ")}</Badge>}
         </div>
         <div className="editor-header__actions">

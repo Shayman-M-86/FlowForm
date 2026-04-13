@@ -1,9 +1,10 @@
 import { NavLink, useParams } from "react-router-dom";
 import { ProjectSelector } from "./ProjectSelector";
 import { AuthButtons } from "./AuthButtons";
-import { getStoredProjectId } from "./ProjectSelector";
 import { ModeToggle } from "./ModeToggle";
 import type { AppMode } from "../../hooks/useAppMode";
+import { useProjectContext } from "../../hooks/useProjectContext";
+import { getStoredProjectRef, projectSubmissionsPath, projectSurveysPath } from "./projectSelection";
 import "./Sidebar.css";
 
 interface SidebarProps {
@@ -12,8 +13,11 @@ interface SidebarProps {
 }
 
 export function Sidebar({ mode, onModeSwitch }: SidebarProps) {
-  const { projectId: paramProjectId } = useParams<{ projectId?: string }>();
-  const projectId = paramProjectId ?? String(getStoredProjectId() ?? 1);
+  const { projectRef: paramProjectRef } = useParams<{ projectRef?: string }>();
+  const fallbackProjectRef = paramProjectRef ?? getStoredProjectRef();
+  const { currentProject } = useProjectContext(fallbackProjectRef);
+  const surveysPath = currentProject ? projectSurveysPath(currentProject) : "/projects";
+  const submissionsPath = currentProject ? projectSubmissionsPath(currentProject) : "/projects";
 
   return (
     <aside className="sidebar">
@@ -47,8 +51,16 @@ export function Sidebar({ mode, onModeSwitch }: SidebarProps) {
 
         <div className="sidebar__section-label">Build</div>
 
+        {currentProject && (
+          <div className="sidebar__project-chip">
+            <span className="sidebar__project-chip-label">Current</span>
+            <strong>{currentProject.name}</strong>
+            <span className="sidebar__project-chip-slug">/{currentProject.slug}</span>
+          </div>
+        )}
+
         <NavLink
-          to={`/projects/${projectId}/surveys`}
+          to={surveysPath}
           className={({ isActive }) =>
             `sidebar__link ${isActive ? "sidebar__link--active" : ""}`
           }
@@ -57,7 +69,7 @@ export function Sidebar({ mode, onModeSwitch }: SidebarProps) {
           Surveys
         </NavLink>
         <NavLink
-          to={`/projects/${projectId}/submissions`}
+          to={submissionsPath}
           className={({ isActive }) =>
             `sidebar__link ${isActive ? "sidebar__link--active" : ""}`
           }

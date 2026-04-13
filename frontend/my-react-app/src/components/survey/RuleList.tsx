@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../../api/useApi";
 import type { CreateRuleRequest, RuleOut } from "../../api/types";
 import { useFetch } from "../../hooks/useFetch";
@@ -337,19 +337,28 @@ export function RuleList({ projectId, surveyId, versionNumber, readOnly }: RuleL
 
   function openAdd() {
     setEditing(null);
-    setRuleKey("");
-    setEditorState(defaultEditorState());
-    setSaveError(null);
     setEditorOpen(true);
   }
 
   function openEdit(r: RuleOut) {
     setEditing(r);
-    setRuleKey(r.rule_key);
-    setEditorState(parseEditorState(r.rule_schema as Record<string, unknown>));
-    setSaveError(null);
     setEditorOpen(true);
   }
+
+  useEffect(() => {
+    if (!editorOpen) return;
+
+    if (editing) {
+      setRuleKey(editing.rule_key);
+      setEditorState(parseEditorState(editing.rule_schema as Record<string, unknown>));
+    } else {
+      setRuleKey("");
+      setEditorState(defaultEditorState());
+    }
+
+    setSaveError(null);
+    setSaving(false);
+  }, [editing, editorOpen]);
 
   async function handleSave() {
     if (!ruleKey.trim()) { setSaveError("Rule key is required."); return; }

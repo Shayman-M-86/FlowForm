@@ -1,5 +1,5 @@
-import { Fragment, useCallback, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../api/useApi";
 import type {
   AnswerOut,
@@ -11,6 +11,11 @@ import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Select } from "../components/ui/Select";
 import { Spinner } from "../components/ui/Spinner";
+import {
+  projectSubmissionsPath,
+  projectSurveySubmissionsPath,
+} from "../components/layout/projectSelection";
+import { useProjectContext } from "../hooks/useProjectContext";
 import { useFetch } from "../hooks/useFetch";
 import "../App.css";
 import "./SubmissionsPage.css";
@@ -29,12 +34,29 @@ const CHANNEL_BADGE: Record<SubmissionChannel, "muted" | "accent"> = {
 
 export function SubmissionsPage() {
   const api = useApi();
-  const { projectId, surveyId } = useParams<{
-    projectId: string;
+  const navigate = useNavigate();
+  const { projectRef: routeProjectRef, surveyId } = useParams<{
+    projectRef: string;
     surveyId?: string;
   }>();
-  const pid = Number(projectId);
+  const { currentProject, projectId, projectRef, loading: projectLoading, error: projectError } =
+    useProjectContext(routeProjectRef);
+  const pid = projectId ?? 0;
   const sid = surveyId ? Number(surveyId) : undefined;
+
+  useEffect(() => {
+    if (
+      currentProject &&
+      routeProjectRef &&
+      routeProjectRef !== currentProject.slug &&
+      String(currentProject.id) === routeProjectRef
+    ) {
+      navigate(
+        sid ? projectSurveySubmissionsPath(currentProject, sid) : projectSubmissionsPath(currentProject),
+        { replace: true },
+      );
+    }
+  }, [currentProject, navigate, routeProjectRef, sid]);
 
   const [status, setStatus] = useState<"" | SubmissionStatus>("");
   const [channel, setChannel] = useState<"" | SubmissionChannel>("");
@@ -47,16 +69,18 @@ export function SubmissionsPage() {
 
   const fetcher = useCallback(
     () =>
-      api.listSubmissions(pid, {
-        survey_id: sid,
-        status: status || undefined,
-        submission_channel: (channel as SubmissionChannel) || undefined,
-        page,
-        page_size: pageSize,
-      }),
-    [api, pid, sid, status, channel, page],
+      projectRef
+        ? api.listSubmissions(projectRef, {
+            survey_id: sid,
+            status: status || undefined,
+            submission_channel: (channel as SubmissionChannel) || undefined,
+            page,
+            page_size: pageSize,
+          })
+        : Promise.resolve(null),
+    [api, projectRef, sid, status, channel, page],
   );
-  const { data, loading, error, refetch } = useFetch(fetcher, [
+  const { data, loading, error, refetch } = useFetch(projectRef ? fetcher : null, [
     pid,
     sid,
     status,
@@ -65,6 +89,7 @@ export function SubmissionsPage() {
   ]);
 
   async function toggleExpand(sub: CoreSubmissionOut) {
+    if (!currentProject) return;
     if (expandedId === sub.id) {
       setExpandedId(null);
       setExpandedAnswers(null);
@@ -74,7 +99,7 @@ export function SubmissionsPage() {
     setExpandedAnswers(null);
     setExpandedLoading(true);
     try {
-      const result = await api.getSubmission(pid, sub.id, true);
+      const result = await api.getSubmission(currentProject.slug, sub.id, true);
       setExpandedAnswers(result.answers);
     } finally {
       setExpandedLoading(false);
@@ -86,11 +111,16 @@ export function SubmissionsPage() {
     refetch();
   }
 
+  if (projectLoading) return <div className="page"><Spinner /></div>;
+  if (projectError) return <div className="page"><div className="error-banner">{projectError}</div></div>;
+  if (!currentProject || !projectRef) return <div className="page"><div className="error-banner">Project not found.</div></div>;
+
   return (
     <div className="page">
       <div className="page-header">
         <h1 className="page-title">
           Submissions
+          <span className="submissions-scope"> — {currentProject.slug}</span>
           {sid && <span className="submissions-scope"> — Survey {sid}</span>}
         </h1>
       </div>

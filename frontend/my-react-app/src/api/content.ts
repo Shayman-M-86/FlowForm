@@ -3,6 +3,7 @@ import type {
   CreateQuestionRequest,
   CreateRuleRequest,
   CreateScoringRuleRequest,
+  ProjectRef,
   QuestionOut,
   RuleOut,
   ScoringRuleOut,
@@ -11,14 +12,14 @@ import type {
   UpdateScoringRuleRequest,
 } from "./types";
 
-const vBase = (p: number, s: number, v: number) =>
+const vBase = (p: ProjectRef, s: number, v: number) =>
   `/api/v1/projects/${p}/surveys/${s}/versions/${v}`;
 
 // ── Questions ─────────────────────────────────────────────────────────────────
 
 export function listQuestions(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
 ): Promise<QuestionOut[]> {
@@ -27,7 +28,7 @@ export function listQuestions(
 
 export function createQuestion(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
   data: CreateQuestionRequest,
@@ -37,7 +38,7 @@ export function createQuestion(
 
 export function updateQuestion(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
   questionId: number,
@@ -51,7 +52,7 @@ export function updateQuestion(
 
 export function deleteQuestion(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
   questionId: number,
@@ -63,7 +64,7 @@ export function deleteQuestion(
 
 export function listRules(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
 ): Promise<RuleOut[]> {
@@ -72,7 +73,7 @@ export function listRules(
 
 export function createRule(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
   data: CreateRuleRequest,
@@ -82,7 +83,7 @@ export function createRule(
 
 export function updateRule(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
   ruleId: number,
@@ -96,7 +97,7 @@ export function updateRule(
 
 export function deleteRule(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
   ruleId: number,
@@ -108,7 +109,7 @@ export function deleteRule(
 
 export function listScoringRules(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
 ): Promise<ScoringRuleOut[]> {
@@ -117,7 +118,7 @@ export function listScoringRules(
 
 export function createScoringRule(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
   data: CreateScoringRuleRequest,
@@ -130,7 +131,7 @@ export function createScoringRule(
 
 export function updateScoringRule(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
   scoringRuleId: number,
@@ -144,7 +145,7 @@ export function updateScoringRule(
 
 export function deleteScoringRule(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   surveyId: number,
   versionNumber: number,
   scoringRuleId: number,

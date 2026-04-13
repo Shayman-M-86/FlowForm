@@ -5,6 +5,7 @@ export type VersionStatus = "draft" | "published" | "archived";
 export type SubmissionStatus = "pending" | "stored" | "failed";
 export type SubmissionChannel = "link" | "slug" | "system";
 export type QuestionType = "choice" | "field" | "matching" | "rating";
+export type ProjectRef = string | number;
 
 // ── Projects ──────────────────────────────────────────────────────────────────
 

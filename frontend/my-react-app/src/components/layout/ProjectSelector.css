@@ -1,17 +1,16 @@
 .project-selector {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .project-selector__label {
   font-size: 0.78rem;
   color: var(--muted);
-  white-space: nowrap;
 }
 
 .project-selector__input {
-  width: 64px;
+  width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -24,9 +23,4 @@
 .project-selector__input:focus {
   border-color: var(--accent-border);
   background: var(--surface);
-}
-
-.project-selector__input::-webkit-inner-spin-button,
-.project-selector__input::-webkit-outer-spin-button {
-  -webkit-appearance: none;
 }

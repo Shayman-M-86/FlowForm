@@ -16,6 +16,7 @@ import type {
   CreateScoringRuleRequest,
   CreateSurveyRequest,
   ListSubmissionsParams,
+  ProjectRef,
   UpdatePublicLinkRequest,
   UpdateQuestionRequest,
   UpdateRuleRequest,
@@ -62,42 +63,42 @@ export function useApi() {
         projectsApi.createProject(executor, data),
 
       // ── Surveys ──────────────────────────────────────────────────────────────
-      listSurveys: (projectId: number) =>
+      listSurveys: (projectId: ProjectRef) =>
         surveysApi.listSurveys(executor, projectId),
-      getSurvey: (projectId: number, surveyId: number) =>
+      getSurvey: (projectId: ProjectRef, surveyId: number) =>
         surveysApi.getSurvey(executor, projectId, surveyId),
-      createSurvey: (projectId: number, data: CreateSurveyRequest) =>
+      createSurvey: (projectId: ProjectRef, data: CreateSurveyRequest) =>
         surveysApi.createSurvey(executor, projectId, data),
-      updateSurvey: (projectId: number, surveyId: number, data: UpdateSurveyRequest) =>
+      updateSurvey: (projectId: ProjectRef, surveyId: number, data: UpdateSurveyRequest) =>
         surveysApi.updateSurvey(executor, projectId, surveyId, data),
-      deleteSurvey: (projectId: number, surveyId: number) =>
+      deleteSurvey: (projectId: ProjectRef, surveyId: number) =>
         surveysApi.deleteSurvey(executor, projectId, surveyId),
 
       // ── Versions ─────────────────────────────────────────────────────────────
-      listVersions: (projectId: number, surveyId: number) =>
+      listVersions: (projectId: ProjectRef, surveyId: number) =>
         surveysApi.listVersions(executor, projectId, surveyId),
-      getVersion: (projectId: number, surveyId: number, versionNumber: number) =>
+      getVersion: (projectId: ProjectRef, surveyId: number, versionNumber: number) =>
         surveysApi.getVersion(executor, projectId, surveyId, versionNumber),
-      createVersion: (projectId: number, surveyId: number) =>
+      createVersion: (projectId: ProjectRef, surveyId: number) =>
         surveysApi.createVersion(executor, projectId, surveyId),
-      copyVersionToDraft: (projectId: number, surveyId: number, versionNumber: number) =>
+      copyVersionToDraft: (projectId: ProjectRef, surveyId: number, versionNumber: number) =>
         surveysApi.copyVersionToDraft(executor, projectId, surveyId, versionNumber),
-      publishVersion: (projectId: number, surveyId: number, versionNumber: number) =>
+      publishVersion: (projectId: ProjectRef, surveyId: number, versionNumber: number) =>
         surveysApi.publishVersion(executor, projectId, surveyId, versionNumber),
-      archiveVersion: (projectId: number, surveyId: number, versionNumber: number) =>
+      archiveVersion: (projectId: ProjectRef, surveyId: number, versionNumber: number) =>
         surveysApi.archiveVersion(executor, projectId, surveyId, versionNumber),
 
       // ── Questions ────────────────────────────────────────────────────────────
-      listQuestions: (projectId: number, surveyId: number, versionNumber: number) =>
+      listQuestions: (projectId: ProjectRef, surveyId: number, versionNumber: number) =>
         contentApi.listQuestions(executor, projectId, surveyId, versionNumber),
       createQuestion: (
-        projectId: number,
+        projectId: ProjectRef,
         surveyId: number,
         versionNumber: number,
         data: CreateQuestionRequest,
       ) => contentApi.createQuestion(executor, projectId, surveyId, versionNumber, data),
       updateQuestion: (
-        projectId: number,
+        projectId: ProjectRef,
         surveyId: number,
         versionNumber: number,
         questionId: number,
@@ -112,46 +113,46 @@ export function useApi() {
           data,
         ),
       deleteQuestion: (
-        projectId: number,
+        projectId: ProjectRef,
         surveyId: number,
         versionNumber: number,
         questionId: number,
       ) => contentApi.deleteQuestion(executor, projectId, surveyId, versionNumber, questionId),
 
       // ── Rules ────────────────────────────────────────────────────────────────
-      listRules: (projectId: number, surveyId: number, versionNumber: number) =>
+      listRules: (projectId: ProjectRef, surveyId: number, versionNumber: number) =>
         contentApi.listRules(executor, projectId, surveyId, versionNumber),
       createRule: (
-        projectId: number,
+        projectId: ProjectRef,
         surveyId: number,
         versionNumber: number,
         data: CreateRuleRequest,
       ) => contentApi.createRule(executor, projectId, surveyId, versionNumber, data),
       updateRule: (
-        projectId: number,
+        projectId: ProjectRef,
         surveyId: number,
         versionNumber: number,
         ruleId: number,
         data: UpdateRuleRequest,
       ) => contentApi.updateRule(executor, projectId, surveyId, versionNumber, ruleId, data),
       deleteRule: (
-        projectId: number,
+        projectId: ProjectRef,
         surveyId: number,
         versionNumber: number,
         ruleId: number,
       ) => contentApi.deleteRule(executor, projectId, surveyId, versionNumber, ruleId),
 
       // ── Scoring Rules ────────────────────────────────────────────────────────
-      listScoringRules: (projectId: number, surveyId: number, versionNumber: number) =>
+      listScoringRules: (projectId: ProjectRef, surveyId: number, versionNumber: number) =>
         contentApi.listScoringRules(executor, projectId, surveyId, versionNumber),
       createScoringRule: (
-        projectId: number,
+        projectId: ProjectRef,
         surveyId: number,
         versionNumber: number,
         data: CreateScoringRuleRequest,
       ) => contentApi.createScoringRule(executor, projectId, surveyId, versionNumber, data),
       updateScoringRule: (
-        projectId: number,
+        projectId: ProjectRef,
         surveyId: number,
         versionNumber: number,
         scoringRuleId: number,
@@ -166,7 +167,7 @@ export function useApi() {
           data,
         ),
       deleteScoringRule: (
-        projectId: number,
+        projectId: ProjectRef,
         surveyId: number,
         versionNumber: number,
         scoringRuleId: number,
@@ -180,26 +181,26 @@ export function useApi() {
         ),
 
       // ── Public Links ─────────────────────────────────────────────────────────
-      listPublicLinks: (projectId: number, surveyId: number) =>
+      listPublicLinks: (projectId: ProjectRef, surveyId: number) =>
         linksApi.listPublicLinks(executor, projectId, surveyId),
       createPublicLink: (
-        projectId: number,
+        projectId: ProjectRef,
         surveyId: number,
         data: CreatePublicLinkRequest,
       ) => linksApi.createPublicLink(executor, projectId, surveyId, data),
       updatePublicLink: (
-        projectId: number,
+        projectId: ProjectRef,
         surveyId: number,
         linkId: number,
         data: UpdatePublicLinkRequest,
       ) => linksApi.updatePublicLink(executor, projectId, surveyId, linkId, data),
-      deletePublicLink: (projectId: number, surveyId: number, linkId: number) =>
+      deletePublicLink: (projectId: ProjectRef, surveyId: number, linkId: number) =>
         linksApi.deletePublicLink(executor, projectId, surveyId, linkId),
 
       // ── Submissions ──────────────────────────────────────────────────────────
-      listSubmissions: (projectId: number, params?: ListSubmissionsParams) =>
+      listSubmissions: (projectId: ProjectRef, params?: ListSubmissionsParams) =>
         submissionsApi.listSubmissions(executor, projectId, params),
-      getSubmission: (projectId: number, submissionId: number, includeAnswers?: boolean) =>
+      getSubmission: (projectId: ProjectRef, submissionId: number, includeAnswers?: boolean) =>
         submissionsApi.getSubmission(executor, projectId, submissionId, includeAnswers),
     }),
     [executor],

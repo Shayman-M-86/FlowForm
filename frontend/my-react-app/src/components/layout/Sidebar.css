@@ -47,6 +47,30 @@
   color: var(--muted);
 }
 
+.sidebar__project-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-raised);
+  color: var(--text-h);
+}
+
+.sidebar__project-chip-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sidebar__project-chip-slug {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
 .sidebar__link {
   display: flex;
   align-items: center;

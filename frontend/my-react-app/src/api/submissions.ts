@@ -4,11 +4,12 @@ import type {
   LinkedSubmissionOut,
   ListSubmissionsParams,
   PaginatedSubmissionsOut,
+  ProjectRef,
 } from "./types";
 
 export function listSubmissions(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   params: ListSubmissionsParams = {},
 ): Promise<PaginatedSubmissionsOut> {
   return api.getWithQuery<PaginatedSubmissionsOut>(
@@ -19,7 +20,7 @@ export function listSubmissions(
 
 export function getSubmission(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   submissionId: number,
   includeAnswers = false,
 ): Promise<LinkedSubmissionOut> {
@@ -31,7 +32,7 @@ export function getSubmission(
 
 export function getSubmissionCore(
   api: ApiExecutor,
-  projectId: number,
+  projectId: ProjectRef,
   submissionId: number,
 ): Promise<CoreSubmissionOut> {
   return api.get<CoreSubmissionOut>(

@@ -1,41 +1,63 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useApi } from "../../api/useApi";
+import { useFetch } from "../../hooks/useFetch";
+import {
+  findProjectByRef,
+  getStoredProjectSelection,
+  projectSurveysPath,
+  setStoredProjectSelection,
+} from "./projectSelection";
 import "./ProjectSelector.css";
 
-const STORAGE_KEY = "flowform_project_id";
-
-export function getStoredProjectId(): number | null {
-  const v = localStorage.getItem(STORAGE_KEY);
-  return v ? Number(v) : null;
-}
-
 export function ProjectSelector() {
-  const { projectId } = useParams<{ projectId?: string }>();
+  const { projectRef } = useParams<{ projectRef?: string }>();
+  const { listProjects } = useApi();
   const navigate = useNavigate();
-  const [value, setValue] = useState(projectId ?? String(getStoredProjectId() ?? ""));
+  const { data: projects, loading } = useFetch(() => listProjects(), [listProjects]);
+  const currentProject = findProjectByRef(projects ?? [], projectRef);
+  const [value, setValue] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const id = parseInt(value, 10);
-    if (isNaN(id) || id < 1) return;
-    localStorage.setItem(STORAGE_KEY, String(id));
-    navigate(`/projects/${id}/surveys`);
+  useEffect(() => {
+    if (currentProject) {
+      setValue(currentProject.slug);
+      setStoredProjectSelection(currentProject);
+      return;
+    }
+
+    const stored = getStoredProjectSelection();
+    if (stored) {
+      setValue(stored.slug);
+    }
+  }, [currentProject]);
+
+  function handleChange(nextSlug: string) {
+    setValue(nextSlug);
+    const project = (projects ?? []).find((entry) => entry.slug === nextSlug);
+    if (!project) return;
+    setStoredProjectSelection(project);
+    navigate(projectSurveysPath(project));
   }
 
   return (
-    <form className="project-selector" onSubmit={handleSubmit}>
+    <div className="project-selector">
       <label htmlFor="project-id" className="project-selector__label">
-        Project
+        Selected project
       </label>
-      <input
+      <select
         id="project-id"
-        type="number"
-        min={1}
         className="project-selector__input"
         value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="ID"
-      />
-    </form>
+        onChange={(e) => handleChange(e.target.value)}
+        disabled={loading || !projects?.length}
+      >
+        <option value="">{loading ? "Loading projects..." : "Select a project"}</option>
+        {(projects ?? []).map((project) => (
+          <option key={project.id} value={project.slug}>
+            {project.name} ({project.slug})
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
