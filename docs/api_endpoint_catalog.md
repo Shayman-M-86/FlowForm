@@ -1,46 +1,43 @@
 # FlowForm API v1 Reference
 
-This is the canonical API reference for the currently implemented Flask v1 endpoints.
+Canonical reference for the currently implemented Flask v1 API.
 
-## 1) Base URL, Versioning, and Content Type
+## Base URL
 
-- **API base:** `/api/v1`
-- **Versioning:** URL versioning (`/v1`)
-- **Content type for request bodies:** `application/json`
-- **Timestamp format:** ISO-8601 datetime strings (examples in this document use UTC `Z`).
+- API base: `/api/v1`
+- Request content type: `application/json` for body-based endpoints
+- Timestamp format: ISO-8601 datetime strings
+- Versioning: path-based (`/api/v1`)
+- Mounted prefixes:
+  - `/api/v1/health`
+  - `/api/v1/auth`
+  - `/api/v1/public`
+  - `/api/v1/projects`
+- Health endpoints currently resolve under `/api/v1/health/health/...` because the health blueprint also defines its own `/health` prefix.
+- `project_ref` accepts either a numeric project ID or a project slug.
 
-### Blueprint-to-prefix mapping
+## Authentication
 
-`register_api_v1()` mounts each blueprint using:
+- `require_auth`: endpoint requires an authenticated user.
+- `optional_auth`: endpoint accepts both authenticated and unauthenticated callers.
+- Public/no-auth: endpoint is available without authentication.
 
-- `/api/v1/health`
-- `/api/v1/projects`
-- `/api/v1/public`
+Current route behavior:
 
-> Note: `health_v1` also has its own internal blueprint prefix (`/health`), so health endpoints are available under `/api/v1/health/health/...`.
+- `/api/v1/projects/...`: `require_auth`
+- `POST /api/v1/auth/bootstrap-user`: `require_auth`
+- `GET /api/v1/public/links/resolve`: `require_auth`
+- `POST /api/v1/public/submissions/link`: `require_auth`
+- `POST /api/v1/public/submissions/slug`: `optional_auth`
+- `GET /api/v1/public/surveys` and `GET /api/v1/public/surveys/{public_slug}`: public/no-auth
 
----
+## Errors
 
-## 2) Authentication and Authorization
+Errors use JSON responses. The lists under each endpoint are the most obvious/common failures, not an exhaustive catalog.
 
-- There is **no explicit auth middleware documented at the route layer** in these v1 handlers.
-- Endpoints under `/projects` should be treated as **authenticated/owner/admin APIs** by client convention.
-- Endpoints under `/public` are intended for public survey access and submissions.
+### AppError
 
----
-
-## 3) Common Validation and Error Behavior
-
-### Request parsing behavior
-
-- JSON body endpoints require:
-  - `Content-Type: application/json`
-  - Body must be a **JSON object** (not an array/string/etc.)
-- Query-based endpoints parse query strings into typed Pydantic models.
-
-### Error shapes
-
-### A) Domain/application error
+Used for domain/service errors.
 
 ```json
 {
@@ -50,7 +47,9 @@ This is the canonical API reference for the currently implemented Flask v1 endpo
 }
 ```
 
-### B) Validation error (`422`)
+### Validation Error
+
+Returned when request parsing or model validation fails.
 
 ```json
 {
@@ -66,7 +65,9 @@ This is the canonical API reference for the currently implemented Flask v1 endpo
 }
 ```
 
-### C) HTTP parsing/media error (`4xx`)
+### HTTP Exception
+
+Used for framework-level HTTP parsing or request-shape failures.
 
 ```json
 {
@@ -75,7 +76,19 @@ This is the canonical API reference for the currently implemented Flask v1 endpo
 }
 ```
 
-### D) Unhandled server error (`500`)
+### Auth Error
+
+Used for authentication failures.
+
+```json
+{
+  "code": "AUTHORIZATION_HEADER_MISSING",
+  "message": "Authorization header is expected",
+  "details": {}
+}
+```
+
+### Internal Server Error
 
 ```json
 {
@@ -84,411 +97,994 @@ This is the canonical API reference for the currently implemented Flask v1 endpo
 }
 ```
 
----
+### Integrity Fallback
 
-## 4) Shared Schema Components
-
-## 4.1 Survey
-
-### `CreateSurveyRequest`
+Unhandled database integrity errors are normalized to:
 
 ```json
 {
-  "title": "Customer Intake",
-  "visibility": "public",
-  "allow_public_responses": true,
-  "public_slug": "customer-intake",
-  "default_response_store_id": 3
+  "code": "UNHANDLED_INTEGRITY_ERROR",
+  "message": "A database integrity error occurred."
 }
 ```
+
+HTTP status: `409 Conflict`
+
+## Shared Schemas
+
+### Response Shapes
+
+`ProjectOut`
+- `id`
+- `name`
+- `slug`
+- `created_by_user_id`
+- `created_at`
+
+`SurveyOut`
+- `id`
+- `project_id`
+- `title`
+- `visibility`
+- `public_slug`
+- `default_response_store_id`
+- `published_version_id`
+- `created_by_user_id`
+- `created_at`
+- `updated_at`
+
+`SurveyVersionOut`
+- `id`
+- `survey_id`
+- `version_number`
+- `status`
+- `compiled_schema`
+- `published_at`
+- `created_by_user_id`
+- `created_at`
+- `updated_at`
+
+`QuestionOut`
+- `id`
+- `survey_version_id`
+- `question_key`
+- `question_schema`
+- `created_at`
+- `updated_at`
+
+`RuleOut`
+- `id`
+- `survey_version_id`
+- `rule_key`
+- `rule_schema`
+- `created_at`
+- `updated_at`
+
+`ScoringRuleOut`
+- `id`
+- `survey_version_id`
+- `scoring_key`
+- `scoring_schema`
+- `created_at`
+- `updated_at`
+
+`PublicLinkOut`
+- `id`
+- `survey_id`
+- `token_prefix`
+- `is_active`
+- `assigned_email`
+- `expires_at`
+- `created_at`
+
+`CoreSubmissionOut`
+- `id`
+- `project_id`
+- `survey_id`
+- `survey_version_id`
+- `response_store_id`
+- `submission_channel`
+- `submitted_by_user_id`
+- `survey_link_id`
+- `submitter`
+- `is_anonymous`
+- `status`
+- `started_at`
+- `submitted_at`
+- `created_at`
+
+`SubmitterOut`
+- `id`
+- `email`
+- `display_name`
+
+`AnswerOut`
+- `id`
+- `question_key`
+- `answer_family`
+- `answer_value`
+- `created_at`
+
+`LinkedSubmissionOut`
+- `core`: `CoreSubmissionOut`
+- `answers`: `AnswerOut[]`
+
+### Common Request Shapes
+
+`CreateProjectRequest`
+- `name: string`
+- `slug: string`
+
+`UpdateProjectRequest`
+- `name?: string`
+- `slug?: string`
+
+`CreateSurveyRequest`
+- `title: string`
+- `visibility: "private" | "link_only" | "public"`
+- `public_slug?: string`
+- `default_response_store_id?: integer`
 
 Rules:
+- `public_slug` is required when `visibility = "public"`
+- `public_slug` is forbidden unless `visibility = "public"`
 
-- `visibility`: `private | link_only | public`
-- `public_slug` is required when `visibility = public`
-- `allow_public_responses` requires `visibility` in `link_only | public`
+`UpdateSurveyRequest`
+- `title?: string`
+- `visibility?: "private" | "link_only" | "public"`
+- `public_slug?: string`
+- `default_response_store_id?: integer`
 
-### `UpdateSurveyRequest`
+`CreatePublicLinkRequest`
+- `assigned_email?: string`
+- `expires_at?: datetime`
 
-All fields optional:
+`UpdatePublicLinkRequest`
+- `is_active?: boolean`
+- `assigned_email?: string`
+- `expires_at?: datetime`
+
+`SlugSubmissionRequest`
+- `public_slug: string`
+- `survey_version_id: integer`
+- `started_at?: datetime`
+- `submitted_at?: datetime`
+- `answers: AnswerIn[]`
+- `metadata?: object`
+
+`LinkSubmissionRequest`
+- `token: string`
+- `survey_version_id: integer`
+- `started_at?: datetime`
+- `submitted_at?: datetime`
+- `answers: AnswerIn[]`
+- `metadata?: object`
+
+`ListPublicSurveysRequest`
+- `page?: integer`
+- `page_size?: integer`
+
+`ResolveTokenRequest`
+- `token: string`
+
+`ListSubmissionsRequest`
+- `survey_id?: integer`
+- `status?: "pending" | "stored" | "failed"`
+- `submission_channel?: "link" | "slug" | "system"`
+- `page?: integer`
+- `page_size?: integer`
+
+`GetSubmissionRequest`
+- `include_answers?: boolean`
+- `resolve_identity?: boolean`
+
+### Minimal Polymorphic Payload Examples
+
+Question payloads are discriminated by `question_schema.family`.
 
 ```json
 {
-  "title": "Customer Intake v2",
-  "visibility": "link_only",
-  "allow_public_responses": true,
-  "public_slug": "customer-intake-v2",
-  "default_response_store_id": 5
-}
-```
-
-### `SurveyOut` (response)
-
-Fields: `id`, `project_id`, `title`, `visibility`, `allow_public_responses`, `public_slug`, `default_response_store_id`, `published_version_id`, `created_by_user_id`, `created_at`, `updated_at`.
-
-## 4.2 Versions
-
-### `SurveyVersionOut`
-
-Fields: `id`, `survey_id`, `version_number`, `status`, `compiled_schema`, `published_at`, `created_by_user_id`, `created_at`, `updated_at`.
-
-## 4.3 Content (Questions / Rules / Scoring Rules)
-
-### Create/Update question
-
-```json
-{
-  "question_key": "q_age",
+  "question_key": "email",
   "question_schema": {
-    "type": "number",
-    "label": "How old are you?",
-    "required": true
+    "family": "field",
+    "label": "Email",
+    "schema": {
+      "field_type": "email"
+    },
+    "ui": {}
   }
 }
 ```
 
-Update allows either field to be omitted.
-
-### Create/Update rule
+Rule payloads use a `condition` object and one or more `effects`.
 
 ```json
 {
-  "rule_key": "eligibility_check",
+  "rule_key": "show_followup",
   "rule_schema": {
-    "if": {"question_key": "q_age", "op": "lt", "value": 18},
-    "then": {"action": "end_survey"}
+    "target": "followup_question",
+    "sort_order": 0,
+    "condition": {
+      "fact": "answers.email_opt_in",
+      "operator": "equals",
+      "value": true
+    },
+    "effects": {
+      "visible": true
+    }
   }
 }
 ```
 
-### Create/Update scoring rule
+Scoring payloads are discriminated by `scoring_schema.strategy`.
 
 ```json
 {
-  "scoring_key": "risk_score",
+  "scoring_key": "satisfaction_score",
   "scoring_schema": {
-    "weights": {"q1": 10, "q2": 5}
+    "target": "satisfaction_rating",
+    "bucket": "overall",
+    "strategy": "rating_direct",
+    "config": {
+      "multiplier": 1
+    }
   }
 }
 ```
 
-## 4.4 Public Links
-
-### `CreatePublicLinkRequest`
+Answer payloads are discriminated by `answer_family`.
 
 ```json
 {
-  "allow_response": true,
-  "expires_at": "2026-12-31T23:59:59Z"
-}
-```
-
-### `UpdatePublicLinkRequest`
-
-```json
-{
-  "is_active": true,
-  "allow_response": true,
-  "expires_at": "2027-01-31T23:59:59Z"
-}
-```
-
-### `CreatePublicLinkOut`
-
-```json
-{
-  "link": {
-    "id": 44,
-    "survey_id": 11,
-    "token_prefix": "a1b2c3",
-    "is_active": true,
-    "allow_response": true,
-    "expires_at": null,
-    "created_at": "2026-04-07T15:10:00Z"
-  },
-  "token": "<plaintext-token-returned-once>",
-  "url": "https://your-host/api/v1/public/links/resolve?token=<token>"
-}
-```
-
-## 4.5 Submissions
-
-### `AnswerIn`
-
-```json
-{
-  "question_key": "q_age",
-  "answer_family": "number",
-  "answer_value": {"value": 34}
-}
-```
-
-### `CreateSubmissionRequest`
-
-```json
-{
-  "survey_version_id": 7,
-  "submitted_by_user_id": 101,
-  "is_anonymous": false,
-  "started_at": "2026-04-07T14:01:00Z",
-  "submitted_at": "2026-04-07T14:03:30Z",
-  "answers": [
-    {
-      "question_key": "q_age",
-      "answer_family": "number",
-      "answer_value": {"value": 34}
-    }
-  ],
-  "metadata": {
-    "source": "web-app"
+  "question_key": "satisfaction_rating",
+  "answer_family": "rating",
+  "answer_value": {
+    "value": 8
   }
 }
 ```
 
-### `PublicSubmissionRequest`
+## Endpoints
+
+### Health
+
+#### `GET /api/v1/health/health/`
+
+- Purpose: simple liveness check.
+- Auth: public/no-auth.
+- Path/query params: none.
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `{ "message": "Service is healthy", "data": { "timestamp": "<datetime>" } }`
+- Obvious errors:
+  - `500 INTERNAL_SERVER_ERROR`
+
+#### `GET /api/v1/health/health/ready`
+
+- Purpose: readiness check including database connectivity.
+- Auth: public/no-auth.
+- Path/query params: none.
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `{ "message": "Service is ready", "data": { "timestamp": "<datetime>" } }`
+  - `503 Service Unavailable`: `{ "message": "Database connectivity Failed: ...", "data": { "timestamp": "<datetime>" } }`
+- Obvious errors:
+  - `500 INTERNAL_SERVER_ERROR`
+
+### Auth
+
+#### `POST /api/v1/auth/bootstrap-user`
+
+- Purpose: create or confirm the currently authenticated user in the local database.
+- Auth: `require_auth`.
+- Path/query params: none.
+- Request shape:
+  - `id_token: string`
+- Success responses:
+  - `200 OK`: `BootstrapUserOut`
+  - `201 Created`: `BootstrapUserOut`
+- Response shape:
+  - `created: boolean`
+  - `user: { id, auth0_user_id, email, display_name }`
+- Obvious errors:
+  - `401` auth required
+  - `422 VALIDATION_ERROR`
+  - `409 UNHANDLED_INTEGRITY_ERROR`
+
+### Public
+
+#### `GET /api/v1/public/surveys`
+
+- Purpose: list publicly browsable surveys.
+- Auth: public/no-auth.
+- Path/query params:
+  - `page?: integer`
+  - `page_size?: integer`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `PaginatedPublicSurveysOut`
+- Response shape:
+  - `items: SurveyOut[]`
+  - `total: integer`
+  - `page: integer`
+  - `page_size: integer`
+- Obvious errors:
+  - `422 VALIDATION_ERROR`
+
+#### `GET /api/v1/public/surveys/{public_slug}`
+
+- Purpose: fetch one public survey and its published version.
+- Auth: public/no-auth.
+- Path/query params:
+  - `public_slug: string`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `PublicSurveyOut`
+- Response shape:
+  - `survey: SurveyOut`
+  - `published_version: SurveyVersionOut | null`
+- Obvious errors:
+  - `404` survey not found
+  - `404` survey is not publicly accessible
+
+#### `GET /api/v1/public/links/resolve`
+
+- Purpose: resolve a link token to the survey and published version it grants access to.
+- Auth: `require_auth`.
+- Path/query params:
+  - `token: string`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `ResolveLinkOut`
+- Response shape:
+  - `link: PublicLinkOut`
+  - `survey: SurveyOut`
+  - `published_version: SurveyVersionOut`
+- Obvious errors:
+  - `401` auth required
+  - `403` link assigned to a different user/email
+  - `404` token not found
+  - `409` link inactive, expired, or survey unpublished
+  - `422 VALIDATION_ERROR`
+
+#### `POST /api/v1/public/submissions/slug`
+
+- Purpose: create a submission for a public survey slug; authenticated callers are recorded, unauthenticated callers become anonymous submitters.
+- Auth: `optional_auth`.
+- Path/query params: none.
+- Request shape:
+  - `public_slug`
+  - `survey_version_id`
+  - `started_at?`
+  - `submitted_at?`
+  - `answers`
+  - `metadata?`
+- Minimal example:
 
 ```json
 {
-  "public_token": "<plaintext-token>",
-  "survey_version_id": 7,
-  "is_anonymous": true,
+  "public_slug": "customer-intake",
+  "survey_version_id": 3,
+  "started_at": "2026-04-13T08:00:00Z",
+  "submitted_at": "2026-04-13T08:01:00Z",
   "answers": [
     {
-      "question_key": "q_age",
-      "answer_family": "number",
-      "answer_value": {"value": 34}
-    }
-  ],
-  "metadata": {
-    "utm_campaign": "spring_launch"
-  },
-  "started_at": "2026-04-07T14:01:00Z",
-  "submitted_at": "2026-04-07T14:03:30Z"
-}
-```
-
-### `ListSubmissionsRequest` (query params)
-
-| Name | Type | Required | Notes |
-|---|---|---|---|
-| `survey_id` | int | No | Optional filter |
-| `status` | string | No | Optional filter |
-| `submission_channel` | string | No | Optional filter |
-| `page` | int | No | Default `1`, min `1` |
-| `page_size` | int | No | Default `20`, min `1`, max `100` |
-
-### `GetSubmissionRequest` (query params)
-
-| Name | Type | Required | Notes |
-|---|---|---|---|
-| `include_answers` | bool | No | Default `false` |
-| `resolve_identity` | bool | No | Default `false` |
-
-### `PaginatedSubmissionsOut`
-
-```json
-{
-  "items": [
-    {
-      "id": 1,
-      "project_id": 9,
-      "survey_id": 11,
-      "survey_version_id": 7,
-      "response_store_id": 3,
-      "submission_channel": "authenticated",
-      "submitted_by_user_id": 101,
-      "public_link_id": null,
-      "is_anonymous": false,
-      "status": "submitted",
-      "started_at": "2026-04-07T14:01:00Z",
-      "submitted_at": "2026-04-07T14:03:30Z",
-      "created_at": "2026-04-07T14:03:31Z"
-    }
-  ],
-  "total": 42,
-  "page": 1,
-  "page_size": 20
-}
-```
-
----
-
-## 5) Endpoint Reference
-
-## 5.1 Health
-
-| Method | Path | Body | Query | Pagination |
-|---|---|---|---|---|
-| GET | `/api/v1/health/health/` | None | None | No |
-| GET | `/api/v1/health/health/ready` | None | None | No |
-| GET | `/api/v1/health/health/db` | None | None | No |
-
-### Example
-
-```bash
-curl -X GET http://localhost:5000/api/v1/health/health/db
-```
-
----
-
-## 5.2 Projects: Surveys
-
-| Method | Path | Request Body | Query | Pagination |
-|---|---|---|---|---|
-| GET | `/api/v1/projects/<project_id>/surveys` | None | None | No |
-| POST | `/api/v1/projects/<project_id>/surveys` | `CreateSurveyRequest` | None | No |
-| GET | `/api/v1/projects/<project_id>/surveys/<survey_id>` | None | None | No |
-| PATCH | `/api/v1/projects/<project_id>/surveys/<survey_id>` | `UpdateSurveyRequest` | None | No |
-| DELETE | `/api/v1/projects/<project_id>/surveys/<survey_id>` | None | None | No |
-
-### Example (create survey)
-
-```bash
-curl -X POST http://localhost:5000/api/v1/projects/9/surveys \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title":"Customer Intake",
-    "visibility":"public",
-    "allow_public_responses":true,
-    "public_slug":"customer-intake"
-  }'
-```
-
----
-
-## 5.3 Projects: Versions
-
-| Method | Path | Request Body | Query | Pagination |
-|---|---|---|---|---|
-| GET | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions` | None | None | No |
-| POST | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions` | None | None | No |
-| GET | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>` | None | None | No |
-| POST | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/publish` | None | None | No |
-| POST | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/archive` | None | None | No |
-
----
-
-## 5.4 Projects: Questions
-
-| Method | Path | Request Body | Query | Pagination |
-|---|---|---|---|---|
-| GET | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/questions` | None | None | No |
-| POST | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/questions` | `CreateQuestionRequest` | None | No |
-| PATCH | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/questions/<question_id>` | `UpdateQuestionRequest` | None | No |
-| DELETE | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/questions/<question_id>` | None | None | No |
-
----
-
-## 5.5 Projects: Rules
-
-| Method | Path | Request Body | Query | Pagination |
-|---|---|---|---|---|
-| GET | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/rules` | None | None | No |
-| POST | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/rules` | `CreateRuleRequest` | None | No |
-| PATCH | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/rules/<rule_id>` | `UpdateRuleRequest` | None | No |
-| DELETE | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/rules/<rule_id>` | None | None | No |
-
----
-
-## 5.6 Projects: Scoring Rules
-
-| Method | Path | Request Body | Query | Pagination |
-|---|---|---|---|---|
-| GET | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/scoring-rules` | None | None | No |
-| POST | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/scoring-rules` | `CreateScoringRuleRequest` | None | No |
-| PATCH | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/scoring-rules/<scoring_rule_id>` | `UpdateScoringRuleRequest` | None | No |
-| DELETE | `/api/v1/projects/<project_id>/surveys/<survey_id>/versions/<version_id>/scoring-rules/<scoring_rule_id>` | None | None | No |
-
----
-
-## 5.7 Projects: Public Link Management
-
-| Method | Path | Request Body | Query | Pagination |
-|---|---|---|---|---|
-| GET | `/api/v1/projects/<project_id>/surveys/<survey_id>/public-links` | None | None | No |
-| POST | `/api/v1/projects/<project_id>/surveys/<survey_id>/public-links` | `CreatePublicLinkRequest` | None | No |
-| PATCH | `/api/v1/projects/<project_id>/surveys/<survey_id>/public-links/<link_id>` | `UpdatePublicLinkRequest` | None | No |
-| DELETE | `/api/v1/projects/<project_id>/surveys/<survey_id>/public-links/<link_id>` | None | None | No |
-
-### Example (create link)
-
-```bash
-curl -X POST http://localhost:5000/api/v1/projects/9/surveys/11/public-links \
-  -H "Content-Type: application/json" \
-  -d '{
-    "allow_response": true,
-    "expires_at": "2026-12-31T23:59:59Z"
-  }'
-```
-
----
-
-## 5.8 Projects: Submissions (Authenticated)
-
-| Method | Path | Request Body | Query | Pagination |
-|---|---|---|---|---|
-| POST | `/api/v1/projects/<project_id>/surveys/<survey_id>/submissions` | `CreateSubmissionRequest` | None | No |
-| GET | `/api/v1/projects/<project_id>/submissions` | None | `ListSubmissionsRequest` | **Yes** |
-| GET | `/api/v1/projects/<project_id>/submissions/<submission_id>` | None | `GetSubmissionRequest` | No |
-
-### Pagination details
-
-- Pagination applies only to `GET /api/v1/projects/<project_id>/submissions`.
-- Uses `page` and `page_size` query parameters.
-- Response includes `items`, `total`, `page`, and `page_size`.
-- Optional `status` filter values: `pending`, `stored`, `failed`.
-
-### Example (list submissions)
-
-```bash
-curl -G http://localhost:5000/api/v1/projects/9/submissions \
-  --data-urlencode "survey_id=11" \
-  --data-urlencode "status=stored" \
-  --data-urlencode "page=1" \
-  --data-urlencode "page_size=20"
-```
-
----
-
-## 5.9 Public Endpoints
-
-| Method | Path | Request Body | Query | Pagination |
-|---|---|---|---|---|
-| GET | `/api/v1/public/surveys/<public_slug>` | None | None | No |
-| GET | `/api/v1/public/links/resolve` | Optional JSON body (`{"token":"..."}`) or query `token` | `token` | No |
-| POST | `/api/v1/public/submissions` | `PublicSubmissionRequest` | None | No |
-
-### Example (resolve token via query)
-
-```bash
-curl -G http://localhost:5000/api/v1/public/links/resolve \
-  --data-urlencode "token=<plaintext-token>"
-```
-
-### Example (public submission)
-
-```bash
-curl -X POST http://localhost:5000/api/v1/public/submissions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "public_token":"<plaintext-token>",
-    "survey_version_id":7,
-    "is_anonymous":true,
-    "answers":[
-      {
-        "question_key":"q_age",
-        "answer_family":"number",
-        "answer_value":{"value":34}
+      "question_key": "satisfaction_rating",
+      "answer_family": "rating",
+      "answer_value": {
+        "value": 8
       }
-    ]
-  }'
+    }
+  ],
+  "metadata": {}
+}
 ```
 
----
+- Success responses:
+  - `201 Created`: `LinkedSubmissionOut`
+- Obvious errors:
+  - `404` public survey not found
+  - `409` survey version not publishable or does not match the public survey
+  - `422 VALIDATION_ERROR`
 
-## 6) Quick Route Count
+#### `POST /api/v1/public/submissions/link`
 
-- Health routes: 3
-- Project routes: 29
-- Public routes: 3
-- **Total**: 35
+- Purpose: create a submission using an authenticated survey link token.
+- Auth: `require_auth`.
+- Path/query params: none.
+- Request shape:
+  - `token`
+  - `survey_version_id`
+  - `started_at?`
+  - `submitted_at?`
+  - `answers`
+  - `metadata?`
+- Success responses:
+  - `201 Created`: `LinkedSubmissionOut`
+- Obvious errors:
+  - `401` auth required
+  - `403` link assigned to a different user/email
+  - `404` token not found
+  - `409` link inactive, expired, or survey unpublished
+  - `422 VALIDATION_ERROR`
+
+### Projects
+
+#### `GET /api/v1/projects`
+
+- Purpose: list projects visible to the authenticated actor.
+- Auth: `require_auth`.
+- Path/query params: none.
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `ProjectOut[]`
+- Obvious errors:
+  - `401` auth required
+
+#### `POST /api/v1/projects`
+
+- Purpose: create a project.
+- Auth: `require_auth`.
+- Path/query params: none.
+- Request shape:
+  - `name`
+  - `slug`
+- Success responses:
+  - `201 Created`: `ProjectOut`
+- Obvious errors:
+  - `401` auth required
+  - `409` duplicate slug
+  - `422 VALIDATION_ERROR`
+
+#### `GET /api/v1/projects/{project_ref}`
+
+- Purpose: fetch one project by numeric ID or slug.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref: string | integer`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `ProjectOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project not found
+  - `403` access denied
+
+#### `PATCH /api/v1/projects/{project_ref}`
+
+- Purpose: partially update a project.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref: string | integer`
+- Request shape:
+  - `name?`
+  - `slug?`
+- Success responses:
+  - `200 OK`: `ProjectOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project not found
+  - `409` duplicate slug
+  - `422 VALIDATION_ERROR`
+
+#### `DELETE /api/v1/projects/{project_ref}`
+
+- Purpose: delete a project.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref: string | integer`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `{ "message": "Project deleted" }`
+- Obvious errors:
+  - `401` auth required
+  - `404` project not found
+  - `403` access denied
+
+### Surveys
+
+#### `GET /api/v1/projects/{project_ref}/surveys`
+
+- Purpose: list surveys in a project.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref: string | integer`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `SurveyOut[]`
+- Obvious errors:
+  - `401` auth required
+  - `404` project not found
+
+#### `POST /api/v1/projects/{project_ref}/surveys`
+
+- Purpose: create a survey in a project.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref: string | integer`
+- Request shape:
+  - `title`
+  - `visibility`
+  - `public_slug?`
+  - `default_response_store_id?`
+- Success responses:
+  - `201 Created`: `SurveyOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project not found
+  - `409` duplicate public slug or invalid survey state
+  - `422 VALIDATION_ERROR`
+
+#### `GET /api/v1/projects/{project_ref}/surveys/{survey_id}`
+
+- Purpose: fetch one survey in a project.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref: string | integer`
+  - `survey_id: integer`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `SurveyOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project or survey not found
+
+#### `PATCH /api/v1/projects/{project_ref}/surveys/{survey_id}`
+
+- Purpose: partially update a survey.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref: string | integer`
+  - `survey_id: integer`
+- Request shape:
+  - `title?`
+  - `visibility?`
+  - `public_slug?`
+  - `default_response_store_id?`
+- Success responses:
+  - `200 OK`: `SurveyOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project or survey not found
+  - `409` duplicate public slug or invalid state transition
+  - `422 VALIDATION_ERROR`
+
+#### `DELETE /api/v1/projects/{project_ref}/surveys/{survey_id}`
+
+- Purpose: delete a survey.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref: string | integer`
+  - `survey_id: integer`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `{ "message": "Survey deleted" }`
+- Obvious errors:
+  - `401` auth required
+  - `404` project or survey not found
+
+### Versions
+
+#### `GET /api/v1/projects/{project_ref}/surveys/{survey_id}/versions`
+
+- Purpose: list survey versions.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `SurveyVersionOut[]`
+- Obvious errors:
+  - `401` auth required
+  - `404` project or survey not found
+
+#### `POST /api/v1/projects/{project_ref}/surveys/{survey_id}/versions`
+
+- Purpose: create a new survey version.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+- Request shape: none.
+- Success responses:
+  - `201 Created`: `SurveyVersionOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project or survey not found
+  - `409` version lifecycle conflict
+
+#### `GET /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}`
+
+- Purpose: fetch one survey version.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `SurveyVersionOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project, survey, or version not found
+
+#### `POST /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/copy-to-draft`
+
+- Purpose: copy an existing version into a new draft version.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+- Request shape: none.
+- Success responses:
+  - `201 Created`: `SurveyVersionOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project, survey, or version not found
+  - `409` version lifecycle conflict
+
+#### `POST /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/publish`
+
+- Purpose: publish a version.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `SurveyVersionOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project, survey, or version not found
+  - `409` invalid publish transition
+
+#### `POST /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/archive`
+
+- Purpose: archive a version.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `SurveyVersionOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project, survey, or version not found
+  - `409` invalid archive transition
+
+### Content
+
+#### `GET /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/questions`
+
+- Purpose: list questions for a survey version.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `QuestionOut[]`
+- Obvious errors:
+  - `401` auth required
+  - `404` project, survey, or version not found
+
+#### `POST /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/questions`
+
+- Purpose: create a question for a survey version.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+- Request shape:
+  - `question_key`
+  - `question_schema`
+- Success responses:
+  - `201 Created`: `QuestionOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project, survey, or version not found
+  - `409` duplicate question key or draft-state conflict
+  - `422 VALIDATION_ERROR`
+
+#### `PATCH /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/questions/{question_id}`
+
+- Purpose: partially update a question.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+  - `question_id`
+- Request shape:
+  - `question_key?`
+  - `question_schema?`
+- Success responses:
+  - `200 OK`: `QuestionOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` question or parent resources not found
+  - `409` duplicate key or non-draft version
+  - `422 VALIDATION_ERROR`
+
+#### `DELETE /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/questions/{question_id}`
+
+- Purpose: delete a question.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+  - `question_id`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `{ "message": "Question deleted" }`
+- Obvious errors:
+  - `401` auth required
+  - `404` question or parent resources not found
+  - `409` non-draft version
+
+#### `GET /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/rules`
+
+- Purpose: list rules for a survey version.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `RuleOut[]`
+- Obvious errors:
+  - `401` auth required
+  - `404` project, survey, or version not found
+
+#### `POST /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/rules`
+
+- Purpose: create a rule for a survey version.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+- Request shape:
+  - `rule_key`
+  - `rule_schema`
+- Success responses:
+  - `201 Created`: `RuleOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project, survey, or version not found
+  - `409` duplicate rule key or non-draft version
+  - `422 VALIDATION_ERROR`
+
+#### `PATCH /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/rules/{rule_id}`
+
+- Purpose: partially update a rule.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+  - `rule_id`
+- Request shape:
+  - `rule_key?`
+  - `rule_schema?`
+- Success responses:
+  - `200 OK`: `RuleOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` rule or parent resources not found
+  - `409` duplicate key or non-draft version
+  - `422 VALIDATION_ERROR`
+
+#### `DELETE /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/rules/{rule_id}`
+
+- Purpose: delete a rule.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+  - `rule_id`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `{ "message": "Rule deleted" }`
+- Obvious errors:
+  - `401` auth required
+  - `404` rule or parent resources not found
+  - `409` non-draft version
+
+#### `GET /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/scoring-rules`
+
+- Purpose: list scoring rules for a survey version.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `ScoringRuleOut[]`
+- Obvious errors:
+  - `401` auth required
+  - `404` project, survey, or version not found
+
+#### `POST /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/scoring-rules`
+
+- Purpose: create a scoring rule for a survey version.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+- Request shape:
+  - `scoring_key`
+  - `scoring_schema`
+- Success responses:
+  - `201 Created`: `ScoringRuleOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project, survey, or version not found
+  - `409` duplicate scoring key or non-draft version
+  - `422 VALIDATION_ERROR`
+
+#### `PATCH /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/scoring-rules/{scoring_rule_id}`
+
+- Purpose: partially update a scoring rule.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+  - `scoring_rule_id`
+- Request shape:
+  - `scoring_key?`
+  - `scoring_schema?`
+- Success responses:
+  - `200 OK`: `ScoringRuleOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` scoring rule or parent resources not found
+  - `409` duplicate key or non-draft version
+  - `422 VALIDATION_ERROR`
+
+#### `DELETE /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/scoring-rules/{scoring_rule_id}`
+
+- Purpose: delete a scoring rule.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `version_number`
+  - `scoring_rule_id`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `{ "message": "Scoring rule deleted" }`
+- Obvious errors:
+  - `401` auth required
+  - `404` scoring rule or parent resources not found
+  - `409` non-draft version
+
+### Links
+
+#### `GET /api/v1/projects/{project_ref}/surveys/{survey_id}/links`
+
+- Purpose: list links for a survey.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `{ "links": PublicLinkOut[] }`
+- Obvious errors:
+  - `401` auth required
+  - `404` project or survey not found
+
+#### `POST /api/v1/projects/{project_ref}/surveys/{survey_id}/links`
+
+- Purpose: create a link for a survey.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+- Request shape:
+  - `assigned_email?`
+  - `expires_at?`
+- Success responses:
+  - `201 Created`: `CreatePublicLinkOut`
+- Response shape:
+  - `link: PublicLinkOut`
+  - `token: string`
+  - `url: string`
+- Obvious errors:
+  - `401` auth required
+  - `404` project or survey not found
+  - `409` invalid visibility/link assignment combination
+  - `422 VALIDATION_ERROR`
+
+#### `PATCH /api/v1/projects/{project_ref}/surveys/{survey_id}/links/{link_id}`
+
+- Purpose: partially update a link.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `link_id`
+- Request shape:
+  - `is_active?`
+  - `assigned_email?`
+  - `expires_at?`
+- Success responses:
+  - `200 OK`: `PublicLinkOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project, survey, or link not found
+  - `409` invalid visibility/link assignment combination
+  - `422 VALIDATION_ERROR`
+
+#### `DELETE /api/v1/projects/{project_ref}/surveys/{survey_id}/links/{link_id}`
+
+- Purpose: delete a link.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id`
+  - `link_id`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `{ "message": "Link deleted" }`
+- Obvious errors:
+  - `401` auth required
+  - `404` project, survey, or link not found
+
+### Submissions
+
+#### `GET /api/v1/projects/{project_ref}/submissions`
+
+- Purpose: list submissions for a project.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `survey_id?`
+  - `status?`
+  - `submission_channel?`
+  - `page?`
+  - `page_size?`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `PaginatedSubmissionsOut`
+- Response shape:
+  - `items: CoreSubmissionOut[]`
+  - `total: integer`
+  - `page: integer`
+  - `page_size: integer`
+- Obvious errors:
+  - `401` auth required
+  - `404` project not found
+  - `422 VALIDATION_ERROR`
+
+#### `GET /api/v1/projects/{project_ref}/submissions/{submission_id}`
+
+- Purpose: fetch one submission and its stored answers.
+- Auth: `require_auth`.
+- Path/query params:
+  - `project_ref`
+  - `submission_id`
+  - `include_answers?: boolean`
+  - `resolve_identity?: boolean`
+- Request shape: none.
+- Success responses:
+  - `200 OK`: `LinkedSubmissionOut`
+- Obvious errors:
+  - `401` auth required
+  - `404` project or submission not found
+  - `403` access denied
+  - `422 VALIDATION_ERROR`
