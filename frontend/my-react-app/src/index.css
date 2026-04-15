@@ -30,6 +30,7 @@
   --shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.16);
   --shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
   --focus-ring: 0 0 0 3px rgba(169, 191, 211, 0.18);
+  --transition-fast: 0.16s ease;
 
   --sans: "SF Pro Text", "SF Pro Display", "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --mono: "SFMono-Regular", "Cascadia Code", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -37,6 +38,15 @@
   --sidebar-w: 232px;
   --radius-sm: 8px;
   --radius-md: 12px;
+  --radius-pill: 999px;
+  --field-gap: 8px;
+  --field-label-size: 0.82rem;
+  --field-help-size: 0.8rem;
+  --control-height-md: 42px;
+  --control-height-sm: 34px;
+  --control-height-xs: 30px;
+  --control-padding-y: 10px;
+  --control-padding-x: 12px;
 
   /* Legacy aliases kept to avoid a broad refactor while the palette shifts. */
   --ink: var(--bg);

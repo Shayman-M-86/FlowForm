@@ -1,3 +1,5 @@
+@import "./InteractiveShared.css";
+
 /* Shared styles for NumberStepper and NumberStepperGroup */
 
 .ns-shell {
@@ -21,10 +23,6 @@
   background: var(--bg-raised);
 }
 
-.ns-shell--pill {
-  border-radius: 999px;
-}
-
 .ns-button.btn {
   min-width: 28px;
   padding: 0;
@@ -36,10 +34,6 @@
 
 .ns-shell--xs .ns-button.btn {
   min-width: 24px;
-}
-
-.ns-shell--pill .ns-button.btn {
-  border-radius: 999px;
 }
 
 .ns-shell--ghost .ns-button.btn:hover:not(:disabled),

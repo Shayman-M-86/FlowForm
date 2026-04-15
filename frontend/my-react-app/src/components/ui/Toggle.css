@@ -1,8 +1,4 @@
-.toggle-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+@import "./FormFieldShared.css";
 
 .toggle-label {
   display: flex;
@@ -24,9 +20,7 @@
   width: 42px;
   height: 24px;
   border: 1px solid var(--border-strong);
-  border-radius: 999px;
   background: var(--surface);
-  transition: background 0.16s ease, border-color 0.16s ease;
   flex-shrink: 0;
 }
 
@@ -41,9 +35,7 @@
   left: 2px;
   width: 18px;
   height: 18px;
-  border-radius: 999px;
   background: var(--text-soft);
-  transition: transform 0.16s ease, background 0.16s ease;
 }
 
 .toggle-input:checked + .toggle-track .toggle-thumb {
@@ -57,6 +49,4 @@
 
 .toggle-hint {
   margin-left: 54px;
-  font-size: 0.8rem;
-  color: var(--muted);
 }

@@ -1,43 +1,15 @@
-.select-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.select-label {
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--text-soft);
-}
+@import "./FormFieldShared.css";
 
 .select-control {
-  width: 100%;
-  min-height: 42px;
-  padding: 10px 38px 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background-color: var(--bg);
-  color: var(--text-h);
-  outline: none;
+  padding-right: 38px;
   cursor: pointer;
-  transition: border-color 0.16s ease, background 0.16s ease;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%237d8792' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
 }
 
-.select-control:focus {
-  border-color: var(--accent-border);
-  background-color: var(--bg-subtle);
-}
-
 .select-control option {
   background: var(--bg);
   color: var(--text-h);
-}
-
-.select-hint {
-  font-size: 0.8rem;
-  color: var(--muted);
 }

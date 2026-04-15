@@ -1,9 +1,10 @@
+@import "./InteractiveShared.css";
+
 .badge {
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;
   border: 1px solid transparent;
-  border-radius: 999px;
   font-size: 0.74rem;
   line-height: 1;
   white-space: nowrap;

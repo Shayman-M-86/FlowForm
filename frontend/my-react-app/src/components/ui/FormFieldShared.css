@@ -1,0 +1,116 @@
+@import "./InteractiveShared.css";
+
+/* Shared form-field structure and control surface styles. */
+
+.input-field,
+.select-field,
+.toggle-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--field-gap);
+}
+
+.input-label,
+.select-label {
+  font-size: var(--field-label-size);
+  font-weight: 500;
+  color: var(--text-soft);
+}
+
+.input-hint,
+.input-error,
+.select-hint,
+.toggle-hint {
+  font-size: var(--field-help-size);
+}
+
+.input-hint,
+.select-hint,
+.toggle-hint {
+  color: var(--muted);
+}
+
+.input-error {
+  color: var(--danger);
+}
+
+.input-control,
+.select-control,
+.large-input-shell {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+.input-control,
+.select-control {
+  min-height: var(--control-height-md);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  outline: none;
+  color: var(--text-h);
+}
+
+.input-control::placeholder {
+  color: var(--muted);
+}
+
+.input-control--secondary {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--text-h);
+}
+
+.input-control--secondary:focus,
+.large-input-shell:focus-within {
+  border-color: var(--accent-border);
+  background: var(--bg-subtle);
+}
+
+.select-control:focus {
+  border-color: var(--accent-border);
+  background-color: var(--bg-subtle);
+}
+
+.input-control--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-h);
+}
+
+.input-control--ghost:hover:not(:disabled),
+.input-control--ghost:focus {
+  background: var(--muted-bg);
+  border-color: transparent;
+}
+
+.input-control--quiet {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.input-control--quiet:hover:not(:disabled),
+.input-control--quiet:focus {
+  background: var(--muted-bg);
+  border-color: var(--border-strong);
+  color: var(--text-h);
+}
+
+.input-control--secondary:disabled {
+  background: var(--bg);
+}
+
+.select-control:disabled {
+  background-color: var(--bg);
+}
+
+.input-control--ghost:disabled,
+.input-control--quiet:disabled {
+  background: transparent;
+}
+
+.input-control--error,
+.large-input-shell--error {
+  border-color: rgba(212, 139, 139, 0.5);
+}

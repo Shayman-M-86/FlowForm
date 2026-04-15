@@ -1,65 +1,52 @@
+@import "./FormFieldShared.css";
+
 .large-input-shell {
-    width: 100%;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg);
-    overflow: hidden;
-    transition: border-color 0.16s ease, background 0.16s ease;
-  }
-  
-  .large-input-shell:focus-within {
-    border-color: var(--accent-border);
-    background: var(--bg-subtle);
-  }
-  
-  .large-input-shell--error {
-    border-color: rgba(212, 139, 139, 0.5);
-  }
-  
-  .large-input-control {
-    display: block;
-    width: 100%;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    outline: none;
-    resize: none;
-    line-height: 1.5;
-    overflow-y: auto;
-  }
-  
-  .large-input-control:focus {
-    border-color: transparent;
-    background: transparent;
-  }
-  
-  .large-input-control--sm {
-    min-height: 88px;
-    max-height: 88px;
-  }
-  
-  .large-input-control--md {
-    min-height: 120px;
-    max-height: 120px;
-  }
-  
-  .large-input-control--lg {
-    min-height: 168px;
-    max-height: 168px;
-  }
-  
-  .large-input-control--autogrow {
-    max-height: none;
-    overflow-y: hidden;
-  }
-  
-  .large-input__meta {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  
-  .input-hint--count {
-    margin-left: auto;
-    white-space: nowrap;
-  }
+  overflow: hidden;
+}
+
+.large-input-control {
+  display: block;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+  resize: none;
+  line-height: 1.5;
+  overflow-y: auto;
+}
+
+.large-input-control:focus {
+  border-color: transparent;
+  background: transparent;
+}
+
+.large-input-control--sm {
+  min-height: 88px;
+  max-height: 88px;
+}
+
+.large-input-control--md {
+  min-height: 120px;
+  max-height: 120px;
+}
+
+.large-input-control--lg {
+  min-height: 168px;
+  max-height: 168px;
+}
+
+.large-input-control--autogrow {
+  max-height: none;
+  overflow-y: hidden;
+}
+
+.large-input__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.input-hint--count {
+  margin-left: auto;
+  white-space: nowrap;
+}

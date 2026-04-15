@@ -1,3 +1,5 @@
+@import "./InteractiveShared.css";
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -7,12 +9,6 @@
   border-radius: var(--radius-sm);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, opacity 0.16s ease;
-}
-
-.btn:disabled {
-  opacity: 0.46;
-  cursor: not-allowed;
 }
 
 .btn--md {
@@ -30,10 +26,6 @@
   min-height: 30px;
   padding: 0 10px;
   font-size: 0.82rem;
-}
-
-.btn--pill {
-  border-radius: 999px;
 }
 
 .btn--primary {
@@ -100,4 +92,19 @@
   border-width: 2px;
 }
 
+.btn--border-dotted.btn--primary {
+  border-color: rgba(13, 16, 19, 0.24);
+}
+
+.btn--border-dotted.btn--ghost {
+  border-color: var(--border);
+}
+
+.btn--border-dotted.btn--primary:hover:not(:disabled) {
+  border-color: rgba(13, 16, 19, 0.32);
+}
+
+.btn--border-dotted.btn--ghost:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
 
