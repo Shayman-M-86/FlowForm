@@ -1,10 +1,76 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import "./RatingQuestion.css";
+import { QUESTION_MAX, blurOnEnter } from "./blankPillUtils";
+import { BlankPillTopbar, BlankPillQuestionField, BlankPillCharCount, BlankPillFieldHead } from "./BlankPillShell";
 
-const QUESTION_MAX = 5000;
 const MAX_STARS = 12;
 
 type RatingType = "numeric-slider" | "emoji" | "stars";
+type EmojiListType = "sad_to_happy" | "angry_to_happy" | "disgust_to_happy";
+
+interface RatingQuestionDataSlider {
+  id: string;
+  title: string;
+  label: string;
+  family: "rating";
+  rating: {
+    style: "slider";
+    schema: {
+      range: { min: number; max: number; step: number };
+    };
+    ui: {
+      left_label: string;
+      right_label: string;
+      step: number;
+    };
+  };
+}
+
+interface RatingQuestionDataEmoji {
+  id: string;
+  title: string;
+  label: string;
+  family: "rating";
+  rating: {
+    style: "emoji";
+    schema: {
+      emoji_list: EmojiListType;
+      words: boolean;
+    };
+    ui: {
+      left_label: string;
+      right_label: string;
+    };
+  };
+}
+
+interface RatingQuestionDataStar {
+  id: string;
+  title: string;
+  label: string;
+  family: "rating";
+  rating: {
+    style: "star";
+    schema: {
+      stars: number;
+    };
+    ui: {
+      left_label: string;
+      right_label: string;
+    };
+  };
+}
+
+export type RatingQuestionData = RatingQuestionDataSlider | RatingQuestionDataEmoji | RatingQuestionDataStar;
+
+export interface RatingQuestionHandle {
+  getData(): RatingQuestionData;
+}
+
+interface RatingQuestionProps {
+  onDelete?: () => void;
+  title?: string;
+}
 
 const RATING_TYPE_OPTIONS: Array<{ value: RatingType; label: string }> = [
   { value: "numeric-slider", label: "Numeric slider" },
@@ -69,8 +135,9 @@ function getNearestValidStep(nextStep: number, validSteps: number[]) {
   }, validSteps[0]);
 }
 
-export function RatingQuestion() {
+export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionProps>(function RatingQuestion({ onDelete, title }, ref) {
   const [isEditMode, setIsEditMode] = useState(true);
+  const [titleValue, setTitleValue] = useState(title ?? "");
   const [questionValue, setQuestionValue] = useState("");
   const [tagValue, setTagValue] = useState("question_id_1");
   const [ratingType, setRatingType] = useState<RatingType>("numeric-slider");
@@ -86,20 +153,76 @@ export function RatingQuestion() {
   const [emojiScaleType, setEmojiScaleType] = useState<EmojiScaleType>("sad");
   const [showEmojiWords, setShowEmojiWords] = useState(true);
 
-  function blurOnEnter(event: React.KeyboardEvent<HTMLElement>) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      (event.currentTarget as HTMLElement).blur();
+  function getEmojiListType(): EmojiListType {
+    switch (emojiScaleType) {
+      case "sad":
+        return "sad_to_happy";
+      case "angry":
+        return "angry_to_happy";
+      case "disgust":
+        return "disgust_to_happy";
     }
   }
 
-  function autoResizeTextarea(element: HTMLTextAreaElement) {
-    element.style.height = "0px";
-    const maxHeight = 600;
-    const nextHeight = Math.min(element.scrollHeight, maxHeight);
-    element.style.height = `${nextHeight}px`;
-    element.style.overflowY = element.scrollHeight > maxHeight ? "auto" : "hidden";
-  }
+  const ratingQuestionData: RatingQuestionData =
+    ratingType === "numeric-slider"
+      ? {
+          id: tagValue,
+          title: titleValue,
+          label: questionValue,
+          family: "rating",
+          rating: {
+            style: "slider",
+            schema: {
+              range: { min: rangeStart, max: rangeEnd, step: stepValue },
+            },
+            ui: {
+              left_label: leftLabel,
+              right_label: rightLabel,
+              step: stepValue,
+            },
+          },
+        }
+      : ratingType === "emoji"
+        ? {
+            id: tagValue,
+            title: titleValue,
+            label: questionValue,
+            family: "rating",
+            rating: {
+              style: "emoji",
+              schema: {
+                emoji_list: getEmojiListType(),
+                words: showEmojiWords,
+              },
+              ui: {
+                left_label: leftLabel,
+                right_label: rightLabel,
+              },
+            },
+          }
+        : {
+            id: tagValue,
+            title: titleValue,
+            label: questionValue,
+            family: "rating",
+            rating: {
+              style: "star",
+              schema: {
+                stars: starCount,
+              },
+              ui: {
+                left_label: leftLabel,
+                right_label: rightLabel,
+              },
+            },
+          };
+
+  useImperativeHandle(ref, () => ({
+    getData() {
+      return ratingQuestionData;
+    },
+  }));
 
   function alignToStep(value: number, min: number, max: number, step: number) {
     const safeStep = Math.max(1, Math.abs(step) || 1);
@@ -109,7 +232,7 @@ export function RatingQuestion() {
   }
 
   function updateRangeStart(nextValue: number) {
-    const nextInteger = Math.round(nextValue);
+    const nextInteger = Math.min(1000, Math.max(-1000, Math.round(nextValue)));
     setRangeStart(nextInteger);
     if (nextInteger > rangeEnd) {
       setRangeEnd(nextInteger);
@@ -117,7 +240,7 @@ export function RatingQuestion() {
   }
 
   function updateRangeEnd(nextValue: number) {
-    const nextInteger = Math.round(nextValue);
+    const nextInteger = Math.min(1000, Math.max(-1000, Math.round(nextValue)));
     setRangeEnd(nextInteger);
     if (nextInteger < rangeStart) {
       setRangeStart(nextInteger);
@@ -179,79 +302,35 @@ export function RatingQuestion() {
 
   return (
     <section className={`blank-pill rating-question ${isEditMode ? "blank-pill--edit" : ""}`} aria-label="Rating question">
-      <header className="blank-pill__topbar">
-        <div className="blank-pill__topbar-left">
-          <span className="blank-pill__family">Rating</span>
-          <input
-            className={`blank-pill__topbar-tag ${!isEditMode ? "blank-pill__topbar-tag--view" : ""}`}
-            type="text"
-            placeholder={isEditMode ? "question_id" : ""}
-            value={tagValue}
-            maxLength={40}
-            size={Math.max(11, tagValue.length + 2)}
-            readOnly={!isEditMode}
-            onChange={(event) => setTagValue(event.target.value)}
-            onKeyDown={blurOnEnter}
-          />
-        </div>
-
-        <div className="blank-pill__actions">
-          {isEditMode && (
-            <>
-              <button className="blank-pill__action blank-pill__action--danger" type="button">
-                Delete
-              </button>
-              <button className="blank-pill__action" type="button">
-                Settings
-              </button>
-            </>
-          )}
-          <button
-            className={`blank-pill__action ${isEditMode ? "blank-pill__action--active" : ""}`}
-            type="button"
-            onClick={() => setIsEditMode((mode) => !mode)}
-          >
-            {isEditMode ? "Editing" : "Edit"}
-          </button>
-        </div>
-      </header>
+      <BlankPillTopbar
+        family="Rating"
+        tagValue={tagValue}
+        onTagChange={setTagValue}
+        isEditMode={isEditMode}
+        onToggleEditMode={() => setIsEditMode((mode) => !mode)}
+        onDelete={onDelete}
+      />
 
       <div className="blank-pill__body">
-        <div className="blank-pill__field">
-          <span className="blank-pill__label">Question</span>
-          <div className="blank-pill__question-stack">
-            <div className="blank-pill__question-field">
-              <textarea
-                className="blank-pill__question"
-                placeholder="Type your question here"
-                rows={3}
-                maxLength={QUESTION_MAX}
-                value={questionValue}
-                readOnly={!isEditMode}
-                onChange={(event) => setQuestionValue(event.target.value)}
-                onInput={(event) => autoResizeTextarea(event.currentTarget)}
-              />
-            </div>
-            {isEditMode && questionValue.length === QUESTION_MAX && (
-              <span className="blank-pill__question-limit">
-                Maximum {QUESTION_MAX} characters reached.
-              </span>
-            )}
-          </div>
-        </div>
+        <BlankPillQuestionField
+          value={questionValue}
+          onChange={setQuestionValue}
+          isEditMode={isEditMode}
+          max={QUESTION_MAX}
+          titleValue={titleValue}
+          onTitleChange={setTitleValue}
+          showTitleEdit={true}
+        />
 
         <div className="blank-pill__field">
-          <span className="blank-pill__field-head">
-            <span className="blank-pill__label">Scale</span>
+          <BlankPillFieldHead label="Scale">
             {isEditMode && (
-              <span className="blank-pill__answer-char-count">
-                <span className="blank-pill__answer-char-count-item">
-                  <span className="blank-pill__answer-char-count-label">Range</span>
-                  <span className="blank-pill__answer-char-count-value">{scaleSummary}</span>
-                </span>
-              </span>
+              <BlankPillCharCount
+                label="Range"
+                value={scaleSummary}
+              />
             )}
-          </span>
+          </BlankPillFieldHead>
 
           <div className="rating-question__panel">
             {isEditMode && (
@@ -344,6 +423,8 @@ export function RatingQuestion() {
                           className="rating-question__number-input"
                           type="number"
                           step={1}
+                          min={-1000}
+                          max={1000}
                           value={rangeStart}
                           readOnly={!isEditMode}
                           onChange={(event) => updateRangeStart(Number(event.target.value))}
@@ -356,6 +437,8 @@ export function RatingQuestion() {
                           className="rating-question__number-input"
                           type="number"
                           step={1}
+                          min={-1000}
+                          max={1000}
                           value={rangeEnd}
                           readOnly={!isEditMode}
                           onChange={(event) => updateRangeEnd(Number(event.target.value))}
@@ -409,6 +492,7 @@ export function RatingQuestion() {
                       type="text"
                       placeholder="Low-end label"
                       value={leftLabel}
+                      maxLength={50}
                       readOnly={!isEditMode}
                       onChange={(event) => setLeftLabel(event.target.value)}
                       onKeyDown={blurOnEnter}
@@ -422,6 +506,7 @@ export function RatingQuestion() {
                       type="text"
                       placeholder="High-end label"
                       value={rightLabel}
+                      maxLength={50}
                       readOnly={!isEditMode}
                       onChange={(event) => setRightLabel(event.target.value)}
                       onKeyDown={blurOnEnter}
@@ -563,4 +648,4 @@ export function RatingQuestion() {
       </div>
     </section>
   );
-}
+});

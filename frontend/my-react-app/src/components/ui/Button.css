@@ -26,6 +26,16 @@
   font-size: 0.86rem;
 }
 
+.btn--xs {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 0.82rem;
+}
+
+.btn--pill {
+  border-radius: 999px;
+}
+
 .btn--primary {
   background: var(--accent);
   color: #0d1013;
@@ -68,3 +78,26 @@
   background: var(--muted-bg);
   color: var(--text-h);
 }
+
+.btn--quiet {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.btn--quiet:hover:not(:disabled) {
+  background: var(--muted-bg);
+  border-color: var(--border-strong);
+  color: var(--text-h);
+}
+
+.btn--border-solid {
+  border-style: solid;
+}
+
+.btn--border-dotted {
+  border-style: dotted;
+  border-width: 2px;
+}
+
+

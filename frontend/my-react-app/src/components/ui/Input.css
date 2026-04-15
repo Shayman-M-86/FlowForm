@@ -16,19 +16,66 @@
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--bg);
-  color: var(--text-h);
   outline: none;
-  transition: border-color 0.16s ease, background 0.16s ease;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease, opacity 0.16s ease;
 }
 
 .input-control::placeholder {
   color: var(--muted);
 }
 
-.input-control:focus {
+.input-control--pill {
+  border-radius: 999px;
+}
+
+.input-control--secondary {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--text-h);
+}
+
+.input-control--secondary:focus {
   border-color: var(--accent-border);
   background: var(--bg-subtle);
+}
+
+.input-control--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-h);
+}
+
+.input-control--ghost:hover:not(:disabled),
+.input-control--ghost:focus {
+  background: var(--muted-bg);
+  border-color: transparent;
+}
+
+.input-control--quiet {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.input-control--quiet:hover:not(:disabled),
+.input-control--quiet:focus {
+  background: var(--muted-bg);
+  border-color: var(--border-strong);
+  color: var(--text-h);
+}
+
+.input-control:disabled {
+  opacity: 0.46;
+  cursor: not-allowed;
+}
+
+.input-control--secondary:disabled {
+  background: var(--bg);
+}
+
+.input-control--ghost:disabled,
+.input-control--quiet:disabled {
+  background: transparent;
 }
 
 .input-control--error {

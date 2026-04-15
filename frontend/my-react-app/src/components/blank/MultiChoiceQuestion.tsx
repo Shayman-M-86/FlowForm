@@ -1,15 +1,31 @@
-import { useRef, useState } from "react";
+import { useRef, useState, forwardRef, useImperativeHandle } from "react";
 import "./MultiChoiceQuestion.css";
 import { useOptionDrag } from "./useOptionDrag";
+import { QUESTION_MAX, autoResizeTextarea, blurOnEnter, nextAvailableTag } from "./blankPillUtils";
+import { BlankPillTopbar, BlankPillQuestionField, BlankPillCharCount, BlankPillFieldHead, BlankPillDragThresholds } from "./BlankPillShell";
 
-const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+export interface MultiChoiceQuestionData {
+  id: string;
+  title: string;
+  label: string;
+  family: "choice";
+  choice: {
+    schema: {
+      options: Array<{ id: string; label: string }>;
+      min_selected: number;
+      max_selected: number;
+    };
+    ui: object;
+  };
+}
 
-function nextAvailableTag(options: { tag: string }[]): string {
-  const used = new Set(options.map((o) => o.tag));
-  for (const letter of ALPHABET) {
-    if (!used.has(letter)) return letter;
-  }
-  return "";
+export interface MultiChoiceQuestionHandle {
+  getData(): MultiChoiceQuestionData;
+}
+
+interface MultiChoiceQuestionProps {
+  onDelete?: () => void;
+  title?: string;
 }
 
 const INITIAL_OPTIONS = [
@@ -18,11 +34,11 @@ const INITIAL_OPTIONS = [
 
 const ANSWER_POOL = 4000;
 const ANSWER_PER_FIELD_MAX = 1000;
-const MAX_ANSWERS =   10;
+const MAX_ANSWERS = 10;
 
-export function MultiChoiceQuestion() {
-  const QUESTION_MAX = 5000;
+export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title }, ref) {
   const [isEditMode, setIsEditMode] = useState(true);
+  const [titleValue, setTitleValue] = useState(title ?? "");
   const [questionValue, setQuestionValue] = useState("");
   const [tagValue, setTagValue] = useState("question_id_1");
   const [minChoices, setMinChoices] = useState(1);
@@ -40,161 +56,111 @@ export function MultiChoiceQuestion() {
     getThresholdRatioForIndex,
   } = useOptionDrag(options, setOptions);
 
-  function blurOnEnter(event: React.KeyboardEvent<HTMLElement>) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      (event.currentTarget as HTMLElement).blur();
-    }
-  }
+  const multiChoiceData: MultiChoiceQuestionData = {
+    id: tagValue,
+    title: titleValue,
+    label: questionValue,
+    family: "choice",
+    choice: {
+      schema: {
+        options: options.map((opt) => ({ id: opt.tag, label: opt.value })),
+        min_selected: minChoices,
+        max_selected: maxChoices,
+      },
+      ui: {},
+    },
+  };
 
-  function autoResizeTextarea(element: HTMLTextAreaElement) {
-    element.style.height = "0px";
-    const maxHeight = element.classList.contains("blank-pill__question") ? 600 : 200;
-    const nextHeight = Math.min(element.scrollHeight, maxHeight);
-    element.style.height = `${nextHeight}px`;
-    element.style.overflowY = element.scrollHeight > maxHeight ? "auto" : "hidden";
-  }
+  useImperativeHandle(ref, () => ({
+    getData() {
+      return multiChoiceData;
+    },
+  }));
 
   return (
     <section className={`blank-pill ${isEditMode ? "blank-pill--edit" : ""}`} aria-label="Blank workspace">
-      <header className="blank-pill__topbar">
-        <div className="blank-pill__topbar-left">
-          <span className="blank-pill__family">Multiple choice</span>
-          <input
-            className={`blank-pill__topbar-tag ${!isEditMode ? "blank-pill__topbar-tag--view" : ""}`}
-            type="text"
-            placeholder={isEditMode ? "question_id" : ""}
-            value={tagValue}
-            maxLength={40}
-            size={Math.max(11, tagValue.length + 2)}
-            readOnly={!isEditMode}
-            onChange={(e) => setTagValue(e.target.value)}
-            onKeyDown={blurOnEnter}
-          />
-        </div>
-        <div className="blank-pill__actions">
-          {isEditMode && (
-            <>
-              <button className="blank-pill__action blank-pill__action--danger" type="button">
-                Delete
-              </button>
-              <button className="blank-pill__action" type="button">
-                Settings
-              </button>
-            </>
-          )}
-          <button
-            className={`blank-pill__action ${isEditMode ? "blank-pill__action--active" : ""}`}
-            type="button"
-            onClick={() => setIsEditMode((m) => !m)}
-          >
-            {isEditMode ? "Editing" : "Edit"}
-          </button>
-        </div>
-      </header>
+      <BlankPillTopbar
+        family="Multiple choice"
+        tagValue={tagValue}
+        onTagChange={setTagValue}
+        isEditMode={isEditMode}
+        onToggleEditMode={() => setIsEditMode((m) => !m)}
+        onDelete={onDelete}
+      />
 
       <div className="blank-pill__body">
-        <div className="blank-pill__field">
-          <span className="blank-pill__label">Question</span>
-          <div className="blank-pill__question-stack">
-            <div className="blank-pill__question-field">
-              <textarea
-                className="blank-pill__question"
-                placeholder="Type your question here"
-                rows={3}
-                maxLength={QUESTION_MAX}
-                value={questionValue}
-                readOnly={!isEditMode}
-                onChange={(e) => setQuestionValue(e.target.value)}
-                onInput={(event) => autoResizeTextarea(event.currentTarget)}
-              />
-            </div>
-            {isEditMode && questionValue.length === QUESTION_MAX && (
-              <span className="blank-pill__question-limit">
-                Maximum {QUESTION_MAX} characters reached.
-              </span>
-            )}
-          </div>
-        </div>
+        <BlankPillQuestionField
+          value={questionValue}
+          onChange={setQuestionValue}
+          isEditMode={isEditMode}
+          max={QUESTION_MAX}
+          titleValue={titleValue}
+          onTitleChange={setTitleValue}
+          showTitleEdit={true}
+        />
 
         <div className="blank-pill__field">
-          <span className="blank-pill__field-head">
-            <span className="blank-pill__label">Answers</span>
+          <BlankPillFieldHead label="Answers">
             {isEditMode && <div className="blank-pill__choice-range-wrapper">
               <span className="blank-pill__choice-range-title">Choices</span>
-            <div className="blank-pill__choice-range">
-              <div className="blank-pill__choice-range-field">
-                <span className="blank-pill__choice-range-label" data-tooltip="Minimum number of answers the user must select.">Min</span>
-                <div className="blank-pill__stepper">
-                  <button
-                    className="blank-pill__stepper-btn"
-                    type="button"
-                    disabled={!isEditMode || minChoices <= 1}
-                    onClick={() => setMinChoices((v) => Math.max(1, v - 1))}
-                  >−</button>
-                  <span className="blank-pill__stepper-value">{minChoices}</span>
-                  <button
-                    className="blank-pill__stepper-btn"
-                    type="button"
-                    disabled={!isEditMode || minChoices >= options.length}
-                    onClick={() => {
-                      const next = Math.min(options.length, minChoices + 1);
-                      setMinChoices(next);
-                      if (next > maxChoices) setMaxChoices(next);
-                    }}
-                  >+</button>
+              <div className="blank-pill__choice-range">
+                <div className="blank-pill__choice-range-field">
+                  <span className="blank-pill__choice-range-label" data-tooltip="Minimum number of answers the user must select.">Min</span>
+                  <div className="blank-pill__stepper">
+                    <button
+                      className="blank-pill__stepper-btn"
+                      type="button"
+                      disabled={!isEditMode || minChoices <= 1}
+                      onClick={() => setMinChoices((v) => Math.max(1, v - 1))}
+                    >−</button>
+                    <span className="blank-pill__stepper-value">{minChoices}</span>
+                    <button
+                      className="blank-pill__stepper-btn"
+                      type="button"
+                      disabled={!isEditMode || minChoices >= options.length}
+                      onClick={() => {
+                        const next = Math.min(options.length, minChoices + 1);
+                        setMinChoices(next);
+                        if (next > maxChoices) setMaxChoices(next);
+                      }}
+                    >+</button>
+                  </div>
+                </div>
+                <div className="blank-pill__choice-range-field">
+                  <span className="blank-pill__choice-range-label" data-tooltip="Maximum number of answers the user can select.">Max</span>
+                  <div className="blank-pill__stepper">
+                    <button
+                      className="blank-pill__stepper-btn"
+                      type="button"
+                      disabled={!isEditMode || maxChoices <= minChoices}
+                      onClick={() => setMaxChoices((v) => Math.max(minChoices, v - 1))}
+                    >−</button>
+                    <span className="blank-pill__stepper-value">{maxChoices}</span>
+                    <button
+                      className="blank-pill__stepper-btn"
+                      type="button"
+                      disabled={!isEditMode || maxChoices >= options.length}
+                      onClick={() => setMaxChoices((v) => Math.min(options.length, v + 1))}
+                    >+</button>
+                  </div>
                 </div>
               </div>
-              <div className="blank-pill__choice-range-field">
-                <span className="blank-pill__choice-range-label" data-tooltip="Maximum number of answers the user can select.">Max</span>
-                <div className="blank-pill__stepper">
-                  <button
-                    className="blank-pill__stepper-btn"
-                    type="button"
-                    disabled={!isEditMode || maxChoices <= minChoices}
-                    onClick={() => setMaxChoices((v) => Math.max(minChoices, v - 1))}
-                  >−</button>
-                  <span className="blank-pill__stepper-value">{maxChoices}</span>
-                  <button
-                    className="blank-pill__stepper-btn"
-                    type="button"
-                    disabled={!isEditMode || maxChoices >= options.length}
-                    onClick={() => setMaxChoices((v) => Math.min(options.length, v + 1))}
-                  >+</button>
-                </div>
-              </div>
-            </div>
             </div>}
             {isEditMode && (
-              <span className="blank-pill__answer-char-count">
-                <span className="blank-pill__answer-char-count-item">
-                  <span className="blank-pill__answer-char-count-label" data-tooltip="Total characters used across all answer choices.">Total</span>
-                  <span className="blank-pill__answer-char-count-value">{options.reduce((sum, o) => sum + o.value.length, 0)}</span>
-                </span>
-                <span className="blank-pill__answer-char-count-divider">/</span>
-                <span className="blank-pill__answer-char-count-item">
-                  <span className="blank-pill__answer-char-count-label">Max</span>
-                  <span className="blank-pill__answer-char-count-value">{ANSWER_POOL}</span>
-                </span>
-              </span>
+              <BlankPillCharCount
+                label="Total"
+                value={options.reduce((sum, o) => sum + o.value.length, 0)}
+                max={ANSWER_POOL}
+                tooltip="Total characters used across all answer choices."
+              />
             )}
-          </span>
+          </BlankPillFieldHead>
           <div className="blank-pill__options" ref={optionsListRef}>
             {options.map((option, index) => {
               const isOpen = openOptionIds.has(option.id);
               const isDragging = activeDrag?.id === option.id;
               const thresholdRatio = getThresholdRatioForIndex(index);
               const dragTransform = getDragTransform(index);
-
-              const isReturnLockSibling = activeDrag?.reverseLock?.siblingId === option.id;
-              const returnThresholdRatio = isReturnLockSibling && activeDrag?.reverseLock
-                ? activeDrag.reverseLock.direction === "down" ? 0.85 : 0.15
-                : null;
-
-              const isInsertLockSibling = activeDrag?.insertLock?.siblingId === option.id;
-              const insertLockThresholdRatio = isInsertLockSibling && activeDrag?.insertLock
-                ? activeDrag.insertLock.direction === "down" ? 0.15 : 0.85
-                : null;
 
               return (
                 <div
@@ -205,39 +171,12 @@ export function MultiChoiceQuestion() {
                   className={`blank-pill__option-row ${isDragging ? "blank-pill__option-row--dragging" : ""}`}
                   style={dragTransform}
                 >
-                  {activeDrag && !isDragging && thresholdRatio !== null && (
-                    <>
-                      <div
-                        className="blank-pill__option-threshold-line"
-                        style={{ top: `${thresholdRatio * 100}%` }}
-                      />
-                      <div className="blank-pill__option-threshold-label">
-                        {thresholdRatio.toFixed(2)}
-                      </div>
-                    </>
-                  )}
-                  {returnThresholdRatio !== null && (
-                    <>
-                      <div
-                        className="blank-pill__option-threshold-line blank-pill__option-threshold-line--return"
-                        style={{ top: `${returnThresholdRatio * 100}%` }}
-                      />
-                      <div className="blank-pill__option-threshold-label blank-pill__option-threshold-label--return">
-                        {returnThresholdRatio.toFixed(2)}
-                      </div>
-                    </>
-                  )}
-                  {insertLockThresholdRatio !== null && (
-                    <>
-                      <div
-                        className="blank-pill__option-threshold-line blank-pill__option-threshold-line--insert-lock"
-                        style={{ top: `${insertLockThresholdRatio * 100}%` }}
-                      />
-                      <div className="blank-pill__option-threshold-label blank-pill__option-threshold-label--insert-lock">
-                        {insertLockThresholdRatio.toFixed(2)}
-                      </div>
-                    </>
-                  )}
+                  <BlankPillDragThresholds
+                    itemId={option.id}
+                    isDragging={isDragging}
+                    thresholdRatio={activeDrag && !isDragging ? thresholdRatio : null}
+                    activeDrag={activeDrag}
+                  />
                   {isEditMode && (
                     <button
                       className="blank-pill__option-handle"
@@ -246,7 +185,11 @@ export function MultiChoiceQuestion() {
                       aria-expanded={isOpen}
                       onClick={() => setOpenOptionIds((current) => {
                         const next = new Set(current);
-                        next.has(option.id) ? next.delete(option.id) : next.add(option.id);
+                        if (next.has(option.id)) {
+                          next.delete(option.id);
+                        } else {
+                          next.add(option.id);
+                        }
                         return next;
                       })}
                     >
@@ -342,4 +285,4 @@ export function MultiChoiceQuestion() {
       </div>
     </section>
   );
-}
+});

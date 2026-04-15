@@ -12,6 +12,7 @@ import { ProtectedApp } from "./components/auth/ProtectedApp";
 import { BuilderPage } from "./pages/Builder";
 import { BlankPage } from "./pages/BlankPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
+import { UITestPage } from "./pages/UITestPage";
 import { useAppMode } from "./hooks/useAppMode";
 import "./App.css";
 
@@ -35,6 +36,7 @@ function AppRoutes() {
       <Route path="/quiz/:publicSlug" element={<QuizTakerPage mode="slug" />} />
       <Route path="/quiz/resolve" element={<QuizTakerPage mode="token" />} />
       <Route path="/builder" element={<BuilderPage />} />
+      <Route path="/ui-test" element={<UITestPage />} />
 
       {/* Explore mode — public shell, no auth required */}
       <Route

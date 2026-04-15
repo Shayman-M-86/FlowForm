@@ -1,0 +1,32 @@
+@import "./NumberStepperShared.css";
+
+.number-stepper-group {
+  overflow: hidden;
+}
+
+.number-stepper-group__segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 42px;
+  padding: 0 8px;
+}
+
+.number-stepper-group--xs .number-stepper-group__segment {
+  gap: 2px;
+  min-height: 34px;
+  padding: 0 6px;
+}
+
+.number-stepper-group__segment + .number-stepper-group__segment {
+  border-left: 1px solid var(--border);
+}
+
+.number-stepper-group__label {
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+.number-stepper-group--xs .number-stepper-group__label {
+  font-size: 0.82rem;
+}

@@ -1,4 +1,6 @@
-@import "./MatchingQuestion.css";
+@import "./blank-pill.css";
+
+/* FieldQuestion-specific: field type selector + textarea preview */
 
 .field-question__panel {
   display: flex;

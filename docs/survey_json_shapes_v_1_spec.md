@@ -34,10 +34,12 @@ Each question follows one shared outer shape:
 
 ```json
 {
-  "family": "...",
   "label": "...",
-  "schema": {},
-  "ui": {}
+  "family": "...name...",
+  "...name...": {
+    "schema": {},
+    "ui": {}
+  }
 }
 ```
 
@@ -47,18 +49,20 @@ Each question follows one shared outer shape:
 
 ```json
 {
+  "label": "Select your hobbies",
   "family": "choice",
-  "label": "What is your favourite colour?",
-  "schema": {
-    "options": [
-      { "id": "a1", "label": "Red" },
-      { "id": "a2", "label": "Blue" }
-    ],
-    "min_selected": 1,
-    "max_selected": 1
-  },
-  "ui": {
-    "style": "radio"
+  "choice": {
+    "schema": {
+      "options": [
+        { "id": "A", "label": "Reading" },
+        { "id": "B", "label": "Traveling" },
+        { "id": "C", "label": "Cooking" }
+      ],
+      "min_selected": 1,
+      "max_selected": 3
+    },
+    "ui": {
+    }
   }
 }
 ```
@@ -67,13 +71,15 @@ Each question follows one shared outer shape:
 
 ```json
 {
-  "family": "field",
   "label": "What is your email address?",
-  "schema": {
-    "field_type": "email"
-  },
-  "ui": {
-    "placeholder": "name@example.com"
+  "family": "field",
+  "field": {
+    "schema": {
+      "field_type": "email"
+    },
+    "ui": {
+      "placeholder": "name@example.com"
+    }
   }
 }
 ```
@@ -82,18 +88,22 @@ Each question follows one shared outer shape:
 
 ```json
 {
-  "family": "matching",
   "label": "Match each country to its capital city",
-  "schema": {
-    "left_items": [
-      { "id": "c1", "label": "Australia" }
-    ],
-    "right_items": [
-      { "id": "r1", "label": "Canberra" }
-    ]
-  },
-  "ui": {
-    "style": "drag_match"
+  "family": "matching",
+  "matching": {
+    "schema": {
+      "prompts": [
+        { "id": "p_A", "label": "Australia" },
+        { "id": "p_B", "label": "France" }
+      ],
+      "matches": [
+        { "id": "m_A", "label": "Canberra" },
+        { "id": "m_B", "label": "Paris" },
+        { "id": "m_C", "label": "Madrid" }
+      ]
+    },
+    "ui": {
+    }
   }
 }
 ```
@@ -102,14 +112,21 @@ Each question follows one shared outer shape:
 
 ```json
 {
-  "family": "rating",
   "label": "How satisfied are you?",
-  "schema": {
-    "min": 1,
-    "max": 5
-  },
-  "ui": {
-    "style": "slider"
+  "family": "rating",
+  "rating": {
+    "schema": {
+      "range": { 
+        "min": -5,
+        "max": 5
+      },
+      "left_label": "Not satisfied",
+      "right_label": "Very satisfied"
+    },
+    "ui": {
+      "style": "slider",
+      "step": 1
+    }
   }
 }
 ```

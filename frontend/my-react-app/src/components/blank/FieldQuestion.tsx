@@ -1,13 +1,39 @@
-import { useState } from "react";
+import { useState, forwardRef, useImperativeHandle } from "react";
 import "./FieldQuestion.css";
+import { QUESTION_MAX, autoResizeTextarea, blurOnEnter } from "./blankPillUtils";
+import { BlankPillTopbar, BlankPillQuestionField, BlankPillCharCount, BlankPillFieldHead } from "./BlankPillShell";
 
-const QUESTION_MAX = 5000;
+export type { FieldQuestionData };
 
-type FieldType = "short-text" | "long-text" | "email" | "phone" | "number" | "date";
+export interface FieldQuestionHandle {
+  getData(): FieldQuestionData;
+}
+
+interface FieldQuestionProps {
+  onDelete?: () => void;
+  title?: string;
+}
+
+type FieldType = "short_text" | "long_text" | "email" | "phone" | "number" | "date";
+
+interface FieldQuestionData {
+  id: string;
+  title: string;
+  label: string;
+  family: "field";
+  field: {
+    schema: {
+      field_type: FieldType;
+    };
+    ui: {
+      placeholder: string;
+    };
+  };
+}
 
 const FIELD_TYPE_OPTIONS: Array<{ value: FieldType; label: string }> = [
-  { value: "short-text", label: "Short text" },
-  { value: "long-text", label: "Long text" },
+  { value: "short_text", label: "Short text" },
+  { value: "long_text", label: "Long text" },
   { value: "email", label: "Email" },
   { value: "phone", label: "Phone" },
   { value: "number", label: "Number" },
@@ -15,11 +41,11 @@ const FIELD_TYPE_OPTIONS: Array<{ value: FieldType; label: string }> = [
 ];
 
 const FIELD_TYPE_PRESETS: Record<FieldType, { placeholder: string; helper: string }> = {
-  "short-text": {
+  "short_text": {
     placeholder: "Type a short response",
     helper: "Single-line text input.",
   },
-  "long-text": {
+  "long_text": {
     placeholder: "Type a longer response",
     helper: "Multi-line text area.",
   },
@@ -41,30 +67,37 @@ const FIELD_TYPE_PRESETS: Record<FieldType, { placeholder: string; helper: strin
   },
 };
 
-export function FieldQuestion() {
+export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>(function FieldQuestion({ onDelete, title }, ref) {
   const [isEditMode, setIsEditMode] = useState(true);
+  const [titleValue, setTitleValue] = useState(title ?? "");
   const [questionValue, setQuestionValue] = useState("");
   const [tagValue, setTagValue] = useState("question_id_1");
-  const [fieldType, setFieldType] = useState<FieldType>("short-text");
+  const [fieldType, setFieldType] = useState<FieldType>("short_text");
   const [placeholderValue, setPlaceholderValue] = useState(
-    FIELD_TYPE_PRESETS["short-text"].placeholder,
+    FIELD_TYPE_PRESETS["short_text"].placeholder,
   );
   const [fieldValue, setFieldValue] = useState("");
 
-  function blurOnEnter(event: React.KeyboardEvent<HTMLElement>) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      (event.currentTarget as HTMLElement).blur();
-    }
-  }
+  const fieldQuestionData: FieldQuestionData = {
+    id: tagValue,
+    title: titleValue,
+    label: questionValue,
+    family: "field",
+    field: {
+      schema: {
+        field_type: fieldType,
+      },
+      ui: {
+        placeholder: placeholderValue,
+      },
+    },
+  };
 
-  function autoResizeTextarea(element: HTMLTextAreaElement) {
-    element.style.height = "0px";
-    const maxHeight = element.classList.contains("blank-pill__question") ? 600 : 220;
-    const nextHeight = Math.min(element.scrollHeight, maxHeight);
-    element.style.height = `${nextHeight}px`;
-    element.style.overflowY = element.scrollHeight > maxHeight ? "auto" : "hidden";
-  }
+  useImperativeHandle(ref, () => ({
+    getData() {
+      return fieldQuestionData;
+    },
+  }));
 
   function updateFieldType(nextType: FieldType) {
     setFieldType(nextType);
@@ -74,84 +107,40 @@ export function FieldQuestion() {
 
   const fieldLabel = FIELD_TYPE_OPTIONS.find((option) => option.value === fieldType)?.label ?? "Field";
   const fieldPreset = FIELD_TYPE_PRESETS[fieldType];
-  const isWideField = fieldType === "long-text";
-  const fieldMaxLength = fieldType === "short-text" ? 100 : fieldType === "long-text" ? 1000 : undefined;
+  const isWideField = fieldType === "long_text";
+  const fieldMaxLength = fieldType === "short_text" ? 100 : fieldType === "long_text" ? 1000 : undefined;
 
   return (
     <section className={`blank-pill field-question ${isEditMode ? "blank-pill--edit" : ""}`} aria-label="Field question">
-      <header className="blank-pill__topbar">
-        <div className="blank-pill__topbar-left">
-          <span className="blank-pill__family">Field</span>
-          <input
-            className={`blank-pill__topbar-tag ${!isEditMode ? "blank-pill__topbar-tag--view" : ""}`}
-            type="text"
-            placeholder={isEditMode ? "question_id" : ""}
-            value={tagValue}
-            maxLength={40}
-            size={Math.max(11, tagValue.length + 2)}
-            readOnly={!isEditMode}
-            onChange={(event) => setTagValue(event.target.value)}
-            onKeyDown={blurOnEnter}
-          />
-        </div>
-
-        <div className="blank-pill__actions">
-          {isEditMode && (
-            <>
-              <button className="blank-pill__action blank-pill__action--danger" type="button">
-                Delete
-              </button>
-              <button className="blank-pill__action" type="button">
-                Settings
-              </button>
-            </>
-          )}
-          <button
-            className={`blank-pill__action ${isEditMode ? "blank-pill__action--active" : ""}`}
-            type="button"
-            onClick={() => setIsEditMode((mode) => !mode)}
-          >
-            {isEditMode ? "Editing" : "Edit"}
-          </button>
-        </div>
-      </header>
+      <BlankPillTopbar
+        family="Field"
+        tagValue={tagValue}
+        onTagChange={setTagValue}
+        isEditMode={isEditMode}
+        onToggleEditMode={() => setIsEditMode((mode) => !mode)}
+        onDelete={onDelete}
+      />
 
       <div className="blank-pill__body">
-        <div className="blank-pill__field">
-          <span className="blank-pill__label">Question</span>
-          <div className="blank-pill__question-stack">
-            <div className="blank-pill__question-field">
-              <textarea
-                className="blank-pill__question"
-                placeholder="Type your question here"
-                rows={3}
-                maxLength={QUESTION_MAX}
-                value={questionValue}
-                readOnly={!isEditMode}
-                onChange={(event) => setQuestionValue(event.target.value)}
-                onInput={(event) => autoResizeTextarea(event.currentTarget)}
-              />
-            </div>
-            {isEditMode && questionValue.length === QUESTION_MAX && (
-              <span className="blank-pill__question-limit">
-                Maximum {QUESTION_MAX} characters reached.
-              </span>
-            )}
-          </div>
-        </div>
+        <BlankPillQuestionField
+          value={questionValue}
+          onChange={setQuestionValue}
+          isEditMode={isEditMode}
+          max={QUESTION_MAX}
+          titleValue={titleValue}
+          onTitleChange={setTitleValue}
+          showTitleEdit={true}
+        />
 
         <div className="blank-pill__field">
-          <span className="blank-pill__field-head">
-            <span className="blank-pill__label">Field</span>
+          <BlankPillFieldHead label="Field">
             {isEditMode && (
-              <span className="blank-pill__answer-char-count">
-                <span className="blank-pill__answer-char-count-item">
-                  <span className="blank-pill__answer-char-count-label">Type</span>
-                  <span className="blank-pill__answer-char-count-value">{fieldLabel}</span>
-                </span>
-              </span>
+              <BlankPillCharCount
+                label="Type"
+                value={fieldLabel}
+              />
             )}
-          </span>
+          </BlankPillFieldHead>
 
           <div className="field-question__panel">
             {isEditMode && (
@@ -197,7 +186,7 @@ export function FieldQuestion() {
                 <span className="field-question__preview-title">{fieldLabel}</span>
               </div>
 
-              {fieldType === "long-text" ? (
+              {fieldType === "long_text" ? (
                 <div className="field-question__textarea-shell">
                   <textarea
                     className={`field-question__input field-question__input--textarea ${!isWideField ? "field-question__input--compact" : ""}`}
@@ -212,7 +201,7 @@ export function FieldQuestion() {
               ) : (
                 <input
                   className={`field-question__input ${!isWideField ? "field-question__input--compact" : ""}`}
-                  type={fieldType === "short-text" ? "text" : fieldType}
+                  type={fieldType === "short_text" ? "text" : fieldType}
                   placeholder={placeholderValue}
                   value={fieldValue}
                   maxLength={fieldMaxLength}
@@ -228,4 +217,4 @@ export function FieldQuestion() {
       </div>
     </section>
   );
-}
+});

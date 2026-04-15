@@ -1,0 +1,72 @@
+/* Shared styles for NumberStepper and NumberStepperGroup */
+
+.ns-shell {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  align-self: flex-start;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.ns-shell--xs {
+  border-radius: 6px;
+}
+
+.ns-shell--ghost {
+  background: var(--bg-subtle);
+}
+
+.ns-shell--secondary {
+  background: var(--bg-raised);
+}
+
+.ns-shell--pill {
+  border-radius: 999px;
+}
+
+.ns-button.btn {
+  min-width: 28px;
+  padding: 0;
+  border-radius: 6px;
+  color: var(--text-soft);
+  background: transparent;
+  border-color: transparent;
+}
+
+.ns-shell--xs .ns-button.btn {
+  min-width: 24px;
+}
+
+.ns-shell--pill .ns-button.btn {
+  border-radius: 999px;
+}
+
+.ns-shell--ghost .ns-button.btn:hover:not(:disabled),
+.ns-shell--ghost .ns-button.btn:focus-visible {
+  background: var(--muted-bg);
+  color: var(--text-h);
+}
+
+.ns-shell--secondary .ns-button.btn {
+  color: var(--text-h);
+}
+
+.ns-shell--secondary .ns-button.btn:hover:not(:disabled),
+.ns-shell--secondary .ns-button.btn:focus-visible {
+  background: var(--surface);
+}
+
+.ns-value {
+  min-width: 28px;
+  text-align: center;
+  color: var(--text-h);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.ns-shell--xs .ns-value {
+  min-width: 22px;
+  font-size: 0.82rem;
+}

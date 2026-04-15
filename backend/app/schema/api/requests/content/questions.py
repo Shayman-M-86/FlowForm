@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 from app.schema.api.requests.content.questions_schemas import QuestionSchemaIn
 
@@ -15,6 +15,15 @@ class CreateQuestionRequest(BaseModel):
         if not value.strip():
             raise ValueError("question_key must not be blank.")
         return value
+
+    @model_validator(mode="after")
+    def validate_id_matches_question_key(self):
+        if self.question_schema.id != self.question_key:
+            raise ValueError(
+                f"question_schema.id must match question_key "
+                f"(id: '{self.question_schema.id}', question_key: '{self.question_key}')"
+            )
+        return self
 
 
 class UpdateQuestionRequest(BaseModel):

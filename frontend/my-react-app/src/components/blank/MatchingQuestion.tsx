@@ -1,9 +1,32 @@
-import { useRef, useState } from "react";
+import { useRef, useState, forwardRef, useImperativeHandle } from "react";
 import "./MatchingQuestion.css";
 import { useOptionDrag } from "./useOptionDrag";
+import { QUESTION_MAX, autoResizeTextarea, blurOnEnter, nextAvailableTag } from "./blankPillUtils";
+import { BlankPillTopbar, BlankPillQuestionField, BlankPillCharCount, BlankPillFieldHead, BlankPillDragThresholds } from "./BlankPillShell";
 
-const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const QUESTION_MAX = 5000;
+export interface MatchingQuestionData {
+  id: string;
+  title: string;
+  label: string;
+  family: "matching";
+  matching: {
+    schema: {
+      prompts: Array<{ id: string; label: string }>;
+      matches: Array<{ id: string; label: string }>;
+    };
+    ui: object;
+  };
+}
+
+export interface MatchingQuestionHandle {
+  getData(): MatchingQuestionData;
+}
+
+interface MatchingQuestionProps {
+  onDelete?: () => void;
+  title?: string;
+}
+
 const ANSWER_POOL = 2000;
 const ANSWER_PER_FIELD_MAX = 250;
 
@@ -31,16 +54,9 @@ const INITIAL_RIGHT_ITEMS: MatchItem[] = [
   { id: "right-1", placeholder: "Match A", value: "", tag: "A" },
 ];
 
-function nextAvailableTag(items: { tag: string }[]) {
-  const used = new Set(items.map((item) => item.tag));
-  for (const letter of ALPHABET) {
-    if (!used.has(letter)) return letter;
-  }
-  return "";
-}
-
-export function MatchingQuestion() {
+export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuestionProps>(function MatchingQuestion({ onDelete, title }, ref) {
   const [isEditMode, setIsEditMode] = useState(true);
+  const [titleValue, setTitleValue] = useState(title ?? "");
   const [questionValue, setQuestionValue] = useState("");
   const [tagValue, setTagValue] = useState("question_id_1");
   const [openItemIds, setOpenItemIds] = useState<Set<string>>(new Set());
@@ -58,20 +74,25 @@ export function MatchingQuestion() {
     0,
   );
 
-  function blurOnEnter(event: React.KeyboardEvent<HTMLElement>) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      (event.currentTarget as HTMLElement).blur();
-    }
-  }
+  const matchingData: MatchingQuestionData = {
+    id: tagValue,
+    title: titleValue,
+    label: questionValue,
+    family: "matching",
+    matching: {
+      schema: {
+        prompts: leftItems.map((item) => ({ id: item.tag, label: item.value })),
+        matches: rightItems.map((item) => ({ id: item.tag, label: item.value })),
+      },
+      ui: {},
+    },
+  };
 
-  function autoResizeTextarea(element: HTMLTextAreaElement) {
-    element.style.height = "0px";
-    const maxHeight = element.classList.contains("blank-pill__question") ? 600 : 200;
-    const nextHeight = Math.min(element.scrollHeight, maxHeight);
-    element.style.height = `${nextHeight}px`;
-    element.style.overflowY = element.scrollHeight > maxHeight ? "auto" : "hidden";
-  }
+  useImperativeHandle(ref, () => ({
+    getData() {
+      return matchingData;
+    },
+  }));
 
   function availableCharactersFor(itemId: string) {
     const usedByOthers = [...leftItems, ...rightItems]
@@ -105,50 +126,6 @@ export function MatchingQuestion() {
     });
   }
 
-  function renderThresholds(
-    isDragging: boolean,
-    thresholdRatio: number | null,
-    returnThresholdRatio: number | null,
-    insertLockThresholdRatio: number | null,
-  ) {
-    return (
-      <>
-        {thresholdRatio !== null && !isDragging && (
-          <>
-            <div
-              className="blank-pill__option-threshold-line"
-              style={{ top: `${thresholdRatio * 100}%` }}
-            />
-            <div className="blank-pill__option-threshold-label">
-              {thresholdRatio.toFixed(2)}
-            </div>
-          </>
-        )}
-        {returnThresholdRatio !== null && (
-          <>
-            <div
-              className="blank-pill__option-threshold-line blank-pill__option-threshold-line--return"
-              style={{ top: `${returnThresholdRatio * 100}%` }}
-            />
-            <div className="blank-pill__option-threshold-label blank-pill__option-threshold-label--return">
-              {returnThresholdRatio.toFixed(2)}
-            </div>
-          </>
-        )}
-        {insertLockThresholdRatio !== null && (
-          <>
-            <div
-              className="blank-pill__option-threshold-line blank-pill__option-threshold-line--insert-lock"
-              style={{ top: `${insertLockThresholdRatio * 100}%` }}
-            />
-            <div className="blank-pill__option-threshold-label blank-pill__option-threshold-label--insert-lock">
-              {insertLockThresholdRatio.toFixed(2)}
-            </div>
-          </>
-        )}
-      </>
-    );
-  }
 
   function renderColumn(
     title: string,
@@ -175,16 +152,6 @@ export function MatchingQuestion() {
             const thresholdRatio = drag.getThresholdRatioForIndex(index);
             const dragTransform = drag.getDragTransform(index);
 
-            const isReturnLockSibling = drag.activeDrag?.reverseLock?.siblingId === item.id;
-            const returnThresholdRatio = isReturnLockSibling && drag.activeDrag?.reverseLock
-              ? drag.activeDrag.reverseLock.direction === "down" ? 0.85 : 0.15
-              : null;
-
-            const isInsertLockSibling = drag.activeDrag?.insertLock?.siblingId === item.id;
-            const insertLockThresholdRatio = isInsertLockSibling && drag.activeDrag?.insertLock
-              ? drag.activeDrag.insertLock.direction === "down" ? 0.15 : 0.85
-              : null;
-
             const fieldMax = availableCharactersFor(item.id);
 
             return (
@@ -196,12 +163,12 @@ export function MatchingQuestion() {
                 className={`blank-pill__option-row ${isDragging ? "blank-pill__option-row--dragging" : ""}`}
                 style={dragTransform}
               >
-                {renderThresholds(
-                  isDragging,
-                  thresholdRatio,
-                  returnThresholdRatio,
-                  insertLockThresholdRatio,
-                )}
+                <BlankPillDragThresholds
+                  itemId={item.id}
+                  isDragging={isDragging}
+                  thresholdRatio={drag.activeDrag && !isDragging ? thresholdRatio : null}
+                  activeDrag={drag.activeDrag}
+                />
 
                 {isEditMode && (
                   <button
@@ -315,89 +282,37 @@ export function MatchingQuestion() {
 
   return (
     <section className={`blank-pill ${isEditMode ? "blank-pill--edit" : ""}`} aria-label="Matching question">
-      <header className="blank-pill__topbar">
-        <div className="blank-pill__topbar-left">
-          <span className="blank-pill__family">Matching</span>
-          <input
-            className={`blank-pill__topbar-tag ${!isEditMode ? "blank-pill__topbar-tag--view" : ""}`}
-            type="text"
-            placeholder={isEditMode ? "question_id" : ""}
-            value={tagValue}
-            maxLength={40}
-            size={Math.max(11, tagValue.length + 2)}
-            readOnly={!isEditMode}
-            onChange={(event) => setTagValue(event.target.value)}
-            onKeyDown={blurOnEnter}
-          />
-        </div>
-
-        <div className="blank-pill__actions">
-          {isEditMode && (
-            <>
-              <button className="blank-pill__action blank-pill__action--danger" type="button">
-                Delete
-              </button>
-              <button className="blank-pill__action" type="button">
-                Settings
-              </button>
-            </>
-          )}
-          <button
-            className={`blank-pill__action ${isEditMode ? "blank-pill__action--active" : ""}`}
-            type="button"
-            onClick={() => setIsEditMode((mode) => !mode)}
-          >
-            {isEditMode ? "Editing" : "Edit"}
-          </button>
-        </div>
-      </header>
+      <BlankPillTopbar
+        family="Matching"
+        tagValue={tagValue}
+        onTagChange={setTagValue}
+        isEditMode={isEditMode}
+        onToggleEditMode={() => setIsEditMode((mode) => !mode)}
+        onDelete={onDelete}
+      />
 
       <div className="blank-pill__body">
-        <div className="blank-pill__field">
-          <span className="blank-pill__label">Question</span>
-          <div className="blank-pill__question-stack">
-            <div className="blank-pill__question-field">
-              <textarea
-                className="blank-pill__question"
-                placeholder="Type your question here"
-                rows={3}
-                maxLength={QUESTION_MAX}
-                value={questionValue}
-                readOnly={!isEditMode}
-                onChange={(event) => setQuestionValue(event.target.value)}
-                onInput={(event) => autoResizeTextarea(event.currentTarget)}
-              />
-            </div>
-            {isEditMode && questionValue.length === QUESTION_MAX && (
-              <span className="blank-pill__question-limit">
-                Maximum {QUESTION_MAX} characters reached.
-              </span>
-            )}
-          </div>
-        </div>
+        <BlankPillQuestionField
+          value={questionValue}
+          onChange={setQuestionValue}
+          isEditMode={isEditMode}
+          max={QUESTION_MAX}
+          titleValue={titleValue}
+          onTitleChange={setTitleValue}
+          showTitleEdit={true}
+        />
 
         <div className="blank-pill__field">
-          <span className="blank-pill__field-head">
-            <span className="blank-pill__label">Pairs</span>
+          <BlankPillFieldHead label="Pairs">
             {isEditMode && (
-              <span className="blank-pill__answer-char-count">
-                <span className="blank-pill__answer-char-count-item">
-                  <span
-                    className="blank-pill__answer-char-count-label"
-                    data-tooltip="Total characters used across both matching columns."
-                  >
-                    Total
-                  </span>
-                  <span className="blank-pill__answer-char-count-value">{totalCharacters}</span>
-                </span>
-                <span className="blank-pill__answer-char-count-divider">/</span>
-                <span className="blank-pill__answer-char-count-item">
-                  <span className="blank-pill__answer-char-count-label">Max</span>
-                  <span className="blank-pill__answer-char-count-value">{ANSWER_POOL}</span>
-                </span>
-              </span>
+              <BlankPillCharCount
+                label="Total"
+                value={totalCharacters}
+                max={ANSWER_POOL}
+                tooltip="Total characters used across both matching columns."
+              />
             )}
-          </span>
+          </BlankPillFieldHead>
 
           <div className="blank-pill__matching-grid">
             {renderColumn("Prompts", "Prompt", leftItems, setLeftItems, leftDrag, nextLeftIndexRef, "left")}
@@ -407,4 +322,4 @@ export function MatchingQuestion() {
       </div>
     </section>
   );
-}
+});

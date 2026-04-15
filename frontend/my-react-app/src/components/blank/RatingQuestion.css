@@ -1,11 +1,12 @@
-@import "./MatchingQuestion.css";
+@import "./blank-pill.css";
+
+/* RatingQuestion-specific: numeric slider, emoji scales, and star rating */
 
 .rating-question__panel {
   display: flex;
   flex-direction: column;
   gap: 14px;
   padding: 16px;
-
 }
 
 .rating-question__controls,
@@ -40,13 +41,6 @@
   color: var(--text-soft);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-}
-
-.rating-question__toggle-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
 .rating-question__switch {
@@ -101,33 +95,6 @@
 .rating-question__switch-label {
   font-size: 0.84rem;
   line-height: 1;
-}
-
-.rating-question__toggle {
-  min-height: 36px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--bg-subtle);
-  color: var(--text-soft);
-  font-size: 0.84rem;
-  cursor: pointer;
-}
-
-.rating-question__toggle--active {
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
-  color: var(--text-h);
-}
-
-.rating-question__toggle:disabled {
-  cursor: default;
-  opacity: 0.7;
-}
-
-.rating-question__emoji-help {
-  font-size: 0.84rem;
-  color: var(--muted);
 }
 
 .rating-question__select,

@@ -1,0 +1,11 @@
+@import "./NumberStepperShared.css";
+
+.number-stepper {
+  gap: 4px;
+  padding: 4px;
+}
+
+.number-stepper--xs {
+  gap: 2px;
+  padding: 2px;
+}
