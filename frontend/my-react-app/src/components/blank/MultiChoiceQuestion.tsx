@@ -1,4 +1,4 @@
-import { useRef, useState, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import "./MultiChoiceQuestion.css";
 import { Button } from "../ui/Button";
 import { NumberStepperGroup } from "../ui/NumberStepperGroup";
@@ -29,6 +29,8 @@ export interface MultiChoiceQuestionHandle {
 interface MultiChoiceQuestionProps {
   onDelete?: () => void;
   title?: string;
+  onEditModeChange?: (isEditMode: boolean) => void;
+  onDataChange?: (summary: { title: string; id: string }) => void;
 }
 
 const INITIAL_OPTIONS = [
@@ -39,7 +41,7 @@ const ANSWER_POOL = 4000;
 const ANSWER_PER_FIELD_MAX = 1000;
 const MAX_ANSWERS = 10;
 
-export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title }, ref) {
+export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title, onEditModeChange, onDataChange }, ref) {
   const [isEditMode, setIsEditMode] = useState(true);
   const [titleValue, setTitleValue] = useState(title ?? "");
   const [questionValue, setQuestionValue] = useState("");
@@ -80,6 +82,18 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
     },
   }));
 
+  useEffect(() => {
+    onDataChange?.({ title: titleValue, id: tagValue });
+  }, [titleValue, tagValue]);
+
+  function toggleEditMode() {
+    setIsEditMode((current) => {
+      const nextMode = !current;
+      onEditModeChange?.(nextMode);
+      return nextMode;
+    });
+  }
+
   return (
     <section className={`blank-pill ${isEditMode ? "blank-pill--edit" : ""}`} aria-label="Blank workspace">
       <BlankPillTopbar
@@ -87,7 +101,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
         tagValue={tagValue}
         onTagChange={setTagValue}
         isEditMode={isEditMode}
-        onToggleEditMode={() => setIsEditMode((m) => !m)}
+        onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
       />
 

@@ -1,4 +1,4 @@
-import { useRef, useState, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import { Button } from "../ui/Button";
 import "./MatchingQuestion.css";
 import { useOptionDrag } from "./useOptionDrag";
@@ -27,6 +27,8 @@ export interface MatchingQuestionHandle {
 interface MatchingQuestionProps {
   onDelete?: () => void;
   title?: string;
+  onEditModeChange?: (isEditMode: boolean) => void;
+  onDataChange?: (summary: { title: string; id: string }) => void;
 }
 
 const ANSWER_POOL = 2000;
@@ -56,7 +58,7 @@ const INITIAL_RIGHT_ITEMS: MatchItem[] = [
   { id: "right-1", placeholder: "Match A", value: "", tag: "A" },
 ];
 
-export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuestionProps>(function MatchingQuestion({ onDelete, title }, ref) {
+export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuestionProps>(function MatchingQuestion({ onDelete, title, onEditModeChange, onDataChange }, ref) {
   const [isEditMode, setIsEditMode] = useState(true);
   const [titleValue, setTitleValue] = useState(title ?? "");
   const [questionValue, setQuestionValue] = useState("");
@@ -96,6 +98,10 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
     },
   }));
 
+  useEffect(() => {
+    onDataChange?.({ title: titleValue, id: tagValue });
+  }, [titleValue, tagValue]);
+
   function availableCharactersFor(itemId: string) {
     const usedByOthers = [...leftItems, ...rightItems]
       .filter((item) => item.id !== itemId)
@@ -125,6 +131,14 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
       const next = new Set(current);
       next.delete(itemId);
       return next;
+    });
+  }
+
+  function toggleEditMode() {
+    setIsEditMode((current) => {
+      const nextMode = !current;
+      onEditModeChange?.(nextMode);
+      return nextMode;
     });
   }
 
@@ -295,7 +309,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
         tagValue={tagValue}
         onTagChange={setTagValue}
         isEditMode={isEditMode}
-        onToggleEditMode={() => setIsEditMode((mode) => !mode)}
+        onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
       />
 

@@ -1,4 +1,4 @@
-import { useState, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import "./FieldQuestion.css";
 import { QUESTION_MAX, blurOnEnter } from "./blankPillUtils";
 import { BlankPillTopbar, BlankPillQuestionField, BlankPillCharCount, BlankPillFieldHead } from "./BlankPillShell";
@@ -15,6 +15,8 @@ export interface FieldQuestionHandle {
 interface FieldQuestionProps {
   onDelete?: () => void;
   title?: string;
+  onEditModeChange?: (isEditMode: boolean) => void;
+  onDataChange?: (summary: { title: string; id: string }) => void;
 }
 
 type FieldType = "short_text" | "long_text" | "email" | "phone" | "number" | "date";
@@ -70,7 +72,7 @@ const FIELD_TYPE_PRESETS: Record<FieldType, { placeholder: string; helper: strin
   },
 };
 
-export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>(function FieldQuestion({ onDelete, title }, ref) {
+export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>(function FieldQuestion({ onDelete, title, onEditModeChange, onDataChange }, ref) {
   const [isEditMode, setIsEditMode] = useState(true);
   const [titleValue, setTitleValue] = useState(title ?? "");
   const [questionValue, setQuestionValue] = useState("");
@@ -102,10 +104,22 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
     },
   }));
 
+  useEffect(() => {
+    onDataChange?.({ title: titleValue, id: tagValue });
+  }, [titleValue, tagValue]);
+
   function updateFieldType(nextType: FieldType) {
     setFieldType(nextType);
     setPlaceholderValue(FIELD_TYPE_PRESETS[nextType].placeholder);
     setFieldValue("");
+  }
+
+  function toggleEditMode() {
+    setIsEditMode((current) => {
+      const nextMode = !current;
+      onEditModeChange?.(nextMode);
+      return nextMode;
+    });
   }
 
   const fieldLabel = FIELD_TYPE_OPTIONS.find((option) => option.value === fieldType)?.label ?? "Field";
@@ -120,7 +134,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
         tagValue={tagValue}
         onTagChange={setTagValue}
         isEditMode={isEditMode}
-        onToggleEditMode={() => setIsEditMode((mode) => !mode)}
+        onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
       />
 

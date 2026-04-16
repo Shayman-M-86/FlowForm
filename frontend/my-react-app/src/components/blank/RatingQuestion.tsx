@@ -75,6 +75,8 @@ export interface RatingQuestionHandle {
 interface RatingQuestionProps {
   onDelete?: () => void;
   title?: string;
+  onEditModeChange?: (isEditMode: boolean) => void;
+  onDataChange?: (summary: { title: string; id: string }) => void;
 }
 
 const RATING_TYPE_OPTIONS: Array<{ value: RatingType; label: string }> = [
@@ -140,7 +142,7 @@ function getNearestValidStep(nextStep: number, validSteps: number[]) {
   }, validSteps[0]);
 }
 
-export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionProps>(function RatingQuestion({ onDelete, title }, ref) {
+export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionProps>(function RatingQuestion({ onDelete, title, onEditModeChange, onDataChange }, ref) {
   const [isEditMode, setIsEditMode] = useState(true);
   const [titleValue, setTitleValue] = useState(title ?? "");
   const [questionValue, setQuestionValue] = useState("");
@@ -229,6 +231,10 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
     },
   }));
 
+  useEffect(() => {
+    onDataChange?.({ title: titleValue, id: tagValue });
+  }, [titleValue, tagValue]);
+
   function alignToStep(value: number, min: number, max: number, step: number) {
     const safeStep = Math.max(1, Math.abs(step) || 1);
     const clamped = Math.min(max, Math.max(min, value));
@@ -297,6 +303,14 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
     setEmojiValue((current) => (current === nextValue ? 0 : nextValue));
   }
 
+  function toggleEditMode() {
+    setIsEditMode((current) => {
+      const nextMode = !current;
+      onEditModeChange?.(nextMode);
+      return nextMode;
+    });
+  }
+
   const emojiScale = EMOJI_SCALES[emojiScaleType];
   const selectedEmoji = emojiScale.find((option) => option.value === emojiValue);
   const scaleSummary = ratingType === "stars"
@@ -312,7 +326,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
         tagValue={tagValue}
         onTagChange={setTagValue}
         isEditMode={isEditMode}
-        onToggleEditMode={() => setIsEditMode((mode) => !mode)}
+        onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
       />
 
