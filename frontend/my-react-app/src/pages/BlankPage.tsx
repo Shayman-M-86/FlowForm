@@ -35,21 +35,19 @@ const QUESTION_TYPE_OPTIONS: Array<{ value: QuestionType; label: string }> = [
 const SWAP_ANIMATION_MS = 280;
 
 export function BlankPage() {
-  const [questions, setQuestions] = useState<Question[]>([{ id: "q1", type: "field" }]);
-  const [nextId, setNextId] = useState(2);
-  const [editingQuestionIds, setEditingQuestionIds] = useState<string[]>(["q1"]);
-  const [questionSummaries, setQuestionSummaries] = useState<Record<string, QuestionSummary>>({
-    q1: { title: "", id: "question_id_1" },
-  });
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [nextId, setNextId] = useState(1);
+  const [editingQuestionIds, setEditingQuestionIds] = useState<string[]>([]);
+  const [questionSummaries, setQuestionSummaries] = useState<Record<string, QuestionSummary>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | QuestionType>("all");
   const questionRefsMap = useRef<Map<string, FieldQuestionHandle | MatchingQuestionHandle | MultiChoiceQuestionHandle | RatingQuestionHandle>>(new Map());
   const questionWrapperNodeMap = useRef<Map<string, HTMLDivElement>>(new Map());
-  const pendingAddedQuestionId = useRef<string | null>(null);
   const pendingMoveAnimation = useRef<{
     positions: Map<string, number>;
     movedId: string;
   } | null>(null);
+  const newlyAddedQuestionId = useRef<string | null>(null);
 
   useLayoutEffect(() => {
     const pendingAnimation = pendingMoveAnimation.current;
@@ -127,28 +125,21 @@ export function BlankPage() {
     };
   }, [questions]);
 
+
   useEffect(() => {
-    const addedQuestionId = pendingAddedQuestionId.current;
-    if (!addedQuestionId) return;
+    const addedId = newlyAddedQuestionId.current;
+    if (!addedId) return;
 
-    pendingAddedQuestionId.current = null;
-
-    const scrollContainer = document.querySelector(".app-shell__main");
-    if (scrollContainer) {
-      scrollContainer.scrollTo({
-        top: scrollContainer.scrollHeight,
-        behavior: "smooth",
-      });
-    } else {
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
-        behavior: "smooth",
-      });
+    newlyAddedQuestionId.current = null;
+    const node = questionWrapperNodeMap.current.get(addedId);
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [questions]);
 
   function addQuestion(type: QuestionType) {
     const newId = `q${nextId}`;
+    newlyAddedQuestionId.current = newId;
     setQuestions((current) => [...current, { id: newId, type }]);
     setNextId((current) => current + 1);
     setEditingQuestionIds((current) =>
@@ -158,7 +149,6 @@ export function BlankPage() {
       ...current,
       [newId]: { title: "", id: "question_id_1" },
     }));
-    pendingAddedQuestionId.current = newId;
   }
 
   function removeQuestion(id: string) {
@@ -246,22 +236,59 @@ export function BlankPage() {
     }
   }
 
+  const addQuestionCard = (
+    <div className="blank-page__add-question">
+      <div className="blank-page__add-question-head">
+        <Badge variant="accent" size="sm">Build</Badge>
+        <p className="blank-page__add-question-label">Add another question</p>
+        <p className="blank-page__add-question-copy">
+          Choose the next response format to keep building the flow.
+        </p>
+      </div>
+      <div className="blank-page__add-question-buttons">
+        {QUESTION_TYPE_OPTIONS.map((option) => (
+          <Button
+            key={option.value}
+            className="blank-page__add-question-btn"
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => addQuestion(option.value)}
+          >
+            <span aria-hidden="true">+</span>
+            {option.label}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const isQuestionExpanded = (question: Question) => {
+    const questionSummary = questionSummaries[question.id] ?? { title: "", id: "question_id_1" };
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    const title = questionSummary.title.trim() || "Untitled question";
+    const id = questionSummary.id.trim() || "question_id_1";
+    const matchesFilter = filterType === "all" || question.type === filterType;
+    const matchesSearch =
+      normalizedSearch === "" ||
+      `${title} ${id}`.toLowerCase().includes(normalizedSearch);
+
+    return matchesFilter && matchesSearch;
+  };
+
   return (
     <section className="blank-page">
-      <div className="blank-page__content">
-        <div className="blank-page__toolbar">
+      <div className="blank-page__toolbar">
+        <div className="blank-page__toolbar-header">
+          <h4 className="blank-page__toolbar-title">Search</h4>
           <Input
-            className="blank-page__toolbar-search"
-            label="Search"
-            size="sm"
-            pill
+            className="blank-page__toolbar-search-input"
             placeholder="Search by title or ID"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
           />
           <Select
             className="blank-page__toolbar-filter"
-            label="Filter"
             value={filterType}
             options={[
               { value: "all", label: "All question types" },
@@ -270,8 +297,16 @@ export function BlankPage() {
             onChange={(event) => setFilterType(event.target.value as "all" | QuestionType)}
           />
         </div>
+      </div>
+      <div className="blank-page__content">
         <div className="blank-page__questions-stack">
-          {questions.map((question, index) => (
+          {questions.map((question, index) => {
+            const nextQuestion = questions[index + 1];
+            const shouldShowDivider =
+              index < questions.length - 1 &&
+              (isQuestionExpanded(question) || (nextQuestion ? isQuestionExpanded(nextQuestion) : false));
+
+            return (
             <Fragment key={question.id}>
               <QuestionRow
                 question={question}
@@ -293,41 +328,19 @@ export function BlankPage() {
                 {renderQuestion(question)}
               </QuestionRow>
 
-              {index < questions.length - 1 && (
+              {shouldShowDivider && (
                 <div className="blank-page__divider" />
               )}
 
               {index === questions.length - 1 && (
                 <>
-                  <div className="blank-page__divider" />
-                  <div className="blank-page__add-question">
-                    <div className="blank-page__add-question-head">
-                      <Badge variant="accent" size="sm">Build</Badge>
-                      <p className="blank-page__add-question-label">Add another question</p>
-                      <p className="blank-page__add-question-copy">
-                        Choose the next response format to keep building the flow.
-                      </p>
-                    </div>
-                    <div className="blank-page__add-question-buttons">
-                      {QUESTION_TYPE_OPTIONS.map((option) => (
-                        <Button
-                          key={option.value}
-                          className="blank-page__add-question-btn"
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => addQuestion(option.value)}
-                        >
-                          <span aria-hidden="true">+</span>
-                          {option.label}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
+                  <div className="blank-page__divider blank-page__divider--section" />
+                  {addQuestionCard}
                 </>
               )}
             </Fragment>
-          ))}
+          )})}
+          {questions.length === 0 && addQuestionCard}
         </div>
       </div>
     </section>
