@@ -2,6 +2,11 @@ import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import "./RatingQuestion.css";
 import { QUESTION_MAX, blurOnEnter } from "./blankPillUtils";
 import { BlankPillTopbar, BlankPillQuestionField, BlankPillCharCount, BlankPillFieldHead } from "./BlankPillShell";
+import { Input } from "../ui/Input";
+import { NumberStepper } from "../ui/NumberStepper";
+import { NumberStepperGroup } from "../ui/NumberStepperGroup";
+import { Select } from "../ui/Select";
+import { Toggle } from "../ui/Toggle";
 
 const MAX_STARS = 12;
 
@@ -323,7 +328,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
         />
 
         <div className="blank-pill__field">
-          <BlankPillFieldHead label="Scale">
+          <BlankPillFieldHead label="Rating">
             {isEditMode && (
               <BlankPillCharCount
                 label="Range"
@@ -336,182 +341,149 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
             {isEditMode && (
               <>
                 <div className="rating-question__controls">
-                  <label className="rating-question__control">
-                    <span className="rating-question__control-label">Type</span>
-                    <select
-                      className="rating-question__select"
-                      value={ratingType}
-                      disabled={!isEditMode}
-                      onChange={(event) => setRatingType(event.target.value as RatingType)}
-                    >
-                      {RATING_TYPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <Select
+                    className="rating-question__control"
+                    label="Type"
+                    value={ratingType}
+                    disabled={!isEditMode}
+                    options={RATING_TYPE_OPTIONS}
+                    onChange={(event) => setRatingType(event.target.value as RatingType)}
+                  />
                   {ratingType === "stars" ? (
-                    <label className="rating-question__control">
+                    <div className="rating-question__control rating-question__control--stepper">
                       <span className="rating-question__control-label">Stars</span>
-                      <div className="rating-question__stepper">
-                        <button
-                          className="rating-question__stepper-button"
-                          type="button"
-                          disabled={!isEditMode || starCount <= 1}
-                          onClick={() => updateStarCount(starCount - 1)}
-                        >
-                          -
-                        </button>
-                        <input
-                          className="rating-question__number-input rating-question__number-input--step"
-                          type="text"
-                          inputMode="numeric"
-                          value={String(starCount)}
-                          readOnly={!isEditMode}
-                          onChange={(event) => updateStarCount(Number(event.target.value))}
-                        />
-                        <button
-                          className="rating-question__stepper-button"
-                          type="button"
-                          disabled={!isEditMode || starCount >= MAX_STARS}
-                          onClick={() => updateStarCount(starCount + 1)}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </label>
+                      <NumberStepper
+                        className="rating-question__stepper"
+                        ariaLabel="Star count"
+                        size="sm"
+                        variant="primary"
+                        allowInput
+                        value={starCount}
+                        min={1}
+                        max={MAX_STARS}
+                        disabled={!isEditMode}
+                        onChange={updateStarCount}
+                      />
+                    </div>
                   ) : ratingType === "emoji" ? (
                     <>
-                      <div className="rating-question__control rating-question__control--span-2">
-                        <span className="rating-question__control-label">Emoji list</span>
-                        <select
-                          className="rating-question__select"
-                          value={emojiScaleType}
-                          disabled={!isEditMode}
-                          onChange={(event) => setEmojiScaleType(event.target.value as EmojiScaleType)}
-                        >
-                          <option value="sad">Sad to happy</option>
-                          <option value="angry">Angry to happy</option>
-                          <option value="disgust">Disgust to happy</option>
-                        </select>
-                      </div>
-                      <label className="rating-question__control">
+                      <Select
+                        className="rating-question__control rating-question__control--span-2"
+                        label="Emoji list"
+                        value={emojiScaleType}
+                        disabled={!isEditMode}
+                        options={[
+                          { value: "sad", label: "Sad to happy" },
+                          { value: "angry", label: "Angry to happy" },
+                          { value: "disgust", label: "Disgust to happy" },
+                        ]}
+                        onChange={(event) => setEmojiScaleType(event.target.value as EmojiScaleType)}
+                      />
+                      <div className="rating-question__control rating-question__control--toggle">
                         <span className="rating-question__control-label">Words</span>
-                        <button
-                          className={`rating-question__switch ${showEmojiWords ? "rating-question__switch--on" : ""}`}
-                          type="button"
-                          role="switch"
-                          aria-checked={showEmojiWords}
+                        <Toggle
+                          label="Show words"
+                          checked={showEmojiWords}
                           disabled={!isEditMode}
-                          onClick={() => setShowEmojiWords((current) => !current)}
-                        >
-                          <span className="rating-question__switch-track">
-                            <span className="rating-question__switch-thumb" />
-                          </span>
-                          <span className="rating-question__switch-label">
-                            {showEmojiWords ? "On" : "Off"}
-                          </span>
-                        </button>
-                      </label>
+                          onChange={setShowEmojiWords}
+                        />
+                      </div>
                     </>
                   ) : (
                     <>
-                      <label className="rating-question__control">
-                        <span className="rating-question__control-label">From</span>
-                        <input
-                          className="rating-question__number-input"
-                          type="number"
-                          step={1}
-                          min={-1000}
-                          max={1000}
-                          value={rangeStart}
-                          readOnly={!isEditMode}
-                          onChange={(event) => updateRangeStart(Number(event.target.value))}
-                        />
-                      </label>
+                      <div className="rating-question__control rating-question__control--span-2">
+                        <span className="rating-question__control-label">Range</span>
+                        <NumberStepperGroup
+                          className="rating-question__range-stepper"
+                          ariaLabel="Slider range"
+                          size="sm"
+                          variant="primary"
+                          allowInput
+                          items={[
+                            {
+                              key: "from",
+                              label: "From",
+                              value: rangeStart,
+                              min: -1000,
+                              max: 1000,
+                              disabled: !isEditMode,
+                            },
+                            {
+                              key: "to",
+                              label: "To",
+                              value: rangeEnd,
+                              min: -1000,
+                              max: 1000,
+                              disabled: !isEditMode,
+                            },
+                          ]}
+                          onChange={(key, value) => {
+                            if (key === "from") {
+                              updateRangeStart(value);
+                              return;
+                            }
 
-                      <label className="rating-question__control">
-                        <span className="rating-question__control-label">To</span>
-                        <input
-                          className="rating-question__number-input"
-                          type="number"
-                          step={1}
-                          min={-1000}
-                          max={1000}
-                          value={rangeEnd}
-                          readOnly={!isEditMode}
-                          onChange={(event) => updateRangeEnd(Number(event.target.value))}
+                            updateRangeEnd(value);
+                          }}
                         />
-                      </label>
+                      </div>
 
-                      <label className="rating-question__control">
+                      <div className="rating-question__control rating-question__control--stepper">
                         <span className="rating-question__control-label">Step</span>
-                        <div className="rating-question__stepper">
-                          <button
-                            className="rating-question__stepper-button"
-                            type="button"
-                            disabled={!isEditMode || currentStepIndex <= 0}
-                            onClick={() => setStepValue(validSteps[Math.max(0, currentStepIndex - 1)])}
-                          >
-                            -
-                          </button>
-                          <input
-                            className="rating-question__number-input rating-question__number-input--step"
-                            type="text"
-                            inputMode="numeric"
-                            value={String(stepValue)}
-                            readOnly={!isEditMode}
-                            onChange={(event) =>
-                              setStepValue(
-                                getNearestValidStep(Math.max(1, Number(event.target.value) || 1), validSteps),
-                              )
-                            }
-                          />
-                          <button
-                            className="rating-question__stepper-button"
-                            type="button"
-                            disabled={!isEditMode || currentStepIndex >= validSteps.length - 1}
-                            onClick={() =>
-                              setStepValue(validSteps[Math.min(validSteps.length - 1, currentStepIndex + 1)])
-                            }
-                          >
-                            +
-                          </button>
-                        </div>
-                      </label>
+                        <NumberStepper
+                          className="rating-question__stepper"
+                          ariaLabel="Slider step"
+                          size="sm"
+                          variant="primary"
+                          value={safeStepValue}
+                          min={validSteps[0]}
+                          max={validSteps[validSteps.length - 1]}
+                          disabled={!isEditMode}
+                          canDecrement={currentStepIndex > 0}
+                          canIncrement={currentStepIndex < validSteps.length - 1}
+                          onDecrement={() =>
+                            setStepValue(validSteps[Math.max(0, currentStepIndex - 1)])
+                          }
+                          onIncrement={() =>
+                            setStepValue(
+                              validSteps[Math.min(validSteps.length - 1, currentStepIndex + 1)],
+                            )
+                          }
+                          onChange={(value) =>
+                            setStepValue(
+                              getNearestValidStep(Math.max(1, Math.abs(value) || 1), validSteps),
+                            )
+                          }
+                        />
+                      </div>
                     </>
                   )}
                 </div>
 
                 <div className="rating-question__labels">
-                  <label className="rating-question__control rating-question__control--wide">
-                    <span className="rating-question__control-label">Left label</span>
-                    <input
-                      className="rating-question__text-input"
-                      type="text"
-                      placeholder="Low-end label"
-                      value={leftLabel}
-                      maxLength={50}
-                      readOnly={!isEditMode}
-                      onChange={(event) => setLeftLabel(event.target.value)}
-                      onKeyDown={blurOnEnter}
-                    />
-                  </label>
+                  <Input
+                    className="rating-question__control rating-question__control--wide"
+                    label="Left label"
+                    type="text"
+                    placeholder="Low-end label"
+                    value={leftLabel}
+                    maxLength={50}
+                    disabled={!isEditMode}
+                    onChange={(event) => setLeftLabel(event.target.value)}
+                    onKeyDown={blurOnEnter}
+                  />
 
-                  <label className="rating-question__control rating-question__control--wide">
-                    <span className="rating-question__control-label">Right label</span>
-                    <input
-                      className="rating-question__text-input"
-                      type="text"
-                      placeholder="High-end label"
-                      value={rightLabel}
-                      maxLength={50}
-                      readOnly={!isEditMode}
-                      onChange={(event) => setRightLabel(event.target.value)}
-                      onKeyDown={blurOnEnter}
-                    />
-                  </label>
+                  <Input
+                    className="rating-question__control rating-question__control--wide"
+                    label="Right label"
+                    type="text"
+                    placeholder="High-end label"
+                    value={rightLabel}
+                    maxLength={50}
+                    disabled={!isEditMode}
+                    onChange={(event) => setRightLabel(event.target.value)}
+                    onKeyDown={blurOnEnter}
+                  />
                 </div>
               </>
             )}

@@ -51,8 +51,33 @@
   color: var(--text-h);
 }
 
+.input-control--md {
+  min-height: var(--control-height-md);
+}
+
+.input-control--sm {
+  min-height: var(--control-height-sm);
+  height: var(--control-height-sm);
+  padding-block: 2px;
+  font-size: 0.86rem;
+  line-height: 1.2;
+}
+
+
+.input-control--xs {
+  min-height: var(--control-height-xs);
+  height: var(--control-height-xs);
+  padding-block: 2px;
+  font-size: 0.80rem;
+  line-height: 1.0;
+}
+
 .input-control::placeholder {
   color: var(--muted);
+}
+
+.input-control--pill {
+  border-radius: var(--radius-pill);
 }
 
 .input-control--secondary {
@@ -61,15 +86,31 @@
   color: var(--text-h);
 }
 
+.input-control--secondary:hover:not(:disabled):not([readonly]) {
+  background: var(--bg-raised);
+}
+
+.large-input-shell:hover:not(:focus-within) {
+  background: var(--bg-raised);
+}
+
+.select-control:hover:not(:disabled) {
+  background-color: var(--bg-raised);
+}
+
 .input-control--secondary:focus,
+.input-control--secondary:focus-visible,
 .large-input-shell:focus-within {
   border-color: var(--accent-border);
   background: var(--bg-subtle);
+  box-shadow: none;
 }
 
-.select-control:focus {
+.select-control:focus,
+.select-control:focus-visible {
   border-color: var(--accent-border);
   background-color: var(--bg-subtle);
+  box-shadow: none;
 }
 
 .input-control--ghost {
@@ -79,9 +120,11 @@
 }
 
 .input-control--ghost:hover:not(:disabled),
-.input-control--ghost:focus {
+.input-control--ghost:focus,
+.input-control--ghost:focus-visible {
   background: var(--muted-bg);
   border-color: transparent;
+  box-shadow: none;
 }
 
 .input-control--quiet {
@@ -90,11 +133,24 @@
   color: var(--text);
 }
 
-.input-control--quiet:hover:not(:disabled),
-.input-control--quiet:focus {
+.input-control--quiet:hover:not(:disabled):not([readonly]),
+.input-control--quiet:focus:not([readonly]),
+.input-control--quiet:focus-visible:not([readonly]) {
   background: var(--muted-bg);
   border-color: var(--border-strong);
   color: var(--text-h);
+  box-shadow: none;
+}
+
+.input-control--quiet[readonly],
+.input-control--quiet[readonly]:hover,
+.input-control--quiet[readonly]:focus,
+.input-control--quiet[readonly]:focus-visible {
+  cursor: default;
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+  box-shadow: none;
 }
 
 .input-control--secondary:disabled {

@@ -1,8 +1,10 @@
 import { useRef, useState, forwardRef, useImperativeHandle } from "react";
+import { Button } from "../ui/Button";
 import "./MatchingQuestion.css";
 import { useOptionDrag } from "./useOptionDrag";
 import { QUESTION_MAX, autoResizeTextarea, blurOnEnter, nextAvailableTag } from "./blankPillUtils";
 import { BlankPillTopbar, BlankPillQuestionField, BlankPillCharCount, BlankPillFieldHead, BlankPillDragThresholds } from "./BlankPillShell";
+import { Input } from "../ui/Input";
 
 export interface MatchingQuestionData {
   id: string;
@@ -171,7 +173,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                 />
 
                 {isEditMode && (
-                  <button
+                  <Button
                     className="blank-pill__option-handle"
                     type="button"
                     aria-label={`${item.placeholder} settings`}
@@ -179,7 +181,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                     onClick={() => toggleItemPanel(item.id)}
                   >
                     <span aria-hidden="true">⋮</span>
-                  </button>
+                  </Button>
                 )}
 
                 <div className="blank-pill__option-field">
@@ -223,8 +225,9 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                     <div className="blank-pill__option-inline-meta">
                       <div className="blank-pill__option-meta-group">
                         <span className="blank-pill__option-meta-label">Item tag</span>
-                        <input
-                          className="blank-pill__option-tag-input"
+                        <Input
+                          className=""
+                          size="sm"
                           type="text"
                           placeholder={`${idPrefix}_${index + 1}`}
                           value={item.tag}
@@ -239,13 +242,16 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                         />
                       </div>
 
-                      <button
+                      <Button
                         className="blank-pill__option-delete"
                         type="button"
+                        variant="danger"
+                        size="xs"
+                        pill={true}
                         onClick={() => deleteItem(item.id, setItems)}
                       >
                         Delete
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -254,9 +260,11 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
           })}
 
           {isEditMode && (
-            <button
+            <Button
               className="blank-pill__option-add"
               type="button"
+              variant="ghost"
+              borderStyle="dotted"
               onClick={() => {
                 const nextTag = nextAvailableTag(items);
                 const nextIndex = nextIndexRef.current++;
@@ -273,7 +281,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
             >
               <span aria-hidden="true">+</span>
               Add {singularTitle.toLowerCase()}
-            </button>
+            </Button>
           )}
         </div>
       </section>

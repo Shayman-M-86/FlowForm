@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { TAG_MAX, autoResizeTextarea, blurOnEnter } from "./blankPillUtils";
+import { TAG_MAX, blurOnEnter } from "./blankPillUtils";
+import { Badge } from "../ui/Badge";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
+import { LargeInput } from "../ui/LargeInput";
+import { Modal } from "../ui/Modal";
+import { Tooltip } from "../ui/Tooltip";
 
 type TopbarProps = {
   family: string;
@@ -24,41 +30,51 @@ export function BlankPillTopbar({
   return (
     <header className="blank-pill__topbar">
       <div className="blank-pill__topbar-left">
-        <span className="blank-pill__family">{family}</span>
-        <input
-          className={`blank-pill__topbar-tag ${!isEditMode ? "blank-pill__topbar-tag--view" : ""}`}
-          type="text"
-          placeholder={isEditMode ? "question_id" : ""}
-          value={tagValue}
-          maxLength={TAG_MAX}
-          size={Math.max(11, tagValue.length + 2)}
-          readOnly={!isEditMode}
-          onChange={(event) => onTagChange(event.target.value)}
-          onKeyDown={blurOnEnter}
-        />
+        <Badge variant="accent" size="xl">{family}</Badge>
+        <div className="blank-pill__id-label">
+          <h3 className="blank-pill__id">id</h3>
+          <Input
+            type="text"
+            placeholder={isEditMode ? "question_id" : ""}
+            value={tagValue}
+            size="xs"
+            maxLength={TAG_MAX}
+            readOnly={!isEditMode}
+            variant="quiet"
+            pill
+            onChange={(event) => onTagChange(event.target.value)}
+            onKeyDown={blurOnEnter}
+          />
+        </div>
       </div>
       <div className="blank-pill__actions">
         {isEditMode && (actions ?? (
           <>
-            <button
-              className="blank-pill__action blank-pill__action--danger"
+            <Button
+              className="blank-pill__action"
               type="button"
+              variant="danger"
+              size="xs"
+              pill
               onClick={onDelete}
             >
               Delete
-            </button>
-            <button className="blank-pill__action" type="button">
+            </Button>
+            <Button className="blank-pill__action" type="button" variant="quiet" size="xs" pill>
               Settings
-            </button>
+            </Button>
           </>
         ))}
-        <button
+        <Button
           className={`blank-pill__action ${isEditMode ? "blank-pill__action--active" : ""}`}
           type="button"
+          variant={isEditMode ? "secondary" : "quiet"}
+          size="xs"
+          pill
           onClick={onToggleEditMode}
         >
           {isEditMode ? "Editing" : "Edit"}
-        </button>
+        </Button>
       </div>
     </header>
   );
@@ -79,20 +95,17 @@ export function BlankPillTitleField({
 }: TitleFieldProps) {
   return (
     <div className="blank-pill__field">
-      {/* <span className="blank-pill__label">Title</span> */}
       <div className="blank-pill__title-stack">
-        <div className="blank-pill__title-field">
-          <input
-            className="blank-pill__title"
-            type="text"
-            placeholder="Enter a title (optional)"
-            maxLength={max}
-            value={value}
-            readOnly={!isEditMode}
-            onChange={(event) => onChange(event.target.value)}
-            onKeyDown={blurOnEnter}
-          />
-        </div>
+        <Input
+          className="blank-pill__title-field"
+          type="text"
+          placeholder="Enter a title (optional)"
+          maxLength={max}
+          value={value}
+          readOnly={!isEditMode}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={blurOnEnter}
+        />
         {isEditMode && value.length === max && (
           <span className="blank-pill__title-limit">
             Maximum {max} characters reached.
@@ -147,65 +160,64 @@ export function BlankPillQuestionField({
           {hasTitle && titleValue ? titleValue : "Question"}
         </span>
         {hasTitle && showTitleEdit && isEditMode && (
-          <button
+          <Button
             className="blank-pill__title-edit-btn"
             type="button"
+            variant="ghost"
+            size="xs"
             onClick={handleTitleClick}
-            title="Edit title"
+            aria-label="Edit title"
           >
             ✎
-          </button>
+          </Button>
         )}
       </div>
-      {isTitleEditMode && hasTitle && (
-        <div className="blank-pill__title-edit-modal">
-          <div className="blank-pill__title-edit-content">
-            <label className="blank-pill__title-edit-label">Enter Title</label>
-            <input
-              type="text"
-              className="blank-pill__title-edit-input"
-              placeholder="Enter a title (optional)"
-              maxLength={titleMax}
-              value={titleValue}
-              onChange={(event) => onTitleChange(event.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleTitleSubmit();
-                if (e.key === "Escape") setIsTitleEditMode(false);
-              }}
-              autoFocus
-            />
-            <div className="blank-pill__title-edit-buttons">
-              <button
-                className="blank-pill__title-edit-btn-cancel"
-                type="button"
-                onClick={() => setIsTitleEditMode(false)}
-              >
+      {hasTitle && (
+        <Modal
+          open={isTitleEditMode}
+          onClose={() => setIsTitleEditMode(false)}
+          title="Edit title"
+          width={420}
+          footer={(
+            <>
+              <Button type="button" variant="secondary" onClick={() => setIsTitleEditMode(false)}>
                 Cancel
-              </button>
-              <button
-                className="blank-pill__title-edit-btn-save"
-                type="button"
-                onClick={handleTitleSubmit}
-              >
+              </Button>
+              <Button type="button" variant="primary" onClick={handleTitleSubmit}>
                 Save
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </>
+          )}
+        >
+          <Input
+            className="blank-pill__title-edit-input-field"
+            label="Title"
+            type="text"
+            placeholder="Enter a title (optional)"
+            maxLength={titleMax}
+            value={titleValue}
+            onChange={(event) => onTitleChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") handleTitleSubmit();
+              if (event.key === "Escape") setIsTitleEditMode(false);
+            }}
+            autoFocus
+          />
+        </Modal>
       )}
       <div className="blank-pill__question-stack">
-        <div className="blank-pill__question-field">
-          <textarea
-            className="blank-pill__question"
-            placeholder="Type your question here"
-            rows={3}
-            maxLength={max}
-            value={value}
-            readOnly={!isEditMode}
-            onChange={(event) => onChange(event.target.value)}
-            onInput={(event) => autoResizeTextarea(event.currentTarget)}
-          />
-        </div>
+        <LargeInput
+          className="blank-pill__question-field"
+          placeholder="Type your question here"
+          rows={3}
+          size="sm"
+          autoGrow
+          maxAutoGrowHeight={680}
+          maxText={max}
+          value={value}
+          readOnly={!isEditMode}
+          onChange={(event) => onChange(event.target.value)}
+        />
         {isEditMode && value.length === max && (
           <span className="blank-pill__question-limit">
             Maximum {max} characters reached.
@@ -224,15 +236,18 @@ type CharCountProps = {
 };
 
 export function BlankPillCharCount({ label, value, max, tooltip }: CharCountProps) {
+  const labelNode = tooltip ? (
+    <Tooltip title={tooltip} size="sm">
+      <span className="blank-pill__char-count-label">{label}</span>
+    </Tooltip>
+  ) : (
+    <span className="blank-pill__char-count-label">{label}</span>
+  );
+
   return (
     <span className="blank-pill__char-count">
       <span className="blank-pill__char-count-item">
-        <span
-          className="blank-pill__char-count-label"
-          {...(tooltip ? { "data-tooltip": tooltip } : {})}
-        >
-          {label}
-        </span>
+        {labelNode}
         <span className="blank-pill__char-count-value">{value}</span>
       </span>
       {max !== undefined && (
@@ -262,11 +277,6 @@ export function BlankPillFieldHead({ label, children }: FieldHeadProps) {
   );
 }
 
-type DragLockState = {
-  siblingId: string;
-  direction: "down" | "up";
-};
-
 type DragLocks = {
   reverseLock?: { siblingId: string; direction: "down" | "up" } | null;
   insertLock?: { siblingId: string; direction: "down" | "up" } | null;
@@ -285,56 +295,9 @@ export function BlankPillDragThresholds({
   thresholdRatio,
   activeDrag,
 }: DragThresholdsProps) {
-  const returnRatio = resolveLockRatio(activeDrag?.reverseLock ?? null, itemId, "reverse");
-  const insertRatio = resolveLockRatio(activeDrag?.insertLock ?? null, itemId, "insert");
-
-  return (
-    <>
-      {thresholdRatio !== null && !isDragging && (
-        <>
-          <div
-            className="blank-pill__option-threshold-line"
-            style={{ top: `${thresholdRatio * 100}%` }}
-          />
-          <div className="blank-pill__option-threshold-label">
-            {thresholdRatio.toFixed(2)}
-          </div>
-        </>
-      )}
-      {returnRatio !== null && (
-        <>
-          <div
-            className="blank-pill__option-threshold-line blank-pill__option-threshold-line--return"
-            style={{ top: `${returnRatio * 100}%` }}
-          />
-          <div className="blank-pill__option-threshold-label blank-pill__option-threshold-label--return">
-            {returnRatio.toFixed(2)}
-          </div>
-        </>
-      )}
-      {insertRatio !== null && (
-        <>
-          <div
-            className="blank-pill__option-threshold-line blank-pill__option-threshold-line--insert-lock"
-            style={{ top: `${insertRatio * 100}%` }}
-          />
-          <div className="blank-pill__option-threshold-label blank-pill__option-threshold-label--insert-lock">
-            {insertRatio.toFixed(2)}
-          </div>
-        </>
-      )}
-    </>
-  );
-}
-
-function resolveLockRatio(
-  lock: DragLockState | null,
-  itemId: string,
-  kind: "reverse" | "insert",
-): number | null {
-  if (!lock || lock.siblingId !== itemId) return null;
-  if (kind === "reverse") {
-    return lock.direction === "down" ? 0.85 : 0.15;
-  }
-  return lock.direction === "down" ? 0.15 : 0.85;
+  void itemId;
+  void isDragging;
+  void thresholdRatio;
+  void activeDrag;
+  return null;
 }

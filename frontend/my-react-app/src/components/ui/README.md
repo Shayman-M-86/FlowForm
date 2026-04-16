@@ -19,12 +19,12 @@ These are styling-only helpers, not React components:
 | Component | Purpose | Key props |
 | --- | --- | --- |
 | `Button` | Actions and CTAs | `variant`, `size`, `pill`, `borderStyle` |
-| `Input` | Single-line text input | `label`, `hint`, `error`, `variant`, `pill`, native input props |
+| `Input` | Single-line text input | `label`, `hint`, `error`, `variant`, `size`, `pill`, native input props |
 | `LargeInput` | Multi-line textarea | `label`, `hint`, `error`, `size`, `maxText`, `showCount`, `autoGrow`, `maxAutoGrowHeight`, native textarea props |
 | `Select` | Dropdown select | `label`, `options`, `hint`, native select props |
 | `Toggle` | Boolean on/off control | `label`, `checked`, `onChange`, `disabled`, `hint` |
 | `Tooltip` | Hover/focus label around another element | `title`, `size`, `children` |
-| `Badge` | Small status label | `variant` |
+| `Badge` | Small status label | `variant`, `size` |
 | `Spinner` | Loading indicator | `size` |
 | `Modal` | Dialog overlay | `open`, `onClose`, `title`, `footer`, `width` |
 | `NumberStepper` | Increment/decrement one value | `value`, `onChange`, `min`, `max`, `step`, `size`, `pill`, `variant` |
@@ -65,8 +65,13 @@ Supported variants:
 - `ghost`
 - `quiet`
 
+Supported sizes:
+- `md`
+- `sm`
+
 ```tsx
 <Input label="Name" placeholder="Default" />
+<Input label="Compact" size="sm" placeholder="Smaller input" />
 <Input label="Ghost" variant="ghost" placeholder="Ghost input" />
 <Input label="Quiet" variant="quiet" placeholder="Quiet input" />
 <Input label="Pill" variant="secondary" pill placeholder="Pill input" />
@@ -192,8 +197,18 @@ Supported variants:
 - `accent`
 - `muted`
 
+Supported sizes:
+- `sm`
+- `md`
+- `lg`
+- `xl`
+
 ```tsx
 <Badge>Default</Badge>
+<Badge size="sm">Small</Badge>
+<Badge size="md">Medium</Badge>
+<Badge size="lg">Large</Badge>
+<Badge size="xl">Extra Large</Badge>
 <Badge variant="success">Success</Badge>
 <Badge variant="danger">Danger</Badge>
 <Badge variant="warning">Warning</Badge>

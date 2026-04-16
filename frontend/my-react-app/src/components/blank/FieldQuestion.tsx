@@ -1,7 +1,10 @@
 import { useState, forwardRef, useImperativeHandle } from "react";
 import "./FieldQuestion.css";
-import { QUESTION_MAX, autoResizeTextarea, blurOnEnter } from "./blankPillUtils";
+import { QUESTION_MAX, blurOnEnter } from "./blankPillUtils";
 import { BlankPillTopbar, BlankPillQuestionField, BlankPillCharCount, BlankPillFieldHead } from "./BlankPillShell";
+import { Input } from "../ui/Input";
+import { LargeInput } from "../ui/LargeInput";
+import { Select } from "../ui/Select";
 
 export type { FieldQuestionData };
 
@@ -146,61 +149,50 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
             {isEditMode && (
               <>
                 <div className="field-question__controls">
-                  <label className="field-question__control">
-                    <span className="field-question__control-label">Type</span>
-                    <select
-                      className="field-question__select"
-                      value={fieldType}
-                      onChange={(event) => updateFieldType(event.target.value as FieldType)}
-                    >
-                      {FIELD_TYPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <Select
+                    className="field-question__control"
+                    label="Type"
+                    value={fieldType}
+                    options={FIELD_TYPE_OPTIONS}
+                    hint={fieldPreset.helper}
+                    onChange={(event) => updateFieldType(event.target.value as FieldType)}
+                  />
 
                   {fieldType !== "date" && (
-                    <label className="field-question__control field-question__control--wide field-question__control--placeholder">
-                      <span className="field-question__control-label">Placeholder</span>
-                      <input
-                        className="field-question__text-input"
-                        type="text"
-                        placeholder="Field placeholder"
-                        value={placeholderValue}
-                        maxLength={50}
-                        onChange={(event) => setPlaceholderValue(event.target.value)}
-                        onKeyDown={blurOnEnter}
-                      />
-                    </label>
+                    <Input
+                      className="field-question__control field-question__control--placeholder"
+                      label="Placeholder"
+                      type="text"
+                      placeholder="Field placeholder"
+                      value={placeholderValue}
+                      maxLength={50}
+                      onChange={(event) => setPlaceholderValue(event.target.value)}
+                      onKeyDown={blurOnEnter}
+                    />
                   )}
                 </div>
 
-                <div className="field-question__helper">{fieldPreset.helper}</div>
               </>
             )}
 
             <div className="field-question__preview">
-              <div className="field-question__preview-head">
-                <span className="field-question__preview-title">{fieldLabel}</span>
-              </div>
+              <span className="field-question__preview-title">{fieldLabel}</span>
 
               {fieldType === "long_text" ? (
-                <div className="field-question__textarea-shell">
-                  <textarea
-                    className={`field-question__input field-question__input--textarea ${!isWideField ? "field-question__input--compact" : ""}`}
-                    rows={4}
-                    placeholder={placeholderValue}
-                    maxLength={fieldMaxLength}
-                    value={fieldValue}
-                    onChange={(event) => setFieldValue(event.target.value)}
-                    onInput={(event) => autoResizeTextarea(event.currentTarget)}
-                  />
-                </div>
+                <LargeInput
+                  className="field-question__preview-textarea"
+                  size="sm"
+                  rows={4}
+                  autoGrow
+                  maxAutoGrowHeight={220}
+                  placeholder={placeholderValue}
+                  maxText={fieldMaxLength}
+                  value={fieldValue}
+                  onChange={(event) => setFieldValue(event.target.value)}
+                />
               ) : (
-                <input
-                  className={`field-question__input ${!isWideField ? "field-question__input--compact" : ""}`}
+                <Input
+                  className={`field-question__preview-input-field ${!isWideField ? "field-question__preview-input-field--compact" : ""}`}
                   type={fieldType === "short_text" ? "text" : fieldType}
                   placeholder={placeholderValue}
                   value={fieldValue}

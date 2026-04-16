@@ -1,11 +1,12 @@
 import type { InputHTMLAttributes } from "react";
 import "./Input.css";
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
   label?: string;
   hint?: string;
   error?: string;
   variant?: "secondary" | "ghost" | "quiet";
+  size?: "sm" | "md" | "xs";
   pill?: boolean;
 }
 
@@ -14,6 +15,7 @@ export function Input({
   hint,
   error,
   variant = "secondary",
+  size = "md",
   pill = false,
   id,
   className = "",
@@ -36,6 +38,7 @@ export function Input({
         className={[
           "input-control",
           `input-control--${variant}`,
+          `input-control--${size}`,
           pill ? "input-control--pill" : "",
           error ? "input-control--error" : "",
         ]

@@ -76,15 +76,10 @@
 }
 
 .ui-test-button-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  width: 100%;
-}
-
-.ui-test-button-row .btn {
-  min-width: 0;
-  width: 100%;
 }
 
 .modal-footer-actions {

@@ -12,11 +12,12 @@ import { NumberStepper } from "../components/ui/NumberStepper";
 import { NumberStepperGroup } from "../components/ui/NumberStepperGroup";
 import "./UITestPage.css";
 
-const buttonVariants = ["primary", "secondary", "danger", "ghost", "quiet"] as const;
+const buttonVariants = ["primary", "secondary", "dark", "danger", "ghost", "quiet"] as const;
 const buttonSizes = ["md", "sm", "xs"] as const;
 const buttonVariantLabels: Record<(typeof buttonVariants)[number], string> = {
   primary: "Primary",
   secondary: "Secondary",
+  dark: "Dark",
   danger: "Danger",
   ghost: "Ghost",
   quiet: "Quiet",
@@ -54,6 +55,7 @@ export function UITestPage() {
     smSecondary: { min: 1, max: 2 },
     smPill: { min: 2, max: 6 },
     smSecondaryPill: { min: 2, max: 6 },
+    smInput: { min: 2, max: 8 },
     xs: { min: 1, max: 2 },
     xsPill: { min: 3, max: 7 },
     stepped: { min: 10, max: 20 },
@@ -294,7 +296,7 @@ export function UITestPage() {
           <h2>Number Up/Down</h2>
           <div className="ui-test-grid">
             <div className="ui-test-card">
-              <h3>Size SM (Default)</h3>
+              <h3>Size SM Primary</h3>
               <NumberStepper
                 value={stepperValues.sm}
                 onChange={(value) => updateStepperValue("sm", value)}
@@ -302,10 +304,11 @@ export function UITestPage() {
                 max={10}
                 step={1}
                 size="sm"
+                variant="primary"
               />
             </div>
             <div className="ui-test-card">
-              <h3>Size SM Pill</h3>
+              <h3>Size SM Primary Pill</h3>
               <NumberStepper
                 value={stepperValues.smPill}
                 onChange={(value) => updateStepperValue("smPill", value)}
@@ -313,6 +316,7 @@ export function UITestPage() {
                 max={10}
                 step={1}
                 size="sm"
+                variant="primary"
                 pill
               />
             </div>
@@ -342,7 +346,7 @@ export function UITestPage() {
               />
             </div>
             <div className="ui-test-card">
-              <h3>Size XS</h3>
+              <h3>Size XS Ghost</h3>
               <NumberStepper
                 value={stepperValues.xs}
                 onChange={(value) => updateStepperValue("xs", value)}
@@ -350,10 +354,11 @@ export function UITestPage() {
                 max={10}
                 step={1}
                 size="xs"
+                variant="ghost"
               />
             </div>
             <div className="ui-test-card">
-              <h3>Size XS Pill</h3>
+              <h3>Size XS Ghost Pill</h3>
               <NumberStepper
                 value={stepperValues.xsPill}
                 onChange={(value) => updateStepperValue("xsPill", value)}
@@ -361,6 +366,7 @@ export function UITestPage() {
                 max={10}
                 step={1}
                 size="xs"
+                variant="ghost"
                 pill
               />
             </div>
@@ -390,9 +396,10 @@ export function UITestPage() {
           <h2>Number Stepper Group</h2>
           <div className="ui-test-grid">
             <div className="ui-test-card">
-              <h3>Size SM (Default)</h3>
+              <h3>Size SM Primary</h3>
               <NumberStepperGroup
                 size="sm"
+                variant="primary"
                 items={[
                   { key: "min", label: "Min", value: rangeGroups.sm.min, min: 0, max: 10 },
                   { key: "max", label: "Max", value: rangeGroups.sm.max, min: 0, max: 10 },
@@ -401,9 +408,10 @@ export function UITestPage() {
               />
             </div>
             <div className="ui-test-card">
-              <h3>Size SM Pill</h3>
+              <h3>Size SM Primary Pill</h3>
               <NumberStepperGroup
                 size="sm"
+                variant="primary"
                 pill
                 items={[
                   { key: "min", label: "Min", value: rangeGroups.smPill.min, min: 0, max: 10 },
@@ -438,9 +446,23 @@ export function UITestPage() {
               />
             </div>
             <div className="ui-test-card">
-              <h3>Size XS</h3>
+              <h3>Size SM Secondary Input</h3>
+              <NumberStepperGroup
+                size="sm"
+                variant="secondary"
+                allowInput
+                items={[
+                  { key: "min", label: "Min", value: rangeGroups.smInput.min, min: 0, max: 10 },
+                  { key: "max", label: "Max", value: rangeGroups.smInput.max, min: 0, max: 10 },
+                ]}
+                onChange={(key, value) => updateRangeGroup("smInput", key as "min" | "max", value)}
+              />
+            </div>
+            <div className="ui-test-card">
+              <h3>Size XS Ghost</h3>
               <NumberStepperGroup
                 size="xs"
+                variant="ghost"
                 items={[
                   { key: "min", label: "Min", value: rangeGroups.xs.min, min: 0, max: 10 },
                   { key: "max", label: "Max", value: rangeGroups.xs.max, min: 0, max: 10 },
@@ -449,9 +471,10 @@ export function UITestPage() {
               />
             </div>
             <div className="ui-test-card">
-              <h3>Size XS Pill</h3>
+              <h3>Size XS Ghost Pill</h3>
               <NumberStepperGroup
                 size="xs"
+                variant="ghost"
                 pill
                 items={[
                   { key: "min", label: "Min", value: rangeGroups.xsPill.min, min: 0, max: 10 },
@@ -513,6 +536,15 @@ export function UITestPage() {
               <h3>Muted</h3>
               <Badge variant="muted">Muted Badge</Badge>
             </div>
+            <div className="ui-test-card">
+              <h3>Sizes</h3>
+              <div className="ui-test-stack">
+                <Badge size="sm">Small</Badge>
+                <Badge size="md">Medium</Badge>
+                <Badge size="lg">Large</Badge>
+                <Badge size="xl">Extra Large</Badge>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -525,6 +557,14 @@ export function UITestPage() {
               <Input
                 label="Name"
                 placeholder="Default"
+              />
+            </div>
+            <div className="ui-test-card">
+              <h3>Small</h3>
+              <Input
+                label="Compact"
+                size="sm"
+                placeholder="Smaller input"
               />
             </div>
             <div className="ui-test-card">

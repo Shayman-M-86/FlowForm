@@ -4,16 +4,6 @@
    type-specific rules on top. Classes prefixed with .blank-pill__ are shared.
    ========================================================================== */
 
-/* Global button active state */
-button {
-  transition: transform 0.16s ease, opacity 0.16s ease;
-}
-
-button:active {
-  transform: scale(0.96);
-  opacity: 0.8;
-}
-
 /* ---------- Shell -------------------------------------------------------- */
 
 .blank-pill {
@@ -27,7 +17,8 @@ button:active {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)),
     var(--bg-raised);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm);;
+  
 }
 
 .blank-pill--edit {
@@ -56,53 +47,26 @@ button:active {
   min-width: 0;
 }
 
-.blank-pill__family {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--accent-border);
-  border-radius: 999px;
-  background: var(--accent-bg);
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.03em;
-  color: var(--text-h);
+h3.blank-pill__id {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-soft);
   text-transform: uppercase;
-  white-space: nowrap;
-  flex-shrink: 0;
+  letter-spacing: 0.04em;
+  margin: 0;
+  padding: 0px 2px 0 8px  ;
 }
-
-.blank-pill__topbar-tag {
-  min-width: 0;
-  height: 32px;
-  padding: 0 12px;
+.blank-pill__id-label {
+  box-shadow: var(--shadow-xs);
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: transparent;
-  color: var(--text-h);
-  font-size: 0.8rem;
-  outline: none;
-  transition: border-color 0.16s ease;
+  margin: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.blank-pill__topbar-tag::placeholder {
-  color: var(--muted);
-}
 
-.blank-pill__topbar-tag:focus,
-.blank-pill__topbar-tag:focus-visible {
-  outline: none;
-  box-shadow: none;
-  border-color: var(--accent-border);
-}
-
-.blank-pill__topbar-tag--view {
-  border-color: transparent;
-  color: var(--text-soft);
-  cursor: default;
-  pointer-events: none;
-}
 
 /* ---------- Actions ------------------------------------------------------ */
 
@@ -113,24 +77,7 @@ button:active {
 }
 
 .blank-pill__action {
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text-soft);
-  font-size: 0.8rem;
-  cursor: pointer;
   white-space: nowrap;
-}
-
-.blank-pill__action--danger {
-  color: var(--danger);
-}
-
-.blank-pill__action--active {
-  border-color: var(--accent-border);
-  color: var(--accent-strong);
 }
 
 /* ---------- Body / field ------------------------------------------------- */
@@ -168,123 +115,21 @@ button:active {
 .blank-pill__question-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   margin-bottom: 8px;
 }
 
-.blank-pill__title-edit-btn {
-  height: 22px;
-  width: 22px;
-  padding: 0 0px 1px 0px;
+.blank-pill__title-edit-btn.btn {
+  min-height: 22px;
+  min-width: 22px;
+  max-height: 22px;
+  max-width: 22px;
   margin: 4px 0 0 0;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg-subtle);
-  color: var(--text-soft);
   font-size: 0.9rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
 }
 
-.blank-pill__title-edit-btn:hover {
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
-  color: var(--accent);
-}
-
-.blank-pill__title-edit-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.blank-pill__title-edit-content {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 10px 25px rgba(0, 0, 0, 0.15);
-}
-
-.blank-pill__title-edit-label {
-  display: block;
-  margin-bottom: 12px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-.blank-pill__title-edit-input {
-  width: 100%;
-  min-height: 40px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-subtle);
-  color: var(--text-h);
+.blank-pill__title-edit-input-field .input-control {
   font-size: 1rem;
-  outline: none;
-  margin-bottom: 16px;
-  box-sizing: border-box;
-  transition: border-color 0.16s ease, background 0.16s ease;
-}
-
-.blank-pill__title-edit-input:focus,
-.blank-pill__title-edit-input:focus-visible {
-  border-color: var(--accent-border);
-  background: var(--bg);
-}
-
-.blank-pill__title-edit-input::placeholder {
-  color: var(--muted);
-}
-
-.blank-pill__title-edit-buttons {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.blank-pill__title-edit-btn-cancel,
-.blank-pill__title-edit-btn-save {
-  min-height: 36px;
-  padding: 0 16px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg-subtle);
-  color: var(--text);
-  font-size: 0.88rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.blank-pill__title-edit-btn-cancel:hover {
-  border-color: var(--border-strong);
-  background: var(--bg);
-}
-
-.blank-pill__title-edit-btn-save {
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
-  color: var(--accent);
-}
-
-.blank-pill__title-edit-btn-save:hover {
-  background: var(--accent);
-  color: white;
 }
 
 .blank-pill__question-stack {
@@ -293,46 +138,37 @@ button:active {
   gap: 8px;
 }
 
-.blank-pill__question-field,
 .blank-pill__option-field {
   border: 1px solid var(--border);
   background: var(--bg);
   transition: border-color 0.16s ease, background 0.16s ease;
 }
 
-.blank-pill__question-field {
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.blank-pill__question-field:focus-within,
 .blank-pill__option-field:focus-within {
   border-color: var(--accent-border);
   background: var(--bg-subtle);
 }
 
-.blank-pill__question {
+.blank-pill__question-field {
   width: 100%;
-  min-height: 84px;
-  max-height: 680px;
-  padding: 12px 18px 16px;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: var(--text-h);
-  outline: none;
-  font-size: 1.08rem;
-  resize: none;
-  line-height: 1.5;
-  overflow-y: hidden;
 }
 
-.blank-pill__question:focus,
-.blank-pill__question:focus-visible {
+.blank-pill__question-field .large-input-shell {
+  border-radius: 14px;
+}
+
+.blank-pill__question-field .large-input-control {
+  min-height: 84px;
+  font-size: 1.08rem;
+  padding: 12px 18px 16px;
+}
+
+.blank-pill__question-field .large-input-control:focus,
+.blank-pill__question-field .large-input-control:focus-visible {
   box-shadow: none;
 }
 
-.blank-pill__question::placeholder,
+.blank-pill__question-field .large-input-control::placeholder,
 .blank-pill__option::placeholder {
   color: var(--muted);
 }
@@ -356,39 +192,25 @@ button:active {
 }
 
 .blank-pill__title-field {
-  border: 1px solid var(--border);
   width: 80%;
-  background: var(--bg-subtle);
-  border-radius: 14px;
-  overflow: hidden;
-  transition: border-color 0.16s ease, background 0.16s ease;
 }
 
-.blank-pill__title-field:focus-within {
-  border-color: var(--accent-border);
-  background: var(--bg-subtle);
-}
-
-.blank-pill__title {
-  width: 100%;
+.blank-pill__title-field .input-control {
   min-height: 48px;
   padding: 12px 18px;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: var(--text-h);
-  outline: none;
   font-size: 1rem;
   line-height: 1.5;
 }
 
-.blank-pill__title:focus,
-.blank-pill__title:focus-visible {
+.blank-pill__title-field .input-control:focus,
+.blank-pill__title-field .input-control:focus-visible {
   box-shadow: none;
 }
 
-.blank-pill__title::placeholder {
-  color: var(--muted);
+.blank-pill__title-field .input-control[readonly] {
+  background: transparent;
+  border-color: transparent;
+  pointer-events: none;
 }
 
 .blank-pill__title-limit {
@@ -405,6 +227,7 @@ button:active {
   gap: 4px;
   font-size: 0.72rem;
   color: var(--text-soft);
+  margin: 0px 0 0 5px;
 }
 
 .blank-pill__char-count-item {
@@ -415,7 +238,6 @@ button:active {
 
 .blank-pill__char-count-label {
   color: var(--muted);
-  position: relative;
   cursor: default;
 }
 
@@ -427,30 +249,8 @@ button:active {
   color: var(--muted);
 }
 
-.blank-pill__char-count-label[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: 220px;
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-overlay);
-  color: var(--text-soft);
-  font-size: 0.75rem;
-  line-height: 1.4;
-  white-space: normal;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.14s ease;
-  z-index: 10;
-}
-
-.blank-pill__char-count-label[data-tooltip]:hover::after {
-  opacity: 1;
+.blank-pill__char-count .tooltip__trigger {
+  display: inline-flex;
 }
 
 /* ---------- Option list (shared by MultiChoice + Matching) -------------- */
@@ -545,15 +345,9 @@ button:active {
   background: var(--accent-bg);
 }
 
-.blank-pill__option-delete {
-  min-height: 30px;
-  padding: 0 10px;
-  border: 1px solid rgba(212, 139, 139, 0.32);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--danger);
-  cursor: pointer;
-}
+/* .blank-pill__option-delete {
+
+} */
 
 .blank-pill__option-inline-meta {
   display: flex;
@@ -598,24 +392,29 @@ button:active {
 }
 
 .blank-pill__option-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
+  border-radius: 14px;
+  min-height: 44px;
+
+  margin: 5px 2px 0 2px;
+  
+}
+/* .blank-pill__option-add {
+gap: 8px;
+align-items: center;
+border: 1px dashed var(--border);
   padding: 0 14px;
-  border: 1px dashed var(--border);
   border-radius: 999px;
   background: transparent;
   color: var(--text-soft);
   font-size: 0.95rem;
   cursor: pointer;
   transition: border-color 0.16s ease, color 0.16s ease;
-}
+} */ 
 
-.blank-pill__option-add:hover {
+/* .blank-pill__option-add:hover {
   border-color: var(--accent-border);
   color: var(--text-h);
-}
+} */
 
 /* ---------- Drag thresholds --------------------------------------------- */
 
@@ -667,85 +466,6 @@ button:active {
   color: rgba(140, 220, 140, 0.9);
 }
 
-/* ---------- Shared control / panel patterns ----------------------------- */
-/* Used by FieldQuestion and RatingQuestion config panels */
-
-.blank-pill__panel {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 16px;
-}
-
-.blank-pill__panel-controls {
-  display: grid;
-  gap: 16px;
-}
-
-.blank-pill__control {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-
-.blank-pill__control-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-soft);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.blank-pill__control-input {
-  min-height: 42px;
-  width: 100%;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg-subtle);
-  color: var(--text-h);
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.16s ease;
-}
-
-.blank-pill__control-input:focus,
-.blank-pill__control-input:focus-visible {
-  border-color: var(--accent-border);
-  box-shadow: none;
-}
-
-.blank-pill__helper {
-  font-size: 0.84rem;
-  color: var(--muted);
-}
-
-.blank-pill__preview {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
-}
-
-.blank-pill__preview-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.blank-pill__preview-title {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--text-soft);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 /* ---------- Responsive --------------------------------------------------- */
 
 @media (max-width: 640px) {
@@ -776,13 +496,13 @@ button:active {
     padding-right: 4px;
   }
 
-  .blank-pill__option-inline-meta {
+  /* .blank-pill__option-inline-meta {
     align-items: flex-start;
     flex-direction: column;
-  }
+  } */
 
-  .blank-pill__option-meta-group {
+  /* .blank-pill__option-meta-group {
     align-items: flex-start;
     flex-direction: column;
-  }
+  } */
 }

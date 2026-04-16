@@ -4,6 +4,10 @@
   overflow: hidden;
 }
 
+.large-input-shell:hover:not(:focus-within) {
+  background: var(--bg-raised);
+}
+
 .large-input-control {
   display: block;
   border: none;

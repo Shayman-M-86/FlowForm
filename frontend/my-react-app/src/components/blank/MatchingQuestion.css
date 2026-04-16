@@ -41,6 +41,8 @@
   font-size: 0.78rem;
 }
 
+
+
 /* Responsive: stack columns on smaller screens */
 @media (max-width: 900px) {
   .blank-pill__matching-grid {

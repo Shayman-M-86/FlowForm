@@ -7,20 +7,30 @@
   align-items: center;
   width: fit-content;
   align-self: flex-start;
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
+  background: transparent;
 }
 
 .ns-shell--xs {
   border-radius: 6px;
 }
 
-.ns-shell--ghost {
+.ns-shell--pill {
+  border-radius: var(--radius-pill);
+}
+
+.ns-shell--primary {
   background: var(--bg-subtle);
+  border-color: var(--border);
 }
 
 .ns-shell--secondary {
-  background: var(--bg-raised);
+  border-color: var(--border);
+}
+
+.ns-shell--ghost {
+  border-color: transparent;
 }
 
 .ns-button.btn {
@@ -36,19 +46,23 @@
   min-width: 24px;
 }
 
-.ns-shell--ghost .ns-button.btn:hover:not(:disabled),
-.ns-shell--ghost .ns-button.btn:focus-visible {
-  background: var(--muted-bg);
-  color: var(--text-h);
+.ns-shell--pill .ns-button.btn {
+  border-radius: var(--radius-pill);
 }
 
+.ns-shell--primary .ns-button.btn,
 .ns-shell--secondary .ns-button.btn {
   color: var(--text-h);
 }
 
+.ns-shell--primary .ns-button.btn:hover:not(:disabled),
+.ns-shell--primary .ns-button.btn:focus-visible,
 .ns-shell--secondary .ns-button.btn:hover:not(:disabled),
-.ns-shell--secondary .ns-button.btn:focus-visible {
-  background: var(--surface);
+.ns-shell--secondary .ns-button.btn:focus-visible,
+.ns-shell--ghost .ns-button.btn:hover:not(:disabled),
+.ns-shell--ghost .ns-button.btn:focus-visible {
+  background: var(--muted-bg);
+  color: var(--text-h);
 }
 
 .ns-value {
@@ -60,7 +74,49 @@
   user-select: none;
 }
 
+.ns-input {
+  min-width: 28px;
+  text-align: center;
+  color: var(--text-h);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+/* .ns-input {
+  min-width: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-h);
+  font: inherit;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  outline: none;
+} */
+
 .ns-shell--xs .ns-value {
   min-width: 22px;
   font-size: 0.82rem;
+}
+
+.ns-shell--xs .ns-input {
+  min-width: 22px;
+  font-size: 0.82rem;
+}
+
+.number-stepper .ns-input,
+.number-stepper-group .ns-input {
+  width: 42px;
+}
+.number-stepper-group .ns-input .input-control{
+  padding: 0;
+  font-size: 14px;
+  text-align: center;
+}
+.number-stepper .ns-input .input-control{
+  padding: 0;
+  font-size: 14px;
+  text-align: center;
 }

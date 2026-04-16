@@ -9,6 +9,42 @@
   border-radius: var(--radius-sm);
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+  animation: btn-release 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.btn:active:not(:disabled) {
+  animation: btn-press 150ms ease-out forwards;
+}
+
+@keyframes btn-press {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    box-shadow: var(--shadow-sm);
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.8;
+    box-shadow: 0 1px 10px rgba(0, 0, 0, 0.07);
+  }
+}
+
+@keyframes btn-release {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+    box-shadow: 0 1px 10px rgba(0, 0, 0, 0.07);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: var(--shadow-sm);
+  }
 }
 
 .btn--md {
@@ -50,6 +86,17 @@
   border-color: var(--border-strong);
 }
 
+.btn--dark {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+  color: var(--text-h);
+}
+
+.btn--dark:hover:not(:disabled) {
+  background: var(--bg-raised);
+  border-color: var(--border-strong);
+}
+
 .btn--danger {
   background: transparent;
   border-color: rgba(212, 139, 139, 0.3);
@@ -63,7 +110,24 @@
 .btn--ghost {
   background: transparent;
   border-color: transparent;
-  color: var(--text-soft);
+  color: var(--text);
+  box-shadow: none;
+  animation: none;
+}
+
+.btn--ghost:active:not(:disabled) {
+  animation: btn-press-flat 150ms ease-out forwards;
+}
+
+@keyframes btn-press-flat {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
 }
 
 .btn--ghost:hover:not(:disabled) {
@@ -107,4 +171,3 @@
 .btn--border-dotted.btn--ghost:hover:not(:disabled) {
   border-color: var(--border-strong);
 }
-

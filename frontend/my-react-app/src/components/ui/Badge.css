@@ -3,11 +3,29 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 8px;
   border: 1px solid transparent;
-  font-size: 0.74rem;
   line-height: 1;
   white-space: nowrap;
+}
+
+.badge--sm {
+  padding: 3px 7px;
+  font-size: 0.68rem;
+}
+
+.badge--md {
+  padding: 4px 8px;
+  font-size: 0.74rem;
+}
+
+.badge--lg {
+  padding: 6px 12px;
+  font-size: 0.88rem;
+}
+
+.badge--xl {
+  padding: 8px 14px;
+  font-size: 0.9rem;
 }
 
 .badge--default,

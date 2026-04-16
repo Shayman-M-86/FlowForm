@@ -1,8 +1,11 @@
 import { useRef, useState, forwardRef, useImperativeHandle } from "react";
 import "./MultiChoiceQuestion.css";
+import { Button } from "../ui/Button";
+import { NumberStepperGroup } from "../ui/NumberStepperGroup";
 import { useOptionDrag } from "./useOptionDrag";
 import { QUESTION_MAX, autoResizeTextarea, blurOnEnter, nextAvailableTag } from "./blankPillUtils";
 import { BlankPillTopbar, BlankPillQuestionField, BlankPillCharCount, BlankPillFieldHead, BlankPillDragThresholds } from "./BlankPillShell";
+import { Input } from "../ui/Input";
 
 export interface MultiChoiceQuestionData {
   id: string;
@@ -103,48 +106,42 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
           <BlankPillFieldHead label="Answers">
             {isEditMode && <div className="blank-pill__choice-range-wrapper">
               <span className="blank-pill__choice-range-title">Choices</span>
-              <div className="blank-pill__choice-range">
-                <div className="blank-pill__choice-range-field">
-                  <span className="blank-pill__choice-range-label" data-tooltip="Minimum number of answers the user must select.">Min</span>
-                  <div className="blank-pill__stepper">
-                    <button
-                      className="blank-pill__stepper-btn"
-                      type="button"
-                      disabled={!isEditMode || minChoices <= 1}
-                      onClick={() => setMinChoices((v) => Math.max(1, v - 1))}
-                    >−</button>
-                    <span className="blank-pill__stepper-value">{minChoices}</span>
-                    <button
-                      className="blank-pill__stepper-btn"
-                      type="button"
-                      disabled={!isEditMode || minChoices >= options.length}
-                      onClick={() => {
-                        const next = Math.min(options.length, minChoices + 1);
-                        setMinChoices(next);
-                        if (next > maxChoices) setMaxChoices(next);
-                      }}
-                    >+</button>
-                  </div>
-                </div>
-                <div className="blank-pill__choice-range-field">
-                  <span className="blank-pill__choice-range-label" data-tooltip="Maximum number of answers the user can select.">Max</span>
-                  <div className="blank-pill__stepper">
-                    <button
-                      className="blank-pill__stepper-btn"
-                      type="button"
-                      disabled={!isEditMode || maxChoices <= minChoices}
-                      onClick={() => setMaxChoices((v) => Math.max(minChoices, v - 1))}
-                    >−</button>
-                    <span className="blank-pill__stepper-value">{maxChoices}</span>
-                    <button
-                      className="blank-pill__stepper-btn"
-                      type="button"
-                      disabled={!isEditMode || maxChoices >= options.length}
-                      onClick={() => setMaxChoices((v) => Math.min(options.length, v + 1))}
-                    >+</button>
-                  </div>
-                </div>
-              </div>
+              <NumberStepperGroup
+                className="multi-choice-question__choice-range"
+                ariaLabel="Choices range"
+                size="xs"
+                pill
+                variant="ghost"
+                items={[
+                  {
+                    key: "min",
+                    label: "Min",
+                    value: minChoices,
+                    min: 1,
+                    max: options.length,
+                    disabled: !isEditMode,
+                  },
+                  {
+                    key: "max",
+                    label: "Max",
+                    value: maxChoices,
+                    min: minChoices,
+                    max: options.length,
+                    disabled: !isEditMode,
+                  },
+                ]}
+                onChange={(key, value) => {
+                  if (key === "min") {
+                    setMinChoices(value);
+                    if (value > maxChoices) {
+                      setMaxChoices(value);
+                    }
+                    return;
+                  }
+
+                  setMaxChoices(Math.max(minChoices, value));
+                }}
+              />
             </div>}
             {isEditMode && (
               <BlankPillCharCount
@@ -178,7 +175,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                     activeDrag={activeDrag}
                   />
                   {isEditMode && (
-                    <button
+                    <Button
                       className="blank-pill__option-handle"
                       type="button"
                       aria-label={`${option.placeholder} settings`}
@@ -194,7 +191,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                       })}
                     >
                       <span aria-hidden="true">⋮</span>
-                    </button>
+                    </Button>
                   )}
                   <div className="blank-pill__option-field">
                     <div className="blank-pill__option-main">
@@ -234,8 +231,9 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                       <div className="blank-pill__option-inline-meta">
                         <div className="blank-pill__option-meta-group">
                           <span className="blank-pill__option-meta-label">Answer tag</span>
-                          <input
-                            className="blank-pill__option-tag-input"
+                          <Input
+                            className=""
+                            size="sm"
                             type="text"
                             placeholder={`answer_${index + 1}`}
                             value={option.tag}
@@ -249,15 +247,18 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                             onKeyDown={blurOnEnter}
                           />
                         </div>
-                        <button
+                        <Button
                           className="blank-pill__option-delete"
                           type="button"
+                          variant="danger"
+                          size="xs"
+                          pill={true}
                           onClick={() =>
                             setOptions((current) => current.filter((entry) => entry.id !== option.id))
                           }
                         >
                           Delete
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -265,9 +266,11 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
               );
             })}
             {isEditMode && options.length < MAX_ANSWERS && (
-              <button
+              <Button
                 className="blank-pill__option-add"
                 type="button"
+                variant="ghost"
+                borderStyle="dotted"
                 onClick={() => {
                   const n = nextOptionIndexRef.current++;
                   setOptions((current) => [
@@ -278,7 +281,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
               >
                 <span aria-hidden="true">+</span>
                 Add another choice
-              </button>
+              </Button>
             )}
           </div>
         </div>
