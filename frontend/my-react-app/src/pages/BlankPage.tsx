@@ -3,6 +3,7 @@ import type { FieldQuestionHandle } from "../components/blank/FieldQuestion";
 import type { MatchingQuestionHandle } from "../components/blank/MatchingQuestion";
 import type { MultiChoiceQuestionHandle } from "../components/blank/MultiChoiceQuestion";
 import type { RatingQuestionHandle } from "../components/blank/RatingQuestion";
+import type { RulesQuestionHandle } from "../components/blank/RulesQuestion";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
 import { Button } from "../components/ui/Button";
@@ -11,9 +12,10 @@ import { FieldQuestion } from "../components/blank/FieldQuestion";
 import { MatchingQuestion } from "../components/blank/MatchingQuestion";
 import { MultiChoiceQuestion } from "../components/blank/MultiChoiceQuestion";
 import { RatingQuestion } from "../components/blank/RatingQuestion";
+import { RulesQuestion } from "../components/blank/RulesQuestion";
 import "./BlankPage.css";
 
-type QuestionType = "multi-choice" | "matching" | "rating" | "field";
+type QuestionType = "multi-choice" | "matching" | "rating" | "field" | "rules";
 
 interface Question {
   id: string;
@@ -30,6 +32,7 @@ const QUESTION_TYPE_OPTIONS: Array<{ value: QuestionType; label: string }> = [
   { value: "matching", label: "Matching" },
   { value: "rating", label: "Rating" },
   { value: "field", label: "Field" },
+  { value: "rules", label: "Rules" },
 ];
 
 const SWAP_ANIMATION_MS = 280;
@@ -41,7 +44,7 @@ export function BlankPage() {
   const [questionSummaries, setQuestionSummaries] = useState<Record<string, QuestionSummary>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | QuestionType>("all");
-  const questionRefsMap = useRef<Map<string, FieldQuestionHandle | MatchingQuestionHandle | MultiChoiceQuestionHandle | RatingQuestionHandle>>(new Map());
+  const questionRefsMap = useRef<Map<string, FieldQuestionHandle | MatchingQuestionHandle | MultiChoiceQuestionHandle | RatingQuestionHandle | RulesQuestionHandle>>(new Map());
   const questionWrapperNodeMap = useRef<Map<string, HTMLDivElement>>(new Map());
   const pendingMoveAnimation = useRef<{
     positions: Map<string, number>;
@@ -233,6 +236,8 @@ export function BlankPage() {
         return <RatingQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleDataChange} />;
       case "field":
         return <FieldQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleDataChange} />;
+      case "rules":
+        return <RulesQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleDataChange} />;
     }
   }
 

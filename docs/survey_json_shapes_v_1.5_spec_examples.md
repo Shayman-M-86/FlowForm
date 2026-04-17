@@ -195,3 +195,199 @@
 ```code
     No additional options.
 ```
+
+
+
+```json
+{
+  "type": "question",
+  "sort_key": 100000, 
+  "content": {
+    "id": "q1",
+    "title": "Satisfaction Survey",
+    "label": "How satisfied are you?",
+    "family": "rating",
+    "definition": {
+      "variant": "slider",
+      "range": {
+        "min": -5,
+        "max": 5,
+        "step": 1
+      },
+      "ui": {
+        "left_label": "Not satisfied",
+        "right_label": "Very satisfied"
+      }
+    }
+  }
+}
+```
+
+```json
+{
+  "type": "question",
+  "sort_key": 200000, 
+  "content": {
+    "id": "q2",
+    "title": "Geography Quiz",
+    "label": "Match each country to its capital city",
+    "family": "matching",
+    "definition": {
+      "prompts": [
+        { "id": "p_A", "label": "Australia" },
+        { "id": "p_B", "label": "France" }
+      ],
+      "matches": [
+        { "id": "m_A", "label": "Canberra" },
+        { "id": "m_B", "label": "Paris" },
+        { "id": "m_C", "label": "Madrid" }
+      ]
+    }
+  }
+}
+```
+```json
+{
+  "type": "question",
+  "sort_key": 300000, 
+  "content": {
+    "id": "q3",
+    "title": "Personal Information",
+    "label": "Enter your age",
+    "family": "field",
+    "definition": {
+      "field_type": "number",
+      "ui": {
+        "placeholder": "e.g. 30"
+      }
+    }
+  }
+}
+```
+```json
+{
+  "type": "question",
+  "sort_key": 400000, 
+  "content": {
+    "id": "q4",
+    "title": "Favorite Color",
+    "label": "What's your favorite color?",
+    "family": "choice",
+    "definition": {
+      "min": 1,
+      "max": 1,
+      "options": [
+        { "id": "a", "label": "Red" },
+        { "id": "b", "label": "Blue" },
+        { "id": "c", "label": "Green" },
+        { "id": "d", "label": "Yellow" },
+        { "id": "e", "label": "Orange" },
+        { "id": "f", "label": "Purple" },
+        { "id": "g", "label": "Pink" }
+      ]
+    }
+  }
+}
+```
+
+```json
+{
+  "type": "question",
+  "sort_key": 500000, 
+  "content": {
+    "id": "q5",
+    "title": "Personal Information",
+    "label": "When did you start working here? ",
+    "family": "field",
+    "definition": {
+      "field_type": "date",
+      "ui": {
+      }
+    }
+  }
+}
+```
+
+```json
+{
+  "type": "rule",
+  "sort_key": 500000,
+  "content": {
+    "id": "r1",
+    "if": {
+      "match": "ALL",//"ANY"/"NONE" 
+      "conditions": [
+        {
+          "target_id": "q4",// "family": "choice"
+          "family": "choice",
+          "requirements": {
+            "required": ["a"],
+            "forbidden": ["b"],
+            "any_of": ["d", "e"]
+          }
+        },
+        {
+          "target_id": "q2", // "family": "matching"
+          "family": "matching",
+          "requirements": {
+            "required": [{"p_A": "m_A"},{ "p_B": "m_B"}],
+          }
+        },
+        {
+          "target_id": "q1",// "family": "rating"
+          "family": "rating",
+          "requirements": {
+            "min": 3,
+            "max": 5
+          }
+        },
+        {
+          "target_id": "q3",// "family": "field"
+          "family": "field",
+          "requirements": {
+            "type": "number",
+            "operator": "GTE",//"LT"/"LTE"/"GT"/"GTE"/"EQ"/"NEQ"
+            "value": 18
+          }
+        },
+        {
+          "target_id": "q5",// "family": "field"
+          "family": "field",
+          "requirements": {
+            "type": "date",
+            "operator": "before",//"before"/"after"
+            "value": "2023-01-01"
+          }
+        }
+      ]
+
+      
+    },
+    "then": {
+      "set": [//set/do
+      {
+        "target_id": "q6",
+        "visible": true,
+        "required": true
+      },
+      {
+        "target_id": "q7",
+        "visible": true,
+        "required": true
+      },
+      {
+        "target_id": "q8",
+        "visible": false,
+      },
+      {
+        "target_id": "q9",
+        "required": false
+      }
+      ]
+    },
+    "else": {
+      "do": {
+        "skip_to": "q10" // "skip_to" / "end_and_submit" / "end_and_discard"
+      }
+    }
+  }
