@@ -3,34 +3,20 @@ import "./MultiChoiceQuestion.css";
 import { Button } from "../ui/Button";
 import { NumberStepperGroup } from "../ui/NumberStepperGroup";
 import { useOptionDrag } from "./useOptionDrag";
-import { QUESTION_MAX, autoResizeTextarea, blurOnEnter, nextAvailableTag } from "./blankPillUtils";
-import { BlankPillTopbar, BlankPillQuestionField, BlankPillCharCount, BlankPillFieldHead, BlankPillDragThresholds } from "./BlankPillShell";
+import { QUESTION_MAX, autoResizeTextarea, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
+import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillDragThresholds } from "./NodePillShell";
 import { Input } from "../ui/Input";
-
-export interface MultiChoiceQuestionData {
-  id: string;
-  title: string;
-  label: string;
-  family: "choice";
-  choice: {
-    schema: {
-      options: Array<{ id: string; label: string }>;
-      min_selected: number;
-      max_selected: number;
-    };
-    ui: object;
-  };
-}
+import type { ChoiceContent } from "./questionTypes";
 
 export interface MultiChoiceQuestionHandle {
-  getData(): MultiChoiceQuestionData;
+  getData(): ChoiceContent;
 }
 
 interface MultiChoiceQuestionProps {
   onDelete?: () => void;
   title?: string;
   onEditModeChange?: (isEditMode: boolean) => void;
-  onDataChange?: (summary: { title: string; id: string }) => void;
+  onDataChange?: (content: ChoiceContent) => void;
 }
 
 const INITIAL_OPTIONS = [
@@ -61,18 +47,15 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
     getThresholdRatioForIndex,
   } = useOptionDrag(options, setOptions);
 
-  const multiChoiceData: MultiChoiceQuestionData = {
+  const multiChoiceData: ChoiceContent = {
     id: tagValue,
     title: titleValue,
     label: questionValue,
     family: "choice",
-    choice: {
-      schema: {
-        options: options.map((opt) => ({ id: opt.tag, label: opt.value })),
-        min_selected: minChoices,
-        max_selected: maxChoices,
-      },
-      ui: {},
+    definition: {
+      min: minChoices,
+      max: maxChoices,
+      options: options.map((opt) => ({ id: opt.tag, label: opt.value })),
     },
   };
 
@@ -83,8 +66,8 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
   }));
 
   useEffect(() => {
-    onDataChange?.({ title: titleValue, id: tagValue });
-  }, [titleValue, tagValue]);
+    onDataChange?.(multiChoiceData);
+  }, [titleValue, tagValue, questionValue, minChoices, maxChoices, options]);
 
   function toggleEditMode() {
     setIsEditMode((current) => {
@@ -95,8 +78,8 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
   }
 
   return (
-    <section className={`blank-pill ${isEditMode ? "blank-pill--edit" : ""}`} aria-label="Blank workspace">
-      <BlankPillTopbar
+    <section className={`node-pill ${isEditMode ? "node-pill--edit" : ""}`} aria-label="node workspace">
+      <NodePillTopbar
         family="Multiple choice"
         tagValue={tagValue}
         onTagChange={setTagValue}
@@ -105,8 +88,8 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
         onDelete={onDelete}
       />
 
-      <div className="blank-pill__body">
-        <BlankPillQuestionField
+      <div className="node-pill__body">
+        <NodePillQuestionField
           value={questionValue}
           onChange={setQuestionValue}
           isEditMode={isEditMode}
@@ -116,10 +99,10 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
           showTitleEdit={true}
         />
 
-        <div className="blank-pill__field">
-          <BlankPillFieldHead label="Answers">
-            {isEditMode && <div className="blank-pill__choice-range-wrapper">
-              <span className="blank-pill__choice-range-title">Choices</span>
+        <div className="node-pill__field">
+          <NodePillFieldHead label="Answers">
+            {isEditMode && <div className="node-pill__choice-range-wrapper">
+              <span className="node-pill__choice-range-title">Choices</span>
               <NumberStepperGroup
                 className="multi-choice-question__choice-range"
                 ariaLabel="Choices range"
@@ -158,15 +141,15 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
               />
             </div>}
             {isEditMode && (
-              <BlankPillCharCount
+              <NodePillCharCount
                 label="Total"
                 value={options.reduce((sum, o) => sum + o.value.length, 0)}
                 max={ANSWER_POOL}
                 tooltip="Total characters used across all answer choices."
               />
             )}
-          </BlankPillFieldHead>
-          <div className="blank-pill__options" ref={optionsListRef}>
+          </NodePillFieldHead>
+          <div className="node-pill__options" ref={optionsListRef}>
             {options.map((option, index) => {
               const isOpen = openOptionIds.has(option.id);
               const isDragging = activeDrag?.id === option.id;
@@ -179,10 +162,10 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                   ref={(node) => {
                     optionRefs.current[option.id] = node;
                   }}
-                  className={`blank-pill__option-row ${isDragging ? "blank-pill__option-row--dragging" : ""}`}
+                  className={`node-pill__option-row ${isDragging ? "node-pill__option-row--dragging" : ""}`}
                   style={dragTransform}
                 >
-                  <BlankPillDragThresholds
+                  <NodePillDragThresholds
                     itemId={option.id}
                     isDragging={isDragging}
                     thresholdRatio={activeDrag && !isDragging ? thresholdRatio : null}
@@ -190,7 +173,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                   />
                   {isEditMode && (
                     <Button
-                      className="blank-pill__option-handle"
+                      className="node-pill__option-handle"
                       type="button"
                       aria-label={`${option.placeholder} settings`}
                       aria-expanded={isOpen}
@@ -207,10 +190,10 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                       <span aria-hidden="true">⋮</span>
                     </Button>
                   )}
-                  <div className="blank-pill__option-field">
-                    <div className="blank-pill__option-main">
+                  <div className="node-pill__option-field">
+                    <div className="node-pill__option-main">
                       <textarea
-                        className="blank-pill__option"
+                        className="node-pill__option"
                         placeholder={option.placeholder}
                         rows={1}
                         maxLength={Math.min(ANSWER_PER_FIELD_MAX, ANSWER_POOL - options.filter((e) => e.id !== option.id).reduce((sum, e) => sum + e.value.length, 0))}
@@ -227,7 +210,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                       />
                       {isEditMode && (
                         <button
-                          className="blank-pill__option-grab"
+                          className="node-pill__option-grab"
                           type="button"
                           aria-label={`Reorder ${option.placeholder}`}
                           onPointerDown={(event) => startDrag(event, option.id, index)}
@@ -237,14 +220,14 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                       )}
                     </div>
                     {isEditMode && option.value.length === Math.min(ANSWER_PER_FIELD_MAX, ANSWER_POOL - options.filter((e) => e.id !== option.id).reduce((sum, e) => sum + e.value.length, 0)) && (
-                      <span className="blank-pill__option-limit">
+                      <span className="node-pill__option-limit">
                         Maximum characters reached.
                       </span>
                     )}
                     {isEditMode && isOpen && (
-                      <div className="blank-pill__option-inline-meta">
-                        <div className="blank-pill__option-meta-group">
-                          <span className="blank-pill__option-meta-label">Answer tag</span>
+                      <div className="node-pill__option-inline-meta">
+                        <div className="node-pill__option-meta-group">
+                          <span className="node-pill__option-meta-label">Answer tag</span>
                           <Input
                             className=""
                             size="sm"
@@ -262,7 +245,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                           />
                         </div>
                         <Button
-                          className="blank-pill__option-delete"
+                          className="node-pill__option-delete"
                           type="button"
                           variant="danger"
                           size="xs"
@@ -281,7 +264,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
             })}
             {isEditMode && options.length < MAX_ANSWERS && (
               <Button
-                className="blank-pill__option-add"
+                className="node-pill__option-add"
                 type="button"
                 variant="ghost"
                 borderStyle="dotted"

@@ -16,7 +16,7 @@ export function autoResizeTextarea(
   element: HTMLTextAreaElement,
   maxHeight: number = OPTION_TEXTAREA_MAX_HEIGHT,
 ) {
-  const resolvedMax = element.classList.contains("blank-pill__question")
+  const resolvedMax = element.classList.contains("node-pill__question")
     ? QUESTION_TEXTAREA_MAX_HEIGHT
     : maxHeight;
   element.style.height = "0px";

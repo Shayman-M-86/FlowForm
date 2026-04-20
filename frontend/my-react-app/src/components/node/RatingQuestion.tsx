@@ -1,82 +1,27 @@
 import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import "./RatingQuestion.css";
-import { QUESTION_MAX, blurOnEnter } from "./blankPillUtils";
-import { BlankPillTopbar, BlankPillQuestionField, BlankPillCharCount, BlankPillFieldHead } from "./BlankPillShell";
+import { QUESTION_MAX, blurOnEnter } from "./NodePillUtils";
+import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead } from "./NodePillShell";
 import { Input } from "../ui/Input";
 import { NumberStepper } from "../ui/NumberStepper";
 import { NumberStepperGroup } from "../ui/NumberStepperGroup";
 import { Select } from "../ui/Select";
 import { Toggle } from "../ui/Toggle";
+import type { RatingContent, EmojiListType } from "./questionTypes";
 
 const MAX_STARS = 12;
 
 type RatingType = "numeric-slider" | "emoji" | "stars";
-type EmojiListType = "sad_to_happy" | "angry_to_happy" | "disgust_to_happy";
-
-interface RatingQuestionDataSlider {
-  id: string;
-  title: string;
-  label: string;
-  family: "rating";
-  rating: {
-    style: "slider";
-    schema: {
-      range: { min: number; max: number; step: number };
-    };
-    ui: {
-      left_label: string;
-      right_label: string;
-      step: number;
-    };
-  };
-}
-
-interface RatingQuestionDataEmoji {
-  id: string;
-  title: string;
-  label: string;
-  family: "rating";
-  rating: {
-    style: "emoji";
-    schema: {
-      emoji_list: EmojiListType;
-      words: boolean;
-    };
-    ui: {
-      left_label: string;
-      right_label: string;
-    };
-  };
-}
-
-interface RatingQuestionDataStar {
-  id: string;
-  title: string;
-  label: string;
-  family: "rating";
-  rating: {
-    style: "star";
-    schema: {
-      stars: number;
-    };
-    ui: {
-      left_label: string;
-      right_label: string;
-    };
-  };
-}
-
-export type RatingQuestionData = RatingQuestionDataSlider | RatingQuestionDataEmoji | RatingQuestionDataStar;
 
 export interface RatingQuestionHandle {
-  getData(): RatingQuestionData;
+  getData(): RatingContent;
 }
 
 interface RatingQuestionProps {
   onDelete?: () => void;
   title?: string;
   onEditModeChange?: (isEditMode: boolean) => void;
-  onDataChange?: (summary: { title: string; id: string }) => void;
+  onDataChange?: (content: RatingContent) => void;
 }
 
 const RATING_TYPE_OPTIONS: Array<{ value: RatingType; label: string }> = [
@@ -171,59 +116,43 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
     }
   }
 
-  const ratingQuestionData: RatingQuestionData =
+  const ratingQuestionData: RatingContent =
     ratingType === "numeric-slider"
       ? {
+        id: tagValue,
+        title: titleValue,
+        label: questionValue,
+        family: "rating",
+        definition: {
+          variant: "slider",
+          range: { min: rangeStart, max: rangeEnd, step: stepValue },
+          ui: { left_label: leftLabel, right_label: rightLabel },
+        },
+      }
+      : ratingType === "emoji"
+        ? {
           id: tagValue,
           title: titleValue,
           label: questionValue,
           family: "rating",
-          rating: {
-            style: "slider",
-            schema: {
-              range: { min: rangeStart, max: rangeEnd, step: stepValue },
-            },
-            ui: {
-              left_label: leftLabel,
-              right_label: rightLabel,
-              step: stepValue,
-            },
+          definition: {
+            variant: "emoji",
+            emoji_list: getEmojiListType(),
+            words: showEmojiWords,
+            ui: { left_label: leftLabel, right_label: rightLabel },
           },
         }
-      : ratingType === "emoji"
-        ? {
-            id: tagValue,
-            title: titleValue,
-            label: questionValue,
-            family: "rating",
-            rating: {
-              style: "emoji",
-              schema: {
-                emoji_list: getEmojiListType(),
-                words: showEmojiWords,
-              },
-              ui: {
-                left_label: leftLabel,
-                right_label: rightLabel,
-              },
-            },
-          }
         : {
-            id: tagValue,
-            title: titleValue,
-            label: questionValue,
-            family: "rating",
-            rating: {
-              style: "star",
-              schema: {
-                stars: starCount,
-              },
-              ui: {
-                left_label: leftLabel,
-                right_label: rightLabel,
-              },
-            },
-          };
+          id: tagValue,
+          title: titleValue,
+          label: questionValue,
+          family: "rating",
+          definition: {
+            variant: "star",
+            stars: starCount,
+            ui: { left_label: leftLabel, right_label: rightLabel },
+          },
+        };
 
   useImperativeHandle(ref, () => ({
     getData() {
@@ -232,8 +161,8 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
   }));
 
   useEffect(() => {
-    onDataChange?.({ title: titleValue, id: tagValue });
-  }, [titleValue, tagValue]);
+    onDataChange?.(ratingQuestionData);
+  }, [titleValue, tagValue, questionValue, ratingType, rangeStart, rangeEnd, stepValue, leftLabel, rightLabel, starCount, emojiScaleType, showEmojiWords]);
 
   function alignToStep(value: number, min: number, max: number, step: number) {
     const safeStep = Math.max(1, Math.abs(step) || 1);
@@ -320,8 +249,8 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
       : rangePreview;
 
   return (
-    <section className={`blank-pill rating-question ${isEditMode ? "blank-pill--edit" : ""}`} aria-label="Rating question">
-      <BlankPillTopbar
+    <section className={`node-pill rating-question ${isEditMode ? "node-pill--edit" : ""}`} aria-label="Rating question">
+      <NodePillTopbar
         family="Rating"
         tagValue={tagValue}
         onTagChange={setTagValue}
@@ -330,8 +259,8 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
         onDelete={onDelete}
       />
 
-      <div className="blank-pill__body">
-        <BlankPillQuestionField
+      <div className="node-pill__body">
+        <NodePillQuestionField
           value={questionValue}
           onChange={setQuestionValue}
           isEditMode={isEditMode}
@@ -341,15 +270,15 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
           showTitleEdit={true}
         />
 
-        <div className="blank-pill__field">
-          <BlankPillFieldHead label="Rating">
+        <div className="node-pill__field">
+          <NodePillFieldHead label="Rating">
             {isEditMode && (
-              <BlankPillCharCount
+              <NodePillCharCount
                 label="Range"
                 value={scaleSummary}
               />
             )}
-          </BlankPillFieldHead>
+          </NodePillFieldHead>
 
           <div className="rating-question__panel">
             {isEditMode && (

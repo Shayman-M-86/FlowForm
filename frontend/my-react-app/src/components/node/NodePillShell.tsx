@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { TAG_MAX, blurOnEnter } from "./blankPillUtils";
+import { TAG_MAX, blurOnEnter } from "./NodePillUtils";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -18,7 +18,7 @@ type TopbarProps = {
   actions?: ReactNode;
 };
 
-export function BlankPillTopbar({
+export function NodePillTopbar({
   family,
   tagValue,
   onTagChange,
@@ -28,11 +28,11 @@ export function BlankPillTopbar({
   actions,
 }: TopbarProps) {
   return (
-    <header className="blank-pill__topbar">
-      <div className="blank-pill__topbar-left">
+    <header className="node-pill__topbar">
+      <div className="node-pill__topbar-left">
         <Badge variant="accent" size="xl">{family}</Badge>
-        <div className="blank-pill__id-label">
-          <h3 className="blank-pill__id">id</h3>
+        <div className="node-pill__id-label">
+          <h3 className="node-pill__id">id</h3>
           <Input
             type="text"
             placeholder={isEditMode ? "question_id" : ""}
@@ -47,11 +47,11 @@ export function BlankPillTopbar({
           />
         </div>
       </div>
-      <div className="blank-pill__actions">
+      <div className="node-pill__actions">
         {isEditMode && (actions ?? (
           <>
             <Button
-              className="blank-pill__action"
+              className="node-pill__action"
               type="button"
               variant="danger"
               size="xs"
@@ -60,13 +60,13 @@ export function BlankPillTopbar({
             >
               Delete
             </Button>
-            <Button className="blank-pill__action" type="button" variant="quiet" size="xs" pill>
+            <Button className="node-pill__action" type="button" variant="quiet" size="xs" pill>
               Settings
             </Button>
           </>
         ))}
         <Button
-          className={`blank-pill__action ${isEditMode ? "blank-pill__action--active" : ""}`}
+          className={`node-pill__action ${isEditMode ? "node-pill__action--active" : ""}`}
           type="button"
           variant={isEditMode ? "secondary" : "quiet"}
           size="xs"
@@ -87,17 +87,17 @@ type TitleFieldProps = {
   max?: number;
 };
 
-export function BlankPillTitleField({
+export function NodePillTitleField({
   value,
   onChange,
   isEditMode,
   max = 80,
 }: TitleFieldProps) {
   return (
-    <div className="blank-pill__field">
-      <div className="blank-pill__title-stack">
+    <div className="node-pill__field">
+      <div className="node-pill__title-stack">
         <Input
-          className="blank-pill__title-field"
+          className="node-pill__title-field"
           type="text"
           placeholder="Enter a title (optional)"
           maxLength={max}
@@ -107,7 +107,7 @@ export function BlankPillTitleField({
           onKeyDown={blurOnEnter}
         />
         {isEditMode && value.length === max && (
-          <span className="blank-pill__title-limit">
+          <span className="node-pill__title-limit">
             Maximum {max} characters reached.
           </span>
         )}
@@ -130,7 +130,7 @@ type QuestionFieldWithTitleProps = QuestionFieldProps & {
   showTitleEdit?: boolean;
 };
 
-export function BlankPillQuestionField({
+export function NodePillQuestionField({
   value,
   onChange,
   isEditMode,
@@ -154,14 +154,14 @@ export function BlankPillQuestionField({
   };
 
   return (
-    <div className="blank-pill__field">
-      <div className="blank-pill__question-header">
-        <span className="blank-pill__label">
+    <div className="node-pill__field">
+      <div className="node-pill__question-header">
+        <span className="node-pill__label">
           {hasTitle && titleValue ? titleValue : "Question"}
         </span>
         {hasTitle && showTitleEdit && isEditMode && (
           <Button
-            className="blank-pill__title-edit-btn"
+            className="node-pill__title-edit-btn"
             type="button"
             variant="ghost"
             size="xs"
@@ -190,7 +190,7 @@ export function BlankPillQuestionField({
           )}
         >
           <Input
-            className="blank-pill__title-edit-input-field"
+            className="node-pill__title-edit-input-field"
             label="Title"
             type="text"
             placeholder="Enter a title (optional)"
@@ -205,9 +205,9 @@ export function BlankPillQuestionField({
           />
         </Modal>
       )}
-      <div className="blank-pill__question-stack">
+      <div className="node-pill__question-stack">
         <LargeInput
-          className="blank-pill__question-field"
+          className="node-pill__question-field"
           placeholder="Type your question here"
           rows={3}
           size="sm"
@@ -219,7 +219,7 @@ export function BlankPillQuestionField({
           onChange={(event) => onChange(event.target.value)}
         />
         {isEditMode && value.length === max && (
-          <span className="blank-pill__question-limit">
+          <span className="node-pill__question-limit">
             Maximum {max} characters reached.
           </span>
         )}
@@ -235,27 +235,27 @@ type CharCountProps = {
   tooltip?: string;
 };
 
-export function BlankPillCharCount({ label, value, max, tooltip }: CharCountProps) {
+export function NodePillCharCount({ label, value, max, tooltip }: CharCountProps) {
   const labelNode = tooltip ? (
     <Tooltip title={tooltip} size="sm">
-      <span className="blank-pill__char-count-label">{label}</span>
+      <span className="node-pill__char-count-label">{label}</span>
     </Tooltip>
   ) : (
-    <span className="blank-pill__char-count-label">{label}</span>
+    <span className="node-pill__char-count-label">{label}</span>
   );
 
   return (
-    <span className="blank-pill__char-count">
-      <span className="blank-pill__char-count-item">
+    <span className="node-pill__char-count">
+      <span className="node-pill__char-count-item">
         {labelNode}
-        <span className="blank-pill__char-count-value">{value}</span>
+        <span className="node-pill__char-count-value">{value}</span>
       </span>
       {max !== undefined && (
         <>
-          <span className="blank-pill__char-count-divider">/</span>
-          <span className="blank-pill__char-count-item">
-            <span className="blank-pill__char-count-label">Max</span>
-            <span className="blank-pill__char-count-value">{max}</span>
+          <span className="node-pill__char-count-divider">/</span>
+          <span className="node-pill__char-count-item">
+            <span className="node-pill__char-count-label">Max</span>
+            <span className="node-pill__char-count-value">{max}</span>
           </span>
         </>
       )}
@@ -268,10 +268,10 @@ type FieldHeadProps = {
   children?: ReactNode;
 };
 
-export function BlankPillFieldHead({ label, children }: FieldHeadProps) {
+export function NodePillFieldHead({ label, children }: FieldHeadProps) {
   return (
-    <span className="blank-pill__field-head">
-      <span className="blank-pill__label">{label}</span>
+    <span className="node-pill__field-head">
+      <span className="node-pill__label">{label}</span>
       {children}
     </span>
   );
@@ -289,7 +289,7 @@ type DragThresholdsProps = {
   activeDrag: DragLocks | null;
 };
 
-export function BlankPillDragThresholds({
+export function NodePillDragThresholds({
   itemId,
   isDragging,
   thresholdRatio,

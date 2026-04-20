@@ -226,6 +226,49 @@
 ```json
 {
   "type": "question",
+  "sort_key": 150000, 
+  "content": {
+    "id": "q15",
+    "title": "Satisfaction Survey",
+    "label": "Out of five stars, what do you rate this?",
+    "family": "rating",
+    "definition": {
+      "variant": "stars",
+      "stars": 5,
+      "ui": {
+        "left_label": "Not satisfied",
+        "right_label": "Very satisfied"
+      }
+    }
+  }
+}
+```
+
+```json
+{
+  "type": "question",
+  "sort_key": 125000, 
+  "content": {
+    "id": "q16",
+    "title": "Satisfaction Survey",
+    "label": "How would you rate our service using emojis?",
+    "family": "rating",
+    "definition": {
+      "variant": "emoji",
+      "emoji_list": "sad_to_happy",
+      "words": true,
+      "ui": {
+        "left_label": "Not satisfied",
+        "right_label": "Very satisfied"
+      }
+    }
+  }
+}
+```
+
+```json
+{
+  "type": "question",
   "sort_key": 200000, 
   "content": {
     "id": "q2",

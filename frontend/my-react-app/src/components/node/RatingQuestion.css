@@ -1,4 +1,4 @@
-@import "./blank-pill.css";
+@import "./Node-pill.css";
 
 /* RatingQuestion-specific: numeric slider, emoji scales, and star rating */
 
@@ -323,15 +323,15 @@
   text-align: right;
 }
 
-.rating-question__control--span-2{
+.rating-question__control--span-2 {
   display: flex;
   justify-content: center;
 }
 
-@media (max-width: 900px) {
-}
+@media (max-width: 900px) {}
 
 @media (max-width: 640px) {
+
   .rating-question__controls,
   .rating-question__labels {
     grid-template-columns: 1fr;

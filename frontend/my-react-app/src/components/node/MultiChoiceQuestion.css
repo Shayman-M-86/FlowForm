@@ -1,15 +1,15 @@
-@import "./blank-pill.css";
+@import "./Node-pill.css";
 
 /* MultiChoice-specific: min/max stepper and choice range widget */
 
-.blank-pill__choice-range-wrapper {
+.node-pill__choice-range-wrapper {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   margin-left: auto;
 }
 
-.blank-pill__choice-range-title {
+.node-pill__choice-range-title {
   font-size: 0.7rem;
   color: var(--text-soft);
   opacity: 0.6;
@@ -21,7 +21,7 @@
 
 /* Responsive overrides */
 @media (max-width: 640px) {
-  .blank-pill__choice-range-wrapper {
+  .node-pill__choice-range-wrapper {
     flex-direction: column;
     width: 100%;
     margin-left: 0;

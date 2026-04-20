@@ -1,39 +1,21 @@
 import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import "./FieldQuestion.css";
-import { QUESTION_MAX, blurOnEnter } from "./blankPillUtils";
-import { BlankPillTopbar, BlankPillQuestionField, BlankPillCharCount, BlankPillFieldHead } from "./BlankPillShell";
+import { QUESTION_MAX, blurOnEnter } from "./NodePillUtils";
+import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead } from "./NodePillShell";
 import { Input } from "../ui/Input";
 import { LargeInput } from "../ui/LargeInput";
 import { Select } from "../ui/Select";
-
-export type { FieldQuestionData };
+import type { FieldContent, FieldType } from "./questionTypes";
 
 export interface FieldQuestionHandle {
-  getData(): FieldQuestionData;
+  getData(): FieldContent;
 }
 
 interface FieldQuestionProps {
   onDelete?: () => void;
   title?: string;
   onEditModeChange?: (isEditMode: boolean) => void;
-  onDataChange?: (summary: { title: string; id: string }) => void;
-}
-
-type FieldType = "short_text" | "long_text" | "email" | "phone" | "number" | "date";
-
-interface FieldQuestionData {
-  id: string;
-  title: string;
-  label: string;
-  family: "field";
-  field: {
-    schema: {
-      field_type: FieldType;
-    };
-    ui: {
-      placeholder: string;
-    };
-  };
+  onDataChange?: (content: FieldContent) => void;
 }
 
 const FIELD_TYPE_OPTIONS: Array<{ value: FieldType; label: string }> = [
@@ -83,18 +65,16 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
   );
   const [fieldValue, setFieldValue] = useState("");
 
-  const fieldQuestionData: FieldQuestionData = {
+  const fieldQuestionData: FieldContent = {
     id: tagValue,
     title: titleValue,
     label: questionValue,
     family: "field",
-    field: {
-      schema: {
-        field_type: fieldType,
-      },
-      ui: {
-        placeholder: placeholderValue,
-      },
+    definition: {
+      field_type: fieldType,
+      ui: fieldType === "date"
+        ? {}
+        : { placeholder: placeholderValue },
     },
   };
 
@@ -105,8 +85,8 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
   }));
 
   useEffect(() => {
-    onDataChange?.({ title: titleValue, id: tagValue });
-  }, [titleValue, tagValue]);
+    onDataChange?.(fieldQuestionData);
+  }, [titleValue, tagValue, questionValue, fieldType, placeholderValue]);
 
   function updateFieldType(nextType: FieldType) {
     setFieldType(nextType);
@@ -128,8 +108,8 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
   const fieldMaxLength = fieldType === "short_text" ? 100 : fieldType === "long_text" ? 1000 : undefined;
 
   return (
-    <section className={`blank-pill field-question ${isEditMode ? "blank-pill--edit" : ""}`} aria-label="Field question">
-      <BlankPillTopbar
+    <section className={`node-pill field-question ${isEditMode ? "node-pill--edit" : ""}`} aria-label="Field question">
+      <NodePillTopbar
         family="Field"
         tagValue={tagValue}
         onTagChange={setTagValue}
@@ -138,8 +118,8 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
         onDelete={onDelete}
       />
 
-      <div className="blank-pill__body">
-        <BlankPillQuestionField
+      <div className="node-pill__body">
+        <NodePillQuestionField
           value={questionValue}
           onChange={setQuestionValue}
           isEditMode={isEditMode}
@@ -149,15 +129,15 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
           showTitleEdit={true}
         />
 
-        <div className="blank-pill__field">
-          <BlankPillFieldHead label="Field">
+        <div className="node-pill__field">
+          <NodePillFieldHead label="Field">
             {isEditMode && (
-              <BlankPillCharCount
+              <NodePillCharCount
                 label="Type"
                 value={fieldLabel}
               />
             )}
-          </BlankPillFieldHead>
+          </NodePillFieldHead>
 
           <div className="field-question__panel">
             {isEditMode && (
@@ -215,7 +195,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
                 />
               )}
               {fieldMaxLength !== undefined && fieldValue.length === fieldMaxLength && (
-                <span className="blank-pill__option-limit">Maximum characters reached.</span>
+                <span className="node-pill__option-limit">Maximum characters reached.</span>
               )}
             </div>
           </div>

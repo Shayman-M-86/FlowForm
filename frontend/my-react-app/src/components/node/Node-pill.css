@@ -1,13 +1,13 @@
 /* ==========================================================================
-   Blank Pill — shared base styles
+   node Pill — shared base styles
    Every question-type component imports this file and then layers its own
-   type-specific rules on top. Classes prefixed with .blank-pill__ are shared.
+   type-specific rules on top. Classes prefixed with .node-pill__ are shared.
    ========================================================================== */
 
 /* ---------- Shell -------------------------------------------------------- */
 
-.blank-pill {
-  width: min(100%, var(--blank-pill-width, 980px));
+.node-pill {
+  width: min(100%, var(--node-pill-width, 980px));
   min-height: 360px;
   display: flex;
   flex-direction: column;
@@ -17,18 +17,19 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)),
     var(--bg-raised);
-  box-shadow: var(--shadow-sm);;
-  
+  box-shadow: var(--shadow-sm);
+  ;
+
 }
 
-.blank-pill--edit {
+.node-pill--edit {
   border-color: var(--accent-border);
   box-shadow: 0 0 0 1px var(--accent-border), var(--shadow-sm);
 }
 
 /* ---------- Topbar ------------------------------------------------------- */
 
-.blank-pill__topbar {
+.node-pill__topbar {
   width: 100%;
   min-height: 56px;
   display: flex;
@@ -39,7 +40,7 @@
   background: rgba(255, 255, 255, 0.02);
 }
 
-.blank-pill__topbar-left {
+.node-pill__topbar-left {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -47,16 +48,17 @@
   min-width: 0;
 }
 
-h3.blank-pill__id {
+h3.node-pill__id {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-soft);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin: 0;
-  padding: 0px 2px 0 8px  ;
+  padding: 0px 2px 0 8px;
 }
-.blank-pill__id-label {
+
+.node-pill__id-label {
   box-shadow: var(--shadow-xs);
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -70,19 +72,19 @@ h3.blank-pill__id {
 
 /* ---------- Actions ------------------------------------------------------ */
 
-.blank-pill__actions {
+.node-pill__actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.blank-pill__action {
+.node-pill__action {
   white-space: nowrap;
 }
 
 /* ---------- Body / field ------------------------------------------------- */
 
-.blank-pill__body {
+.node-pill__body {
   flex: 1;
   width: 100%;
   display: flex;
@@ -91,20 +93,20 @@ h3.blank-pill__id {
   padding: 20px;
 }
 
-.blank-pill__field {
+.node-pill__field {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.blank-pill__field-head {
+.node-pill__field-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
-.blank-pill__label {
+.node-pill__label {
   font-size: 1.4rem;
   font-weight: 600;
   color: var(--text-soft);
@@ -112,14 +114,14 @@ h3.blank-pill__id {
 
 /* ---------- Question textarea ------------------------------------------- */
 
-.blank-pill__question-header {
+.node-pill__question-header {
   display: flex;
   align-items: center;
   gap: 5px;
   margin-bottom: 8px;
 }
 
-.blank-pill__title-edit-btn.btn {
+.node-pill__title-edit-btn.btn {
   min-height: 22px;
   min-width: 22px;
   max-height: 22px;
@@ -128,92 +130,92 @@ h3.blank-pill__id {
   font-size: 0.9rem;
 }
 
-.blank-pill__title-edit-input-field .input-control {
+.node-pill__title-edit-input-field .input-control {
   font-size: 1rem;
 }
 
-.blank-pill__question-stack {
+.node-pill__question-stack {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.blank-pill__option-field {
+.node-pill__option-field {
   border: 1px solid var(--border);
   background: var(--bg);
   transition: border-color 0.16s ease, background 0.16s ease;
 }
 
-.blank-pill__option-field:focus-within {
+.node-pill__option-field:focus-within {
   border-color: var(--accent-border);
   background: var(--bg-subtle);
 }
 
-.blank-pill__question-field {
+.node-pill__question-field {
   width: 100%;
 }
 
-.blank-pill__question-field .large-input-shell {
+.node-pill__question-field .large-input-shell {
   border-radius: 14px;
 }
 
-.blank-pill__question-field .large-input-control {
+.node-pill__question-field .large-input-control {
   min-height: 84px;
   font-size: 1.08rem;
   padding: 12px 18px 16px;
 }
 
-.blank-pill__question-field .large-input-control:focus,
-.blank-pill__question-field .large-input-control:focus-visible {
+.node-pill__question-field .large-input-control:focus,
+.node-pill__question-field .large-input-control:focus-visible {
   box-shadow: none;
 }
 
-.blank-pill__question-field .large-input-control::placeholder,
-.blank-pill__option::placeholder {
+.node-pill__question-field .large-input-control::placeholder,
+.node-pill__option::placeholder {
   color: var(--muted);
 }
 
-.blank-pill__question-limit,
-.blank-pill__option-limit {
+.node-pill__question-limit,
+.node-pill__option-limit {
   font-size: 0.75rem;
   color: var(--danger);
 }
 
-.blank-pill__option-limit {
+.node-pill__option-limit {
   padding: 2px 6px;
 }
 
 /* ---------- Title input -------------------------------------------------- */
 
-.blank-pill__title-stack {
+.node-pill__title-stack {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.blank-pill__title-field {
+.node-pill__title-field {
   width: 80%;
 }
 
-.blank-pill__title-field .input-control {
+.node-pill__title-field .input-control {
   min-height: 48px;
   padding: 12px 18px;
   font-size: 1rem;
   line-height: 1.5;
 }
 
-.blank-pill__title-field .input-control:focus,
-.blank-pill__title-field .input-control:focus-visible {
+.node-pill__title-field .input-control:focus,
+.node-pill__title-field .input-control:focus-visible {
   box-shadow: none;
 }
 
-.blank-pill__title-field .input-control[readonly] {
+.node-pill__title-field .input-control[readonly] {
   background: transparent;
   border-color: transparent;
   pointer-events: none;
 }
 
-.blank-pill__title-limit {
+.node-pill__title-limit {
   font-size: 0.75rem;
   color: var(--danger);
   padding: 0 6px;
@@ -221,7 +223,7 @@ h3.blank-pill__id {
 
 /* ---------- Character counter ------------------------------------------- */
 
-.blank-pill__char-count {
+.node-pill__char-count {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -230,51 +232,51 @@ h3.blank-pill__id {
   margin: 0px 0 0 5px;
 }
 
-.blank-pill__char-count-item {
+.node-pill__char-count-item {
   display: flex;
   align-items: center;
   gap: 3px;
 }
 
-.blank-pill__char-count-label {
+.node-pill__char-count-label {
   color: var(--muted);
   cursor: default;
 }
 
-.blank-pill__char-count-value {
+.node-pill__char-count-value {
   font-variant-numeric: tabular-nums;
 }
 
-.blank-pill__char-count-divider {
+.node-pill__char-count-divider {
   color: var(--muted);
 }
 
-.blank-pill__char-count .tooltip__trigger {
+.node-pill__char-count .tooltip__trigger {
   display: inline-flex;
 }
 
 /* ---------- Option list (shared by MultiChoice + Matching) -------------- */
 
-.blank-pill__options {
+.node-pill__options {
   display: flex;
   flex-direction: column;
   gap: 18px;
   position: relative;
 }
 
-.blank-pill__option-row {
+.node-pill__option-row {
   display: flex;
   align-items: stretch;
   gap: 0;
   position: relative;
 }
 
-.blank-pill__option-row--dragging {
+.node-pill__option-row--dragging {
   opacity: 0.92;
   z-index: 2;
 }
 
-.blank-pill__option-handle {
+.node-pill__option-handle {
   width: 24px;
   min-height: 48px;
   flex: 0 0 24px;
@@ -287,7 +289,7 @@ h3.blank-pill__id {
   padding: 0 0 0 2px;
 }
 
-.blank-pill__option-field {
+.node-pill__option-field {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -295,18 +297,18 @@ h3.blank-pill__id {
   overflow: hidden;
 }
 
-.blank-pill--edit .blank-pill__option-field {
+.node-pill--edit .node-pill__option-field {
   border-radius: 0 14px 14px 0;
 }
 
-.blank-pill__option-main {
+.node-pill__option-main {
   display: flex;
   align-items: flex-start;
   min-height: 48px;
   padding-right: 0;
 }
 
-.blank-pill__option {
+.node-pill__option {
   flex: 1;
   min-height: 46px;
   max-height: 200px;
@@ -320,12 +322,12 @@ h3.blank-pill__id {
   overflow: hidden;
 }
 
-.blank-pill__option:focus,
-.blank-pill__option:focus-visible {
+.node-pill__option:focus,
+.node-pill__option:focus-visible {
   box-shadow: none;
 }
 
-.blank-pill__option-grab {
+.node-pill__option-grab {
   width: 28px;
   min-height: 48px;
   flex: 0 0 28px;
@@ -340,16 +342,16 @@ h3.blank-pill__id {
   user-select: none;
 }
 
-.blank-pill__option-grab:active {
+.node-pill__option-grab:active {
   cursor: grabbing;
   background: var(--accent-bg);
 }
 
-/* .blank-pill__option-delete {
+/* .node-pill__option-delete {
 
 } */
 
-.blank-pill__option-inline-meta {
+.node-pill__option-inline-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -359,19 +361,19 @@ h3.blank-pill__id {
   border-top: 1px solid var(--border);
 }
 
-.blank-pill__option-meta-group {
+.node-pill__option-meta-group {
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
 }
 
-.blank-pill__option-meta-label {
+.node-pill__option-meta-label {
   font-size: 0.78rem;
   color: var(--text-soft);
 }
 
-.blank-pill__option-tag-input {
+.node-pill__option-tag-input {
   width: 100%;
   max-width: 180px;
   min-height: 30px;
@@ -383,22 +385,23 @@ h3.blank-pill__id {
   outline: none;
 }
 
-.blank-pill__option-tag-input:focus,
-.blank-pill__option-tag-input:focus-visible {
+.node-pill__option-tag-input:focus,
+.node-pill__option-tag-input:focus-visible {
   outline: none;
   box-shadow: none;
   border-color: var(--accent-border);
   background: var(--bg-subtle);
 }
 
-.blank-pill__option-add {
+.node-pill__option-add {
   border-radius: 14px;
   min-height: 44px;
 
   margin: 5px 2px 0 2px;
-  
+
 }
-/* .blank-pill__option-add {
+
+/* .node-pill__option-add {
 gap: 8px;
 align-items: center;
 border: 1px dashed var(--border);
@@ -409,16 +412,16 @@ border: 1px dashed var(--border);
   font-size: 0.95rem;
   cursor: pointer;
   transition: border-color 0.16s ease, color 0.16s ease;
-} */ 
+} */
 
-/* .blank-pill__option-add:hover {
+/* .node-pill__option-add:hover {
   border-color: var(--accent-border);
   color: var(--text-h);
 } */
 
 /* ---------- Drag thresholds --------------------------------------------- */
 
-.blank-pill__option-threshold-line {
+.node-pill__option-threshold-line {
   position: absolute;
   left: 0;
   right: 0;
@@ -427,17 +430,17 @@ border: 1px dashed var(--border);
   z-index: 1;
 }
 
-.blank-pill__option-threshold-line--return {
+.node-pill__option-threshold-line--return {
   border-top-color: rgba(255, 180, 100, 0.7);
   border-top-style: dotted;
 }
 
-.blank-pill__option-threshold-line--insert-lock {
+.node-pill__option-threshold-line--insert-lock {
   border-top-color: rgba(140, 220, 140, 0.7);
   border-top-style: dashed;
 }
 
-.blank-pill__option-threshold-label {
+.node-pill__option-threshold-label {
   position: absolute;
   top: 6px;
   right: 8px;
@@ -452,14 +455,14 @@ border: 1px dashed var(--border);
   z-index: 1;
 }
 
-.blank-pill__option-threshold-label--return {
+.node-pill__option-threshold-label--return {
   top: auto;
   bottom: 6px;
   border-color: rgba(255, 180, 100, 0.55);
   color: rgba(255, 180, 100, 0.9);
 }
 
-.blank-pill__option-threshold-label--insert-lock {
+.node-pill__option-threshold-label--insert-lock {
   top: auto;
   bottom: 24px;
   border-color: rgba(140, 220, 140, 0.55);
@@ -469,39 +472,39 @@ border: 1px dashed var(--border);
 /* ---------- Responsive --------------------------------------------------- */
 
 @media (max-width: 640px) {
-  .blank-pill__topbar {
+  .node-pill__topbar {
     align-items: flex-start;
     flex-direction: column;
     padding: 16px 18px;
   }
 
-  .blank-pill__actions {
+  .node-pill__actions {
     width: 100%;
   }
 
-  .blank-pill__action {
+  .node-pill__action {
     flex: 1;
   }
 
-  .blank-pill__body {
+  .node-pill__body {
     padding: 18px;
   }
 
-  .blank-pill__field-head {
+  .node-pill__field-head {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .blank-pill__option-main {
+  .node-pill__option-main {
     padding-right: 4px;
   }
 
-  /* .blank-pill__option-inline-meta {
+  /* .node-pill__option-inline-meta {
     align-items: flex-start;
     flex-direction: column;
   } */
 
-  /* .blank-pill__option-meta-group {
+  /* .node-pill__option-meta-group {
     align-items: flex-start;
     flex-direction: column;
   } */

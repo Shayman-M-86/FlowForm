@@ -1,34 +1,34 @@
-@import "./blank-pill.css";
+@import "./Node-pill.css";
 
 /* Matching-specific: two-column layout for prompts and matches */
 
-.blank-pill__matching-grid {
+.node-pill__matching-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 20px;
 }
 
-.blank-pill__match-column {
+.node-pill__match-column {
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-width: 0;
 }
 
-.blank-pill__match-column-head {
+.node-pill__match-column-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
 
-.blank-pill__match-column-label {
+.node-pill__match-column-label {
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-h);
 }
 
-.blank-pill__match-column-count {
+.node-pill__match-column-count {
   min-width: 24px;
   height: 24px;
   display: inline-flex;
@@ -45,13 +45,13 @@
 
 /* Responsive: stack columns on smaller screens */
 @media (max-width: 900px) {
-  .blank-pill__matching-grid {
+  .node-pill__matching-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 640px) {
-  .blank-pill__matching-grid {
+  .node-pill__matching-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -2,33 +2,20 @@ import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "re
 import { Button } from "../ui/Button";
 import "./MatchingQuestion.css";
 import { useOptionDrag } from "./useOptionDrag";
-import { QUESTION_MAX, autoResizeTextarea, blurOnEnter, nextAvailableTag } from "./blankPillUtils";
-import { BlankPillTopbar, BlankPillQuestionField, BlankPillCharCount, BlankPillFieldHead, BlankPillDragThresholds } from "./BlankPillShell";
+import { QUESTION_MAX, autoResizeTextarea, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
+import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillDragThresholds } from "./NodePillShell";
 import { Input } from "../ui/Input";
-
-export interface MatchingQuestionData {
-  id: string;
-  title: string;
-  label: string;
-  family: "matching";
-  matching: {
-    schema: {
-      prompts: Array<{ id: string; label: string }>;
-      matches: Array<{ id: string; label: string }>;
-    };
-    ui: object;
-  };
-}
+import type { MatchingContent } from "./questionTypes";
 
 export interface MatchingQuestionHandle {
-  getData(): MatchingQuestionData;
+  getData(): MatchingContent;
 }
 
 interface MatchingQuestionProps {
   onDelete?: () => void;
   title?: string;
   onEditModeChange?: (isEditMode: boolean) => void;
-  onDataChange?: (summary: { title: string; id: string }) => void;
+  onDataChange?: (content: MatchingContent) => void;
 }
 
 const ANSWER_POOL = 2000;
@@ -78,17 +65,14 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
     0,
   );
 
-  const matchingData: MatchingQuestionData = {
+  const matchingData: MatchingContent = {
     id: tagValue,
     title: titleValue,
     label: questionValue,
     family: "matching",
-    matching: {
-      schema: {
-        prompts: leftItems.map((item) => ({ id: item.tag, label: item.value })),
-        matches: rightItems.map((item) => ({ id: item.tag, label: item.value })),
-      },
-      ui: {},
+    definition: {
+      prompts: leftItems.map((item) => ({ id: item.tag, label: item.value })),
+      matches: rightItems.map((item) => ({ id: item.tag, label: item.value })),
     },
   };
 
@@ -99,8 +83,8 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
   }));
 
   useEffect(() => {
-    onDataChange?.({ title: titleValue, id: tagValue });
-  }, [titleValue, tagValue]);
+    onDataChange?.(matchingData);
+  }, [titleValue, tagValue, questionValue, leftItems, rightItems]);
 
   function availableCharactersFor(itemId: string) {
     const usedByOthers = [...leftItems, ...rightItems]
@@ -153,15 +137,15 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
     idPrefix: "left" | "right",
   ) {
     return (
-      <section className="blank-pill__match-column">
-        <div className="blank-pill__match-column-head">
-          <span className="blank-pill__match-column-label">{title}</span>
+      <section className="node-pill__match-column">
+        <div className="node-pill__match-column-head">
+          <span className="node-pill__match-column-label">{title}</span>
           {isEditMode && (
-            <span className="blank-pill__match-column-count">{items.length}</span>
+            <span className="node-pill__match-column-count">{items.length}</span>
           )}
         </div>
 
-        <div className="blank-pill__options" ref={drag.optionsListRef}>
+        <div className="node-pill__options" ref={drag.optionsListRef}>
           {items.map((item, index) => {
             const isOpen = openItemIds.has(item.id);
             const isDragging = drag.activeDrag?.id === item.id;
@@ -176,10 +160,10 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                 ref={(node) => {
                   drag.optionRefs.current[item.id] = node;
                 }}
-                className={`blank-pill__option-row ${isDragging ? "blank-pill__option-row--dragging" : ""}`}
+                className={`node-pill__option-row ${isDragging ? "node-pill__option-row--dragging" : ""}`}
                 style={dragTransform}
               >
-                <BlankPillDragThresholds
+                <NodePillDragThresholds
                   itemId={item.id}
                   isDragging={isDragging}
                   thresholdRatio={drag.activeDrag && !isDragging ? thresholdRatio : null}
@@ -188,7 +172,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
 
                 {isEditMode && (
                   <Button
-                    className="blank-pill__option-handle"
+                    className="node-pill__option-handle"
                     type="button"
                     aria-label={`${item.placeholder} settings`}
                     aria-expanded={isOpen}
@@ -198,10 +182,10 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                   </Button>
                 )}
 
-                <div className="blank-pill__option-field">
-                  <div className="blank-pill__option-main">
+                <div className="node-pill__option-field">
+                  <div className="node-pill__option-main">
                     <textarea
-                      className="blank-pill__option"
+                      className="node-pill__option"
                       placeholder={item.placeholder}
                       rows={1}
                       maxLength={fieldMax}
@@ -219,7 +203,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
 
                     {isEditMode && (
                       <button
-                        className="blank-pill__option-grab"
+                        className="node-pill__option-grab"
                         type="button"
                         aria-label={`Reorder ${item.placeholder}`}
                         onPointerDown={(event) => drag.startDrag(event, item.id, index)}
@@ -230,15 +214,15 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                   </div>
 
                   {isEditMode && item.value.length === fieldMax && (
-                    <span className="blank-pill__option-limit">
+                    <span className="node-pill__option-limit">
                       Maximum characters reached.
                     </span>
                   )}
 
                   {isEditMode && isOpen && (
-                    <div className="blank-pill__option-inline-meta">
-                      <div className="blank-pill__option-meta-group">
-                        <span className="blank-pill__option-meta-label">Item tag</span>
+                    <div className="node-pill__option-inline-meta">
+                      <div className="node-pill__option-meta-group">
+                        <span className="node-pill__option-meta-label">Item tag</span>
                         <Input
                           className=""
                           size="sm"
@@ -257,7 +241,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                       </div>
 
                       <Button
-                        className="blank-pill__option-delete"
+                        className="node-pill__option-delete"
                         type="button"
                         variant="danger"
                         size="xs"
@@ -275,7 +259,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
 
           {isEditMode && (
             <Button
-              className="blank-pill__option-add"
+              className="node-pill__option-add"
               type="button"
               variant="ghost"
               borderStyle="dotted"
@@ -303,8 +287,8 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
   }
 
   return (
-    <section className={`blank-pill ${isEditMode ? "blank-pill--edit" : ""}`} aria-label="Matching question">
-      <BlankPillTopbar
+    <section className={`node-pill ${isEditMode ? "node-pill--edit" : ""}`} aria-label="Matching question">
+      <NodePillTopbar
         family="Matching"
         tagValue={tagValue}
         onTagChange={setTagValue}
@@ -313,8 +297,8 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
         onDelete={onDelete}
       />
 
-      <div className="blank-pill__body">
-        <BlankPillQuestionField
+      <div className="node-pill__body">
+        <NodePillQuestionField
           value={questionValue}
           onChange={setQuestionValue}
           isEditMode={isEditMode}
@@ -324,19 +308,19 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
           showTitleEdit={true}
         />
 
-        <div className="blank-pill__field">
-          <BlankPillFieldHead label="Pairs">
+        <div className="node-pill__field">
+          <NodePillFieldHead label="Pairs">
             {isEditMode && (
-              <BlankPillCharCount
+              <NodePillCharCount
                 label="Total"
                 value={totalCharacters}
                 max={ANSWER_POOL}
                 tooltip="Total characters used across both matching columns."
               />
             )}
-          </BlankPillFieldHead>
+          </NodePillFieldHead>
 
-          <div className="blank-pill__matching-grid">
+          <div className="node-pill__matching-grid">
             {renderColumn("Prompts", "Prompt", leftItems, setLeftItems, leftDrag, nextLeftIndexRef, "left")}
             {renderColumn("Matches", "Match", rightItems, setRightItems, rightDrag, nextRightIndexRef, "right")}
           </div>

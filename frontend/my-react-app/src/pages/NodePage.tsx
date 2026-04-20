@@ -1,19 +1,21 @@
 import { Fragment, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { FieldQuestionHandle } from "../components/blank/FieldQuestion";
-import type { MatchingQuestionHandle } from "../components/blank/MatchingQuestion";
-import type { MultiChoiceQuestionHandle } from "../components/blank/MultiChoiceQuestion";
-import type { RatingQuestionHandle } from "../components/blank/RatingQuestion";
-import type { RulesQuestionHandle } from "../components/blank/RulesQuestion";
+import type { FieldQuestionHandle } from "../components/node/FieldQuestion";
+import type { MatchingQuestionHandle } from "../components/node/MatchingQuestion";
+import type { MultiChoiceQuestionHandle } from "../components/node/MultiChoiceQuestion";
+import type { RatingQuestionHandle } from "../components/node/RatingQuestion";
+import type { RulesQuestionHandle } from "../components/node/RulesQuestion";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
-import { FieldQuestion } from "../components/blank/FieldQuestion";
-import { MatchingQuestion } from "../components/blank/MatchingQuestion";
-import { MultiChoiceQuestion } from "../components/blank/MultiChoiceQuestion";
-import { RatingQuestion } from "../components/blank/RatingQuestion";
-import { RulesQuestion } from "../components/blank/RulesQuestion";
-import "./BlankPage.css";
+import { FieldQuestion } from "../components/node/FieldQuestion";
+import { MatchingQuestion } from "../components/node/MatchingQuestion";
+import { MultiChoiceQuestion } from "../components/node/MultiChoiceQuestion";
+import { RatingQuestion } from "../components/node/RatingQuestion";
+import { RulesQuestion } from "../components/node/RulesQuestion";
+import type { QuestionContent, RuleContent } from "../components/node/questionTypes";
+import { serializeSurveyEntries, type SurveyEntry } from "../components/node/surveySerialize";
+import "./NodePage.css";
 
 type QuestionType = "multi-choice" | "matching" | "rating" | "field" | "rules";
 
@@ -37,11 +39,12 @@ const QUESTION_TYPE_OPTIONS: Array<{ value: QuestionType; label: string }> = [
 
 const SWAP_ANIMATION_MS = 280;
 
-export function BlankPage() {
+export function NodePage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [nextId, setNextId] = useState(1);
   const [editingQuestionIds, setEditingQuestionIds] = useState<string[]>([]);
-  const [questionSummaries, setQuestionSummaries] = useState<Record<string, QuestionSummary>>({});
+  const [questionContents, setQuestionContents] = useState<Record<string, QuestionContent>>({});
+  const [ruleContents, setRuleContents] = useState<Record<string, RuleContent>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | QuestionType>("all");
   const questionRefsMap = useRef<Map<string, FieldQuestionHandle | MatchingQuestionHandle | MultiChoiceQuestionHandle | RatingQuestionHandle | RulesQuestionHandle>>(new Map());
@@ -79,7 +82,7 @@ export function BlankPage() {
       questionNode.style.position = "relative";
       questionNode.style.zIndex = question.id === pendingAnimation.movedId ? "3" : "1";
 
-      const questionContainer = questionNode.querySelector<HTMLDivElement>(".blank-page__question-container");
+      const questionContainer = questionNode.querySelector<HTMLDivElement>(".node-page__question-container");
       if (questionContainer && question.id === pendingAnimation.movedId) {
         questionContainer.style.boxShadow = "var(--shadow)";
       }
@@ -114,7 +117,7 @@ export function BlankPage() {
         questionNode.style.position = "";
         questionNode.style.zIndex = "";
         questionNode.style.willChange = "";
-        const questionContainer = questionNode.querySelector<HTMLDivElement>(".blank-page__question-container");
+        const questionContainer = questionNode.querySelector<HTMLDivElement>(".node-page__question-container");
         if (questionContainer) {
           questionContainer.style.boxShadow = "";
         }
@@ -148,10 +151,6 @@ export function BlankPage() {
     setEditingQuestionIds((current) =>
       current.includes(newId) ? current : [...current, newId],
     );
-    setQuestionSummaries((current) => ({
-      ...current,
-      [newId]: { title: "", id: "question_id_1" },
-    }));
   }
 
   function removeQuestion(id: string) {
@@ -159,10 +158,15 @@ export function BlankPage() {
       return current.filter((q) => q.id !== id);
     });
     setEditingQuestionIds((current) => current.filter((questionId) => questionId !== id));
-    setQuestionSummaries((current) => {
-      const nextSummaries = { ...current };
-      delete nextSummaries[id];
-      return nextSummaries;
+    setQuestionContents((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+    setRuleContents((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
     });
     questionRefsMap.current.delete(id);
     questionWrapperNodeMap.current.delete(id);
@@ -209,52 +213,55 @@ export function BlankPage() {
         return current.filter((questionId) => questionId !== question.id);
       });
     };
-    const handleDataChange = (summary: QuestionSummary) => {
-      setQuestionSummaries((current) => {
-        const existingSummary = current[question.id];
-        if (
-          existingSummary &&
-          existingSummary.title === summary.title &&
-          existingSummary.id === summary.id
-        ) {
-          return current;
-        }
-
-        return {
-          ...current,
-          [question.id]: summary,
-        };
-      });
+    const handleContentChange = (content: QuestionContent) => {
+      setQuestionContents((current) => ({
+        ...current,
+        [question.id]: content,
+      }));
     };
+    const handleRuleContentChange = (content: RuleContent) => {
+      setRuleContents((current) => ({
+        ...current,
+        [question.id]: content,
+      }));
+    };
+    const ruleIndex = questions.findIndex((q) => q.id === question.id);
+    const collectContents = (slice: typeof questions) =>
+      slice
+        .filter((q) => q.type !== "rules")
+        .map((q) => questionContents[q.id])
+        .filter((content): content is QuestionContent => Boolean(content));
+    const previousSiblings = collectContents(questions.slice(0, ruleIndex));
+    const followingSiblings = collectContents(questions.slice(ruleIndex + 1));
 
     switch (question.type) {
       case "multi-choice":
-        return <MultiChoiceQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleDataChange} />;
+        return <MultiChoiceQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
       case "matching":
-        return <MatchingQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleDataChange} />;
+        return <MatchingQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
       case "rating":
-        return <RatingQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleDataChange} />;
+        return <RatingQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
       case "field":
-        return <FieldQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleDataChange} />;
+        return <FieldQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
       case "rules":
-        return <RulesQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleDataChange} />;
+        return <RulesQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleRuleContentChange} previousSiblings={previousSiblings} followingSiblings={followingSiblings} />;
     }
   }
 
   const addQuestionCard = (
-    <div className="blank-page__add-question">
-      <div className="blank-page__add-question-head">
+    <div className="node-page__add-question">
+      <div className="node-page__add-question-head">
         <Badge variant="accent" size="sm">Build</Badge>
-        <p className="blank-page__add-question-label">Add another question</p>
-        <p className="blank-page__add-question-copy">
+        <p className="node-page__add-question-label">Add another question</p>
+        <p className="node-page__add-question-copy">
           Choose the next response format to keep building the flow.
         </p>
       </div>
-      <div className="blank-page__add-question-buttons">
+      <div className="node-page__add-question-buttons">
         {QUESTION_TYPE_OPTIONS.map((option) => (
           <Button
             key={option.value}
-            className="blank-page__add-question-btn"
+            className="node-page__add-question-btn"
             type="button"
             variant="secondary"
             size="sm"
@@ -268,11 +275,21 @@ export function BlankPage() {
     </div>
   );
 
+  const getQuestionSummary = (question: Question): QuestionSummary => {
+    if (question.type === "rules") {
+      const rule = ruleContents[question.id];
+      return { title: rule ? "Rule" : "", id: rule?.id ?? "r1" };
+    }
+    const content = questionContents[question.id];
+    if (!content) return { title: "", id: "question_id_1" };
+    return { title: content.title, id: content.id };
+  };
+
   const isQuestionExpanded = (question: Question) => {
-    const questionSummary = questionSummaries[question.id] ?? { title: "", id: "question_id_1" };
+    const summary = getQuestionSummary(question);
     const normalizedSearch = searchQuery.trim().toLowerCase();
-    const title = questionSummary.title.trim() || "Untitled question";
-    const id = questionSummary.id.trim() || "question_id_1";
+    const title = summary.title.trim() || "Untitled question";
+    const id = summary.id.trim() || "question_id_1";
     const matchesFilter = filterType === "all" || question.type === filterType;
     const matchesSearch =
       normalizedSearch === "" ||
@@ -281,19 +298,34 @@ export function BlankPage() {
     return matchesFilter && matchesSearch;
   };
 
+  const serializeSurvey = () => {
+    const entries: SurveyEntry[] = [];
+    for (const question of questions) {
+      if (question.type === "rules") {
+        const rule = ruleContents[question.id];
+        if (rule) entries.push({ kind: "rule", content: rule });
+      } else {
+        const content = questionContents[question.id];
+        if (content) entries.push({ kind: "question", content });
+      }
+    }
+    return serializeSurveyEntries(entries);
+  };
+  void serializeSurvey;
+
   return (
-    <section className="blank-page">
-      <div className="blank-page__toolbar">
-        <div className="blank-page__toolbar-header">
-          <h4 className="blank-page__toolbar-title">Search</h4>
+    <section className="node-page">
+      <div className="node-page__toolbar">
+        <div className="node-page__toolbar-header">
+          <h4 className="node-page__toolbar-title">Search</h4>
           <Input
-            className="blank-page__toolbar-search-input"
+            className="node-page__toolbar-search-input"
             placeholder="Search by title or ID"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
           />
           <Select
-            className="blank-page__toolbar-filter"
+            className="node-page__toolbar-filter"
             value={filterType}
             options={[
               { value: "all", label: "All question types" },
@@ -303,8 +335,8 @@ export function BlankPage() {
           />
         </div>
       </div>
-      <div className="blank-page__content">
-        <div className="blank-page__questions-stack">
+      <div className="node-page__content">
+        <div className="node-page__questions-stack">
           {questions.map((question, index) => {
             const nextQuestion = questions[index + 1];
             const shouldShowDivider =
@@ -312,39 +344,40 @@ export function BlankPage() {
               (isQuestionExpanded(question) || (nextQuestion ? isQuestionExpanded(nextQuestion) : false));
 
             return (
-            <Fragment key={question.id}>
-              <QuestionRow
-                question={question}
-                index={index}
-                isLast={index === questions.length - 1}
-                questionSummary={questionSummaries[question.id] ?? { title: "", id: "question_id_1" }}
-                isEditing={editingQuestionIds.includes(question.id)}
-                filterType={filterType}
-                searchQuery={searchQuery}
-                onMoveQuestion={moveQuestion}
-                onSetWrapperNode={(node) => {
-                  if (node) {
-                    questionWrapperNodeMap.current.set(question.id, node);
-                  } else {
-                    questionWrapperNodeMap.current.delete(question.id);
-                  }
-                }}
-              >
-                {renderQuestion(question)}
-              </QuestionRow>
+              <Fragment key={question.id}>
+                <QuestionRow
+                  question={question}
+                  index={index}
+                  isLast={index === questions.length - 1}
+                  questionSummary={getQuestionSummary(question)}
+                  isEditing={editingQuestionIds.includes(question.id)}
+                  filterType={filterType}
+                  searchQuery={searchQuery}
+                  onMoveQuestion={moveQuestion}
+                  onSetWrapperNode={(node) => {
+                    if (node) {
+                      questionWrapperNodeMap.current.set(question.id, node);
+                    } else {
+                      questionWrapperNodeMap.current.delete(question.id);
+                    }
+                  }}
+                >
+                  {renderQuestion(question)}
+                </QuestionRow>
 
-              {shouldShowDivider && (
-                <div className="blank-page__divider" />
-              )}
+                {shouldShowDivider && (
+                  <div className="node-page__divider" />
+                )}
 
-              {index === questions.length - 1 && (
-                <>
-                  <div className="blank-page__divider blank-page__divider--section" />
-                  {addQuestionCard}
-                </>
-              )}
-            </Fragment>
-          )})}
+                {index === questions.length - 1 && (
+                  <>
+                    <div className="node-page__divider node-page__divider--section" />
+                    {addQuestionCard}
+                  </>
+                )}
+              </Fragment>
+            )
+          })}
           {questions.length === 0 && addQuestionCard}
         </div>
       </div>
@@ -387,27 +420,26 @@ function QuestionRow({
   return (
     <div
       ref={onSetWrapperNode}
-      className={`blank-page__question-wrapper ${
-        isExpanded ? "" : "blank-page__question-wrapper--collapsed"
-      }`}
+      className={`node-page__question-wrapper ${isExpanded ? "" : "node-page__question-wrapper--collapsed"
+        }`}
     >
-      <div className="blank-page__question-row">
-        <div className="blank-page__question-container">
-          <div className={isExpanded ? "" : "blank-page__question-content--hidden"}>
+      <div className="node-page__question-row">
+        <div className="node-page__question-container">
+          <div className={isExpanded ? "" : "node-page__question-content--hidden"}>
             {children}
           </div>
           {!isExpanded && (
-            <div className="blank-page__question-summary">
-              <p className="blank-page__question-summary-title">{title}</p>
-              <p className="blank-page__question-summary-id">{id}</p>
+            <div className="node-page__question-summary">
+              <p className="node-page__question-summary-title">{title}</p>
+              <p className="node-page__question-summary-id">{id}</p>
             </div>
           )}
         </div>
 
         {isExpanded && isEditing && (
-          <div className="blank-page__question-move-controls" aria-label="Move question">
+          <div className="node-page__question-move-controls" aria-label="Move question">
             <Button
-              className="blank-page__question-move-btn"
+              className="node-page__question-move-btn"
               type="button"
               variant="quiet"
               size="xs"
@@ -418,7 +450,7 @@ function QuestionRow({
               ↑
             </Button>
             <Button
-              className="blank-page__question-move-btn"
+              className="node-page__question-move-btn"
               type="button"
               variant="quiet"
               size="xs"
