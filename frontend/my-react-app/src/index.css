@@ -22,10 +22,95 @@
 
   --success: #88b39b;
   --success-bg: rgba(136, 179, 155, 0.16);
+  --success-border-soft: rgba(136, 179, 155, 0.26);
   --danger: #d48b8b;
   --danger-bg: rgba(212, 139, 139, 0.16);
+  --danger-border-soft: rgba(212, 139, 139, 0.26);
+  --danger-border: rgba(212, 139, 139, 0.3);
+  --danger-border-medium: rgba(212, 139, 139, 0.5);
   --warning: #c7b18b;
   --warning-bg: rgba(199, 177, 139, 0.16);
+  --warning-border-soft: rgba(199, 177, 139, 0.26);
+
+  /* Text on filled accent surfaces (primary buttons etc.) */
+  --text-on-accent: #0d1013;
+  --text-on-accent-border-dotted: rgba(13, 16, 19, 0.24);
+  --text-on-accent-border-dotted-hover: rgba(13, 16, 19, 0.32);
+
+  /* Overlays — raw white at various opacities, used as subtle surface lifts */
+  --overlay-hairline: rgba(255, 255, 255, 0.02);
+  --overlay-faint: rgba(255, 255, 255, 0.03);
+  --overlay-soft: rgba(255, 255, 255, 0.04);
+  --overlay-soft-2: rgba(255, 255, 255, 0.045);
+  --overlay-medium: rgba(255, 255, 255, 0.06);
+  --overlay-strong: rgba(255, 255, 255, 0.08);
+  --overlay-heavy: rgba(255, 255, 255, 0.12);
+  --overlay-transparent: rgba(255, 255, 255, 0);
+
+  /* Reusable subtle gradient used by card/preview surfaces */
+  --surface-lift-gradient: linear-gradient(180deg, var(--overlay-faint), var(--overlay-transparent));
+  --surface-lift-gradient-faint: linear-gradient(180deg, var(--overlay-hairline), var(--overlay-transparent));
+  --surface-lift-gradient-soft: linear-gradient(180deg, var(--overlay-soft-2), rgba(255, 255, 255, 0.015));
+
+  /* Rules mark palette — semantic intent colors for required/forbidden/any-of */
+  --mark-required: #2e7d32;
+  --mark-required-border: rgba(46, 125, 50, 0.55);
+  --mark-required-bg: rgba(46, 125, 50, 0.08);
+  --mark-forbidden: #c62828;
+  --mark-forbidden-border: rgba(198, 40, 40, 0.55);
+  --mark-forbidden-bg: rgba(198, 40, 40, 0.08);
+  --mark-any-of: #c9a227;
+  --mark-any-of-border: rgba(201, 162, 39, 0.55);
+  --mark-any-of-bg: rgba(201, 162, 39, 0.08);
+  --mark-active-text: #fff;
+
+  /* Drag-threshold colors used in the node editor */
+  --drag-insert: rgba(169, 191, 211, 0.55);
+  --drag-return: rgba(255, 180, 100, 0.7);
+  --drag-return-border: rgba(255, 180, 100, 0.55);
+  --drag-return-text: rgba(255, 180, 100, 0.9);
+  --drag-lock: rgba(140, 220, 140, 0.7);
+  --drag-lock-border: rgba(140, 220, 140, 0.55);
+  --drag-lock-text: rgba(140, 220, 140, 0.9);
+
+  /* Rating: stars + slider */
+  --star-fill: #f5c451;
+  --star-empty: rgba(210, 220, 231, 0.4);
+  --slider-track: linear-gradient(90deg, rgba(169, 191, 211, 0.25), rgba(169, 191, 211, 0.5));
+  --slider-tick: rgba(210, 220, 231, 0.55);
+
+  /* App-chrome glass overlays */
+  --toolbar-bg: rgba(17, 19, 21, 0.88);
+  --debug-bg: rgba(12, 12, 16, 0.92);
+  --debug-text: #e8e8ee;
+  --debug-text-dim: rgba(232, 232, 238, 0.7);
+  --debug-border: rgba(255, 255, 255, 0.12);
+
+  /* Form-filler surfaces */
+  --form-page-bg:
+    radial-gradient(circle at top left, rgba(247, 199, 120, 0.18), transparent 34%),
+    radial-gradient(circle at right 20%, rgba(97, 180, 255, 0.14), transparent 30%),
+    linear-gradient(180deg, #0d1117 0%, #141a22 100%);
+  --form-panel-bg: rgba(11, 16, 24, 0.92);
+  --form-panel-border: var(--overlay-strong);
+  --form-panel-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  --form-text-bright: #f6f8fb;
+  --form-text-dim-60: rgba(255, 255, 255, 0.6);
+  --form-text-dim-62: rgba(255, 255, 255, 0.62);
+  --form-text-dim-68: rgba(255, 255, 255, 0.68);
+  --form-text-dim-72: rgba(255, 255, 255, 0.72);
+  --form-marker: rgba(255, 194, 102, 0.96);
+  --form-error-border: rgba(255, 135, 135, 0.4);
+  --form-error-bg: rgba(255, 135, 135, 0.08);
+  --form-error-text: #ffb9b9;
+  --form-code-bg: rgba(0, 0, 0, 0.24);
+  --form-code-text: #d8deea;
+
+  /* Button press/release animation shadow */
+  --shadow-btn-press: 0 1px 10px rgba(0, 0, 0, 0.07);
+
+  /* SVG dropdown arrow (muted) — declared as full background-image token so it can be swapped per-theme */
+  --select-arrow-muted: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%237d8792' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
 
   --shadow-xs: 0 2px 12px rgba(0, 0, 0, 0.11);
   --shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.14);
@@ -51,27 +136,7 @@
   --control-padding-x: 12px;
 
   /* Legacy aliases kept to avoid a broad refactor while the palette shifts. */
-  --ink: var(--bg);
-  --ink-2: var(--bg-subtle);
-  --ink-3: var(--bg-raised);
-  --ink-4: var(--surface);
-  --rule: var(--border);
-  --rule-mid: var(--border-strong);
-  --cream: var(--text-h);
-  --cream-2: var(--text);
-  --cream-dim: var(--text);
-  --cream-ghost: var(--muted-bg);
-  --gold: var(--accent);
-  --gold-bright: var(--accent-strong);
-  --gold-dim: var(--accent-bg);
-  --gold-border: var(--accent-border);
-  --red: var(--danger);
-  --red-bg: var(--danger-bg);
-  --green: var(--success);
-  --green-bg: var(--success-bg);
-  --amber: var(--warning);
-  --amber-bg: var(--warning-bg);
-  --code-bg: #161a1f;
+
 
   font: 15px/1.5 var(--sans);
   color-scheme: dark;

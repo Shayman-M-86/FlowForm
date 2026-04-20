@@ -34,7 +34,7 @@
   outline: none;
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%237d8792' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: var(--select-arrow-muted);
   background-repeat: no-repeat;
   background-position: right 12px center;
 }

@@ -30,7 +30,7 @@
   100% {
     transform: scale(0.95);
     opacity: 0.8;
-    box-shadow: 0 1px 10px rgba(0, 0, 0, 0.07);
+    box-shadow: var(--shadow-btn-press);
   }
 }
 
@@ -38,7 +38,7 @@
   0% {
     transform: scale(0.95);
     opacity: 0.8;
-    box-shadow: 0 1px 10px rgba(0, 0, 0, 0.07);
+    box-shadow: var(--shadow-btn-press);
   }
   100% {
     transform: scale(1);
@@ -66,7 +66,7 @@
 
 .btn--primary {
   background: var(--accent);
-  color: #0d1013;
+  color: var(--text-on-accent);
   border-color: transparent;
   font-weight: 600;
 }
@@ -99,7 +99,7 @@
 
 .btn--danger {
   background: transparent;
-  border-color: rgba(212, 139, 139, 0.3);
+  border-color: var(--danger-border);
   color: var(--danger);
 }
 
@@ -157,7 +157,7 @@
 }
 
 .btn--border-dotted.btn--primary {
-  border-color: rgba(13, 16, 19, 0.24);
+  border-color: var(--text-on-accent-border-dotted);
 }
 
 .btn--border-dotted.btn--ghost {
@@ -165,7 +165,7 @@
 }
 
 .btn--border-dotted.btn--primary:hover:not(:disabled) {
-  border-color: rgba(13, 16, 19, 0.32);
+  border-color: var(--text-on-accent-border-dotted-hover);
 }
 
 .btn--border-dotted.btn--ghost:hover:not(:disabled) {

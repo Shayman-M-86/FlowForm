@@ -1,7 +1,7 @@
 import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import "./RatingQuestion.css";
 import { QUESTION_MAX, blurOnEnter } from "./NodePillUtils";
-import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead } from "./NodePillShell";
+import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillCollapsed } from "./NodePillShell";
 import { Input } from "../ui/Input";
 import { NumberStepper } from "../ui/NumberStepper";
 import { NumberStepperGroup } from "../ui/NumberStepperGroup";
@@ -21,6 +21,10 @@ interface RatingQuestionProps {
   onDelete?: () => void;
   title?: string;
   initialTag?: string;
+  initialContent?: RatingContent;
+  idError?: string;
+  isCollapsed?: boolean;
+  onExpand?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: RatingContent) => void;
 }
@@ -88,23 +92,39 @@ function getNearestValidStep(nextStep: number, validSteps: number[]) {
   }, validSteps[0]);
 }
 
-export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionProps>(function RatingQuestion({ onDelete, title, initialTag, onEditModeChange, onDataChange }, ref) {
+export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionProps>(function RatingQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, onExpand, onEditModeChange, onDataChange }, ref) {
+  const initialRatingType: RatingType =
+    initialContent?.definition.variant === "slider"
+      ? "numeric-slider"
+      : initialContent?.definition.variant === "emoji"
+        ? "emoji"
+        : initialContent?.definition.variant === "star"
+          ? "stars"
+          : "numeric-slider";
   const [isEditMode, setIsEditMode] = useState(true);
-  const [titleValue, setTitleValue] = useState(title ?? "");
-  const [questionValue, setQuestionValue] = useState("");
-  const [tagValue, setTagValue] = useState(initialTag ?? "question_id_1");
-  const [ratingType, setRatingType] = useState<RatingType>("numeric-slider");
-  const [rangeStart, setRangeStart] = useState(-5);
-  const [rangeEnd, setRangeEnd] = useState(5);
-  const [leftLabel, setLeftLabel] = useState("Strongly disagree");
-  const [rightLabel, setRightLabel] = useState("Strongly agree");
-  const [stepValue, setStepValue] = useState(1);
-  const [sliderValue, setSliderValue] = useState(0);
-  const [starCount, setStarCount] = useState(5);
+  const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
+  const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
+  const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
+  const [ratingType, setRatingType] = useState<RatingType>(initialRatingType);
+  const [rangeStart, setRangeStart] = useState(initialContent?.definition.variant === "slider" ? initialContent.definition.range.min : -5);
+  const [rangeEnd, setRangeEnd] = useState(initialContent?.definition.variant === "slider" ? initialContent.definition.range.max : 5);
+  const [leftLabel, setLeftLabel] = useState(initialContent?.definition.ui.left_label ?? "Strongly disagree");
+  const [rightLabel, setRightLabel] = useState(initialContent?.definition.ui.right_label ?? "Strongly agree");
+  const [stepValue, setStepValue] = useState(initialContent?.definition.variant === "slider" ? initialContent.definition.range.step : 1);
+  const [sliderValue, setSliderValue] = useState(initialContent?.definition.variant === "slider" ? initialContent.definition.range.min : 0);
+  const [starCount, setStarCount] = useState(initialContent?.definition.variant === "star" ? initialContent.definition.stars : 5);
   const [starValue, setStarValue] = useState(0);
   const [emojiValue, setEmojiValue] = useState(0);
-  const [emojiScaleType, setEmojiScaleType] = useState<EmojiScaleType>("sad");
-  const [showEmojiWords, setShowEmojiWords] = useState(true);
+  const [emojiScaleType, setEmojiScaleType] = useState<EmojiScaleType>(
+    initialContent?.definition.variant === "emoji"
+      ? initialContent.definition.emoji_list === "angry_to_happy"
+        ? "angry"
+        : initialContent.definition.emoji_list === "disgust_to_happy"
+          ? "disgust"
+          : "sad"
+      : "sad",
+  );
+  const [showEmojiWords, setShowEmojiWords] = useState(initialContent?.definition.variant === "emoji" ? initialContent.definition.words : true);
 
   function getEmojiListType(): EmojiListType {
     switch (emojiScaleType) {
@@ -249,12 +269,17 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
       ? `0 to ${emojiScale.length}`
       : rangePreview;
 
+  if (isCollapsed) {
+    return <NodePillCollapsed family="Rating" tagValue={tagValue} title={titleValue} onExpand={() => { onExpand?.(); setIsEditMode(true); onEditModeChange?.(true); }} />;
+  }
+
   return (
     <section className={`node-pill rating-question ${isEditMode ? "node-pill--edit" : ""}`} aria-label="Rating question">
       <NodePillTopbar
         family="Rating"
         tagValue={tagValue}
         onTagChange={setTagValue}
+        idError={idError}
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}

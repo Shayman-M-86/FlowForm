@@ -10,6 +10,7 @@ import { QuizTakerPage } from "./pages/QuizTakerPage";
 import { PublicSurveyBrowsePage } from "./pages/PublicSurveyBrowsePage";
 import { ProtectedApp } from "./components/auth/ProtectedApp";
 import { BuilderPage } from "./pages/Builder";
+import { FormFillerPage } from "./pages/FormFillerPage";
 import { NodePage } from "./pages/NodePage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { UITestPage } from "./pages/UITestPage";
@@ -56,6 +57,7 @@ function AppRoutes() {
       >
         <Route path="/" element={<HomePage />} />
         <Route path="/node" element={<NodePage />} />
+        <Route path="/node/preview" element={<FormFillerPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/take" element={<TakeSurveyPage />} />
         <Route path="/projects/:projectRef/surveys" element={<SurveysPage />} />

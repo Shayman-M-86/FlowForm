@@ -72,7 +72,7 @@
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+  background: var(--surface-lift-gradient-faint);
 }
 
 .rules-question__picker-head {
@@ -166,20 +166,20 @@
 }
 
 .rules-question__mark-btn--active {
-  color: #fff;
+  color: var(--mark-active-text);
   border-color: transparent;
 }
 
 .rules-question__mark-btn.rules-question__mark--required.rules-question__mark-btn--active {
-  background: #2e7d32;
+  background: var(--mark-required);
 }
 
 .rules-question__mark-btn.rules-question__mark--forbidden.rules-question__mark-btn--active {
-  background: #c62828;
+  background: var(--mark-forbidden);
 }
 
 .rules-question__mark-btn.rules-question__mark--any_of.rules-question__mark-btn--active {
-  background: #c9a227;
+  background: var(--mark-any-of);
 }
 
 .rules-question__mark-btn.rules-question__mark--none.rules-question__mark-btn--active {
@@ -188,18 +188,18 @@
 
 /* row-level tint echoing active mark */
 .rules-question__choice-row.rules-question__mark--required {
-  border-color: rgba(46, 125, 50, 0.55);
-  background: rgba(46, 125, 50, 0.08);
+  border-color: var(--mark-required-border);
+  background: var(--mark-required-bg);
 }
 
 .rules-question__choice-row.rules-question__mark--forbidden {
-  border-color: rgba(198, 40, 40, 0.55);
-  background: rgba(198, 40, 40, 0.08);
+  border-color: var(--mark-forbidden-border);
+  background: var(--mark-forbidden-bg);
 }
 
 .rules-question__choice-row.rules-question__mark--any_of {
-  border-color: rgba(201, 162, 39, 0.55);
-  background: rgba(201, 162, 39, 0.08);
+  border-color: var(--mark-any-of-border);
+  background: var(--mark-any-of-bg);
 }
 
 /* ---------- Matching picker -------------------------------------------- */

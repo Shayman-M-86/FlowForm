@@ -12,6 +12,7 @@ type TopbarProps = {
   family: string;
   tagValue: string;
   onTagChange: (next: string) => void;
+  idError?: string;
   isEditMode: boolean;
   onToggleEditMode: () => void;
   onDelete?: () => void;
@@ -22,6 +23,7 @@ export function NodePillTopbar({
   family,
   tagValue,
   onTagChange,
+  idError,
   isEditMode,
   onToggleEditMode,
   onDelete,
@@ -47,6 +49,7 @@ export function NodePillTopbar({
             readOnly={!isEditMode}
             variant="quiet"
             pill
+            error={idError}
             onChange={(event) => onTagChange(sanitizeQuestionId(event.target.value))}
             onKeyDown={blurOnEnter}
           />
@@ -305,4 +308,36 @@ export function NodePillDragThresholds({
   void thresholdRatio;
   void activeDrag;
   return null;
+}
+
+type CollapsedProps = {
+  family: string;
+  tagValue: string;
+  title: string;
+  onExpand: () => void;
+};
+
+export function NodePillCollapsed({ family, tagValue, title, onExpand }: CollapsedProps) {
+  return (
+    <div className="node-pill node-pill--collapsed">
+      <div className="node-pill__collapsed-row">
+        <Badge variant="accent" size="xl">{family}</Badge>
+        <div className="node-pill__collapsed-text">
+          <span className="node-pill__collapsed-title">
+            {title.trim() || "Untitled question"}
+          </span>
+          <span className="node-pill__collapsed-id">{tagValue}</span>
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="xs"
+          pill
+          onClick={onExpand}
+        >
+          Edit
+        </Button>
+      </div>
+    </div>
+  );
 }

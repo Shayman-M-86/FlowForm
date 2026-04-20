@@ -1,6 +1,6 @@
-import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from "react";
 import "./RulesQuestion.css";
-import { NodePillTopbar, NodePillFieldHead } from "./NodePillShell";
+import { NodePillTopbar, NodePillFieldHead, NodePillCollapsed } from "./NodePillShell";
 import { Select } from "../ui/Select";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -32,6 +32,10 @@ interface RulesQuestionProps {
   onDelete?: () => void;
   title?: string;
   initialTag?: string;
+  initialContent?: RuleContent;
+  idError?: string;
+  isCollapsed?: boolean;
+  onExpand?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: RuleContent) => void;
   previousSiblings?: QuestionContent[];
@@ -196,23 +200,98 @@ function findSibling(siblings: QuestionContent[], id: string) {
   return siblings.find((s) => s.id === id);
 }
 
+function doToState(action: RuleDoAction | undefined): { kind: DoKind; skipTo: string } {
+  if (!action) return { kind: "skip_to", skipTo: "" };
+  if ("skip_to" in action) return { kind: "skip_to", skipTo: action.skip_to };
+  if ("end_and_submit" in action) return { kind: "end_and_submit", skipTo: "" };
+  return { kind: "end_and_discard", skipTo: "" };
+}
+
+function conditionToDraft(
+  condition: RuleCondition,
+  siblings: QuestionContent[],
+): ConditionDraft {
+  const target = findSibling(siblings, condition.source_id);
+
+  if (condition.family === "choice") {
+    const marks: Record<string, ChoiceMark> = {};
+    const optionIds = target?.family === "choice"
+      ? target.definition.options.map((option) => option.id)
+      : [
+        ...(condition.requirements.required ?? []),
+        ...(condition.requirements.forbidden ?? []),
+        ...(condition.requirements.any_of ?? []),
+      ];
+
+    optionIds.forEach((optionId) => {
+      marks[optionId] = "none";
+    });
+    (condition.requirements.required ?? []).forEach((optionId) => { marks[optionId] = "required"; });
+    (condition.requirements.forbidden ?? []).forEach((optionId) => { marks[optionId] = "forbidden"; });
+    (condition.requirements.any_of ?? []).forEach((optionId) => { marks[optionId] = "any_of"; });
+
+    return { key: newConditionKey(), target_id: condition.source_id, family: "choice", marks };
+  }
+
+  if (condition.family === "matching") {
+    const pairs: Record<string, string> = {};
+    if (target?.family === "matching") {
+      target.definition.prompts.forEach((prompt) => {
+        pairs[prompt.id] = "";
+      });
+    }
+    (condition.requirements.required ?? []).forEach((pair) => {
+      Object.entries(pair).forEach(([promptId, matchId]) => {
+        pairs[promptId] = matchId;
+      });
+    });
+    return { key: newConditionKey(), target_id: condition.source_id, family: "matching", pairs };
+  }
+
+  if (condition.family === "rating") {
+    return {
+      key: newConditionKey(),
+      target_id: condition.source_id,
+      family: "rating",
+      min: condition.requirements.min ?? null,
+      max: condition.requirements.max ?? null,
+    };
+  }
+
+  return {
+    key: newConditionKey(),
+    target_id: condition.source_id,
+    family: "field",
+    numberOperator: condition.requirements.type === "date" ? "EQ" : condition.requirements.operator,
+    numberValue: condition.requirements.type === "date" ? "" : String(condition.requirements.value ?? ""),
+    dateOperator: condition.requirements.type === "date" ? condition.requirements.operator : "before",
+    dateValue: condition.requirements.type === "date" ? condition.requirements.value : "",
+  };
+}
+
 export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>(function RulesQuestion(
-  { onDelete, title: _title, initialTag, onEditModeChange, onDataChange, previousSiblings = [], followingSiblings = [] },
+  { onDelete, title: _title, initialTag, initialContent, idError, isCollapsed, onExpand, onEditModeChange, onDataChange, previousSiblings = [], followingSiblings = [] },
   ref,
 ) {
   const siblings = [...previousSiblings, ...followingSiblings];
+  const initialThenDo = doToState(initialContent?.then.do);
+  const initialElseDo = doToState(initialContent?.else?.do);
   void _title;
   const [isEditMode, setIsEditMode] = useState(true);
-  const [tagValue, setTagValue] = useState(initialTag ?? "r1");
-  const [match, setMatch] = useState<RuleMatch>("ALL");
-  const [conditions, setConditions] = useState<ConditionDraft[]>([]);
-  const [thenMode, setThenMode] = useState<ThenMode>("set");
-  const [setEntries, setSetEntries] = useState<Array<RuleSetEntry & { key: string }>>([]);
-  const [thenDoKind, setThenDoKind] = useState<DoKind>("skip_to");
-  const [thenSkipTo, setThenSkipTo] = useState("");
-  const [includeElse, setIncludeElse] = useState(false);
-  const [elseDoKind, setElseDoKind] = useState<DoKind>("skip_to");
-  const [elseSkipTo, setElseSkipTo] = useState("");
+  const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "r1");
+  const [match, setMatch] = useState<RuleMatch>(initialContent?.if.match ?? "ALL");
+  const [conditions, setConditions] = useState<ConditionDraft[]>(
+    () => initialContent?.if.conditions.map((condition) => conditionToDraft(condition, siblings)) ?? [],
+  );
+  const [thenMode, setThenMode] = useState<ThenMode>(initialContent?.then.do ? "do" : "set");
+  const [setEntries, setSetEntries] = useState<Array<RuleSetEntry & { key: string }>>(
+    () => initialContent?.then.set?.map((entry) => ({ key: newSetEntryKey(), ...entry })) ?? [],
+  );
+  const [thenDoKind, setThenDoKind] = useState<DoKind>(initialThenDo.kind);
+  const [thenSkipTo, setThenSkipTo] = useState(initialThenDo.skipTo);
+  const [includeElse, setIncludeElse] = useState(Boolean(initialContent?.else?.do));
+  const [elseDoKind, setElseDoKind] = useState<DoKind>(initialElseDo.kind);
+  const [elseSkipTo, setElseSkipTo] = useState(initialElseDo.skipTo);
 
   const previousOptions = [
     { value: "", label: "Select a question…" },
@@ -222,6 +301,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     { value: "", label: "Select a question…" },
     ...followingSiblings.map(questionOption),
   ];
+  const siblingSignature = JSON.stringify(siblings);
 
   function buildThen(): RuleContent["then"] {
     if (thenMode === "set") {
@@ -245,7 +325,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     return { end_and_discard: true };
   }
 
-  const ruleContent: RuleContent = {
+  const ruleContent: RuleContent = useMemo(() => ({
     id: tagValue,
     if: {
       match,
@@ -257,17 +337,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     ...(includeElse
       ? { else: { do: buildDo(elseDoKind, elseSkipTo) } }
       : {}),
-  };
-
-  useImperativeHandle(ref, () => ({
-    getData() {
-      return ruleContent;
-    },
-  }));
-
-  useEffect(() => {
-    onDataChange?.(ruleContent);
-  }, [
+  }), [
     tagValue,
     match,
     conditions,
@@ -278,8 +348,18 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     includeElse,
     elseDoKind,
     elseSkipTo,
-    siblings,
+    siblingSignature,
   ]);
+
+  useImperativeHandle(ref, () => ({
+    getData() {
+      return ruleContent;
+    },
+  }));
+
+  useEffect(() => {
+    onDataChange?.(ruleContent);
+  }, [onDataChange, ruleContent]);
 
   function toggleEditMode() {
     setIsEditMode((current) => {
@@ -630,12 +710,17 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     );
   }
 
+  if (isCollapsed) {
+    return <NodePillCollapsed family="Rule" tagValue={tagValue} title={tagValue} onExpand={() => { onExpand?.(); setIsEditMode(true); onEditModeChange?.(true); }} />;
+  }
+
   return (
     <section className={`node-pill rules-question ${isEditMode ? "node-pill--edit" : ""}`} aria-label="Rules question">
       <NodePillTopbar
         family="Rule"
         tagValue={tagValue}
         onTagChange={setTagValue}
+        idError={idError}
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}

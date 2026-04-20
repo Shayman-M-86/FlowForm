@@ -37,19 +37,19 @@
 
 .badge--success {
   background: var(--success-bg);
-  border-color: rgba(136, 179, 155, 0.26);
+  border-color: var(--success-border-soft);
   color: var(--success);
 }
 
 .badge--danger {
   background: var(--danger-bg);
-  border-color: rgba(212, 139, 139, 0.26);
+  border-color: var(--danger-border-soft);
   color: var(--danger);
 }
 
 .badge--warning {
   background: var(--warning-bg);
-  border-color: rgba(199, 177, 139, 0.26);
+  border-color: var(--warning-border-soft);
   color: var(--warning);
 }
 

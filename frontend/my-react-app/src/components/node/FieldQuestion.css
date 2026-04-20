@@ -30,7 +30,7 @@
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+  background: var(--surface-lift-gradient-faint);
 }
 
 .field-question__preview-title {

@@ -15,7 +15,7 @@
   border-radius: 24px;
   overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)),
+    var(--surface-lift-gradient),
     var(--bg-raised);
   box-shadow: var(--shadow-sm);
   ;
@@ -25,6 +25,47 @@
 .node-pill--edit {
   border-color: var(--accent-border);
   box-shadow: 0 0 0 1px var(--accent-border), var(--shadow-sm);
+}
+
+/* ---------- Collapsed summary -------------------------------------------- */
+
+.node-pill--collapsed {
+  min-height: unset;
+  border-radius: 14px;
+}
+
+.node-pill__collapsed-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px 10px 14px;
+}
+
+.node-pill__collapsed-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.node-pill__collapsed-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.node-pill__collapsed-id {
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 /* ---------- Topbar ------------------------------------------------------- */
@@ -37,7 +78,7 @@
   gap: 12px;
   padding: 0 24px;
   border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--overlay-hairline);
 }
 
 .node-pill__topbar-left {
@@ -423,18 +464,18 @@ border: 1px dashed var(--border);
   position: absolute;
   left: 0;
   right: 0;
-  border-top: 1px dashed rgba(169, 191, 211, 0.55);
+  border-top: 1px dashed var(--drag-insert);
   pointer-events: none;
   z-index: 1;
 }
 
 .node-pill__option-threshold-line--return {
-  border-top-color: rgba(255, 180, 100, 0.7);
+  border-top-color: var(--drag-return);
   border-top-style: dotted;
 }
 
 .node-pill__option-threshold-line--insert-lock {
-  border-top-color: rgba(140, 220, 140, 0.7);
+  border-top-color: var(--drag-lock);
   border-top-style: dashed;
 }
 
@@ -456,15 +497,15 @@ border: 1px dashed var(--border);
 .node-pill__option-threshold-label--return {
   top: auto;
   bottom: 6px;
-  border-color: rgba(255, 180, 100, 0.55);
-  color: rgba(255, 180, 100, 0.9);
+  border-color: var(--drag-return-border);
+  color: var(--drag-return-text);
 }
 
 .node-pill__option-threshold-label--insert-lock {
   top: auto;
   bottom: 24px;
-  border-color: rgba(140, 220, 140, 0.55);
-  color: rgba(140, 220, 140, 0.9);
+  border-color: var(--drag-lock-border);
+  color: var(--drag-lock-text);
 }
 
 /* ---------- Responsive --------------------------------------------------- */

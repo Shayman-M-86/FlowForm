@@ -31,7 +31,7 @@
 
 .browse-error {
   padding: 14px 16px;
-  border: 1px solid rgba(212, 139, 139, 0.26);
+  border: 1px solid var(--danger-border-soft);
   border-radius: var(--radius-sm);
   background: var(--danger-bg);
   color: var(--danger);

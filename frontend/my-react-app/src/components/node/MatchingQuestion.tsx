@@ -3,7 +3,7 @@ import { Button } from "../ui/Button";
 import "./MatchingQuestion.css";
 import { useOptionDrag } from "./useOptionDrag";
 import { QUESTION_MAX, autoResizeTextarea, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
-import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillDragThresholds } from "./NodePillShell";
+import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillDragThresholds, NodePillCollapsed } from "./NodePillShell";
 import { Input } from "../ui/Input";
 import type { MatchingContent } from "./questionTypes";
 
@@ -15,6 +15,10 @@ interface MatchingQuestionProps {
   onDelete?: () => void;
   title?: string;
   initialTag?: string;
+  initialContent?: MatchingContent;
+  idError?: string;
+  isCollapsed?: boolean;
+  onExpand?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: MatchingContent) => void;
 }
@@ -47,17 +51,33 @@ const INITIAL_RIGHT_ITEMS: MatchItem[] = [
   { id: "right-1", placeholder: "Match A", value: "", tag: "A" },
 ];
 
-export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuestionProps>(function MatchingQuestion({ onDelete, title, initialTag, onEditModeChange, onDataChange }, ref) {
+export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuestionProps>(function MatchingQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, onExpand, onEditModeChange, onDataChange }, ref) {
+  const initialLeftItems = initialContent?.definition.prompts.length
+    ? initialContent.definition.prompts.map((item, index) => ({
+      id: `left-${index + 1}`,
+      placeholder: `Prompt ${item.id || String.fromCharCode(65 + index)}`,
+      value: item.label,
+      tag: item.id,
+    }))
+    : INITIAL_LEFT_ITEMS;
+  const initialRightItems = initialContent?.definition.matches.length
+    ? initialContent.definition.matches.map((item, index) => ({
+      id: `right-${index + 1}`,
+      placeholder: `Match ${item.id || String.fromCharCode(65 + index)}`,
+      value: item.label,
+      tag: item.id,
+    }))
+    : INITIAL_RIGHT_ITEMS;
   const [isEditMode, setIsEditMode] = useState(true);
-  const [titleValue, setTitleValue] = useState(title ?? "");
-  const [questionValue, setQuestionValue] = useState("");
-  const [tagValue, setTagValue] = useState(initialTag ?? "question_id_1");
+  const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
+  const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
+  const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
   const [openItemIds, setOpenItemIds] = useState<Set<string>>(new Set());
-  const [leftItems, setLeftItems] = useState(INITIAL_LEFT_ITEMS);
-  const [rightItems, setRightItems] = useState(INITIAL_RIGHT_ITEMS);
+  const [leftItems, setLeftItems] = useState(initialLeftItems);
+  const [rightItems, setRightItems] = useState(initialRightItems);
 
-  const nextLeftIndexRef = useRef(2);
-  const nextRightIndexRef = useRef(2);
+  const nextLeftIndexRef = useRef(initialLeftItems.length + 1);
+  const nextRightIndexRef = useRef(initialRightItems.length + 1);
 
   const leftDrag = useOptionDrag(leftItems, setLeftItems);
   const rightDrag = useOptionDrag(rightItems, setRightItems);
@@ -288,12 +308,17 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
     );
   }
 
+  if (isCollapsed) {
+    return <NodePillCollapsed family="Matching" tagValue={tagValue} title={titleValue} onExpand={() => { onExpand?.(); setIsEditMode(true); onEditModeChange?.(true); }} />;
+  }
+
   return (
     <section className={`node-pill ${isEditMode ? "node-pill--edit" : ""}`} aria-label="Matching question">
       <NodePillTopbar
         family="Matching"
         tagValue={tagValue}
         onTagChange={setTagValue}
+        idError={idError}
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}

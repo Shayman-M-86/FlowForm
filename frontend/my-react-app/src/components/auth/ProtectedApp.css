@@ -46,7 +46,7 @@
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: var(--accent);
-  color: #0d1013;
+  color: var(--text-on-accent);
   cursor: pointer;
   transition: background 0.16s ease, border-color 0.16s ease;
 }

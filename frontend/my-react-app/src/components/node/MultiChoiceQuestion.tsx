@@ -4,7 +4,7 @@ import { Button } from "../ui/Button";
 import { NumberStepperGroup } from "../ui/NumberStepperGroup";
 import { useOptionDrag } from "./useOptionDrag";
 import { QUESTION_MAX, autoResizeTextarea, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
-import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillDragThresholds } from "./NodePillShell";
+import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillDragThresholds, NodePillCollapsed } from "./NodePillShell";
 import { Input } from "../ui/Input";
 import type { ChoiceContent } from "./questionTypes";
 
@@ -16,6 +16,10 @@ interface MultiChoiceQuestionProps {
   onDelete?: () => void;
   title?: string;
   initialTag?: string;
+  initialContent?: ChoiceContent;
+  idError?: string;
+  isCollapsed?: boolean;
+  onExpand?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: ChoiceContent) => void;
 }
@@ -28,16 +32,25 @@ const ANSWER_POOL = 4000;
 const ANSWER_PER_FIELD_MAX = 1000;
 const MAX_ANSWERS = 10;
 
-export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title, initialTag, onEditModeChange, onDataChange }, ref) {
+export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, onExpand, onEditModeChange, onDataChange }, ref) {
+  const initialOptions = initialContent?.definition.options.length
+    ? initialContent.definition.options.map((option, index) => ({
+      id: `answer-${index + 1}`,
+      placeholder: `Answer choice ${option.id || String.fromCharCode(65 + index)}`,
+      value: option.label,
+      tag: option.id,
+      ghost: false,
+    }))
+    : INITIAL_OPTIONS;
   const [isEditMode, setIsEditMode] = useState(true);
-  const [titleValue, setTitleValue] = useState(title ?? "");
-  const [questionValue, setQuestionValue] = useState("");
-  const [tagValue, setTagValue] = useState(initialTag ?? "question_id_1");
-  const [minChoices, setMinChoices] = useState(1);
-  const [maxChoices, setMaxChoices] = useState(1);
+  const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
+  const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
+  const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
+  const [minChoices, setMinChoices] = useState(initialContent?.definition.min ?? 1);
+  const [maxChoices, setMaxChoices] = useState(initialContent?.definition.max ?? 1);
   const [openOptionIds, setOpenOptionIds] = useState<Set<string>>(new Set());
-  const [options, setOptions] = useState(INITIAL_OPTIONS);
-  const nextOptionIndexRef = useRef(2);
+  const [options, setOptions] = useState(initialOptions);
+  const nextOptionIndexRef = useRef(initialOptions.length + 1);
 
   const {
     activeDrag,
@@ -78,12 +91,17 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
     });
   }
 
+  if (isCollapsed) {
+    return <NodePillCollapsed family="Multiple choice" tagValue={tagValue} title={titleValue} onExpand={() => { onExpand?.(); setIsEditMode(true); onEditModeChange?.(true); }} />;
+  }
+
   return (
     <section className={`node-pill ${isEditMode ? "node-pill--edit" : ""}`} aria-label="node workspace">
       <NodePillTopbar
         family="Multiple choice"
         tagValue={tagValue}
         onTagChange={setTagValue}
+        idError={idError}
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}

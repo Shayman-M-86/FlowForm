@@ -46,7 +46,7 @@
 
 .qcard__icon-btn--danger:hover {
   background: var(--danger-bg);
-  border-color: rgba(212, 139, 139, 0.26);
+  border-color: var(--danger-border-soft);
   color: var(--danger);
 }
 

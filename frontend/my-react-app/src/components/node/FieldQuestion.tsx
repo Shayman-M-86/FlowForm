@@ -1,7 +1,7 @@
 import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import "./FieldQuestion.css";
 import { QUESTION_MAX, blurOnEnter } from "./NodePillUtils";
-import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead } from "./NodePillShell";
+import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillCollapsed } from "./NodePillShell";
 import { Input } from "../ui/Input";
 import { LargeInput } from "../ui/LargeInput";
 import { Select } from "../ui/Select";
@@ -15,6 +15,10 @@ interface FieldQuestionProps {
   onDelete?: () => void;
   title?: string;
   initialTag?: string;
+  initialContent?: FieldContent;
+  idError?: string;
+  isCollapsed?: boolean;
+  onExpand?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: FieldContent) => void;
 }
@@ -55,14 +59,15 @@ const FIELD_TYPE_PRESETS: Record<FieldType, { placeholder: string; helper: strin
   },
 };
 
-export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>(function FieldQuestion({ onDelete, title, initialTag, onEditModeChange, onDataChange }, ref) {
+export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>(function FieldQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, onExpand, onEditModeChange, onDataChange }, ref) {
   const [isEditMode, setIsEditMode] = useState(true);
-  const [titleValue, setTitleValue] = useState(title ?? "");
-  const [questionValue, setQuestionValue] = useState("");
-  const [tagValue, setTagValue] = useState(initialTag ?? "question_id_1");
-  const [fieldType, setFieldType] = useState<FieldType>("short_text");
+  const initialFieldType = initialContent?.definition.field_type ?? "short_text";
+  const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
+  const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
+  const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
+  const [fieldType, setFieldType] = useState<FieldType>(initialFieldType);
   const [placeholderValue, setPlaceholderValue] = useState(
-    FIELD_TYPE_PRESETS["short_text"].placeholder,
+    initialContent?.definition.ui.placeholder ?? FIELD_TYPE_PRESETS[initialFieldType].placeholder,
   );
   const [fieldValue, setFieldValue] = useState("");
 
@@ -108,12 +113,17 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
   const isWideField = fieldType === "long_text";
   const fieldMaxLength = fieldType === "short_text" ? 100 : fieldType === "long_text" ? 1000 : undefined;
 
+  if (isCollapsed) {
+    return <NodePillCollapsed family="Field" tagValue={tagValue} title={titleValue} onExpand={() => { onExpand?.(); setIsEditMode(true); onEditModeChange?.(true); }} />;
+  }
+
   return (
     <section className={`node-pill field-question ${isEditMode ? "node-pill--edit" : ""}`} aria-label="Field question">
       <NodePillTopbar
         family="Field"
         tagValue={tagValue}
         onTagChange={setTagValue}
+        idError={idError}
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}

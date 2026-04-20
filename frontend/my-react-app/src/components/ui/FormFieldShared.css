@@ -168,5 +168,5 @@
 
 .input-control--error,
 .large-input-shell--error {
-  border-color: rgba(212, 139, 139, 0.5);
+  border-color: var(--danger-border-medium);
 }

@@ -2,7 +2,6 @@ import type {
   QuestionContent,
   QuestionNode,
   RuleContent,
-  RuleNode,
   SurveyNode,
 } from "./questionTypes";
 

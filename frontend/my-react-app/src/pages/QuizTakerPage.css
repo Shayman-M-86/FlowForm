@@ -19,7 +19,7 @@
 .quiz-error,
 .quiz-inline-error {
   padding: 14px 16px;
-  border: 1px solid rgba(212, 139, 139, 0.26);
+  border: 1px solid var(--danger-border-soft);
   border-radius: 14px;
   background: var(--danger-bg);
   color: var(--danger);
@@ -183,7 +183,7 @@
   border-radius: 999px;
   background: var(--success-bg);
   color: var(--success);
-  border: 1px solid rgba(136, 179, 155, 0.26);
+  border: 1px solid var(--success-border-soft);
 }
 
 .quiz-thankyou p {

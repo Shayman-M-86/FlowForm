@@ -16,7 +16,7 @@
 
 .link-reveal__warning {
   padding: 12px 14px;
-  border: 1px solid rgba(199, 177, 139, 0.26);
+  border: 1px solid var(--warning-border-soft);
   border-radius: var(--radius-sm);
   background: var(--warning-bg);
   color: var(--warning);
