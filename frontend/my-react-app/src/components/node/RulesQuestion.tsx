@@ -31,6 +31,7 @@ export interface RulesQuestionHandle {
 interface RulesQuestionProps {
   onDelete?: () => void;
   title?: string;
+  initialTag?: string;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: RuleContent) => void;
   previousSiblings?: QuestionContent[];
@@ -157,7 +158,7 @@ function draftToCondition(draft: ConditionDraft, target: QuestionContent | undef
     if (required.length) reqs.required = required;
     if (forbidden.length) reqs.forbidden = forbidden;
     if (anyOf.length) reqs.any_of = anyOf;
-    return { target_id: draft.target_id, family: "choice", requirements: reqs };
+    return { source_id: draft.target_id, family: "choice", requirements: reqs };
   }
 
   if (draft.family === "matching") {
@@ -166,14 +167,14 @@ function draftToCondition(draft: ConditionDraft, target: QuestionContent | undef
       if (matchId) required.push({ [promptId]: matchId });
     });
     const reqs: MatchingRequirements = required.length ? { required } : {};
-    return { target_id: draft.target_id, family: "matching", requirements: reqs };
+    return { source_id: draft.target_id, family: "matching", requirements: reqs };
   }
 
   if (draft.family === "rating") {
     const reqs: RatingRequirements = {};
     if (draft.min !== null) reqs.min = draft.min;
     if (draft.max !== null) reqs.max = draft.max;
-    return { target_id: draft.target_id, family: "rating", requirements: reqs };
+    return { source_id: draft.target_id, family: "rating", requirements: reqs };
   }
 
   const fieldTarget = target && target.family === "field" ? target : null;
@@ -188,7 +189,7 @@ function draftToCondition(draft: ConditionDraft, target: QuestionContent | undef
       : draft.numberValue;
     requirements = { type: fieldType, operator: draft.numberOperator, value };
   }
-  return { target_id: draft.target_id, family: "field", requirements };
+  return { source_id: draft.target_id, family: "field", requirements };
 }
 
 function findSibling(siblings: QuestionContent[], id: string) {
@@ -196,13 +197,13 @@ function findSibling(siblings: QuestionContent[], id: string) {
 }
 
 export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>(function RulesQuestion(
-  { onDelete, title: _title, onEditModeChange, onDataChange, previousSiblings = [], followingSiblings = [] },
+  { onDelete, title: _title, initialTag, onEditModeChange, onDataChange, previousSiblings = [], followingSiblings = [] },
   ref,
 ) {
   const siblings = [...previousSiblings, ...followingSiblings];
   void _title;
   const [isEditMode, setIsEditMode] = useState(true);
-  const [tagValue, setTagValue] = useState("r1");
+  const [tagValue, setTagValue] = useState(initialTag ?? "r1");
   const [match, setMatch] = useState<RuleMatch>("ALL");
   const [conditions, setConditions] = useState<ConditionDraft[]>([]);
   const [thenMode, setThenMode] = useState<ThenMode>("set");

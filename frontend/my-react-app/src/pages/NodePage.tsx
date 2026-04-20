@@ -15,13 +15,17 @@ import { RatingQuestion } from "../components/node/RatingQuestion";
 import { RulesQuestion } from "../components/node/RulesQuestion";
 import type { QuestionContent, RuleContent } from "../components/node/questionTypes";
 import { serializeSurveyEntries, type SurveyEntry } from "../components/node/surveySerialize";
+import { incrementQuestionId } from "../components/node/NodePillUtils";
 import "./NodePage.css";
+
+const DEBUG_SHOW_JSON = true;
 
 type QuestionType = "multi-choice" | "matching" | "rating" | "field" | "rules";
 
 interface Question {
   id: string;
   type: QuestionType;
+  initialTag: string;
 }
 
 interface QuestionSummary {
@@ -146,11 +150,22 @@ export function NodePage() {
   function addQuestion(type: QuestionType) {
     const newId = `q${nextId}`;
     newlyAddedQuestionId.current = newId;
-    setQuestions((current) => [...current, { id: newId, type }]);
+    setQuestions((current) => {
+      const initialTag = computeNextTag(current, type);
+      return [...current, { id: newId, type, initialTag }];
+    });
     setNextId((current) => current + 1);
     setEditingQuestionIds((current) =>
       current.includes(newId) ? current : [...current, newId],
     );
+  }
+
+  function computeNextTag(currentQuestions: Question[], type: QuestionType): string {
+    const isRule = type === "rules";
+    const relevant = currentQuestions.filter((q) => (q.type === "rules") === isRule);
+    if (relevant.length === 0) return isRule ? "r1" : "question_id_1";
+    const lastTag = relevant[relevant.length - 1].initialTag;
+    return incrementQuestionId(lastTag);
   }
 
   function removeQuestion(id: string) {
@@ -236,15 +251,15 @@ export function NodePage() {
 
     switch (question.type) {
       case "multi-choice":
-        return <MultiChoiceQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
+        return <MultiChoiceQuestion key={key} ref={handleRef} initialTag={question.initialTag} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
       case "matching":
-        return <MatchingQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
+        return <MatchingQuestion key={key} ref={handleRef} initialTag={question.initialTag} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
       case "rating":
-        return <RatingQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
+        return <RatingQuestion key={key} ref={handleRef} initialTag={question.initialTag} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
       case "field":
-        return <FieldQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
+        return <FieldQuestion key={key} ref={handleRef} initialTag={question.initialTag} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
       case "rules":
-        return <RulesQuestion key={key} ref={handleRef} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleRuleContentChange} previousSiblings={previousSiblings} followingSiblings={followingSiblings} />;
+        return <RulesQuestion key={key} ref={handleRef} initialTag={question.initialTag} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleRuleContentChange} previousSiblings={previousSiblings} followingSiblings={followingSiblings} />;
     }
   }
 
@@ -311,7 +326,6 @@ export function NodePage() {
     }
     return serializeSurveyEntries(entries);
   };
-  void serializeSurvey;
 
   return (
     <section className="node-page">
@@ -381,6 +395,15 @@ export function NodePage() {
           {questions.length === 0 && addQuestionCard}
         </div>
       </div>
+      {DEBUG_SHOW_JSON && (
+        <aside className="node-page__debug" aria-label="Debug survey JSON">
+          <header className="node-page__debug-head">
+            <span>Debug · survey JSON</span>
+            <span className="node-page__debug-count">{questions.length} node{questions.length === 1 ? "" : "s"}</span>
+          </header>
+          <pre className="node-page__debug-body">{JSON.stringify(serializeSurvey(), null, 2)}</pre>
+        </aside>
+      )}
     </section>
   );
 }

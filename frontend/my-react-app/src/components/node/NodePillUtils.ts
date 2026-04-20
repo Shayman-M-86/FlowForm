@@ -32,3 +32,17 @@ export function nextAvailableTag(items: { tag: string }[]): string {
   }
   return "";
 }
+
+export function sanitizeQuestionId(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, "_");
+}
+
+export function incrementQuestionId(value: string): string {
+  const match = value.match(/^(.*?)(\d+)(\D*)$/);
+  if (match) {
+    const [, prefix, digits, suffix] = match;
+    return `${prefix}${String(Number(digits) + 1).padStart(digits.length, "0")}${suffix}`;
+  }
+  const base = value.trim() === "" ? "question_id" : value;
+  return `${base}_1`;
+}

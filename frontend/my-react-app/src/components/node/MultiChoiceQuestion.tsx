@@ -15,6 +15,7 @@ export interface MultiChoiceQuestionHandle {
 interface MultiChoiceQuestionProps {
   onDelete?: () => void;
   title?: string;
+  initialTag?: string;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: ChoiceContent) => void;
 }
@@ -27,11 +28,11 @@ const ANSWER_POOL = 4000;
 const ANSWER_PER_FIELD_MAX = 1000;
 const MAX_ANSWERS = 10;
 
-export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title, onEditModeChange, onDataChange }, ref) {
+export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title, initialTag, onEditModeChange, onDataChange }, ref) {
   const [isEditMode, setIsEditMode] = useState(true);
   const [titleValue, setTitleValue] = useState(title ?? "");
   const [questionValue, setQuestionValue] = useState("");
-  const [tagValue, setTagValue] = useState("question_id_1");
+  const [tagValue, setTagValue] = useState(initialTag ?? "question_id_1");
   const [minChoices, setMinChoices] = useState(1);
   const [maxChoices, setMaxChoices] = useState(1);
   const [openOptionIds, setOpenOptionIds] = useState<Set<string>>(new Set());

@@ -14,6 +14,7 @@ export interface FieldQuestionHandle {
 interface FieldQuestionProps {
   onDelete?: () => void;
   title?: string;
+  initialTag?: string;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: FieldContent) => void;
 }
@@ -54,11 +55,11 @@ const FIELD_TYPE_PRESETS: Record<FieldType, { placeholder: string; helper: strin
   },
 };
 
-export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>(function FieldQuestion({ onDelete, title, onEditModeChange, onDataChange }, ref) {
+export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>(function FieldQuestion({ onDelete, title, initialTag, onEditModeChange, onDataChange }, ref) {
   const [isEditMode, setIsEditMode] = useState(true);
   const [titleValue, setTitleValue] = useState(title ?? "");
   const [questionValue, setQuestionValue] = useState("");
-  const [tagValue, setTagValue] = useState("question_id_1");
+  const [tagValue, setTagValue] = useState(initialTag ?? "question_id_1");
   const [fieldType, setFieldType] = useState<FieldType>("short_text");
   const [placeholderValue, setPlaceholderValue] = useState(
     FIELD_TYPE_PRESETS["short_text"].placeholder,

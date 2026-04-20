@@ -20,6 +20,7 @@ export interface RatingQuestionHandle {
 interface RatingQuestionProps {
   onDelete?: () => void;
   title?: string;
+  initialTag?: string;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: RatingContent) => void;
 }
@@ -87,11 +88,11 @@ function getNearestValidStep(nextStep: number, validSteps: number[]) {
   }, validSteps[0]);
 }
 
-export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionProps>(function RatingQuestion({ onDelete, title, onEditModeChange, onDataChange }, ref) {
+export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionProps>(function RatingQuestion({ onDelete, title, initialTag, onEditModeChange, onDataChange }, ref) {
   const [isEditMode, setIsEditMode] = useState(true);
   const [titleValue, setTitleValue] = useState(title ?? "");
   const [questionValue, setQuestionValue] = useState("");
-  const [tagValue, setTagValue] = useState("question_id_1");
+  const [tagValue, setTagValue] = useState(initialTag ?? "question_id_1");
   const [ratingType, setRatingType] = useState<RatingType>("numeric-slider");
   const [rangeStart, setRangeStart] = useState(-5);
   const [rangeEnd, setRangeEnd] = useState(5);

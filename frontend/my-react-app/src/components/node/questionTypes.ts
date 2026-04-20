@@ -174,25 +174,25 @@ export interface FieldDateRequirements {
 export type FieldRequirements = FieldNumberRequirements | FieldDateRequirements;
 
 export interface ChoiceCondition {
-  target_id: string;
+  source_id: string;
   family: "choice";
   requirements: ChoiceRequirements;
 }
 
 export interface MatchingCondition {
-  target_id: string;
+  source_id: string;
   family: "matching";
   requirements: MatchingRequirements;
 }
 
 export interface RatingCondition {
-  target_id: string;
+  source_id: string;
   family: "rating";
   requirements: RatingRequirements;
 }
 
 export interface FieldCondition {
-  target_id: string;
+  source_id: string;
   family: "field";
   requirements: FieldRequirements;
 }

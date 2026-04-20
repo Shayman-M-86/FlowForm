@@ -14,12 +14,14 @@ export interface MatchingQuestionHandle {
 interface MatchingQuestionProps {
   onDelete?: () => void;
   title?: string;
+  initialTag?: string;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: MatchingContent) => void;
 }
 
 const ANSWER_POOL = 2000;
 const ANSWER_PER_FIELD_MAX = 250;
+const MAX_ITEMS_PER_COLUMN = 10;
 
 type MatchItem = {
   id: string;
@@ -45,11 +47,11 @@ const INITIAL_RIGHT_ITEMS: MatchItem[] = [
   { id: "right-1", placeholder: "Match A", value: "", tag: "A" },
 ];
 
-export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuestionProps>(function MatchingQuestion({ onDelete, title, onEditModeChange, onDataChange }, ref) {
+export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuestionProps>(function MatchingQuestion({ onDelete, title, initialTag, onEditModeChange, onDataChange }, ref) {
   const [isEditMode, setIsEditMode] = useState(true);
   const [titleValue, setTitleValue] = useState(title ?? "");
   const [questionValue, setQuestionValue] = useState("");
-  const [tagValue, setTagValue] = useState("question_id_1");
+  const [tagValue, setTagValue] = useState(initialTag ?? "question_id_1");
   const [openItemIds, setOpenItemIds] = useState<Set<string>>(new Set());
   const [leftItems, setLeftItems] = useState(INITIAL_LEFT_ITEMS);
   const [rightItems, setRightItems] = useState(INITIAL_RIGHT_ITEMS);
@@ -257,7 +259,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
             );
           })}
 
-          {isEditMode && (
+          {isEditMode && items.length < MAX_ITEMS_PER_COLUMN && (
             <Button
               className="node-pill__option-add"
               type="button"

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { TAG_MAX, blurOnEnter } from "./NodePillUtils";
+import { TAG_MAX, blurOnEnter, sanitizeQuestionId } from "./NodePillUtils";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -32,7 +32,12 @@ export function NodePillTopbar({
       <div className="node-pill__topbar-left">
         <Badge variant="accent" size="xl">{family}</Badge>
         <div className="node-pill__id-label">
-          <h3 className="node-pill__id">id</h3>
+          <Tooltip
+            title="Identifier for this question. Lowercase only; no spaces or capitals."
+            size="sm"
+          >
+            <h3 className="node-pill__id">id</h3>
+          </Tooltip>
           <Input
             type="text"
             placeholder={isEditMode ? "question_id" : ""}
@@ -42,7 +47,7 @@ export function NodePillTopbar({
             readOnly={!isEditMode}
             variant="quiet"
             pill
-            onChange={(event) => onTagChange(event.target.value)}
+            onChange={(event) => onTagChange(sanitizeQuestionId(event.target.value))}
             onKeyDown={blurOnEnter}
           />
         </div>
