@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { Button } from "./Button";
 import { Input } from "./Input";
-import "./NumberStepper.css";
+import {
+  stepperShellClass,
+  stepperButtonClass,
+  stepperValueClass,
+  stepperInputClass,
+  type StepperSize,
+  type StepperVariant,
+} from "./stepperStyles";
 
 interface NumberStepperProps {
   value: number;
@@ -16,9 +23,9 @@ interface NumberStepperProps {
   onIncrement?: () => void;
   className?: string;
   ariaLabel?: string;
-  size?: "xs" | "sm";
+  size?: StepperSize;
   pill?: boolean;
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: StepperVariant;
   allowInput?: boolean;
 }
 
@@ -90,9 +97,13 @@ export function NumberStepper({
     onChange(nextValue);
   }
 
+  const shellPadding = size === "xs" ? "gap-0.5 p-0.5" : "gap-1 p-1";
+
   return (
     <div
-      className={`ns-shell ns-shell--${size} ns-shell--${variant} ${pill ? "ns-shell--pill" : ""} number-stepper number-stepper--${size} ${className}`}
+      className={[stepperShellClass({ size, variant, pill }), shellPadding, className]
+        .filter(Boolean)
+        .join(" ")}
       role="group"
       aria-label={ariaLabel}
     >
@@ -103,7 +114,7 @@ export function NumberStepper({
         pill={pill}
         onClick={decrement}
         disabled={!canDecrementValue}
-        className="ns-button"
+        className={stepperButtonClass({ size, variant, pill })}
         aria-label="Decrease value"
       >
         −
@@ -111,7 +122,7 @@ export function NumberStepper({
 
       {allowInput ? (
         <Input
-          className="ns-input"
+          className={stepperInputClass(size)}
           type="text"
           variant="ghost"
           size={size}
@@ -134,7 +145,7 @@ export function NumberStepper({
           }}
         />
       ) : (
-        <span className="ns-value" aria-live="polite" aria-atomic="true">
+        <span className={stepperValueClass(size)} aria-live="polite" aria-atomic="true">
           {value}
         </span>
       )}
@@ -146,7 +157,7 @@ export function NumberStepper({
         pill={pill}
         onClick={increment}
         disabled={!canIncrementValue}
-        className="ns-button"
+        className={stepperButtonClass({ size, variant, pill })}
         aria-label="Increase value"
       >
         +

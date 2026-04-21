@@ -1,242 +1,178 @@
+@import "tailwindcss";
+
 :root {
-  --bg: #111315;
-  --bg-subtle: #16191d;
-  --bg-raised: #1b1f24;
-  --bg-overlay: rgba(7, 9, 11, 0.72);
-  --surface: #20252b;
-  --surface-hover: #252b31;
-  --surface-strong: #2a3139;
-  --border: #2c333c;
-  --border-strong: #39424d;
-
-  --text-h: #f2f4f6;
-  --text: #c2c8ce;
-  --text-soft: #a2aab3;
-  --muted: #7d8792;
-  --muted-bg: rgba(255, 255, 255, 0.04);
-
-  --accent: #8ea4ba;
-  --accent-strong: #a9bfd3;
-  --accent-bg: rgba(142, 164, 186, 0.16);
-  --accent-border: rgba(142, 164, 186, 0.34);
-
-  --success: #88b39b;
-  --success-bg: rgba(136, 179, 155, 0.16);
-  --success-border-soft: rgba(136, 179, 155, 0.26);
-  --danger: #d48b8b;
-  --danger-bg: rgba(212, 139, 139, 0.16);
-  --danger-border-soft: rgba(212, 139, 139, 0.26);
-  --danger-border: rgba(212, 139, 139, 0.3);
-  --danger-border-medium: rgba(212, 139, 139, 0.5);
-  --warning: #c7b18b;
-  --warning-bg: rgba(199, 177, 139, 0.16);
-  --warning-border-soft: rgba(199, 177, 139, 0.26);
-
-  /* Text on filled accent surfaces (primary buttons etc.) */
-  --text-on-accent: #0d1013;
-  --text-on-accent-border-dotted: rgba(13, 16, 19, 0.24);
-  --text-on-accent-border-dotted-hover: rgba(13, 16, 19, 0.32);
-
-  /* Overlays — raw white at various opacities, used as subtle surface lifts */
-  --overlay-hairline: rgba(255, 255, 255, 0.02);
-  --overlay-faint: rgba(255, 255, 255, 0.03);
-  --overlay-soft: rgba(255, 255, 255, 0.04);
-  --overlay-soft-2: rgba(255, 255, 255, 0.045);
-  --overlay-medium: rgba(255, 255, 255, 0.06);
-  --overlay-strong: rgba(255, 255, 255, 0.08);
-  --overlay-heavy: rgba(255, 255, 255, 0.12);
-  --overlay-transparent: rgba(255, 255, 255, 0);
-
-  /* Reusable subtle gradient used by card/preview surfaces */
-  --surface-lift-gradient: linear-gradient(180deg, var(--overlay-faint), var(--overlay-transparent));
-  --surface-lift-gradient-faint: linear-gradient(180deg, var(--overlay-hairline), var(--overlay-transparent));
-  --surface-lift-gradient-soft: linear-gradient(180deg, var(--overlay-soft-2), rgba(255, 255, 255, 0.015));
-
-  /* Rules mark palette — semantic intent colors for required/forbidden/any-of */
-  --mark-required: #2e7d32;
-  --mark-required-border: rgba(46, 125, 50, 0.55);
-  --mark-required-bg: rgba(46, 125, 50, 0.08);
-  --mark-forbidden: #c62828;
-  --mark-forbidden-border: rgba(198, 40, 40, 0.55);
-  --mark-forbidden-bg: rgba(198, 40, 40, 0.08);
-  --mark-any-of: #c9a227;
-  --mark-any-of-border: rgba(201, 162, 39, 0.55);
-  --mark-any-of-bg: rgba(201, 162, 39, 0.08);
-  --mark-active-text: #fff;
-
-  /* Drag-threshold colors used in the node editor */
-  --drag-insert: rgba(169, 191, 211, 0.55);
-  --drag-return: rgba(255, 180, 100, 0.7);
-  --drag-return-border: rgba(255, 180, 100, 0.55);
-  --drag-return-text: rgba(255, 180, 100, 0.9);
-  --drag-lock: rgba(140, 220, 140, 0.7);
-  --drag-lock-border: rgba(140, 220, 140, 0.55);
-  --drag-lock-text: rgba(140, 220, 140, 0.9);
-
-  /* Rating: stars + slider */
-  --star-fill: #f5c451;
-  --star-empty: rgba(210, 220, 231, 0.4);
-  --slider-track: linear-gradient(90deg, rgba(169, 191, 211, 0.25), rgba(169, 191, 211, 0.5));
-  --slider-tick: rgba(210, 220, 231, 0.55);
-
-  /* App-chrome glass overlays */
-  --toolbar-bg: rgba(17, 19, 21, 0.88);
-  --debug-bg: rgba(12, 12, 16, 0.92);
-  --debug-text: #e8e8ee;
-  --debug-text-dim: rgba(232, 232, 238, 0.7);
-  --debug-border: rgba(255, 255, 255, 0.12);
-
-  /* Form-filler surfaces */
-  --form-page-bg:
-    radial-gradient(circle at top left, rgba(247, 199, 120, 0.18), transparent 34%),
-    radial-gradient(circle at right 20%, rgba(97, 180, 255, 0.14), transparent 30%),
-    linear-gradient(180deg, #0d1117 0%, #141a22 100%);
-  --form-panel-bg: rgba(11, 16, 24, 0.92);
-  --form-panel-border: var(--overlay-strong);
-  --form-panel-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
-  --form-text-bright: #f6f8fb;
-  --form-text-dim-60: rgba(255, 255, 255, 0.6);
-  --form-text-dim-62: rgba(255, 255, 255, 0.62);
-  --form-text-dim-68: rgba(255, 255, 255, 0.68);
-  --form-text-dim-72: rgba(255, 255, 255, 0.72);
-  --form-marker: rgba(255, 194, 102, 0.96);
-  --form-error-border: rgba(255, 135, 135, 0.4);
-  --form-error-bg: rgba(255, 135, 135, 0.08);
-  --form-error-text: #ffb9b9;
-  --form-code-bg: rgba(0, 0, 0, 0.24);
-  --form-code-text: #d8deea;
-
-  /* Button press/release animation shadow */
-  --shadow-btn-press: 0 1px 10px rgba(0, 0, 0, 0.07);
-
-  /* SVG dropdown arrow (muted) — declared as full background-image token so it can be swapped per-theme */
-  --select-arrow-muted: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%237d8792' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-
-  --shadow-xs: 0 2px 12px rgba(0, 0, 0, 0.11);
-  --shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.14);
-  --shadow: 0 18px 38px rgba(0, 0, 0, 0.20);
-  --focus-ring: 0 0 0 3px rgba(169, 191, 211, 0.18);
-  --transition-fast: 0.16s ease;
-  --transition: 3.25s ease;
-
-  --sans: "SF Pro Text", "SF Pro Display", "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --mono: "SFMono-Regular", "Cascadia Code", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --heading: var(--sans);
-  --sidebar-w: 232px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-pill: 999px;
-  --field-gap: 7px;
-  --field-label-size: 0.82rem;
-  --field-help-size: 0.8rem;
-  --control-height-md: 42px;
-  --control-height-sm: 34px;
-  --control-height-xs: 30px;
-  --control-padding-y: 10px;
-  --control-padding-x: 12px;
-
-  /* Legacy aliases kept to avoid a broad refactor while the palette shifts. */
+  --background: rgb(247 247 247);
+  --foreground: rgb(44 45 48);
+  --card: rgb(254 253 253);
+  --card-foreground: rgb(32 32 34);
+  --popover: rgb(255 255 255);
+  --popover-foreground: rgb(10 10 10);
+  --primary: rgb(80 145 220);
+  --primary-saturated: rgb(84, 162, 252);
+  --primary-foreground: rgb(253 252 253);
+  --secondary: rgb(254 253 253);
+  --secondary-foreground: rgb(96 155 223);
+  --muted: rgb(240 239 240);
+  --muted-foreground: rgb(115 115 115);
+  --accent: rgb(110 164 226);
+  --accent-foreground: rgb(58 60 65);
+  --destructive: rgb(234, 116, 110);
+  --border: rgb(229 229 229);
+  --input: rgba(244, 244, 244, 0.934);
+  --ring: rgb(161 161 161);
+  --hover-highlight: #F0EFF0;
 
 
-  font: 15px/1.5 var(--sans);
-  color-scheme: dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --font-sans: 'Geist', 'Geist Fallback', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-serif: "Geist", "Geist Fallback", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --radius: 0.625rem;
+  
+  --app-shadow-2xs: 0.5px 1.5px 5px rgb(0 0 0 / 0.024);
+  --app-shadow-xs: 0.5px 1.5px 6px rgb(0 0 0 / 0.03);
+  --app-shadow-sm: 0.5px 2px 8px rgb(0 0 0 / 0.042), 0.5px 1px 3px rgb(0 0 0 / 0.024);
+  --app-shadow: 0.5px 3px 10px rgb(0 0 0 / 0.048), 0.5px 1.5px 4px rgb(0 0 0 / 0.026);
+  --app-shadow-md: 0.5px 5px 14px rgb(0 0 0 / 0.054), 0.5px 2px 6px rgb(0 0 0 / 0.03);
+  --app-shadow-lg: 0.5px 8px 22px rgb(0 0 0 / 0.06), 0.5px 3px 8px rgb(0 0 0 / 0.03);
+  --app-shadow-xl: 0.5px 12px 30px rgb(0 0 0 / 0.066), 0.5px 4px 10px rgb(0 0 0 / 0.03);
+  --app-shadow-2xl: 0.5px 16px 40px rgb(0 0 0 / 0.084);
+
+  --success: rgb(22 163 74);
+  --warning: rgb(202 138 4);
+  
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
+.dark {
+  --background: rgb(29, 29, 31);
+  --foreground: rgb(250 250 250);
+  --card: rgb(23 23 23);
+  --card-foreground: rgb(250 250 250);
+  --popover: rgb(23 23 23);
+  --popover-foreground: rgb(250 250 250);
+  --primary: rgb(82, 149, 226);
+  --primary-saturated: rgb(73, 151, 240);
+  --primary-foreground: rgb(0, 0, 0);
+  --secondary: rgb(43, 42, 45);
+  --secondary-foreground: rgb(96 155 223);
+  --muted: rgb(38 38 38);
+  --muted-foreground: rgb(161 161 161);
+  --accent: rgb(110 164 226);
+  --accent-foreground: rgb(250 250 250);
+  --destructive: rgb(234, 116, 110);
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgba(41, 41, 44, 0.937);
+  --ring: rgb(115 115 115);
+  --hover-highlight: rgba(167, 167, 167, 0.195);
+
+  
+  --app-shadow-2xs: 0.5px 1px 2px rgb(0 0 0 / 0.12);
+  --app-shadow-xs: 0.5px 1px 2px rgb(0 0 0 / 0.14);
+  --app-shadow-sm: 0.5px 1px 2px rgb(0 0 0 / 0.18), 0.5px 1px 1px rgb(0 0 0 / 0.12);
+  --app-shadow: 0.5px 1.5px 3px rgb(0 0 0 / 0.22), 0.5px 1px 2px rgb(0 0 0 / 0.14);
+  --app-shadow-md: 0.5px 2px 5px rgb(0 0 0 / 0.24), 0.5px 1px 2px rgb(0 0 0 / 0.14);
+  --app-shadow-lg: 0.5px 4px 10px rgb(0 0 0 / 0.26), 0.5px 2px 4px rgb(0 0 0 / 0.14);
+  --app-shadow-xl: 0.5px 8px 18px rgb(0 0 0 / 0.28), 0.5px 3px 6px rgb(0 0 0 / 0.14);
+  --app-shadow-2xl: 0.5px 12px 28px rgb(0 0 0 / 0.34);
+
+  --success: rgb(74 222 128);
+  --warning: rgb(250 204 21);
 }
 
-html {
-  background: var(--bg);
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-saturated: var(--primary-saturated);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-hover-highlight: var(--hover-highlight);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-2xs: var(--app-shadow-2xs);
+  --shadow-xs: var(--app-shadow-xs);
+  --shadow-sm: var(--app-shadow-sm);
+  --shadow: var(--app-shadow);
+  --shadow-md: var(--app-shadow-md);
+  --shadow-lg: var(--app-shadow-lg);
+  --shadow-xl: var(--app-shadow-xl);
+  --shadow-2xl: var(--app-shadow-2xl);
+  
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
 }
 
 body {
   margin: 0;
-  min-width: 320px;
-  background: var(--bg);
+  background: var(--background);
+  color: var(--foreground);
 }
 
-#root {
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+@layer base {
+  h1 {
+    @apply text-[2rem] font-bold text-foreground md:text-[2.5rem];
+  }
+
+  h2 {
+    @apply mb-6 border-b border-border pb-3 text-2xl font-semibold text-foreground md:text-[1.8rem];
+  }
 }
 
-body,
-button,
-input,
-select,
-textarea {
-  font: inherit;
+@layer components {
+  .section-label {
+    @apply m-0 text-[0.9rem] font-semibold uppercase tracking-[0.04em] text-accent-foreground;
+  }
 }
 
-h1,
-h2,
-h3,
-h4 {
-  margin: 0;
-  font-family: var(--heading);
-  font-weight: 600;
-  color: var(--text-h);
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-}
-
-p {
-  margin: 0;
-}
-
-code {
-  font-family: var(--mono);
-  font-size: 12px;
-  line-height: 1.45;
-  padding: 2px 6px;
-  background: var(--code-bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-h);
-}
-
-a {
-  color: var(--accent-strong);
-  text-decoration: none;
-}
-
-a:hover {
-  color: var(--text-h);
-}
-
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-a:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
+/* Chrome, Edge, Safari */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-subtle);
+  background: var(--color-background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  background: var(--color-border);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted);
+  background: var(--color-muted-foreground);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-background);
 }

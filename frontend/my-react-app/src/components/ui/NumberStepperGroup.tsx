@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { Button } from "./Button";
-import "./NumberStepperGroup.css";
 import { Input } from "./Input";
+import {
+  stepperShellClass,
+  stepperButtonClass,
+  stepperValueClass,
+  stepperInputClass,
+  type StepperSize,
+  type StepperVariant,
+} from "./stepperStyles";
 
 interface NumberStepperItem {
   key: string;
@@ -18,9 +25,9 @@ interface NumberStepperGroupProps {
   onChange: (key: string, value: number) => void;
   className?: string;
   ariaLabel?: string;
-  size?: "xs" | "sm";
+  size?: StepperSize;
   pill?: boolean;
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: StepperVariant;
   allowInput?: boolean;
 }
 
@@ -61,9 +68,27 @@ export function NumberStepperGroup({
     onChange(item.key, nextValue);
   }
 
+  const segmentBase =
+    "inline-flex items-center gap-0.5 [&+&]:border-l [&+&]:border-border";
+  const segmentSize =
+    size === "xs"
+      ? "min-h-[34px] px-[5px]"
+      : "min-h-10 pl-2.5 pr-1.5";
+  const segmentBorderOverride =
+    variant === "ghost" ? "[&+&]:border-l-transparent" : "";
+
+  const labelBase = "whitespace-nowrap pr-1 text-muted-foreground";
+  const labelSize = size === "xs" ? "text-[0.82rem]" : "text-[0.86rem]";
+
   return (
     <div
-      className={`ns-shell ns-shell--${size} ns-shell--${variant} ${pill ? "ns-shell--pill" : ""} number-stepper-group number-stepper-group--${size} ${className}`}
+      className={[
+        stepperShellClass({ size, variant, pill }),
+        "overflow-hidden",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
       role="group"
       aria-label={ariaLabel}
     >
@@ -73,15 +98,22 @@ export function NumberStepperGroup({
         const canIncrement = !item.disabled && (item.max === undefined || item.value < item.max);
 
         return (
-          <div key={item.key} className="number-stepper-group__segment">
-            <span className="number-stepper-group__label">{item.label}</span>
+          <div
+            key={item.key}
+            className={[segmentBase, segmentSize, segmentBorderOverride]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            <span className={[labelBase, labelSize].join(" ")}>{item.label}</span>
 
             <Button
               type="button"
               variant="ghost"
               size={size}
               pill={pill}
-              className="ns-button"
+              className={[stepperButtonClass({ size, variant, pill }), "min-w-6"].join(
+                " ",
+              )}
               disabled={!canDecrement}
               aria-label={`Decrease ${item.label}`}
               onClick={() =>
@@ -93,7 +125,7 @@ export function NumberStepperGroup({
 
             {allowInput ? (
               <Input
-                className="ns-input"
+                className={[stepperInputClass(size), "min-w-8"].join(" ")}
                 type="text"
                 variant="ghost"
                 size={size}
@@ -124,7 +156,7 @@ export function NumberStepperGroup({
                 }}
               />
             ) : (
-              <span className="ns-value">{item.value}</span>
+              <span className={stepperValueClass(size)}>{item.value}</span>
             )}
 
             <Button
@@ -132,7 +164,9 @@ export function NumberStepperGroup({
               variant="ghost"
               size={size}
               pill={pill}
-              className="ns-button"
+              className={[stepperButtonClass({ size, variant, pill }), "min-w-6"].join(
+                " ",
+              )}
               disabled={!canIncrement}
               aria-label={`Increase ${item.label}`}
               onClick={() =>

@@ -3,31 +3,37 @@ import {
   useRef,
   type TextareaHTMLAttributes,
 } from "react";
-import "./LargeInput.css";
-/**
- * LargeInput props:
- * label, hint, error, size ("sm" | "md" | "lg"), maxText, showCount,
- * autoGrow, maxAutoGrowHeight, className, id,
- * plus all normal textarea props such as placeholder, value, defaultValue,
- * onChange, onInput, disabled, readOnly, required, name, rows, maxLength,
- * autoComplete, aria-*, data-*, and other standard textarea attributes.
- */
+import {
+  formFieldClass,
+  formLabelClass,
+  formHintClass,
+  formErrorClass,
+  getTextareaShellClassName,
+  controlBaseClass,
+  type InputVariant,
+} from "./formFieldStyles";
+import {
+  textareaMinHeights,
+  textareaSizeClasses,
+  type TextareaSize,
+} from "./uiSizes";
+
 interface LargeInputProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   hint?: string;
   error?: string;
-  size?: "sm" | "md" | "lg";
+  variant?: InputVariant;
+  size?: TextareaSize;
   maxText?: number;
   showCount?: boolean;
   autoGrow?: boolean;
   maxAutoGrowHeight?: number;
 }
 
-const SIZE_MIN_HEIGHT: Record<NonNullable<LargeInputProps["size"]>, number> = {
-  sm: 88,
-  md: 120,
-  lg: 168,
-};
+const textareaBaseClass = [
+  controlBaseClass,
+  "block resize-none border-0 bg-transparent text-foreground",
+].join(" ");
 
 export function LargeInput({
   label,
@@ -35,6 +41,7 @@ export function LargeInput({
   error,
   id,
   className = "",
+  variant = "secondary",
   size = "md",
   maxText,
   showCount = false,
@@ -45,7 +52,7 @@ export function LargeInput({
   onInput,
   ...props
 }: LargeInputProps) {
-  const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
+  const inputId = id ?? label?.toLowerCase().trim().replace(/\s+/g, "-");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const currentValue =
@@ -60,8 +67,8 @@ export function LargeInput({
   function resizeTextarea(textarea: HTMLTextAreaElement) {
     if (!autoGrow) return;
 
-    const minHeight = SIZE_MIN_HEIGHT[size];
-    const maxHeight = maxAutoGrowHeight ?? SIZE_MIN_HEIGHT[size] * 2;
+    const minHeight = textareaMinHeights[size];
+    const maxHeight = maxAutoGrowHeight ?? textareaMinHeights[size] * 2;
 
     textarea.style.height = "0px";
     const nextHeight = Math.max(minHeight, textarea.scrollHeight);
@@ -78,15 +85,15 @@ export function LargeInput({
   }, [value, defaultValue, size, autoGrow, maxAutoGrowHeight]);
 
   return (
-    <div className={`input-field ${className}`}>
-      {label && (
-        <label className="input-label" htmlFor={inputId}>
+    <div className={[formFieldClass, className].filter(Boolean).join(" ")}>
+      {label ? (
+        <label className={formLabelClass} htmlFor={inputId}>
           {label}
         </label>
-      )}
+      ) : null}
 
       <div
-        className={`large-input-shell ${error ? "large-input-shell--error" : ""}`}
+        className={getTextareaShellClassName({ variant, error: Boolean(error) })}
       >
         <textarea
           ref={textareaRef}
@@ -94,9 +101,14 @@ export function LargeInput({
           maxLength={maxText}
           value={value}
           defaultValue={defaultValue}
-          className={`input-control large-input-control large-input-control--${size} ${
-            autoGrow ? "large-input-control--autogrow" : ""
-          }`}
+          aria-invalid={error ? true : undefined}
+          className={[
+            textareaBaseClass,
+            textareaSizeClasses[size],
+            autoGrow ? "max-h-none overflow-y-hidden" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
           onInput={(event) => {
             resizeTextarea(event.currentTarget);
             onInput?.(event);
@@ -105,18 +117,18 @@ export function LargeInput({
         />
       </div>
 
-      {hint && !error && !showCount && <p className="input-hint">{hint}</p>}
-
-      {!error && showCount && maxText && (
-        <div className="large-input__meta">
-          {hint ? <p className="input-hint">{hint}</p> : <span />}
-          <p className="input-hint input-hint--count">
+      {error ? (
+        <p className={formErrorClass}>{error}</p>
+      ) : showCount && maxText ? (
+        <div className="flex items-center justify-between gap-3">
+          {hint ? <p className={formHintClass}>{hint}</p> : <span />}
+          <p className={[formHintClass, "ml-auto whitespace-nowrap"].join(" ")}>
             {currentLength}/{maxText}
           </p>
         </div>
-      )}
-
-      {error && <p className="input-error">{error}</p>}
+      ) : hint ? (
+        <p className={formHintClass}>{hint}</p>
+      ) : null}
     </div>
-    );
-  }
+  );
+}

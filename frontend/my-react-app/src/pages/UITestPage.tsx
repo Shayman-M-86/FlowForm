@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
+import { Card } from "../components/ui/Card";
+import { CardRow } from "../components/ui/CardRow";
+import { CardStack } from "../components/ui/CardStack";
 import { Input } from "../components/ui/Input";
 import { LargeInput } from "../components/ui/LargeInput";
 import { Select } from "../components/ui/Select";
@@ -10,37 +13,88 @@ import { Spinner } from "../components/ui/Spinner";
 import { Modal } from "../components/ui/Modal";
 import { NumberStepper } from "../components/ui/NumberStepper";
 import { NumberStepperGroup } from "../components/ui/NumberStepperGroup";
-import "./UITestPage.css";
+import { ThemeToggle } from "../components/ui/ThemeToggle";
 
-const buttonVariants = ["primary", "secondary", "dark", "danger", "ghost", "quiet"] as const;
+const buttonVariants = ["primary", "secondary", "danger", "ghost"] as const;
 const buttonSizes = ["md", "sm", "xs"] as const;
+
 const buttonVariantLabels: Record<(typeof buttonVariants)[number], string> = {
   primary: "Primary",
   secondary: "Secondary",
-  dark: "Dark",
   danger: "Danger",
   ghost: "Ghost",
-  quiet: "Quiet",
 };
+
 const buttonSizeLabels: Record<(typeof buttonSizes)[number], string> = {
   md: "MD",
   sm: "SM",
   xs: "XS",
 };
 
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="mb-12 md:mb-16">
+      <h2>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function TestGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
+      {children}
+    </div>
+  );
+}
+
+function TestCard({
+  title,
+  children,
+}: {
+  title?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card size="md">
+      <CardStack gap="sm">
+        {title ? <h3 className="section-label">{title}</h3> : null}
+        {children}
+      </CardStack>
+    </Card>
+  );
+}
+
+function InlineStack({ children }: { children: React.ReactNode }) {
+  return <CardRow gap="xs">{children}</CardRow>;
+}
+
+function WideStack({ children }: { children: React.ReactNode }) {
+  return <CardRow gap="sm">{children}</CardRow>;
+}
+
 export function UITestPage() {
   const [toggleStates, setToggleStates] = useState({
     toggle1: false,
     toggle2: true,
   });
+
   const [largeInputValues, setLargeInputValues] = useState({
     controlled: "",
     counted: "Initial summary text for the counted large input.",
     autoGrow:
       "Start typing here to test auto-grow.\n\nThis example begins with multiple lines so the resize behavior is visible immediately.",
   });
+
   const [selectValue, setSelectValue] = useState("option1");
   const [modalOpen, setModalOpen] = useState(false);
+
   const [stepperValues, setStepperValues] = useState({
     sm: 5,
     smSecondary: 5,
@@ -50,6 +104,7 @@ export function UITestPage() {
     xsPill: 5,
     stepped: 10,
   });
+
   const [rangeGroups, setRangeGroups] = useState({
     sm: { min: 1, max: 2 },
     smSecondary: { min: 1, max: 2 },
@@ -91,54 +146,71 @@ export function UITestPage() {
   };
 
   return (
-    <div className="ui-test-page">
-      <div className="ui-test-container">
-        <h1>UI Component Test Suite</h1>
+    <div className="min-h-screen w-full bg-background px-4 py-5 text-foreground md:px-5 md:py-10">
+      <div className="mx-auto max-w-[1400px]">
+        <div className="mb-8 flex items-center justify-between gap-4 border-b-2 border-border pb-5 md:mb-10">
+          <h1 className="m-0">UI Component Test Suite</h1>
+          <ThemeToggle />
+        </div>
 
-        {/* Buttons Section */}
-        <section className="ui-test-section">
-          <h2>Buttons</h2>
-          <div className="ui-test-grid">
+        <Section title="Buttons">
+          <TestGrid>
             {buttonVariants.map((variant) => (
-              <div key={`${variant}-standard`} className="ui-test-card">
-                <h3>{buttonVariantLabels[variant]} / Standard</h3>
-                <div className="ui-test-button-row">
+              <TestCard
+                key={`${variant}-standard`}
+                title={`${buttonVariantLabels[variant]} / Standard`}
+              >
+                <InlineStack>
                   {buttonSizes.map((size) => (
                     <Button key={`${variant}-${size}`} variant={variant} size={size}>
                       {buttonSizeLabels[size]}
                     </Button>
                   ))}
-                </div>
-              </div>
+                </InlineStack>
+              </TestCard>
             ))}
+
             {buttonVariants.map((variant) => (
-              <div key={`${variant}-pill`} className="ui-test-card">
-                <h3>{buttonVariantLabels[variant]} / Pill</h3>
-                <div className="ui-test-button-row">
+              <TestCard
+                key={`${variant}-pill`}
+                title={`${buttonVariantLabels[variant]} / Pill`}
+              >
+                <InlineStack>
                   {buttonSizes.map((size) => (
                     <Button key={`${variant}-${size}-pill`} variant={variant} size={size} pill>
                       {buttonSizeLabels[size]}
                     </Button>
                   ))}
-                </div>
-              </div>
+                </InlineStack>
+              </TestCard>
             ))}
+
             {buttonVariants.map((variant) => (
-              <div key={`${variant}-disabled`} className="ui-test-card">
-                <h3>{buttonVariantLabels[variant]} / Disabled</h3>
-                <div className="ui-test-button-row">
+              <TestCard
+                key={`${variant}-disabled`}
+                title={`${buttonVariantLabels[variant]} / Disabled`}
+              >
+                <InlineStack>
                   {buttonSizes.map((size) => (
-                    <Button key={`${variant}-${size}-disabled`} variant={variant} size={size} disabled>
+                    <Button
+                      key={`${variant}-${size}-disabled`}
+                      variant={variant}
+                      size={size}
+                      disabled
+                    >
                       {buttonSizeLabels[size]}
                     </Button>
                   ))}
-                </div>
-              </div>
+                </InlineStack>
+              </TestCard>
             ))}
+
             {buttonVariants.map((variant) => (
-              <div key={`${variant}-dotted`} className="ui-test-card">
-                <h3>{buttonVariantLabels[variant]} / Dotted Border</h3>
-                <div className="ui-test-button-row">
+              <TestCard
+                key={`${variant}-dotted`}
+                title={`${buttonVariantLabels[variant]} / Dotted Border`}
+              >
+                <InlineStack>
                   {buttonSizes.map((size) => (
                     <Button
                       key={`${variant}-${size}-dotted`}
@@ -149,19 +221,16 @@ export function UITestPage() {
                       {buttonSizeLabels[size]}
                     </Button>
                   ))}
-                </div>
-              </div>
+                </InlineStack>
+              </TestCard>
             ))}
-          </div>
-        </section>
+          </TestGrid>
+        </Section>
 
-        {/* Tooltip Section */}
-        <section className="ui-test-section">
-          <h2>Tooltip</h2>
-          <div className="ui-test-grid">
-            <div className="ui-test-card">
-              <h3>Ghost Button Sizes</h3>
-              <div className="ui-test-stack">
+        <Section title="Tooltip">
+          <TestGrid>
+            <TestCard title="Ghost Button Sizes">
+              <WideStack>
                 <Tooltip title="Delete" size="sm">
                   <Button variant="ghost">Small</Button>
                 </Tooltip>
@@ -173,17 +242,14 @@ export function UITestPage() {
                 <Tooltip title="Delete" size="lg">
                   <Button variant="ghost">Large</Button>
                 </Tooltip>
-              </div>
-            </div>
-          </div>
-        </section>
+              </WideStack>
+            </TestCard>
+          </TestGrid>
+        </Section>
 
-        {/* Large Input Section */}
-        <section className="ui-test-section">
-          <h2>Large Input</h2>
-          <div className="ui-test-grid">
-            <div className="ui-test-card">
-              <h3>Size SM / Placeholder</h3>
+        <Section title="Large Input">
+          <TestGrid>
+            <TestCard title="Size SM / Placeholder">
               <LargeInput
                 label="Quick Note"
                 size="sm"
@@ -191,9 +257,9 @@ export function UITestPage() {
                 hint="Tests size, label, placeholder, and name"
                 name="quickNote"
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Size MD / Rows</h3>
+            </TestCard>
+
+            <TestCard title="Size MD / Rows">
               <LargeInput
                 label="Description"
                 size="md"
@@ -202,9 +268,9 @@ export function UITestPage() {
                 placeholder="Add a medium-length description..."
                 hint="Tests default value and rows"
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Size LG / Placeholder</h3>
+            </TestCard>
+
+            <TestCard title="Size LG / Placeholder">
               <LargeInput
                 label="Detailed Summary"
                 size="lg"
@@ -213,9 +279,9 @@ export function UITestPage() {
                 required
                 autoComplete="off"
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Controlled Value</h3>
+            </TestCard>
+
+            <TestCard title="Controlled Value">
               <LargeInput
                 label="Controlled Notes"
                 size="md"
@@ -226,9 +292,9 @@ export function UITestPage() {
                 placeholder="Type to test value and onChange..."
                 hint="Tests controlled textarea behavior"
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Character Count</h3>
+            </TestCard>
+
+            <TestCard title="Character Count">
               <LargeInput
                 label="Summary"
                 size="md"
@@ -241,9 +307,9 @@ export function UITestPage() {
                 maxText={180}
                 showCount
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Auto Grow</h3>
+            </TestCard>
+
+            <TestCard title="Auto Grow">
               <LargeInput
                 label="Auto-Growing Notes"
                 size="sm"
@@ -256,18 +322,18 @@ export function UITestPage() {
                 autoGrow
                 maxAutoGrowHeight={220}
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Error State</h3>
+            </TestCard>
+
+            <TestCard title="Error State">
               <LargeInput
                 label="Feedback"
                 size="md"
                 placeholder="Explain what went wrong..."
                 error="Feedback is required before continuing."
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Disabled</h3>
+            </TestCard>
+
+            <TestCard title="Disabled">
               <LargeInput
                 label="Archived Notes"
                 size="sm"
@@ -276,9 +342,9 @@ export function UITestPage() {
                 disabled
                 hint="Disabled textarea state"
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Read Only</h3>
+            </TestCard>
+
+            <TestCard title="Read Only">
               <LargeInput
                 label="Reference Copy"
                 size="sm"
@@ -287,16 +353,13 @@ export function UITestPage() {
                 readOnly
                 hint="Tests readOnly behavior"
               />
-            </div>
-          </div>
-        </section>
+            </TestCard>
+          </TestGrid>
+        </Section>
 
-        {/* Number Up/Down Section */}
-        <section className="ui-test-section">
-          <h2>Number Up/Down</h2>
-          <div className="ui-test-grid">
-            <div className="ui-test-card">
-              <h3>Size SM Primary</h3>
+        <Section title="Number Up/Down">
+          <TestGrid>
+            <TestCard title="Size SM Primary">
               <NumberStepper
                 value={stepperValues.sm}
                 onChange={(value) => updateStepperValue("sm", value)}
@@ -306,9 +369,9 @@ export function UITestPage() {
                 size="sm"
                 variant="primary"
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Size SM Primary Pill</h3>
+            </TestCard>
+
+            <TestCard title="Size SM Primary Pill">
               <NumberStepper
                 value={stepperValues.smPill}
                 onChange={(value) => updateStepperValue("smPill", value)}
@@ -319,9 +382,9 @@ export function UITestPage() {
                 variant="primary"
                 pill
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Size SM Secondary</h3>
+            </TestCard>
+
+            <TestCard title="Size SM Secondary">
               <NumberStepper
                 value={stepperValues.smSecondary}
                 onChange={(value) => updateStepperValue("smSecondary", value)}
@@ -331,9 +394,9 @@ export function UITestPage() {
                 size="sm"
                 variant="secondary"
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Size SM Secondary Pill</h3>
+            </TestCard>
+
+            <TestCard title="Size SM Secondary Pill">
               <NumberStepper
                 value={stepperValues.smSecondaryPill}
                 onChange={(value) => updateStepperValue("smSecondaryPill", value)}
@@ -344,9 +407,9 @@ export function UITestPage() {
                 pill
                 variant="secondary"
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Size XS Ghost</h3>
+            </TestCard>
+
+            <TestCard title="Size XS Ghost">
               <NumberStepper
                 value={stepperValues.xs}
                 onChange={(value) => updateStepperValue("xs", value)}
@@ -356,9 +419,9 @@ export function UITestPage() {
                 size="xs"
                 variant="ghost"
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Size XS Ghost Pill</h3>
+            </TestCard>
+
+            <TestCard title="Size XS Ghost Pill">
               <NumberStepper
                 value={stepperValues.xsPill}
                 onChange={(value) => updateStepperValue("xsPill", value)}
@@ -369,9 +432,9 @@ export function UITestPage() {
                 variant="ghost"
                 pill
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Range 0-100, Step 5</h3>
+            </TestCard>
+
+            <TestCard title="Range 0-100, Step 5">
               <NumberStepper
                 value={stepperValues.stepped}
                 onChange={(value) => updateStepperValue("stepped", value)}
@@ -379,24 +442,17 @@ export function UITestPage() {
                 max={100}
                 step={5}
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Disabled</h3>
-              <NumberStepper
-                value={5}
-                onChange={() => { }}
-                disabled
-              />
-            </div>
-          </div>
-        </section>
+            </TestCard>
 
-        {/* Number Stepper Group Section */}
-        <section className="ui-test-section">
-          <h2>Number Stepper Group</h2>
-          <div className="ui-test-grid">
-            <div className="ui-test-card">
-              <h3>Size SM Primary</h3>
+            <TestCard title="Disabled">
+              <NumberStepper value={5} onChange={() => {}} disabled />
+            </TestCard>
+          </TestGrid>
+        </Section>
+
+        <Section title="Number Stepper Group">
+          <TestGrid>
+            <TestCard title="Size SM Primary">
               <NumberStepperGroup
                 size="sm"
                 variant="primary"
@@ -406,9 +462,9 @@ export function UITestPage() {
                 ]}
                 onChange={(key, value) => updateRangeGroup("sm", key as "min" | "max", value)}
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Size SM Primary Pill</h3>
+            </TestCard>
+
+            <TestCard title="Size SM Primary Pill">
               <NumberStepperGroup
                 size="sm"
                 variant="primary"
@@ -419,9 +475,9 @@ export function UITestPage() {
                 ]}
                 onChange={(key, value) => updateRangeGroup("smPill", key as "min" | "max", value)}
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Size SM Secondary</h3>
+            </TestCard>
+
+            <TestCard title="Size SM Secondary">
               <NumberStepperGroup
                 size="sm"
                 variant="secondary"
@@ -429,11 +485,13 @@ export function UITestPage() {
                   { key: "min", label: "Min", value: rangeGroups.smSecondary.min, min: 0, max: 10 },
                   { key: "max", label: "Max", value: rangeGroups.smSecondary.max, min: 0, max: 10 },
                 ]}
-                onChange={(key, value) => updateRangeGroup("smSecondary", key as "min" | "max", value)}
+                onChange={(key, value) =>
+                  updateRangeGroup("smSecondary", key as "min" | "max", value)
+                }
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Size SM Secondary Pill</h3>
+            </TestCard>
+
+            <TestCard title="Size SM Secondary Pill">
               <NumberStepperGroup
                 size="sm"
                 pill
@@ -442,11 +500,13 @@ export function UITestPage() {
                   { key: "min", label: "Min", value: rangeGroups.smSecondaryPill.min, min: 0, max: 10 },
                   { key: "max", label: "Max", value: rangeGroups.smSecondaryPill.max, min: 0, max: 10 },
                 ]}
-                onChange={(key, value) => updateRangeGroup("smSecondaryPill", key as "min" | "max", value)}
+                onChange={(key, value) =>
+                  updateRangeGroup("smSecondaryPill", key as "min" | "max", value)
+                }
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Size SM Secondary Input</h3>
+            </TestCard>
+
+            <TestCard title="Size SM Secondary Input">
               <NumberStepperGroup
                 size="sm"
                 variant="secondary"
@@ -455,11 +515,13 @@ export function UITestPage() {
                   { key: "min", label: "Min", value: rangeGroups.smInput.min, min: 0, max: 10 },
                   { key: "max", label: "Max", value: rangeGroups.smInput.max, min: 0, max: 10 },
                 ]}
-                onChange={(key, value) => updateRangeGroup("smInput", key as "min" | "max", value)}
+                onChange={(key, value) =>
+                  updateRangeGroup("smInput", key as "min" | "max", value)
+                }
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Size XS Ghost</h3>
+            </TestCard>
+
+            <TestCard title="Size XS Ghost">
               <NumberStepperGroup
                 size="xs"
                 variant="ghost"
@@ -469,9 +531,9 @@ export function UITestPage() {
                 ]}
                 onChange={(key, value) => updateRangeGroup("xs", key as "min" | "max", value)}
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Size XS Ghost Pill</h3>
+            </TestCard>
+
+            <TestCard title="Size XS Ghost Pill">
               <NumberStepperGroup
                 size="xs"
                 variant="ghost"
@@ -482,133 +544,91 @@ export function UITestPage() {
                 ]}
                 onChange={(key, value) => updateRangeGroup("xsPill", key as "min" | "max", value)}
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Step 5 / Wide Range</h3>
+            </TestCard>
+
+            <TestCard title="Step 5 / Wide Range">
               <NumberStepperGroup
                 size="sm"
                 items={[
                   { key: "min", label: "Min", value: rangeGroups.stepped.min, min: 0, max: 50, step: 5 },
                   { key: "max", label: "Max", value: rangeGroups.stepped.max, min: 0, max: 50, step: 5 },
                 ]}
-                onChange={(key, value) => updateRangeGroup("stepped", key as "min" | "max", value)}
+                onChange={(key, value) =>
+                  updateRangeGroup("stepped", key as "min" | "max", value)
+                }
               />
-            </div>
-            <div className="ui-test-card">
-              <h3>Disabled</h3>
+            </TestCard>
+
+            <TestCard title="Disabled">
               <NumberStepperGroup
                 size="sm"
                 items={[
                   { key: "min", label: "Min", value: 2, min: 0, max: 10, disabled: true },
                   { key: "max", label: "Max", value: 6, min: 0, max: 10, disabled: true },
                 ]}
-                onChange={() => { }}
+                onChange={() => {}}
               />
-            </div>
-          </div>
-        </section>
+            </TestCard>
+          </TestGrid>
+        </Section>
 
-        {/* Badges Section */}
-        <section className="ui-test-section">
-          <h2>Badges</h2>
-          <div className="ui-test-grid">
-            <div className="ui-test-card">
-              <h3>Default</h3>
+        <Section title="Badges">
+          <TestGrid>
+            <TestCard title="Default">
               <Badge>Default Badge</Badge>
-            </div>
-            <div className="ui-test-card">
-              <h3>Success</h3>
+            </TestCard>
+            <TestCard title="Success">
               <Badge variant="success">Success Badge</Badge>
-            </div>
-            <div className="ui-test-card">
-              <h3>Danger</h3>
+            </TestCard>
+            <TestCard title="Danger">
               <Badge variant="danger">Danger Badge</Badge>
-            </div>
-            <div className="ui-test-card">
-              <h3>Warning</h3>
+            </TestCard>
+            <TestCard title="Warning">
               <Badge variant="warning">Warning Badge</Badge>
-            </div>
-            <div className="ui-test-card">
-              <h3>Accent</h3>
+            </TestCard>
+            <TestCard title="Accent">
               <Badge variant="accent">Accent Badge</Badge>
-            </div>
-            <div className="ui-test-card">
-              <h3>Muted</h3>
+            </TestCard>
+            <TestCard title="Muted">
               <Badge variant="muted">Muted Badge</Badge>
-            </div>
-            <div className="ui-test-card">
-              <h3>Sizes</h3>
-              <div className="ui-test-stack">
+            </TestCard>
+            <TestCard title="Sizes">
+              <WideStack>
                 <Badge size="sm">Small</Badge>
                 <Badge size="md">Medium</Badge>
                 <Badge size="lg">Large</Badge>
                 <Badge size="xl">Extra Large</Badge>
-              </div>
-            </div>
-          </div>
-        </section>
+              </WideStack>
+            </TestCard>
+          </TestGrid>
+        </Section>
 
-        {/* Inputs Section */}
-        <section className="ui-test-section">
-          <h2>Inputs</h2>
-          <div className="ui-test-grid">
-            <div className="ui-test-card">
-              <h3>Default</h3>
-              <Input
-                label="Name"
-                placeholder="Default"
-              />
-            </div>
-            <div className="ui-test-card">
-              <h3>Small</h3>
-              <Input
-                label="Compact"
-                size="sm"
-                placeholder="Smaller input"
-              />
-            </div>
-            <div className="ui-test-card">
-              <h3>Ghost</h3>
-              <Input
-                label="Ghost"
-                variant="ghost"
-                placeholder="Ghost input"
-              />
-            </div>
-            <div className="ui-test-card">
-              <h3>Quiet</h3>
-              <Input
-                label="Quiet"
-                variant="quiet"
-                placeholder="Quiet input"
-              />
-            </div>
-            <div className="ui-test-card">
-              <h3>Pill</h3>
-              <Input
-                label="Pill"
-                variant="secondary"
-                pill
-                placeholder="Pill input"
-              />
-            </div>
-            <div className="ui-test-card">
-              <h3>Disabled</h3>
-              <Input
-                label="Disabled"
-                variant="quiet"
-                disabled
-                value="Disabled value"
-              />
-            </div>
-          </div>
-        </section>
+        <Section title="Inputs">
+          <TestGrid>
+            <TestCard title="Default">
+              <Input label="Name" placeholder="Default" />
+            </TestCard>
+            <TestCard title="Small">
+              <Input label="Compact" size="sm" placeholder="Smaller input" />
+            </TestCard>
+            <TestCard title="Ghost">
+              <Input label="Ghost" variant="ghost" placeholder="Ghost input" />
+            </TestCard>
+            <TestCard title="Quiet">
+              <Input label="Quiet" variant="quiet" placeholder="Quiet input" />
+            </TestCard>
+            <TestCard title="Pill">
+              <Input label="Pill" variant="secondary" pill placeholder="Pill input" />
+            </TestCard>
+            <TestCard title="Disabled">
+              <Input label="Disabled" variant="quiet" disabled value="Disabled value" />
+            </TestCard>
+          </TestGrid>
+        </Section>
 
-        {/* Select Section */}
-        <section className="ui-test-section">
-          <h2>Select Dropdown</h2>
-          <div className="ui-test-grid">
-            <div className="ui-test-card">
+        <Section title="Select Dropdown">
+          <TestGrid>
+            <TestCard>
               <Select
                 label="Choose an option"
                 options={[
@@ -619,8 +639,8 @@ export function UITestPage() {
                 value={selectValue}
                 onChange={(e) => setSelectValue(e.target.value)}
               />
-            </div>
-            <div className="ui-test-card">
+            </TestCard>
+            <TestCard>
               <Select
                 label="With Hint"
                 options={[
@@ -630,88 +650,73 @@ export function UITestPage() {
                 ]}
                 hint="Select one of the options above"
               />
-            </div>
-          </div>
-        </section>
+            </TestCard>
+          </TestGrid>
+        </Section>
 
-        {/* Toggles Section */}
-        <section className="ui-test-section">
-          <h2>Toggles</h2>
-          <div className="ui-test-grid">
-            <div className="ui-test-card">
+        <Section title="Toggles">
+          <TestGrid>
+            <TestCard>
               <Toggle
                 label="Enable notifications"
                 checked={toggleStates.toggle1}
                 onChange={(checked) => handleToggle("toggle1", checked)}
               />
-            </div>
-            <div className="ui-test-card">
+            </TestCard>
+            <TestCard>
               <Toggle
                 label="Dark mode (enabled)"
                 checked={toggleStates.toggle2}
                 onChange={(checked) => handleToggle("toggle2", checked)}
               />
-            </div>
-            <div className="ui-test-card">
-              <Toggle
-                label="Disabled toggle"
-                checked={false}
-                onChange={() => { }}
-                disabled
-              />
-            </div>
-            <div className="ui-test-card">
+            </TestCard>
+            <TestCard>
+              <Toggle label="Disabled toggle" checked={false} onChange={() => {}} disabled />
+            </TestCard>
+            <TestCard>
               <Toggle
                 label="With hint text"
                 checked={toggleStates.toggle1}
                 onChange={(checked) => handleToggle("toggle1", checked)}
                 hint="This toggle has a helpful hint below"
               />
-            </div>
-          </div>
-        </section>
+            </TestCard>
+          </TestGrid>
+        </Section>
 
-        {/* Spinner Section */}
-        <section className="ui-test-section">
-          <h2>Spinners</h2>
-          <div className="ui-test-grid">
-            <div className="ui-test-card">
-              <h3>Small (16px)</h3>
+        <Section title="Spinners">
+          <TestGrid>
+            <TestCard title="Small (16px)">
               <Spinner size={16} />
-            </div>
-            <div className="ui-test-card">
-              <h3>Medium (24px)</h3>
+            </TestCard>
+            <TestCard title="Medium (24px)">
               <Spinner size={24} />
-            </div>
-            <div className="ui-test-card">
-              <h3>Large (32px)</h3>
+            </TestCard>
+            <TestCard title="Large (32px)">
               <Spinner size={32} />
-            </div>
-            <div className="ui-test-card">
-              <h3>Extra Large (48px)</h3>
+            </TestCard>
+            <TestCard title="Extra Large (48px)">
               <Spinner size={48} />
-            </div>
-          </div>
-        </section>
+            </TestCard>
+          </TestGrid>
+        </Section>
 
-        {/* Modal Section */}
-        <section className="ui-test-section">
-          <h2>Modal</h2>
-          <div className="ui-test-grid">
-            <div className="ui-test-card">
+        <Section title="Modal">
+          <TestGrid>
+            <TestCard>
               <Button variant="primary" onClick={() => setModalOpen(true)}>
                 Open Modal
               </Button>
-            </div>
-          </div>
-        </section>
+            </TestCard>
+          </TestGrid>
+        </Section>
 
         <Modal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
           title="Test Modal"
           footer={
-            <div className="modal-footer-actions">
+            <div className="flex justify-end gap-3">
               <Button variant="secondary" onClick={() => setModalOpen(false)}>
                 Cancel
               </Button>
@@ -721,15 +726,19 @@ export function UITestPage() {
             </div>
           }
         >
-          <p>This is a test modal dialog. You can interact with all the UI components inside it.</p>
-          <Input label="Modal Input" placeholder="Type something..." />
-          <Select
-            label="Modal Select"
-            options={[
-              { value: "opt1", label: "Option 1" },
-              { value: "opt2", label: "Option 2" },
-            ]}
-          />
+          <div className="flex flex-col gap-4">
+            <p>
+              This is a test modal dialog. You can interact with all the UI components inside it.
+            </p>
+            <Input label="Modal Input" placeholder="Type something..." />
+            <Select
+              label="Modal Select"
+              options={[
+                { value: "opt1", label: "Option 1" },
+                { value: "opt2", label: "Option 2" },
+              ]}
+            />
+          </div>
         </Modal>
       </div>
     </div>

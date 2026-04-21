@@ -1,6 +1,5 @@
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import "./Tooltip.css";
 
 interface TooltipProps {
   title: string;
@@ -8,6 +7,12 @@ interface TooltipProps {
   children: ReactNode;
   className?: string;
 }
+
+const sizeClasses: Record<NonNullable<TooltipProps["size"]>, string> = {
+  sm: "px-2 py-1 text-[0.72rem]",
+  md: "px-2.5 py-1.5 text-[0.78rem]",
+  lg: "px-3 py-2 text-[0.84rem]",
+};
 
 export function Tooltip({
   title,
@@ -49,14 +54,14 @@ export function Tooltip({
 
   return (
     <span
-      className={`tooltip ${className}`}
+      className={["relative inline-flex w-fit", className].filter(Boolean).join(" ")}
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
       onFocus={() => setIsOpen(true)}
       onBlur={() => setIsOpen(false)}
     >
       <span
-        className="tooltip__trigger"
+        className="inline-flex"
         aria-describedby={tooltipId}
         ref={triggerRef}
       >
@@ -68,8 +73,12 @@ export function Tooltip({
           id={tooltipId}
           role="tooltip"
           ref={contentRef}
-          className={`tooltip__content tooltip__content--portal tooltip__content--${size} ${position ? "tooltip__content--visible" : ""}`}
-          style={position ? { top: position.top, left: position.left } : undefined}
+          className={[
+            "pointer-events-none fixed z-9999 -translate-x-1/2 whitespace-nowrap rounded-sm border border-border bg-popover text-popover-foreground shadow-sm transition-opacity duration-150",
+            sizeClasses[size],
+            position ? "opacity-100" : "opacity-0",
+          ].join(" ")}
+          style={position ? { top: position.top, left: position.left } : { top: 0, left: 0 }}
         >
           {title}
         </span>,

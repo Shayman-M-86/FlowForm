@@ -15,6 +15,7 @@ import { MultiChoiceQuestion } from "../components/node/MultiChoiceQuestion";
 import { RatingQuestion } from "../components/node/RatingQuestion";
 import { RulesQuestion } from "../components/node/RulesQuestion";
 import { savePreviewSurvey } from "../components/form_filler/previewStorage";
+import { ThemeToggle } from "../components/ui/ThemeToggle";
 import type { QuestionContent, RuleContent, SurveyNode } from "../components/node/questionTypes";
 import { serializeSurveyEntries, type SurveyEntry } from "../components/node/surveySerialize";
 import { incrementQuestionId } from "../components/node/NodePillUtils";
@@ -587,10 +588,11 @@ export function NodePage() {
             />
           </div>
           <div className="node-page__toolbar-actions">
+            <ThemeToggle />
             <Button
               className="node-page__toolbar-clear"
               type="button"
-              variant="quiet"
+              variant="ghost"
               size="sm"
               onClick={clearSchema}
               disabled={questions.length === 0}
@@ -698,7 +700,7 @@ function QuestionRow({
         <Button
           className="node-page__question-collapse-btn"
           type="button"
-          variant="quiet"
+          variant="ghost"
           size="xs"
           aria-label={isExpanded ? "Collapse question" : "Expand question"}
           aria-expanded={isExpanded}
@@ -716,7 +718,7 @@ function QuestionRow({
             <Button
               className="node-page__question-move-btn"
               type="button"
-              variant="quiet"
+              variant="ghost"
               size="xs"
               disabled={index === 0}
               aria-label="Move question up"
@@ -727,7 +729,7 @@ function QuestionRow({
             <Button
               className="node-page__question-move-btn"
               type="button"
-              variant="quiet"
+              variant="ghost"
               size="xs"
               disabled={isLast}
               aria-label="Move question down"

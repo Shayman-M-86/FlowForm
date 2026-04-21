@@ -68,7 +68,7 @@ export function NodePillTopbar({
             >
               Delete
             </Button>
-            <Button className="node-pill__action" type="button" variant="quiet" size="xs" pill>
+            <Button className="node-pill__action" type="button" variant="secondary" size="xs" pill>
               Settings
             </Button>
           </>
@@ -76,7 +76,7 @@ export function NodePillTopbar({
         <Button
           className={`node-pill__action ${isEditMode ? "node-pill__action--active" : ""}`}
           type="button"
-          variant={isEditMode ? "secondary" : "quiet"}
+          variant={isEditMode ? "secondary" : "secondary"}
           size="xs"
           pill
           onClick={onToggleEditMode}
@@ -321,7 +321,7 @@ export function NodePillCollapsed({ family, tagValue, title, onExpand }: Collaps
   return (
     <div className="node-pill node-pill--collapsed">
       <div className="node-pill__collapsed-row">
-        <Badge variant="accent" size="xl">{family}</Badge>
+        <Badge variant="accent" size="xs">{family}</Badge>
         <div className="node-pill__collapsed-text">
           <span className="node-pill__collapsed-title">
             {title.trim() || "Untitled question"}
