@@ -21,7 +21,7 @@ import { serializeSurveyEntries, type SurveyEntry } from "../components/node/sur
 import { incrementQuestionId } from "../components/node/NodePillUtils";
 import "./NodePage.css";
 
-const DEBUG_SHOW_JSON = true;
+const DEBUG_SHOW_JSON = false;
 const NODE_PAGE_STORAGE_KEY = "flowform.node-page.schema";
 const NODE_PAGE_UI_STORAGE_KEY = "flowform.node-page.ui";
 

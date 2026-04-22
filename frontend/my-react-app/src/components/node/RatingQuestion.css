@@ -1,5 +1,3 @@
-@import "./Node-pill.css";
-
 /* RatingQuestion-specific: numeric slider, emoji scales, and star rating */
 
 .rating-question__panel {
@@ -125,11 +123,11 @@
 }
 
 .rating-question__star-base {
-  color: var(--star-empty);
+  color: color-mix(in srgb, var(--muted-foreground) 30%, var(--border) 70%);
 }
 
 .rating-question__star-fill {
-  color: var(--star-fill);
+  color: #f5c542;
   overflow: hidden;
 }
 
@@ -223,7 +221,7 @@
   right: 10px;
   height: 8px;
   border-radius: 999px;
-  background: var(--slider-track);
+  background: color-mix(in srgb, var(--border) 70%, var(--muted) 30%);
   transform: translateY(-50%);
   pointer-events: none;
   z-index: 0;
@@ -246,7 +244,7 @@
   width: 2px;
   height: 10px;
   border-radius: 999px;
-  background: var(--slider-tick);
+  background: color-mix(in srgb, var(--muted-foreground) 45%, transparent);
 }
 
 .rating-question__slider {
@@ -282,18 +280,33 @@
   width: 18px;
   height: 18px;
   margin-top: -5px;
-  border: 2px solid var(--accent-border);
+  border: 2px solid var(--accent);
   border-radius: 999px;
-  background: var(--bg);
+  background: var(--card);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .rating-question__slider::-moz-range-thumb {
-  position: absolute;
   width: 18px;
   height: 18px;
-  border: 2px solid var(--accent-border);
+  border: 2px solid var(--accent);
   border-radius: 999px;
-  background: var(--bg);
+  background: var(--card);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.rating-question__slider-visual-thumb {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .rating-question__preview-value {

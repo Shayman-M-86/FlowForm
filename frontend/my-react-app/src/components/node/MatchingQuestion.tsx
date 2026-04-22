@@ -1,10 +1,36 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import { Button } from "../ui/Button";
-import "./MatchingQuestion.css";
 import { useOptionDrag } from "./useOptionDrag";
-import { QUESTION_MAX, autoResizeTextarea, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
-import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillDragThresholds, NodePillCollapsed } from "./NodePillShell";
+import { QUESTION_MAX, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
+import {
+  NodePillTopbar,
+  NodePillQuestionField,
+  NodePillCharCount,
+  NodePillFieldHead,
+  NodePillDragThresholds,
+  NodePillCollapsed,
+} from "./NodePillShell";
+import {
+  nodePillBodyClass,
+  nodePillFieldClass,
+  nodePillLimitTextClass,
+  nodePillOptionAddClass,
+  nodePillOptionFieldClass,
+  nodePillOptionFieldEditClass,
+  nodePillOptionGrabClass,
+  nodePillOptionHandleClass,
+  nodePillOptionInlineMetaClass,
+  nodePillOptionMainClass,
+  nodePillOptionMetaGroupClass,
+  nodePillOptionMetaLabelClass,
+  nodePillOptionRowClass,
+  nodePillOptionDraggingClass,
+  nodePillOptionsListClass,
+  nodePillShellClass,
+  nodePillShellEditClass,
+} from "./nodePillStyles";
 import { Input } from "../ui/Input";
+import { LargeInput } from "../ui/LargeInput";
 import type { MatchingContent } from "./questionTypes";
 
 export interface MatchingQuestionHandle {
@@ -24,7 +50,7 @@ interface MatchingQuestionProps {
 }
 
 const ANSWER_POOL = 2000;
-const ANSWER_PER_FIELD_MAX = 250;
+const ANSWER_PER_FIELD_MAX = 200;
 const MAX_ITEMS_PER_COLUMN = 10;
 
 type MatchItem = {
@@ -148,9 +174,8 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
     });
   }
 
-
   function renderColumn(
-    title: string,
+    columnTitle: string,
     singularTitle: string,
     items: MatchItem[],
     setItems: React.Dispatch<React.SetStateAction<MatchItem[]>>,
@@ -159,15 +184,17 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
     idPrefix: "left" | "right",
   ) {
     return (
-      <section className="node-pill__match-column">
-        <div className="node-pill__match-column-head">
-          <span className="node-pill__match-column-label">{title}</span>
+      <section className="flex min-w-0 flex-col gap-2.5">
+        <div className="flex items-center justify-between gap-2.5">
+          <span className="text-[0.95rem] font-semibold text-foreground">{columnTitle}</span>
           {isEditMode && (
-            <span className="node-pill__match-column-count">{items.length}</span>
+            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-border px-2 text-[0.78rem] text-muted-foreground">
+              {items.length}
+            </span>
           )}
         </div>
 
-        <div className="node-pill__options" ref={drag.optionsListRef}>
+        <div className={nodePillOptionsListClass} ref={drag.optionsListRef}>
           {items.map((item, index) => {
             const isOpen = openItemIds.has(item.id);
             const isDragging = drag.activeDrag?.id === item.id;
@@ -182,7 +209,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                 ref={(node) => {
                   drag.optionRefs.current[item.id] = node;
                 }}
-                className={`node-pill__option-row ${isDragging ? "node-pill__option-row--dragging" : ""}`}
+                className={`${nodePillOptionRowClass} ${isDragging ? nodePillOptionDraggingClass : ""}`}
                 style={dragTransform}
               >
                 <NodePillDragThresholds
@@ -194,7 +221,8 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
 
                 {isEditMode && (
                   <Button
-                    className="node-pill__option-handle"
+                    className={nodePillOptionHandleClass}
+                    variant="primary"
                     type="button"
                     aria-label={`${item.placeholder} settings`}
                     aria-expanded={isOpen}
@@ -204,75 +232,79 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                   </Button>
                 )}
 
-                <div className="node-pill__option-field">
-                  <div className="node-pill__option-main">
-                    <textarea
-                      className="node-pill__option"
-                      placeholder={item.placeholder}
-                      rows={1}
-                      maxLength={fieldMax}
-                      value={item.value}
-                      readOnly={!isEditMode}
-                      onChange={(event) =>
-                        setItems((current) =>
-                          current.map((entry) =>
-                            entry.id === item.id ? { ...entry, value: event.target.value } : entry,
-                          ),
-                        )
-                      }
-                      onInput={(event) => autoResizeTextarea(event.currentTarget)}
-                    />
-
-                    {isEditMode && (
-                      <button
-                        className="node-pill__option-grab"
-                        type="button"
-                        aria-label={`Reorder ${item.placeholder}`}
-                        onPointerDown={(event) => drag.startDrag(event, item.id, index)}
-                      >
-                        <span aria-hidden="true">⋮⋮</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {isEditMode && item.value.length === fieldMax && (
-                    <span className="node-pill__option-limit">
-                      Maximum characters reached.
-                    </span>
-                  )}
-
-                  {isEditMode && isOpen && (
-                    <div className="node-pill__option-inline-meta">
-                      <div className="node-pill__option-meta-group">
-                        <span className="node-pill__option-meta-label">Item tag</span>
-                        <Input
-                          className=""
-                          size="sm"
-                          type="text"
-                          placeholder={`${idPrefix}_${index + 1}`}
-                          value={item.tag}
+                <div className={`${nodePillOptionFieldClass} ${isEditMode ? `${nodePillOptionFieldEditClass} flex-row items-stretch` : ""}`}>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <div className={nodePillOptionMainClass}>
+                      <div className="min-w-0 flex-1">
+                        <LargeInput
+                          className="w-full"
+                          shellClassName="border-0 rounded-none"
+                          placeholder={item.placeholder}
+                          rows={1}
+                          maxText={fieldMax}
+                          maxAutoGrowHeight={110}
+                          value={item.value}
+                          autoGrow
+                          readOnly={!isEditMode}
                           onChange={(event) =>
                             setItems((current) =>
                               current.map((entry) =>
-                                entry.id === item.id ? { ...entry, tag: event.target.value } : entry,
+                                entry.id === item.id ? { ...entry, value: event.target.value } : entry,
                               ),
                             )
                           }
-                          onKeyDown={blurOnEnter}
                         />
                       </div>
-
-                      <Button
-                        className="node-pill__option-delete"
-                        type="button"
-                        variant="danger"
-                        size="xs"
-                        pill={true}
-                        onClick={() => deleteItem(item.id, setItems)}
-                      >
-                        Delete
-                      </Button>
                     </div>
+
+                    {isEditMode && item.value.length === fieldMax && (
+                      <span className={`${nodePillLimitTextClass} px-1.5`}>
+                        Maximum characters reached.
+                      </span>
+                    )}
+
+                    {isEditMode && isOpen && (
+                      <div className={nodePillOptionInlineMetaClass}>
+                        <div className={nodePillOptionMetaGroupClass}>
+                          <span className={nodePillOptionMetaLabelClass}>Item tag</span>
+                          <Input
+                            size="sm"
+                            type="text"
+                            placeholder={`${idPrefix}_${index + 1}`}
+                            value={item.tag}
+                            onChange={(event) =>
+                              setItems((current) =>
+                                current.map((entry) =>
+                                  entry.id === item.id ? { ...entry, tag: event.target.value } : entry,
+                                ),
+                              )
+                            }
+                            onKeyDown={blurOnEnter}
+                          />
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="xs"
+                          pill={true}
+                          onClick={() => deleteItem(item.id, setItems)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {isEditMode && (
+                    <button
+                      className={nodePillOptionGrabClass}
+                      type="button"
+                      aria-label={`Reorder ${item.placeholder}`}
+                      onPointerDown={(event) => drag.startDrag(event, item.id, index)}
+                    >
+                      <span aria-hidden="true">⋮⋮</span>
+                    </button>
                   )}
                 </div>
               </div>
@@ -281,7 +313,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
 
           {isEditMode && items.length < MAX_ITEMS_PER_COLUMN && (
             <Button
-              className="node-pill__option-add"
+              className={nodePillOptionAddClass}
               type="button"
               variant="ghost"
               borderStyle="dotted"
@@ -313,7 +345,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
   }
 
   return (
-    <section className={`node-pill ${isEditMode ? "node-pill--edit" : ""}`} aria-label="Matching question">
+    <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`} aria-label="Matching question">
       <NodePillTopbar
         family="Matching"
         tagValue={tagValue}
@@ -324,7 +356,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
         onDelete={onDelete}
       />
 
-      <div className="node-pill__body">
+      <div className={nodePillBodyClass}>
         <NodePillQuestionField
           value={questionValue}
           onChange={setQuestionValue}
@@ -335,7 +367,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
           showTitleEdit={true}
         />
 
-        <div className="node-pill__field">
+        <div className={nodePillFieldClass}>
           <NodePillFieldHead label="Pairs">
             {isEditMode && (
               <NodePillCharCount
@@ -347,7 +379,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
             )}
           </NodePillFieldHead>
 
-          <div className="node-pill__matching-grid">
+          <div className="grid gap-5 lg:grid-cols-2">
             {renderColumn("Prompts", "Prompt", leftItems, setLeftItems, leftDrag, nextLeftIndexRef, "left")}
             {renderColumn("Matches", "Match", rightItems, setRightItems, rightDrag, nextRightIndexRef, "right")}
           </div>

@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from "react";
-import "./RulesQuestion.css";
-import { NodePillTopbar, NodePillFieldHead, NodePillCollapsed } from "./NodePillShell";
+import {
+  NodePillTopbar,
+  NodePillFieldHead,
+  NodePillCollapsed,
+} from "./NodePillShell";
+import {
+  nodePillBodyClass,
+  nodePillFieldClass,
+  nodePillShellClass,
+  nodePillShellEditClass,
+} from "./nodePillStyles";
+import { Card } from "../ui/Card";
+import { CardStack } from "../ui/CardStack";
 import { Select } from "../ui/Select";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -68,11 +79,36 @@ const MATCH_OPTIONS: Array<{ value: RuleMatch; label: string }> = [
   { value: "NONE", label: "Match none" },
 ];
 
-const CHOICE_MARK_OPTIONS: Array<{ value: ChoiceMark; label: string; className: string }> = [
-  { value: "none", label: "Ignore", className: "rules-question__mark--none" },
-  { value: "required", label: "Required", className: "rules-question__mark--required" },
-  { value: "forbidden", label: "Forbidden", className: "rules-question__mark--forbidden" },
-  { value: "any_of", label: "Any of", className: "rules-question__mark--any_of" },
+const CHOICE_MARK_OPTIONS: Array<{
+  value: ChoiceMark;
+  label: string;
+  rowActive: string;
+  btnActive: string;
+}> = [
+  {
+    value: "none",
+    label: "Ignore",
+    rowActive: "",
+    btnActive: "bg-muted-foreground text-background border-transparent",
+  },
+  {
+    value: "required",
+    label: "Required",
+    rowActive: "border-success/40 bg-success/10",
+    btnActive: "bg-success text-background border-transparent",
+  },
+  {
+    value: "forbidden",
+    label: "Forbidden",
+    rowActive: "border-destructive/40 bg-destructive/10",
+    btnActive: "bg-destructive text-background border-transparent",
+  },
+  {
+    value: "any_of",
+    label: "Any of",
+    rowActive: "border-warning/40 bg-warning/10",
+    btnActive: "bg-warning text-background border-transparent",
+  },
 ];
 
 const NUMBER_OP_OPTIONS: Array<{ value: FieldNumberOperator; label: string }> = [
@@ -269,6 +305,18 @@ function conditionToDraft(
   };
 }
 
+const sectionClass = "border-t border-border pt-3 first:border-t-0 first:pt-0";
+const emptyTextClass = "m-0 px-4 py-2 text-[0.88rem] text-muted-foreground";
+const addBtnClass = "rounded-2xl min-h-11 mx-4 mb-3 mt-1.5";
+const choiceTagClass =
+  "inline-flex items-center rounded-full border border-border bg-muted px-1.5 py-0.5 text-[0.72rem] font-bold uppercase text-muted-foreground";
+const pickerHeadClass = "flex items-baseline justify-between gap-2";
+const pickerTitleClass = "text-[0.95rem] font-semibold text-foreground";
+const pickerHintClass =
+  "text-[0.78rem] uppercase tracking-[0.04em] text-muted-foreground";
+const toggleRowClass =
+  "inline-flex items-center gap-1.5 whitespace-nowrap text-[0.85rem] text-muted-foreground";
+
 export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>(function RulesQuestion(
   { onDelete, title: _title, initialTag, initialContent, idError, isCollapsed, onExpand, onEditModeChange, onDataChange, previousSiblings = [], followingSiblings = [] },
   ref,
@@ -453,7 +501,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
   function renderConditionBody(draft: ConditionDraft) {
     if (draft.family === null) {
       return (
-        <p className="rules-question__condition-empty">
+        <p className="m-0 text-[0.88rem] text-muted-foreground">
           Choose a question to configure how its answer should match.
         </p>
       );
@@ -462,7 +510,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     const target = findSibling(siblings, draft.target_id);
     if (!target) {
       return (
-        <p className="rules-question__condition-empty">
+        <p className="m-0 text-[0.88rem] text-muted-foreground">
           The target question is no longer available.
         </p>
       );
@@ -486,45 +534,53 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     marks: Record<string, ChoiceMark>,
   ) {
     return (
-      <div className="rules-question__picker rules-question__picker--choice">
-        <div className="rules-question__picker-head">
-          <span className="rules-question__picker-title">{target.title || target.label || target.id}</span>
-          <span className="rules-question__picker-hint">Mark each choice</span>
+      <Card tone="muted" size="sm" className="flex flex-col gap-2.5">
+        <div className={pickerHeadClass}>
+          <span className={pickerTitleClass}>{target.title || target.label || target.id}</span>
+          <span className={pickerHintClass}>Mark each choice</span>
         </div>
-        <div className="rules-question__choice-list">
+        <div className="flex flex-col gap-1.5">
           {target.definition.options.map((option) => {
             const mark = marks[option.id] ?? "none";
+            const activeRow = CHOICE_MARK_OPTIONS.find((o) => o.value === mark)?.rowActive ?? "";
             return (
               <div
                 key={option.id}
-                className={`rules-question__choice-row rules-question__mark--${mark}`}
+                className={`flex items-center justify-between gap-2.5 rounded-xl border border-border bg-card p-2 px-2.5 transition-colors ${activeRow}`}
               >
-                <span className="rules-question__choice-label">
-                  <span className="rules-question__choice-tag">{option.id}</span>
-                  <span className="rules-question__choice-text">{option.label || "—"}</span>
+                <span className="flex min-w-0 flex-1 items-center gap-2">
+                  <span className={choiceTagClass}>{option.id}</span>
+                  <span className="overflow-hidden text-ellipsis text-[0.92rem] text-foreground">
+                    {option.label || "—"}
+                  </span>
                 </span>
-                <div className="rules-question__mark-group" role="radiogroup" aria-label="Requirement">
-                  {CHOICE_MARK_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      role="radio"
-                      aria-checked={mark === opt.value}
-                      className={`rules-question__mark-btn ${opt.className} ${
-                        mark === opt.value ? "rules-question__mark-btn--active" : ""
-                      }`}
-                      disabled={!isEditMode}
-                      onClick={() => updateChoiceMark(key, option.id, opt.value)}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Requirement">
+                  {CHOICE_MARK_OPTIONS.map((opt) => {
+                    const active = mark === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        className={`rounded-full border px-2.5 py-1 text-[0.78rem] font-semibold transition-colors disabled:cursor-default disabled:opacity-60 ${
+                          active
+                            ? opt.btnActive
+                            : "border-border bg-card text-muted-foreground hover:bg-muted"
+                        }`}
+                        disabled={!isEditMode}
+                        onClick={() => updateChoiceMark(key, option.id, opt.value)}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
         </div>
-      </div>
+      </Card>
     );
   }
 
@@ -541,17 +597,19 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
       })),
     ];
     return (
-      <div className="rules-question__picker">
-        <div className="rules-question__picker-head">
-          <span className="rules-question__picker-title">{target.title || target.label || target.id}</span>
-          <span className="rules-question__picker-hint">Required pairings</span>
+      <Card tone="muted" size="sm" className="flex flex-col gap-2.5">
+        <div className={pickerHeadClass}>
+          <span className={pickerTitleClass}>{target.title || target.label || target.id}</span>
+          <span className={pickerHintClass}>Required pairings</span>
         </div>
-        <div className="rules-question__matching-list">
+        <div className="flex flex-col gap-2">
           {target.definition.prompts.map((prompt) => (
-            <div key={prompt.id} className="rules-question__matching-row">
-              <span className="rules-question__matching-prompt">
-                <span className="rules-question__choice-tag">{prompt.id}</span>
-                <span className="rules-question__choice-text">{prompt.label || "—"}</span>
+            <div key={prompt.id} className="grid grid-cols-1 items-center gap-3 sm:grid-cols-2">
+              <span className="flex min-w-0 flex-1 items-center gap-2">
+                <span className={choiceTagClass}>{prompt.id}</span>
+                <span className="overflow-hidden text-ellipsis text-[0.92rem] text-foreground">
+                  {prompt.label || "—"}
+                </span>
               </span>
               <Select
                 value={pairs[prompt.id] ?? ""}
@@ -562,7 +620,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     );
   }
 
@@ -580,15 +638,15 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
           ? { low: 0, high: def.stars }
           : { low: 1, high: 5 };
     return (
-      <div className="rules-question__picker">
-        <div className="rules-question__picker-head">
-          <span className="rules-question__picker-title">{target.title || target.label || target.id}</span>
-          <span className="rules-question__picker-hint">
+      <Card tone="muted" size="sm" className="flex flex-col gap-2.5">
+        <div className={pickerHeadClass}>
+          <span className={pickerTitleClass}>{target.title || target.label || target.id}</span>
+          <span className={pickerHintClass}>
             Range {bounds.low} to {bounds.high}
           </span>
         </div>
-        <div className="rules-question__rating-row">
-          <label className="rules-question__rating-field">
+        <div className="flex flex-wrap gap-4">
+          <label className="flex flex-col gap-1.5 text-[0.82rem] text-muted-foreground">
             <span>Min</span>
             <NumberStepper
               ariaLabel="Minimum value"
@@ -600,7 +658,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
               onChange={(value) => updateRatingRange(key, "min", value)}
             />
           </label>
-          <label className="rules-question__rating-field">
+          <label className="flex flex-col gap-1.5 text-[0.82rem] text-muted-foreground">
             <span>Max</span>
             <NumberStepper
               ariaLabel="Maximum value"
@@ -613,7 +671,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
             />
           </label>
         </div>
-      </div>
+      </Card>
     );
   }
 
@@ -623,12 +681,12 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
   ) {
     const isDate = target.definition.field_type === "date";
     return (
-      <div className="rules-question__picker">
-        <div className="rules-question__picker-head">
-          <span className="rules-question__picker-title">{target.title || target.label || target.id}</span>
-          <span className="rules-question__picker-hint">{target.definition.field_type}</span>
+      <Card tone="muted" size="sm" className="flex flex-col gap-2.5">
+        <div className={pickerHeadClass}>
+          <span className={pickerTitleClass}>{target.title || target.label || target.id}</span>
+          <span className={pickerHintClass}>{target.definition.field_type}</span>
         </div>
-        <div className="rules-question__field-row">
+        <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[auto_1fr]">
           {isDate ? (
             <>
               <Select
@@ -677,7 +735,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
             </>
           )}
         </div>
-      </div>
+      </Card>
     );
   }
 
@@ -689,7 +747,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
   ) {
     const skipOptions = followingOptions;
     return (
-      <div className="rules-question__do-row">
+      <div className="flex flex-row flex-wrap items-end gap-3 px-4 py-3">
         <Select
           label="Action"
           value={kind}
@@ -715,7 +773,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
   }
 
   return (
-    <section className={`node-pill rules-question ${isEditMode ? "node-pill--edit" : ""}`} aria-label="Rules question">
+    <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`} aria-label="Rules question">
       <NodePillTopbar
         family="Rule"
         tagValue={tagValue}
@@ -726,9 +784,8 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
         onDelete={onDelete}
       />
 
-      <div className="node-pill__body">
-        {/* If section */}
-        <div className="node-pill__field rules-question__section rules-question__section--if">
+      <div className={nodePillBodyClass}>
+        <div className={`${nodePillFieldClass} ${sectionClass}`}>
           <NodePillFieldHead label="If">
             {isEditMode && (
               <Select
@@ -739,14 +796,14 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
             )}
           </NodePillFieldHead>
 
-          <div className="rules-question__conditions">
-            {conditions.length === 0 && (
-              <p className="rules-question__empty">No conditions yet.</p>
-            )}
+          <div className="flex flex-col gap-3 px-4 py-3">
+            {conditions.length === 0 && <p className={emptyTextClass}>No conditions yet.</p>}
             {conditions.map((draft, index) => (
-              <div key={draft.key} className="rules-question__condition">
-                <div className="rules-question__condition-head">
-                  <span className="rules-question__condition-label">Condition {index + 1}</span>
+              <Card key={draft.key} tone="muted" size="sm" className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[0.78rem] font-bold uppercase tracking-[0.04em] text-muted-foreground">
+                    Condition {index + 1}
+                  </span>
                   {isEditMode && (
                     <Button
                       type="button"
@@ -767,11 +824,11 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
                   onChange={(event) => retargetCondition(draft.key, event.target.value)}
                 />
                 {renderConditionBody(draft)}
-              </div>
+              </Card>
             ))}
             {isEditMode && (
               <Button
-                className="rules-question__add"
+                className={addBtnClass}
                 type="button"
                 variant="ghost"
                 borderStyle="dotted"
@@ -783,8 +840,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
           </div>
         </div>
 
-        {/* Then section */}
-        <div className="node-pill__field rules-question__section rules-question__section--then">
+        <div className={`${nodePillFieldClass} ${sectionClass}`}>
           <NodePillFieldHead label="Then">
             {isEditMode && (
               <Select
@@ -799,12 +855,10 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
           </NodePillFieldHead>
 
           {thenMode === "set" ? (
-            <div className="rules-question__set-list">
-              {setEntries.length === 0 && (
-                <p className="rules-question__empty">No set entries yet.</p>
-              )}
+            <CardStack gap="sm" className="px-4 py-3">
+              {setEntries.length === 0 && <p className={emptyTextClass}>No set entries yet.</p>}
               {setEntries.map((entry) => (
-                <div key={entry.key} className="rules-question__set-row">
+                <Card key={entry.key} tone="muted" size="sm" className="grid grid-cols-1 items-center gap-2.5 sm:grid-cols-[1fr_auto_auto_auto]">
                   <Select
                     label="Target"
                     value={entry.target_id}
@@ -814,7 +868,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
                       updateSetEntry(entry.key, { target_id: event.target.value })
                     }
                   />
-                  <label className="rules-question__set-toggle">
+                  <label className={toggleRowClass}>
                     <input
                       type="checkbox"
                       checked={entry.visible === false}
@@ -827,7 +881,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
                     />
                     Hide
                   </label>
-                  <label className="rules-question__set-toggle">
+                  <label className={toggleRowClass}>
                     <input
                       type="checkbox"
                       checked={entry.required === true}
@@ -851,11 +905,11 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
                       Remove
                     </Button>
                   )}
-                </div>
+                </Card>
               ))}
               {isEditMode && (
                 <Button
-                  className="rules-question__add"
+                  className={addBtnClass}
                   type="button"
                   variant="ghost"
                   borderStyle="dotted"
@@ -864,17 +918,16 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
                   <span aria-hidden="true">+</span> Add set
                 </Button>
               )}
-            </div>
+            </CardStack>
           ) : (
             renderDoEditor(thenDoKind, thenSkipTo, setThenDoKind, setThenSkipTo)
           )}
         </div>
 
-        {/* Else section */}
-        <div className="node-pill__field rules-question__section rules-question__section--else">
+        <div className={`${nodePillFieldClass} ${sectionClass}`}>
           <NodePillFieldHead label="Else">
             {isEditMode && (
-              <label className="rules-question__else-toggle">
+              <label className={toggleRowClass}>
                 <input
                   type="checkbox"
                   checked={includeElse}
@@ -888,7 +941,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
           {includeElse ? (
             renderDoEditor(elseDoKind, elseSkipTo, setElseDoKind, setElseSkipTo)
           ) : (
-            <p className="rules-question__empty">No else branch.</p>
+            <p className={emptyTextClass}>No else branch.</p>
           )}
         </div>
       </div>

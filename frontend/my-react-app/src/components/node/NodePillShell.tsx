@@ -7,6 +7,15 @@ import { Input } from "../ui/Input";
 import { LargeInput } from "../ui/LargeInput";
 import { Modal } from "../ui/Modal";
 import { Tooltip } from "../ui/Tooltip";
+import {
+  nodePillCollapsedShellClass,
+  nodePillFieldClass,
+  nodePillFieldHeadClass,
+  nodePillInputRingClass,
+  nodePillLabelClass,
+  nodePillLimitTextClass,
+  nodePillTopbarClass,
+} from "./nodePillStyles";
 
 type TopbarProps = {
   family: string;
@@ -30,24 +39,27 @@ export function NodePillTopbar({
   actions,
 }: TopbarProps) {
   return (
-    <header className="node-pill__topbar">
-      <div className="node-pill__topbar-left">
-        <Badge variant="accent" size="xl">{family}</Badge>
-        <div className="node-pill__id-label">
+    <header className={nodePillTopbarClass}>
+      <div className="flex min-w-0 grow items-center gap-2">
+        <Badge variant="accent" size="md">{family}</Badge>
+        <div className={nodePillInputRingClass}>
           <Tooltip
             title="Identifier for this question. Lowercase only; no spaces or capitals."
             size="sm"
           >
-            <h3 className="node-pill__id">id</h3>
+            <h6 className=" pl-2 text-muted-foreground">
+              ID
+            </h6>
           </Tooltip>
           <Input
             type="text"
+            className="border-l border-border rounded-xl"
             placeholder={isEditMode ? "question_id" : ""}
             value={tagValue}
             size="xs"
             maxLength={TAG_MAX}
             readOnly={!isEditMode}
-            variant="quiet"
+            variant="ghost"
             pill
             error={idError}
             onChange={(event) => onTagChange(sanitizeQuestionId(event.target.value))}
@@ -55,11 +67,11 @@ export function NodePillTopbar({
           />
         </div>
       </div>
-      <div className="node-pill__actions">
+      <div className="ml-auto flex shrink-0 items-center gap-2.5">
         {isEditMode && (actions ?? (
           <>
             <Button
-              className="node-pill__action"
+              className="whitespace-nowrap"
               type="button"
               variant="danger"
               size="xs"
@@ -68,15 +80,15 @@ export function NodePillTopbar({
             >
               Delete
             </Button>
-            <Button className="node-pill__action" type="button" variant="secondary" size="xs" pill>
+            <Button className="whitespace-nowrap" type="button" variant="secondary" size="xs" pill>
               Settings
             </Button>
           </>
         ))}
         <Button
-          className={`node-pill__action ${isEditMode ? "node-pill__action--active" : ""}`}
+          className="whitespace-nowrap"
           type="button"
-          variant={isEditMode ? "secondary" : "secondary"}
+          variant="secondary"
           size="xs"
           pill
           onClick={onToggleEditMode}
@@ -102,10 +114,9 @@ export function NodePillTitleField({
   max = 80,
 }: TitleFieldProps) {
   return (
-    <div className="node-pill__field">
-      <div className="node-pill__title-stack">
+    <div className={nodePillFieldClass}>
+      <div className="flex flex-col gap-2 w-4/5">
         <Input
-          className="node-pill__title-field"
           type="text"
           placeholder="Enter a title (optional)"
           maxLength={max}
@@ -115,7 +126,7 @@ export function NodePillTitleField({
           onKeyDown={blurOnEnter}
         />
         {isEditMode && value.length === max && (
-          <span className="node-pill__title-limit">
+          <span className={`${nodePillLimitTextClass} px-1.5`}>
             Maximum {max} characters reached.
           </span>
         )}
@@ -162,17 +173,17 @@ export function NodePillQuestionField({
   };
 
   return (
-    <div className="node-pill__field">
-      <div className="node-pill__question-header">
-        <span className="node-pill__label">
+    <div className={nodePillFieldClass}>
+      <div className="mb-2 flex items-center gap-1.5">
+        <span className={nodePillLabelClass}>
           {hasTitle && titleValue ? titleValue : "Question"}
         </span>
         {hasTitle && showTitleEdit && isEditMode && (
           <Button
-            className="node-pill__title-edit-btn"
+            className="mt-1 !p-1"
             type="button"
             variant="ghost"
-            size="xs"
+            size="xxs"
             onClick={handleTitleClick}
             aria-label="Edit title"
           >
@@ -198,7 +209,6 @@ export function NodePillQuestionField({
           )}
         >
           <Input
-            className="node-pill__title-edit-input-field"
             label="Title"
             type="text"
             placeholder="Enter a title (optional)"
@@ -213,21 +223,21 @@ export function NodePillQuestionField({
           />
         </Modal>
       )}
-      <div className="node-pill__question-stack">
+      <div className="flex flex-col gap-2">
         <LargeInput
-          className="node-pill__question-field"
+          className="w-full"
           placeholder="Type your question here"
           rows={3}
           size="sm"
           autoGrow
-          maxAutoGrowHeight={680}
+          maxAutoGrowHeight={640}
           maxText={max}
           value={value}
           readOnly={!isEditMode}
           onChange={(event) => onChange(event.target.value)}
         />
         {isEditMode && value.length === max && (
-          <span className="node-pill__question-limit">
+          <span className={nodePillLimitTextClass}>
             Maximum {max} characters reached.
           </span>
         )}
@@ -244,26 +254,27 @@ type CharCountProps = {
 };
 
 export function NodePillCharCount({ label, value, max, tooltip }: CharCountProps) {
+  const labelClass = "cursor-default text-muted-foreground";
   const labelNode = tooltip ? (
     <Tooltip title={tooltip} size="sm">
-      <span className="node-pill__char-count-label">{label}</span>
+      <span className={labelClass}>{label}</span>
     </Tooltip>
   ) : (
-    <span className="node-pill__char-count-label">{label}</span>
+    <span className={labelClass}>{label}</span>
   );
 
   return (
-    <span className="node-pill__char-count">
-      <span className="node-pill__char-count-item">
+    <span className="ml-1 flex items-center gap-1 text-[0.72rem] text-muted-foreground">
+      <span className="flex items-center gap-0.5">
         {labelNode}
-        <span className="node-pill__char-count-value">{value}</span>
+        <span className="tabular-nums">{value}</span>
       </span>
       {max !== undefined && (
         <>
-          <span className="node-pill__char-count-divider">/</span>
-          <span className="node-pill__char-count-item">
-            <span className="node-pill__char-count-label">Max</span>
-            <span className="node-pill__char-count-value">{max}</span>
+          <span className="text-muted-foreground">/</span>
+          <span className="flex items-center gap-0.5">
+            <span className={labelClass}>Max</span>
+            <span className="tabular-nums">{max}</span>
           </span>
         </>
       )}
@@ -278,8 +289,8 @@ type FieldHeadProps = {
 
 export function NodePillFieldHead({ label, children }: FieldHeadProps) {
   return (
-    <span className="node-pill__field-head">
-      <span className="node-pill__label">{label}</span>
+    <span className={nodePillFieldHeadClass}>
+      <span className={nodePillLabelClass}>{label}</span>
       {children}
     </span>
   );
@@ -319,14 +330,16 @@ type CollapsedProps = {
 
 export function NodePillCollapsed({ family, tagValue, title, onExpand }: CollapsedProps) {
   return (
-    <div className="node-pill node-pill--collapsed">
-      <div className="node-pill__collapsed-row">
-        <Badge variant="accent" size="xs">{family}</Badge>
-        <div className="node-pill__collapsed-text">
-          <span className="node-pill__collapsed-title">
+    <div className={nodePillCollapsedShellClass}>
+      <div className="flex items-center gap-3 px-3.5 py-2.5">
+        <Badge variant="accent" size="md">{family}</Badge>
+        <div className="flex flex-1 min-w-0 items-baseline gap-2.5 overflow-hidden">
+          <span className="overflow-hidden text-ellipsis whitespace-nowrap text-[0.88rem] font-semibold text-foreground">
             {title.trim() || "Untitled question"}
           </span>
-          <span className="node-pill__collapsed-id">{tagValue}</span>
+          <span className="shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[0.78rem] text-muted-foreground">
+            {tagValue}
+          </span>
         </div>
         <Button
           type="button"
@@ -341,3 +354,5 @@ export function NodePillCollapsed({ family, tagValue, title, onExpand }: Collaps
     </div>
   );
 }
+
+export { nodePillShellClass, nodePillShellEditClass, nodePillBodyClass, nodePillFieldClass } from "./nodePillStyles";

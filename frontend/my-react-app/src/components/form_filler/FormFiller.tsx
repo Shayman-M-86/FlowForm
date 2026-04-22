@@ -14,7 +14,6 @@ import {
   type QuestionAnswer,
 } from "./formFillerRuntime";
 import type { QuestionContent, SurveyNode } from "../node/questionTypes";
-import "./formFiller.css";
 
 export interface FormFillerResult {
   status: "submitted" | "discarded";
@@ -34,6 +33,12 @@ interface FormFillerProps {
   showAnswerSummary?: boolean;
   stackSidebar?: boolean;
 }
+
+const panelClass = [
+  "flex w-full min-w-0 flex-col gap-7 rounded-3xl border border-border bg-card p-7",
+  "shadow-md backdrop-blur-md",
+  "max-sm:rounded-2xl max-sm:p-5.5",
+].join(" ");
 
 export function FormFiller({
   survey,
@@ -71,6 +76,9 @@ export function FormFiller({
     ? deriveSurveyProgress(preparedSurvey, answers, [...progress.effectiveCommittedIds, currentQuestion.id])
     : null;
   const answerSummary = buildAnswerSummary(preparedSurvey, answers, progress.effectiveCommittedIds);
+  const isContinueDisabled = currentQuestion
+    ? Boolean(validateQuestionAnswer(currentQuestion, answers[currentQuestion.id], currentQuestionState?.required ?? true))
+    : false;
   const completionResult = progress.status === "active"
     ? null
     : {
@@ -132,14 +140,14 @@ export function FormFiller({
 
   if (survey.length === 0) {
     return (
-      <section className="form-filler-page">
-        <div className="form-filler form-filler--single-column">
-          <div className="form-filler__empty-state">
+      <section className="box-border min-h-full px-8 py-9 max-sm:min-h-screen max-sm:px-4.5 max-sm:py-6">
+        <div className="mx-auto w-full max-w-[760px]">
+          <div className={panelClass}>
             {title && <Badge variant="accent" size="sm">{title}</Badge>}
-            <h1 className="form-filler__completion-title">{emptyTitle}</h1>
-            <p className="form-filler__completion-copy">{emptyMessage}</p>
+            <h1 className="m-0 text-[clamp(1.7rem,4vw,2.4rem)] text-foreground">{emptyTitle}</h1>
+            <p className="m-0 leading-relaxed text-muted-foreground">{emptyMessage}</p>
             {onExit && (
-              <div className="form-filler__completion-actions">
+              <div className="flex flex-wrap gap-3">
                 <Button type="button" variant="primary" onClick={onExit}>
                   {exitLabel}
                 </Button>
@@ -151,28 +159,37 @@ export function FormFiller({
     );
   }
 
+  const isSingleColumn = !showAnswerSummary || stackSidebar;
+
   return (
-    <section className="form-filler-page">
+    <section className="box-border min-h-full px-8 py-9 max-sm:min-h-screen max-sm:flex max-sm:items-center max-sm:justify-center max-sm:px-4.5 max-sm:py-6">
       <div
-        className={`form-filler ${showAnswerSummary ? "" : "form-filler--single-column"} ${stackSidebar ? "form-filler--stacked" : ""}`}
+        className={[
+          "mx-auto w-full",
+          isSingleColumn
+            ? "flex max-w-[1120px] justify-center"
+            : "grid max-w-[1360px] grid-cols-[minmax(0,1fr)_320px] items-start gap-6 max-[920px]:grid-cols-1",
+        ].join(" ")}
       >
-        <div className="form-filler__panel">
+        <div className={panelClass}>
           {progress.status === "active" && currentQuestion ? (
             <>
-              <header className="form-filler__panel-head">
+              <header className="flex items-start justify-between max-sm:flex-col">
                 <div>
                   {currentQuestion.title.trim() !== "" && (
-                    <h1 className="form-filler__title">{currentQuestion.title}</h1>
+                    <h1 className="m-0 text-[clamp(1.35rem,3vw,1.9rem)] leading-[1.15] text-foreground">
+                      {currentQuestion.title}
+                    </h1>
                   )}
                 </div>
-                <span className="form-filler__requirement">
+                <span className="inline-flex min-w-[108px] items-center justify-center rounded-full bg-muted px-3.5 py-2.5 text-[0.85rem] font-semibold text-foreground">
                   {(currentQuestionState?.required ?? true) ? "Required" : "Optional"}
                 </span>
               </header>
 
-              <div className="form-filler__prompt-card">
-                <div className="form-filler__prompt-scroll">
-                  <p className="form-filler__prompt">
+              <div className="overflow-hidden rounded-2xl border border-border bg-muted/20">
+                <div className="max-h-[420px] overflow-y-auto px-5.5 py-5">
+                  <p className="m-0 whitespace-pre-wrap break-words text-[clamp(1.15rem,2.4vw,1.45rem)] font-semibold leading-[1.55] text-foreground">
                     {currentQuestion.label || description}
                   </p>
                 </div>
@@ -181,12 +198,15 @@ export function FormFiller({
               {renderQuestionInput(currentQuestion, answers[currentQuestion.id], handleAnswerChange)}
 
               {validationMessage && (
-                <div className="form-filler__error" role="alert">
+                <div
+                  className="rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3.5 text-destructive"
+                  role="alert"
+                >
                   {validationMessage}
                 </div>
               )}
 
-              <div className="form-filler__actions">
+              <div className="flex flex-wrap gap-3">
                 <Button
                   type="button"
                   variant="secondary"
@@ -195,7 +215,7 @@ export function FormFiller({
                 >
                   Back
                 </Button>
-                <Button type="button" variant="primary" onClick={handleContinue}>
+                <Button type="button" variant="primary" onClick={handleContinue} disabled={isContinueDisabled}>
                   {projectedProgress?.status === "submitted"
                     ? "Submit"
                     : projectedProgress?.status === "discarded"
@@ -203,29 +223,31 @@ export function FormFiller({
                       : "Continue"}
                 </Button>
                 {onExit && (
-                  <Button type="button" variant="quiet" onClick={onExit}>
+                  <Button type="button" variant="secondary" onClick={onExit}>
                     {exitLabel}
                   </Button>
                 )}
               </div>
             </>
           ) : (
-            <div className="form-filler__completion">
+            <div className="flex flex-col gap-4.5">
               <Badge variant="accent" size="sm">
                 {completionResult?.status === "discarded" ? "Closed" : "Complete"}
               </Badge>
-              <h1 className="form-filler__completion-title">
+              <h1 className="m-0 text-[clamp(1.7rem,4vw,2.4rem)] text-foreground">
                 {completionResult?.status === "discarded" ? "This response flow ended" : "Survey complete"}
               </h1>
-              <p className="form-filler__completion-copy">
+              <p className="m-0 leading-relaxed text-muted-foreground">
                 {completionResult?.status === "discarded"
                   ? "A rule ended the survey before submission."
                   : "All visible survey steps have been completed."}
               </p>
               {showAnswerSummary && (
-                <pre className="form-filler__json">{JSON.stringify(answerSummary, null, 2)}</pre>
+                <pre className="m-0 overflow-auto rounded-2xl bg-muted p-4 font-mono text-[0.82rem] leading-[1.55] text-foreground">
+                  {JSON.stringify(answerSummary, null, 2)}
+                </pre>
               )}
-              <div className="form-filler__completion-actions">
+              <div className="flex flex-wrap gap-3">
                 <Button type="button" variant="primary" onClick={handleRestart}>
                   Start over
                 </Button>
@@ -238,25 +260,6 @@ export function FormFiller({
             </div>
           )}
         </div>
-
-        {showAnswerSummary && (
-          <aside className="form-filler__sidebar">
-            <div className="form-filler__sidebar-card">
-              <p className="form-filler__eyebrow">Progress</p>
-              <h2 className="form-filler__sidebar-title">Survey state</h2>
-              <ul className="form-filler__sidebar-list">
-                <li>{preparedSurvey.questionNodes.length} question nodes</li>
-                <li>{preparedSurvey.nodes.length - preparedSurvey.questionNodes.length} rule nodes</li>
-                <li>{progress.effectiveCommittedIds.length} completed step{progress.effectiveCommittedIds.length === 1 ? "" : "s"}</li>
-              </ul>
-            </div>
-
-            <div className="form-filler__sidebar-card">
-              <h2 className="form-filler__sidebar-title">Answers</h2>
-              <pre className="form-filler__json">{JSON.stringify(answerSummary, null, 2)}</pre>
-            </div>
-          </aside>
-        )}
       </div>
     </section>
   );

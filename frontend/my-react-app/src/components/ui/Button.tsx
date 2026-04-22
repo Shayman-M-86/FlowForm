@@ -1,24 +1,39 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { controlSizeClasses, type ControlSize } from "./uiSizes";
 
+type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
+type ButtonBorderStyle = "solid" | "dotted";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "danger" | "ghost";
+  variant?: ButtonVariant;
   size?: ControlSize;
   pill?: boolean;
-  borderStyle?: "solid" | "dotted";
+  borderStyle?: ButtonBorderStyle;
   children: ReactNode;
 }
 
-const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
+const baseClasses =
+  "cursor-pointer border";
+
+const activeClasses = "active:scale-95 active:opacity-80 ";
+
+const disabledClasses =
+  "disabled:cursor-not-allowed disabled:opacity-50 ";
+
+const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-primary text-primary-foreground border-transparent font-semibold hover:bg-accent",
+    "border-transparent bg-primary text-primary-foreground font-semibold hover:bg-accent shadow-sm",
   secondary:
-    "bg-input text-secondary-foreground border-border/40 font-semibold hover:bg-hover-highlight hover:border-ring/80",
+    "border-border/80 bg-input text-secondary-foreground font-semibold hover:bg-hover-highlight hover:border-ring/80 shadow-sm",
   danger:
-    "bg-transparent text-destructive border-destructive/30 font-semibold hover:bg-destructive/10",
+    "border-destructive/30 bg-transparent text-destructive font-semibold hover:bg-destructive/10 shadow-sm",
   ghost:
-    "bg-transparent text-accent-foreground border-transparent font-semibold shadow-none hover:bg-muted hover:border-ring/20",
+    "border-transparent bg-transparent text-accent-foreground font-semibold hover:bg-muted hover:border-ring/20 shadow-none",
+};
+
+const borderStyleClasses: Record<ButtonBorderStyle, string> = {
+  solid: "",
+  dotted: "border-dashed border-2",
 };
 
 export function Button({
@@ -28,19 +43,20 @@ export function Button({
   borderStyle = "solid",
   className = "",
   children,
+  disabled,
   ...props
 }: ButtonProps) {
   return (
     <button
+      disabled={disabled}
       className={[
-        "inline-flex items-center justify-center gap-1.5",
-        "border cursor-pointer whitespace-nowrap transition-colors duration-150",
-        "active:scale-95 active:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed",
-        borderStyle === "dotted" ? "border-dashed border-2" : "",
-        pill ? "rounded-full" : "rounded-sm",
-        variant !== "ghost" ? "shadow-sm" : "shadow-none",
+        baseClasses,
+        disabled ? "" : activeClasses,
         variantClasses[variant],
+        pill ? "rounded-full" : "rounded-sm",
+        borderStyleClasses[borderStyle],
         controlSizeClasses[size],
+        disabled ? disabledClasses : "",
         className,
       ]
         .filter(Boolean)

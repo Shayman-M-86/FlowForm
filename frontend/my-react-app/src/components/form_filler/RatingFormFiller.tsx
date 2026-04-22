@@ -31,6 +31,10 @@ const EMOJI_SETS: Record<EmojiListType, Array<{ symbol: string; label: string }>
   ],
 };
 
+const scaleLabelsClass = "flex justify-between gap-4 text-[0.88rem] text-muted-foreground [&>span:last-child]:text-right";
+const valuePillClass = "w-fit min-w-40 rounded-full border border-border bg-muted px-3.5 py-2.5 text-[0.92rem] text-foreground";
+const previewClass = "flex flex-col gap-2.5 rounded-2xl border border-border bg-muted/20 p-4";
+
 export function RatingFormFiller({
   question,
   value,
@@ -53,11 +57,11 @@ export function RatingFormFiller({
       });
 
       return (
-        <div className="form-filler-question__body">
-          <div className="rating-question__preview">
-            <div className="rating-question__preview-track">
-              <span className="rating-question__control-label">{sliderDefinition.ui.left_label || "Low"}</span>
-              <div className="rating-question__preview-line">
+        <div className="flex flex-col gap-4.5">
+          <div className={previewClass}>
+            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3.5 rating-question__preview-track">
+              <span className="min-w-7 text-center text-[0.88rem] font-semibold text-foreground">{sliderDefinition.ui.left_label || "Low"}</span>
+              <div className="relative h-6.5 rating-question__preview-line">
                 <div className="rating-question__slider-track" />
                 <div className="rating-question__slider-ticks" aria-hidden="true">
                   {tickValues.map((tickValue) => (
@@ -74,9 +78,9 @@ export function RatingFormFiller({
                   onChange={(event) => onChange(Number(event.target.value))}
                 />
               </div>
-              <span className="rating-question__control-label">{sliderDefinition.ui.right_label || "High"}</span>
+              <span className="min-w-7 text-center text-[0.88rem] font-semibold text-foreground">{sliderDefinition.ui.right_label || "High"}</span>
             </div>
-            <div className="form-filler-rating__value-pill">
+            <div className={valuePillClass}>
               {typeof value === "number" ? `Selected value: ${resolvedValue}` : "Move the slider to choose a value."}
             </div>
           </div>
@@ -86,9 +90,13 @@ export function RatingFormFiller({
     case "emoji": {
       const emojiDefinition = question.definition;
       return (
-        <div className="form-filler-question__body">
-          <div className="rating-question__preview">
-            <div className={`rating-question__emoji-list ${emojiDefinition.words ? "" : "rating-question__emoji-list--icons-only"}`} role="radiogroup" aria-label={question.title}>
+        <div className="flex flex-col gap-4.5">
+          <div className={previewClass}>
+            <div
+              className={`rating-question__emoji-list ${emojiDefinition.words ? "" : "rating-question__emoji-list--icons-only"}`}
+              role="radiogroup"
+              aria-label={question.title}
+            >
               {EMOJI_SETS[emojiDefinition.emoji_list].map((emoji, index) => {
                 const score = index + 1;
                 const isSelected = value === score;
@@ -106,7 +114,7 @@ export function RatingFormFiller({
                 );
               })}
             </div>
-            <div className="form-filler-rating__scale-labels">
+            <div className={scaleLabelsClass}>
               <span>{emojiDefinition.ui.left_label || "Low"}</span>
               <span>{emojiDefinition.ui.right_label || "High"}</span>
             </div>
@@ -121,8 +129,8 @@ export function RatingFormFiller({
       }
 
       return (
-        <div className="form-filler-question__body">
-          <div className="rating-question__preview">
+        <div className="flex flex-col gap-4.5">
+          <div className={previewClass}>
             <div
               className="rating-question__stars"
               role="radiogroup"
@@ -172,7 +180,7 @@ export function RatingFormFiller({
                 );
               })}
             </div>
-            <div className="form-filler-rating__scale-labels">
+            <div className={scaleLabelsClass}>
               <span>{starDefinition.ui.left_label || "Low"}</span>
               <span>{starDefinition.ui.right_label || "High"}</span>
             </div>

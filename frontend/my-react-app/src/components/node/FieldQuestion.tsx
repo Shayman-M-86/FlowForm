@@ -1,7 +1,22 @@
 import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
-import "./FieldQuestion.css";
 import { QUESTION_MAX, blurOnEnter } from "./NodePillUtils";
-import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillCollapsed } from "./NodePillShell";
+import {
+  NodePillTopbar,
+  NodePillQuestionField,
+  NodePillCharCount,
+  NodePillFieldHead,
+  NodePillCollapsed,
+} from "./NodePillShell";
+import {
+  nodePillBodyClass,
+  nodePillFieldClass,
+  nodePillLimitTextClass,
+  nodePillPanelClass,
+  nodePillPreviewClass,
+  nodePillShellClass,
+  nodePillShellEditClass,
+  nodePillSubLabelClass,
+} from "./nodePillStyles";
 import { Input } from "../ui/Input";
 import { LargeInput } from "../ui/LargeInput";
 import { Select } from "../ui/Select";
@@ -33,30 +48,12 @@ const FIELD_TYPE_OPTIONS: Array<{ value: FieldType; label: string }> = [
 ];
 
 const FIELD_TYPE_PRESETS: Record<FieldType, { placeholder: string; helper: string }> = {
-  "short_text": {
-    placeholder: "Type a short response",
-    helper: "Single-line text input.",
-  },
-  "long_text": {
-    placeholder: "Type a longer response",
-    helper: "Multi-line text area.",
-  },
-  email: {
-    placeholder: "name@example.com",
-    helper: "Email-formatted input.",
-  },
-  phone: {
-    placeholder: "(555) 123-4567",
-    helper: "Phone number input.",
-  },
-  number: {
-    placeholder: "Enter a number",
-    helper: "Numeric-only input.",
-  },
-  date: {
-    placeholder: "",
-    helper: "Calendar date input.",
-  },
+  "short_text": { placeholder: "Type a short response", helper: "Single-line text input." },
+  "long_text": { placeholder: "Type a longer response", helper: "Multi-line text area." },
+  email: { placeholder: "name@example.com", helper: "Email-formatted input." },
+  phone: { placeholder: "(555) 123-4567", helper: "Phone number input." },
+  number: { placeholder: "Enter a number", helper: "Numeric-only input." },
+  date: { placeholder: "", helper: "Calendar date input." },
 };
 
 export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>(function FieldQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, onExpand, onEditModeChange, onDataChange }, ref) {
@@ -78,9 +75,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
     family: "field",
     definition: {
       field_type: fieldType,
-      ui: fieldType === "date"
-        ? {}
-        : { placeholder: placeholderValue },
+      ui: fieldType === "date" ? {} : { placeholder: placeholderValue },
     },
   };
 
@@ -118,7 +113,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
   }
 
   return (
-    <section className={`node-pill field-question ${isEditMode ? "node-pill--edit" : ""}`} aria-label="Field question">
+    <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`} aria-label="Field question">
       <NodePillTopbar
         family="Field"
         tagValue={tagValue}
@@ -129,7 +124,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
         onDelete={onDelete}
       />
 
-      <div className="node-pill__body">
+      <div className={nodePillBodyClass}>
         <NodePillQuestionField
           value={questionValue}
           onChange={setQuestionValue}
@@ -140,52 +135,44 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
           showTitleEdit={true}
         />
 
-        <div className="node-pill__field">
+        <div className={nodePillFieldClass}>
           <NodePillFieldHead label="Field">
-            {isEditMode && (
-              <NodePillCharCount
-                label="Type"
-                value={fieldLabel}
-              />
-            )}
+            {isEditMode && <NodePillCharCount label="Type" value={fieldLabel} />}
           </NodePillFieldHead>
 
-          <div className="field-question__panel">
+          <div className={nodePillPanelClass}>
             {isEditMode && (
-              <>
-                <div className="field-question__controls">
-                  <Select
-                    className="field-question__control"
-                    label="Type"
-                    value={fieldType}
-                    options={FIELD_TYPE_OPTIONS}
-                    hint={fieldPreset.helper}
-                    onChange={(event) => updateFieldType(event.target.value as FieldType)}
+              <div className="grid gap-4 md:grid-cols-[240px_minmax(0,1fr)]">
+                <Select
+                  className="min-w-0"
+                  label="Type"
+                  value={fieldType}
+                  options={FIELD_TYPE_OPTIONS}
+                  hint={fieldPreset.helper}
+                  onChange={(event) => updateFieldType(event.target.value as FieldType)}
+                />
+
+                {fieldType !== "date" && (
+                  <Input
+                    className="min-w-0 max-w-110"
+                    label="Placeholder"
+                    type="text"
+                    placeholder="Field placeholder"
+                    value={placeholderValue}
+                    maxLength={50}
+                    onChange={(event) => setPlaceholderValue(event.target.value)}
+                    onKeyDown={blurOnEnter}
                   />
-
-                  {fieldType !== "date" && (
-                    <Input
-                      className="field-question__control field-question__control--placeholder"
-                      label="Placeholder"
-                      type="text"
-                      placeholder="Field placeholder"
-                      value={placeholderValue}
-                      maxLength={50}
-                      onChange={(event) => setPlaceholderValue(event.target.value)}
-                      onKeyDown={blurOnEnter}
-                    />
-                  )}
-                </div>
-
-              </>
+                )}
+              </div>
             )}
 
-            <div className="field-question__preview">
-              <span className="field-question__preview-title">{fieldLabel}</span>
+            <div className={nodePillPreviewClass}>
+              <span className={nodePillSubLabelClass}>{fieldLabel}</span>
 
               {fieldType === "long_text" ? (
                 <LargeInput
-                  className="field-question__preview-textarea"
+                  className="w-full"
                   size="sm"
                   rows={4}
                   autoGrow
@@ -197,7 +184,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
                 />
               ) : (
                 <Input
-                  className={`field-question__preview-input-field ${!isWideField ? "field-question__preview-input-field--compact" : ""}`}
+                  className={`${isWideField ? "w-full" : "w-full max-w-112.5"}`}
                   type={fieldType === "short_text" ? "text" : fieldType}
                   placeholder={placeholderValue}
                   value={fieldValue}
@@ -206,7 +193,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
                 />
               )}
               {fieldMaxLength !== undefined && fieldValue.length === fieldMaxLength && (
-                <span className="node-pill__option-limit">Maximum characters reached.</span>
+                <span className={`${nodePillLimitTextClass} px-1.5`}>Maximum characters reached.</span>
               )}
             </div>
           </div>

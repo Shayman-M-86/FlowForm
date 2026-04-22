@@ -1,11 +1,37 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
-import "./MultiChoiceQuestion.css";
 import { Button } from "../ui/Button";
 import { NumberStepperGroup } from "../ui/NumberStepperGroup";
 import { useOptionDrag } from "./useOptionDrag";
-import { QUESTION_MAX, autoResizeTextarea, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
-import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillDragThresholds, NodePillCollapsed } from "./NodePillShell";
+import { QUESTION_MAX, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
+import {
+  NodePillTopbar,
+  NodePillQuestionField,
+  NodePillCharCount,
+  NodePillFieldHead,
+  NodePillDragThresholds,
+  NodePillCollapsed,
+} from "./NodePillShell";
+import {
+  nodePillBodyClass,
+  nodePillFieldClass,
+  nodePillLimitTextClass,
+  nodePillOptionAddClass,
+  nodePillOptionFieldClass,
+  nodePillOptionFieldEditClass,
+  nodePillOptionGrabClass,
+  nodePillOptionHandleClass,
+  nodePillOptionInlineMetaClass,
+  nodePillOptionMainClass,
+  nodePillOptionMetaGroupClass,
+  nodePillOptionMetaLabelClass,
+  nodePillOptionRowClass,
+  nodePillOptionDraggingClass,
+  nodePillOptionsListClass,
+  nodePillShellClass,
+  nodePillShellEditClass,
+} from "./nodePillStyles";
 import { Input } from "../ui/Input";
+import { LargeInput } from "../ui/LargeInput";
 import type { ChoiceContent } from "./questionTypes";
 
 export interface MultiChoiceQuestionHandle {
@@ -83,6 +109,35 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
     onDataChange?.(multiChoiceData);
   }, [titleValue, tagValue, questionValue, minChoices, maxChoices, options]);
 
+  function availableCharactersFor(optionId: string) {
+    const usedByOthers = options
+      .filter((option) => option.id !== optionId)
+      .reduce((sum, option) => sum + option.value.length, 0);
+    return Math.min(ANSWER_PER_FIELD_MAX, ANSWER_POOL - usedByOthers);
+  }
+
+  function toggleOptionPanel(optionId: string) {
+    setOpenOptionIds((current) => {
+      const next = new Set(current);
+      if (next.has(optionId)) {
+        next.delete(optionId);
+      } else {
+        next.add(optionId);
+      }
+      return next;
+    });
+  }
+
+  function deleteOption(optionId: string) {
+    setOptions((current) => current.filter((entry) => entry.id !== optionId));
+    setOpenOptionIds((current) => {
+      if (!current.has(optionId)) return current;
+      const next = new Set(current);
+      next.delete(optionId);
+      return next;
+    });
+  }
+
   function toggleEditMode() {
     setIsEditMode((current) => {
       const nextMode = !current;
@@ -96,7 +151,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
   }
 
   return (
-    <section className={`node-pill ${isEditMode ? "node-pill--edit" : ""}`} aria-label="node workspace">
+    <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`} aria-label="node workspace">
       <NodePillTopbar
         family="Multiple choice"
         tagValue={tagValue}
@@ -107,7 +162,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
         onDelete={onDelete}
       />
 
-      <div className="node-pill__body">
+      <div className={nodePillBodyClass}>
         <NodePillQuestionField
           value={questionValue}
           onChange={setQuestionValue}
@@ -118,47 +173,47 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
           showTitleEdit={true}
         />
 
-        <div className="node-pill__field">
+        <div className={nodePillFieldClass}>
           <NodePillFieldHead label="Answers">
-            {isEditMode && <div className="node-pill__choice-range-wrapper">
-              <span className="node-pill__choice-range-title">Choices</span>
-              <NumberStepperGroup
-                className="multi-choice-question__choice-range"
-                ariaLabel="Choices range"
-                size="xs"
-                pill
-                variant="ghost"
-                items={[
-                  {
-                    key: "min",
-                    label: "Min",
-                    value: minChoices,
-                    min: 1,
-                    max: options.length,
-                    disabled: !isEditMode,
-                  },
-                  {
-                    key: "max",
-                    label: "Max",
-                    value: maxChoices,
-                    min: minChoices,
-                    max: options.length,
-                    disabled: !isEditMode,
-                  },
-                ]}
-                onChange={(key, value) => {
-                  if (key === "min") {
-                    setMinChoices(value);
-                    if (value > maxChoices) {
-                      setMaxChoices(value);
+            {isEditMode && (
+              <div className="ml-auto inline-flex items-center gap-1.5">
+                <span className="text-[0.7rem] text-muted-foreground opacity-60">Choices</span>
+                <NumberStepperGroup
+                  ariaLabel="Choices range"
+                  size="xs"
+                  pill
+                  variant="ghost"
+                  items={[
+                    {
+                      key: "min",
+                      label: "Min",
+                      value: minChoices,
+                      min: 1,
+                      max: options.length,
+                      disabled: !isEditMode,
+                    },
+                    {
+                      key: "max",
+                      label: "Max",
+                      value: maxChoices,
+                      min: minChoices,
+                      max: options.length,
+                      disabled: !isEditMode,
+                    },
+                  ]}
+                  onChange={(key, value) => {
+                    if (key === "min") {
+                      setMinChoices(value);
+                      if (value > maxChoices) {
+                        setMaxChoices(value);
+                      }
+                      return;
                     }
-                    return;
-                  }
-
-                  setMaxChoices(Math.max(minChoices, value));
-                }}
-              />
-            </div>}
+                    setMaxChoices(Math.max(minChoices, value));
+                  }}
+                />
+              </div>
+            )}
             {isEditMode && (
               <NodePillCharCount
                 label="Total"
@@ -168,12 +223,13 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
               />
             )}
           </NodePillFieldHead>
-          <div className="node-pill__options" ref={optionsListRef}>
+          <div className={nodePillOptionsListClass} ref={optionsListRef}>
             {options.map((option, index) => {
               const isOpen = openOptionIds.has(option.id);
               const isDragging = activeDrag?.id === option.id;
               const thresholdRatio = getThresholdRatioForIndex(index);
               const dragTransform = getDragTransform(index);
+              const fieldMax = availableCharactersFor(option.id);
 
               return (
                 <div
@@ -181,7 +237,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                   ref={(node) => {
                     optionRefs.current[option.id] = node;
                   }}
-                  className={`node-pill__option-row ${isDragging ? "node-pill__option-row--dragging" : ""}`}
+                  className={`${nodePillOptionRowClass} ${isDragging ? nodePillOptionDraggingClass : ""}`}
                   style={dragTransform}
                 >
                   <NodePillDragThresholds
@@ -192,90 +248,88 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                   />
                   {isEditMode && (
                     <Button
-                      className="node-pill__option-handle"
+                      className={nodePillOptionHandleClass}
+                      variant="primary"
                       type="button"
                       aria-label={`${option.placeholder} settings`}
                       aria-expanded={isOpen}
-                      onClick={() => setOpenOptionIds((current) => {
-                        const next = new Set(current);
-                        if (next.has(option.id)) {
-                          next.delete(option.id);
-                        } else {
-                          next.add(option.id);
-                        }
-                        return next;
-                      })}
+                      onClick={() => toggleOptionPanel(option.id)}
                     >
                       <span aria-hidden="true">⋮</span>
                     </Button>
                   )}
-                  <div className="node-pill__option-field">
-                    <div className="node-pill__option-main">
-                      <textarea
-                        className="node-pill__option"
-                        placeholder={option.placeholder}
-                        rows={1}
-                        maxLength={Math.min(ANSWER_PER_FIELD_MAX, ANSWER_POOL - options.filter((e) => e.id !== option.id).reduce((sum, e) => sum + e.value.length, 0))}
-                        value={option.value}
-                        readOnly={!isEditMode}
-                        onChange={(event) =>
-                          setOptions((current) =>
-                            current.map((entry) =>
-                              entry.id === option.id ? { ...entry, value: event.target.value } : entry
-                            )
-                          )
-                        }
-                        onInput={(event) => autoResizeTextarea(event.currentTarget)}
-                      />
-                      {isEditMode && (
-                        <button
-                          className="node-pill__option-grab"
-                          type="button"
-                          aria-label={`Reorder ${option.placeholder}`}
-                          onPointerDown={(event) => startDrag(event, option.id, index)}
-                        >
-                          <span aria-hidden="true">⋮⋮</span>
-                        </button>
-                      )}
-                    </div>
-                    {isEditMode && option.value.length === Math.min(ANSWER_PER_FIELD_MAX, ANSWER_POOL - options.filter((e) => e.id !== option.id).reduce((sum, e) => sum + e.value.length, 0)) && (
-                      <span className="node-pill__option-limit">
-                        Maximum characters reached.
-                      </span>
-                    )}
-                    {isEditMode && isOpen && (
-                      <div className="node-pill__option-inline-meta">
-                        <div className="node-pill__option-meta-group">
-                          <span className="node-pill__option-meta-label">Answer tag</span>
-                          <Input
-                            className=""
-                            size="sm"
-                            type="text"
-                            placeholder={`answer_${index + 1}`}
-                            value={option.tag}
+                  <div className={`${nodePillOptionFieldClass} ${isEditMode ? `${nodePillOptionFieldEditClass} flex-row items-stretch` : ""}`}>
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <div className={nodePillOptionMainClass}>
+                        <div className="min-w-0 flex-1">
+                          <LargeInput
+                            className="w-full"
+                          shellClassName="border-0 rounded-none"
+                          placeholder={option.placeholder}
+                          rows={1}
+                          maxText={fieldMax}
+                          maxAutoGrowHeight={190}
+                          value={option.value}
+                          autoGrow
+                          readOnly={!isEditMode}
                             onChange={(event) =>
                               setOptions((current) =>
                                 current.map((entry) =>
-                                  entry.id === option.id ? { ...entry, tag: event.target.value } : entry
+                                  entry.id === option.id ? { ...entry, value: event.target.value } : entry
                                 )
                               )
                             }
-                            onKeyDown={blurOnEnter}
                           />
                         </div>
-                        <Button
-                          className="node-pill__option-delete"
-                          type="button"
-                          variant="danger"
-                          size="xs"
-                          pill={true}
-                          onClick={() =>
-                            setOptions((current) => current.filter((entry) => entry.id !== option.id))
-                          }
-                        >
-                          Delete
-                        </Button>
                       </div>
+
+                      {isEditMode && option.value.length === fieldMax && (
+                        <span className={`${nodePillLimitTextClass} px-1.5`}>
+                          Maximum characters reached.
+                        </span>
+                      )}
+
+                      {isEditMode && isOpen && (
+                        <div className={nodePillOptionInlineMetaClass}>
+                          <div className={nodePillOptionMetaGroupClass}>
+                            <span className={nodePillOptionMetaLabelClass}>Answer tag</span>
+                            <Input
+                              size="sm"
+                              type="text"
+                              placeholder={`answer_${index + 1}`}
+                              value={option.tag}
+                              onChange={(event) =>
+                                setOptions((current) =>
+                                  current.map((entry) =>
+                                    entry.id === option.id ? { ...entry, tag: event.target.value } : entry
+                                  )
+                                )
+                              }
+                              onKeyDown={blurOnEnter}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="danger"
+                            size="xs"
+                            pill={true}
+                            onClick={() => deleteOption(option.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {isEditMode && (
+                      <button
+                        className={nodePillOptionGrabClass}
+                        type="button"
+                        aria-label={`Reorder ${option.placeholder}`}
+                        onPointerDown={(event) => startDrag(event, option.id, index)}
+                      >
+                        <span aria-hidden="true">⋮⋮</span>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -283,7 +337,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
             })}
             {isEditMode && options.length < MAX_ANSWERS && (
               <Button
-                className="node-pill__option-add"
+                className={nodePillOptionAddClass}
                 type="button"
                 variant="ghost"
                 borderStyle="dotted"

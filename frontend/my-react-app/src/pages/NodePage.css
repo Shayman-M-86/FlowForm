@@ -140,13 +140,15 @@
 }
 
 .node-page__question-collapse-btn {
-  flex: 0 0 auto;
+  position: absolute;
+  top: 14px;
+  left: calc(-1 * var(--node-page-controls-gutter) + 10px);
   min-width: 28px;
   min-height: 28px;
   padding: 0;
-  margin-top: 14px;
   font-size: 0.8rem;
   color: var(--text-soft);
+  z-index: 1;
 }
 
 .node-page__question-container {

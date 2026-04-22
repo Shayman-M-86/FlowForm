@@ -21,6 +21,11 @@
   --input: rgba(244, 244, 244, 0.934);
   --ring: rgb(161 161 161);
   --hover-highlight: #F0EFF0;
+  --node-pill-topbar-gradient: linear-gradient(
+    to bottom,
+    rgba(252, 252, 252, 0.969),
+    rgb(248, 248, 248)
+  );
 
 
   --font-sans: 'Geist', 'Geist Fallback', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
@@ -44,26 +49,32 @@
 }
 
 .dark {
-  --background: rgb(29, 29, 31);
+  --background: rgb(30 30 32);
   --foreground: rgb(250 250 250);
-  --card: rgb(23 23 23);
+  --card: rgb(24 24 24);
   --card-foreground: rgb(250 250 250);
-  --popover: rgb(23 23 23);
+  --popover: rgb(24 24 24);
   --popover-foreground: rgb(250 250 250);
-  --primary: rgb(82, 149, 226);
-  --primary-saturated: rgb(73, 151, 240);
-  --primary-foreground: rgb(0, 0, 0);
-  --secondary: rgb(43, 42, 45);
+  --primary: rgb(82 149 226);
+  --primary-saturated: rgb(73 151 240);
+  --primary-foreground: rgb(0 0 0);
+  --secondary: rgb(44 43 46);
   --secondary-foreground: rgb(96 155 223);
-  --muted: rgb(38 38 38);
+  --muted: rgb(39 39 39);
   --muted-foreground: rgb(161 161 161);
   --accent: rgb(110 164 226);
   --accent-foreground: rgb(250 250 250);
-  --destructive: rgb(234, 116, 110);
-  --border: rgb(255 255 255 / 0.1);
-  --input: rgba(41, 41, 44, 0.937);
-  --ring: rgb(115 115 115);
-  --hover-highlight: rgba(167, 167, 167, 0.195);
+  --destructive: rgb(234 116 110);
+  --border: rgb(255 255 255 / 0.11);
+  --input: rgba(42, 42, 45, 0.937);
+  --ring: rgb(117 117 117);
+  --hover-highlight: rgba(167, 167, 167, 0.2);
+  --node-pill-topbar-gradient: linear-gradient(
+    to bottom,
+    rgb(39 39 39 / 0.3),
+    rgb(39 39 39 / 0.7)
+  );
+
 
   
   --app-shadow-2xs: 0.5px 1px 2px rgb(0 0 0 / 0.12);
@@ -137,12 +148,32 @@ body {
 }
 
 @layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+  }
+
   h1 {
-    @apply text-[2rem] font-bold text-foreground md:text-[2.5rem];
+    @apply text-[2rem] font-bold md:text-[2.5rem];
   }
 
   h2 {
-    @apply mb-6 border-b border-border pb-3 text-2xl font-semibold text-foreground md:text-[1.8rem];
+    @apply mb-6 border-b border-border pb-3 text-2xl font-semibold md:text-[1.8rem];
+  }
+
+  h3 {
+    @apply text-xl font-semibold;
+  }
+
+  h4 {
+    @apply text-lg font-semibold;
+  }
+
+  h5 {
+    @apply text-base font-semibold;
+  }
+
+  h6 {
+    @apply text-sm font-semibold uppercase tracking-wide text-muted-foreground;
   }
 }
 

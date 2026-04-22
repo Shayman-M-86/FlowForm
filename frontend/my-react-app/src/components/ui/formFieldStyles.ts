@@ -1,6 +1,15 @@
 import type { ControlSize } from "./uiSizes";
 import { controlSizeClasses } from "./uiSizes";
 
+const inputMinWidthClasses: Record<ControlSize, string> = {
+  xxs: "min-w-16",
+  xs:  "min-w-20",
+  sm:  "min-w-24",
+  md:  "min-w-32",
+  lg:  "min-w-40",
+  xl:  "min-w-48",
+};
+
 export type InputVariant = "secondary" | "ghost" | "quiet";
 export type FocusMode = "focus" | "focus-within";
 
@@ -12,7 +21,7 @@ export const formErrorClass = "text-[0.8rem] text-destructive";
 export const controlBaseClass =
   "w-full outline-none transition-colors placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60";
 
-const surfaceRoundedClass = "w-full rounded-sm text-foreground transition-colors";
+const surfaceRoundedClass = "w-full text-foreground transition-colors";
 
 const variantSurface: Record<InputVariant, string> = {
   secondary: "border border-border bg-input",
@@ -80,6 +89,7 @@ export function getInputControlClassName({
   return [
     controlBaseClass,
     controlSizeClasses[size],
+    inputMinWidthClasses[size],
     getSurfaceClassName({ variant, focusMode: "focus", pill, error }),
     className,
   ]

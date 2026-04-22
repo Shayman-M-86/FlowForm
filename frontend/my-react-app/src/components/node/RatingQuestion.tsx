@@ -2,12 +2,23 @@ import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import "./RatingQuestion.css";
 import { QUESTION_MAX, blurOnEnter } from "./NodePillUtils";
 import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillCollapsed } from "./NodePillShell";
+import {
+  nodePillBodyClass,
+  nodePillFieldClass,
+  nodePillPanelClass,
+  nodePillPreviewClass,
+  nodePillShellClass,
+  nodePillShellEditClass,
+} from "./nodePillStyles";
 import { Input } from "../ui/Input";
 import { NumberStepper } from "../ui/NumberStepper";
 import { NumberStepperGroup } from "../ui/NumberStepperGroup";
 import { Select } from "../ui/Select";
 import { Toggle } from "../ui/Toggle";
 import type { RatingContent, EmojiListType } from "./questionTypes";
+
+const controlClass = "flex min-w-0 flex-col gap-2";
+const controlLabelClass = "text-[0.78rem] font-semibold uppercase tracking-[0.04em] text-muted-foreground";
 
 const MAX_STARS = 12;
 
@@ -274,7 +285,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
   }
 
   return (
-    <section className={`node-pill rating-question ${isEditMode ? "node-pill--edit" : ""}`} aria-label="Rating question">
+    <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""} rating-question`} aria-label="Rating question">
       <NodePillTopbar
         family="Rating"
         tagValue={tagValue}
@@ -285,7 +296,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
         onDelete={onDelete}
       />
 
-      <div className="node-pill__body">
+      <div className={nodePillBodyClass}>
         <NodePillQuestionField
           value={questionValue}
           onChange={setQuestionValue}
@@ -296,7 +307,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
           showTitleEdit={true}
         />
 
-        <div className="node-pill__field">
+        <div className={nodePillFieldClass}>
           <NodePillFieldHead label="Rating">
             {isEditMode && (
               <NodePillCharCount
@@ -306,12 +317,12 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
             )}
           </NodePillFieldHead>
 
-          <div className="rating-question__panel">
+          <div className={`${nodePillPanelClass} rating-question__panel`}>
             {isEditMode && (
               <>
-                <div className="rating-question__controls">
+                <div className="flex flex-wrap items-start gap-4">
                   <Select
-                    className="rating-question__control"
+                    className={controlClass}
                     label="Type"
                     value={ratingType}
                     disabled={!isEditMode}
@@ -319,10 +330,10 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                     onChange={(event) => setRatingType(event.target.value as RatingType)}
                   />
                   {ratingType === "stars" ? (
-                    <div className="rating-question__control rating-question__control--stepper">
-                      <span className="rating-question__control-label">Stars</span>
+                    <div className={controlClass}>
+                      <span className={controlLabelClass}>Stars</span>
                       <NumberStepper
-                        className="rating-question__stepper"
+                        className="self-start"
                         ariaLabel="Star count"
                         size="sm"
                         variant="primary"
@@ -337,7 +348,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                   ) : ratingType === "emoji" ? (
                     <>
                       <Select
-                        className="rating-question__control rating-question__control--span-2"
+                        className={`${controlClass} flex-1 min-w-60`}
                         label="Emoji list"
                         value={emojiScaleType}
                         disabled={!isEditMode}
@@ -348,8 +359,8 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                         ]}
                         onChange={(event) => setEmojiScaleType(event.target.value as EmojiScaleType)}
                       />
-                      <div className="rating-question__control rating-question__control--toggle">
-                        <span className="rating-question__control-label">Words</span>
+                      <div className={controlClass}>
+                        <span className={controlLabelClass}>Words</span>
                         <Toggle
                           label="Show words"
                           checked={showEmojiWords}
@@ -360,10 +371,10 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                     </>
                   ) : (
                     <>
-                      <div className="rating-question__control rating-question__control--span-2">
-                        <span className="rating-question__control-label">Range</span>
+                      <div className={`${controlClass} flex-1 min-w-60`}>
+                        <span className={controlLabelClass}>Range</span>
                         <NumberStepperGroup
-                          className="rating-question__range-stepper"
+                          className="self-start"
                           ariaLabel="Slider range"
                           size="sm"
                           variant="primary"
@@ -397,10 +408,10 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                         />
                       </div>
 
-                      <div className="rating-question__control rating-question__control--stepper">
-                        <span className="rating-question__control-label">Step</span>
+                      <div className={controlClass}>
+                        <span className={controlLabelClass}>Step</span>
                         <NumberStepper
-                          className="rating-question__stepper"
+                          className="self-start"
                           ariaLabel="Slider step"
                           size="sm"
                           variant="primary"
@@ -429,9 +440,9 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                   )}
                 </div>
 
-                <div className="rating-question__labels">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <Input
-                    className="rating-question__control rating-question__control--wide"
+                    className="min-w-0"
                     label="Left label"
                     type="text"
                     placeholder="Low-end label"
@@ -443,7 +454,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                   />
 
                   <Input
-                    className="rating-question__control rating-question__control--wide"
+                    className="min-w-0"
                     label="Right label"
                     type="text"
                     placeholder="High-end label"
@@ -457,15 +468,15 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
               </>
             )}
 
-            <div className="rating-question__preview">
-              <div className="rating-question__preview-value">
+            <div className={`${nodePillPreviewClass} rating-question__preview`}>
+              <div className="text-[0.88rem] text-foreground">
                 Current value: <strong>{ratingType === "stars"
                   ? `${starValue} / ${starCount}`
                   : ratingType === "emoji"
                     ? (selectedEmoji ? `${selectedEmoji.emoji}${showEmojiWords ? ` ${selectedEmoji.label}` : ""}` : "None")
                     : normalizedSliderValue}</strong>
               </div>
-              <div className="rating-question__preview-labels">
+              <div className="flex justify-between gap-4 text-[0.95rem] text-muted-foreground [&>span:last-child]:text-right">
                 <span>{leftLabel || "Left label"}</span>
                 <span>{rightLabel || "Right label"}</span>
               </div>
@@ -547,9 +558,9 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                   ))}
                 </div>
               ) : (
-                <div className="rating-question__preview-track">
-                  <span className="rating-question__preview-end">{rangeStart}</span>
-                  <div className="rating-question__preview-line">
+                <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3.5">
+                  <span className="min-w-7 text-center text-[0.88rem] font-semibold text-foreground">{rangeStart}</span>
+                  <div className="relative h-6.5 rating-question__preview-line">
                     <div className="rating-question__slider-track" aria-hidden="true" />
                     <div className="rating-question__slider-ticks" aria-hidden="true">
                       {tickValues.map((tickValue) => (
@@ -576,10 +587,10 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                       }}
                     />
                   </div>
-                  <span className="rating-question__preview-end">{rangeEnd}</span>
+                  <span className="min-w-7 text-center text-[0.88rem] font-semibold text-foreground">{rangeEnd}</span>
                 </div>
               )}
-              <div className="rating-question__preview-meta">
+              <div className="flex justify-between gap-4 text-[0.95rem] text-muted-foreground [&>span:last-child]:text-right">
                 <span>{RATING_TYPE_OPTIONS.find((option) => option.value === ratingType)?.label}</span>
                 <span>{ratingType === "stars" ? `${starCount} stars` : ratingType === "emoji" ? `${emojiScaleType === "sad" ? "Sad" : emojiScaleType === "angry" ? "Angry" : "Disgust"} to happy` : `Step ${stepValue}`}</span>
               </div>

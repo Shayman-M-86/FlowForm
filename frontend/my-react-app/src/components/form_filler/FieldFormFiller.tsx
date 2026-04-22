@@ -2,7 +2,6 @@ import type { HTMLInputTypeAttribute } from "react";
 import { Input } from "../ui/Input";
 import { LargeInput } from "../ui/LargeInput";
 import type { FieldContent } from "../node/questionTypes";
-import "../node/FieldQuestion.css";
 
 interface FieldFormFillerProps {
   question: FieldContent;
@@ -24,13 +23,14 @@ export function FieldFormFiller({
       : undefined;
 
   return (
-    <div className="form-filler-question__body">
-      <div className="field-question__preview">
-        <span className="field-question__preview-title">{fieldMeta.label}</span>
+    <div className="flex flex-col gap-4.5">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-muted/20 p-4">
+        <span className="text-[0.78rem] font-semibold uppercase tracking-[0.04em] text-muted-foreground">
+          {fieldMeta.label}
+        </span>
 
         {question.definition.field_type === "long_text" ? (
           <LargeInput
-            className="field-question__preview-textarea"
             size="sm"
             rows={4}
             autoGrow
@@ -42,7 +42,7 @@ export function FieldFormFiller({
           />
         ) : (
           <Input
-            className="field-question__preview-input-field field-question__preview-input-field--compact"
+            className="w-full max-w-112.5"
             type={mapInputType(question.definition.field_type)}
             placeholder={placeholder}
             value={value}
@@ -51,7 +51,7 @@ export function FieldFormFiller({
           />
         )}
       </div>
-      <p className="form-filler-question__helper">{fieldMeta.helper}</p>
+      <p className="m-0 text-[0.92rem] text-muted-foreground">{fieldMeta.helper}</p>
     </div>
   );
 }
