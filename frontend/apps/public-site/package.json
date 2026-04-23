@@ -12,6 +12,9 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@flowform/builder": "0.0.0",
+    "@flowform/styles": "0.0.0",
+    "@flowform/ui": "0.0.0",
     "@astrojs/react": "^5.0.3",
     "@astrojs/starlight": "^0.38.3",
     "@tailwindcss/vite": "^4.2.4",

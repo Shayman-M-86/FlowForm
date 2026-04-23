@@ -8,6 +8,10 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const reactSrc = path.resolve(__dirname, '../../my-react-app/src');
+const stylesSrc = path.resolve(__dirname, '../../packages/styles/src');
+const uiSrc = path.resolve(__dirname, '../../packages/ui/src');
+const builderSrc = path.resolve(__dirname, '../../packages/builder/src');
+const reactRouterDomSrc = path.resolve(__dirname, 'node_modules/react-router-dom');
 
 export default defineConfig({
   build: {
@@ -49,9 +53,16 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     resolve: {
-      alias: {
-        '@react-app': reactSrc,
-      },
+      alias: [
+        { find: '@flowform/builder/node-page.css', replacement: path.resolve(builderSrc, 'pages/NodePage.css') },
+        { find: '@flowform/builder', replacement: path.resolve(builderSrc, 'index.ts') },
+        { find: '@flowform/ui', replacement: path.resolve(uiSrc, 'index.tsx') },
+        { find: '@flowform/styles/tokens.css', replacement: path.resolve(stylesSrc, 'tokens.css') },
+        { find: '@flowform/styles/components.css', replacement: path.resolve(stylesSrc, 'components.css') },
+        { find: '@flowform/styles', replacement: path.resolve(stylesSrc, 'index.css') },
+        { find: 'react-router-dom', replacement: reactRouterDomSrc },
+        { find: '@react-app', replacement: reactSrc },
+      ],
     },
   },
 });

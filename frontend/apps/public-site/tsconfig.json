@@ -12,6 +12,12 @@
     "jsxImportSource": "react",
     "types": ["node", "astro/client", "react"],
     "paths": {
+      "@flowform/builder": ["../../packages/builder/src/index.ts"],
+      "@flowform/builder/*": ["../../packages/builder/src/*"],
+      "@flowform/styles": ["../../packages/styles/src/index.css"],
+      "@flowform/styles/*": ["../../packages/styles/src/*"],
+      "@flowform/ui": ["../../packages/ui/src/index.tsx"],
+      "@flowform/ui/*": ["../../packages/ui/src/*"],
       "@react-app/*": ["../../my-react-app/src/*"]
     }
   }

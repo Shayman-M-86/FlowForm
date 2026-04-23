@@ -198,7 +198,16 @@ import { NodePageIsland } from '../components/NodePageIsland';
       </div>
 
       <!-- NodePage island — full React app embedded -->
-      <NodePageIsland client:only="react" />
+      <NodePageIsland client:only="react">
+        <div slot="fallback" class="builder-loading" aria-hidden="true">
+          <div class="builder-loading__body">
+            <div class="builder-loading__divider"></div>
+            <div class="builder-loading__card">
+              <div class="builder-loading__wave"></div>
+            </div>
+          </div>
+        </div>
+      </NodePageIsland>
     </section>
 
 
@@ -375,6 +384,7 @@ import { NodePageIsland } from '../components/NodePageIsland';
 
         <!-- Right: visual shield card -->
         <div
+          class="shield-card"
           style="
             background: var(--card);
             border: 1px solid var(--border);
@@ -397,7 +407,9 @@ import { NodePageIsland } from '../components/NodePageIsland';
               font-size: 2.2rem;
             "
           >
-            🛡️
+            <svg class="shield-icon" xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24">
+              <path class="shield-path" fill="#7194fe" stroke="#7194fe" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l-9 3.5v6.5c0 3.5 3.5 9 8 10c4.5 -1 8 -6.5 8 -10v-6.5l-8 -3.5Z" />
+            </svg>
           </div>
 
           <div style="width:100%;display:flex;flex-direction:column;gap:10px;">
@@ -712,6 +724,27 @@ import { NodePageIsland } from '../components/NodePageIsland';
 </Layout>
 
 <style>
+  .shield-icon .shield-path {
+    fill-opacity: 0.15;
+    stroke-dasharray: 64;
+    stroke-dashoffset: 0;
+    transition: fill-opacity 0.2s ease;
+  }
+
+  .shield-card:hover .shield-path {
+    animation: shield-draw 1.2s ease forwards, shield-fill 0.3s ease 1.1s forwards;
+  }
+
+  @keyframes shield-draw {
+    from { stroke-dashoffset: 64; }
+    to   { stroke-dashoffset: 0; }
+  }
+
+  @keyframes shield-fill {
+    from { fill-opacity: 0; }
+    to   { fill-opacity: 0.3; }
+  }
+
   /* Responsive grid overrides for smaller screens */
   @media (max-width: 768px) {
     #security > div > div {
