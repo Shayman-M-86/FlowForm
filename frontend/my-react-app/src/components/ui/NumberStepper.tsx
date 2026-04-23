@@ -8,7 +8,7 @@ import {
   stepperInputClass,
   type StepperSize,
   type StepperVariant,
-} from "./stepperStyles";
+} from "../../index.optimized";
 
 interface NumberStepperProps {
   value: number;

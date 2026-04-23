@@ -7,9 +7,9 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
-import type { ControlSize } from "./uiSizes";
-import { controlSizeClasses } from "./uiSizes";
 import {
+  type ControlSize,
+  controlSizeClasses,
   formFieldClass,
   formLabelClass,
   formHintClass,
@@ -17,7 +17,7 @@ import {
   controlBaseClass,
   getSurfaceClassName,
   type InputVariant,
-} from "./formFieldStyles";
+} from "../../index.optimized";
 
 interface SelectOption {
   value: string;

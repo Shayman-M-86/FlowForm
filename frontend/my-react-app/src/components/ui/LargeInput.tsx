@@ -12,12 +12,10 @@ import {
   getTextareaShellClassName,
   controlBaseClass,
   type InputVariant,
-} from "./formFieldStyles";
-import {
   textareaBodySizeClasses,
   textareaSizeClasses,
   type TextareaSize,
-} from "./uiSizes";
+} from "../../index.optimized";
 
 interface LargeInputProps
   extends TextareaHTMLAttributes<HTMLTextAreaElement> {

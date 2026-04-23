@@ -17,9 +17,7 @@ import {
   nodePillShellEditClass,
   nodePillSubLabelClass,
 } from "./nodePillStyles";
-import { Input } from "../ui/Input";
-import { LargeInput } from "../ui/LargeInput";
-import { Select } from "../ui/Select";
+import { Input, LargeInput, Select } from "../../index.optimized";
 import type { FieldContent, FieldType } from "./questionTypes";
 
 export interface FieldQuestionHandle {

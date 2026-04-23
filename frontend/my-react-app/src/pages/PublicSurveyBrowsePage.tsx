@@ -2,8 +2,7 @@ import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { listPublicSurveys } from "../api/public";
 import type { SurveyOut } from "../api/types";
-import { Button } from "../components/ui/Button";
-import { Spinner } from "../components/ui/Spinner";
+import { Button, Spinner } from "../index.optimized";
 import { useFetch } from "../hooks/useFetch";
 import "./PublicSurveyBrowsePage.css";
 

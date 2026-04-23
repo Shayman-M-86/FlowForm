@@ -10,11 +10,7 @@ import {
   nodePillShellClass,
   nodePillShellEditClass,
 } from "./nodePillStyles";
-import { Input } from "../ui/Input";
-import { NumberStepper } from "../ui/NumberStepper";
-import { NumberStepperGroup } from "../ui/NumberStepperGroup";
-import { Select } from "../ui/Select";
-import { Toggle } from "../ui/Toggle";
+import { Input, NumberStepper, NumberStepperGroup, Select, Toggle } from "../../index.optimized";
 import type { RatingContent, EmojiListType } from "./questionTypes";
 
 const controlClass = "flex min-w-0 flex-col gap-2";

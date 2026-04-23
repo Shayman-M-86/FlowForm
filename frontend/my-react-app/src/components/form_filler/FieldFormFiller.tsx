@@ -1,6 +1,5 @@
 import type { HTMLInputTypeAttribute } from "react";
-import { Input } from "../ui/Input";
-import { LargeInput } from "../ui/LargeInput";
+import { Input, LargeInput } from "../../index.optimized";
 import type { FieldContent } from "../node/questionTypes";
 
 interface FieldFormFillerProps {

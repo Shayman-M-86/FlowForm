@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { MatchingContent } from "../node/questionTypes";
-import { ExpandableTextArea } from "../ui/ExpandableTextArea";
+import { ExpandableTextArea } from "../../index.optimized";
 
 interface MatchingFormFillerProps {
   question: MatchingContent;

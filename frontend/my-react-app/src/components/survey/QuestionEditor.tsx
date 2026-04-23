@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
-import { Modal } from "../ui/Modal";
-import { Select } from "../ui/Select";
+import { Button, Input, Modal, Select } from "../../index.optimized";
 import { ApiRequestError } from "../../api/client";
 import type { CreateQuestionRequest, QuestionOut, QuestionType } from "../../api/types";
 import "./QuestionEditor.css";

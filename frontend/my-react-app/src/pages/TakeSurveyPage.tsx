@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
+import { Button, Input } from "../index.optimized";
 import "../App.css";
 import "./TakeSurveyPage.css";
 

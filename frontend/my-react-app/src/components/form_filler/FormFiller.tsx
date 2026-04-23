@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Badge } from "../ui/Badge";
-import { Button } from "../ui/Button";
+
+import { Button, Badge } from "../../index.optimized";
 import { FieldFormFiller } from "./FieldFormFiller";
 import { MatchingFormFiller } from "./MatchingFormFiller";
 import { MultiChoiceFormFiller } from "./MultiChoiceFormFiller";

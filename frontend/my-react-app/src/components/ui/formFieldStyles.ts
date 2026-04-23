@@ -1,5 +1,4 @@
-import type { ControlSize } from "./uiSizes";
-import { controlSizeClasses } from "./uiSizes";
+import { type ControlSize, controlSizeClasses } from "../../index.optimized";
 
 const inputMinWidthClasses: Record<ControlSize, string> = {
   xxs: "min-w-16",

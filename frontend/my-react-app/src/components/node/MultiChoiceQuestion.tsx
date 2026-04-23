@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
-import { Button } from "../ui/Button";
-import { NumberStepperGroup } from "../ui/NumberStepperGroup";
+import { Button, NumberStepperGroup, Input, LargeInput } from "../../index.optimized";
 import { useOptionDrag } from "./useOptionDrag";
 import { QUESTION_MAX, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
 import {
@@ -30,8 +29,6 @@ import {
   nodePillShellClass,
   nodePillShellEditClass,
 } from "./nodePillStyles";
-import { Input } from "../ui/Input";
-import { LargeInput } from "../ui/LargeInput";
 import type { ChoiceContent } from "./questionTypes";
 
 export interface MultiChoiceQuestionHandle {

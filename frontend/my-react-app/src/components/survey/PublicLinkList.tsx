@@ -2,11 +2,8 @@ import { useCallback, useState } from "react";
 import { useApi } from "../../api/useApi";
 import type { CreatePublicLinkOut, SurveyVisibility } from "../../api/types";
 import { useFetch } from "../../hooks/useFetch";
-import { Badge } from "../ui/Badge";
-import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
-import { Modal } from "../ui/Modal";
-import { Spinner } from "../ui/Spinner";
+
+import { Button, Input, Modal, Spinner, Badge } from "../../index.optimized";
 import "../../App.css";
 import "./PublicLinkList.css";
 

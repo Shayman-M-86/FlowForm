@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
-import { Button } from "../ui/Button";
+import { Button, Input, LargeInput } from "../../index.optimized";
 import { useOptionDrag } from "./useOptionDrag";
 import { QUESTION_MAX, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
 import {
@@ -29,8 +29,6 @@ import {
   nodePillShellClass,
   nodePillShellEditClass,
 } from "./nodePillStyles";
-import { Input } from "../ui/Input";
-import { LargeInput } from "../ui/LargeInput";
 import type { MatchingContent } from "./questionTypes";
 
 export interface MatchingQuestionHandle {

@@ -1,19 +1,21 @@
 import { useState } from "react";
-import { Button } from "../components/ui/Button";
-import { Badge } from "../components/ui/Badge";
-import { Card } from "../components/ui/Card";
-import { CardRow } from "../components/ui/CardRow";
-import { CardStack } from "../components/ui/CardStack";
-import { Input } from "../components/ui/Input";
-import { LargeInput } from "../components/ui/LargeInput";
-import { Select } from "../components/ui/Select";
-import { Tooltip } from "../components/ui/Tooltip";
-import { Toggle } from "../components/ui/Toggle";
-import { Spinner } from "../components/ui/Spinner";
-import { Modal } from "../components/ui/Modal";
-import { NumberStepper } from "../components/ui/NumberStepper";
-import { NumberStepperGroup } from "../components/ui/NumberStepperGroup";
-import { ThemeToggle } from "../components/ui/ThemeToggle";
+import {
+  Button,
+  Card,
+  CardRow,
+  CardStack,
+  Input,
+  LargeInput,
+  Select,
+  Tooltip,
+  Toggle,
+  Spinner,
+  Modal,
+  NumberStepper,
+  NumberStepperGroup,
+  ThemeToggle,
+, Badge
+} from "../index.optimized";
 
 const buttonVariants = ["primary", "secondary", "danger", "ghost"] as const;
 const buttonSizes = ["md", "sm", "xs"] as const;

@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { controlSizeClasses, type ControlSize } from "./uiSizes";
+import { controlSizeClasses, type ControlSize } from "../../index.optimized";
 
 type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
 type ButtonBorderStyle = "solid" | "dotted";

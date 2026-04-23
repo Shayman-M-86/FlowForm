@@ -1,12 +1,8 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { TAG_MAX, blurOnEnter, sanitizeQuestionId } from "./NodePillUtils";
-import { Badge } from "../ui/Badge";
-import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
-import { LargeInput } from "../ui/LargeInput";
-import { Modal } from "../ui/Modal";
-import { Tooltip } from "../ui/Tooltip";
+
+import { Button, Input, LargeInput, Modal, Tooltip, Badge} from "../../index.optimized";
 import {
   nodePillCollapsedShellClass,
   nodePillFieldClass,

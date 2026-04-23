@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Badge } from "../ui/Badge";
+import { Badge } from "../../index.optimized";
 import type { SurveyOut } from "../../api/types";
 import "./SurveyCard.css";
 

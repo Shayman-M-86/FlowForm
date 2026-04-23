@@ -2,9 +2,8 @@ import { useCallback, useState } from "react";
 import { useApi } from "../../api/useApi";
 import type { QuestionOut } from "../../api/types";
 import { useFetch } from "../../hooks/useFetch";
-import { Badge } from "../ui/Badge";
-import { Button } from "../ui/Button";
-import { Spinner } from "../ui/Spinner";
+
+import { Button, Spinner, Badge } from "../../index.optimized";
 import { QuestionEditor } from "./QuestionEditor";
 import "../../App.css";
 import "./QuestionList.css";

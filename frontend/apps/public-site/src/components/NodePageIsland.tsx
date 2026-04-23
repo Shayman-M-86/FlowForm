@@ -1,5 +1,5 @@
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { ThemeProvider } from './ThemeProvider';
+import { ThemeProvider } from '@react-app/index.optimized';
 import { NodePage } from '@react-app/pages/NodePage';
 import { FormFillerPage } from '@react-app/pages/FormFillerPage';
 import '@react-app/pages/NodePage.css';

@@ -1,7 +1,7 @@
 import {
   formFieldClass,
   formHintClass,
-} from "./formFieldStyles";
+} from "../../index.optimized";
 
 interface ToggleProps {
   label: string;

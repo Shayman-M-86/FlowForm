@@ -2,11 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../../api/useApi";
 import type { CreateRuleRequest, RuleOut } from "../../api/types";
 import { useFetch } from "../../hooks/useFetch";
-import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
-import { Modal } from "../ui/Modal";
-import { Select } from "../ui/Select";
-import { Spinner } from "../ui/Spinner";
+import { Button, Input, Modal, Select, Spinner } from "../../index.optimized";
 import "../../App.css";
 import "./RuleList.css";
 

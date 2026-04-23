@@ -1,5 +1,5 @@
-import { Badge } from "../ui/Badge";
-import { Button } from "../ui/Button";
+
+import { Button, Badge } from "../../index.optimized";
 import type { SurveyVersionOut, VersionStatus } from "../../api/types";
 import "./VersionBar.css";
 

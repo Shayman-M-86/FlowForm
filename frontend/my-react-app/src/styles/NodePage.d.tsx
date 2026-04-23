@@ -5,8 +5,7 @@ import type { MatchingQuestionHandle } from "../components/node/MatchingQuestion
 import type { MultiChoiceQuestionHandle } from "../components/node/MultiChoiceQuestion";
 import type { RatingQuestionHandle } from "../components/node/RatingQuestion";
 import type { RulesQuestionHandle } from "../components/node/RulesQuestion";
-import { Input, Select, Button, ThemeToggle } from "../index.optimized";
-import { Badge } from "../components/ui/Badge";
+import { Input, Select, Button, ThemeToggle, Badge } from "../index.optimized";
 import { FieldQuestion } from "../components/node/FieldQuestion";
 import { MatchingQuestion } from "../components/node/MatchingQuestion";
 import { MultiChoiceQuestion } from "../components/node/MultiChoiceQuestion";
@@ -168,6 +167,7 @@ function getNodeSchemaId(
   return questionContents[question.id]?.id ?? question.initialTag;
 }
 
+
 const QUESTION_TYPE_OPTIONS: Array<{ value: QuestionType; label: string }> = [
   { value: "multi-choice", label: "Multiple choice" },
   { value: "matching", label: "Matching" },
@@ -291,6 +291,7 @@ export function NodePage() {
     };
   }, [questions]);
 
+
   useEffect(() => {
     const addedId = newlyAddedQuestionId.current;
     if (!addedId) return;
@@ -324,7 +325,9 @@ export function NodePage() {
   }
 
   function removeQuestion(id: string) {
-    setQuestions((current) => current.filter((q) => q.id !== id));
+    setQuestions((current) => {
+      return current.filter((q) => q.id !== id);
+    });
     setEditingQuestionIds((current) => current.filter((questionId) => questionId !== id));
     setQuestionContents((current) => {
       const next = { ...current };
@@ -435,11 +438,7 @@ export function NodePage() {
     const isCollapsed = collapsedIds.has(question.id);
     const idError = duplicateQuestionIds.has(question.id) ? "ID must be unique." : undefined;
     const onExpand = () => {
-      setCollapsedIds((current) => {
-        const next = new Set(current);
-        next.delete(question.id);
-        return next;
-      });
+      setCollapsedIds((current) => { const next = new Set(current); next.delete(question.id); return next; });
       setEditingQuestionIds((current) => current.includes(question.id) ? current : [...current, question.id]);
     };
 
@@ -458,19 +457,19 @@ export function NodePage() {
   }
 
   const addQuestionCard = (
-    <div className="flex flex-col items-stretch gap-[18px] rounded-2xl border border-border bg-[image:var(--surface-lift-gradient-faint),var(--bg-subtle)] px-[26px] py-6 shadow-[inset_0_1px_0_var(--overlay-faint)] my-[10px] mb-[60px]">
-      <div className="flex flex-col items-start gap-2">
+    <div className="node-page__add-question">
+      <div className="node-page__add-question-head">
         <Badge variant="accent" size="sm">Build</Badge>
-        <p className="m-0 text-base font-semibold text-[var(--text-h)]">Add another question</p>
-        <p className="m-0 text-[0.88rem] text-[var(--text-soft)]">
+        <p className="node-page__add-question-label">Add another question</p>
+        <p className="node-page__add-question-copy">
           Choose the next response format to keep building the flow.
         </p>
       </div>
-      <div className="flex flex-wrap justify-start gap-2.5">
+      <div className="node-page__add-question-buttons">
         {QUESTION_TYPE_OPTIONS.map((option) => (
           <Button
             key={option.value}
-            className="min-w-[150px] justify-start"
+            className="node-page__add-question-btn"
             type="button"
             variant="secondary"
             size="sm"
@@ -563,21 +562,19 @@ export function NodePage() {
   }
 
   return (
-    <section className="node-page flex min-h-full flex-col">
-      <div className="node-page__toolbar fixed left-[var(--sidebar-w)] right-0 top-0 z-20 box-border flex h-[var(--node-page-toolbar-height)] items-center justify-center border-b border-border bg-[var(--toolbar-bg)] px-6 py-[14px] backdrop-blur-[14px] max-[640px]:left-0 max-[640px]:px-4">
-        <div className="node-page__toolbar-shell flex w-full max-w-[980px] items-center gap-3 max-[640px]:flex-col max-[640px]:items-stretch">
-          <div className="node-page__toolbar-header flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[999px] border border-border bg-[var(--bg-subtle)] shadow-sm max-[640px]:w-full">
-            <h4 className="m-0 flex items-center border-r border-border px-[18px] text-[0.82rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-soft)] max-[640px]:px-[14px]">
-              Search
-            </h4>
+    <section className="node-page">
+      <div className="node-page__toolbar">
+        <div className="node-page__toolbar-shell">
+          <div className="node-page__toolbar-header">
+            <h4 className="node-page__toolbar-title">Search</h4>
             <Input
-              className="node-page__toolbar-search-input min-w-0 flex-1"
+              className="node-page__toolbar-search-input"
               placeholder="Search by title or ID"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
             />
             <Select
-              className="node-page__toolbar-filter min-w-0 basis-[240px] max-[640px]:basis-[200px]"
+              className="node-page__toolbar-filter"
               value={filterType}
               options={[
                 { value: "all", label: "All question types" },
@@ -586,10 +583,10 @@ export function NodePage() {
               onChange={(event) => setFilterType(event.target.value as "all" | QuestionType)}
             />
           </div>
-          <div className="node-page__toolbar-actions flex shrink-0 items-center gap-2.5 max-[640px]:w-full">
+          <div className="node-page__toolbar-actions">
             <ThemeToggle />
             <Button
-              className="max-[640px]:flex-1"
+              className="node-page__toolbar-clear"
               type="button"
               variant="ghost"
               size="sm"
@@ -599,7 +596,7 @@ export function NodePage() {
               Clear
             </Button>
             <Button
-              className="max-[640px]:flex-1"
+              className="node-page__toolbar-preview"
               type="button"
               variant="secondary"
               size="sm"
@@ -611,8 +608,8 @@ export function NodePage() {
           </div>
         </div>
       </div>
-      <div className="node-page__content box-border flex w-full max-w-[calc(980px+(var(--node-page-controls-gutter)*2))] shrink-0 flex-col items-center self-center px-[var(--node-page-controls-gutter)] pb-10 pt-[calc(var(--node-page-toolbar-height)+var(--node-page-toolbar-gap))] max-[640px]:gap-[14px] max-[640px]:px-5 max-[640px]:pt-[calc(var(--node-page-toolbar-height)+var(--node-page-toolbar-gap)+10px)]">
-        <div className="node-page__questions-stack flex w-full flex-col gap-5">
+      <div className="node-page__content">
+        <div className="node-page__questions-stack">
           {questions.map((question, index) => {
             const nextQuestion = questions[index + 1];
             const shouldShowDivider =
@@ -641,28 +638,28 @@ export function NodePage() {
                 </QuestionRow>
 
                 {shouldShowDivider && (
-                  <div className="my-2 h-px bg-border" />
+                  <div className="node-page__divider" />
                 )}
 
                 {index === questions.length - 1 && (
                   <>
-                    <div className="node-page__section-divider my-2 h-px bg-border" />
+                    <div className="node-page__divider node-page__divider--section" />
                     {addQuestionCard}
                   </>
                 )}
               </Fragment>
-            );
+            )
           })}
           {questions.length === 0 && addQuestionCard}
         </div>
       </div>
       {DEBUG_SHOW_JSON && (
-        <aside className="fixed bottom-4 right-4 z-50 flex max-h-[60vh] w-[min(420px,calc(100vw-32px))] flex-col overflow-hidden rounded-xl border border-border bg-[var(--debug-bg)] font-mono text-[0.78rem] text-[var(--debug-text)] shadow max-[640px]:right-4">
-          <header className="flex items-center justify-between border-b border-[var(--debug-border)] px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.04em]">
+        <aside className="node-page__debug" aria-label="Debug survey JSON">
+          <header className="node-page__debug-head">
             <span>Debug · survey JSON</span>
-            <span className="font-medium text-[var(--debug-text-dim)]">{questions.length} node{questions.length === 1 ? "" : "s"}</span>
+            <span className="node-page__debug-count">{questions.length} node{questions.length === 1 ? "" : "s"}</span>
           </header>
-          <pre className="m-0 overflow-auto whitespace-pre p-3 leading-[1.45]">{JSON.stringify(serializedSurvey, null, 2)}</pre>
+          <pre className="node-page__debug-body">{JSON.stringify(serializedSurvey, null, 2)}</pre>
         </aside>
       )}
     </section>
@@ -693,11 +690,11 @@ function QuestionRow({
   return (
     <div
       ref={onSetWrapperNode}
-      className={`node-page__question-wrapper flex flex-col ${isExpanded ? "" : "node-page__question-wrapper--collapsed"}`}
+      className={`node-page__question-wrapper ${isExpanded ? "" : "node-page__question-wrapper--collapsed"}`}
     >
-      <div className="node-page__question-row relative flex items-start gap-2 max-[640px]:flex-col">
+      <div className="node-page__question-row">
         <Button
-          className="node-page__question-collapse-btn absolute left-[calc(-1*var(--node-page-controls-gutter)+10px)] top-[14px] z-[1] min-h-7 min-w-7 p-0 text-[0.8rem] text-[var(--text-soft)] max-[640px]:left-0"
+          className="node-page__question-collapse-btn"
           type="button"
           variant="ghost"
           size="xs"
@@ -708,14 +705,14 @@ function QuestionRow({
           {isExpanded ? "▾" : "▸"}
         </Button>
 
-        <div className="node-page__question-container relative flex min-w-0 w-full flex-1 flex-col gap-3">
+        <div className="node-page__question-container">
           {children}
         </div>
 
         {isExpanded && isEditing && (
-          <div className="node-page__question-move-controls absolute right-[-52px] top-3 inline-flex flex-col gap-2 max-[640px]:static max-[640px]:mt-2 max-[640px]:self-end max-[640px]:flex-row" aria-label="Move question">
+          <div className="node-page__question-move-controls" aria-label="Move question">
             <Button
-              className="min-w-[34px] p-0"
+              className="node-page__question-move-btn"
               type="button"
               variant="ghost"
               size="xs"
@@ -726,7 +723,7 @@ function QuestionRow({
               ↑
             </Button>
             <Button
-              className="min-w-[34px] p-0"
+              className="node-page__question-move-btn"
               type="button"
               variant="ghost"
               size="xs"

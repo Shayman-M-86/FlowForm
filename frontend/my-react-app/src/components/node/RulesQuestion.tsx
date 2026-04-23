@@ -10,12 +10,7 @@ import {
   nodePillShellClass,
   nodePillShellEditClass,
 } from "./nodePillStyles";
-import { Card } from "../ui/Card";
-import { CardStack } from "../ui/CardStack";
-import { Select } from "../ui/Select";
-import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
-import { NumberStepper } from "../ui/NumberStepper";
+import { Card, CardStack, Select, Button, Input, NumberStepper } from "../../index.optimized";
 import type {
   QuestionContent,
   ChoiceContent,

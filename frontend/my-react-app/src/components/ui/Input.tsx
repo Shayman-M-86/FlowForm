@@ -1,13 +1,13 @@
 import type { InputHTMLAttributes } from "react";
-import type { ControlSize } from "./uiSizes";
 import {
+  type ControlSize,
   formFieldClass,
   formLabelClass,
   formHintClass,
   formErrorClass,
   getInputControlClassName,
   type InputVariant,
-} from "./formFieldStyles";
+} from "../../index.optimized";
 
 interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
   label?: string;

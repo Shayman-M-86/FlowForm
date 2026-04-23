@@ -7,10 +7,7 @@ import type {
   SubmissionChannel,
   SubmissionStatus,
 } from "../api/types";
-import { Badge } from "../components/ui/Badge";
-import { Button } from "../components/ui/Button";
-import { Select } from "../components/ui/Select";
-import { Spinner } from "../components/ui/Spinner";
+import { Button, Select, Spinner, Badge } from "../index.optimized";
 import {
   projectSubmissionsPath,
   projectSurveySubmissionsPath,

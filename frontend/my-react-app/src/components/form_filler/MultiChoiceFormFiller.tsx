@@ -1,5 +1,5 @@
 import type { ChoiceContent } from "../node/questionTypes";
-import { ExpandableSelector } from "../ui/ExpandableSelector";
+import { ExpandableSelector } from "../../index.optimized";
 
 interface MultiChoiceFormFillerProps {
   question: ChoiceContent;

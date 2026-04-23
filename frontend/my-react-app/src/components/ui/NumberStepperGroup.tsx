@@ -8,7 +8,7 @@ import {
   stepperInputClass,
   type StepperSize,
   type StepperVariant,
-} from "./stepperStyles";
+} from "../../index.optimized";
 
 interface NumberStepperItem {
   key: string;
