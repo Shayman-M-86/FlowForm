@@ -58,7 +58,8 @@
   --sidebar-w: 0px;
 }
 
-.dark {
+.dark,
+[data-theme='dark'] {
   --background: rgb(30 30 32);
   --foreground: rgb(250 250 250);
   --card: rgb(24 24 24);

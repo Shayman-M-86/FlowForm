@@ -113,6 +113,7 @@
     position: fixed;
     inset: 0 0 auto 0;
     z-index: 50;
+    line-height: normal;
     border-bottom: 1px solid var(--border);
     background: var(--toolbar-bg);
     backdrop-filter: blur(14px);
@@ -165,11 +166,10 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--accent);
-    background: rgb(110 164 226 / 0.12);
+    background: rgb( from var(--accent) r g b / 0.13);
     padding: 2px 7px;
     border-radius: 999px;
-    border: 1px solid rgb(110 164 226 / 0.25);
-    margin-left: 2px;
+    border: 1px solid rgb( from var(--accent) r g b / 0.30);
   }
 
   .site-header__actions {

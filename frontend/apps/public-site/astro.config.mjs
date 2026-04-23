@@ -10,6 +10,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const reactSrc = path.resolve(__dirname, '../../my-react-app/src');
 
 export default defineConfig({
+  build: {
+    inlineStylesheets: 'always',
+  },
   integrations: [
     starlight({
       title: 'FlowForm Docs',

@@ -6,7 +6,7 @@ const { hasSidebar } = Astro.locals.starlightRoute;
 ---
 
 <div class="header-placeholder" aria-hidden="true"></div>
-<SiteHeader />
+<SiteHeader transition:persist />
 
 <div class="page sl-flex">
   {hasSidebar && (
@@ -27,16 +27,6 @@ const { hasSidebar } = Astro.locals.starlightRoute;
   @layer starlight.core {
     .header-placeholder {
       height: var(--sl-nav-height);
-      width: 100%;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: calc(var(--sl-z-index-navbar) - 1);
-      background: var(--sl-color-bg-nav);
-      border-bottom: 1px solid var(--sl-color-hairline-shade);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
     }
 
     .page {
