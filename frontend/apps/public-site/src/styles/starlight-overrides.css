@@ -1,0 +1,14 @@
+@import "./tokens.css";
+
+:root {
+  --sl-color-accent-low: rgb(110 164 226 / 0.16);
+  --sl-color-accent: rgb(110 164 226);
+  --sl-color-accent-high: rgb(44 45 48);
+  --sl-font: var(--font-sans);
+}
+
+:root[data-theme='dark'] {
+  --sl-color-accent-low: rgb(110 164 226 / 0.22);
+  --sl-color-accent: rgb(82 149 226);
+  --sl-color-accent-high: rgb(250 250 250);
+}

@@ -1,0 +1,272 @@
+<header class="site-header" data-site-header>
+  <div class="site-header__inner">
+    <div class="site-header__brand">
+      <div class="site-header__logo" aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <path d="M8 10h8M8 14h5" />
+        </svg>
+      </div>
+      <span class="site-header__wordmark">FlowForm</span>
+      <span class="site-header__badge">Beta</span>
+    </div>
+
+    <div class="site-header__actions">
+      <nav class="site-header__nav" aria-label="Primary">
+        <a href="/#features" class="site-header__nav-link">Features</a>
+        <a href="/#security" class="site-header__nav-link">Security</a>
+        <a href="/#pricing" class="site-header__nav-link">Pricing</a>
+        <a href="/docs/introduction" class="site-header__nav-link">Docs</a>
+      </nav>
+
+      <a
+        href="https://github.com/Shayman-M-86/FlowForm"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="View on GitHub"
+        class="site-header__icon-link"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8C0 11.54 2.29 14.53 5.47 15.59C5.87 15.66 6.02 15.42 6.02 15.21C6.02 15.02 6.01 14.39 6.01 13.72C4 14.09 3.48 13.23 3.32 12.78C3.23 12.55 2.84 11.84 2.5 11.65C2.22 11.5 1.82 11.13 2.49 11.12C3.12 11.11 3.57 11.7 3.72 11.94C4.44 13.15 5.59 12.81 6.05 12.6C6.12 12.08 6.33 11.73 6.56 11.53C4.78 11.33 2.92 10.64 2.92 7.58C2.92 6.71 3.23 5.99 3.74 5.43C3.66 5.23 3.38 4.41 3.82 3.31C3.82 3.31 4.49 3.1 6.02 4.13C6.66 3.95 7.34 3.86 8.02 3.86C8.7 3.86 9.38 3.95 10.02 4.13C11.55 3.09 12.22 3.31 12.22 3.31C12.66 4.41 12.38 5.23 12.3 5.43C12.81 5.99 13.12 6.7 13.12 7.58C13.12 10.65 11.25 11.33 9.47 11.53C9.76 11.78 10.01 12.26 10.01 13.01C10.01 14.08 10 14.94 10 15.21C10 15.42 10.15 15.67 10.55 15.59C13.71 14.53 16 11.53 16 8C16 3.58 12.42 0 8 0Z" />
+        </svg>
+      </a>
+
+      <button
+        type="button"
+        class="site-header__theme-toggle"
+        data-theme-toggle
+        aria-label="Toggle color theme"
+        title="Switch to dark mode"
+      >
+        <svg class="site-header__theme-icon site-header__theme-icon--sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+        </svg>
+        <svg class="site-header__theme-icon site-header__theme-icon--moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+      </button>
+
+      <a href="/#builder" class="site-header__cta">Try it free</a>
+    </div>
+  </div>
+</header>
+
+<script is:inline>
+  (() => {
+    const STORAGE_KEY = 'flowform.theme';
+
+    const resolveTheme = () => {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === 'light' || stored === 'dark') return stored;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    };
+
+    const applyTheme = (theme) => {
+      const root = document.documentElement;
+      const isDark = theme === 'dark';
+      root.classList.toggle('dark', isDark);
+      root.dataset.theme = theme;
+
+      document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+        button.setAttribute('data-theme', theme);
+        button.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+        button.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+      });
+    };
+
+    const initHeaderThemeToggle = () => {
+      let theme;
+      try {
+        theme = resolveTheme();
+      } catch (_) {
+        theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      }
+
+      applyTheme(theme);
+
+      document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+        if (button.dataset.bound === 'true') return;
+        button.dataset.bound = 'true';
+        button.addEventListener('click', () => {
+          const nextTheme = button.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          try {
+            localStorage.setItem(STORAGE_KEY, nextTheme);
+          } catch (_) {}
+          applyTheme(nextTheme);
+        });
+      });
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initHeaderThemeToggle, { once: true });
+    } else {
+      initHeaderThemeToggle();
+    }
+
+    document.addEventListener('astro:page-load', initHeaderThemeToggle);
+  })();
+</script>
+
+<style>
+  .site-header {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 50;
+    border-bottom: 1px solid var(--border);
+    background: var(--toolbar-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .site-header__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .site-header__brand,
+  .site-header__actions,
+  .site-header__nav {
+    display: flex;
+    align-items: center;
+  }
+
+  .site-header__brand {
+    gap: 10px;
+  }
+
+  .site-header__logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .site-header__wordmark {
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+    color: var(--foreground);
+  }
+
+  .site-header__badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgb(110 164 226 / 0.12);
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid rgb(110 164 226 / 0.25);
+    margin-left: 2px;
+  }
+
+  .site-header__actions {
+    gap: 8px;
+  }
+
+  .site-header__nav {
+    gap: 4px;
+    margin-right: 8px;
+  }
+
+  .site-header__nav-link,
+  .site-header__icon-link,
+  .site-header__theme-toggle,
+  .site-header__cta {
+    transition: color 0.15s, background 0.15s, border-color 0.15s, opacity 0.15s;
+  }
+
+  .site-header__nav-link {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: var(--radius);
+  }
+
+  .site-header__nav-link:hover,
+  .site-header__nav-link:focus-visible,
+  .site-header__icon-link:hover,
+  .site-header__icon-link:focus-visible,
+  .site-header__theme-toggle:hover,
+  .site-header__theme-toggle:focus-visible {
+    color: var(--foreground);
+    background: var(--hover-highlight);
+  }
+
+  .site-header__icon-link,
+  .site-header__theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted-foreground);
+    text-decoration: none;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .site-header__theme-icon {
+    display: none;
+  }
+
+  .site-header__theme-toggle[data-theme='dark'] .site-header__theme-icon--sun,
+  .site-header__theme-toggle[data-theme='light'] .site-header__theme-icon--moon {
+    display: block;
+  }
+
+  .site-header__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--primary-foreground);
+    background: var(--primary);
+    padding: 7px 16px;
+    border-radius: var(--radius);
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .site-header__cta:hover,
+  .site-header__cta:focus-visible {
+    opacity: 0.88;
+  }
+
+  @media (max-width: 900px) {
+    .site-header__nav {
+      display: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .site-header__inner {
+      padding: 10px 16px;
+      min-height: 56px;
+    }
+
+    .site-header__badge,
+    .site-header__cta {
+      display: none;
+    }
+  }
+</style>
