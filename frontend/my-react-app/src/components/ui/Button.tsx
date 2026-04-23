@@ -12,13 +12,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
-const baseClasses =
-  "cursor-pointer border";
-
-const activeClasses = "active:scale-95 active:opacity-80 ";
-
-const disabledClasses =
-  "disabled:cursor-not-allowed disabled:opacity-50 ";
+const baseClasses = "cursor-pointer border";
+const activeClasses = "active:scale-95 active:opacity-80";
+const disabledClasses = "disabled:cursor-not-allowed disabled:opacity-50";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
@@ -43,26 +39,20 @@ export function Button({
   borderStyle = "solid",
   className = "",
   children,
-  disabled,
+  disabled = false,
   ...props
 }: ButtonProps) {
+  const classes =
+    `${baseClasses} ` +
+    `${disabled ? disabledClasses : activeClasses} ` +
+    `${variantClasses[variant]} ` +
+    `${pill ? "rounded-full" : "rounded-sm"} ` +
+    `${borderStyleClasses[borderStyle]} ` +
+    `${controlSizeClasses[size]} ` +
+    className;
+
   return (
-    <button
-      disabled={disabled}
-      className={[
-        baseClasses,
-        disabled ? "" : activeClasses,
-        variantClasses[variant],
-        pill ? "rounded-full" : "rounded-sm",
-        borderStyleClasses[borderStyle],
-        controlSizeClasses[size],
-        disabled ? disabledClasses : "",
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    >
+    <button disabled={disabled} className={classes.trim()} {...props}>
       {children}
     </button>
   );
