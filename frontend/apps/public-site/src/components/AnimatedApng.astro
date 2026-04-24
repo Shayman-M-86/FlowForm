@@ -1,0 +1,232 @@
+---
+interface Props {
+  src: string;
+  alt?: string;
+  width?: number | string;
+  height?: number | string;
+  class?: string;
+  style?: string;
+}
+
+const { src, alt = '', width = 200, height = 200, class: className, style } = Astro.props;
+---
+
+<span
+  class:list={['apng-wrap', className]}
+  data-src={src}
+  data-alt={alt}
+  style={`width:${typeof width === 'number' ? `${width}px` : width}; height:${typeof height === 'number' ? `${height}px` : height}; ${style ?? ''}`}
+>
+  <canvas
+    class="apng-canvas"
+    width={typeof width === 'number' ? width : undefined}
+    height={typeof height === 'number' ? height : undefined}
+    aria-label={alt}
+    role="img"
+  ></canvas>
+</span>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.apng-wrap').forEach((wrap) => {
+    if (wrap.dataset.apngInitialized === 'true') return;
+    wrap.dataset.apngInitialized = 'true';
+
+    const AUTO_PLAY_MIN_DURATION_MS = 1400;
+    const AUTO_PLAY_MAX_DURATION_MS = 2600;
+    const AUTO_PLAY_MIN_DELAY_MS = 800;
+    const AUTO_PLAY_MAX_DELAY_MS = 11000;
+    const AUTO_PLAY_CHECK_MS = 750;
+
+    const canvas = wrap.querySelector<HTMLCanvasElement>('.apng-canvas')!;
+    const ctx = canvas.getContext('2d')!;
+    const src = wrap.dataset.src!;
+    let activeClone: HTMLImageElement | null = null;
+    let isHovering = false;
+    let isAutoPlaying = false;
+    let autoPlayInterval: number | null = null;
+    let autoHideTimeout: number | null = null;
+    let fadeTimeout: number | null = null;
+    let removalTimeout: number | null = null;
+    let nextAutoPlayAt = 0;
+
+    const drawToCanvas = (image: CanvasImageSource) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    };
+
+    const loader = new Image();
+    loader.onload = () => {
+      drawToCanvas(loader);
+    };
+    loader.src = src;
+
+    const getNextAutoPlayDelay = () => {
+      return (
+        AUTO_PLAY_MIN_DELAY_MS +
+        Math.random() * (AUTO_PLAY_MAX_DELAY_MS - AUTO_PLAY_MIN_DELAY_MS)
+      );
+    };
+
+    const getAutoPlayDuration = () => {
+      return (
+        AUTO_PLAY_MIN_DURATION_MS +
+        Math.random() * (AUTO_PLAY_MAX_DURATION_MS - AUTO_PLAY_MIN_DURATION_MS)
+      );
+    };
+
+    const scheduleNextAutoPlay = () => {
+      nextAutoPlayAt = window.Date.now() + getNextAutoPlayDelay();
+    };
+
+    const clearAutoPlayInterval = () => {
+      if (autoPlayInterval !== null) {
+        window.clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+      }
+    };
+
+    const clearAutoHideTimeout = () => {
+      if (autoHideTimeout !== null) {
+        window.clearTimeout(autoHideTimeout);
+        autoHideTimeout = null;
+      }
+    };
+
+    const clearFadeTimeout = () => {
+      if (fadeTimeout !== null) {
+        window.clearTimeout(fadeTimeout);
+        fadeTimeout = null;
+      }
+    };
+
+    const clearRemovalTimeout = () => {
+      if (removalTimeout !== null) {
+        window.clearTimeout(removalTimeout);
+        removalTimeout = null;
+      }
+    };
+
+    const scheduleCloneRemoval = () => {
+      clearRemovalTimeout();
+      removalTimeout = window.setTimeout(() => {
+        activeClone?.remove();
+        activeClone = null;
+        removalTimeout = null;
+      }, 100);
+    };
+
+    const scheduleCloneFadeOut = () => {
+      clearFadeTimeout();
+      fadeTimeout = window.setTimeout(() => {
+        fadeTimeout = null;
+        if (!activeClone) return;
+
+        activeClone.style.opacity = '0';
+        scheduleCloneRemoval();
+      }, 100);
+    };
+
+    const createClone = () => {
+      const clone = new Image();
+      clone.className = 'apng-clone';
+      clone.alt = wrap.dataset.alt ?? '';
+      clone.src = src;
+      wrap.appendChild(clone);
+      activeClone = clone;
+
+      return clone;
+    };
+
+    const showAnimation = () => {
+      clearFadeTimeout();
+      clearRemovalTimeout();
+      clearAutoHideTimeout();
+
+      if (activeClone) activeClone.remove();
+
+      const clone = createClone();
+      requestAnimationFrame(() => {
+        canvas.style.opacity = '0';
+        clone.style.opacity = '1';
+      });
+    };
+
+    const hideAnimation = () => {
+      if (activeClone) {
+        drawToCanvas(activeClone);
+        canvas.style.opacity = '1';
+        activeClone.style.opacity = '1';
+        scheduleCloneFadeOut();
+      }
+    };
+
+    const startAutoPlayLoop = () => {
+      clearAutoPlayInterval();
+      scheduleNextAutoPlay();
+
+      autoPlayInterval = window.setInterval(() => {
+        if (isHovering || isAutoPlaying) return;
+        if (window.Date.now() < nextAutoPlayAt) return;
+
+        isAutoPlaying = true;
+        showAnimation();
+        const autoPlayDuration = getAutoPlayDuration();
+        autoHideTimeout = window.setTimeout(() => {
+          autoHideTimeout = null;
+          isAutoPlaying = false;
+          if (!isHovering) hideAnimation();
+          scheduleNextAutoPlay();
+        }, autoPlayDuration);
+      }, AUTO_PLAY_CHECK_MS);
+    };
+
+    wrap.addEventListener('mouseenter', () => {
+      isHovering = true;
+      clearAutoHideTimeout();
+      isAutoPlaying = false;
+      showAnimation();
+    });
+
+    wrap.addEventListener('mouseleave', () => {
+      isHovering = false;
+      clearAutoHideTimeout();
+      isAutoPlaying = false;
+      hideAnimation();
+      scheduleNextAutoPlay();
+    });
+
+    startAutoPlayLoop();
+  });
+</script>
+
+<style>
+  .apng-wrap {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    line-height: 0;
+  }
+
+  .apng-canvas,
+  .apng-clone {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+    transition: opacity 0.1s linear;
+  }
+
+  .apng-canvas {
+    z-index: 1;
+    opacity: 1;
+  }
+
+  .apng-clone {
+    z-index: 2;
+    object-fit: contain;
+    opacity: 0;
+  }
+</style>

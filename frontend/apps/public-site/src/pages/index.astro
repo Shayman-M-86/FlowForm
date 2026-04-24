@@ -2,9 +2,10 @@
 import Layout from '../layouts/Layout.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import { NodePageIsland } from '../components/NodePageIsland';
+import AnimatedApng from '../components/AnimatedApng.astro';
 ---
 
-<Layout title="FlowForm — Easy Form & Survey Builder">
+<Layout title="FlowForm — Adaptive Forms, No Code">
   <SiteHeader />
 
   <main style="padding-top: 56px;">
@@ -56,7 +57,7 @@ import { NodePageIsland } from '../components/NodePageIsland';
           "
         >
           FlowForm<br />
-          <span style="color: var(--primary);">An easy form builder</span>
+          <span style="color: var(--primary);">Forms that adapt to every answer.</span>
         </h1>
 
         <p
@@ -65,11 +66,11 @@ import { NodePageIsland } from '../components/NodePageIsland';
             color: var(--muted-foreground);
             line-height: 1.65;
             margin: 0 auto 36px;
-            max-width: 520px;
+            max-width: 560px;
           "
         >
-          Design powerful surveys and forms in minutes — no code, no complexity.
-          Security-first architecture keeps your data where it belongs.
+          Build branching surveys, scored quizzes, and research questionnaires in your browser.
+          Five question types, visual rules, and scoring logic — all from a clean visual interface.
         </p>
 
         <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
@@ -117,25 +118,23 @@ import { NodePageIsland } from '../components/NodePageIsland';
         <!-- Social proof strip -->
         <div
           style="
-            margin-top: 48px;
+            margin-top: 52px;
             display: flex;
-            align-items: center;
+            align-items: stretch;
             justify-content: center;
-            gap: 32px;
+            gap: 12px;
             flex-wrap: wrap;
-            font-size: 0.82rem;
-            color: var(--muted-foreground);
-            font-weight: 500;
           "
         >
           {[
-            { icon: '🔒', text: 'End-to-end encrypted' },
-            { icon: '⚡', text: 'Under 5 min to launch' },
-            { icon: '🛡️', text: 'GDPR-ready' },
-            { icon: '🎨', text: '5 question types' },
-          ].map(({ icon, text }) => (
-            <span style="display:flex;align-items:center;gap:6px;">
-              <span>{icon}</span> {text}
+            { src: '/icons8-fast-48.apng.png', alt: 'Timer', label: 'Launch in minutes' },
+            { src: '/icons8-settings-48.apng.png', alt: 'Settings', label: 'Visual logic builder' },
+            { src: '/icons8-lock-48.apng.png', alt: 'Lock', label: 'Privacy by design' },
+            { src: '/icons8-verified-account-48.apng.png', alt: 'Verified', label: 'Easy to use' },
+          ].map(({ src, alt, label }) => (
+            <span style="display:flex;align-items:center;gap:7px;font-size:0.82rem;font-weight:500;color:var(--muted-foreground);">
+              <AnimatedApng src={src} alt={alt} width={20} height={20} />
+              {label}
             </span>
           ))}
         </div>
@@ -192,8 +191,8 @@ import { NodePageIsland } from '../components/NodePageIsland';
             Build your form, right here
           </h2>
         </div>
-        <p style="margin:0;font-size:0.88rem;color:var(--muted-foreground);max-width:380px;line-height:1.5;">
-          Everything auto-saves to your browser. No account needed to get started.
+        <p style="margin:0;font-size:0.88rem;color:var(--muted-foreground);max-width:420px;line-height:1.5;">
+          Everything auto-saves to your browser. Try adding a rule or rating scale.
         </p>
       </div>
 
@@ -211,18 +210,225 @@ import { NodePageIsland } from '../components/NodePageIsland';
     </section>
 
 
-    <!-- ─── Features ───────────────────────────────────────────── -->
+    <!-- ─── Question Types ─────────────────────────────────────── -->
     <section
       id="features"
       style="
+        padding: 120px 48px 140px;
+        background: var(--background);
+        border-top: 1px solid var(--border);
+      "
+    >
+      <div style="max-width: 1400px; margin: 0 auto;">
+        <div style="margin-bottom:56px;">
+          <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);">
+            Question types
+          </p>
+          <h2
+            style="
+              margin:0;
+              font-size:clamp(1.6rem,3.5vw,2.4rem);
+              font-weight:800;
+              letter-spacing:-0.025em;
+              color:var(--foreground);
+              border:none;padding:0;
+            "
+          >
+            Five building blocks. Infinite flows.
+          </h2>
+        </div>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 24px;
+          "
+        >
+          {[
+            {
+              num: '01',
+              title: 'Multiple choice',
+              body: 'Single or multi-select, with optional numeric scores.',
+              img: '/screenshots/qt-choice.png',
+            },
+            {
+              num: '02',
+              title: 'Matching',
+              body: 'Pair items between two columns for knowledge checks.',
+              img: '/screenshots/qt-matching.png',
+            },
+            {
+              num: '03',
+              title: 'Rating',
+              body: 'Numeric scales, sliders, or stars with configurable range.',
+              img: '/screenshots/qt-rating.png',
+            },
+            {
+              num: '04',
+              title: 'Open field',
+              body: 'Text, email, number, or date inputs for free-form answers.',
+              img: '/screenshots/qt-field.png',
+            },
+            {
+              num: '05',
+              title: 'Rules',
+              body: 'A logic node that branches the form based on previous answers.',
+              img: '/screenshots/qt-rules.png',
+            },
+          ].map(({ num, title, body, img }) => (
+            <div
+              class="qt-col"
+              style="
+                display: flex;
+                flex-direction: column;
+              "
+            >
+              <div
+                style="
+                  flex: 1;
+                  border-radius: 14px;
+                  overflow: hidden;
+                  background: var(--muted);
+                  min-height: 320px;
+                "
+              >
+                <img
+                  src={img}
+                  alt={title}
+                  style="width:100%;height:100%;object-fit:cover;display:block;"
+                  loading="lazy"
+                  onerror="this.style.display='none'"
+                />
+              </div>
+              <div style="padding-top:16px;">
+                <span
+                  style="
+                    display:block;
+                    font-size: 0.65rem;
+                    font-weight: 800;
+                    letter-spacing: 0.1em;
+                    color: var(--accent);
+                    text-transform: uppercase;
+                    margin-bottom: 6px;
+                  "
+                >{num}</span>
+                <h3
+                  style="
+                    margin: 0 0 6px;
+                    font-size: 0.92rem;
+                    font-weight: 700;
+                    color: var(--foreground);
+                    line-height: 1.3;
+                  "
+                >{title}</h3>
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 0.8rem;
+                    color: var(--muted-foreground);
+                    line-height: 1.55;
+                  "
+                >{body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ─── Rules & adaptive logic ─────────────────────────────── -->
+    <section
+      id="logic"
+      style="
         padding: 100px 24px;
+        border-top: 1px solid var(--border);
+        background: linear-gradient(
+          135deg,
+          var(--background) 0%,
+          rgb(110 164 226 / 0.04) 100%
+        );
+      "
+    >
+      <div style="max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;">
+        <div>
+          <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);">
+            Adaptive logic
+          </p>
+          <h2
+            style="
+              margin:0 0 20px;
+              font-size:clamp(1.6rem,3vw,2.2rem);
+              font-weight:800;
+              letter-spacing:-0.025em;
+              color:var(--foreground);
+              border:none;padding:0;line-height:1.2;
+            "
+          >
+            Your form branches.<br />Without code.
+          </h2>
+          <p style="margin:0 0 28px;color:var(--muted-foreground);font-size:1rem;line-height:1.7;">
+            Add a Rules node anywhere in your flow and set conditions like <em>equals</em>, <em>contains</em>, <em>between</em>, or <em>is answered</em>. Combine them with AND / OR / NOT to skip questions, show follow-ups, or change required fields — all from the visual builder.
+          </p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          {[
+            { src: '/icons8-settings-48.apng.png', alt: 'Settings', label: 'Grouped AND / OR / NOT conditions', detail: 'Build nested logic trees — no code, no regex.' },
+            { src: '/icons8-goal-48.apng.png', alt: 'Target', label: 'Show, hide, require, or disable', detail: 'Rules can drive four distinct effects on any question.' },
+            { src: '/icons8-search-in-list-48.apng.png', alt: 'List', label: 'Deterministic conflict resolution', detail: 'Sort-keyed rule ordering means results are always predictable.' },
+          ].map(({ src, alt, label, detail }) => (
+            <div
+              style="
+                display:flex;gap:16px;align-items:flex-start;
+                padding:18px 20px;
+                background:var(--card);
+                border:1px solid var(--border);
+                border-radius:14px;
+                box-shadow:var(--app-shadow-xs);
+              "
+            >
+              <div
+                style="
+                  width:30px;
+                  min-width:30px;
+                  align-self:stretch;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                "
+              >
+                <AnimatedApng src={src} alt={alt} width={30} height={30} />
+              </div>
+              <div style="display:flex;flex-direction:column;justify-content:center;min-height:calc(0.92rem + 6px + (0.83rem * 1.55));">
+                <p style="margin:0 0 6px;font-size:0.92rem;font-weight:700;color:var(--foreground);">
+                  {label}
+                </p>
+                <p style="margin:0;font-size:0.83rem;color:var(--muted-foreground);line-height:1.55;">
+                  {detail}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ─── Scoring & export ───────────────────────────────────── -->
+    <section
+      id="scoring"
+      style="
+        padding: 100px 24px;
+        border-top: 1px solid var(--border);
         background: var(--background);
       "
     >
       <div style="max-width: 1080px; margin: 0 auto;">
-        <div style="text-align:center;margin-bottom:64px;">
+        <div style="text-align:center;margin-bottom:56px;">
           <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);">
-            Why FlowForm
+            For serious survey work
           </p>
           <h2
             style="
@@ -234,78 +440,45 @@ import { NodePageIsland } from '../components/NodePageIsland';
               border:none;padding:0;
             "
           >
-            Everything you need,<br />nothing you don't
+            Built for quizzes,<br />assessments, and research.
           </h2>
-          <p style="margin:0 auto;max-width:480px;color:var(--muted-foreground);font-size:1rem;line-height:1.6;">
-            FlowForm packs a professional-grade survey engine into a clean, intuitive interface.
-          </p>
         </div>
 
         <div
           style="
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 20px;
           "
         >
           {[
             {
-              icon: '🎯',
-              title: 'Multiple question types',
-              body: 'Multiple choice, matching, rating scales, open-ended fields, and conditional rules — everything a real survey demands.',
+              icon: <AnimatedApng src="/icons8-question-48.apng.png" alt="Scoring" width={36} height={36} />,
+              title: 'Scoring',
+              body: 'Score responses with multiple strategies — option-to-points, matching keys, rating values, or numeric-range buckets. Organize results into named buckets like total or risk.',
             },
             {
-              icon: '⚙️',
-              title: 'Visual logic builder',
-              body: 'Set up skip logic and branching rules without writing a single line of code. Drag, drop, done.',
-            },
-            {
-              icon: '🔍',
-              title: 'Instant preview',
-              body: 'Hit Preview and see exactly what respondents will experience before you share anything.',
-            },
-            {
-              icon: '💾',
-              title: 'Auto-save, always',
-              body: 'Your work is saved to localStorage automatically. Refresh, close the tab — it\'ll be there when you return.',
-            },
-            {
-              icon: '🎨',
-              title: 'Consistent design',
-              body: 'A polished, accessible UI with light and dark mode baked in. Looks great on every screen.',
-            },
-            {
-              icon: '📤',
-              title: 'Structured export',
-              body: 'Serialize your entire survey to clean JSON, ready for your backend, API, or data pipeline.',
+              icon: <AnimatedApng src="/icons8-choice-48.apng.png" alt="Export" width={36} height={36} />,
+              title: 'Open export',
+              body: 'Every form serializes to a clean SurveyNode[] JSON schema. Send it to your backend, your API, or your data pipeline — no lock-in, ever.',
             },
           ].map(({ icon, title, body }) => (
             <div
               style="
-                padding: 28px;
+                padding: 32px;
                 background: var(--card);
                 border: 1px solid var(--border);
-                border-radius: 16px;
-                box-shadow: var(--app-shadow-xs);
+                border-radius: 18px;
+                box-shadow: var(--app-shadow-sm);
+                position: relative;
+                overflow: hidden;
               "
             >
-              <div
-                style="
-                  width: 44px;
-                  height: 44px;
-                  border-radius: 12px;
-                  background: rgb(110 164 226 / 0.1);
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: 1.3rem;
-                  margin-bottom: 16px;
-                "
-              >
+              <div style="display:flex;align-items:center;gap:14px;margin:0 0 12px;">
                 {icon}
+                <h3 style="margin:0;font-size:1.15rem;font-weight:700;color:var(--foreground);line-height:1.3;">{title}</h3>
               </div>
-              <h3 style="margin:0 0 10px;font-size:1rem;font-weight:700;color:var(--foreground);">{title}</h3>
-              <p style="margin:0;font-size:0.88rem;color:var(--muted-foreground);line-height:1.6;">{body}</p>
+              <p style="margin:0;font-size:0.92rem;color:var(--muted-foreground);line-height:1.65;max-width:380px;">{body}</p>
             </div>
           ))}
         </div>
@@ -345,10 +518,10 @@ import { NodePageIsland } from '../components/NodePageIsland';
             Your data is yours.<br />Full stop.
           </h2>
           <p style="margin:0 0 28px;color:var(--muted-foreground);font-size:1rem;line-height:1.7;">
-            We built security into FlowForm from day one — not as an afterthought.
-            Responses are stored in an isolated database with no cross-contamination,
-            pseudonymous identity mapping keeps PII separate from answer data,
-            and every submission flows through a hardened write saga with rollback protection.
+            FlowForm stores form structure and responses in two separate databases, with no
+            cross-database foreign keys. Real user IDs never touch response data — only
+            stable pseudonymous UUIDs. Every submission uses a two-phase write with rollback
+            protection. Privacy is architectural, not aspirational.
           </p>
 
           <div style="display:flex;flex-direction:column;gap:14px;">
@@ -404,12 +577,9 @@ import { NodePageIsland } from '../components/NodePageIsland';
               background: linear-gradient(135deg, rgb(80 145 220 / 0.15), rgb(110 164 226 / 0.08));
               border: 1px solid rgb(110 164 226 / 0.2);
               display:flex;align-items:center;justify-content:center;
-              font-size: 2.2rem;
             "
           >
-            <svg class="shield-icon" xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24">
-              <path class="shield-path" fill="#7194fe" stroke="#7194fe" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l-9 3.5v6.5c0 3.5 3.5 9 8 10c4.5 -1 8 -6.5 8 -10v-6.5l-8 -3.5Z" />
-            </svg>
+            <AnimatedApng src="/icons8-shield-96.apng.png" alt="Security shield" width={64} height={64} />
           </div>
 
           <div style="width:100%;display:flex;flex-direction:column;gap:10px;">
@@ -477,18 +647,18 @@ import { NodePageIsland } from '../components/NodePageIsland';
           {[
             {
               step: '01',
-              title: 'Add your questions',
-              body: 'Choose from multiple choice, rating, field, matching, and rule nodes. Build your exact flow.',
+              title: 'Drop in question nodes',
+              body: 'Choose from multiple choice, matching, rating, and open-field nodes. Arrange them into the flow your form needs.',
             },
             {
               step: '02',
-              title: 'Set logic & rules',
-              body: 'Use the visual rules builder to add conditional branching, skip logic, and scoring rules.',
+              title: 'Add a Rules node',
+              body: 'Set conditions like equals or between, combine them with AND / OR / NOT, and branch the flow automatically.',
             },
             {
               step: '03',
-              title: 'Preview & share',
-              body: 'Hit Preview to test the respondent experience, then share the link or export the JSON schema.',
+              title: 'Preview, share, export',
+              body: 'Test the respondent experience end-to-end, share a link, or export the JSON schema for your own backend.',
             },
           ].map(({ step, title, body }) => (
             <div style="position:relative;">
@@ -564,7 +734,7 @@ import { NodePageIsland } from '../components/NodePageIsland';
           Open the builder →
         </a>
         <p style="margin:20px 0 0;font-size:0.82rem;color:var(--muted-foreground);">
-          No sign-up required · Auto-saves to your browser · Export anytime
+          Auto-saves to your browser · Export anytime
         </p>
       </div>
     </section>
@@ -594,14 +764,15 @@ import { NodePageIsland } from '../components/NodePageIsland';
               <div
                 style="
                   width:30px;height:30px;border-radius:9px;
-                  background:var(--primary);
                   display:flex;align-items:center;justify-content:center;
+                  overflow:hidden;
                 "
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="3" />
-                  <path d="M8 10h8M8 14h5" />
-                </svg>
+                <img
+                  src="/FlowForm_logo.png"
+                  alt="FlowForm logo"
+                  style="width:100%;height:100%;object-fit:contain;display:block;"
+                />
               </div>
               <span style="font-weight:800;font-size:1.05rem;letter-spacing:-0.02em;color:var(--foreground);">FlowForm</span>
             </div>
@@ -611,9 +782,13 @@ import { NodePageIsland } from '../components/NodePageIsland';
             </p>
             <!-- Security badges -->
             <div style="display:flex;flex-wrap:wrap;gap:8px;">
-              {['🔒 Encrypted', '🛡️ GDPR Ready', '🔑 Pseudonymous'].map((badge) => (
+              {[
+                { apng: '/icons8-lock-48.apng.png', label: 'Encrypted' },
+                { apng: '/icons8-shield-48.apng.png', label: 'GDPR Ready' }
+              ].map(({ apng, label }) => (
                 <span
                   style="
+                    display:inline-flex;align-items:center;gap:5px;
                     font-size:0.72rem;
                     font-weight:600;
                     color:var(--muted-foreground);
@@ -623,7 +798,8 @@ import { NodePageIsland } from '../components/NodePageIsland';
                     border-radius:999px;
                   "
                 >
-                  {badge}
+                  {apng ? <AnimatedApng src={apng} alt={label} width={14} height={14} /> : null}
+                  {label}
                 </span>
               ))}
             </div>
@@ -635,7 +811,7 @@ import { NodePageIsland } from '../components/NodePageIsland';
               Product
             </p>
             <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;">
-              {['Form Builder', 'Question Types', 'Logic Rules', 'Export & API', 'Preview Mode'].map((item) => (
+              {['Form Builder', 'Question Types', 'Adaptive Rules', 'Export & API', 'Preview Mode'].map((item) => (
                 <li>
                   <a
                     href="#builder"
@@ -745,6 +921,15 @@ import { NodePageIsland } from '../components/NodePageIsland';
     to   { fill-opacity: 0.3; }
   }
 
+  @media (max-width: 860px) {
+    .qt-col:nth-child(n+4) { display: none; }
+    div:has(> .qt-col) { grid-template-columns: repeat(3, 1fr) !important; }
+  }
+  @media (max-width: 560px) {
+    .qt-col:nth-child(n+3) { display: none; }
+    div:has(> .qt-col) { grid-template-columns: repeat(2, 1fr) !important; }
+  }
+
   /* Responsive grid overrides for smaller screens */
   @media (max-width: 768px) {
     #security > div > div {
@@ -759,4 +944,5 @@ import { NodePageIsland } from '../components/NodePageIsland';
       grid-template-columns: 1fr !important;
     }
   }
+
 </style>

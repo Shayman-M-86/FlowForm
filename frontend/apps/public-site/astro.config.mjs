@@ -32,7 +32,7 @@ export default defineConfig({
           items: [
             { label: 'Introduction', slug: 'docs/introduction' },
             { label: 'Building Your First Form', slug: 'docs/building-your-first-form' },
-          ],
+            { label: 'FlowForm API v1 Reference', slug: 'docs/flowform-api-v1-reference' },],
         },
         {
           label: 'Question Types',
