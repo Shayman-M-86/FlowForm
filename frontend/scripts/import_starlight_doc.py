@@ -61,6 +61,45 @@ def extract_title(content: str) -> str | None:
     return None
 
 
+def split_frontmatter(content: str) -> tuple[list[str], str]:
+    frontmatter_match = re.match(r"^---\n(.*?)\n---\n?", content, re.DOTALL)
+    if not frontmatter_match:
+        return [], content
+    return frontmatter_match.group(1).splitlines(), content[frontmatter_match.end() :]
+
+
+def format_frontmatter_value(value: str) -> str:
+    if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 .,_()/-]*", value):
+        return value
+    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def ensure_frontmatter(content: str, title: str) -> str:
+    frontmatter_lines, body = split_frontmatter(content)
+    has_title = False
+    has_description = False
+    updated_lines: list[str] = []
+
+    for line in frontmatter_lines:
+        if re.match(r"^title\s*:", line):
+            updated_lines.append(f"title: {format_frontmatter_value(title)}")
+            has_title = True
+            continue
+        if re.match(r"^description\s*:", line):
+            updated_lines.append('description: ""')
+            has_description = True
+            continue
+        updated_lines.append(line)
+
+    if not has_title:
+        updated_lines.insert(0, f"title: {format_frontmatter_value(title)}")
+    if not has_description:
+        insert_at = 1 if updated_lines and re.match(r"^title\s*:", updated_lines[0]) else len(updated_lines)
+        updated_lines.insert(insert_at, 'description: ""')
+
+    return "---\n" + "\n".join(updated_lines) + "\n---\n\n" + body.lstrip()
+
+
 def escape_js_string(value: str) -> str:
     return value.replace("\\", "\\\\").replace("'", "\\'")
 
@@ -99,6 +138,7 @@ def import_doc(source_path: Path, title: str, slug: str) -> Path:
     destination = DOCS_DIR / f"{slug}.md"
 
     content = source_path.read_text(encoding="utf-8")
+    content = ensure_frontmatter(content, title)
     destination.write_text(content, encoding="utf-8")
     update_astro_config(title=title, slug=slug)
     return destination

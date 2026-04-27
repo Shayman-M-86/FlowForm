@@ -2,6 +2,11 @@
 import '@flowform/styles/tokens.css';
 import { ClientRouter } from 'astro:transitions';
 const { head } = Astro.locals.starlightRoute;
+const filteredHead = head.filter(({ tag, attrs }) => {
+  if (tag !== 'link') return true;
+  if (attrs.href !== '/favicon.svg') return true;
+  return attrs.rel !== 'icon' && attrs.rel !== 'shortcut icon';
+});
 ---
 
 <!-- Geist font — same as Layout.astro -->
@@ -11,7 +16,8 @@ const { head } = Astro.locals.starlightRoute;
   href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=optional"
   rel="stylesheet"
 />
+<link rel="icon" type="image/webp" href="/FlowForm_logo.png" />
 
 <ClientRouter />
 
-{head.map(({ tag: Tag, attrs, content }) => <Tag {...attrs} set:html={content} />)}
+{filteredHead.map(({ tag: Tag, attrs, content }) => <Tag {...attrs} set:html={content} />)}
