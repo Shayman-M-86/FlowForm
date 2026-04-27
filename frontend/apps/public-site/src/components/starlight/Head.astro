@@ -4,7 +4,7 @@ import { ClientRouter } from 'astro:transitions';
 const { head } = Astro.locals.starlightRoute;
 const filteredHead = head.filter(({ tag, attrs }) => {
   if (tag !== 'link') return true;
-  if (attrs.href !== '/favicon.svg') return true;
+  if (attrs?.href !== '/favicon.svg') return true;
   return attrs.rel !== 'icon' && attrs.rel !== 'shortcut icon';
 });
 ---
