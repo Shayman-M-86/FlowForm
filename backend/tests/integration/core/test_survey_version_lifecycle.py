@@ -10,7 +10,7 @@ from app.core.errors import AppError
 from app.repositories import surveys_repo
 from app.schema.api.requests.submissions.answers import FieldAnswerIn, FieldAnswerValue
 from app.schema.api.requests.submissions.create import SlugSubmissionRequest
-from app.schema.orm.core.survey_content import SurveyQuestion, SurveyRule, SurveyScoringRule
+from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from app.services.submissions import SubmissionIntakeService
 from app.services.surveys import SurveyService
 from tests.integration.conftest import DbSessions
@@ -168,10 +168,20 @@ def test_copy_version_to_draft_clones_content_and_creates_new_version_number(
     assert cloned_version is not None
 
     copied_questions = list(
-        db_session.scalars(select(SurveyQuestion).where(SurveyQuestion.survey_version_id == draft.id))
+        db_session.scalars(
+            select(SurveyQuestion).where(
+                SurveyQuestion.survey_version_id == draft.id,
+                SurveyQuestion.node_type == "question",
+            )
+        )
     )
     copied_rules = list(
-        db_session.scalars(select(SurveyRule).where(SurveyRule.survey_version_id == draft.id))
+        db_session.scalars(
+            select(SurveyQuestion).where(
+                SurveyQuestion.survey_version_id == draft.id,
+                SurveyQuestion.node_type == "rule",
+            )
+        )
     )
     copied_scoring_rules = list(
         db_session.scalars(select(SurveyScoringRule).where(SurveyScoringRule.survey_version_id == draft.id))
@@ -180,7 +190,7 @@ def test_copy_version_to_draft_clones_content_and_creates_new_version_number(
     assert len(copied_questions) == 1
     assert copied_questions[0].question_key == "q1"
     assert len(copied_rules) == 1
-    assert copied_rules[0].rule_key == "r1"
+    assert copied_rules[0].question_key == "r1"
     assert len(copied_scoring_rules) == 1
     assert copied_scoring_rules[0].scoring_key == "s1"
 

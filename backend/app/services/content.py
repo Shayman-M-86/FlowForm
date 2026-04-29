@@ -3,22 +3,19 @@ from sqlalchemy.orm import Session
 from app.db.error_handling import commit_with_err_handle
 from app.domain import version_rules
 from app.domain.errors import (
-    QuestionNotFoundError,
-    RuleNotFoundError,
+    NodeNotFoundError,
     ScoringRuleNotFoundError,
 )
 from app.domain.permissions import PERMISSIONS
 from app.repositories import content_repo
 from app.schema.api.requests.content import (
-    CreateQuestionRequest,
-    CreateRuleRequest,
+    CreateNodeRequest,
     CreateScoringRuleRequest,
-    UpdateQuestionRequest,
-    UpdateRuleRequest,
+    UpdateNodeRequest,
     UpdateScoringRuleRequest,
 )
 from app.schema.orm.core.survey import SurveyVersion
-from app.schema.orm.core.survey_content import SurveyQuestion, SurveyRule, SurveyScoringRule
+from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from app.schema.orm.core.user import User
 from app.services.access.access_service import require_survey_permission
 from app.services.surveys import SurveyService
@@ -32,9 +29,10 @@ class ContentService:
     def _get_version(self, db: Session, project_id: int, survey_id: int, version_number: int) -> SurveyVersion:
         return _survey_service._get_version(db, project_id, survey_id, version_number)
 
-    # ── Questions ──────────────────────────────────────────────────────────────
+    # ── Nodes (questions + rules) ──────────────────────────────────────────────
+
     @require_survey_permission(PERMISSIONS.survey.view)
-    def list_questions(
+    def list_nodes(
         self,
         db: Session,
         project_id: int,
@@ -43,165 +41,80 @@ class ContentService:
         actor: User,  # noqa: ARG002
     ) -> list[SurveyQuestion]:
         version = self._get_version(db, project_id, survey_id, version_number)
-        return content_repo.list_questions(db, version.id)
+        return content_repo.list_nodes(db, version.id)
 
     @require_survey_permission(PERMISSIONS.survey.edit)
-    def create_question(
+    def create_node(
         self,
         db: Session,
         project_id: int,
         survey_id: int,
         version_number: int,
-        data: CreateQuestionRequest,
+        data: CreateNodeRequest,
         actor: User,  # noqa: ARG002
     ) -> SurveyQuestion:
         version = self._get_version(db, project_id, survey_id, version_number)
         version_rules.ensure_is_editable(version=version)
-
-        question = content_repo.create_question(db, version, data)
-        commit_with_err_handle(db, contexts=[question, version])
-        return question
+        node = content_repo.create_node(db, version, data)
+        commit_with_err_handle(db, contexts=[node, version])
+        return node
 
     @require_survey_permission(PERMISSIONS.survey.view)
-    def get_question(
+    def get_node(
         self,
         db: Session,
         project_id: int,
         survey_id: int,
         version_number: int,
-        question_id: int,
+        node_id: int,
         actor: User,  # noqa: ARG002
     ) -> SurveyQuestion:
         version = self._get_version(db, project_id, survey_id, version_number)
-        question = content_repo.get_question(db, version.id, question_id)
-        if question is None:
-            raise QuestionNotFoundError()
-        return question
+        node = content_repo.get_node(db, version.id, node_id)
+        if node is None:
+            raise NodeNotFoundError()
+        return node
 
     @require_survey_permission(PERMISSIONS.survey.edit)
-    def update_question(
+    def update_node(
         self,
         db: Session,
         project_id: int,
         survey_id: int,
         version_number: int,
-        question_id: int,
-        data: UpdateQuestionRequest,
+        node_id: int,
+        data: UpdateNodeRequest,
         actor: User,  # noqa: ARG002
     ) -> SurveyQuestion:
         version = self._get_version(db, project_id, survey_id, version_number)
         version_rules.ensure_is_editable(version=version)
-        question = content_repo.get_question(db, version.id, question_id)
-        if question is None:
-            raise QuestionNotFoundError()
-        updated = content_repo.update_question(db, question, data)
+        node = content_repo.get_node(db, version.id, node_id)
+        if node is None:
+            raise NodeNotFoundError()
+        updated = content_repo.update_node(db, node, data)
         commit_with_err_handle(db, contexts=[updated, version])
         return updated
 
     @require_survey_permission(PERMISSIONS.survey.edit)
-    def delete_question(
+    def delete_node(
         self,
         db: Session,
         project_id: int,
         survey_id: int,
         version_number: int,
-        question_id: int,
+        node_id: int,
         actor: User,  # noqa: ARG002
     ) -> None:
         version = self._get_version(db, project_id, survey_id, version_number)
         version_rules.ensure_is_editable(version=version)
-        question = content_repo.get_question(db, version.id, question_id)
-        if question is None:
-            raise QuestionNotFoundError()
-        content_repo.delete_question(db, question)
-        commit_with_err_handle(db, contexts=[question, version])
-
-    # ── Rules ──────────────────────────────────────────────────────────────────
-    @require_survey_permission(PERMISSIONS.survey.view)
-    def list_rules(
-        self,
-        db: Session,
-        project_id: int,
-        survey_id: int,
-        version_number: int,
-        actor: User,  # noqa: ARG002
-    ) -> list[SurveyRule]:
-        version = self._get_version(db, project_id, survey_id, version_number)
-        return content_repo.list_rules(db, version.id)
-
-    @require_survey_permission(PERMISSIONS.survey.edit)
-    def create_rule(
-        self,
-        db: Session,
-        project_id: int,
-        survey_id: int,
-        version_number: int,
-        data: CreateRuleRequest,
-        actor: User,  # noqa: ARG002
-    ) -> SurveyRule:
-        version = self._get_version(db, project_id, survey_id, version_number)
-        version_rules.ensure_is_editable(version=version)
-
-        rule = content_repo.create_rule(db, version, data)
-        commit_with_err_handle(db, contexts=[rule, version])
-
-        return rule
-
-    @require_survey_permission(PERMISSIONS.survey.view)
-    def get_rule(
-        self,
-        db: Session,
-        project_id: int,
-        survey_id: int,
-        version_number: int,
-        rule_id: int,
-        actor: User,  # noqa: ARG002
-    ) -> SurveyRule:
-        version = self._get_version(db, project_id, survey_id, version_number)
-        rule = content_repo.get_rule(db, version.id, rule_id)
-        if rule is None:
-            raise RuleNotFoundError()
-        return rule
-
-    @require_survey_permission(PERMISSIONS.survey.edit)
-    def update_rule(
-        self,
-        db: Session,
-        project_id: int,
-        survey_id: int,
-        version_number: int,
-        rule_id: int,
-        data: UpdateRuleRequest,
-        actor: User,  # noqa: ARG002
-    ) -> SurveyRule:
-        version = self._get_version(db, project_id, survey_id, version_number)
-        version_rules.ensure_is_editable(version=version)
-        rule = content_repo.get_rule(db, version.id, rule_id)
-        if rule is None:
-            raise RuleNotFoundError()
-        updated = content_repo.update_rule(db, rule, data)
-        commit_with_err_handle(db, contexts=[updated, version])
-        return updated
-
-    @require_survey_permission(PERMISSIONS.survey.edit)
-    def delete_rule(
-        self,
-        db: Session,
-        project_id: int,
-        survey_id: int,
-        version_number: int,
-        rule_id: int,
-        actor: User,  # noqa: ARG002
-    ) -> None:
-        version = self._get_version(db, project_id, survey_id, version_number)
-        version_rules.ensure_is_editable(version=version)
-        rule = content_repo.get_rule(db, version.id, rule_id)
-        if rule is None:
-            raise RuleNotFoundError()
-        content_repo.delete_rule(db, rule)
-        commit_with_err_handle(db, contexts=[rule, version])
+        node = content_repo.get_node(db, version.id, node_id)
+        if node is None:
+            raise NodeNotFoundError()
+        content_repo.delete_node(db, node)
+        commit_with_err_handle(db, contexts=[node, version])
 
     # ── Scoring rules ──────────────────────────────────────────────────────────
+
     @require_survey_permission(PERMISSIONS.survey.view)
     def list_scoring_rules(
         self,
@@ -262,7 +175,6 @@ class ContentService:
         rule = content_repo.get_scoring_rule(db, version.id, scoring_rule_id)
         if rule is None:
             raise ScoringRuleNotFoundError()
-
         updated = content_repo.update_scoring_rule(db, rule, data)
         commit_with_err_handle(db, contexts=[updated, version])
         return updated

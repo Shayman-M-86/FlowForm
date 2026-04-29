@@ -297,18 +297,11 @@ class VersionNotEditableError(AppError):
         )
 
 
-class QuestionNotFoundError(AppError):
-    """Error raised when a question cannot be found."""
+class NodeNotFoundError(AppError):
+    """Error raised when a content node (question or rule) cannot be found."""
 
     def __init__(self) -> None:
-        super().__init__(status_code=404, code="NOT_FOUND", message="Question not found")
-
-
-class RuleNotFoundError(AppError):
-    """Error raised when a rule cannot be found."""
-
-    def __init__(self) -> None:
-        super().__init__(status_code=404, code="NOT_FOUND", message="Rule not found")
+        super().__init__(status_code=404, code="NOT_FOUND", message="Node not found")
 
 
 class ScoringRuleNotFoundError(AppError):

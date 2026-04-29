@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.schema.api.requests.content.rule_schemas import ConditionIn
+# A simple condition used as an optional filter on scoring rules.
+# This is separate from the survey-level rule if/then/else schema.
+ConditionIn = dict[str, Any]
 
 ScoreNumber = int | float
 

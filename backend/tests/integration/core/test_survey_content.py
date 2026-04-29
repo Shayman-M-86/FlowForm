@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
 from app.schema.orm.core.survey import SurveyVersion
-from app.schema.orm.core.survey_content import SurveyQuestion, SurveyRule, SurveyScoringRule
+from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from tests.integration.core.factories import (
     make_survey_question,
     make_survey_rule,
@@ -161,37 +161,36 @@ def test_survey_question_cascades_on_version_delete(
 
 
 # ---------------------------------------------------------------------------
-# SurveyRule
+# Rule nodes (node_type='rule', stored in survey_questions)
 # ---------------------------------------------------------------------------
 
 
 def test_survey_rule_can_be_created(db_session: scoped_session[Session], survey_version: SurveyVersion) -> None:
-    """All fields are persisted and server defaults populate created_at and updated_at."""
-    schema = {"target": "q1", "condition": {}, "effects": {}}
+    """Rule nodes are persisted as SurveyQuestion rows with node_type='rule'."""
+    schema = {"id": "r1", "if": {"match": "ALL", "conditions": []}, "then": {"set": []}}
     rule = make_survey_rule(survey_version.id, rule_key="r1", rule_schema=schema)
     db_session.add(rule)
     db_session.flush()
 
-    saved = db_session.get(SurveyRule, rule.id)
-    assert saved is not None, "SurveyRule was not persisted"
-    assert saved.survey_version_id == survey_version.id, (
-        f"survey_version_id={saved.survey_version_id!r}, expected {survey_version.id!r}"
-    )
-    assert saved.rule_key == "r1", f"rule_key={saved.rule_key!r}, expected 'r1'"
-    assert saved.rule_schema == schema, f"rule_schema={saved.rule_schema!r}"
-    assert saved.created_at is not None, "created_at was not set by the server default"
-    assert saved.updated_at is not None, "updated_at was not set by the server default"
+    saved = db_session.get(SurveyQuestion, rule.id)
+    assert saved is not None, "Rule node was not persisted"
+    assert saved.survey_version_id == survey_version.id
+    assert saved.node_type == "rule"
+    assert saved.question_key == "r1"
+    assert saved.question_schema == schema
+    assert saved.created_at is not None
+    assert saved.updated_at is not None
 
 
 def test_survey_rule_unique_key_within_version(
     db_session: scoped_session[Session], survey_version: SurveyVersion
 ) -> None:
-    """Two rules in the same survey version cannot share a rule_key."""
-    r_a = make_survey_rule(survey_version.id, rule_key="dup")
+    """Two rule nodes in the same survey version cannot share a question_key."""
+    r_a = make_survey_rule(survey_version.id, rule_key="dup", sort_key=500000)
     db_session.add(r_a)
     db_session.flush()
 
-    r_b = make_survey_rule(survey_version.id, rule_key="dup")
+    r_b = make_survey_rule(survey_version.id, rule_key="dup", sort_key=600000)
     db_session.add(r_b)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -199,8 +198,8 @@ def test_survey_rule_unique_key_within_version(
 
     orig = cast(UniqueViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
-    assert constraint == "uq_survey_rules_survey_version_id_rule_key", (
-        f"Expected constraint 'uq_survey_rules_survey_version_id_rule_key', got '{constraint}'\nDB error: {exc_info.value}"
+    assert constraint == "uq_survey_questions_survey_version_id_question_key", (
+        f"Expected constraint 'uq_survey_questions_survey_version_id_question_key', got '{constraint}'\nDB error: {exc_info.value}"
     )
 
     db_session.rollback()
@@ -223,10 +222,10 @@ def test_survey_rule_same_key_allowed_across_versions(
     assert r_a.id != r_b.id, f"Expected distinct IDs across versions, got id={r_a.id!r} for both"
 
 
-def test_survey_rule_requires_rule_key(db_session: scoped_session[Session], survey_version: SurveyVersion) -> None:
-    """rule_key is NOT NULL — omitting it raises an IntegrityError."""
+def test_survey_rule_requires_question_key(db_session: scoped_session[Session], survey_version: SurveyVersion) -> None:
+    """question_key is NOT NULL on rule nodes."""
     rule = make_survey_rule(survey_version.id)
-    rule.rule_key = None  # type: ignore[assignment]
+    rule.question_key = None  # type: ignore[assignment]
     db_session.add(rule)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -234,40 +233,28 @@ def test_survey_rule_requires_rule_key(db_session: scoped_session[Session], surv
 
     orig = cast(NotNullViolation, exc_info.value.orig)
     column = orig.diag.column_name
-    assert column == "rule_key", (
-        f"Expected NOT NULL violation on 'rule_key', got '{column}'\nDB error: {exc_info.value}"
+    assert column == "question_key", (
+        f"Expected NOT NULL violation on 'question_key', got '{column}'\nDB error: {exc_info.value}"
     )
 
     db_session.rollback()
 
 
-def test_survey_rule_rejects_non_object_schema(
+def test_survey_rule_accepts_object_schema(
     db_session: scoped_session[Session], survey_version: SurveyVersion
 ) -> None:
-    """rule_schema must be a JSON object — arrays and scalars are rejected."""
-    rule = make_survey_rule(survey_version.id)
-    rule.rule_schema = ["not", "an", "object"]  # type: ignore[assignment]
+    """Rule nodes with a valid object schema are persisted correctly."""
+    schema = {"id": "r1", "if": {"match": "ALL", "conditions": []}, "then": {"set": []}}
+    rule = make_survey_rule(survey_version.id, rule_schema=schema)
     db_session.add(rule)
-
-    with pytest.raises(IntegrityError) as exc_info:
-        db_session.flush()
-
-    orig = cast(CheckViolation, exc_info.value.orig)
-    constraint = orig.diag.constraint_name
-    assert constraint in (
-        "ck_survey_rules_rule_schema_is_object",
-        "ck_survey_rules_rule_condition_is_object",
-    ), (
-        f"Expected a rule_schema shape constraint, got '{constraint}'\nDB error: {exc_info.value}"
-    )
-
-    db_session.rollback()
+    db_session.flush()
+    assert rule.id is not None
 
 
 def test_survey_rule_cascades_on_version_delete(
     db_session: scoped_session[Session], survey_version: SurveyVersion
 ) -> None:
-    """Deleting the survey version removes all its rules."""
+    """Deleting the survey version removes all its rule nodes."""
     rule = make_survey_rule(survey_version.id)
     db_session.add(rule)
     db_session.flush()
@@ -277,8 +264,8 @@ def test_survey_rule_cascades_on_version_delete(
     db_session.flush()
     db_session.expire_all()
 
-    assert db_session.get(SurveyRule, rule_id) is None, (
-        "SurveyRule should have been deleted when its survey version was deleted"
+    assert db_session.get(SurveyQuestion, rule_id) is None, (
+        "Rule node should have been deleted when its survey version was deleted"
     )
 
 

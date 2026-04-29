@@ -11,7 +11,7 @@ from app.schema.orm.core.survey_access import (
     SurveyRole,
     survey_role_permissions,
 )
-from app.schema.orm.core.survey_content import SurveyQuestion, SurveyRule, SurveyScoringRule
+from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from app.schema.orm.core.survey_submission import SurveySubmission
 from app.schema.orm.core.user import User
 
@@ -29,7 +29,6 @@ __all__ = [
     "SurveyPublicLink",
     "SurveyQuestion",
     "SurveyRole",
-    "SurveyRule",
     "SurveyScoringRule",
     "SurveySubmission",
     "SurveyVersion",

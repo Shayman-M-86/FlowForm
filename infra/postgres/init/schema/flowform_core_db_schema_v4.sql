@@ -306,116 +306,63 @@ CREATE UNIQUE INDEX uq_survey_versions_one_published
 
 CREATE TABLE survey_questions (
     id BIGSERIAL PRIMARY KEY,
-    survey_version_id BIGINT NOT NULL REFERENCES survey_versions(id) ON DELETE CASCADE,
+
+    survey_version_id BIGINT NOT NULL
+        REFERENCES survey_versions(id)
+        ON DELETE CASCADE,
+
     question_key TEXT NOT NULL,
+    sort_key INTEGER NOT NULL,
+    node_type TEXT NOT NULL,
     question_schema JSONB NOT NULL,
+
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT uq_survey_questions_survey_version_id_question_key 
-        UNIQUE (survey_version_id, question_key),
+    CONSTRAINT ck_survey_questions_node_type_valid
+        CHECK (node_type IN ('question', 'rule')),
+
+    CONSTRAINT ck_survey_questions_sort_key_positive
+        CHECK (sort_key > 0),
+
+    CONSTRAINT ck_survey_questions_question_key_len
+        CHECK (length(question_key) BETWEEN 1 AND 128),
+
+    CONSTRAINT ck_survey_questions_question_key_format
+        CHECK (question_key ~ '^[A-Za-z0-9_-]+$'),
+
+    CONSTRAINT ck_survey_questions_schema_size
+        CHECK (length(question_schema::text) <= 10000),
 
     CONSTRAINT ck_survey_questions_question_schema_is_object
-        CHECK (jsonb_typeof(question_schema) = 'object'),
-
-    CONSTRAINT ck_survey_questions_question_schema_top_level_shape_valid
-        CHECK (jsonb_has_exact_keys(question_schema, ARRAY['family', 'label', 'schema', 'ui'])),
+        CHECK (
+            node_type <> 'question'
+            OR jsonb_typeof(question_schema) = 'object'
+        ),
 
     CONSTRAINT ck_survey_questions_question_family_valid
-        CHECK (question_schema->>'family' IN ('choice', 'field', 'matching', 'rating')),
-
-    CONSTRAINT ck_survey_questions_question_label_valid
-        CHECK (jsonb_typeof(question_schema->'label') = 'string' AND btrim(question_schema->>'label') <> ''),
-
-    CONSTRAINT ck_survey_questions_question_schema_inner_is_object
-        CHECK (jsonb_typeof(question_schema->'schema') = 'object'),
-
-    CONSTRAINT ck_survey_questions_question_ui_is_object
-        CHECK (jsonb_typeof(question_schema->'ui') = 'object'),
-
-    CONSTRAINT ck_survey_questions_question_choice_schema_valid
         CHECK (
-            question_schema->>'family' <> 'choice' OR (
-                jsonb_has_exact_keys(question_schema->'schema', ARRAY['options', 'min_selected', 'max_selected'])
-                AND jsonb_typeof(question_schema->'schema'->'options') = 'array'
-                AND jsonb_typeof(question_schema->'schema'->'min_selected') = 'number'
-                AND jsonb_typeof(question_schema->'schema'->'max_selected') = 'number'
-            )
-        ),
-    CONSTRAINT ck_survey_questions_question_field_schema_valid
-        CHECK (
-            question_schema->>'family' <> 'field' OR (
-                jsonb_has_exact_keys(question_schema->'schema', ARRAY['field_type'])
-                AND question_schema->'schema'->>'field_type' IN ('text', 'email', 'number', 'date', 'phone')
-            )
-        ),
-    CONSTRAINT ck_survey_questions_question_matching_schema_valid
-        CHECK (
-            question_schema->>'family' <> 'matching' OR (
-                jsonb_has_exact_keys(question_schema->'schema', ARRAY['left_items', 'right_items'])
-                AND jsonb_typeof(question_schema->'schema'->'left_items') = 'array'
-                AND jsonb_typeof(question_schema->'schema'->'right_items') = 'array'
-            )
-        ),
-    CONSTRAINT ck_survey_questions_question_rating_schema_valid
-        CHECK (
-            question_schema->>'family' <> 'rating' OR (
-                jsonb_has_exact_keys(question_schema->'schema', ARRAY['min', 'max'])
-                AND jsonb_typeof(question_schema->'schema'->'min') = 'number'
-                AND jsonb_typeof(question_schema->'schema'->'max') = 'number'
-                AND (question_schema->'schema'->>'max')::numeric > (question_schema->'schema'->>'min')::numeric
-            )
+            node_type <> 'question'
+            OR question_schema->>'family' IN ('choice', 'field', 'matching', 'rating')
         )
 );
+
+CREATE UNIQUE INDEX uq_survey_questions_survey_version_id_question_key
+    ON survey_questions (survey_version_id, question_key);
+
+CREATE UNIQUE INDEX uq_survey_questions_survey_version_id_sort_key
+    ON survey_questions (survey_version_id, sort_key);
+
+CREATE INDEX ix_survey_questions_survey_version_id_node_type
+    ON survey_questions (survey_version_id, node_type);
+
+CREATE INDEX ix_survey_questions_survey_version_id_sort_key
+    ON survey_questions (survey_version_id, sort_key);
 
 -- =========================================
 -- SURVEY RULES
 -- =========================================
 
-CREATE TABLE survey_rules (
-    id BIGSERIAL PRIMARY KEY,
-    survey_version_id BIGINT NOT NULL REFERENCES survey_versions(id) ON DELETE CASCADE,
-    rule_key TEXT NOT NULL,
-    rule_schema JSONB NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT uq_survey_rules_survey_version_id_rule_key
-        UNIQUE (survey_version_id, rule_key),
-
-    CONSTRAINT ck_survey_rules_rule_schema_is_object
-        CHECK (jsonb_typeof(rule_schema) = 'object'),
-
-    CONSTRAINT ck_survey_rules_rule_schema_top_level_shape_valid
-        CHECK (
-            jsonb_has_exact_keys(rule_schema, ARRAY['target', 'condition', 'effects'])
-            OR jsonb_has_exact_keys(rule_schema, ARRAY['target', 'sort_order', 'condition', 'effects'])
-        ),
-
-    CONSTRAINT ck_survey_rules_rule_target_valid
-        CHECK (
-            jsonb_typeof(rule_schema->'target') = 'string'
-            AND btrim(rule_schema->>'target') <> ''
-        ),
-
-    CONSTRAINT ck_survey_rules_rule_condition_is_object
-        CHECK (
-            rule_schema->'condition' IS NOT NULL
-            AND jsonb_typeof(rule_schema->'condition') = 'object'
-        ),
-
-    CONSTRAINT ck_survey_rules_rule_effects_is_object
-        CHECK (
-            rule_schema->'effects' IS NOT NULL
-            AND jsonb_typeof(rule_schema->'effects') = 'object'
-        ),
-
-    CONSTRAINT ck_survey_rules_rule_sort_order_valid
-        CHECK (
-            (rule_schema ? 'sort_order') = FALSE
-            OR jsonb_typeof(rule_schema->'sort_order') = 'number'
-        )
-);
 
 -- =========================================
 -- SURVEY SCORING RULES
@@ -728,13 +675,6 @@ CREATE TRIGGER trg_survey_questions_lock_published
 BEFORE INSERT OR UPDATE OR DELETE ON survey_questions
 FOR EACH ROW EXECUTE FUNCTION prevent_changes_to_published_version_parts();
 
-CREATE TRIGGER trg_survey_rules_updated_at
-BEFORE UPDATE ON survey_rules
-FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
-CREATE TRIGGER trg_survey_rules_lock_published
-BEFORE INSERT OR UPDATE OR DELETE ON survey_rules
-FOR EACH ROW EXECUTE FUNCTION prevent_changes_to_published_version_parts();
 
 CREATE TRIGGER trg_survey_scoring_rules_updated_at
 BEFORE UPDATE ON survey_scoring_rules
@@ -764,7 +704,6 @@ CREATE INDEX idx_surveys_published_version ON surveys(published_version_id);
 CREATE INDEX idx_survey_versions_survey ON survey_versions(survey_id);
 CREATE INDEX idx_survey_versions_status ON survey_versions(status);
 CREATE INDEX idx_survey_questions_version ON survey_questions(survey_version_id);
-CREATE INDEX idx_survey_rules_version ON survey_rules(survey_version_id);
 CREATE INDEX idx_survey_scoring_rules_version ON survey_scoring_rules(survey_version_id);
 
 CREATE INDEX idx_survey_membership_roles_project ON survey_membership_roles(project_id);

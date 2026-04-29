@@ -8,7 +8,7 @@ from app.schema.orm.core.project import Project, ProjectRole
 from app.schema.orm.core.response_store import ResponseStore
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyPublicLink, SurveyRole
-from app.schema.orm.core.survey_content import SurveyQuestion, SurveyRule, SurveyScoringRule
+from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from app.schema.orm.core.user import User
 
 
@@ -111,12 +111,19 @@ def make_audit_log(
 def make_survey_rule(
     survey_version_id: int,
     rule_key: str = "r1",
+    sort_key: int = 500000,
     rule_schema: dict | None = None,
-) -> SurveyRule:
-    rule = SurveyRule()
+) -> SurveyQuestion:
+    rule = SurveyQuestion()
     rule.survey_version_id = survey_version_id
-    rule.rule_key = rule_key
-    rule.rule_schema = rule_schema or {"target": "q1", "condition": {}, "effects": {}}
+    rule.question_key = rule_key
+    rule.sort_key = sort_key
+    rule.node_type = "rule"
+    rule.question_schema = rule_schema or {
+        "id": rule_key,
+        "if": {"match": "ALL", "conditions": []},
+        "then": {"set": []},
+    }
     return rule
 
 
@@ -140,15 +147,22 @@ def make_survey_scoring_rule(
 def make_survey_question(
     survey_version_id: int,
     question_key: str = "q1",
+    sort_key: int | None = None,
     question_schema: dict | None = None,
 ) -> SurveyQuestion:
+    # Derive a unique sort_key from the question_key so multiple questions
+    # in one version don't collide on the unique constraint.
+    if sort_key is None:
+        sort_key = abs(hash(question_key)) % 900000 + 100000
     question = SurveyQuestion()
     question.survey_version_id = survey_version_id
     question.question_key = question_key
+    question.sort_key = sort_key
+    question.node_type = "question"
     question.question_schema = question_schema or {
+        "id": question_key,
         "family": "field",
         "label": "Question",
-        "schema": {"field_type": "text"},
-        "ui": {},
+        "field": {"schema": {"field_type": "short_text"}, "ui": {}},
     }
     return question

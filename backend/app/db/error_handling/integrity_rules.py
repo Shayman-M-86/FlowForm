@@ -17,7 +17,6 @@ from app.schema.orm.core import (
     SurveyLink,
     SurveyMembershipRole,
     SurveyQuestion,
-    SurveyRule,
     SurveyScoringRule,
     SurveySubmission,
     SurveyVersion,
@@ -31,7 +30,6 @@ type RuleContext = (
     | ResponseSubjectMapping
     | SurveySubmission
     | SurveyQuestion
-    | SurveyRule
     | SurveyScoringRule
     | ProjectRole
     | ProjectMembership
@@ -57,8 +55,8 @@ allowed_parameters = {
     "response_store_id",
     "external_submission_id",
     "pseudonymous_subject_id",
+    "node_type",
     "survey_question_id",
-    "survey_rule_id",
     "survey_scoring_rule_id",
     "project_role_id",
     "name",
@@ -133,13 +131,7 @@ def _survey_question_ctx(question: SurveyQuestion) -> dict[str, object]:
     return {
         "survey_question_id": question.id,
         "survey_version_id": question.survey_version_id,
-    }
-
-
-def _survey_rule_ctx(rule: SurveyRule) -> dict[str, object]:
-    return {
-        "survey_rule_id": rule.id,
-        "survey_version_id": rule.survey_version_id,
+        "node_type": question.node_type,
     }
 
 
@@ -426,39 +418,58 @@ SURVEY_QUESTION_RULES: tuple[DbErrorRule, ...] = (
         "uq_survey_questions_survey_version_id_question_key",
         lambda ctx, _exc: AppError(
             409,
-            "QUESTION_KEY_CONFLICT",
-            f"Survey version id={ctx['survey_version_id']} already uses question_key={ctx['question_key']!r}.",
+            "QUESTION_KEY_CONFLICT" if ctx.get("node_type") == "question" else "RULE_KEY_CONFLICT",
+            f"Survey version id={ctx['survey_version_id']} already uses"
+            f" {'question' if ctx.get('node_type') == 'question' else 'rule'}_key"
+            f" (node id={ctx['survey_question_id']}).",
         ),
         extractor=_survey_question_ctx,
     ),
-    message_rule(
-        "Cannot modify components of a published survey version",
-        lambda ctx, _exc: AppError(
-            409,
-            "QUESTION_VERSION_LOCKED",
-            f"Question id={ctx['survey_question_id']} cannot be changed because its survey version is published.",
-        ),
-        extractor=_survey_question_ctx,
-    ),
-)
-SURVEY_RULE_CONTENT_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
-        "uq_survey_rules_survey_version_id_rule_key",
+        "uq_survey_questions_survey_version_id_sort_key",
         lambda ctx, _exc: AppError(
             409,
-            "RULE_KEY_CONFLICT",
-            f"Survey version id={ctx['survey_version_id']} already uses rule_key={ctx['rule_key']!r}.",
+            "SORT_KEY_CONFLICT",
+            f"Survey version id={ctx['survey_version_id']} already uses that sort_key.",
         ),
-        extractor=_survey_rule_ctx,
+        extractor=_survey_question_ctx,
+    ),
+    check_rule(
+        "ck_survey_questions_schema_size",
+        lambda ctx, _exc: AppError(
+            422,
+            "NODE_SCHEMA_TOO_LARGE",
+            f"Node id={ctx['survey_question_id']} schema exceeds the maximum allowed size.",
+        ),
+        extractor=_survey_question_ctx,
+    ),
+    check_rule(
+        "ck_survey_questions_question_schema_is_object",
+        lambda ctx, _exc: AppError(
+            422,
+            "QUESTION_SCHEMA_INVALID",
+            f"Node id={ctx['survey_question_id']} question_schema must be a JSON object.",
+        ),
+        extractor=_survey_question_ctx,
+    ),
+    check_rule(
+        "ck_survey_questions_question_family_valid",
+        lambda ctx, _exc: AppError(
+            422,
+            "QUESTION_FAMILY_INVALID",
+            f"Node id={ctx['survey_question_id']} question_schema.family must be"
+            " one of: choice, field, matching, rating.",
+        ),
+        extractor=_survey_question_ctx,
     ),
     message_rule(
         "Cannot modify components of a published survey version",
-        lambda ctx, _exc: AppError(  # noqa: ARG005
+        lambda ctx, _exc: AppError(
             409,
-            "RULE_VERSION_LOCKED",
-            "Rules cannot be changed on a published survey version.",
+            "QUESTION_VERSION_LOCKED" if ctx.get("node_type") == "question" else "RULE_VERSION_LOCKED",
+            f"Node id={ctx['survey_question_id']} cannot be changed because its survey version is published.",
         ),
-        extractor=_survey_rule_ctx,
+        extractor=_survey_question_ctx,
     ),
 )
 
@@ -551,7 +562,6 @@ RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
     ResponseSubjectMapping: RESPONSE_SUBJECT_MAPPING_RULES,
     SurveySubmission: SURVEY_SUBMISSION_RULES,
     SurveyQuestion: SURVEY_QUESTION_RULES,
-    SurveyRule: SURVEY_RULE_CONTENT_RULES,
     SurveyScoringRule: SURVEY_SCORING_RULE_RULES,
     ProjectRole: PROJECT_ROLE_RULES,
     ProjectMembership: PROJECT_MEMBERSHIP_RULES,

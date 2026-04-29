@@ -419,38 +419,3 @@ QuestionSchemaIn = Annotated[
 ]
 
 
-# ============================================================================
-# REQUEST MODELS
-# ============================================================================
-
-
-class CreateQuestionRequest(BaseModel):
-    """Validates requests that create a new question schema entry."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    question_key: str
-    question_schema: QuestionSchemaIn
-
-    @field_validator("question_key")
-    @classmethod
-    def validate_question_key(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("question_key must not be blank")
-        return value
-
-
-class UpdateQuestionRequest(BaseModel):
-    """Validates partial updates to an existing question schema entry."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    question_key: str | None = None
-    question_schema: QuestionSchemaIn | None = None
-
-    @field_validator("question_key")
-    @classmethod
-    def validate_question_key(cls, value: str | None) -> str | None:
-        if value is not None and not value.strip():
-            raise ValueError("question_key must not be blank")
-        return value

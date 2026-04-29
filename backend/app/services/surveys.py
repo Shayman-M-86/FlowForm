@@ -174,14 +174,14 @@ class SurveyService:
         questions = content_repo.list_questions(db, version.id)
         version_rules.ensure_has_questions(questions=questions)
 
-        rules = content_repo.list_rules(db, version.id)
+        all_nodes = content_repo.list_nodes(db, version.id)
         scoring_rules = content_repo.list_scoring_rules(db, version.id)
 
         compiled = {
-            "questions": [
-                {"id": q.id, "question_key": q.question_key, "question_schema": q.question_schema} for q in questions
+            "nodes": [
+                {"type": n.node_type, "sort_key": n.sort_key, "content": n.question_schema}
+                for n in all_nodes
             ],
-            "rules": [{"id": r.id, "rule_key": r.rule_key, "rule_schema": r.rule_schema} for r in rules],
             "scoring_rules": [
                 {"id": s.id, "scoring_key": s.scoring_key, "scoring_schema": s.scoring_schema} for s in scoring_rules
             ],

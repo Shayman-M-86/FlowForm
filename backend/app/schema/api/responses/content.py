@@ -1,30 +1,19 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class QuestionOut(BaseModel):
-    """API response shape for a survey question."""
+class NodeOut(BaseModel):
+    """API response shape for a survey content node (question or rule)."""
 
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    survey_version_id: int
-    question_key: str
-    question_schema: dict
-    created_at: datetime
-    updated_at: datetime
-
-
-class RuleOut(BaseModel):
-    """API response shape for a survey rule."""
-
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     id: int
     survey_version_id: int
-    rule_key: str
-    rule_schema: dict
+    node_key: str = Field(validation_alias="question_key")
+    sort_key: int
+    node_type: str
+    content: dict = Field(validation_alias="question_schema")
     created_at: datetime
     updated_at: datetime
 

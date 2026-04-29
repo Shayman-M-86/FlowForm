@@ -16,7 +16,6 @@ from app.schema.orm.core import (
     SurveyMembershipRole,
     SurveyQuestion,
     SurveyRole,
-    SurveyRule,
     SurveyScoringRule,
     SurveySubmission,
     SurveyVersion,
@@ -105,7 +104,6 @@ def test_survey_version_relationships() -> None:
 
 def test_survey_content_relationships() -> None:
     assert get_relationship(SurveyQuestion, "survey_version").mapper.class_ is SurveyVersion
-    assert get_relationship(SurveyRule, "survey_version").mapper.class_ is SurveyVersion
     assert get_relationship(SurveyScoringRule, "survey_version").mapper.class_ is SurveyVersion
 
 
@@ -202,7 +200,7 @@ def test_survey_version_constraints() -> None:
 
 def test_survey_content_unique_constraints() -> None:
     assert "uq_survey_questions_survey_version_id_question_key" in unique_constraint_names(SurveyQuestion)
-    assert "uq_survey_rules_survey_version_id_rule_key" in unique_constraint_names(SurveyRule)
+    assert "uq_survey_questions_survey_version_id_sort_key" in unique_constraint_names(SurveyQuestion)
     assert "uq_survey_scoring_rules_survey_version_id_scoring_key" in unique_constraint_names(SurveyScoringRule)
 
 

@@ -26,10 +26,15 @@ dump_all_logs() {
   docker compose -f "${COMPOSE_FILE}" logs --no-color 2>&1 || true
 }
 
+dump_test_logs() {
+  echo "==> Logs from backend-test service:"
+  docker compose -f "${COMPOSE_FILE}" logs --no-color backend-test 2>&1 || true
+}
+
 _failed=0
 teardown() {
   if [ "${_failed}" -eq 1 ]; then
-    dump_all_logs
+    dump_test_logs
   fi
   echo "==> Tearing down test environment..."
   docker compose -f "${COMPOSE_FILE}" down -v

@@ -35,7 +35,8 @@ def test_bootstrap_current_user_returns_result(monkeypatch: pytest.MonkeyPatch) 
         },
     )
 
-    db = object()
+    db = Mock()
+    db.scalar.return_value = None  # user not yet in DB
     result = service.bootstrap_current_user(
         db,
         access_token_sub="auth0|service-created",
@@ -71,9 +72,11 @@ def test_bootstrap_current_user_rejects_subject_mismatch(
         },
     )
 
+    db = Mock()
+    db.scalar.return_value = None  # user not yet in DB
     with pytest.raises(AuthError) as exc_info:
         service.bootstrap_current_user(
-            object(),
+            db,
             access_token_sub="auth0|access-token",
             payload=BootstrapUserRequest(id_token="raw-id-token"),
         )
