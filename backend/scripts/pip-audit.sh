@@ -4,23 +4,21 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Detect OS and set correct python path
-if [[ "$OS" == "Windows_NT" ]]; then
-    PYTHON_PATH_1="$PROJECT_ROOT/.venv/Scripts/python.exe"
-else
-    PYTHON_PATH_1="$PROJECT_ROOT/.venv/bin/python"
-fi
+cd "$PROJECT_ROOT"
 
-# Validate path
-if [[ ! -f "$PYTHON_PATH_1" ]]; then
-    echo "❌ Python executable not found at $PYTHON_PATH_1"
+if ! command -v uv >/dev/null 2>&1; then
+    echo "uv is required to compile backend requirements and run pip-audit." >&2
     exit 1
 fi
 
-echo "Using Python executable at $PYTHON_PATH_1"
+REQUIREMENTS_FILE="$(mktemp "${TMPDIR:-/tmp}/flowform-pip-audit-requirements.XXXXXX.txt")"
+cleanup() {
+    rm -f "$REQUIREMENTS_FILE"
+}
+trap cleanup EXIT INT TERM
 
-# Set for pip-audit (optional but fine)
-export PIPAPI_PYTHON_LOCATION="$PYTHON_PATH_1"
+echo "Compiling backend requirements for pip-audit..."
+uv pip compile pyproject.toml --extra dev --extra test -o "$REQUIREMENTS_FILE"
 
-# Run pip-audit correctly (module name uses underscore)
-"$PYTHON_PATH_1" -m pip_audit
+echo "Running pip-audit..."
+uvx pip-audit -r "$REQUIREMENTS_FILE" "$@"

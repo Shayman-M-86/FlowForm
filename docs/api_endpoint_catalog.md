@@ -144,19 +144,13 @@ HTTP status: `409 Conflict`
 - `created_at`
 - `updated_at`
 
-`QuestionOut`
+`NodeOut`
 - `id`
 - `survey_version_id`
-- `question_key`
-- `question_schema`
-- `created_at`
-- `updated_at`
-
-`RuleOut`
-- `id`
-- `survey_version_id`
-- `rule_key`
-- `rule_schema`
+- `node_key` (the stable content ID, e.g. `"q1"`, `"r1"`)
+- `sort_key`
+- `node_type` (`"question"` | `"rule"`)
+- `content` (the full question or rule schema object)
 - `created_at`
 - `updated_at`
 
@@ -280,37 +274,52 @@ Rules:
 
 ### Minimal Polymorphic Payload Examples
 
-Question payloads are discriminated by `question_schema.family`.
+Node payloads use `type` to discriminate between questions and rules. `sort_key` controls ordering across all nodes in a version. `content.id` must match the node's stable key and is used as `node_key` in responses.
+
+Question node — `content` is discriminated by `content.family`:
 
 ```json
 {
-  "question_key": "email",
-  "question_schema": {
+  "type": "question",
+  "sort_key": 100000,
+  "content": {
+    "id": "email",
     "family": "field",
-    "label": "Email",
-    "schema": {
-      "field_type": "email"
-    },
-    "ui": {}
+    "label": "Email address",
+    "title": "Contact Info",
+    "definition": {
+      "variant": "email",
+      "ui": { "placeholder": "you@example.com" }
+    }
   }
 }
 ```
 
-Rule payloads use a `condition` object and one or more `effects`.
+Rule node — `content` uses an `if / then / else` structure:
 
 ```json
 {
-  "rule_key": "show_followup",
-  "rule_schema": {
-    "target": "followup_question",
-    "sort_order": 0,
-    "condition": {
-      "fact": "answers.email_opt_in",
-      "operator": "equals",
-      "value": true
+  "type": "rule",
+  "sort_key": 500000,
+  "content": {
+    "id": "show_followup",
+    "if": {
+      "match": "ALL",
+      "conditions": [
+        {
+          "target_id": "email",
+          "family": "field",
+          "requirements": { "type": "number", "operator": "GTE", "value": 18 }
+        }
+      ]
     },
-    "effects": {
-      "visible": true
+    "then": {
+      "set": [
+        { "target_id": "followup", "visible": true, "required": true }
+      ]
+    },
+    "else": {
+      "do": { "skip_to": "end" }
     }
   }
 }
@@ -759,9 +768,11 @@ Answer payloads are discriminated by `answer_family`.
 
 ### Content
 
-#### `GET /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/questions`
+Questions and rules are unified as **nodes**, ordered by `sort_key`. Both are stored in the same table and returned by the same endpoints, discriminated by `node_type`.
 
-- Purpose: list questions for a survey version.
+#### `GET /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/nodes`
+
+- Purpose: list all nodes (questions and rules) for a survey version, ordered by `sort_key`.
 - Auth: `require_auth`.
 - Path/query params:
   - `project_ref`
@@ -769,136 +780,82 @@ Answer payloads are discriminated by `answer_family`.
   - `version_number`
 - Request shape: none.
 - Success responses:
-  - `200 OK`: `QuestionOut[]`
+  - `200 OK`: `NodeOut[]`
 - Obvious errors:
   - `401` auth required
   - `404` project, survey, or version not found
 
-#### `POST /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/questions`
+#### `POST /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/nodes`
 
-- Purpose: create a question for a survey version.
+- Purpose: create a node (question or rule) in a survey version.
 - Auth: `require_auth`.
 - Path/query params:
   - `project_ref`
   - `survey_id`
   - `version_number`
 - Request shape:
-  - `question_key`
-  - `question_schema`
+  - `type: "question" | "rule"`
+  - `sort_key: integer > 0`
+  - `content: QuestionContentIn | RuleContentIn` (discriminated by `type`)
 - Success responses:
-  - `201 Created`: `QuestionOut`
+  - `201 Created`: `NodeOut`
 - Obvious errors:
   - `401` auth required
   - `404` project, survey, or version not found
-  - `409` duplicate question key or draft-state conflict
+  - `409` duplicate node key, duplicate sort_key, or non-draft version
   - `422 VALIDATION_ERROR`
 
-#### `PATCH /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/questions/{question_id}`
+#### `GET /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}`
 
-- Purpose: partially update a question.
+- Purpose: fetch one node by ID.
 - Auth: `require_auth`.
 - Path/query params:
   - `project_ref`
   - `survey_id`
   - `version_number`
-  - `question_id`
-- Request shape:
-  - `question_key?`
-  - `question_schema?`
-- Success responses:
-  - `200 OK`: `QuestionOut`
-- Obvious errors:
-  - `401` auth required
-  - `404` question or parent resources not found
-  - `409` duplicate key or non-draft version
-  - `422 VALIDATION_ERROR`
-
-#### `DELETE /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/questions/{question_id}`
-
-- Purpose: delete a question.
-- Auth: `require_auth`.
-- Path/query params:
-  - `project_ref`
-  - `survey_id`
-  - `version_number`
-  - `question_id`
+  - `node_id`
 - Request shape: none.
 - Success responses:
-  - `200 OK`: `{ "message": "Question deleted" }`
+  - `200 OK`: `NodeOut`
 - Obvious errors:
   - `401` auth required
-  - `404` question or parent resources not found
-  - `409` non-draft version
+  - `404` node or parent resources not found
 
-#### `GET /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/rules`
+#### `PATCH /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}`
 
-- Purpose: list rules for a survey version.
+- Purpose: partially update a node. `type` cannot be changed after creation.
 - Auth: `require_auth`.
 - Path/query params:
   - `project_ref`
   - `survey_id`
   - `version_number`
-- Request shape: none.
-- Success responses:
-  - `200 OK`: `RuleOut[]`
-- Obvious errors:
-  - `401` auth required
-  - `404` project, survey, or version not found
-
-#### `POST /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/rules`
-
-- Purpose: create a rule for a survey version.
-- Auth: `require_auth`.
-- Path/query params:
-  - `project_ref`
-  - `survey_id`
-  - `version_number`
+  - `node_id`
 - Request shape:
-  - `rule_key`
-  - `rule_schema`
+  - `sort_key?: integer > 0`
+  - `content?: QuestionContentIn | RuleContentIn`
 - Success responses:
-  - `201 Created`: `RuleOut`
+  - `200 OK`: `NodeOut`
 - Obvious errors:
   - `401` auth required
-  - `404` project, survey, or version not found
-  - `409` duplicate rule key or non-draft version
+  - `404` node or parent resources not found
+  - `409` duplicate sort_key or non-draft version
   - `422 VALIDATION_ERROR`
 
-#### `PATCH /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/rules/{rule_id}`
+#### `DELETE /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}`
 
-- Purpose: partially update a rule.
+- Purpose: delete a node.
 - Auth: `require_auth`.
 - Path/query params:
   - `project_ref`
   - `survey_id`
   - `version_number`
-  - `rule_id`
-- Request shape:
-  - `rule_key?`
-  - `rule_schema?`
-- Success responses:
-  - `200 OK`: `RuleOut`
-- Obvious errors:
-  - `401` auth required
-  - `404` rule or parent resources not found
-  - `409` duplicate key or non-draft version
-  - `422 VALIDATION_ERROR`
-
-#### `DELETE /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/rules/{rule_id}`
-
-- Purpose: delete a rule.
-- Auth: `require_auth`.
-- Path/query params:
-  - `project_ref`
-  - `survey_id`
-  - `version_number`
-  - `rule_id`
+  - `node_id`
 - Request shape: none.
 - Success responses:
-  - `200 OK`: `{ "message": "Rule deleted" }`
+  - `200 OK`: `{ "message": "Node deleted" }`
 - Obvious errors:
   - `401` auth required
-  - `404` rule or parent resources not found
+  - `404` node or parent resources not found
   - `409` non-draft version
 
 #### `GET /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/scoring-rules`
