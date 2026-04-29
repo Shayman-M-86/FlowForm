@@ -53,7 +53,7 @@ def test_archive_active_published_version_unpublishes_and_archives(
     db_session.flush()
 
     service = SurveyService()
-    archived = SurveyService.archive_version.__wrapped__(
+    archived = SurveyService.archive_version.__wrapped__(  # type: ignore
         service,
         db=db_session,
         project_id=project.id,
@@ -104,7 +104,7 @@ def test_publish_new_version_archives_previous_live_version_in_safe_order(
     db_session.flush()
 
     service = SurveyService()
-    published = SurveyService.publish_version.__wrapped__(
+    published = SurveyService.publish_version.__wrapped__(  # type: ignore
         service,
         db=db_session,
         project_id=project.id,
@@ -151,7 +151,7 @@ def test_copy_version_to_draft_clones_content_and_creates_new_version_number(
     db_session.flush()
 
     service = SurveyService()
-    draft = SurveyService.copy_version_to_draft.__wrapped__(
+    draft = SurveyService.copy_version_to_draft.__wrapped__(  # type: ignore
         service,
         db=db_session,
         project_id=project.id,
@@ -164,7 +164,7 @@ def test_copy_version_to_draft_clones_content_and_creates_new_version_number(
     assert draft.status == "draft"
     assert draft.id != source.id
 
-    cloned_version = surveys_repo.get_version(db_session, project.id, survey.id, 3)
+    cloned_version = surveys_repo.get_version(db_session, project.id, survey.id, 3) # type: ignore
     assert cloned_version is not None
 
     copied_questions = list(
@@ -229,7 +229,7 @@ def test_unpublished_survey_rejects_submission_after_unpublish(
     core_db.flush()
 
     service = SurveyService()
-    SurveyService.archive_version.__wrapped__(
+    SurveyService.archive_version.__wrapped__( # type: ignore
         service,
         db=core_db,
         project_id=project.id,
@@ -240,7 +240,7 @@ def test_unpublished_survey_rejects_submission_after_unpublish(
 
     submission_service = SubmissionIntakeService()
     payload = SlugSubmissionRequest(
-        public_slug=survey.public_slug,
+        public_slug=survey.public_slug, # type: ignore
         survey_version_id=version.id,
         answers=[
             FieldAnswerIn(
@@ -288,7 +288,7 @@ def test_direct_active_archive_trigger_translates_to_app_error_not_key_error(
     db_session.flush()
 
     with pytest.raises(AppError) as exc_info:
-        surveys_repo.archive_version(db_session, version)
+        surveys_repo.archive_version(db_session, version) # type: ignore
 
     assert exc_info.value.code == "VERSION_STATE_PROTECTED"
     assert "Published version id=" in exc_info.value.message

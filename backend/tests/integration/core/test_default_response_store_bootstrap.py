@@ -20,7 +20,7 @@ def test_create_project_bootstraps_platform_primary_response_store(
     user,
 ) -> None:
     project = projects_repo.create_project(
-        db_session,
+        db_session, # type: ignore
         CreateProjectRequest(name="Bootstrap Project", slug="bootstrap-project"),
         created_by_user_id=user.id,
     )
@@ -50,7 +50,7 @@ def test_create_survey_backfills_missing_project_response_store(
     db_session.flush()
 
     service = SurveyService()
-    survey = SurveyService.create_survey.__wrapped__(
+    survey = SurveyService.create_survey.__wrapped__(  # type: ignore
         service,
         db=db_session,
         project_id=project.id,
@@ -88,7 +88,7 @@ def test_publish_version_backfills_missing_survey_response_store(
     db_session.flush()
 
     service = SurveyService()
-    published = SurveyService.publish_version.__wrapped__(
+    published = SurveyService.publish_version.__wrapped__(  # type: ignore
         service,
         db=db_session,
         project_id=project.id,

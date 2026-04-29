@@ -3,6 +3,7 @@ FROM python:3.14-slim-trixie
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
+    UV_PROJECT_ENVIRONMENT=/opt/flowform/backend-test-venv \
     UV_LINK_MODE=copy \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 

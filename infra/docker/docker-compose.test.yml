@@ -101,7 +101,7 @@ services:
     volumes:
       - ../../backend:/app
       - ../../backend/logs:/app/logs
-      - flowform_backend_test_venv:/app/.venv
+      - flowform_backend_test_venv:/opt/flowform/backend-test-venv
     depends_on:
       postgres-core:
         condition: service_healthy

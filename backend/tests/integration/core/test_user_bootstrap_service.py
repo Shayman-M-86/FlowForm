@@ -14,7 +14,7 @@ def test_bootstrap_user_creates_user(db_session: scoped_session[Session]) -> Non
     service = UserService()
 
     user, created = service.bootstrap_user(
-        db_session,
+        db_session, # type: ignore
         auth0_user_id="auth0|bootstrap-new",
         email="bootstrap-new@example.com",
         display_name="Bootstrap New",
@@ -41,7 +41,7 @@ def test_bootstrap_user_updates_existing_user(
 
     service = UserService()
     user, created = service.bootstrap_user(
-        db_session,
+        db_session, # type: ignore
         auth0_user_id="auth0|bootstrap-existing",
         email="new@example.com",
         display_name="New Name",
@@ -71,7 +71,7 @@ def test_bootstrap_user_raises_conflict_for_duplicate_email(
 
     with pytest.raises(UserBootstrapConflictError):
         service.bootstrap_user(
-            db_session,
+            db_session, # type: ignore
             auth0_user_id="auth0|bootstrap-email-other",
             email="duplicate@example.com",
             display_name="Other",
