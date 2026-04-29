@@ -4,10 +4,10 @@ import { FormFillerPage, NodePage } from '@flowform/builder';
 
 const builderOverrideCSS = `
   .builder-shell .node-page__toolbar {
-    position: sticky !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
   }
   .builder-shell .node-page__content {
     padding-top: 24px !important;

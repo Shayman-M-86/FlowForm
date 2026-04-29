@@ -15,7 +15,7 @@ import AnimatedApng from '../components/AnimatedApng.astro';
       id="hero"
       style="
         text-align: center;
-        padding: 80px 24px 60px;
+        padding: 90px 24px 80px;
         background: linear-gradient(
           160deg,
           var(--background) 0%,
@@ -214,7 +214,7 @@ import AnimatedApng from '../components/AnimatedApng.astro';
     <section
       id="features"
       style="
-        padding: 120px 48px 140px;
+        padding: 50px 48px 40px;
         background: var(--background);
         border-top: 1px solid var(--border);
       "
@@ -768,12 +768,13 @@ import AnimatedApng from '../components/AnimatedApng.astro';
       style="
         border-top: 1px solid var(--border);
         background: var(--card);
-        padding: 64px 24px 40px;
+        padding: 45px 24px 45px;
       "
     >
       <div style="max-width:1080px;margin:0 auto;">
         <!-- Top row -->
         <div
+          class="site-footer-grid"
           style="
             display:grid;
             grid-template-columns:2fr 1fr 1fr 1fr;
@@ -782,7 +783,7 @@ import AnimatedApng from '../components/AnimatedApng.astro';
           "
         >
           <!-- Brand column -->
-          <div>
+          <div class="site-footer-brand" style="justify-self:center;padding-bottom:12px;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
               <div
                 style="
@@ -829,11 +830,11 @@ import AnimatedApng from '../components/AnimatedApng.astro';
           </div>
 
           <!-- Product column -->
-          <div>
+          <div class="site-footer-link-section">
             <p style="margin:0 0 16px;font-size:0.75rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--foreground);">
               Product
             </p>
-            <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;">
+            <ul class="site-footer-link-list" style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;">
               {['Form Builder', 'Question Types', 'Adaptive Rules', 'Export & API', 'Preview Mode'].map((item) => (
                 <li>
                   <a
@@ -848,11 +849,11 @@ import AnimatedApng from '../components/AnimatedApng.astro';
           </div>
 
           <!-- Security column -->
-          <div>
+          <div class="site-footer-link-section">
             <p style="margin:0 0 16px;font-size:0.75rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--foreground);">
               Security
             </p>
-            <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;">
+            <ul class="site-footer-link-list" style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;">
               {['Privacy Policy', 'Data Isolation', 'GDPR Compliance', 'Audit Logs', 'Pseudonymity'].map((item) => (
                 <li>
                   <a
@@ -867,11 +868,11 @@ import AnimatedApng from '../components/AnimatedApng.astro';
           </div>
 
           <!-- Company column -->
-          <div>
+          <div class="site-footer-link-section">
             <p style="margin:0 0 16px;font-size:0.75rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--foreground);">
               Company
             </p>
-            <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;">
+            <ul class="site-footer-link-list" style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;">
               {['About', 'Blog', 'Changelog', 'Status', 'Contact'].map((item) => (
                 <li>
                   <a
@@ -886,23 +887,26 @@ import AnimatedApng from '../components/AnimatedApng.astro';
           </div>
         </div>
 
-        <!-- Divider -->
-        <div style="height:1px;background:var(--border);margin-bottom:28px;"></div>
-
         <!-- Bottom row -->
         <div
+          class="site-footer-bottom"
           style="
             display:flex;
             align-items:center;
             justify-content:space-between;
             flex-wrap:wrap;
             gap:16px;
+            width:100vw;
+            box-sizing:border-box;
+            margin:0 calc(50% - 50vw) -45px;
+            padding:28px max(24px, calc((100vw - 1080px) / 2)) 40px;
+            background:var(--background);
           "
         >
           <p style="margin:0;font-size:0.8rem;color:var(--muted-foreground);">
             © {new Date().getFullYear()} FlowForm. Built with security in mind.
           </p>
-          <div style="display:flex;align-items:center;gap:20px;">
+          <div class="site-footer-bottom-links" style="display:flex;align-items:center;gap:20px;">
             <span
               style="
                 display:inline-flex;align-items:center;gap:5px;
@@ -1140,8 +1144,48 @@ import AnimatedApng from '../components/AnimatedApng.astro';
       justify-self: center;
       padding: 28px 24px !important;
     }
-    footer > div > div:first-child {
-      grid-template-columns: 1fr 1fr !important;
+    .site-footer-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 24px 18px !important;
+      margin-bottom: 28px !important;
+    }
+    .site-footer-grid > div:first-child {
+      grid-column: 1 / -1;
+    }
+    .site-footer-brand {
+      width: min(100%, 420px);
+    }
+    .site-footer-brand > div:first-child {
+      margin-bottom: 10px !important;
+    }
+    .site-footer-brand > p {
+      max-width: 420px !important;
+      margin-bottom: 12px !important;
+      line-height: 1.45 !important;
+    }
+    .site-footer-link-section {
+      display: block;
+      justify-self: center;
+    }
+    .site-footer-link-section > p {
+      margin-bottom: 8px !important;
+    }
+    .site-footer-link-list {
+      flex-direction: column !important;
+      gap: 6px !important;
+    }
+    .site-footer-link-list a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+    }
+    .site-footer-bottom {
+      justify-content: center !important;
+      text-align: center;
+    }
+    .site-footer-bottom-links {
+      justify-content: center;
+      flex-wrap: wrap;
     }
   }
   @media (max-width: 490px) {
@@ -1150,8 +1194,23 @@ import AnimatedApng from '../components/AnimatedApng.astro';
       gap: 8px;
       flex-direction: column;
     }
-    footer > div > div:first-child {
-      grid-template-columns: 1fr !important;
+    .site-footer-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 22px 12px !important;
+    }
+    .site-footer-brand {
+      width: 100%;
+    }
+    .site-footer-link-section {
+      display: block;
+    }
+    .site-footer-bottom {
+      flex-direction: column;
+      align-items: center !important;
+      gap: 10px !important;
+    }
+    .site-footer-bottom-links {
+      gap: 10px 16px !important;
     }
   }
 

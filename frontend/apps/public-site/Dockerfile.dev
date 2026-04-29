@@ -1,0 +1,22 @@
+FROM node:24-alpine
+
+WORKDIR /app
+
+# Copy workspace manifests first for better layer caching
+COPY package.json package-lock.json ./
+COPY apps/public-site/package.json ./apps/public-site/
+COPY packages/builder/package.json ./packages/builder/
+COPY packages/site-shell/package.json ./packages/site-shell/
+COPY packages/styles/package.json ./packages/styles/
+COPY packages/ui/package.json ./packages/ui/
+
+RUN npm install
+
+# Copy the rest of the source
+COPY . .
+
+WORKDIR /app/apps/public-site
+
+EXPOSE 4321
+
+CMD ["npx", "astro", "dev", "--host", "0.0.0.0", "--port", "4321"]

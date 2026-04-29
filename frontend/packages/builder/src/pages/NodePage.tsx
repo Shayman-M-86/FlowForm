@@ -24,6 +24,11 @@ const NODE_PAGE_STYLES = `
     --node-page-controls-gutter: 52px;
     --node-page-toolbar-height: 86.5px;
     --node-page-toolbar-gap: 20px;
+    --sab: env(safe-area-inset-bottom, 0px);
+  }
+
+  .node-page__content {
+    padding-bottom: var(--sab);
   }
 
   .node-page__question-wrapper--collapsed + .node-page__question-wrapper--collapsed {
