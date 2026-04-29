@@ -78,6 +78,11 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
       const isDark = theme === 'dark';
       root.classList.toggle('dark', isDark);
       root.dataset.theme = theme;
+      const bg = getComputedStyle(root).getPropertyValue('--background').trim();
+      ['theme-color-light', 'theme-color-dark', 'theme-color-active'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute('content', bg);
+      });
       document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
         button.setAttribute('data-theme', theme);
         button.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
