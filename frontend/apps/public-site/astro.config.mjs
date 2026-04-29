@@ -12,6 +12,7 @@ const builderSrc = path.resolve(__dirname, '../../packages/builder/src');
 const siteShellSrc = path.resolve(__dirname, '../../packages/site-shell/src');
 
 export default defineConfig({
+  site: 'https://flow-form.com.au',
   build: {
     inlineStylesheets: 'always',
   },
