@@ -1,0 +1,14 @@
+{
+  "name": "@flowform/site-shell",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./header.css": "./src/SiteHeader.css"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  }
+}

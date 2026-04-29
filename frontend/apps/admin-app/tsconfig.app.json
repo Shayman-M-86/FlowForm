@@ -5,10 +5,17 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "esnext",
     "types": ["vite/client"],
-    "typeRoots": ["./node_modules/@types", "./node_modules"],
     "skipLibCheck": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@flowform/site-shell": ["../../packages/site-shell/src/index.ts"],
+      "@flowform/site-shell/*": ["../../packages/site-shell/src/*"],
+      "@flowform/ui": ["../../packages/ui/src/index.tsx"],
+      "@flowform/ui/*": ["../../packages/ui/src/*"],
+      "@flowform/builder": ["../../packages/builder/src/index.ts"],
+      "@flowform/builder/*": ["../../packages/builder/src/*"],
+      "@flowform/styles": ["../../packages/styles/src/index.css"],
+      "@flowform/styles/*": ["../../packages/styles/src/*"]
     },
 
     /* Bundler mode */

@@ -130,6 +130,17 @@ body {
   color: var(--sl-color-text);
 }
 
+/* ─── Header alignment on docs pages ────────────────────────────────────── */
+
+/* When the docs sidebar is visible, shift the header inner content to align
+   with the main content column rather than the full viewport edge. */
+@media (min-width: 50rem) {
+  .site-header[data-has-sidebar] .site-header__inner {
+    padding-inline-start: calc(var(--sl-sidebar-width) + 24px);
+    max-width: 100%;
+  }
+}
+
 /* ─── Sidebar ────────────────────────────────────────────────────────────── */
 
 .sidebar-content a {
@@ -169,6 +180,23 @@ starlight-toc a {
 starlight-toc a[aria-current='true'] {
   color: var(--sl-color-text-accent);
   font-weight: 600;
+}
+
+#starlight__on-this-page--mobile .toggle {
+  background: var(--sl-color-bg) !important;
+  border-color: var(--sl-color-hairline-shade) !important;
+  color: var(--sl-color-text) !important;
+}
+
+#starlight__mobile-toc[open] #starlight__on-this-page--mobile .toggle,
+#starlight__on-this-page--mobile .toggle:hover {
+  background: var(--sl-color-accent-low) !important;
+  border-color: var(--sl-color-accent) !important;
+  color: var(--sl-color-text-accent) !important;
+}
+
+#starlight__on-this-page--mobile .display-current {
+  color: var(--sl-color-text) !important;
 }
 
 /* ─── Pagination ─────────────────────────────────────────────────────────── */

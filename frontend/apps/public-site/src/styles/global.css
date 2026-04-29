@@ -1,8 +1,8 @@
 @import "tailwindcss";
 @import "@flowform/styles";
 
-/* Source the React app so Tailwind includes all its utility classes */
-@source "../../../../my-react-app/src/**/*.{ts,tsx}";
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+@source "../../../../packages/builder/src/**/*.{ts,tsx}";
 
 *,
 *::before,

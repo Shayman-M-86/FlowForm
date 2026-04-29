@@ -1,1 +1,1 @@
-export { ThemeProvider, useTheme } from '@react-app/context/ThemeContext';
+export { ThemeProvider, useTheme } from '@flowform/ui';

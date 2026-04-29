@@ -1,24 +1,12 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
     "paths": {
+      "@flowform/ui": ["./src/index.tsx"],
+      "@flowform/ui/*": ["./src/*"],
       "@flowform/styles": ["../styles/src/index.css"],
       "@flowform/styles/*": ["../styles/src/*"]
-    },
-    "typeRoots": [
-      "../../my-react-app/node_modules/@types",
-      "../../apps/admin-app/node_modules/@types"
-    ],
-    "jsx": "react-jsx",
-    "strict": true,
-    "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
-    "noEmit": true
+    }
   },
   "include": ["src"]
 }

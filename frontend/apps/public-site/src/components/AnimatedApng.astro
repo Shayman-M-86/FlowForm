@@ -27,6 +27,30 @@ const { src, alt = '', width = 200, height = 200, class: className, style } = As
 </span>
 
 <script>
+  type ApngCacheWindow = Window & {
+    __flowformApngBlobCache?: Map<string, Promise<string>>;
+  };
+
+  const cacheWindow = window as ApngCacheWindow;
+  const apngBlobCache =
+    cacheWindow.__flowformApngBlobCache ?? new Map<string, Promise<string>>();
+  cacheWindow.__flowformApngBlobCache = apngBlobCache;
+
+  const getApngBlobUrl = (src: string) => {
+    const cached = apngBlobCache.get(src);
+    if (cached) return cached;
+
+    const blobUrlPromise = fetch(src)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Failed to load APNG: ${src}`);
+        return response.blob();
+      })
+      .then((blob) => URL.createObjectURL(blob));
+
+    apngBlobCache.set(src, blobUrlPromise);
+    return blobUrlPromise;
+  };
+
   document.querySelectorAll<HTMLElement>('.apng-wrap').forEach((wrap) => {
     if (wrap.dataset.apngInitialized === 'true') return;
     wrap.dataset.apngInitialized = 'true';
@@ -40,25 +64,61 @@ const { src, alt = '', width = 200, height = 200, class: className, style } = As
     const canvas = wrap.querySelector<HTMLCanvasElement>('.apng-canvas')!;
     const ctx = canvas.getContext('2d')!;
     const src = wrap.dataset.src!;
-    let activeClone: HTMLImageElement | null = null;
+    const animatedImage = new Image();
+    let playableSrc: string | null = null;
+    let isLoaded = false;
     let isHovering = false;
     let isAutoPlaying = false;
     let autoPlayInterval: number | null = null;
     let autoHideTimeout: number | null = null;
     let fadeTimeout: number | null = null;
-    let removalTimeout: number | null = null;
     let nextAutoPlayAt = 0;
 
+    animatedImage.className = 'apng-clone';
+    animatedImage.alt = wrap.dataset.alt ?? '';
+    wrap.appendChild(animatedImage);
+
+    const syncCanvasSize = () => {
+      const rect = wrap.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      const width = Math.max(1, Math.round(rect.width * ratio));
+      const height = Math.max(1, Math.round(rect.height * ratio));
+
+      if (canvas.width !== width) canvas.width = width;
+      if (canvas.height !== height) canvas.height = height;
+    };
+
     const drawToCanvas = (image: CanvasImageSource) => {
+      syncCanvasSize();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
     };
 
-    const loader = new Image();
-    loader.onload = () => {
-      drawToCanvas(loader);
-    };
-    loader.src = src;
+    getApngBlobUrl(src)
+      .then((blobUrl) => {
+        playableSrc = blobUrl;
+
+        const loader = new Image();
+        loader.onload = () => {
+          drawToCanvas(loader);
+          isLoaded = true;
+        };
+        loader.src = blobUrl;
+
+        animatedImage.src = blobUrl;
+      })
+      .catch(() => {
+        playableSrc = src;
+
+        const loader = new Image();
+        loader.onload = () => {
+          drawToCanvas(loader);
+          isLoaded = true;
+        };
+        loader.src = src;
+
+        animatedImage.src = src;
+      });
 
     const getNextAutoPlayDelay = () => {
       return (
@@ -99,65 +159,43 @@ const { src, alt = '', width = 200, height = 200, class: className, style } = As
       }
     };
 
-    const clearRemovalTimeout = () => {
-      if (removalTimeout !== null) {
-        window.clearTimeout(removalTimeout);
-        removalTimeout = null;
-      }
-    };
-
-    const scheduleCloneRemoval = () => {
-      clearRemovalTimeout();
-      removalTimeout = window.setTimeout(() => {
-        activeClone?.remove();
-        activeClone = null;
-        removalTimeout = null;
-      }, 100);
-    };
-
     const scheduleCloneFadeOut = () => {
       clearFadeTimeout();
       fadeTimeout = window.setTimeout(() => {
         fadeTimeout = null;
-        if (!activeClone) return;
-
-        activeClone.style.opacity = '0';
-        scheduleCloneRemoval();
+        animatedImage.style.opacity = '0';
       }, 100);
     };
 
-    const createClone = () => {
-      const clone = new Image();
-      clone.className = 'apng-clone';
-      clone.alt = wrap.dataset.alt ?? '';
-      clone.src = src;
-      wrap.appendChild(clone);
-      activeClone = clone;
+    const restartAnimation = () => {
+      if (!playableSrc) return;
 
-      return clone;
+      animatedImage.src = '';
+      requestAnimationFrame(() => {
+        if (playableSrc) animatedImage.src = playableSrc;
+      });
     };
 
     const showAnimation = () => {
+      if (!isLoaded) return;
+
       clearFadeTimeout();
-      clearRemovalTimeout();
       clearAutoHideTimeout();
+      restartAnimation();
 
-      if (activeClone) activeClone.remove();
-
-      const clone = createClone();
       requestAnimationFrame(() => {
         canvas.style.opacity = '0';
-        clone.style.opacity = '1';
+        animatedImage.style.opacity = '1';
       });
     };
 
     const hideAnimation = () => {
-      if (activeClone) {
-        drawToCanvas(activeClone);
-        canvas.style.opacity = '1';
-        activeClone.style.opacity = '1';
-        scheduleCloneFadeOut();
-      }
+      if (!isLoaded) return;
+
+      drawToCanvas(animatedImage);
+      canvas.style.opacity = '1';
+      animatedImage.style.opacity = '1';
+      scheduleCloneFadeOut();
     };
 
     const startAutoPlayLoop = () => {
@@ -165,7 +203,7 @@ const { src, alt = '', width = 200, height = 200, class: className, style } = As
       scheduleNextAutoPlay();
 
       autoPlayInterval = window.setInterval(() => {
-        if (isHovering || isAutoPlaying) return;
+        if (isHovering || isAutoPlaying || !isLoaded) return;
         if (window.Date.now() < nextAutoPlayAt) return;
 
         isAutoPlaying = true;
@@ -193,6 +231,11 @@ const { src, alt = '', width = 200, height = 200, class: className, style } = As
       isAutoPlaying = false;
       hideAnimation();
       scheduleNextAutoPlay();
+    });
+
+    window.addEventListener('resize', () => {
+      if (!isLoaded) return;
+      drawToCanvas(animatedImage);
     });
 
     startAutoPlayLoop();

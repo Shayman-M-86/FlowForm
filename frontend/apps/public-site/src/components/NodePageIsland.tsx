@@ -1,7 +1,6 @@
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from '@flowform/ui';
 import { FormFillerPage, NodePage } from '@flowform/builder';
-// import '@flowform/builder/node-page.css';
 
 const builderOverrideCSS = `
   .builder-shell .node-page__toolbar {

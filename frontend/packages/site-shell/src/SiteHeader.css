@@ -1,0 +1,129 @@
+@reference "tailwindcss";
+@reference "@flowform/styles";
+
+.site-header {
+  @apply fixed inset-x-0 top-0 z-50 border-b border-border;
+  background: var(--toolbar-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  line-height: normal;
+}
+
+.site-header__inner {
+  @apply flex items-center justify-between gap-4 mx-auto px-6;
+  max-width: 1100px;
+  min-height: 56px;
+}
+
+.site-header__brand {
+  @apply flex items-center gap-2.5 shrink-0;
+}
+
+.site-header__logo {
+  @apply flex items-center justify-center shrink-0 overflow-hidden rounded-lg;
+  width: 28px;
+  height: 28px;
+}
+
+.site-header__logo-image {
+  @apply block w-full h-full object-cover;
+}
+
+.site-header__wordmark {
+  @apply font-bold text-foreground;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+/* Matches Badge variant="muted" feel but accent-coloured */
+.site-header__badge {
+  @apply text-accent border rounded-full font-semibold uppercase mt-0.5 shrink-0;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  background: rgb(from var(--accent) r g b / 0.13);
+  border-color: rgb(from var(--accent) r g b / 0.3);
+}
+
+.site-header__nav {
+  @apply flex items-center gap-1;
+}
+
+.site-header__actions {
+  @apply flex items-center gap-2 shrink-0;
+}
+
+/* Ghost button (sm) — matches Button variant="ghost" size="sm" */
+.site-header__nav-link {
+  @apply cursor-pointer border border-transparent bg-transparent font-semibold text-accent-foreground
+         shadow-none rounded-sm no-underline
+         active:scale-95 active:opacity-80
+         hover:border-ring/20 hover:bg-muted hover:text-foreground;
+  /* size="sm": min-h-[34px] px-3 text-[0.86rem] leading-[1.2] */
+  @apply inline-flex items-center min-h-[34px] px-3 text-[0.86rem] leading-[1.2];
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.site-header__nav-link[data-active="true"] {
+  /* Secondary variant active state */
+  @apply border-border/80 bg-input text-secondary-foreground shadow-sm;
+}
+
+/* Icon button — 34×34, same border/bg as secondary but no text, square */
+.site-header__icon-link,
+.site-header__theme-toggle {
+  @apply cursor-pointer border border-border/80 bg-input text-muted-foreground rounded-sm
+         flex items-center justify-center shrink-0 no-underline
+         hover:border-ring/80 hover:bg-hover-highlight hover:text-foreground
+         active:scale-95 active:opacity-80;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+/* Astro-only theme icon visibility (React uses JS conditionals instead) */
+.site-header__theme-icon {
+  display: none;
+}
+
+.site-header__theme-toggle[data-theme="dark"] .site-header__theme-icon--sun,
+.site-header__theme-toggle[data-theme="light"] .site-header__theme-icon--moon {
+  display: block;
+}
+
+/* Primary button (sm) — matches Button variant="primary" size="sm" */
+.site-header__cta {
+  @apply cursor-pointer border border-transparent bg-primary font-semibold text-primary-foreground
+         shadow-sm rounded-sm no-underline shrink-0
+         inline-flex items-center min-h-[34px] px-3 text-[0.86rem] leading-[1.2]
+         hover:bg-accent active:scale-95 active:opacity-80;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+@media (max-width: 780px) {
+  .site-header__inner {
+    @apply px-4 gap-2;
+  }
+
+  .site-header__badge,
+  .site-header__cta {
+    @apply hidden;
+  }
+}
+
+@media (max-width: 600px) {
+  .site-header__icon-link {
+    @apply hidden;
+  }
+}
+
+@media (max-width: 490px) {
+  .site-header__wordmark {
+    @apply hidden;
+  }
+
+  .site-header__actions {
+    @apply gap-1;
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "extends": "astro/tsconfigs/strict",
+  "extends": "../../node_modules/astro/tsconfigs/strict.json",
   "include": [
     ".astro/types.d.ts",
     "**/*"
@@ -12,13 +12,14 @@
     "jsxImportSource": "react",
     "types": ["node", "astro/client", "react"],
     "paths": {
+      "@flowform/site-shell": ["../../packages/site-shell/src/index.ts"],
+      "@flowform/site-shell/*": ["../../packages/site-shell/src/*"],
       "@flowform/builder": ["../../packages/builder/src/index.ts"],
       "@flowform/builder/*": ["../../packages/builder/src/*"],
       "@flowform/styles": ["../../packages/styles/src/index.css"],
       "@flowform/styles/*": ["../../packages/styles/src/*"],
       "@flowform/ui": ["../../packages/ui/src/index.tsx"],
-      "@flowform/ui/*": ["../../packages/ui/src/*"],
-      "@react-app/*": ["../../my-react-app/src/*"]
+      "@flowform/ui/*": ["../../packages/ui/src/*"]
     }
   }
 }

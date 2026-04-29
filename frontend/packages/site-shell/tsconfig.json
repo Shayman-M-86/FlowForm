@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@flowform/site-shell": ["./src/index.ts"],
+      "@flowform/site-shell/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}

@@ -1,3 +1,4 @@
+import './index.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Auth0Provider } from '@auth0/auth0-react'
@@ -7,7 +8,7 @@ import { RouterProvider } from '@tanstack/react-router'
 import { ThemeProvider } from '@flowform/ui'
 import { queryClient } from './lib/queryClient'
 import { router } from './lib/router'
-import './index.css'
+
 
 const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN as string
 const auth0ClientId = import.meta.env.VITE_AUTH0_CLIENT_ID as string

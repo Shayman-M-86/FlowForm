@@ -239,6 +239,7 @@ import AnimatedApng from '../components/AnimatedApng.astro';
         </div>
 
         <div
+          class="qt-track"
           style="
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -278,6 +279,7 @@ import AnimatedApng from '../components/AnimatedApng.astro';
             },
           ].map(({ num, title, body, img }) => (
             <div
+              id={`qt-${num}`}
               class="qt-col"
               style="
                 display: flex;
@@ -334,6 +336,15 @@ import AnimatedApng from '../components/AnimatedApng.astro';
             </div>
           ))}
         </div>
+        <nav class="qt-dots" aria-label="Question type slides">
+          {['01', '02', '03', '04', '05'].map((num) => (
+            <a
+              href={`#qt-${num}`}
+              aria-label={`Show question type ${num}`}
+              aria-current={num === '01' ? 'true' : undefined}
+            ></a>
+          ))}
+        </nav>
       </div>
     </section>
 
@@ -342,7 +353,7 @@ import AnimatedApng from '../components/AnimatedApng.astro';
     <section
       id="logic"
       style="
-        padding: 100px 24px;
+        padding: 80px 24px;
         border-top: 1px solid var(--border);
         background: linear-gradient(
           135deg,
@@ -351,7 +362,7 @@ import AnimatedApng from '../components/AnimatedApng.astro';
         );
       "
     >
-      <div style="max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;">
+      <div class="logic-layout" style="max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;">
         <div>
           <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);">
             Adaptive logic
@@ -373,13 +384,15 @@ import AnimatedApng from '../components/AnimatedApng.astro';
           </p>
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="logic-cards" style="display:flex;flex-direction:column;gap:14px;">
           {[
             { src: '/icons8-settings-48.apng.png', alt: 'Settings', label: 'Grouped AND / OR / NOT conditions', detail: 'Build nested logic trees — no code, no regex.' },
             { src: '/icons8-goal-48.apng.png', alt: 'Target', label: 'Show, hide, require, or disable', detail: 'Rules can drive four distinct effects on any question.' },
             { src: '/icons8-search-in-list-48.apng.png', alt: 'List', label: 'Deterministic conflict resolution', detail: 'Sort-keyed rule ordering means results are always predictable.' },
-          ].map(({ src, alt, label, detail }) => (
+          ].map(({ src, alt, label, detail }, index) => (
             <div
+              id={`logic-${index + 1}`}
+              class="logic-card"
               style="
                 display:flex;gap:16px;align-items:flex-start;
                 padding:18px 20px;
@@ -412,6 +425,15 @@ import AnimatedApng from '../components/AnimatedApng.astro';
             </div>
           ))}
         </div>
+        <nav class="logic-dots" aria-label="Adaptive logic slides">
+          {[1, 2, 3].map((num) => (
+            <a
+              href={`#logic-${num}`}
+              aria-label={`Show adaptive logic card ${num}`}
+              aria-current={num === 1 ? 'true' : undefined}
+            ></a>
+          ))}
+        </nav>
       </div>
     </section>
 
@@ -499,9 +521,9 @@ import AnimatedApng from '../components/AnimatedApng.astro';
         border-top: 1px solid var(--border);
       "
     >
-      <div style="max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;">
+      <div class="security-layout" style="max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;">
         <!-- Left copy -->
-        <div>
+        <div class="security-copy">
           <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);">
             Security first
           </p>
@@ -591,6 +613,7 @@ import AnimatedApng from '../components/AnimatedApng.astro';
               { label: 'SOC 2 (coming soon)', status: 'Planned', color: 'rgb(202 138 4)' },
             ].map(({ label, status, color }) => (
               <div
+                class="security-status-row"
                 style="
                   display:flex;align-items:center;justify-content:space-between;
                   padding:10px 14px;
@@ -899,6 +922,74 @@ import AnimatedApng from '../components/AnimatedApng.astro';
   </main>
 </Layout>
 
+<script>
+  const initCarouselDots = (trackSelector: string, cardSelector: string, dotSelector: string) => {
+    const track = document.querySelector<HTMLElement>(trackSelector);
+    const cards = Array.from(document.querySelectorAll<HTMLElement>(cardSelector));
+    const dots = Array.from(document.querySelectorAll<HTMLAnchorElement>(dotSelector));
+
+    if (!track || cards.length === 0 || dots.length === 0) return;
+
+    const setActiveDot = () => {
+      const trackCenter = track.getBoundingClientRect().left + track.clientWidth / 2;
+      let activeIndex = 0;
+      let activeDistance = Number.POSITIVE_INFINITY;
+
+      cards.forEach((card, index) => {
+        const rect = card.getBoundingClientRect();
+        const cardCenter = rect.left + rect.width / 2;
+        const distance = Math.abs(trackCenter - cardCenter);
+
+        if (distance < activeDistance) {
+          activeDistance = distance;
+          activeIndex = index;
+        }
+      });
+
+      dots.forEach((dot, index) => {
+        if (index === activeIndex) {
+          dot.setAttribute('aria-current', 'true');
+        } else {
+          dot.removeAttribute('aria-current');
+        }
+      });
+    };
+
+    track.addEventListener('scroll', () => requestAnimationFrame(setActiveDot), { passive: true });
+    window.addEventListener('resize', setActiveDot);
+
+    dots.forEach((dot) => {
+      dot.addEventListener('click', (event) => {
+        event.preventDefault();
+
+        const targetId = dot.getAttribute('href')?.slice(1);
+        const target = targetId ? document.getElementById(targetId) : null;
+        if (!target) return;
+
+        const trackRect = track.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const nextLeft =
+          track.scrollLeft +
+          targetRect.left -
+          trackRect.left -
+          (track.clientWidth - targetRect.width) / 2;
+
+        track.scrollTo({ left: nextLeft, behavior: 'smooth' });
+      });
+    });
+
+    setActiveDot();
+  };
+
+  const initCarouselDotIndicators = () => {
+    initCarouselDots('.qt-track', '.qt-col', '.qt-dots a');
+    initCarouselDots('.logic-cards', '.logic-card', '.logic-dots a');
+  };
+
+  document.addEventListener('astro:page-load', initCarouselDotIndicators);
+  initCarouselDotIndicators();
+</script>
+
 <style>
   .shield-icon .shield-path {
     fill-opacity: 0.15;
@@ -921,25 +1012,144 @@ import AnimatedApng from '../components/AnimatedApng.astro';
     to   { fill-opacity: 0.3; }
   }
 
-  @media (max-width: 860px) {
-    .qt-col:nth-child(n+4) { display: none; }
-    div:has(> .qt-col) { grid-template-columns: repeat(3, 1fr) !important; }
+  .qt-dots,
+  .logic-dots {
+    display: none;
   }
-  @media (max-width: 560px) {
-    .qt-col:nth-child(n+3) { display: none; }
-    div:has(> .qt-col) { grid-template-columns: repeat(2, 1fr) !important; }
+
+  @media (max-width: 860px) {
+    #features {
+      padding-inline: 0 !important;
+    }
+    #features > div > div:first-child {
+      padding-inline: 24px;
+    }
+    .qt-track {
+      --carousel-card-width: min(82vw, 340px);
+      display: flex !important;
+      gap: 16px !important;
+      margin-inline: -24px;
+      overflow-x: auto;
+      padding-inline: 0;
+      padding-bottom: 14px;
+      scroll-padding-inline: 0;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .qt-track::before,
+    .qt-track::after {
+      content: '';
+      flex: 0 0 max(24px, calc((100% - var(--carousel-card-width)) / 2));
+    }
+    .qt-col {
+      flex: 0 0 var(--carousel-card-width);
+      scroll-snap-align: center;
+    }
+    .qt-dots {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 10px;
+    }
+    .qt-dots a,
+    .logic-dots a {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .qt-dots a::before,
+    .logic-dots a::before {
+      content: '';
+      position: absolute;
+      inset: 12px;
+      border-radius: 999px;
+      background: var(--border);
+      border: 1px solid var(--accent);
+      opacity: 0.7;
+    }
+    .qt-dots a:focus-visible,
+    .logic-dots a:focus-visible {
+      opacity: 1;
+      outline: 2px solid var(--accent);
+      outline-offset: -6px;
+    }
+    .qt-dots a[aria-current='true']::before,
+    .logic-dots a[aria-current='true']::before {
+      background: var(--accent);
+      opacity: 1;
+    }
+    @media (hover: hover) {
+      .qt-dots a:hover::before,
+      .logic-dots a:hover::before {
+        background: var(--accent);
+        opacity: 1;
+      }
+    }
   }
 
   /* Responsive grid overrides for smaller screens */
   @media (max-width: 768px) {
-    #security > div > div {
+    #logic {
+      padding: 50px 0 30px 0 !important;
+    }
+    .logic-layout {
       grid-template-columns: 1fr !important;
+      gap: 28px !important;
+      padding-inline: 24px;
+    }
+    .logic-cards {
+      --carousel-card-width: min(90vw, 360px);
+      flex-direction: row !important;
+      gap: 12px !important;
+      margin-inline: -24px;
+      overflow-x: auto;
+      padding-inline: 0;
+      padding-bottom: 8px;
+      scroll-padding-inline: 0;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .logic-cards::before,
+    .logic-cards::after {
+      content: '';
+      flex: 0 0 max(24px, calc((100% - var(--carousel-card-width)) / 2));
+    }
+    .logic-card {
+      flex: 0 0 var(--carousel-card-width);
+      scroll-snap-align: center;
+    }
+    .logic-dots {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 10px;
+    }
+    .security-layout {
+      grid-template-columns: 1fr !important;
+      gap: 36px !important;
+      align-items: stretch !important;
+    }
+    .security-copy {
+      max-width: 680px;
+    }
+    .shield-card {
+      width: 100%;
+      max-width: 520px;
+      justify-self: center;
+      padding: 28px 24px !important;
     }
     footer > div > div:first-child {
       grid-template-columns: 1fr 1fr !important;
     }
   }
-  @media (max-width: 480px) {
+  @media (max-width: 490px) {
+    .security-status-row {
+      align-items: flex-start !important;
+      gap: 8px;
+      flex-direction: column;
+    }
     footer > div > div:first-child {
       grid-template-columns: 1fr !important;
     }
