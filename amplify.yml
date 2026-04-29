@@ -9,7 +9,7 @@ applications:
             - cd ../.. && npm ci
         build:
           commands:
-            - pwd && cd frontend && npm run build:site
+            - npm run build:site
       artifacts:
         baseDirectory: dist
         files:
