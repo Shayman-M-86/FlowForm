@@ -1334,8 +1334,7 @@ interface SelectProps {
 }
 
 const chevronClass =
-  "bg-no-repeat bg-[position:right_0.875rem_center] bg-[length:0.7rem_auto] " +
-  "bg-[image:url(\"data:image/svg+xml;utf8,<svg_xmlns='http://www.w3.org/2000/svg'_width='12'_height='8'_viewBox='0_0_12_8'_fill='none'_stroke='%23737373'_stroke-width='1.75'_stroke-linecap='round'_stroke-linejoin='round'><polyline_points='1,1.5_6,6.5_11,1.5'/></svg>\")]";
+  "pr-10";
 
 export function Select({
   label,
@@ -1480,7 +1479,7 @@ export function Select({
     controlSizeClasses[size],
     getSurfaceClassName({ variant, focusMode: "focus", pill, error: Boolean(error) }),
     chevronClass,
-    "flex cursor-pointer items-center pr-10 text-left",
+    "relative flex cursor-pointer items-center text-left",
     !selectedOption && "text-muted-foreground",
   );
 
@@ -1511,6 +1510,18 @@ export function Select({
         onKeyDown={onTriggerKeyDown}
       >
         <span className="truncate">{selectedOption?.label ?? placeholder ?? " "}</span>
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute right-3.5 top-1/2 h-2 w-3 -translate-y-1/2 text-muted-foreground"
+          viewBox="0 0 12 8"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="1,1.5 6,6.5 11,1.5" />
+        </svg>
       </button>
 
       {open ? (
