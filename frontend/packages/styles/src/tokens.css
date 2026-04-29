@@ -19,6 +19,8 @@
   --input: rgb(244 244 244 / 93.4%);
   --ring: rgb(161 161 161);
   --hover-highlight: rgb(240 239 240);
+  --toolbar-bg-solid: rgb(247 247 247);
+  --toolbar-bg: rgb(247 247 247 / 0.15);
   --node-pill-topbar-gradient: linear-gradient(
     to bottom,
     rgb(252 252 252 / 96.9%),
@@ -99,6 +101,8 @@
   --input: rgb(42 42 45 / 93.7%);
   --ring: rgb(117 117 117);
   --hover-highlight: rgb(167 167 167 / 0.2);
+  --toolbar-bg-solid: rgb(30 30 32);
+  --toolbar-bg: rgb(30 30 32 / 0.15);
   --node-pill-topbar-gradient: linear-gradient(
     to bottom,
     rgb(39 39 39 / 0.3),

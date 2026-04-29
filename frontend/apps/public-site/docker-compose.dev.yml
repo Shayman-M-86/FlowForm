@@ -1,0 +1,12 @@
+services:
+  public-site:
+    build:
+      context: ../..
+      dockerfile: apps/public-site/Dockerfile.dev
+    ports:
+      - "4321:4321"
+    volumes:
+      - ../../apps/public-site/src:/app/apps/public-site/src
+      - ../../packages:/app/packages
+    environment:
+      - NODE_ENV=development

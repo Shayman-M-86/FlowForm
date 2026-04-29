@@ -3,11 +3,19 @@
 
 .site-header {
   @apply fixed inset-x-0 top-0 z-50 border-b border-border;
-  background: var(--toolbar-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  height: calc(env(safe-area-inset-top) + 56px);
+  padding-top: env(safe-area-inset-top);
+  background: linear-gradient(
+    to bottom,
+    var(--toolbar-bg-solid) 0%,
+    var(--toolbar-bg) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   line-height: normal;
 }
+
+
 
 .site-header__inner {
   @apply flex items-center justify-between gap-4 mx-auto px-6;

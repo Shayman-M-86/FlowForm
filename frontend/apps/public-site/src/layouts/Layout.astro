@@ -16,17 +16,15 @@ const {
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content={description} />
     <title>{title}</title>
     <link rel="icon" type="image/webp" href="/FlowForm_logo.png" />
 
-    <!-- theme-color: controls iOS status bar / Dynamic Island area color.
-         Media-query tags cover the initial load; SiteHeader's applyTheme()
-         updates theme-color-active after toggle using the live CSS variable. -->
-    <meta name="theme-color" content="rgb(247 247 247)" media="(prefers-color-scheme: light)" id="theme-color-light" />
-    <meta name="theme-color" content="rgb(30 30 32)" media="(prefers-color-scheme: dark)" id="theme-color-dark" />
-    <meta name="theme-color" content="" id="theme-color-active" />
+    <!-- theme-color: iOS reads these automatically based on OS mode.
+         No JS override needed — media-query tags update instantly. -->
+    <meta name="theme-color" content="rgb(247 247 247)" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="rgb(30 30 32)" media="(prefers-color-scheme: dark)" />
 
     <!-- Geist font from Vercel CDN -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -38,12 +36,24 @@ const {
     <!-- Inline theme-init: apply .dark before first paint to avoid flash -->
     <script is:inline>
       (function () {
-        try {
-          var stored = localStorage.getItem('flowform.theme');
-          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          var dark = stored === 'dark' || (!stored && prefersDark);
-          if (dark) document.documentElement.classList.add('dark');
-        } catch (_) {}
+        var mq = window.matchMedia('(prefers-color-scheme: dark)');
+        var resolveTheme = function () {
+          try {
+            var stored = localStorage.getItem('flowform.theme');
+            if (stored === 'dark' || stored === 'light') return stored;
+          } catch (_) {}
+          // No explicit user preference — follow the OS
+          return mq.matches ? 'dark' : 'light';
+        };
+        var apply = function (theme) {
+          document.documentElement.classList.toggle('dark', theme === 'dark');
+        };
+        apply(resolveTheme());
+        // Re-apply when OS light/dark mode changes, but only if user hasn't overridden
+        mq.addEventListener('change', function () {
+          try { if (localStorage.getItem('flowform.theme')) return; } catch (_) {}
+          apply(mq.matches ? 'dark' : 'light');
+        });
       })();
     </script>
   </head>
