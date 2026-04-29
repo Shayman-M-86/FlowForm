@@ -1,0 +1,18 @@
+{
+    "private": true,
+    "workspaces": [
+      "apps/*",
+      "packages/*"
+    ],
+    "scripts": {
+      "dev:admin": "npm --workspace apps/admin-app run dev",
+      "dev:site": "npm --workspace apps/public-site run dev",
+      "build:admin": "npm --workspace apps/admin-app run build",
+      "build:site": "npm --workspace apps/public-site run build"
+    },
+    "devDependencies": {
+      "@types/react": "^19.0.0",
+      "@types/react-dom": "^19.0.0",
+      "typescript": "^5.0.0"
+    }
+  }

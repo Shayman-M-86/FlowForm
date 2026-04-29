@@ -15,7 +15,7 @@ import {
   NumberStepperGroup,
   ThemeToggle,
  Badge
-} from "../index.optimized";
+} from "@flowform/ui";
 
 const buttonVariants = ["primary", "secondary", "danger", "ghost"] as const;
 const buttonSizes = ["md", "sm", "xs"] as const;

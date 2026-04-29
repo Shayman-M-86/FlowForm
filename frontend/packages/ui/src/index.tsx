@@ -14,7 +14,6 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import { createPortal } from "react-dom";
-import "@flowform/styles";
 
 type ClassValue = string | false | null | undefined;
 

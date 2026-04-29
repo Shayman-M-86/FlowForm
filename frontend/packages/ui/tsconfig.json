@@ -6,13 +6,12 @@
     "moduleResolution": "bundler",
     "paths": {
       "@flowform/styles": ["../styles/src/index.css"],
-      "@flowform/styles/*": ["../styles/src/*"],
-      "react": ["../../my-react-app/node_modules/@types/react"],
-      "react-dom": ["../../my-react-app/node_modules/@types/react-dom"],
-      "react/jsx-runtime": ["../../my-react-app/node_modules/@types/react/jsx-runtime.d.ts"]
+      "@flowform/styles/*": ["../styles/src/*"]
     },
-    "types": ["react", "react-dom"],
-    "typeRoots": ["../../my-react-app/node_modules/@types"],
+    "typeRoots": [
+      "../../my-react-app/node_modules/@types",
+      "../../apps/admin-app/node_modules/@types"
+    ],
     "jsx": "react-jsx",
     "strict": true,
     "skipLibCheck": true,
