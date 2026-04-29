@@ -6,10 +6,10 @@ applications:
       phases:
         preBuild:
           commands:
-            - pwd && ls ../.. && cd ../.. && npm ci
+            - cd ../.. && npm ci
         build:
           commands:
-            - cd ../.. && npm run build:site
+            - pwd && cd frontend && npm run build:site
       artifacts:
         baseDirectory: dist
         files:
