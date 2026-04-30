@@ -1,6 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { DashboardPage } from '@/pages/DashboardPage'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { getActiveProjectSlug } from '@/lib/activeProject'
 
 export const Route = createFileRoute('/')({
-  component: DashboardPage,
+  beforeLoad: () => {
+    const slug = getActiveProjectSlug()
+    if (slug) {
+      throw redirect({ to: '/projects/$slug', params: { slug } })
+    }
+    throw redirect({ to: '/projects' })
+  },
 })

@@ -8,7 +8,7 @@ import type { ApiExecutor } from './types'
 export const projectKeys = {
   all: () => ['projects'] as const,
   list: () => [...projectKeys.all(), 'list'] as const,
-  detail: (id: number) => [...projectKeys.all(), 'detail', id] as const,
+  detail: (ref: string | number | null) => [...projectKeys.all(), 'detail', ref] as const,
 }
 
 // ── Fetchers ──────────────────────────────────────────────────────────────────
@@ -17,16 +17,16 @@ function fetchProjects(executor: ApiExecutor): Promise<ProjectOut[]> {
   return executor.get('/api/v1/projects')
 }
 
-function fetchProject(executor: ApiExecutor, id: number): Promise<ProjectOut> {
-  return executor.get(`/api/v1/projects/${id}`)
+function fetchProject(executor: ApiExecutor, ref: string | number): Promise<ProjectOut> {
+  return executor.get(`/api/v1/projects/${ref}`)
 }
 
 function createProject(executor: ApiExecutor, body: CreateProjectRequest): Promise<ProjectOut> {
   return executor.post('/api/v1/projects', body)
 }
 
-function deleteProject(executor: ApiExecutor, id: number): Promise<void> {
-  return executor.del(`/api/v1/projects/${id}`)
+function deleteProject(executor: ApiExecutor, ref: string | number): Promise<void> {
+  return executor.del(`/api/v1/projects/${ref}`)
 }
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
@@ -39,11 +39,15 @@ export function useProjects() {
   })
 }
 
-export function useProject(id: number) {
+export function useProject(ref: string | number | null) {
   const { executor } = useApi()
   return useQuery({
-    queryKey: projectKeys.detail(id),
-    queryFn: () => fetchProject(executor, id),
+    queryKey: projectKeys.detail(ref),
+    queryFn: () => {
+      if (ref === null) throw new Error('Project ref is required')
+      return fetchProject(executor, ref)
+    },
+    enabled: ref !== null,
   })
 }
 
@@ -62,7 +66,7 @@ export function useDeleteProject() {
   const { executor } = useApi()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => deleteProject(executor, id),
+    mutationFn: (ref: string | number) => deleteProject(executor, ref),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.list() })
     },

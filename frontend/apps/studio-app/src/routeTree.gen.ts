@@ -13,6 +13,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as UiTestIndexRouteImport } from './routes/ui-test/index'
 import { Route as SurveysIndexRouteImport } from './routes/surveys/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
+import { Route as ProjectsSlugRouteImport } from './routes/projects/$slug'
+import { Route as ProjectsSlugIndexRouteImport } from './routes/projects/$slug/index'
+import { Route as ProjectsSlugSurveysRouteImport } from './routes/projects/$slug/surveys'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,36 +37,81 @@ const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   path: '/projects/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsSlugRoute = ProjectsSlugRouteImport.update({
+  id: '/projects/$slug',
+  path: '/projects/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsSlugIndexRoute = ProjectsSlugIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProjectsSlugRoute,
+} as any)
+const ProjectsSlugSurveysRoute = ProjectsSlugSurveysRouteImport.update({
+  id: '/surveys',
+  path: '/surveys',
+  getParentRoute: () => ProjectsSlugRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/projects/$slug': typeof ProjectsSlugRouteWithChildren
   '/projects/': typeof ProjectsIndexRoute
   '/surveys/': typeof SurveysIndexRoute
   '/ui-test/': typeof UiTestIndexRoute
+  '/projects/$slug/surveys': typeof ProjectsSlugSurveysRoute
+  '/projects/$slug/': typeof ProjectsSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/surveys': typeof SurveysIndexRoute
   '/ui-test': typeof UiTestIndexRoute
+  '/projects/$slug/surveys': typeof ProjectsSlugSurveysRoute
+  '/projects/$slug': typeof ProjectsSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/projects/$slug': typeof ProjectsSlugRouteWithChildren
   '/projects/': typeof ProjectsIndexRoute
   '/surveys/': typeof SurveysIndexRoute
   '/ui-test/': typeof UiTestIndexRoute
+  '/projects/$slug/surveys': typeof ProjectsSlugSurveysRoute
+  '/projects/$slug/': typeof ProjectsSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/projects/' | '/surveys/' | '/ui-test/'
+  fullPaths:
+    | '/'
+    | '/projects/$slug'
+    | '/projects/'
+    | '/surveys/'
+    | '/ui-test/'
+    | '/projects/$slug/surveys'
+    | '/projects/$slug/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/projects' | '/surveys' | '/ui-test'
-  id: '__root__' | '/' | '/projects/' | '/surveys/' | '/ui-test/'
+  to:
+    | '/'
+    | '/projects'
+    | '/surveys'
+    | '/ui-test'
+    | '/projects/$slug/surveys'
+    | '/projects/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/projects/$slug'
+    | '/projects/'
+    | '/surveys/'
+    | '/ui-test/'
+    | '/projects/$slug/surveys'
+    | '/projects/$slug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ProjectsSlugRoute: typeof ProjectsSlugRouteWithChildren
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   SurveysIndexRoute: typeof SurveysIndexRoute
   UiTestIndexRoute: typeof UiTestIndexRoute
@@ -99,11 +147,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/$slug': {
+      id: '/projects/$slug'
+      path: '/projects/$slug'
+      fullPath: '/projects/$slug'
+      preLoaderRoute: typeof ProjectsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/$slug/': {
+      id: '/projects/$slug/'
+      path: '/'
+      fullPath: '/projects/$slug/'
+      preLoaderRoute: typeof ProjectsSlugIndexRouteImport
+      parentRoute: typeof ProjectsSlugRoute
+    }
+    '/projects/$slug/surveys': {
+      id: '/projects/$slug/surveys'
+      path: '/surveys'
+      fullPath: '/projects/$slug/surveys'
+      preLoaderRoute: typeof ProjectsSlugSurveysRouteImport
+      parentRoute: typeof ProjectsSlugRoute
+    }
   }
 }
 
+interface ProjectsSlugRouteChildren {
+  ProjectsSlugSurveysRoute: typeof ProjectsSlugSurveysRoute
+  ProjectsSlugIndexRoute: typeof ProjectsSlugIndexRoute
+}
+
+const ProjectsSlugRouteChildren: ProjectsSlugRouteChildren = {
+  ProjectsSlugSurveysRoute: ProjectsSlugSurveysRoute,
+  ProjectsSlugIndexRoute: ProjectsSlugIndexRoute,
+}
+
+const ProjectsSlugRouteWithChildren = ProjectsSlugRoute._addFileChildren(
+  ProjectsSlugRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ProjectsSlugRoute: ProjectsSlugRouteWithChildren,
   ProjectsIndexRoute: ProjectsIndexRoute,
   SurveysIndexRoute: SurveysIndexRoute,
   UiTestIndexRoute: UiTestIndexRoute,

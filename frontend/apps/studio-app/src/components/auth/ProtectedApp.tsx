@@ -258,9 +258,12 @@ export function ProtectedApp({ children }: Props) {
         </div>
       )}
       {bootstrapError && !needsLogin && (
-        <div className="mt-6">
+        <div className="flex gap-3 mt-6 flex-wrap">
           <Button variant="secondary" onClick={() => setBootstrapAttempt((n) => n + 1)}>
             Retry
+          </Button>
+          <Button variant="primary" onClick={() => void clearSiteDataAndLogout()}>
+            Log out and retry
           </Button>
         </div>
       )}

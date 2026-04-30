@@ -982,7 +982,7 @@ export function Modal({ open, onClose, title, children, footer, width = 480 }: M
         aria-labelledby={titleId}
       >
         <div className="ui-modal-header">
-          <h2 id={titleId} className="text-[1.05rem] font-semibold text-foreground">
+          <h2 id={titleId} className="m-0 border-b-0 p-0 text-[1.05rem] font-semibold leading-8 text-foreground">
             {title}
           </h2>
           <button

@@ -2,8 +2,10 @@ import { useRef, useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useTheme, DropdownMenu, Button, Badge } from '@flowform/ui'
-import { STUDIO_NAV_LINKS, BRAND, GITHUB_URL, GitHubIcon } from '@flowform/site-shell'
+import { STUDIO_NAV_LINKS, BRAND } from '@flowform/site-shell'
 import { useCurrentUser } from '@/auth/UserContext'
+import { useProject } from '@/api/projects'
+import { clearActiveProjectSlug, getActiveProjectSlug } from '@/lib/activeProject'
 import '@flowform/site-shell/header.css'
 
 const SunIcon = () => (
@@ -52,6 +54,9 @@ export function SiteHeader() {
   const { isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0()
   const { theme, toggleTheme } = useTheme()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const projectSlug = pathname.match(/^\/projects\/([^/]+)/)?.[1] ?? null
+  const activeProjectSlug = projectSlug ? decodeURIComponent(projectSlug) : getActiveProjectSlug()
+  const project = useProject(activeProjectSlug)
   const ctx = useCurrentUser()
   const avatarRef = useRef<HTMLButtonElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -90,6 +95,18 @@ export function SiteHeader() {
     {
       actions: [
         {
+          key: 'switch-project',
+          content: (
+            <Link
+              to="/projects"
+              role="menuitem"
+              className="mx-3 mt-4 mb-2 flex w-[calc(100%-1.5rem)] items-center justify-center rounded-sm px-3 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+            >
+              Switch project
+            </Link>
+          ),
+        },
+        {
           key: 'theme',
           closeOnSelect: false,
           content: (
@@ -97,7 +114,7 @@ export function SiteHeader() {
               type="button"
               variant="secondary"
               size="sm"
-              className="mx-3 mt-4 mb-2 flex w-[calc(100%-1.5rem)] items-center justify-center"
+              className="mx-3 mt-1 mb-2 flex w-[calc(100%-1.5rem)] items-center justify-center"
               onClick={toggleTheme}
             >
               <span className="flex items-center gap-2">
@@ -122,6 +139,7 @@ export function SiteHeader() {
             </Button>
           ),
           onSelect: () => {
+            clearActiveProjectSlug()
             logout({ logoutParams: { returnTo: window.location.origin } })
           },
         },
@@ -131,7 +149,65 @@ export function SiteHeader() {
 
   return (
     <>
-    <style>{`.site-header { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }`}</style>
+    <style>{`
+      .site-header { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+      .site-header__project {
+        display: inline-flex;
+        min-width: 0;
+        max-width: min(34vw, 360px);
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--background) 76%, transparent);
+        padding: 0.35rem 0.75rem;
+        box-shadow: 0 8px 24px color-mix(in srgb, black 8%, transparent);
+        text-decoration: none;
+        transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+      }
+      .site-header__project:hover,
+      .site-header__project:focus-visible {
+        border-color: color-mix(in srgb, var(--foreground) 24%, transparent);
+        background: color-mix(in srgb, var(--background) 88%, transparent);
+        box-shadow: 0 10px 28px color-mix(in srgb, black 10%, transparent);
+        outline: none;
+      }
+      .site-header__project-dot {
+        height: 0.5rem;
+        width: 0.5rem;
+        flex: 0 0 auto;
+        border-radius: 999px;
+        background: var(--success, #16a34a);
+      }
+      .site-header__project-label {
+        flex: 0 0 auto;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0;
+        line-height: 1;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+      }
+      .site-header__project-name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.86rem;
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--foreground);
+      }
+      @media (max-width: 720px) {
+        .site-header__project {
+          max-width: 44vw;
+          padding-inline: 0.6rem;
+        }
+        .site-header__project-label {
+          display: none;
+        }
+      }
+    `}</style>
     <header className="site-header" data-site-header>
       <div className="site-header__inner">
 
@@ -158,6 +234,21 @@ export function SiteHeader() {
             )
           })}
         </nav>
+
+        {activeProjectSlug && (
+          <Link
+            to="/projects/$slug"
+            params={{ slug: activeProjectSlug }}
+            className="site-header__project"
+            aria-label={`Manage selected project: ${project.data?.name ?? 'current project'}`}
+          >
+            <span className="site-header__project-dot" aria-hidden="true" />
+            <span className="site-header__project-label">Project</span>
+            <span className="site-header__project-name">
+              {project.data?.name ?? (project.isLoading ? 'Loading project' : 'Project unavailable')}
+            </span>
+          </Link>
+        )}
 
         <div className="site-header__actions">
 
