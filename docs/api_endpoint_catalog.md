@@ -114,6 +114,19 @@ HTTP status: `409 Conflict`
 
 ### Response Shapes
 
+`BootstrapUserOut`
+
+- `created: boolean`
+- `user: CurrentUserOut`
+- `default_project: ProjectOut | null`
+
+`CurrentUserOut`
+
+- `id`
+- `auth0_user_id`
+- `email`
+- `display_name`
+
 `ProjectOut`
 - `id`
 - `name`
@@ -384,17 +397,22 @@ Answer payloads are discriminated by `answer_family`.
 
 #### `POST /api/v1/auth/bootstrap-user`
 
-- Purpose: create or confirm the currently authenticated user in the local database.
+- Purpose: create or confirm the currently authenticated user in the local database. On first creation, also provisions a default project for the user.
 - Auth: `require_auth`.
 - Path/query params: none.
 - Request shape:
   - `id_token: string`
 - Success responses:
-  - `200 OK`: `BootstrapUserOut`
-  - `201 Created`: `BootstrapUserOut`
+  - `200 OK`: `BootstrapUserOut` — returning user, no project created.
+  - `201 Created`: `BootstrapUserOut` — new user created with a default project.
 - Response shape:
   - `created: boolean`
   - `user: { id, auth0_user_id, email, display_name }`
+  - `default_project: ProjectOut | null` — populated on `201`, `null` on `200`.
+- Side effects on `201`:
+  - A default project is created with `name: "My Project"` and `slug: <user.public_id lowercased>`.
+  - The user is assigned as Owner of the default project.
+  - The slug is derived from the user's `public_id` (8-character URL-safe base64 string), guaranteeing uniqueness.
 - Obvious errors:
   - `401` auth required
   - `422 VALIDATION_ERROR`

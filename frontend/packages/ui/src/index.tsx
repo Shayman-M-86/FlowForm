@@ -1,6 +1,8 @@
 import * as React from "react";
 import {
   useCallback,
+  cloneElement,
+  isValidElement,
   useEffect,
   useId,
   useLayoutEffect,
@@ -1824,5 +1826,226 @@ export function Badge({ children, variant = "default", size = "xs" }: BadgeProps
     <span className={`${badgeBaseClass} ${badgeSizeClasses[size]} ${badgeVariantClasses[variant]}`}>
       {children}
     </span>
+  );
+}
+
+/* =========================
+   DropdownMenu.tsx
+========================= */
+
+export interface DropdownMenuAction {
+  key: string;
+  content: ReactNode;
+  onSelect?: () => void;
+  closeOnSelect?: boolean;
+}
+
+export interface DropdownMenuSection {
+  label?: ReactNode;
+  actions: DropdownMenuAction[];
+}
+
+type DropdownMenuSize = "sm" | "md" | "lg" | "xl";
+type DropdownMenuFullscreenAt = "never" | number;
+
+interface DropdownMenuProps {
+  open: boolean;
+  onClose: () => void;
+  trigger: React.RefObject<HTMLElement | null>;
+  sections: DropdownMenuSection[];
+  align?: "left" | "right";
+  size?: DropdownMenuSize;
+  fullscreenAt?: DropdownMenuFullscreenAt;
+}
+
+const dropdownMenuSizeClasses: Record<DropdownMenuSize, string> = {
+  sm: "w-[220px]",
+  md: "w-[280px]",
+  lg: "w-[360px]",
+  xl: "w-[440px]",
+};
+
+export function DropdownMenu({
+  open,
+  onClose,
+  trigger,
+  sections,
+  align = "right",
+  size = "sm",
+  fullscreenAt = 640,
+}: DropdownMenuProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open || !isBrowser) return;
+
+    const el = trigger.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    const gap = 6;
+    const top = rect.bottom + gap;
+    const left = align === "right" ? rect.right : rect.left;
+
+    setPosition({ top, left });
+  }, [open, align, trigger]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+
+    const onMouse = (e: MouseEvent) => {
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(e.target as Node) &&
+        !trigger.current?.contains(e.target as Node)
+      ) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onMouse);
+
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onMouse);
+    };
+  }, [open, onClose, trigger]);
+
+  if (!open || !isBrowser) return null;
+
+  const isFullscreenViewport =
+    fullscreenAt !== "never" && window.innerWidth <= fullscreenAt;
+
+  const panelStyle: React.CSSProperties = position
+    ? isFullscreenViewport
+      ? {
+          inset: 0,
+        }
+      : {
+          top: position.top,
+          [align === "right" ? "right" : "left"]:
+            align === "right" ? window.innerWidth - position.left : position.left,
+        }
+    : { visibility: "hidden" };
+
+  const renderAction = (action: DropdownMenuAction) => {
+    const content = action.content;
+    const closeOnSelect = action.closeOnSelect ?? true;
+
+    const handleSelect = () => {
+      action.onSelect?.();
+
+      if (closeOnSelect) {
+        onClose();
+      }
+    };
+
+    if (isValidElement<{ onClick?: React.MouseEventHandler }>(content)) {
+      return cloneElement(content, {
+        onClick: (event) => {
+          content.props.onClick?.(event);
+          handleSelect();
+        },
+      });
+    }
+
+    return (
+      <Button
+        type="button"
+        role="menuitem"
+        variant="ghost"
+        size="sm"
+        onClick={handleSelect}
+        className="w-full justify-start text-left max-[640px]:px-4 max-[640px]:py-3 max-[640px]:text-base"
+      >
+        {content}
+      </Button>
+    );
+  };
+
+  const panel = (
+    <div
+      ref={panelRef}
+      role="menu"
+      aria-orientation="vertical"
+      style={panelStyle}
+      tabIndex={-1}
+      className={cn(
+        "fixed z-[200] rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none",
+        dropdownMenuSizeClasses[size],
+        isFullscreenViewport &&
+          "h-dvh max-h-none w-full min-w-0 overflow-y-auto rounded-none p-2 pt-[calc(0.5rem+env(safe-area-inset-top))] pb-[calc(0.5rem+env(safe-area-inset-bottom))]",
+      )}
+    >
+      {isFullscreenViewport ? (
+        <div className="mb-2 flex justify-end">
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={onClose}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </div>
+      ) : null}
+
+      {sections.map((section, si) => (
+        <div
+          key={si}
+          role="group"
+          aria-label={typeof section.label === "string" ? section.label : undefined}
+        >
+          {si > 0 ? <div className="mx-2 my-1 h-px bg-border" role="separator" /> : null}
+
+          {section.label ? (
+            <div className="px-3 pb-1 pt-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+              {section.label}
+            </div>
+          ) : null}
+
+          <div className="flex flex-col gap-1">
+            {section.actions.map((action) => (
+              <div key={action.key}>{renderAction(action)}</div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  return createPortal(
+    <>
+      <div
+        onClick={onClose}
+        aria-hidden="true"
+        className={cn(
+          "hidden",
+          isFullscreenViewport &&
+            "fixed inset-0 z-[199] block bg-black/40 backdrop-blur",
+        )}
+      />
+      {panel}
+    </>,
+    document.body,
   );
 }

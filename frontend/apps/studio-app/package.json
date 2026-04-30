@@ -1,5 +1,5 @@
 {
-  "name": "@flowform/admin-app",
+  "name": "@flowform/studio-app",
   "version": "0.0.0",
   "private": true,
   "type": "module",

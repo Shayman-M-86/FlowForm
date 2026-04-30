@@ -327,6 +327,7 @@ body {
     border-radius: 9999px;
     transition: transform 150ms ease;
   }
+
 }
 
 @media (min-width: 768px) {

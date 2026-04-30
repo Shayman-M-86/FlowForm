@@ -22,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
       authorizationParams={{
         redirect_uri: window.location.origin,
         audience: auth0Audience,
+        scope: 'openid profile email',
       }}
     >
       <QueryClientProvider client={queryClient}>

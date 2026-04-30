@@ -2,9 +2,14 @@ import { useCallback, useMemo } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import * as authApi from './auth'
 import * as client from './client'
-import type { ApiExecutor } from './types'
+import type { ApiExecutor, BootstrapUserOut } from './types'
 
-export function useApi() {
+interface Api {
+  executor: ApiExecutor
+  bootstrapCurrentUser: (idToken: string) => Promise<BootstrapUserOut>
+}
+
+export function useApi(): Api {
   const { getAccessTokenSilently } = useAuth0()
 
   const getAuthHeaders = useCallback(async (): Promise<HeadersInit> => {
@@ -14,8 +19,8 @@ export function useApi() {
     return { Authorization: `Bearer ${token}` }
   }, [getAccessTokenSilently])
 
-  const executor = useMemo(
-    (): ApiExecutor => ({
+  return useMemo((): Api => {
+    const executor: ApiExecutor = {
       get: <T,>(path: string) => getAuthHeaders().then((h) => client.get<T>(path, h)),
       post: <T,>(path: string, body?: unknown) =>
         getAuthHeaders().then((h) => client.post<T>(path, body, h)),
@@ -26,14 +31,10 @@ export function useApi() {
         path: string,
         params: Record<string, string | number | boolean | undefined>,
       ) => getAuthHeaders().then((h) => client.getWithQuery<T>(path, params, h)),
-    }),
-    [getAuthHeaders],
-  )
-
-  return useMemo(
-    () => ({
+    }
+    return {
+      executor,
       bootstrapCurrentUser: (idToken: string) => authApi.bootstrapCurrentUser(executor, idToken),
-    }),
-    [executor],
-  )
+    }
+  }, [getAuthHeaders])
 }

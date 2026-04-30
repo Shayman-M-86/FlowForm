@@ -66,6 +66,7 @@ def test_bootstrap_user_returns_created_response(
             "email": "created@example.com",
             "display_name": "Created User",
         },
+        "default_project": None,
     }
 
 

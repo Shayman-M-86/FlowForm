@@ -15,6 +15,8 @@
 -- =========================================
 -- HELPERS
 -- =========================================
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
@@ -117,8 +119,10 @@ CREATE TABLE users (
     display_name TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     platform_admin BOOLEAN NOT NULL DEFAULT FALSE,
-    CONSTRAINT ck_users_platform_admin 
-        CHECK (NOT platform_admin OR id = 1)
+    public_id TEXT NOT NULL DEFAULT (translate(encode(gen_random_bytes(6), 'base64'), '+/', '-_')) UNIQUE,
+
+    CONSTRAINT ck_users_platform_admin CHECK (NOT platform_admin OR id = 1),
+    CONSTRAINT ck_users_public_id_format CHECK (public_id ~ '^[A-Za-z0-9_-]{8}$')
 );
 
 -- =========================================

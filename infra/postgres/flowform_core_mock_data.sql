@@ -21,13 +21,13 @@ BEGIN;
 -- USERS
 -- =========================================
 
-INSERT INTO users (id, auth0_user_id, email, display_name, created_at, platform_admin) VALUES
-    (1, 'auth0|flowform-admin',   'alex@flowform.dev',   'Alex Carter',   NOW() - INTERVAL '40 days', TRUE),
-    (2, 'auth0|project-owner',    'maya@acme.dev',       'Maya Singh',    NOW() - INTERVAL '35 days', FALSE),
-    (3, 'auth0|project-editor',   'liam@acme.dev',       'Liam Turner',   NOW() - INTERVAL '30 days', FALSE),
-    (4, 'auth0|project-viewer',   'zoe@acme.dev',        'Zoe Walker',    NOW() - INTERVAL '28 days', FALSE),
-    (5, 'auth0|research-owner',   'noah@beta.dev',       'Noah Bennett',  NOW() - INTERVAL '24 days', FALSE),
-    (6, 'auth0|public-link-user', 'guest@example.test',  'Public Guest',  NOW() - INTERVAL '10 days', FALSE);
+INSERT INTO users (id, public_id, auth0_user_id, email, display_name, created_at, platform_admin) VALUES
+    (1, 'A1x9Kq43', 'auth0|flowform-admin',   'alex@flowform.dev',   'Alex Carter',   NOW() - INTERVAL '40 days', TRUE),
+    (2, 'M7s2Qa23', 'auth0|project-owner',    'maya@acme.dev',       'Maya Singh',    NOW() - INTERVAL '35 days', FALSE),
+    (3, 'L4t8Np34', 'auth0|project-editor',   'liam@acme.dev',       'Liam Turner',   NOW() - INTERVAL '30 days', FALSE),
+    (4, 'Z9w3Vr64', 'auth0|project-viewer',   'zoe@acme.dev',        'Zoe Walker',    NOW() - INTERVAL '28 days', FALSE),
+    (5, 'N2b6Hx25', 'auth0|research-owner',   'noah@beta.dev',       'Noah Bennett',  NOW() - INTERVAL '24 days', FALSE),
+    (6, 'G5p1Yu15', 'auth0|public-link-user', 'guest@example.test',  'Public Guest',  NOW() - INTERVAL '10 days', FALSE);
 
 -- =========================================
 -- PROJECTS
@@ -41,18 +41,6 @@ INSERT INTO projects (id, name, slug, created_by_user_id, created_at) VALUES
 -- PERMISSIONS
 -- =========================================
 
-INSERT INTO permissions (id, name) VALUES
-    (1, 'project:edit'),
-    (2, 'project:delete'),
-    (3, 'project:manage_members'),
-    (4, 'project:manage_roles'),
-    (5, 'survey:view'),
-    (6, 'survey:create'),
-    (7, 'survey:edit'),
-    (8, 'survey:delete'),
-    (9, 'survey:publish'),
-    (10, 'survey:archive'),
-    (11, 'submission:view');
 
 -- =========================================
 -- PROJECT ROLES
@@ -79,13 +67,16 @@ FROM (VALUES
     (1, 'survey:publish'),
     (1, 'survey:archive'),
     (1, 'submission:view'),
+
     (2, 'survey:view'),
     (2, 'survey:create'),
     (2, 'survey:edit'),
     (2, 'survey:publish'),
     (2, 'submission:view'),
+
     (3, 'survey:view'),
     (3, 'submission:view'),
+
     (4, 'project:edit'),
     (4, 'project:delete'),
     (4, 'project:manage_members'),
@@ -97,6 +88,7 @@ FROM (VALUES
     (4, 'survey:publish'),
     (4, 'survey:archive'),
     (4, 'submission:view'),
+
     (5, 'survey:view'),
     (5, 'submission:view')
 ) AS r(role_id, perm_name)

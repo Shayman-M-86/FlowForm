@@ -149,7 +149,7 @@ export function UITestPage() {
 
   return (
     <div className="min-h-screen w-full bg-background px-4 py-5 text-foreground md:px-5 md:py-10">
-      <div className="mx-auto max-w-[1400px]">
+      <div className="mx-auto max-w-1400px">
         <div className="mb-8 flex items-center justify-between gap-4 border-b-2 border-border pb-5 md:mb-10">
           <h1 className="m-0">UI Component Test Suite</h1>
           <ThemeToggle />
