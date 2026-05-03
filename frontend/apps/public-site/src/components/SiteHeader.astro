@@ -8,9 +8,36 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }
+
+  /* These rules must live here (is:inline) so they persist across Astro
+     view transitions on docs pages. Starlight's ClientRouter swaps <head>
+     on each doc navigation, which drops the external SiteHeader.css link
+     and lets Starlight's base styles win. Inline styles travel with the
+     persisted element and are never evicted. */
+  .site-header__icon-link,
+  .site-header__theme-toggle {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    color-scheme: inherit !important;
+    color: var(--muted-foreground) !important;
+    background: transparent !important;
+    border: none !important;
+  }
+  .site-header__icon-link:hover,
+  .site-header__theme-toggle:hover {
+    background: var(--hover-highlight) !important;
+    color: var(--foreground) !important;
+  }
+  .site-header__nav-dropdown-button {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    color-scheme: inherit !important;
+    border: none !important;
+    background: transparent !important;
+  }
 </style>
 
-<header class="site-header" data-site-header>
+<header class="site-header" data-site-header transition:persist="site-header">
   <div class="site-header__inner">
 
     <div class="site-header__brand">
@@ -75,13 +102,13 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
     </div>
 
   </div>
-</header>
 
-<nav id="site-header-mobile-nav" class="site-header__nav-dropdown-menu" data-mobile-nav aria-label="Primary" hidden>
-  {PUBLIC_NAV_LINKS.map((link: { href: string; label: string }) => (
-    <a href={link.href} class="site-header__nav-dropdown-link">{link.label}</a>
-  ))}
-</nav>
+  <nav id="site-header-mobile-nav" class="site-header__nav-dropdown-menu" data-mobile-nav aria-label="Primary" hidden>
+    {PUBLIC_NAV_LINKS.map((link: { href: string; label: string }) => (
+      <a href={link.href} class="site-header__nav-dropdown-link">{link.label}</a>
+    ))}
+  </nav>
+</header>
 
 <script is:inline>
   (() => {
@@ -122,25 +149,29 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
       });
     };
 
-    const initHeaderMobileNav = () => {
+    const closeMobileNav = () => {
       const button = document.querySelector('[data-nav-toggle]');
       const menu = document.querySelector('[data-mobile-nav]');
-      if (!button || !menu || button.dataset.bound === 'true') return;
+      if (!button || !menu) return;
+      button.setAttribute('aria-expanded', 'false');
+      menu.hidden = true;
+    };
+
+    const handleNavToggleClick = () => {
+      const button = document.querySelector('[data-nav-toggle]');
+      const menu = document.querySelector('[data-mobile-nav]');
+      if (!button || !menu) return;
+      const isOpen = button.getAttribute('aria-expanded') !== 'true';
+      button.setAttribute('aria-expanded', String(isOpen));
+      menu.hidden = !isOpen;
+    };
+
+    const initHeaderMobileNav = () => {
+      const button = document.querySelector('[data-nav-toggle]');
+      if (!button || button.dataset.bound === 'true') return;
 
       button.dataset.bound = 'true';
-
-      const setOpen = (isOpen) => {
-        button.setAttribute('aria-expanded', String(isOpen));
-        menu.hidden = !isOpen;
-      };
-
-      button.addEventListener('click', () => {
-        setOpen(button.getAttribute('aria-expanded') !== 'true');
-      });
-
-      menu.querySelectorAll('a').forEach((link) => {
-        link.addEventListener('click', () => setOpen(false));
-      });
+      button.addEventListener('click', handleNavToggleClick);
     };
 
     if (document.readyState === 'loading') {
@@ -152,9 +183,23 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
       initHeaderThemeToggle();
       initHeaderMobileNav();
     }
-    document.addEventListener('astro:page-load', () => {
-      initHeaderThemeToggle();
-      initHeaderMobileNav();
-    });
+
+    if (!window.__siteHeaderListenersAttached) {
+      window.__siteHeaderListenersAttached = true;
+
+      // Astro view transitions (docs ↔ docs, docs → other)
+      document.addEventListener('astro:before-navigation', closeMobileNav);
+      document.addEventListener('astro:page-load', () => {
+        closeMobileNav();
+        initHeaderThemeToggle();
+      });
+
+      // Close when any dropdown link is clicked (covers full-page navigations
+      // that don't fire astro:before-navigation on non-docs pages)
+      document.addEventListener('click', (e) => {
+        const link = e.target.closest('[data-mobile-nav] a');
+        if (link) closeMobileNav();
+      });
+    }
   })();
 </script>

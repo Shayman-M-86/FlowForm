@@ -1,7 +1,6 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
-import starlight from '@astrojs/starlight';
 import PinyAstro from '@pinegrow/piny-astro';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,45 +15,18 @@ const siteShellSrc = path.resolve(__dirname, '../../packages/site-shell/src');
 export default defineConfig({
   site: 'https://flow-form.com.au',
   build: {
-    inlineStylesheets: 'always',
+    inlineStylesheets: 'never',
   },
   integrations: [
-    starlight({
-      title: 'FlowForm Docs',
-      logo: {
-        src: './src/assets/FlowForm_logo.png',
-      },
-      social: [
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/Shayman-M-86/FlowForm' },
-      ],
-      sidebar: [
-        {
-          label: 'Getting Started',
-          items: [
-            { label: 'Introduction', slug: 'docs/introduction' },
-            { label: 'Building Your First Form', slug: 'docs/building-your-first-form' },],
-        },
-        {
-          label: 'Question Types',
-          autogenerate: { directory: 'docs/question-types' },
-        },
-      ],
-      components: {
-        Head: './src/components/starlight/Head.astro',
-        Header: './src/components/starlight/Header.astro',
-        ThemeProvider: './src/components/starlight/ThemeProvider.astro',
-        ThemeSelect: './src/components/starlight/ThemeSelect.astro',
-        PageFrame: './src/components/starlight/PageFrame.astro',
-        MobileMenuToggle: './src/components/MobileMenuToggle.astro',
-      },
-      customCss: ['./src/styles/starlight-overrides.css'],
-    }),
     react(),
     PinyAstro(),
     sitemap(),
   ],
   vite: {
     plugins: [tailwindcss()],
+    ssr: {
+      noExternal: ['@flowform/ui', '@flowform/builder', '@flowform/site-shell', '@flowform/styles'],
+    },
     resolve: {
       tsconfigPaths: false,
       extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],

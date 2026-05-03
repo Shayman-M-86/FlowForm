@@ -5,7 +5,7 @@ import type { MatchingQuestionHandle } from "../components/node/MatchingQuestion
 import type { MultiChoiceQuestionHandle } from "../components/node/MultiChoiceQuestion";
 import type { RatingQuestionHandle } from "../components/node/RatingQuestion";
 import type { RulesQuestionHandle } from "../components/node/RulesQuestion";
-import { Badge, Button, Input, Select, ThemeToggle } from "@flowform/ui";
+import { Badge, Button } from "@flowform/ui";
 import { FieldQuestion } from "../components/node/FieldQuestion";
 import { MatchingQuestion } from "../components/node/MatchingQuestion";
 import { MultiChoiceQuestion } from "../components/node/MultiChoiceQuestion";
@@ -34,29 +34,6 @@ const NODE_PAGE_STYLES = `
 
   .node-page__question-wrapper--collapsed + .node-page__question-wrapper--collapsed {
     margin-top: -10px;
-  }
-
-  .node-page__toolbar-search-input.input-field,
-  .node-page__toolbar-filter.select-field {
-    gap: 0;
-  }
-
-  .node-page__toolbar-search-input .input-control,
-  .node-page__toolbar-filter .select-control {
-    height: 100%;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  .node-page__toolbar-search-input .input-control {
-    border-right: 1px solid var(--border);
-  }
-
-  .node-page__toolbar-search-input .input-control:focus,
-  .node-page__toolbar-filter .select-control:focus {
-    box-shadow: inset 0 0 0 1px var(--accent-border), var(--focus-ring);
   }
 
   .node-page__question-content--hidden {
@@ -93,8 +70,6 @@ interface PersistedNodePageState {
 
 interface PersistedNodePageUiState {
   collapsedIds: string[];
-  searchQuery: string;
-  filterType: "all" | QuestionType;
 }
 
 function loadPersistedNodePageState(): PersistedNodePageState | null {
@@ -190,16 +165,6 @@ function loadPersistedNodePageUiState(): PersistedNodePageUiState | null {
     const parsed = JSON.parse(stored) as Partial<PersistedNodePageUiState>;
     return {
       collapsedIds: Array.isArray(parsed.collapsedIds) ? parsed.collapsedIds.filter((id): id is string => typeof id === "string") : [],
-      searchQuery: typeof parsed.searchQuery === "string" ? parsed.searchQuery : "",
-      filterType:
-        parsed.filterType === "all" ||
-        parsed.filterType === "multi-choice" ||
-        parsed.filterType === "matching" ||
-        parsed.filterType === "rating" ||
-        parsed.filterType === "field" ||
-        parsed.filterType === "rules"
-          ? parsed.filterType
-          : "all",
     };
   } catch {
     return null;
@@ -245,8 +210,6 @@ export function NodePage() {
   const [ruleContents, setRuleContents] = useState<Record<string, RuleContent>>(
     () => persistedState.current?.ruleContents ?? {},
   );
-  const [searchQuery, setSearchQuery] = useState(() => persistedUiState.current?.searchQuery ?? "");
-  const [filterType, setFilterType] = useState<"all" | QuestionType>(() => persistedUiState.current?.filterType ?? "all");
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set(persistedUiState.current?.collapsedIds ?? []));
   const questionRefsMap = useRef<Map<string, FieldQuestionHandle | MatchingQuestionHandle | MultiChoiceQuestionHandle | RatingQuestionHandle | RulesQuestionHandle>>(new Map());
   const questionWrapperNodeMap = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -430,8 +393,6 @@ export function NodePage() {
     setEditingQuestionIds([]);
     setQuestionContents({});
     setRuleContents({});
-    setSearchQuery("");
-    setFilterType("all");
     setCollapsedIds(new Set());
     questionRefsMap.current.clear();
     questionWrapperNodeMap.current.clear();
@@ -538,24 +499,8 @@ export function NodePage() {
     </div>
   );
 
-  const getQuestionSearchTokens = (question: Question) => {
-    if (question.type === "rules") {
-      const rule = ruleContents[question.id];
-      return { title: "Rule", id: rule?.id ?? question.initialTag };
-    }
-    const content = questionContents[question.id];
-    return { title: content?.title ?? "", id: content?.id ?? question.initialTag };
-  };
-
   const isQuestionExpanded = (question: Question) => {
-    if (collapsedIds.has(question.id)) return false;
-    const { title, id } = getQuestionSearchTokens(question);
-    const normalizedSearch = searchQuery.trim().toLowerCase();
-    const matchesFilter = filterType === "all" || question.type === filterType;
-    const matchesSearch =
-      normalizedSearch === "" ||
-      `${title || "Untitled question"} ${id}`.toLowerCase().includes(normalizedSearch);
-    return matchesFilter && matchesSearch;
+    return !collapsedIds.has(question.id);
   };
 
   function toggleCollapsed(id: string) {
@@ -599,8 +544,6 @@ export function NodePage() {
     const questionIds = new Set(questions.map((question) => question.id));
     const uiState: PersistedNodePageUiState = {
       collapsedIds: Array.from(collapsedIds).filter((id) => questionIds.has(id)),
-      searchQuery,
-      filterType,
     };
 
     try {
@@ -608,7 +551,7 @@ export function NodePage() {
     } catch {
       // Ignore persistence failures.
     }
-  }, [collapsedIds, filterType, questions, searchQuery]);
+  }, [collapsedIds, questions]);
 
   function handlePreview() {
     if (serializedSurvey.length === 0) return;
@@ -620,31 +563,9 @@ export function NodePage() {
     <section className="node-page flex min-h-full flex-col">
       <style dangerouslySetInnerHTML={{ __html: NODE_PAGE_STYLES }} />
       <div className="node-page__toolbar fixed left-[var(--sidebar-w)] right-0 top-0 z-20 box-border flex h-[var(--node-page-toolbar-height)] items-center justify-center border-b border-border bg-[var(--toolbar-bg)] px-6 py-[14px] backdrop-blur-[14px] max-[640px]:left-0 max-[640px]:px-4">
-        <div className="node-page__toolbar-shell flex w-full max-w-[980px] items-center gap-3 max-[640px]:flex-col max-[640px]:items-stretch">
-          <div className="node-page__toolbar-header flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[999px] border border-border bg-[var(--bg-subtle)] shadow-sm max-[640px]:w-full">
-            <h4 className="m-0 flex items-center border-r border-border px-[18px] text-[0.82rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-soft)] max-[640px]:px-[14px]">
-              Search
-            </h4>
-            <Input
-              className="node-page__toolbar-search-input min-w-0 flex-1"
-              placeholder="Search by title or ID"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-            <Select
-              className="node-page__toolbar-filter min-w-0 basis-[240px] max-[640px]:basis-[200px]"
-              value={filterType}
-              options={[
-                { value: "all", label: "All question types" },
-                ...QUESTION_TYPE_OPTIONS,
-              ]}
-              onChange={(event) => setFilterType(event.target.value as "all" | QuestionType)}
-            />
-          </div>
-          <div className="node-page__toolbar-actions flex shrink-0 items-center gap-2.5 max-[640px]:w-full">
-            <ThemeToggle />
+        <div className="node-page__toolbar-shell flex w-full max-w-[980px] items-center justify-end gap-3">
+          <div className="node-page__toolbar-actions flex shrink-0 items-center gap-2.5">
             <Button
-              className="max-[640px]:flex-1"
               type="button"
               variant="ghost"
               size="sm"
@@ -654,7 +575,6 @@ export function NodePage() {
               Clear
             </Button>
             <Button
-              className="max-[640px]:flex-1"
               type="button"
               variant="secondary"
               size="sm"
