@@ -124,7 +124,7 @@
                     "/docs/introduction",
                     "/scroll-test"
                 ],
-                "current_route": "/#features"
+                "current_route": "/"
             },
             "urls": {
                 "pinyfakepage.html": {

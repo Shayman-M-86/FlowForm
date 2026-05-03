@@ -56,6 +56,7 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     resolve: {
+      tsconfigPaths: false,
       alias: [
         { find: '@flowform/site-shell/header.css', replacement: path.resolve(siteShellSrc, 'SiteHeader.css') },
         { find: '@flowform/site-shell', replacement: path.resolve(siteShellSrc, 'index.ts') },
