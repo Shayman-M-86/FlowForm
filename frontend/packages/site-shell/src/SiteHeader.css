@@ -66,11 +66,17 @@
 .site-header__nav-link {
   @apply cursor-pointer bg-transparent font-semibold text-accent-foreground
          shadow-none rounded-sm no-underline
-         active:scale-95 active:opacity-80
+         active:scale-95
          hover:bg-muted hover:text-foreground;
   /* size="sm": min-h-[34px] px-3 text-[0.86rem] leading-[1.2] */
   @apply inline-flex items-center min-h-[34px] px-3 text-[0.86rem] leading-[1.2];
+  -webkit-tap-highlight-color: transparent;
   transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.site-header__nav-link:active {
+  background: var(--muted) !important;
+  color: var(--foreground) !important;
 }
 
 .site-header__nav-link[data-active="true"] {
@@ -83,11 +89,21 @@
          shadow-none rounded-sm no-underline list-none
          items-center justify-center min-h-[34px] text-lg leading-[1.2]
          hover:bg-muted hover:text-foreground
-         active:scale-95 active:opacity-80;
+         active:scale-95;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  color-scheme: inherit;
   width: 34px;
   height: 34px;
   padding: 0;
   transition: color 0.15s, background 0.15s, border-color 0.15s;
+  border: none;
+}
+
+.site-header__nav-dropdown-button:active {
+  background: var(--muted) !important;
+  color: var(--foreground) !important;
 }
 
 .site-header__nav-icon-close {
@@ -109,30 +125,52 @@
 .site-header__nav-dropdown-menu {
   @apply fixed inset-x-0 z-40 flex flex-col gap-1 px-4 py-3 shadow-md;
   top: calc(env(safe-area-inset-top) + 56px);
-  background: rgb(from var(--popover) r g b / 0.68);
-  backdrop-filter: saturate(100%) blur(6px);
-  -webkit-backdrop-filter: saturate(100%) blur(6px);
+  background: rgb(from var(--popover) r g b / 0.96);
 }
 
 .site-header__nav-dropdown-link {
   @apply cursor-pointer rounded-sm px-4 py-4 text-xl font-semibold leading-[1.2]
          text-accent-foreground no-underline
-         hover:bg-muted hover:text-foreground
-         active:opacity-80;
+         hover:bg-muted hover:text-foreground;
+  -webkit-tap-highlight-color: transparent;
   transition: color 0.15s, background 0.15s;
+}
+
+.site-header__nav-dropdown-link:active {
+  background: var(--muted) !important;
+  color: var(--foreground) !important;
+  transform: scale(0.98);
 }
 
 /* Icon button — 34×34, same border/bg as secondary but no text, square */
 .site-header__icon-link,
 .site-header__theme-toggle {
-  @apply cursor-pointer  text-muted-foreground rounded-sm
+  @apply cursor-pointer rounded-sm
          flex items-center justify-center shrink-0 no-underline
-         hover:bg-hover-highlight hover:text-foreground
-         active:scale-95 active:opacity-80;
+         active:scale-95;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  color-scheme: inherit;
+  color: var(--muted-foreground) !important;
+  background: transparent;
+  border: none;
   width: 34px;
   height: 34px;
   padding: 0;
   transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.site-header__icon-link:active,
+.site-header__theme-toggle:active {
+  background: var(--hover-highlight) !important;
+  color: var(--foreground) !important;
+}
+
+.site-header__icon-link:hover,
+.site-header__theme-toggle:hover {
+  background: var(--hover-highlight) !important;
+  color: var(--foreground) !important;
 }
 
 /* Astro-only theme icon visibility (React uses JS conditionals instead) */
@@ -150,7 +188,8 @@
   @apply cursor-pointer border border-transparent bg-primary font-semibold text-primary-foreground
          shadow-sm rounded-sm no-underline shrink-0
          inline-flex items-center min-h-[34px] px-3 text-[0.86rem] leading-[1.2]
-         hover:bg-accent active:scale-95 active:opacity-80;
+         hover:bg-accent active:scale-95 active:brightness-90;
+  -webkit-tap-highlight-color: transparent;
   transition: opacity 0.15s, background 0.15s;
 }
 

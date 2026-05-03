@@ -10,6 +10,16 @@
   box-sizing: border-box;
 }
 
+/* Prevent Safari on iOS from zooming in when focusing inputs smaller than 16px.
+   Also lock horizontal panning on inputs — iOS ignores overflow-x:hidden on
+   parent elements when touch-scrolling originates inside a text field. */
+@media (max-width: 768px) {
+  input, textarea, select {
+    font-size: max(16px, 1em) !important;
+    touch-action: pan-y;
+  }
+}
+
 html {
   margin: 0;
   width: 100%;

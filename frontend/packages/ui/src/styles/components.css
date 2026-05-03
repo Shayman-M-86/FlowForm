@@ -180,7 +180,26 @@
   }
 
   .ui-button-active {
-    @apply active:scale-95 active:opacity-80;
+    @apply active:scale-95;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ui-button-active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgb(0 0 0 / 0.1);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.05s;
+  }
+
+  .ui-button-active:active::after {
+    opacity: 1;
+    transition: none;
   }
 
   .ui-button-disabled {

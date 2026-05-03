@@ -2,7 +2,7 @@
 
 :root,
 :root[data-theme='light'] {
-  --sl-nav-height: 56px;
+  --sl-nav-height: 56px !important;
   --sl-font: 'Geist', 'Geist Fallback', ui-sans-serif, system-ui, sans-serif;
   --sl-font-mono: 'Geist Mono', 'Geist Mono Fallback', ui-monospace, monospace;
 
@@ -221,4 +221,12 @@ starlight-toc a[aria-current='true'] {
 site-search dialog,
 #starlight__search {
   font-family: var(--sl-font) !important;
+}
+
+/* ─── Mobile nav ─────────────────────────────────────────────────────────── */
+
+/* Reinforce the HTML hidden attribute — Starlight's layer ordering can
+   cause display:flex from SiteHeader.css to win over the UA hidden rule. */
+[data-mobile-nav][hidden] {
+  display: none !important;
 }
