@@ -188,5 +188,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Clear Astro build cache
+        run: rm -rf apps/public-site/node_modules/.astro
+
       - name: Build public site
         run: npm run build:site
