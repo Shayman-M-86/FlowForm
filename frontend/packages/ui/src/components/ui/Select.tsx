@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { cn, useFieldId } from "../../lib/utils.ts";
-import { controlSizeClasses, type ControlSize } from "../../lib/sizes.ts";
+import { cn, useFieldId } from "../../lib/utils";
+import { controlSizeClasses, type ControlSize } from "../../lib/sizes";
 import {
   controlBaseClass,
   formFieldClass,
@@ -9,7 +9,7 @@ import {
   formErrorClass,
   getSurfaceClassName,
   type InputVariant,
-} from "../../lib/formFieldStyles.ts";
+} from "../../lib/formFieldStyles";
 
 interface SelectOption {
   value: string;

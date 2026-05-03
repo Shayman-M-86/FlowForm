@@ -1,5 +1,5 @@
-import { useTheme } from "./ThemeProvider.tsx";
-import { Button } from "./Button.tsx";
+import { useTheme } from "./ThemeProvider";
+import { Button } from "./Button";
 
 const SunIcon = () => (
   <svg

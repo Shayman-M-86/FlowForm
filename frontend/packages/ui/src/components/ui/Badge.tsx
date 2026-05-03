@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
-import { cn } from "../../lib/utils.ts";
-import { badgeSizeClasses, type ControlSize } from "../../lib/sizes.ts";
+import { cn } from "../../lib/utils";
+import { badgeSizeClasses, type ControlSize } from "../../lib/sizes";
 
 type BadgeVariant = "default" | "success" | "danger" | "warning" | "accent" | "muted";
 
