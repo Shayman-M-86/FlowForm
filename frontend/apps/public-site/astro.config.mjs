@@ -55,6 +55,9 @@ export default defineConfig({
   ],
   vite: {
     plugins: [tailwindcss()],
+    ssr: {
+      noExternal: ['@flowform/ui', '@flowform/builder', '@flowform/site-shell', '@flowform/styles'],
+    },
     resolve: {
       tsconfigPaths: false,
       extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
