@@ -1,18 +1,18 @@
 import { useEffect, useRef, type TextareaHTMLAttributes } from "react";
-import { cn, useFieldId, resizeTextareaElement } from "../../lib/utils";
-import { controlBaseClass, type InputVariant } from "../../lib/formFieldStyles";
+import { cn, useFieldId, resizeTextareaElement } from "../../lib/utils.ts";
+import { controlBaseClass, type InputVariant } from "../../lib/formFieldStyles.ts";
 import {
   formFieldClass,
   formLabelClass,
   formHintClass,
   formErrorClass,
   getTextareaShellClassName,
-} from "../../lib/formFieldStyles";
+} from "../../lib/formFieldStyles.ts";
 import {
   textareaBodySizeClasses,
   textareaSizeClasses,
   type TextareaSize,
-} from "../../lib/sizes";
+} from "../../lib/sizes.ts";
 
 interface LargeInputProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;

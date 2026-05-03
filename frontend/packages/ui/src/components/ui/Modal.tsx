@@ -1,6 +1,6 @@
 import { useEffect, useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { isBrowser } from "../../lib/utils";
+import { isBrowser } from "../../lib/utils.ts";
 
 interface ModalProps {
   open: boolean;

@@ -1,4 +1,4 @@
-import { cn, useAutoResizingTextarea } from "../../lib/utils";
+import { cn, useAutoResizingTextarea } from "../../lib/utils.ts";
 
 type ExpandableSelectorProps = {
   value: string;

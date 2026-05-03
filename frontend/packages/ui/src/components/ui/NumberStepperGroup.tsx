@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { cn, clampNumber, parseNumericValue } from "../../lib/utils";
+import { cn, clampNumber, parseNumericValue } from "../../lib/utils.ts";
 import {
   stepperShellClass,
   stepperButtonClass,
@@ -7,9 +7,9 @@ import {
   stepperInputClass,
   type StepperSize,
   type StepperVariant,
-} from "../../lib/stepperStyles";
-import { Button } from "./Button";
-import { Input } from "./Input";
+} from "../../lib/stepperStyles.ts";
+import { Button } from "./Button.tsx";
+import { Input } from "./Input.tsx";
 
 interface NumberStepperItem {
   key: string;
