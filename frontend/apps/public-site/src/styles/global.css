@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@flowform/styles";
+@import "./docs.css";
 
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 @source "../../../../packages/builder/src/**/*.{ts,tsx}";

@@ -10,8 +10,8 @@
     var(--toolbar-bg-solid) 0%,
     var(--toolbar-bg) 100%
   );
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   line-height: normal;
   box-shadow: var(--topbar-shadow);
 }

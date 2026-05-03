@@ -20,7 +20,7 @@
   --ring: rgb(161 161 161);
   --hover-highlight: rgb(240 239 240);
   --toolbar-bg-solid: rgb(247 247 247);
-  --toolbar-bg: rgb(247 247 247 / 0.15);
+  --toolbar-bg: rgb(247 247 247 / 0.05);
   --topbar-shadow: 0.5px 1.5px 20px rgb(0 0 0 / 0.04);
   --node-pill-topbar-gradient: linear-gradient(
     to bottom,
@@ -103,7 +103,7 @@
   --ring: rgb(117 117 117);
   --hover-highlight: rgb(167 167 167 / 0.2);
   --toolbar-bg-solid: rgb(30 30 32);
-  --toolbar-bg: rgb(30 30 32 / 0.15);
+  --toolbar-bg: rgb(30 30 32 / 0.05);
   --topbar-shadow: 0.5px 1.5px 16px rgb(0 0 0 / 0.14);
   --node-pill-topbar-gradient: linear-gradient(
     to bottom,

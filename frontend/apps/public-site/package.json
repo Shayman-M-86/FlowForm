@@ -14,8 +14,7 @@
   "dependencies": {
     "@astrojs/react": "^5.0.3",
     "@astrojs/sitemap": "^3.7.2",
-    "@astrojs/starlight": "^0.38.3",
-    "@flowform/builder": "0.0.0",
+"@flowform/builder": "0.0.0",
     "@flowform/site-shell": "0.0.0",
     "@flowform/styles": "0.0.0",
     "@flowform/ui": "0.0.0",

@@ -1,0 +1,27 @@
+---
+import { getCollection, render } from 'astro:content';
+import DocsLayout from '../../layouts/DocsLayout.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('docs');
+  return entries.map(entry => ({
+    // entry.id is "docs/introduction" — strip "docs/" so the URL
+    // becomes /docs/introduction not /docs/docs/introduction
+    params: { slug: entry.id.replace(/^docs\//, '') },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content, headings } = await render(entry);
+const pagePath = `/docs/${entry.id.replace(/^docs\//, '')}`;
+---
+
+<DocsLayout
+  title={entry.data.title}
+  description={entry.data.description}
+  headings={headings}
+  currentPath={pagePath}
+>
+  <Content />
+</DocsLayout>

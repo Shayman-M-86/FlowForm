@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
 
 export interface Props {
   title?: string;
@@ -48,12 +49,23 @@ const ogImage = `${SITE_URL}/FlowForm_logo.png`;
     <meta name="theme-color" content="rgb(247 247 247)" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="rgb(30 30 32)" media="(prefers-color-scheme: dark)" />
 
-    <!-- Geist font from Vercel CDN -->
+    <!-- Geist font — preconnect to both origins, load non-blocking -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=optional"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=optional"
+      />
+    </noscript>
+
+    <ClientRouter />
 
     <!-- Inline theme-init: apply .dark before first paint to avoid flash -->
     <script is:inline>
