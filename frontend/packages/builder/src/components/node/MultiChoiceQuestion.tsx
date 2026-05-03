@@ -4,6 +4,7 @@ import { useOptionDrag } from "./useOptionDrag";
 import { QUESTION_MAX, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
 import {
   NodePillTopbar,
+  NodePillIdField,
   NodePillQuestionField,
   NodePillCharCount,
   NodePillFieldHead,
@@ -151,9 +152,6 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
     <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`} aria-label="node workspace">
       <NodePillTopbar
         family="Multiple choice"
-        tagValue={tagValue}
-        onTagChange={setTagValue}
-        idError={idError}
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
@@ -168,6 +166,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
           titleValue={titleValue}
           onTitleChange={setTitleValue}
           showTitleEdit={true}
+          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
         />
 
         <div className={nodePillFieldClass}>

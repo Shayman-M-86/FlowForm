@@ -1,4 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { isDesignPreviewMode } from './designPreview'
+import { createMockProject, getMockProject, mockProjects } from './mockData'
 import { useApi } from './useApi'
 import type { ProjectOut, CreateProjectRequest } from './types'
 import type { ApiExecutor } from './types'
@@ -35,7 +37,8 @@ export function useProjects() {
   const { executor } = useApi()
   return useQuery({
     queryKey: projectKeys.list(),
-    queryFn: () => fetchProjects(executor),
+    queryFn: () =>
+      isDesignPreviewMode ? Promise.resolve([...mockProjects]) : fetchProjects(executor),
   })
 }
 
@@ -45,6 +48,7 @@ export function useProject(ref: string | number | null) {
     queryKey: projectKeys.detail(ref),
     queryFn: () => {
       if (ref === null) throw new Error('Project ref is required')
+      if (isDesignPreviewMode) return Promise.resolve(getMockProject(ref))
       return fetchProject(executor, ref)
     },
     enabled: ref !== null,
@@ -55,9 +59,19 @@ export function useCreateProject() {
   const { executor } = useApi()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (body: CreateProjectRequest) => createProject(executor, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: projectKeys.list() })
+    mutationFn: (body: CreateProjectRequest) =>
+      isDesignPreviewMode ? Promise.resolve(createMockProject(body)) : createProject(executor, body),
+    onSuccess: (project) => {
+      if (isDesignPreviewMode) {
+        queryClient.setQueryData<ProjectOut[]>(projectKeys.list(), (current = mockProjects) => [
+          project,
+          ...current,
+        ])
+        queryClient.setQueryData(projectKeys.detail(project.slug), project)
+        return
+      }
+
+      void queryClient.invalidateQueries({ queryKey: projectKeys.list() })
     },
   })
 }
@@ -66,9 +80,17 @@ export function useDeleteProject() {
   const { executor } = useApi()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (ref: string | number) => deleteProject(executor, ref),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: projectKeys.list() })
+    mutationFn: (ref: string | number) =>
+      isDesignPreviewMode ? Promise.resolve() : deleteProject(executor, ref),
+    onSuccess: (_result, ref) => {
+      if (isDesignPreviewMode) {
+        queryClient.setQueryData<ProjectOut[]>(projectKeys.list(), (current = mockProjects) =>
+          current.filter((project) => project.id !== Number(ref) && project.slug !== String(ref)),
+        )
+        return
+      }
+
+      void queryClient.invalidateQueries({ queryKey: projectKeys.list() })
     },
   })
 }

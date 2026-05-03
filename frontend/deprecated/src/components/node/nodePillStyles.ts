@@ -9,7 +9,7 @@ export const nodePillCollapsedShellClass =
   "flex flex-col rounded-2xl border border-border bg-card";
 
 export const nodePillTopbarClass =
-  "flex w-full flex-wrap items-center border-b border-border bg-muted/50 [background-image:var(--node-pill-topbar-gradient)] px-3";
+  "flex w-full flex-wrap items-center border-b border-border bg-muted/50 [background-image:var(--node-pill-topbar-gradient)] my-6";
 
 export const nodePillBodyClass = "flex flex-1 flex-col gap-4 p-5";
 

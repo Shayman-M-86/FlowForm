@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
+import PinyVite from '@pinegrow/piny-vite'
 import { resolve } from 'path'
 
 const stylesSrc = resolve(__dirname, '../../packages/styles/src')
@@ -18,6 +19,7 @@ export default defineConfig({
     tanstackRouter({ routesDirectory: './src/routes', generatedRouteTree: './src/routeTree.gen.ts' }),
     tailwindcss(),
     react(),
+    PinyVite(),
   ],
   resolve: {
     alias: [

@@ -4,6 +4,7 @@ import { useAuth0 } from '@auth0/auth0-react'
 import { useTheme, DropdownMenu, Button, Badge } from '@flowform/ui'
 import { STUDIO_NAV_LINKS, BRAND } from '@flowform/site-shell'
 import { useCurrentUser } from '@/auth/UserContext'
+import { isAuthBypassEnabled } from '@/auth/testing'
 import { useProject } from '@/api/projects'
 import { clearActiveProjectSlug, getActiveProjectSlug } from '@/lib/activeProject'
 import '@flowform/site-shell/header.css'
@@ -61,7 +62,8 @@ export function SiteHeader() {
   const avatarRef = useRef<HTMLButtonElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const showAsAuthenticated = isAuthenticated || (isLoading && hasBootstrappedSession())
+  const showAsAuthenticated =
+    isAuthBypassEnabled || isAuthenticated || (isLoading && hasBootstrappedSession())
 
   const menuSections = [
     ...(ctx
@@ -74,7 +76,7 @@ export function SiteHeader() {
                 content: (
                   <div className="flex w-full min-w-0 items-center justify-between gap-3 rounded-sm px-3 py-2">
                     <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="truncate text-sm font-semibold text-foreground">
+                      <span className="truncate text-base font-semibold text-foreground">
                         {ctx.displayName}
                       </span>
                       <span className="truncate text-xs text-muted-foreground">
@@ -140,6 +142,7 @@ export function SiteHeader() {
           ),
           onSelect: () => {
             clearActiveProjectSlug()
+            if (isAuthBypassEnabled) return
             logout({ logoutParams: { returnTo: window.location.origin } })
           },
         },

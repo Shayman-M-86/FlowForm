@@ -1,7 +1,7 @@
 import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import "./RatingQuestion.css";
 import { QUESTION_MAX, blurOnEnter } from "./NodePillUtils";
-import { NodePillTopbar, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillCollapsed } from "./NodePillShell";
+import { NodePillTopbar, NodePillIdField, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillCollapsed } from "./NodePillShell";
 import {
   nodePillBodyClass,
   nodePillFieldClass,
@@ -284,9 +284,6 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
     <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""} rating-question`} aria-label="Rating question">
       <NodePillTopbar
         family="Rating"
-        tagValue={tagValue}
-        onTagChange={setTagValue}
-        idError={idError}
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
@@ -301,6 +298,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
           titleValue={titleValue}
           onTitleChange={setTitleValue}
           showTitleEdit={true}
+          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
         />
 
         <div className={nodePillFieldClass}>

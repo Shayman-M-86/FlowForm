@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from "react";
 import {
   NodePillTopbar,
+  NodePillIdField,
   NodePillFieldHead,
   NodePillCollapsed,
 } from "./NodePillShell";
@@ -771,9 +772,6 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`} aria-label="Rules question">
       <NodePillTopbar
         family="Rule"
-        tagValue={tagValue}
-        onTagChange={setTagValue}
-        idError={idError}
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
@@ -789,6 +787,12 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
                 onChange={(event) => setMatch(event.target.value as RuleMatch)}
               />
             )}
+            <NodePillIdField
+              tagValue={tagValue}
+              onTagChange={setTagValue}
+              idError={idError}
+              isEditMode={isEditMode}
+            />
           </NodePillFieldHead>
 
           <div className="flex flex-col gap-3 px-4 py-3">

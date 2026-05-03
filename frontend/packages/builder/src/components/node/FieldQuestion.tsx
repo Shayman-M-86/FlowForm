@@ -2,6 +2,7 @@ import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { QUESTION_MAX, blurOnEnter } from "./NodePillUtils";
 import {
   NodePillTopbar,
+  NodePillIdField,
   NodePillQuestionField,
   NodePillCharCount,
   NodePillFieldHead,
@@ -114,9 +115,6 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
     <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`} aria-label="Field question">
       <NodePillTopbar
         family="Field"
-        tagValue={tagValue}
-        onTagChange={setTagValue}
-        idError={idError}
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
@@ -131,6 +129,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
           titleValue={titleValue}
           onTitleChange={setTitleValue}
           showTitleEdit={true}
+          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
         />
 
         <div className={nodePillFieldClass}>

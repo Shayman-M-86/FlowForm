@@ -4,6 +4,7 @@ import { Button, Card, Spinner } from '@flowform/ui'
 import { ApiRequestError } from '@/api/client'
 import { useApi } from '@/api/useApi'
 import { getAuthReturnTo } from '@/auth/redirect'
+import { isAuthBypassEnabled } from '@/auth/testing'
 import { UserProvider } from '@/auth/UserContext'
 import type { CurrentUserOut } from '@/api/types'
 
@@ -22,7 +23,9 @@ function getBootstrappedUserId(): string | null {
 function markBootstrapped(userId: string): void {
   try {
     window.sessionStorage.setItem(BOOTSTRAP_SESSION_KEY, userId)
-  } catch {}
+  } catch {
+    return
+  }
 }
 
 function clearBootstrapped(): void {
@@ -30,14 +33,18 @@ function clearBootstrapped(): void {
     window.sessionStorage.removeItem(BOOTSTRAP_SESSION_KEY)
     window.sessionStorage.removeItem(USER_SESSION_KEY)
     window.sessionStorage.removeItem(AVATAR_SESSION_KEY)
-  } catch {}
+  } catch {
+    return
+  }
 }
 
 function saveUserToSession(user: CurrentUserOut, avatarUrl: string | null): void {
   try {
     window.sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(user))
     if (avatarUrl) window.sessionStorage.setItem(AVATAR_SESSION_KEY, avatarUrl)
-  } catch {}
+  } catch {
+    return
+  }
 }
 
 function getUserFromSession(): CurrentUserOut | null {
@@ -59,7 +66,26 @@ function getAvatarFromSession(): string | null {
 
 type Props = { children: ReactNode }
 
+const TEST_USER: CurrentUserOut = {
+  id: 0,
+  auth0_user_id: 'test-user',
+  email: 'testing@flowform.local',
+  display_name: 'Testing User',
+}
+
 export function ProtectedApp({ children }: Props) {
+  if (isAuthBypassEnabled) {
+    return (
+      <UserProvider user={TEST_USER} avatarUrl={null}>
+        {children}
+      </UserProvider>
+    )
+  }
+
+  return <AuthenticatedProtectedApp>{children}</AuthenticatedProtectedApp>
+}
+
+function AuthenticatedProtectedApp({ children }: Props) {
   const { isLoading, isAuthenticated, getIdTokenClaims, loginWithRedirect, logout, error, user } =
     useAuth0()
   const { bootstrapCurrentUser } = useApi()

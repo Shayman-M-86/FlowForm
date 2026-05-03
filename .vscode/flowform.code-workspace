@@ -80,5 +80,62 @@
         },
         "hide-files.files": [],
         "folder-color.pathColors": [],
+        "piny.project_settings": {
+            "open-pages": [
+                "pinyfakepage.html"
+            ],
+            "tw-external-config": {
+                "external_config_url": "frontend/apps/public-site/src/styles/tailwind.config.js",
+                "external_source_url": "frontend/apps/public-site/src/styles/global.css"
+            },
+            "source-folders": null,
+            "preview-url": "http://localhost:4321",
+            "ai-project-brief": null,
+            "component-settings": {
+                "frontend/apps/public-site/src/pages/index.astro:::Temp": {
+                    "route": null
+                },
+                "frontend/apps/public-site/astro.config.mjs:::Temp": {
+                    "route": "/",
+                    "black-box": true
+                }
+            },
+            "app-routes": {
+                "routes": [
+                    "/",
+                    "/#features",
+                    "/#pricing",
+                    "/#security",
+                    "/Builder",
+                    "/DashboardPage",
+                    "/FormFillerPage",
+                    "/HomePage",
+                    "/NodePage",
+                    "/ProjectDashboardPage",
+                    "/ProjectSurveysPage",
+                    "/ProjectsPage",
+                    "/PublicSurveyBrowsePage",
+                    "/QuizTakerPage",
+                    "/SubmissionsPage",
+                    "/SurveyEditorPage",
+                    "/SurveysPage",
+                    "/TakeSurveyPage",
+                    "/UITestPage",
+                    "/docs/introduction",
+                    "/scroll-test"
+                ],
+                "current_route": "/#features"
+            },
+            "urls": {
+                "pinyfakepage.html": {
+                    "open-page-views": [
+                        {
+                            "w": 472.99,
+                            "h": 0
+                        }
+                    ]
+                }
+            }
+        },
     }
 }

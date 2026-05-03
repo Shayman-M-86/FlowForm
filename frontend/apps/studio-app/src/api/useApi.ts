@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
+import { isAuthBypassEnabled } from '@/auth/testing'
 import * as authApi from './auth'
 import * as client from './client'
 import type { ApiExecutor, BootstrapUserOut } from './types'
@@ -13,6 +14,8 @@ export function useApi(): Api {
   const { getAccessTokenSilently } = useAuth0()
 
   const getAuthHeaders = useCallback(async (): Promise<HeadersInit> => {
+    if (isAuthBypassEnabled) return {}
+
     const token = await getAccessTokenSilently({
       authorizationParams: { audience: import.meta.env.VITE_AUTH0_AUDIENCE as string },
     })

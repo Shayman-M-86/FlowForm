@@ -28,6 +28,20 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
     </nav>
 
     <div class="site-header__actions">
+      <button
+        type="button"
+        class="site-header__nav-dropdown-button"
+        data-nav-toggle
+        aria-label="Toggle navigation menu"
+        aria-controls="site-header-mobile-nav"
+        aria-expanded="false"
+      >
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path class="site-header__nav-icon-menu" d="M4 6h16M4 12h16M4 18h16" />
+          <path class="site-header__nav-icon-close" d="M6 6l12 12M18 6 6 18" />
+        </svg>
+      </button>
+
       <a
         href={GITHUB_URL}
         target="_blank"
@@ -62,6 +76,12 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
 
   </div>
 </header>
+
+<nav id="site-header-mobile-nav" class="site-header__nav-dropdown-menu" data-mobile-nav aria-label="Primary" hidden>
+  {PUBLIC_NAV_LINKS.map((link: { href: string; label: string }) => (
+    <a href={link.href} class="site-header__nav-dropdown-link">{link.label}</a>
+  ))}
+</nav>
 
 <script is:inline>
   (() => {
@@ -102,11 +122,39 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
       });
     };
 
+    const initHeaderMobileNav = () => {
+      const button = document.querySelector('[data-nav-toggle]');
+      const menu = document.querySelector('[data-mobile-nav]');
+      if (!button || !menu || button.dataset.bound === 'true') return;
+
+      button.dataset.bound = 'true';
+
+      const setOpen = (isOpen) => {
+        button.setAttribute('aria-expanded', String(isOpen));
+        menu.hidden = !isOpen;
+      };
+
+      button.addEventListener('click', () => {
+        setOpen(button.getAttribute('aria-expanded') !== 'true');
+      });
+
+      menu.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', () => setOpen(false));
+      });
+    };
+
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initHeaderThemeToggle, { once: true });
+      document.addEventListener('DOMContentLoaded', () => {
+        initHeaderThemeToggle();
+        initHeaderMobileNav();
+      }, { once: true });
     } else {
       initHeaderThemeToggle();
+      initHeaderMobileNav();
     }
-    document.addEventListener('astro:page-load', initHeaderThemeToggle);
+    document.addEventListener('astro:page-load', () => {
+      initHeaderThemeToggle();
+      initHeaderMobileNav();
+    });
   })();
 </script>

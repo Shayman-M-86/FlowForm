@@ -61,7 +61,8 @@ export function ProjectsPage() {
             params={{ slug: project.slug }}
             className="block no-underline"
           >
-            <Card className="hover:border-ring/60 transition-colors cursor-pointer">
+            <Card className="hover:border-ring/60 transition-colors cursor-pointer"
+            size='md'>
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="font-semibold text-foreground">{project.name}</p>

@@ -66,7 +66,7 @@ function TestCard({
   return (
     <Card size="md">
       <CardStack gap="sm">
-        {title ? <h3 className="section-label">{title}</h3> : null}
+        {title ? <h3 className="m-0 text-[0.9rem] font-semibold tracking-[0.04em] uppercase text-(--color-accent-foreground)">{title}</h3> : null}
         {children}
       </CardStack>
     </Card>

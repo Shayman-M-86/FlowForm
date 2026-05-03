@@ -4,12 +4,19 @@ import '../styles/global.css';
 export interface Props {
   title?: string;
   description?: string;
+  canonicalPath?: string;
 }
 
+const SITE_URL = 'https://flow-form.com.au';
+
 const {
-  title = 'FlowForm — Easy Form & Survey Builder',
-  description = 'FlowForm is a secure, privacy-first form and survey builder. Build beautiful forms in minutes.',
+  title = 'FlowForm | Build Forms and Surveys',
+  description = 'FlowForm is a form and survey builder for creating, sharing, and managing online forms. Five question types, visual logic, and privacy by design.',
+  canonicalPath = Astro.url.pathname,
 } = Astro.props;
+
+const canonicalURL = new URL(canonicalPath, SITE_URL).href;
+const ogImage = `${SITE_URL}/FlowForm_logo.png`;
 ---
 
 <!doctype html>
@@ -19,7 +26,22 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content={description} />
     <title>{title}</title>
+    <link rel="canonical" href={canonicalURL} />
     <link rel="icon" type="image/webp" href="/FlowForm_logo.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:site_name" content="FlowForm" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
 
     <!-- theme-color: iOS reads these automatically based on OS mode.
          No JS override needed — media-query tags update instantly. -->

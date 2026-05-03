@@ -2,8 +2,10 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 import starlight from '@astrojs/starlight';
+import PinyAstro from '@pinegrow/piny-astro';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import sitemap from '@astrojs/sitemap';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const stylesSrc = path.resolve(__dirname, '../../packages/styles/src');
@@ -48,6 +50,8 @@ export default defineConfig({
       customCss: ['./src/styles/starlight-overrides.css'],
     }),
     react(),
+    PinyAstro(),
+    sitemap(),
   ],
   vite: {
     plugins: [tailwindcss()],
