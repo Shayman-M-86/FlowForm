@@ -3,7 +3,7 @@ import "./styles/index.css";
 export type { Theme } from "./components/ui/ThemeProvider";
 export { ThemeProvider, useTheme } from "./components/ui/ThemeProvider";
 
-export type { ControlSize, TextareaSize, LayoutGap } from "./lib/sizes.ts";
+export type { ControlSize, TextareaSize, LayoutGap } from "./lib/sizes";
 export {
   controlSizeClasses,
   badgeSizeClasses,
@@ -13,9 +13,9 @@ export {
   textareaSizeClasses,
   textareaMinHeights,
   layoutGapClasses,
-} from "./lib/sizes.ts";
+} from "./lib/sizes";
 
-export type { InputVariant, FocusMode } from "./lib/formFieldStyles.ts";
+export type { InputVariant, FocusMode } from "./lib/formFieldStyles";
 export {
   formFieldClass,
   formLabelClass,
@@ -25,15 +25,15 @@ export {
   getSurfaceClassName,
   getInputControlClassName,
   getTextareaShellClassName,
-} from "./lib/formFieldStyles.ts";
+} from "./lib/formFieldStyles";
 
-export type { StepperSize, StepperVariant } from "./lib/stepperStyles.ts";
+export type { StepperSize, StepperVariant } from "./lib/stepperStyles";
 export {
   stepperShellClass,
   stepperButtonClass,
   stepperValueClass,
   stepperInputClass,
-} from "./lib/stepperStyles.ts";
+} from "./lib/stepperStyles";
 
 export { Button } from "./components/ui/Button";
 export { Card, CardRow, CardStack } from "./components/ui/Card";

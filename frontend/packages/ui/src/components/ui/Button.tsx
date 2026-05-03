@@ -1,6 +1,6 @@
 import { type ButtonHTMLAttributes, type ReactNode } from "react";
-import { cn } from "../../lib/utils.ts";
-import { controlSizeClasses, type ControlSize } from "../../lib/sizes.ts";
+import { cn } from "../../lib/utils";
+import { controlSizeClasses, type ControlSize } from "../../lib/sizes";
 
 type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
 type ButtonBorderStyle = "solid" | "dotted";

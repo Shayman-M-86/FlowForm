@@ -1,5 +1,5 @@
-import { cn } from "../../lib/utils.ts";
-import { formFieldClass, formHintClass } from "../../lib/formFieldStyles.ts";
+import { cn } from "../../lib/utils";
+import { formFieldClass, formHintClass } from "../../lib/formFieldStyles";
 
 interface ToggleProps {
   label: string;

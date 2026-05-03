@@ -160,3 +160,36 @@ jobs:
       - name: Teardown
         if: always()
         run: docker compose -f "$COMPOSE_FILE" down -v --remove-orphans
+
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    needs: security
+
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Clear Astro build cache
+        run: rm -rf apps/public-site/node_modules/.astro
+
+      - name: Build public site
+        run: npm run build:site
