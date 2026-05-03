@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
-import { cn } from "../../lib/utils";
-import { cardPaddingClasses, layoutGapClasses, type LayoutGap } from "../../lib/sizes";
+import { cn } from "../../lib/utils.ts";
+import { cardPaddingClasses, layoutGapClasses, type LayoutGap } from "../../lib/sizes.ts";
 
 type CardSize = "xs" | "sm" | "md" | "lg" | "xl";
 type CardTone = "default" | "muted" | "ghost";

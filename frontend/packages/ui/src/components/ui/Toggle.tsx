@@ -1,5 +1,5 @@
-import { cn } from "../../lib/utils";
-import { formFieldClass, formHintClass } from "../../lib/formFieldStyles";
+import { cn } from "../../lib/utils.ts";
+import { formFieldClass, formHintClass } from "../../lib/formFieldStyles.ts";
 
 interface ToggleProps {
   label: string;
@@ -39,7 +39,7 @@ export function Toggle({ label, checked, onChange, disabled, hint }: ToggleProps
         <span className="text-sm text-foreground">{label}</span>
       </label>
 
-      {hint ? <p className={cn(formHintClass, "ml-[54px]")}>{hint}</p> : null}
+      {hint ? <p className={cn(formHintClass, "ml-54px")}>{hint}</p> : null}
     </div>
   );
 }

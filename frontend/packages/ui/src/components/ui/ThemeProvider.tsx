@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { isBrowser } from "../../lib/utils";
+import { isBrowser } from "../../lib/utils.ts";
 
 export type Theme = "light" | "dark";
 

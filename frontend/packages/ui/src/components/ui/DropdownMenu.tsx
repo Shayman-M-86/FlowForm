@@ -9,8 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { cn, isBrowser } from "../../lib/utils";
-import { Button } from "./Button";
+import { cn, isBrowser } from "../../lib/utils.ts";
+import { Button } from "./Button.tsx";
 
 export interface DropdownMenuAction {
   key: string;
