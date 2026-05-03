@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://flow-form.com.au/sitemap-index.xml

@@ -5,6 +5,7 @@ from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.schema.api.requests.auth import BootstrapUserRequest
 from app.schema.api.responses.auth import BootstrapUserOut, CurrentUserOut
+from app.schema.api.responses.projects import ProjectOut
 from app.services.auth import AuthService
 
 auth_bp = Blueprint("auth_v1", __name__)
@@ -28,5 +29,6 @@ def bootstrap_user():
     response = BootstrapUserOut(
         created=result.created,
         user=CurrentUserOut.model_validate(result.user),
+        default_project=ProjectOut.model_validate(result.default_project) if result.default_project else None,
     )
     return response.model_dump(mode="json"), 201 if result.created else 200

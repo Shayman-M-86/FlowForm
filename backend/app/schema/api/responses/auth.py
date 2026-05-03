@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
+from app.schema.api.responses.projects import ProjectOut
+
 
 class CurrentUserOut(BaseModel):
     """API response shape for a bootstrapped user."""
@@ -17,3 +19,4 @@ class BootstrapUserOut(BaseModel):
 
     created: bool
     user: CurrentUserOut
+    default_project: ProjectOut | None = None

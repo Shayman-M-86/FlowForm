@@ -4,6 +4,7 @@ import { useOptionDrag } from "./useOptionDrag";
 import { QUESTION_MAX, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
 import {
   NodePillTopbar,
+  NodePillIdField,
   NodePillQuestionField,
   NodePillCharCount,
   NodePillFieldHead,
@@ -346,9 +347,6 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
     <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`} aria-label="Matching question">
       <NodePillTopbar
         family="Matching"
-        tagValue={tagValue}
-        onTagChange={setTagValue}
-        idError={idError}
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
@@ -363,6 +361,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
           titleValue={titleValue}
           onTitleChange={setTitleValue}
           showTitleEdit={true}
+          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
         />
 
         <div className={nodePillFieldClass}>

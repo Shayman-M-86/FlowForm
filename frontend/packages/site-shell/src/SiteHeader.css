@@ -2,7 +2,7 @@
 @reference "@flowform/styles";
 
 .site-header {
-  @apply fixed inset-x-0 top-0 z-50 border-b border-border;
+  @apply fixed inset-x-0 top-0 z-50;
   height: calc(env(safe-area-inset-top) + 56px);
   padding-top: env(safe-area-inset-top);
   background: linear-gradient(
@@ -13,12 +13,13 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   line-height: normal;
+  box-shadow: var(--topbar-shadow);
 }
 
 
 
 .site-header__inner {
-  @apply flex items-center justify-between gap-4 mx-auto px-6;
+  @apply flex flex-wrap items-center justify-between gap-x-4 mx-auto px-6;
   max-width: 1100px;
   min-height: 56px;
 }
@@ -63,10 +64,10 @@
 
 /* Ghost button (sm) — matches Button variant="ghost" size="sm" */
 .site-header__nav-link {
-  @apply cursor-pointer border border-transparent bg-transparent font-semibold text-accent-foreground
+  @apply cursor-pointer bg-transparent font-semibold text-accent-foreground
          shadow-none rounded-sm no-underline
          active:scale-95 active:opacity-80
-         hover:border-ring/20 hover:bg-muted hover:text-foreground;
+         hover:bg-muted hover:text-foreground;
   /* size="sm": min-h-[34px] px-3 text-[0.86rem] leading-[1.2] */
   @apply inline-flex items-center min-h-[34px] px-3 text-[0.86rem] leading-[1.2];
   transition: color 0.15s, background 0.15s, border-color 0.15s;
@@ -77,12 +78,56 @@
   @apply border-border/80 bg-input text-secondary-foreground shadow-sm;
 }
 
+.site-header__nav-dropdown-button {
+  @apply hidden cursor-pointer select-none bg-transparent font-semibold text-accent-foreground
+         shadow-none rounded-sm no-underline list-none
+         items-center justify-center min-h-[34px] text-lg leading-[1.2]
+         hover:bg-muted hover:text-foreground
+         active:scale-95 active:opacity-80;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.site-header__nav-icon-close {
+  opacity: 0;
+}
+
+.site-header__nav-dropdown-button[aria-expanded="true"] .site-header__nav-icon-menu {
+  opacity: 0;
+}
+
+.site-header__nav-dropdown-button[aria-expanded="true"] .site-header__nav-icon-close {
+  opacity: 1;
+}
+
+.site-header__nav-dropdown-button path {
+  transition: opacity 0.15s;
+}
+
+.site-header__nav-dropdown-menu {
+  @apply fixed inset-x-0 z-40 flex flex-col gap-1 px-4 py-3 shadow-md;
+  top: calc(env(safe-area-inset-top) + 56px);
+  background: rgb(from var(--popover) r g b / 0.68);
+  backdrop-filter: saturate(100%) blur(6px);
+  -webkit-backdrop-filter: saturate(100%) blur(6px);
+}
+
+.site-header__nav-dropdown-link {
+  @apply cursor-pointer rounded-sm px-4 py-4 text-xl font-semibold leading-[1.2]
+         text-accent-foreground no-underline
+         hover:bg-muted hover:text-foreground
+         active:opacity-80;
+  transition: color 0.15s, background 0.15s;
+}
+
 /* Icon button — 34×34, same border/bg as secondary but no text, square */
 .site-header__icon-link,
 .site-header__theme-toggle {
-  @apply cursor-pointer border border-border/80 bg-input text-muted-foreground rounded-sm
+  @apply cursor-pointer  text-muted-foreground rounded-sm
          flex items-center justify-center shrink-0 no-underline
-         hover:border-ring/80 hover:bg-hover-highlight hover:text-foreground
+         hover:bg-hover-highlight hover:text-foreground
          active:scale-95 active:opacity-80;
   width: 34px;
   height: 34px;
@@ -109,6 +154,26 @@
   transition: opacity 0.15s, background 0.15s;
 }
 
+/* User avatar button — circular, replaces the sign-out CTA when authenticated */
+.site-header__avatar-btn {
+  @apply cursor-pointer shrink-0 rounded-full overflow-hidden border-0
+         flex items-center justify-center bg-transparent p-0
+         w-[38px] h-[38px]
+         hover:opacity-80 active:scale-95 active:opacity-60
+         transition-[opacity,transform] duration-150;
+}
+
+.site-header__avatar-img {
+  @apply block w-full h-full object-cover;
+}
+
+/* Fallback when no avatar image is available — shows initials */
+.site-header__avatar-initials {
+  @apply w-full h-full flex items-center justify-center select-none
+         bg-primary text-primary-foreground font-semibold
+         text-[0.78rem] tracking-[0.01em];
+}
+
 @media (max-width: 780px) {
   .site-header__inner {
     @apply px-4 gap-2;
@@ -125,13 +190,24 @@
     @apply hidden;
   }
 }
+@media (max-width: 510px) {
+  .site-header__theme-toggle {
+    @apply hidden;
+  }
+}
 
-@media (max-width: 490px) {
-  .site-header__wordmark {
+@media (max-width: 475px) {
+  .site-header__nav {
     @apply hidden;
   }
 
-  .site-header__actions {
-    @apply gap-1;
+  .site-header__nav-dropdown-button {
+    @apply inline-flex;
+  }
+}
+
+@media (min-width: 476px) {
+  .site-header__nav-dropdown-menu {
+    @apply hidden;
   }
 }

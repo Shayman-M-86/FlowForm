@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 
+from app.schema.orm.core.project import Project
 from app.schema.orm.core.response_subject_mapping import ResponseSubjectMapping
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
@@ -61,3 +64,4 @@ class BootstrapCurrentUserResult:
 
     user: User
     created: bool
+    default_project: Project | None = None

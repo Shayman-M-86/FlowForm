@@ -1,1 +1,402 @@
-@import "@flowform/styles/components.css";
+@reference "tailwindcss";
+@reference "@flowform/styles";
+
+@layer components {
+  /* Form text */
+  .ui-field {
+    @apply flex flex-col gap-1.5;
+  }
+
+  .ui-label {
+    @apply text-[0.82rem] font-medium text-muted-foreground;
+  }
+
+  .ui-hint {
+    @apply text-[0.8rem] text-muted-foreground;
+  }
+
+  .ui-error {
+    @apply text-[0.8rem] text-destructive;
+  }
+
+  /* Shared control/surface */
+  .ui-control-base,
+  .ui-surface {
+    @apply w-full transition-colors;
+  }
+
+  .ui-control-base {
+    @apply outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .ui-surface {
+    @apply text-foreground;
+  }
+
+  /* Surface variants */
+  .ui-surface-secondary,
+  .ui-surface-quiet {
+    @apply border border-border;
+  }
+
+  .ui-surface-secondary {
+    @apply bg-input;
+  }
+
+  .ui-surface-ghost {
+    @apply border border-transparent bg-transparent;
+  }
+
+  .ui-surface-quiet {
+    @apply bg-transparent;
+  }
+
+  .ui-surface-secondary-focus {
+    @apply focus:border-accent focus:bg-secondary;
+  }
+
+  .ui-surface-secondary-focus-within {
+    @apply focus-within:border-accent focus-within:bg-secondary;
+  }
+
+  .ui-surface-ghost-focus {
+    @apply focus:border-transparent focus:bg-muted;
+  }
+
+  .ui-surface-ghost-focus-within {
+    @apply focus-within:border-transparent focus-within:bg-muted;
+  }
+
+  .ui-surface-quiet-focus {
+    @apply focus:border-ring/80 focus:bg-muted read-only:border-border read-only:bg-transparent read-only:text-foreground;
+  }
+
+  .ui-surface-quiet-focus-within {
+    @apply focus-within:border-ring/80 focus-within:bg-muted read-only:border-border read-only:bg-transparent read-only:text-foreground;
+  }
+
+  /* Control sizes */
+  .ui-control-xxs {
+    @apply min-h-[26px] px-2 text-[0.75rem] leading-none;
+  }
+
+  .ui-control-xs {
+    @apply min-h-[30px] px-2.5 text-[0.8rem] leading-none;
+  }
+
+  .ui-control-sm {
+    @apply min-h-[34px] px-3 text-[0.86rem] leading-[1.2];
+  }
+
+  .ui-control-md {
+    @apply min-h-10 px-4 text-sm leading-normal;
+  }
+
+  .ui-control-lg {
+    @apply min-h-11 px-5 text-base leading-normal;
+  }
+
+  .ui-control-xl {
+    @apply min-h-12 px-6 text-[1.05rem] leading-normal;
+  }
+
+  /* Badge sizes */
+  .ui-badge-xxs {
+    @apply px-1.5 py-0.5 text-[0.65rem] leading-none;
+  }
+
+  .ui-badge-xs {
+    @apply px-2 py-1 text-[0.72rem] leading-none;
+  }
+
+  .ui-badge-sm {
+    @apply px-2.5 py-1 text-[0.8rem] leading-none;
+  }
+
+  .ui-badge-md {
+    @apply px-3 py-1.5 text-xs leading-none;
+  }
+
+  .ui-badge-lg {
+    @apply px-3.5 py-2 text-sm leading-none;
+  }
+
+  .ui-badge-xl {
+    @apply px-4 py-2.5 text-sm leading-none;
+  }
+
+  /* Textareas */
+  .ui-textarea-body-sm,
+  .ui-textarea-sm {
+    @apply px-3 py-2 text-[0.86rem] leading-6;
+  }
+
+  .ui-textarea-body-md,
+  .ui-textarea-md {
+    @apply px-4 py-3 text-sm leading-6;
+  }
+
+  .ui-textarea-body-lg,
+  .ui-textarea-lg {
+    @apply px-4 py-3 text-base leading-7;
+  }
+
+  .ui-textarea-sm {
+    @apply min-h-[88px] max-h-[88px];
+  }
+
+  .ui-textarea-md {
+    @apply min-h-[120px] max-h-[120px];
+  }
+
+  .ui-textarea-lg {
+    @apply min-h-[168px] max-h-[168px];
+  }
+
+  /* Expandable textarea */
+  .ui-expandable-shell {
+    @apply flex w-full items-stretch overflow-hidden rounded-2xl border border-border bg-input text-foreground transition-colors;
+  }
+
+  .ui-expandable-shell--interactive {
+    @apply hover:border-muted-foreground/40;
+  }
+
+  .ui-expandable-shell--selected {
+    @apply border-primary shadow-sm;
+  }
+
+  .ui-expandable-textarea {
+    @apply block w-full resize-none overflow-y-hidden border-0 bg-transparent px-4 py-3 text-base leading-6 text-foreground outline-none;
+  }
+
+  .ui-expandable-textarea--compact {
+    @apply px-3 py-2;
+  }
+
+  /* Buttons */
+  .ui-button {
+    @apply cursor-pointer border font-semibold;
+  }
+
+  .ui-button-active {
+    @apply active:scale-95 active:opacity-80;
+  }
+
+  .ui-button-disabled {
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .ui-button-primary {
+    @apply border-transparent bg-primary text-primary-foreground shadow-sm hover:bg-accent;
+  }
+
+  .ui-button-secondary {
+    @apply border-border/80 bg-input text-secondary-foreground shadow-sm hover:border-ring/80 hover:bg-hover-highlight;
+  }
+
+  .ui-button-danger {
+    @apply border-destructive/30 bg-transparent text-destructive shadow-sm hover:bg-destructive/10;
+  }
+
+  .ui-button-ghost {
+    @apply border-transparent bg-transparent text-accent-foreground shadow-none hover:border-ring/20 hover:bg-muted;
+  }
+
+  .ui-button-border-dotted {
+    @apply border-2 border-dashed;
+  }
+
+  /* Stepper */
+  .ui-stepper-shell {
+    @apply inline-flex w-fit items-center self-start border transition-colors;
+  }
+  
+  .ui-stepper-shell-primary {
+    @apply border-primary/60 bg-primary/10;
+  }
+  
+  .ui-stepper-shell-secondary {
+    @apply border-secondary/10 bg-input;
+  }
+  
+  .ui-stepper-shell-ghost {
+    @apply border-transparent bg-transparent;
+  }
+  
+  .ui-stepper-button {
+    @apply border-transparent bg-transparent p-0 shadow-none hover:bg-muted;
+  }
+  
+  .ui-stepper-value {
+    @apply select-none text-center font-medium tabular-nums text-foreground;
+  }
+  
+  .ui-stepper-input {
+    @apply w-[42px] text-center tabular-nums;
+  }
+
+  /* Floating UI */
+  .ui-icon-button {
+    @apply flex items-center justify-center rounded-sm border border-transparent bg-transparent text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground;
+  }
+
+  .ui-popover-panel {
+    @apply rounded-md border border-border bg-popover text-popover-foreground shadow-lg;
+  }
+
+  .ui-tooltip {
+    @apply pointer-events-none fixed z-[9999] -translate-x-1/2 whitespace-nowrap rounded-sm border border-border bg-popover text-popover-foreground shadow-sm transition-opacity;
+  }
+
+  /* Modal */
+  .ui-modal-backdrop {
+    @apply fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-5 backdrop-blur-[12px];
+  }
+
+  .ui-modal-panel {
+    @apply flex max-h-[min(90vh,760px)] w-full min-w-0 flex-col rounded-2xl border border-border bg-card shadow-lg;
+  }
+
+  .ui-modal-header {
+    @apply flex items-center justify-between gap-3 border-b border-border px-5 pb-3 pt-4;
+  }
+
+  .ui-modal-body {
+    @apply flex flex-1 flex-col gap-4 overflow-y-auto p-5;
+  }
+
+  .ui-modal-footer {
+    @apply flex justify-end gap-2.5 border-t border-border px-5 pb-5 pt-3.5;
+  }
+
+  /* Toggle */
+  .ui-toggle-track {
+    @apply relative h-6 w-[42px] shrink-0 rounded-full border border-border transition-colors;
+  }
+
+  .ui-toggle-thumb {
+    @apply absolute left-0.5 top-0.5 h-[18px] w-[18px] rounded-full transition-transform;
+  }
+
+  /* Card tones */
+    .ui-card-default {
+    @apply border-border/80 bg-card text-card-foreground;
+    }
+
+    .ui-card-muted {
+    @apply border-border/80 bg-muted text-foreground;
+    }
+
+    .ui-card-ghost {
+    @apply border-transparent bg-transparent text-foreground shadow-none;
+    }
+
+    .ui-card {
+        @apply rounded-xl border transition-colors;
+      }
+
+      .ui-expandable-selection-button {
+        @apply flex w-14 shrink-0 items-center justify-center rounded-l-full;
+      }
+      
+      .ui-expandable-indicator {
+        @apply block h-4 w-4 rounded-full border transition-colors;
+      }
+
+      .ui-stepper-segment {
+        @apply inline-flex items-center gap-0.5 [&+&]:border-l [&+&]:border-border;
+      }
+
+      .ui-spinner {
+        @apply inline-block shrink-0 animate-spin rounded-full border-2 border-border border-t-accent;
+      }
+
+      .ui-badge {
+        @apply inline-flex items-center whitespace-nowrap rounded-md border font-medium leading-none;
+      }
+      
+      .ui-badge-default {
+        @apply border-primary/30 bg-primary/20 text-primary-saturated;
+      }
+      
+      .ui-badge-muted {
+        @apply border-border bg-muted text-muted-foreground;
+      }
+      
+      .ui-badge-accent {
+        @apply border-accent/30 bg-accent/13 text-accent;
+      }
+      
+      .ui-badge-danger {
+        @apply border-destructive/25 bg-destructive/10 text-destructive;
+      }
+      
+      .ui-badge-success {
+        @apply border-success/25 bg-success/10 text-success;
+      }
+      
+      .ui-badge-warning {
+        @apply border-warning/25 bg-warning/10 text-warning;
+      }
+
+      .ui-dropdown-action-button {
+        @apply w-full justify-start text-left max-[640px]:px-4 max-[640px]:py-3 max-[640px]:text-base;
+      }
+      
+      .ui-dropdown-panel {
+        @apply fixed z-[200] rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none;
+      }
+      
+      .ui-dropdown-panel-fullscreen {
+        @apply h-dvh max-h-none w-full min-w-0 overflow-y-auto rounded-none p-2 pt-[calc(0.5rem+env(safe-area-inset-top))] pb-[calc(0.5rem+env(safe-area-inset-bottom))];
+      }
+      
+      .ui-dropdown-close-row {
+        @apply mb-2 flex justify-end;
+      }
+      
+      .ui-dropdown-close-button {
+        @apply inline-flex h-8 w-8 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted;
+      }
+      
+      .ui-dropdown-separator {
+        @apply mx-2 my-1 h-px bg-border;
+      }
+      
+      .ui-dropdown-section-label {
+        @apply px-3 pb-1 pt-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.05em] text-muted-foreground;
+      }
+      
+      .ui-dropdown-actions {
+        @apply flex flex-col gap-1;
+      }
+      
+      .ui-dropdown-overlay {
+        @apply fixed inset-0 z-[199] block bg-black/40 backdrop-blur;
+      }
+
+      .ui-toggle-label {
+        @apply flex cursor-pointer select-none items-center gap-3;
+      }
+      
+      .ui-toggle-input {
+        @apply sr-only;
+      }
+
+      .ui-toggle-track {
+        @apply relative h-6 w-[42px] shrink-0 rounded-full border transition-colors;
+      }
+      .ui-toggle-input:focus-visible ~ .ui-toggle-track {
+        @apply ring-2 ring-accent/50;
+      }
+      
+      .ui-toggle-thumb {
+        @apply absolute left-0.5 top-0.5 h-[18px] w-[18px] rounded-full transition-transform;
+      }
+
+      .ui-spinner {
+        @apply inline-block shrink-0 animate-spin rounded-full border-2 border-border border-t-accent;
+      }
+
+}

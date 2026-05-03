@@ -1,0 +1,31 @@
+{
+    "piny.project_settings": {
+        "open-pages": [
+            "pinyfakepage.html"
+        ],
+        "app-routes": {
+            "routes": [
+                "/",
+                "/projects",
+                "/projects/customer-research",
+                "/surveys"
+            ],
+            "current_route": "/projects/customer-research"
+        },
+        "urls": {
+            "pinyfakepage.html": {
+                "open-page-views": [
+                    {
+                        "w": 1199,
+                        "h": 0
+                    }
+                ]
+            }
+        },
+        "component-settings": {
+            "src/pages/ProjectDashboardPage.tsx:::ProjectDashboardPage": {
+                "route": "/projects"
+            }
+        }
+    }
+}

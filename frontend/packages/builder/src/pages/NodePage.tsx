@@ -15,6 +15,7 @@ import { savePreviewSurvey } from "../components/form_filler/previewStorage";
 import type { QuestionContent, RuleContent, SurveyNode } from "../components/node/questionTypes";
 import { serializeSurveyEntries, type SurveyEntry } from "../components/node/surveySerialize";
 import { incrementQuestionId } from "../components/node/NodePillUtils";
+import { NodePillMobileControlsProvider } from "../components/node/NodePillShell";
 
 const DEBUG_SHOW_JSON = false;
 const NODE_PAGE_STORAGE_KEY = "flowform.node-page.schema";
@@ -751,7 +752,7 @@ function QuestionRow({
     >
       <div className="node-page__question-row relative flex items-start gap-2 max-[640px]:flex-col">
         <Button
-          className="node-page__question-collapse-btn absolute left-[calc(-1*var(--node-page-controls-gutter)+10px)] top-[14px] z-[1] min-h-7 min-w-7 p-0 text-[0.8rem] text-[var(--text-soft)] max-[640px]:left-0"
+          className="node-page__question-collapse-btn absolute left-[calc(-1*var(--node-page-controls-gutter)+10px)] top-[14px] z-[1] min-h-7 min-w-7 p-0 text-[0.8rem] text-[var(--text-soft)] max-[640px]:hidden"
           type="button"
           variant="ghost"
           size="xs"
@@ -763,11 +764,53 @@ function QuestionRow({
         </Button>
 
         <div className="node-page__question-container relative flex min-w-0 w-full flex-1 flex-col gap-3">
-          {children}
+          <NodePillMobileControlsProvider value={{
+            leading: (
+              <Button
+                className="min-h-7 min-w-7 p-0 text-[0.8rem] text-(--text-soft)"
+                type="button"
+                variant="ghost"
+                size="xs"
+                aria-label={isExpanded ? "Collapse question" : "Expand question"}
+                aria-expanded={isExpanded}
+                onClick={onToggleCollapse}
+              >
+                {isExpanded ? "▾" : "▸"}
+              </Button>
+            ),
+            trailing: isEditing ? (
+              <>
+                <Button
+                  className="min-h-[30px] min-w-[30px] p-0"
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={index === 0}
+                  aria-label="Move question up"
+                  onClick={() => onMoveQuestion(question.id, "up")}
+                >
+                  ↑
+                </Button>
+                <Button
+                  className="min-h-[30px] min-w-[30px] p-0"
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={isLast}
+                  aria-label="Move question down"
+                  onClick={() => onMoveQuestion(question.id, "down")}
+                >
+                  ↓
+                </Button>
+              </>
+            ) : undefined,
+          }}>
+            {children}
+          </NodePillMobileControlsProvider>
         </div>
 
         {isExpanded && isEditing && (
-          <div className="node-page__question-move-controls absolute right-[-52px] top-3 inline-flex flex-col gap-2 max-[640px]:static max-[640px]:mt-2 max-[640px]:self-end max-[640px]:flex-row" aria-label="Move question">
+          <div className="node-page__question-move-controls absolute right-[-52px] top-3 inline-flex flex-col gap-2 max-[640px]:hidden" aria-label="Move question">
             <Button
               className="min-w-[34px] p-0"
               type="button"

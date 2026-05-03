@@ -269,6 +269,47 @@ Like ExpandableTextArea but with a circular select-indicator button on the left.
 
 ---
 
+## DropdownMenu
+
+Opens below the trigger on desktop. On mobile (≤ 640px) it becomes a full-screen bottom sheet with a backdrop.
+
+```tsx
+const triggerRef = useRef<HTMLButtonElement>(null)
+const [open, setOpen] = useState(false)
+
+<button ref={triggerRef} onClick={() => setOpen(o => !o)}>Open</button>
+
+<DropdownMenu
+  open={boolean}
+  onClose={() => void}
+  trigger={triggerRef}              // ref to the trigger element — used for positioning
+  sections={DropdownMenuSection[]}
+  align?="left | right"            // default: "right" — panel aligns to right edge of trigger
+/>
+```
+
+**`DropdownMenuSection`**
+
+```ts
+{ label?: string, items: DropdownMenuItem[] }
+```
+
+**`DropdownMenuItem`**
+
+```ts
+{
+  key: string
+  label: ReactNode
+  icon?: ReactNode
+  variant?: "default" | "danger"   // danger renders in destructive colour
+  onSelect: () => void             // called before onClose
+}
+```
+
+Closes on: Escape key, outside click, item selection.
+
+---
+
 ## Exported style helpers (advanced use)
 
 Use these when composing custom inputs that need to match the standard control look.

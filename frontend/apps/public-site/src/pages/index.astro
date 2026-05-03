@@ -1,198 +1,101 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import SiteHeader from '../components/SiteHeader.astro';
-import { NodePageIsland } from '../components/NodePageIsland';
-import AnimatedApng from '../components/AnimatedApng.astro';
+import Layout from "../layouts/Layout.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import { NodePageIsland } from "../components/NodePageIsland";
+import AnimatedApng from "../components/AnimatedApng.astro";
 ---
 
-<Layout title="FlowForm — Adaptive Forms, No Code">
+<Layout
+  title="FlowForm | Build Forms and Surveys"
+  description="Build branching surveys, scored quizzes, and research questionnaires in minutes. Five question types, visual logic rules, and privacy by design — free during beta."
+>
   <SiteHeader />
 
-  <main style="padding-top: calc(56px + env(safe-area-inset-top));">
-
+  <main class="main-safe-top">
     <!-- ─── Hero ──────────────────────────────────────────────── -->
-    <section
-      id="hero"
-      style="
-        text-align: center;
-        padding: 90px 24px 80px;
-        background: linear-gradient(
-          160deg,
-          var(--background) 0%,
-          rgb(110 164 226 / 0.06) 50%,
-          var(--background) 100%
-        );
-      "
-    >
-      <div style="max-width: 720px; margin: 0 auto;">
-        <div
-          style="
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            letter-spacing: 0.07em;
-            text-transform: uppercase;
-            color: var(--accent);
-            background: rgb(110 164 226 / 0.1);
-            border: 1px solid rgb(110 164 226 / 0.22);
-            padding: 4px 12px;
-            border-radius: 999px;
-            margin-bottom: 24px;
-          "
-        >
-          <span style="width:6px;height:6px;border-radius:999px;background:var(--accent);display:inline-block;"></span>
+    <section id="hero" class="bg-hero-gradient px-6 pb-20 pt-24 text-center">
+      <div class="mx-auto max-w-3xl">
+        <div class="mb-6 inline-flex items-center gap-1.5 rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-accent">
+          <span class="inline-block size-1.5 rounded-full bg-accent"></span>
           Now in Beta · Free to use
         </div>
 
-        <h1
-          style="
-            font-size: clamp(2.2rem, 5vw, 3.5rem);
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            line-height: 1.1;
-            color: var(--foreground);
-            margin: 0 0 20px;
-          "
-        >
+        <h1 class="mb-5 text-4xl font-extrabold leading-tight tracking-tight text-foreground md:text-6xl">
           FlowForm<br />
-          <span style="color: var(--primary);">Forms that adapt to every answer.</span>
+          <span class="text-primary">Forms that adapt to every answer.</span>
         </h1>
 
-        <p
-          style="
-            font-size: clamp(1rem, 2.2vw, 1.2rem);
-            color: var(--muted-foreground);
-            line-height: 1.65;
-            margin: 0 auto 36px;
-            max-width: 560px;
-          "
-        >
-          Build branching surveys, scored quizzes, and research questionnaires in your browser.
-          Five question types, visual rules, and scoring logic — all from a clean visual interface.
+        <p class="mx-auto mb-9 max-w-xl text-base leading-relaxed text-muted-foreground md:text-xl">
+          Build branching surveys, scored quizzes, and research questionnaires
+          in your browser. Five question types, visual rules, and scoring logic
+          — all from a clean visual interface.
         </p>
 
-        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <div class="flex flex-wrap items-center justify-center gap-3">
           <a
             href="#builder"
-            style="
-              display: inline-flex;
-              align-items: center;
-              gap: 8px;
-              font-size: 0.95rem;
-              font-weight: 600;
-              color: var(--primary-foreground);
-              background: var(--primary);
-              padding: 12px 28px;
-              border-radius: var(--radius-xl);
-              text-decoration: none;
-              box-shadow: var(--app-shadow-md);
-              transition: opacity 0.15s;
-            "
+            class="inline-flex items-center gap-2 rounded-xl bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground no-underline shadow-md transition-opacity hover:opacity-90"
           >
             Start building now →
           </a>
           <a
             href="#features"
-            style="
-              display: inline-flex;
-              align-items: center;
-              gap: 8px;
-              font-size: 0.95rem;
-              font-weight: 500;
-              color: var(--foreground);
-              background: var(--card);
-              padding: 12px 28px;
-              border-radius: var(--radius-xl);
-              text-decoration: none;
-              border: 1px solid var(--border);
-              box-shadow: var(--app-shadow-sm);
-              transition: background 0.15s;
-            "
+            class="inline-flex items-center gap-2 rounded-xl bg-card px-7 py-3.5 text-sm font-semibold text-foreground no-underline shadow-sm transition-colors hover:bg-hover-highlight"
           >
             See features
           </a>
         </div>
 
         <!-- Social proof strip -->
-        <div
-          style="
-            margin-top: 52px;
-            display: flex;
-            align-items: stretch;
-            justify-content: center;
-            gap: 12px;
-            flex-wrap: wrap;
-          "
-        >
-          {[
-            { src: '/icons8-fast-48.apng.png', alt: 'Timer', label: 'Launch in minutes' },
-            { src: '/icons8-settings-48.apng.png', alt: 'Settings', label: 'Visual logic builder' },
-            { src: '/icons8-lock-48.apng.png', alt: 'Lock', label: 'Privacy by design' },
-            { src: '/icons8-verified-account-48.apng.png', alt: 'Verified', label: 'Easy to use' },
-          ].map(({ src, alt, label }) => (
-            <span style="display:flex;align-items:center;gap:7px;font-size:0.82rem;font-weight:500;color:var(--muted-foreground);">
-              <AnimatedApng src={src} alt={alt} width={20} height={20} />
-              {label}
-            </span>
-          ))}
+        <div class="mt-14 flex flex-wrap items-stretch justify-center gap-3">
+          {
+            [
+              {
+                src: "/icons8-fast-48.apng.png",
+                alt: "Timer",
+                label: "Launch in minutes",
+              },
+              {
+                src: "/icons8-settings-48.apng.png",
+                alt: "Settings",
+                label: "Visual logic builder",
+              },
+              {
+                src: "/icons8-lock-48.apng.png",
+                alt: "Lock",
+                label: "Privacy by design",
+              },
+              {
+                src: "/icons8-verified-account-48.apng.png",
+                alt: "Verified",
+                label: "Easy to use",
+              },
+            ].map(({ src, alt, label }) => (
+              <span class="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <AnimatedApng src={src} alt={alt} width={20} height={20} />
+                {label}
+              </span>
+            ))
+          }
         </div>
       </div>
     </section>
 
     <!-- ─── Builder ────────────────────────────────────────────── -->
-    <section
-      id="builder"
-      style="
-        border-top: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-        background: var(--background);
-      "
-    >
+    <section id="builder" class="border-y border-border bg-background">
       <!-- Builder label bar -->
-      <div
-        style="
-          max-width: 1080px;
-          margin: 0 auto;
-          padding: 28px 24px 0;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 12px;
-        "
-      >
+      <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-6 pt-7">
         <div>
-          <p
-            style="
-              margin: 0;
-              font-size: 0.75rem;
-              font-weight: 700;
-              letter-spacing: 0.08em;
-              text-transform: uppercase;
-              color: var(--accent);
-              margin-bottom: 4px;
-            "
-          >
+          <p class="mb-1 text-xs font-bold uppercase tracking-widest text-accent">
             Live builder
           </p>
-          <h2
-            style="
-              margin: 0;
-              font-size: clamp(1.3rem, 3vw, 1.8rem);
-              font-weight: 700;
-              letter-spacing: -0.02em;
-              color: var(--foreground);
-              border: none;
-              padding: 0;
-            "
-          >
+          <h2 class="border-none p-0 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
             Build your form, right here
           </h2>
         </div>
-        <p style="margin:0;font-size:0.88rem;color:var(--muted-foreground);max-width:420px;line-height:1.5;">
-          Everything auto-saves to your browser. Try adding a rule or rating scale.
+        <p class="max-w-md text-sm leading-normal text-muted-foreground">
+          Everything auto-saves to your browser. Try adding a rule or rating
+          scale.
         </p>
       </div>
 
@@ -209,733 +112,578 @@ import AnimatedApng from '../components/AnimatedApng.astro';
       </NodePageIsland>
     </section>
 
-
     <!-- ─── Question Types ─────────────────────────────────────── -->
-    <section
-      id="features"
-      style="
-        padding: 50px 48px 40px;
-        background: var(--background);
-        border-top: 1px solid var(--border);
-      "
-    >
-      <div style="max-width: 1400px; margin: 0 auto;">
-        <div style="margin-bottom:56px;">
-          <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);">
+    <section id="features" class="border-t border-border bg-background px-12 pb-10 pt-12">
+      <div class="mx-auto max-w-7xl">
+        <div class="mb-14">
+          <p class="mb-2.5 text-xs font-bold uppercase tracking-widest text-accent">
             Question types
           </p>
-          <h2
-            style="
-              margin:0;
-              font-size:clamp(1.6rem,3.5vw,2.4rem);
-              font-weight:800;
-              letter-spacing:-0.025em;
-              color:var(--foreground);
-              border:none;padding:0;
-            "
-          >
+          <h2 class="border-none p-0 text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
             Five building blocks. Infinite flows.
           </h2>
         </div>
 
-        <div
-          class="qt-track"
-          style="
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 24px;
-          "
-        >
-          {[
-            {
-              num: '01',
-              title: 'Multiple choice',
-              body: 'Single or multi-select, with optional numeric scores.',
-              img: '/screenshots/qt-choice.apng',
-            },
-            {
-              num: '02',
-              title: 'Matching',
-              body: 'Pair items between two columns for knowledge checks.',
-              img: '/screenshots/qt-matching.png',
-            },
-            {
-              num: '03',
-              title: 'Rating',
-              body: 'Numeric scales, sliders, or stars with configurable range.',
-              img: '/screenshots/qt-rating.png',
-            },
-            {
-              num: '04',
-              title: 'Open field',
-              body: 'Text, email, number, or date inputs for free-form answers.',
-              img: '/screenshots/qt-field.png',
-            },
-            {
-              num: '05',
-              title: 'Rules',
-              body: 'A logic node that branches the form based on previous answers.',
-              img: '/screenshots/qt-rules.png',
-            },
-          ].map(({ num, title, body, img }) => (
-            <div
-              id={`qt-${num}`}
-              class="qt-col"
-              style="
-                display: flex;
-                flex-direction: column;
-              "
-            >
-              <div
-                style="
-                  flex: 1;
-                  border-radius: 14px;
-                  overflow: hidden;
-                  background: var(--muted);
-                  min-height: 320px;
-                "
-              >
-                <img
-                  src={img}
-                  alt={title}
-                  style="width:100%;height:100%;object-fit:cover;display:block;"
-                  loading="lazy"
-                  onerror="this.style.display='none'"
-                />
+        <div class="qt-track grid grid-cols-5 gap-6">
+          {
+            [
+              {
+                num: "01",
+                title: "Multiple choice",
+                body: "Single or multi-select, with optional numeric scores.",
+                img: "/screenshots/qt-choice.apng",
+              },
+              {
+                num: "02",
+                title: "Matching",
+                body: "Pair items between two columns for knowledge checks.",
+                img: "/screenshots/qt-matching.png",
+              },
+              {
+                num: "03",
+                title: "Rating",
+                body: "Numeric scales, sliders, or stars with configurable range.",
+                img: "/screenshots/qt-rating.png",
+              },
+              {
+                num: "04",
+                title: "Open field",
+                body: "Text, email, number, or date inputs for free-form answers.",
+                img: "/screenshots/qt-field.png",
+              },
+              {
+                num: "05",
+                title: "Rules",
+                body: "A logic node that branches the form based on previous answers.",
+                img: "/screenshots/qt-rules.png",
+              },
+            ].map(({ num, title, body, img }) => (
+              <div id={`qt-${num}`} class="qt-col flex flex-col">
+                <div class="min-h-80 flex-1 overflow-hidden rounded-2xl bg-muted">
+                  <img
+                    src={img}
+                    alt={title}
+                    class="block h-full w-full object-cover"
+                    loading="lazy"
+                    onerror="this.style.display='none'"
+                  />
+                </div>
+                <div class="pt-4">
+                  <span class="mb-1.5 block text-xs font-extrabold uppercase tracking-widest text-accent">
+                    {num}
+                  </span>
+                  <h3 class="mb-1.5 text-sm font-bold leading-tight text-foreground">
+                    {title}
+                  </h3>
+                  <p class="text-sm leading-relaxed text-muted-foreground">
+                    {body}
+                  </p>
+                </div>
               </div>
-              <div style="padding-top:16px;">
-                <span
-                  style="
-                    display:block;
-                    font-size: 0.65rem;
-                    font-weight: 800;
-                    letter-spacing: 0.1em;
-                    color: var(--accent);
-                    text-transform: uppercase;
-                    margin-bottom: 6px;
-                  "
-                >{num}</span>
-                <h3
-                  style="
-                    margin: 0 0 6px;
-                    font-size: 0.92rem;
-                    font-weight: 700;
-                    color: var(--foreground);
-                    line-height: 1.3;
-                  "
-                >{title}</h3>
-                <p
-                  style="
-                    margin: 0;
-                    font-size: 0.8rem;
-                    color: var(--muted-foreground);
-                    line-height: 1.55;
-                  "
-                >{body}</p>
-              </div>
-            </div>
-          ))}
+            ))
+          }
         </div>
         <nav class="qt-dots" aria-label="Question type slides">
-          {['01', '02', '03', '04', '05'].map((num) => (
-            <a
-              href={`#qt-${num}`}
-              aria-label={`Show question type ${num}`}
-              aria-current={num === '01' ? 'true' : undefined}
-            ></a>
-          ))}
+          {
+            ["01", "02", "03", "04", "05"].map((num) => (
+              <a
+                href={`#qt-${num}`}
+                aria-label={`Show question type ${num}`}
+                aria-current={num === "01" ? "true" : undefined}
+              />
+            ))
+          }
         </nav>
       </div>
     </section>
-
 
     <!-- ─── Rules & adaptive logic ─────────────────────────────── -->
-    <section
-      id="logic"
-      style="
-        padding: 80px 24px;
-        border-top: 1px solid var(--border);
-        background: linear-gradient(
-          135deg,
-          var(--background) 0%,
-          rgb(110 164 226 / 0.04) 100%
-        );
-      "
-    >
-      <div class="logic-layout" style="max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;">
+    <section id="logic" class="bg-logic-gradient border-t border-border px-6 py-20">
+      <div class="logic-layout mx-auto grid max-w-5xl grid-cols-2 items-center gap-16">
         <div>
-          <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);">
+          <p class="mb-2.5 text-xs font-bold uppercase tracking-widest text-accent">
             Adaptive logic
           </p>
-          <h2
-            style="
-              margin:0 0 20px;
-              font-size:clamp(1.6rem,3vw,2.2rem);
-              font-weight:800;
-              letter-spacing:-0.025em;
-              color:var(--foreground);
-              border:none;padding:0;line-height:1.2;
-            "
-          >
+          <h2 class="mb-5 border-none p-0 text-3xl font-extrabold leading-tight tracking-tight text-foreground md:text-4xl">
             Your form branches.<br />Without code.
           </h2>
-          <p style="margin:0 0 28px;color:var(--muted-foreground);font-size:1rem;line-height:1.7;">
-            Add a Rules node anywhere in your flow and set conditions like <em>equals</em>, <em>contains</em>, <em>between</em>, or <em>is answered</em>. Combine them with AND / OR / NOT to skip questions, show follow-ups, or change required fields — all from the visual builder.
+          <p class="mb-7 text-base leading-loose text-muted-foreground">
+            Add a Rules node anywhere in your flow and set conditions like <em
+              >equals</em
+            >, <em>contains</em>, <em>between</em>, or <em>is answered</em>.
+            Combine them with AND / OR / NOT to skip questions, show follow-ups,
+            or change required fields — all from the visual builder.
           </p>
         </div>
 
-        <div class="logic-cards" style="display:flex;flex-direction:column;gap:14px;">
-          {[
-            { src: '/icons8-settings-48.apng.png', alt: 'Settings', label: 'Grouped AND / OR / NOT conditions', detail: 'Build nested logic trees — no code, no regex.' },
-            { src: '/icons8-goal-48.apng.png', alt: 'Target', label: 'Show, hide, require, or disable', detail: 'Rules can drive four distinct effects on any question.' },
-            { src: '/icons8-search-in-list-48.apng.png', alt: 'List', label: 'Deterministic conflict resolution', detail: 'Sort-keyed rule ordering means results are always predictable.' },
-          ].map(({ src, alt, label, detail }, index) => (
-            <div
-              id={`logic-${index + 1}`}
-              class="logic-card"
-              style="
-                display:flex;gap:16px;align-items:flex-start;
-                padding:18px 20px;
-                background:var(--card);
-                border:1px solid var(--border);
-                border-radius:14px;
-                box-shadow:var(--app-shadow-xs);
-              "
-            >
+        <div class="logic-cards flex flex-col gap-3.5">
+          {
+            [
+              {
+                src: "/icons8-settings-48.apng.png",
+                alt: "Settings",
+                label: "Grouped AND / OR / NOT conditions",
+                detail: "Build nested logic trees — no code, no regex.",
+              },
+              {
+                src: "/icons8-goal-48.apng.png",
+                alt: "Target",
+                label: "Show, hide, require, or disable",
+                detail:
+                  "Rules can drive four distinct effects on any question.",
+              },
+              {
+                src: "/icons8-search-in-list-48.apng.png",
+                alt: "List",
+                label: "Deterministic conflict resolution",
+                detail:
+                  "Sort-keyed rule ordering means results are always predictable.",
+              },
+            ].map(({ src, alt, label, detail }, index) => (
               <div
-                style="
-                  width:30px;
-                  min-width:30px;
-                  align-self:stretch;
-                  display:flex;
-                  align-items:center;
-                  justify-content:center;
-                "
+                id={`logic-${index + 1}`}
+                class="logic-card flex items-start gap-4 rounded-xl bg-card px-5 py-4 shadow-xs"
               >
-                <AnimatedApng src={src} alt={alt} width={30} height={30} />
+                <div class="flex min-w-8 self-stretch items-center justify-center">
+                  <AnimatedApng src={src} alt={alt} width={30} height={30} />
+                </div>
+                <div class="flex min-h-14 flex-col justify-center">
+                  <p class="mb-1.5 text-sm font-bold text-foreground">
+                    {label}
+                  </p>
+                  <p class="text-sm leading-relaxed text-muted-foreground">
+                    {detail}
+                  </p>
+                </div>
               </div>
-              <div style="display:flex;flex-direction:column;justify-content:center;min-height:calc(0.92rem + 6px + (0.83rem * 1.55));">
-                <p style="margin:0 0 6px;font-size:0.92rem;font-weight:700;color:var(--foreground);">
-                  {label}
-                </p>
-                <p style="margin:0;font-size:0.83rem;color:var(--muted-foreground);line-height:1.55;">
-                  {detail}
-                </p>
-              </div>
-            </div>
-          ))}
+            ))
+          }
         </div>
         <nav class="logic-dots" aria-label="Adaptive logic slides">
-          {[1, 2, 3].map((num) => (
-            <a
-              href={`#logic-${num}`}
-              aria-label={`Show adaptive logic card ${num}`}
-              aria-current={num === 1 ? 'true' : undefined}
-            ></a>
-          ))}
+          {
+            [1, 2, 3].map((num) => (
+              <a
+                href={`#logic-${num}`}
+                aria-label={`Show adaptive logic card ${num}`}
+                aria-current={num === 1 ? "true" : undefined}
+              />
+            ))
+          }
         </nav>
       </div>
     </section>
 
-
     <!-- ─── Scoring & export ───────────────────────────────────── -->
-    <section
-      id="scoring"
-      style="
-        padding: 100px 24px;
-        border-top: 1px solid var(--border);
-        background: var(--background);
-      "
-    >
-      <div style="max-width: 1080px; margin: 0 auto;">
-        <div style="text-align:center;margin-bottom:56px;">
-          <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);">
+    <section id="scoring" class="border-t border-border bg-background px-6 py-24">
+      <div class="mx-auto max-w-5xl">
+        <div class="mb-14 text-center">
+          <p class="mb-2.5 text-xs font-bold uppercase tracking-widest text-accent">
             For serious survey work
           </p>
-          <h2
-            style="
-              margin:0 0 16px;
-              font-size:clamp(1.6rem,3.5vw,2.4rem);
-              font-weight:800;
-              letter-spacing:-0.025em;
-              color:var(--foreground);
-              border:none;padding:0;
-            "
-          >
+          <h2 class="border-none p-0 text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
             Built for quizzes,<br />assessments, and research.
           </h2>
         </div>
 
-        <div
-          style="
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
-          "
-        >
-          {[
-            {
-              icon: <AnimatedApng src="/icons8-question-48.apng.png" alt="Scoring" width={36} height={36} />,
-              title: 'Scoring',
-              body: 'Score responses with multiple strategies — option-to-points, matching keys, rating values, or numeric-range buckets. Organize results into named buckets like total or risk.',
-            },
-            {
-              icon: <AnimatedApng src="/icons8-choice-48.apng.png" alt="Export" width={36} height={36} />,
-              title: 'Open export',
-              body: 'Every form serializes to a clean SurveyNode[] JSON schema. Send it to your backend, your API, or your data pipeline — no lock-in, ever.',
-            },
-          ].map(({ icon, title, body }) => (
-            <div
-              style="
-                padding: 32px;
-                background: var(--card);
-                border: 1px solid var(--border);
-                border-radius: 18px;
-                box-shadow: var(--app-shadow-sm);
-                position: relative;
-                overflow: hidden;
-              "
-            >
-              <div style="display:flex;align-items:center;gap:14px;margin:0 0 12px;">
-                {icon}
-                <h3 style="margin:0;font-size:1.15rem;font-weight:700;color:var(--foreground);line-height:1.3;">{title}</h3>
+        <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+          {
+            [
+              {
+                icon: (
+                  <AnimatedApng
+                    src="/icons8-question-48.apng.png"
+                    alt="Scoring"
+                    width={36}
+                    height={36}
+                  />
+                ),
+                title: "Scoring",
+                body: "Score responses with multiple strategies — option-to-points, matching keys, rating values, or numeric-range buckets. Organize results into named buckets like total or risk.",
+              },
+              {
+                icon: (
+                  <AnimatedApng
+                    src="/icons8-choice-48.apng.png"
+                    alt="Export"
+                    width={36}
+                    height={36}
+                  />
+                ),
+                title: "Open export",
+                body: "Every form serializes to a clean SurveyNode[] JSON schema. Send it to your backend, your API, or your data pipeline — no lock-in, ever.",
+              },
+            ].map(({ icon, title, body }) => (
+              <div class="relative overflow-hidden rounded-xl bg-card p-8 shadow-sm">
+                <div class="mb-3 flex items-center gap-3.5">
+                  {icon}
+                  <h3 class="text-lg font-bold leading-tight text-foreground">
+                    {title}
+                  </h3>
+                </div>
+                <p class="max-w-sm text-sm leading-relaxed text-muted-foreground">
+                  {body}
+                </p>
               </div>
-              <p style="margin:0;font-size:0.92rem;color:var(--muted-foreground);line-height:1.65;max-width:380px;">{body}</p>
-            </div>
-          ))}
+            ))
+          }
         </div>
       </div>
     </section>
 
-
     <!-- ─── Security ───────────────────────────────────────────── -->
-    <section
-      id="security"
-      style="
-        padding: 100px 24px;
-        background: linear-gradient(
-          135deg,
-          rgb(80 145 220 / 0.04) 0%,
-          var(--background) 60%
-        );
-        border-top: 1px solid var(--border);
-      "
-    >
-      <div class="security-layout" style="max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;">
+    <section id="security" class="bg-security-gradient border-t border-border px-6 py-24">
+      <div class="security-layout mx-auto grid max-w-5xl grid-cols-2 items-center gap-16">
         <!-- Left copy -->
         <div class="security-copy">
-          <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);">
+          <p class="mb-2.5 text-xs font-bold uppercase tracking-widest text-accent">
             Security first
           </p>
-          <h2
-            style="
-              margin:0 0 20px;
-              font-size:clamp(1.6rem,3vw,2.2rem);
-              font-weight:800;
-              letter-spacing:-0.025em;
-              color:var(--foreground);
-              border:none;padding:0;line-height:1.2;
-            "
-          >
+          <h2 class="mb-5 border-none p-0 text-3xl font-extrabold leading-tight tracking-tight text-foreground md:text-4xl">
             Your data is yours.<br />Full stop.
           </h2>
-          <p style="margin:0 0 28px;color:var(--muted-foreground);font-size:1rem;line-height:1.7;">
-            FlowForm stores form structure and responses in two separate databases, with no
-            cross-database foreign keys. Real user IDs never touch response data — only
-            stable pseudonymous UUIDs. Every submission uses a two-phase write with rollback
-            protection. Privacy is architectural, not aspirational.
+          <p class="mb-7 text-base leading-loose text-muted-foreground">
+            FlowForm stores form structure and responses in two separate
+            databases, with no cross-database foreign keys. Real user IDs never
+            touch response data — only stable pseudonymous UUIDs. Every
+            submission uses a two-phase write with rollback protection. Privacy
+            is architectural, not aspirational.
           </p>
 
-          <div style="display:flex;flex-direction:column;gap:14px;">
-            {[
-              { label: 'Pseudonymous responses', detail: 'Real user IDs never touch the response database — only stable anonymous UUIDs.' },
-              { label: 'Dual-database isolation', detail: 'Survey structure and raw responses live in separate databases with no cross-DB foreign keys.' },
-              { label: 'Atomic saga writes', detail: 'Submissions use a two-phase commit with automatic rollback. Partial writes are impossible.' },
-              { label: 'GDPR-ready architecture', detail: 'Right-to-erasure is straightforward: pseudonymous mappings can be deleted independently.' },
-            ].map(({ label, detail }) => (
-              <div style="display:flex;gap:14px;align-items:flex-start;">
-                <div
-                  style="
-                    flex-shrink:0;
-                    width:22px;height:22px;
-                    border-radius:999px;
-                    background:rgb(22 163 74 / 0.12);
-                    display:flex;align-items:center;justify-content:center;
-                    margin-top:2px;
-                  "
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgb(22 163 74)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+          <div class="flex flex-col gap-3.5">
+            {
+              [
+                {
+                  label: "Pseudonymous responses",
+                  detail:
+                    "Real user IDs never touch the response database — only stable anonymous UUIDs.",
+                },
+                {
+                  label: "Dual-database isolation",
+                  detail:
+                    "Survey structure and raw responses live in separate databases with no cross-DB foreign keys.",
+                },
+                {
+                  label: "Atomic saga writes",
+                  detail:
+                    "Submissions use a two-phase commit with automatic rollback. Partial writes are impossible.",
+                },
+                {
+                  label: "GDPR-ready architecture",
+                  detail:
+                    "Right-to-erasure is straightforward: pseudonymous mappings can be deleted independently.",
+                },
+              ].map(({ label, detail }) => (
+                <div class="flex items-start gap-3.5">
+                  <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-success/10">
+                    <svg
+                      class="size-3 stroke-success"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="mb-0.5 text-sm font-semibold text-foreground">
+                      {label}
+                    </p>
+                    <p class="text-sm leading-relaxed text-muted-foreground">
+                      {detail}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p style="margin:0 0 2px;font-size:0.9rem;font-weight:600;color:var(--foreground);">{label}</p>
-                  <p style="margin:0;font-size:0.83rem;color:var(--muted-foreground);line-height:1.55;">{detail}</p>
-                </div>
-              </div>
-            ))}
+              ))
+            }
           </div>
         </div>
 
         <!-- Right: visual shield card -->
-        <div
-          class="shield-card"
-          style="
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 40px 36px;
-            box-shadow: var(--app-shadow-lg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 28px;
-          "
-        >
-          <div
-            style="
-              width: 80px;height:80px;
-              border-radius: 24px;
-              background: linear-gradient(135deg, rgb(80 145 220 / 0.15), rgb(110 164 226 / 0.08));
-              border: 1px solid rgb(110 164 226 / 0.2);
-              display:flex;align-items:center;justify-content:center;
-            "
-          >
-            <AnimatedApng src="/icons8-shield-96.apng.png" alt="Security shield" width={64} height={64} />
+        <div class="shield-card flex flex-col items-center gap-7 rounded-xl bg-card px-9 py-10 shadow-lg">
+          <div class="shield-icon-box flex size-20 items-center justify-center rounded-3xl bg-primary/10">
+            <AnimatedApng
+              src="/icons8-shield-96.apng.png"
+              alt="Security shield"
+              width={64}
+              height={64}
+            />
           </div>
 
-          <div style="width:100%;display:flex;flex-direction:column;gap:10px;">
-            {[
-              { label: 'Data encryption', status: 'Active', color: 'rgb(22 163 74)' },
-              { label: 'Identity isolation', status: 'Active', color: 'rgb(22 163 74)' },
-              { label: 'Audit logging', status: 'Active', color: 'rgb(22 163 74)' },
-              { label: 'GDPR compliance', status: 'Ready', color: 'rgb(80 145 220)' },
-              { label: 'SOC 2 (coming soon)', status: 'Planned', color: 'rgb(202 138 4)' },
-            ].map(({ label, status, color }) => (
-              <div
-                class="security-status-row"
-                style="
-                  display:flex;align-items:center;justify-content:space-between;
-                  padding:10px 14px;
-                  background:var(--muted);
-                  border-radius:10px;
-                  font-size:0.85rem;
-                "
-              >
-                <span style="font-weight:500;color:var(--foreground);">{label}</span>
-                <span
-                  style={`
-                    font-weight:600;
-                    color:${color};
-                    font-size:0.78rem;
-                    letter-spacing:0.04em;
-                  `}
-                >
-                  ✓ {status}
-                </span>
-              </div>
-            ))}
+          <div class="flex w-full flex-col gap-2.5">
+            {
+              [
+                {
+                  label: "Data encryption",
+                  status: "Active",
+                  tone: "text-success",
+                },
+                {
+                  label: "Identity isolation",
+                  status: "Active",
+                  tone: "text-success",
+                },
+                {
+                  label: "Audit logging",
+                  status: "Active",
+                  tone: "text-success",
+                },
+                {
+                  label: "GDPR compliance",
+                  status: "Ready",
+                  tone: "text-primary",
+                },
+                {
+                  label: "SOC 2 (coming soon)",
+                  status: "Planned",
+                  tone: "text-warning",
+                },
+              ].map(({ label, status, tone }) => (
+                <div class="security-status-row flex items-center justify-between rounded-lg bg-muted px-3.5 py-2.5 text-sm">
+                  <span class="font-medium text-foreground">{label}</span>
+                  <span class:list={["text-xs font-semibold uppercase tracking-wide", tone]}>
+                    ✓ {status}
+                  </span>
+                </div>
+              ))
+            }
           </div>
         </div>
       </div>
     </section>
 
-
     <!-- ─── How it works ───────────────────────────────────────── -->
-    <section
-      style="
-        padding: 100px 24px;
-        border-top: 1px solid var(--border);
-        background: var(--background);
-      "
-    >
-      <div style="max-width: 860px; margin: 0 auto; text-align: center;">
-        <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);">
+    <section class="border-t border-border bg-background px-6 py-24">
+      <div class="mx-auto max-w-4xl text-center">
+        <p class="mb-2.5 text-xs font-bold uppercase tracking-widest text-accent">
           How it works
         </p>
-        <h2
-          style="
-            margin:0 0 56px;
-            font-size:clamp(1.6rem,3.5vw,2.4rem);
-            font-weight:800;
-            letter-spacing:-0.025em;
-            color:var(--foreground);
-            border:none;padding:0;
-          "
-        >
+        <h2 class="mb-14 border-none p-0 text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
           From zero to live form in three steps
         </h2>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:32px;text-align:left;">
-          {[
-            {
-              step: '01',
-              title: 'Drop in question nodes',
-              body: 'Choose from multiple choice, matching, rating, and open-field nodes. Arrange them into the flow your form needs.',
-            },
-            {
-              step: '02',
-              title: 'Add a Rules node',
-              body: 'Set conditions like equals or between, combine them with AND / OR / NOT, and branch the flow automatically.',
-            },
-            {
-              step: '03',
-              title: 'Preview, share, export',
-              body: 'Test the respondent experience end-to-end, share a link, or export the JSON schema for your own backend.',
-            },
-          ].map(({ step, title, body }) => (
-            <div style="position:relative;">
-              <div
-                style="
-                  font-size:3rem;
-                  font-weight:900;
-                  letter-spacing:-0.04em;
-                  color:rgb(110 164 226 / 0.15);
-                  line-height:1;
-                  margin-bottom:12px;
-                "
-              >
-                {step}
+        <div class="grid grid-cols-1 gap-8 text-left md:grid-cols-3">
+          {
+            [
+              {
+                step: "01",
+                title: "Drop in question nodes",
+                body: "Choose from multiple choice, matching, rating, and open-field nodes. Arrange them into the flow your form needs.",
+              },
+              {
+                step: "02",
+                title: "Add a Rules node",
+                body: "Set conditions like equals or between, combine them with AND / OR / NOT, and branch the flow automatically.",
+              },
+              {
+                step: "03",
+                title: "Preview, share, export",
+                body: "Test the respondent experience end-to-end, share a link, or export the JSON schema for your own backend.",
+              },
+            ].map(({ step, title, body }) => (
+              <div class="relative">
+                <div class="mb-3 text-5xl font-black leading-none tracking-tighter text-accent/15">
+                  {step}
+                </div>
+                <h3 class="mb-2.5 text-base font-bold text-foreground">
+                  {title}
+                </h3>
+                <p class="text-sm leading-relaxed text-muted-foreground">
+                  {body}
+                </p>
               </div>
-              <h3 style="margin:0 0 10px;font-size:1rem;font-weight:700;color:var(--foreground);">{title}</h3>
-              <p style="margin:0;font-size:0.875rem;color:var(--muted-foreground);line-height:1.6;">{body}</p>
-            </div>
-          ))}
+            ))
+          }
         </div>
       </div>
     </section>
 
-
     <!-- ─── CTA band ───────────────────────────────────────────── -->
-    <section
-      id="pricing"
-      style="
-        padding: 80px 24px;
-        border-top: 1px solid var(--border);
-        background: linear-gradient(
-          135deg,
-          rgb(80 145 220 / 0.08) 0%,
-          rgb(110 164 226 / 0.04) 100%
-        );
-        text-align: center;
-      "
-    >
-      <div style="max-width:600px;margin:0 auto;">
-        <h2
-          style="
-            margin:0 0 16px;
-            font-size:clamp(1.6rem,4vw,2.4rem);
-            font-weight:800;
-            letter-spacing:-0.025em;
-            color:var(--foreground);
-            border:none;padding:0;
-          "
-        >
+    <section id="pricing" class="bg-cta-gradient border-t border-border px-6 py-20 text-center">
+      <div class="mx-auto max-w-2xl">
+        <h2 class="mb-4 border-none p-0 text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
           Ready to build smarter forms?
         </h2>
-        <p style="margin:0 0 36px;font-size:1.05rem;color:var(--muted-foreground);line-height:1.6;">
-          FlowForm is free during beta. No credit card. No time limit.
-          Just open the builder above and start creating.
+        <p class="mb-9 text-lg leading-relaxed text-muted-foreground">
+          FlowForm is free during beta. No credit card. No time limit. Just open
+          the builder above and start creating.
         </p>
         <a
           href="#builder"
-          style="
-            display:inline-flex;
-            align-items:center;
-            gap:8px;
-            font-size:1rem;
-            font-weight:700;
-            color:var(--primary-foreground);
-            background:var(--primary);
-            padding:14px 36px;
-            border-radius:var(--radius-xl);
-            text-decoration:none;
-            box-shadow:var(--app-shadow-lg);
-            transition:opacity 0.15s;
-          "
+          class="inline-flex items-center gap-2 rounded-xl bg-primary px-9 py-3.5 text-base font-bold text-primary-foreground no-underline shadow-lg transition-opacity hover:opacity-90"
         >
           Open the builder →
         </a>
-        <p style="margin:20px 0 0;font-size:0.82rem;color:var(--muted-foreground);">
+        <p class="mt-5 text-sm text-muted-foreground">
           Auto-saves to your browser · Export anytime
         </p>
       </div>
     </section>
 
-
     <!-- ─── Footer ─────────────────────────────────────────────── -->
-    <footer
-      style="
-        border-top: 1px solid var(--border);
-        background: var(--card);
-        padding: 45px 24px 45px;
-      "
-    >
-      <div style="max-width:1080px;margin:0 auto;">
+    <footer class="border-t border-border bg-card px-6 py-11 pb-0">
+      <div class="mx-auto max-w-5xl">
         <!-- Top row -->
-        <div
-          class="site-footer-grid"
-          style="
-            display:grid;
-            grid-template-columns:2fr 1fr 1fr 1fr;
-            gap:48px;
-            margin-bottom:56px;
-          "
-        >
+        <div class="site-footer-grid mb-14 grid gap-12">
           <!-- Brand column -->
-          <div class="site-footer-brand" style="justify-self:center;padding-bottom:12px;">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-              <div
-                style="
-                  width:30px;height:30px;border-radius:9px;
-                  display:flex;align-items:center;justify-content:center;
-                  overflow:hidden;
-                "
-              >
+          <div class="site-footer-brand justify-self-center pb-3">
+            <div class="mb-4 flex items-center gap-2.5">
+              <div class="flex size-8 items-center justify-center overflow-hidden rounded-lg">
                 <img
                   src="/FlowForm_logo.png"
                   alt="FlowForm logo"
-                  style="width:100%;height:100%;object-fit:contain;display:block;"
+                  class="block h-full w-full object-contain"
                 />
               </div>
-              <span style="font-weight:800;font-size:1.05rem;letter-spacing:-0.02em;color:var(--foreground);">FlowForm</span>
+              <span class="text-lg font-extrabold tracking-tight text-foreground">
+                FlowForm
+              </span>
             </div>
-            <p style="margin:0 0 20px;font-size:0.875rem;color:var(--muted-foreground);line-height:1.7;max-width:280px;">
-              A security-first form and survey builder. Fast to set up,
-              powerful enough for real research, private by design.
+            <p class="mb-5 max-w-xs text-sm leading-loose text-muted-foreground">
+              A security-first form and survey builder. Fast to set up, powerful
+              enough for real research, private by design.
             </p>
             <!-- Security badges -->
-            <div style="display:flex;flex-wrap:wrap;gap:8px;">
-              {[
-                { apng: '/icons8-lock-48.apng.png', label: 'Encrypted' },
-                { apng: '/icons8-shield-48.apng.png', label: 'GDPR Ready' }
-              ].map(({ apng, label }) => (
-                <span
-                  style="
-                    display:inline-flex;align-items:center;gap:5px;
-                    font-size:0.72rem;
-                    font-weight:600;
-                    color:var(--muted-foreground);
-                    background:var(--muted);
-                    border:1px solid var(--border);
-                    padding:3px 10px;
-                    border-radius:999px;
-                  "
-                >
-                  {apng ? <AnimatedApng src={apng} alt={label} width={14} height={14} /> : null}
-                  {label}
-                </span>
-              ))}
+            <div class="flex flex-wrap gap-2">
+              {
+                [
+                  { apng: "/icons8-lock-48.apng.png", label: "Encrypted" },
+                  { apng: "/icons8-shield-48.apng.png", label: "GDPR Ready" },
+                ].map(({ apng, label }) => (
+                  <span class="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                    {apng ? (
+                      <AnimatedApng
+                        src={apng}
+                        alt={label}
+                        width={14}
+                        height={14}
+                      />
+                    ) : null}
+                    {label}
+                  </span>
+                ))
+              }
             </div>
           </div>
 
           <!-- Product column -->
           <div class="site-footer-link-section">
-            <p style="margin:0 0 16px;font-size:0.75rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--foreground);">
+            <p class="mb-4 text-xs font-bold uppercase tracking-wider text-foreground">
               Product
             </p>
-            <ul class="site-footer-link-list" style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;">
-              {['Form Builder', 'Question Types', 'Adaptive Rules', 'Export & API', 'Preview Mode'].map((item) => (
-                <li>
-                  <a
-                    href="#builder"
-                    style="font-size:0.875rem;color:var(--muted-foreground);text-decoration:none;transition:color 0.15s;"
-                  >
-                    {item}
-                  </a>
-                </li>
-              ))}
+            <ul class="site-footer-link-list flex list-none flex-col gap-2.5 p-0">
+              {
+                [
+                  "Form Builder",
+                  "Question Types",
+                  "Adaptive Rules",
+                  "Export & API",
+                  "Preview Mode",
+                ].map((item) => (
+                  <li>
+                    <a
+                      href="#builder"
+                      class="text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
+                    >
+                      {item}
+                    </a>
+                  </li>
+                ))
+              }
             </ul>
           </div>
 
           <!-- Security column -->
           <div class="site-footer-link-section">
-            <p style="margin:0 0 16px;font-size:0.75rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--foreground);">
+            <p class="mb-4 text-xs font-bold uppercase tracking-wider text-foreground">
               Security
             </p>
-            <ul class="site-footer-link-list" style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;">
-              {['Privacy Policy', 'Data Isolation', 'GDPR Compliance', 'Audit Logs', 'Pseudonymity'].map((item) => (
-                <li>
-                  <a
-                    href="#security"
-                    style="font-size:0.875rem;color:var(--muted-foreground);text-decoration:none;transition:color 0.15s;"
-                  >
-                    {item}
-                  </a>
-                </li>
-              ))}
+            <ul class="site-footer-link-list flex list-none flex-col gap-2.5 p-0">
+              {
+                [
+                  "Privacy Policy",
+                  "Data Isolation",
+                  "GDPR Compliance",
+                  "Audit Logs",
+                  "Pseudonymity",
+                ].map((item) => (
+                  <li>
+                    <a
+                      href="#security"
+                      class="text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
+                    >
+                      {item}
+                    </a>
+                  </li>
+                ))
+              }
             </ul>
           </div>
 
           <!-- Company column -->
           <div class="site-footer-link-section">
-            <p style="margin:0 0 16px;font-size:0.75rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--foreground);">
+            <p class="mb-4 text-xs font-bold uppercase tracking-wider text-foreground">
               Company
             </p>
-            <ul class="site-footer-link-list" style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;">
-              {['About', 'Blog', 'Changelog', 'Status', 'Contact'].map((item) => (
-                <li>
-                  <a
-                    href="#"
-                    style="font-size:0.875rem;color:var(--muted-foreground);text-decoration:none;transition:color 0.15s;"
-                  >
-                    {item}
-                  </a>
-                </li>
-              ))}
+            <ul class="site-footer-link-list flex list-none flex-col gap-2.5 p-0">
+              {
+                ["About", "Blog", "Changelog", "Status", "Contact"].map(
+                  (item) => (
+                    <li>
+                      <a
+                        href="#"
+                        class="text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
+                      >
+                        {item}
+                      </a>
+                    </li>
+                  ),
+                )
+              }
             </ul>
           </div>
         </div>
 
         <!-- Bottom row -->
-        <div
-          class="site-footer-bottom"
-          style="
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            flex-wrap:wrap;
-            gap:16px;
-            width:100vw;
-            box-sizing:border-box;
-            margin:0 calc(50% - 50vw) -45px;
-            padding:28px max(24px, calc((100vw - 1080px) / 2)) 40px;
-            background:var(--background);
-          "
-        >
-          <p style="margin:0;font-size:0.8rem;color:var(--muted-foreground);">
+        <div class="site-footer-bottom footer-bleed flex flex-wrap items-center justify-between gap-4 bg-background py-7 pb-10">
+          <p class="text-sm text-muted-foreground">
             © {new Date().getFullYear()} FlowForm. Built with security in mind.
           </p>
-          <div class="site-footer-bottom-links" style="display:flex;align-items:center;gap:20px;">
-            <span
-              style="
-                display:inline-flex;align-items:center;gap:5px;
-                font-size:0.78rem;font-weight:600;
-                color:rgb(22 163 74);
-              "
-            >
-              <span style="width:7px;height:7px;border-radius:999px;background:rgb(22 163 74);display:inline-block;"></span>
+          <div class="site-footer-bottom-links flex items-center gap-5">
+            <span class="inline-flex items-center gap-1 text-xs font-semibold text-success">
+              <span class="inline-block size-2 rounded-full bg-success"></span>
               All systems operational
             </span>
-            <span style="font-size:0.8rem;color:var(--muted-foreground);">Privacy · Terms · Cookies</span>
+            <span class="text-sm text-muted-foreground">
+              Privacy · Terms · Cookies
+            </span>
           </div>
         </div>
       </div>
     </footer>
-
   </main>
 </Layout>
 
 <script>
-  const initCarouselDots = (trackSelector: string, cardSelector: string, dotSelector: string) => {
+  const initCarouselDots = (
+    trackSelector: string,
+    cardSelector: string,
+    dotSelector: string,
+  ) => {
     const track = document.querySelector<HTMLElement>(trackSelector);
-    const cards = Array.from(document.querySelectorAll<HTMLElement>(cardSelector));
-    const dots = Array.from(document.querySelectorAll<HTMLAnchorElement>(dotSelector));
+    const cards = Array.from(
+      document.querySelectorAll<HTMLElement>(cardSelector),
+    );
+    const dots = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>(dotSelector),
+    );
 
     if (!track || cards.length === 0 || dots.length === 0) return;
 
     const setActiveDot = () => {
-      const trackCenter = track.getBoundingClientRect().left + track.clientWidth / 2;
+      const trackCenter =
+        track.getBoundingClientRect().left + track.clientWidth / 2;
       let activeIndex = 0;
       let activeDistance = Number.POSITIVE_INFINITY;
 
@@ -952,21 +700,25 @@ import AnimatedApng from '../components/AnimatedApng.astro';
 
       dots.forEach((dot, index) => {
         if (index === activeIndex) {
-          dot.setAttribute('aria-current', 'true');
+          dot.setAttribute("aria-current", "true");
         } else {
-          dot.removeAttribute('aria-current');
+          dot.removeAttribute("aria-current");
         }
       });
     };
 
-    track.addEventListener('scroll', () => requestAnimationFrame(setActiveDot), { passive: true });
-    window.addEventListener('resize', setActiveDot);
+    track.addEventListener(
+      "scroll",
+      () => requestAnimationFrame(setActiveDot),
+      { passive: true },
+    );
+    window.addEventListener("resize", setActiveDot);
 
     dots.forEach((dot) => {
-      dot.addEventListener('click', (event) => {
+      dot.addEventListener("click", (event) => {
         event.preventDefault();
 
-        const targetId = dot.getAttribute('href')?.slice(1);
+        const targetId = dot.getAttribute("href")?.slice(1);
         const target = targetId ? document.getElementById(targetId) : null;
         if (!target) return;
 
@@ -978,7 +730,7 @@ import AnimatedApng from '../components/AnimatedApng.astro';
           trackRect.left -
           (track.clientWidth - targetRect.width) / 2;
 
-        track.scrollTo({ left: nextLeft, behavior: 'smooth' });
+        track.scrollTo({ left: nextLeft, behavior: "smooth" });
       });
     });
 
@@ -986,15 +738,52 @@ import AnimatedApng from '../components/AnimatedApng.astro';
   };
 
   const initCarouselDotIndicators = () => {
-    initCarouselDots('.qt-track', '.qt-col', '.qt-dots a');
-    initCarouselDots('.logic-cards', '.logic-card', '.logic-dots a');
+    initCarouselDots(".qt-track", ".qt-col", ".qt-dots a");
+    initCarouselDots(".logic-cards", ".logic-card", ".logic-dots a");
   };
 
-  document.addEventListener('astro:page-load', initCarouselDotIndicators);
+  document.addEventListener("astro:page-load", initCarouselDotIndicators);
   initCarouselDotIndicators();
 </script>
 
 <style>
+  .main-safe-top {
+    padding-top: calc(56px + env(safe-area-inset-top));
+  }
+
+  .bg-hero-gradient {
+    background: linear-gradient(
+      160deg,
+      var(--background) 0%,
+      rgb(110 164 226 / 0.06) 50%,
+      var(--background) 100%
+    );
+  }
+
+  .bg-logic-gradient {
+    background: linear-gradient(
+      135deg,
+      var(--background) 0%,
+      rgb(110 164 226 / 0.04) 100%
+    );
+  }
+
+  .bg-security-gradient {
+    background: linear-gradient(
+      135deg,
+      rgb(80 145 220 / 0.04) 0%,
+      var(--background) 60%
+    );
+  }
+
+  .bg-cta-gradient {
+    background: linear-gradient(
+      135deg,
+      rgb(80 145 220 / 0.08) 0%,
+      rgb(110 164 226 / 0.04) 100%
+    );
+  }
+
   .shield-icon .shield-path {
     fill-opacity: 0.15;
     stroke-dasharray: 64;
@@ -1003,17 +792,27 @@ import AnimatedApng from '../components/AnimatedApng.astro';
   }
 
   .shield-card:hover .shield-path {
-    animation: shield-draw 1.2s ease forwards, shield-fill 0.3s ease 1.1s forwards;
+    animation:
+      shield-draw 1.2s ease forwards,
+      shield-fill 0.3s ease 1.1s forwards;
   }
 
   @keyframes shield-draw {
-    from { stroke-dashoffset: 64; }
-    to   { stroke-dashoffset: 0; }
+    from {
+      stroke-dashoffset: 64;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
   }
 
   @keyframes shield-fill {
-    from { fill-opacity: 0; }
-    to   { fill-opacity: 0.3; }
+    from {
+      fill-opacity: 0;
+    }
+    to {
+      fill-opacity: 0.3;
+    }
   }
 
   .qt-dots,
@@ -1021,17 +820,28 @@ import AnimatedApng from '../components/AnimatedApng.astro';
     display: none;
   }
 
+  .site-footer-grid {
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+  }
+
+  .footer-bleed {
+    box-sizing: border-box;
+    margin: 0 calc(50% - 50vw);
+    padding-inline: max(24px, calc((100vw - 1024px) / 2));
+    width: 100vw;
+  }
+
   @media (max-width: 860px) {
     #features {
-      padding-inline: 0 !important;
+      padding-inline: 0;
     }
     #features > div > div:first-child {
       padding-inline: 24px;
     }
     .qt-track {
       --carousel-card-width: min(82vw, 340px);
-      display: flex !important;
-      gap: 16px !important;
+      display: flex;
+      gap: 16px;
       margin-inline: -24px;
       overflow-x: auto;
       padding-inline: 0;
@@ -1042,7 +852,7 @@ import AnimatedApng from '../components/AnimatedApng.astro';
     }
     .qt-track::before,
     .qt-track::after {
-      content: '';
+      content: "";
       flex: 0 0 max(24px, calc((100% - var(--carousel-card-width)) / 2));
     }
     .qt-col {
@@ -1065,7 +875,7 @@ import AnimatedApng from '../components/AnimatedApng.astro';
     }
     .qt-dots a::before,
     .logic-dots a::before {
-      content: '';
+      content: "";
       position: absolute;
       inset: 12px;
       border-radius: 999px;
@@ -1079,8 +889,8 @@ import AnimatedApng from '../components/AnimatedApng.astro';
       outline: 2px solid var(--accent);
       outline-offset: -6px;
     }
-    .qt-dots a[aria-current='true']::before,
-    .logic-dots a[aria-current='true']::before {
+    .qt-dots a[aria-current="true"]::before,
+    .logic-dots a[aria-current="true"]::before {
       background: var(--accent);
       opacity: 1;
     }
@@ -1093,20 +903,19 @@ import AnimatedApng from '../components/AnimatedApng.astro';
     }
   }
 
-  /* Responsive grid overrides for smaller screens */
   @media (max-width: 768px) {
     #logic {
-      padding: 50px 0 30px 0 !important;
+      padding: 50px 0 30px;
     }
     .logic-layout {
-      grid-template-columns: 1fr !important;
-      gap: 28px !important;
+      grid-template-columns: 1fr;
+      gap: 28px;
       padding-inline: 24px;
     }
     .logic-cards {
       --carousel-card-width: min(90vw, 360px);
-      flex-direction: row !important;
-      gap: 12px !important;
+      flex-direction: row;
+      gap: 12px;
       margin-inline: -24px;
       overflow-x: auto;
       padding-inline: 0;
@@ -1117,7 +926,7 @@ import AnimatedApng from '../components/AnimatedApng.astro';
     }
     .logic-cards::before,
     .logic-cards::after {
-      content: '';
+      content: "";
       flex: 0 0 max(24px, calc((100% - var(--carousel-card-width)) / 2));
     }
     .logic-card {
@@ -1131,9 +940,9 @@ import AnimatedApng from '../components/AnimatedApng.astro';
       margin-top: 10px;
     }
     .security-layout {
-      grid-template-columns: 1fr !important;
-      gap: 36px !important;
-      align-items: stretch !important;
+      grid-template-columns: 1fr;
+      gap: 36px;
+      align-items: stretch;
     }
     .security-copy {
       max-width: 680px;
@@ -1142,12 +951,12 @@ import AnimatedApng from '../components/AnimatedApng.astro';
       width: 100%;
       max-width: 520px;
       justify-self: center;
-      padding: 28px 24px !important;
+      padding: 28px 24px;
     }
     .site-footer-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-      gap: 24px 18px !important;
-      margin-bottom: 28px !important;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px 18px;
+      margin-bottom: 28px;
     }
     .site-footer-grid > div:first-child {
       grid-column: 1 / -1;
@@ -1156,23 +965,23 @@ import AnimatedApng from '../components/AnimatedApng.astro';
       width: min(100%, 420px);
     }
     .site-footer-brand > div:first-child {
-      margin-bottom: 10px !important;
+      margin-bottom: 10px;
     }
     .site-footer-brand > p {
-      max-width: 420px !important;
-      margin-bottom: 12px !important;
-      line-height: 1.45 !important;
+      max-width: 420px;
+      margin-bottom: 12px;
+      line-height: 1.45;
     }
     .site-footer-link-section {
       display: block;
       justify-self: center;
     }
     .site-footer-link-section > p {
-      margin-bottom: 8px !important;
+      margin-bottom: 8px;
     }
     .site-footer-link-list {
-      flex-direction: column !important;
-      gap: 6px !important;
+      flex-direction: column;
+      gap: 6px;
     }
     .site-footer-link-list a {
       display: inline-flex;
@@ -1180,7 +989,7 @@ import AnimatedApng from '../components/AnimatedApng.astro';
       min-height: 28px;
     }
     .site-footer-bottom {
-      justify-content: center !important;
+      justify-content: center;
       text-align: center;
     }
     .site-footer-bottom-links {
@@ -1188,15 +997,16 @@ import AnimatedApng from '../components/AnimatedApng.astro';
       flex-wrap: wrap;
     }
   }
+
   @media (max-width: 490px) {
     .security-status-row {
-      align-items: flex-start !important;
+      align-items: flex-start;
       gap: 8px;
       flex-direction: column;
     }
     .site-footer-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-      gap: 22px 12px !important;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 22px 12px;
     }
     .site-footer-brand {
       width: 100%;
@@ -1206,12 +1016,11 @@ import AnimatedApng from '../components/AnimatedApng.astro';
     }
     .site-footer-bottom {
       flex-direction: column;
-      align-items: center !important;
-      gap: 10px !important;
+      align-items: center;
+      gap: 10px;
     }
     .site-footer-bottom-links {
-      gap: 10px 16px !important;
+      gap: 10px 16px;
     }
   }
-
 </style>

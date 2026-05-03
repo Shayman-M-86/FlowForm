@@ -1,0 +1,24 @@
+{
+    "piny.project_settings": {
+        "open-pages": [
+            "pinyfakepage.html"
+        ],
+        "app-routes": {
+            "routes": [
+                "/",
+                "/scroll-test"
+            ],
+            "current_route": "/"
+        },
+        "recent-classes": [
+            "l",
+            "4",
+            "w",
+            "-",
+            "x",
+            "a",
+            "m"
+        ]
+    },
+    "folder-color.pathColors": []
+}

@@ -36,7 +36,7 @@ export function NodePillTopbar({
 }: TopbarProps) {
   return (
     <header className={nodePillTopbarClass}>
-      <div className="flex min-w-0 grow items-center gap-2">
+      <div className="flex min-w-0 grow items-center gap-3">
         <Badge variant="accent" size="md">{family}</Badge>
         <div className={nodePillInputRingClass}>
           <Tooltip
@@ -327,7 +327,7 @@ type CollapsedProps = {
 export function NodePillCollapsed({ family, tagValue, title, onExpand }: CollapsedProps) {
   return (
     <div className={nodePillCollapsedShellClass}>
-      <div className="flex items-center gap-3 px-3.5 py-2.5">
+      <div className="flex items-center gap-3 px-3.5 py-3">
         <Badge variant="accent" size="md">{family}</Badge>
         <div className="flex flex-1 min-w-0 items-baseline gap-2.5 overflow-hidden">
           <span className="overflow-hidden text-ellipsis whitespace-nowrap text-[0.88rem] font-semibold text-foreground">

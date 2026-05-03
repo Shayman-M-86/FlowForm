@@ -1,9 +1,11 @@
 from sqlalchemy.orm import Session
 
 from app.core.extensions import auth
+from app.db.transaction import commit_or_rollback
 from app.domain import auth_rules
-from app.repositories import users_repo
+from app.repositories import projects_repo, users_repo
 from app.schema.api.requests.auth import BootstrapUserRequest
+from app.schema.api.requests.projects import CreateProjectRequest
 from app.services.results import BootstrapCurrentUserResult
 from app.services.users import UserService
 
@@ -40,4 +42,17 @@ class AuthService:
             email=email,
             display_name=display_name,
         )
-        return BootstrapCurrentUserResult(user=user, created=created)
+
+        default_project = None
+        if created:
+            default_project = projects_repo.create_project(
+                db,
+                CreateProjectRequest(
+                    name="My Project",
+                    slug=user.public_id.lower(),
+                ),
+                created_by_user_id=user.id,
+            )
+            commit_or_rollback(db)
+
+        return BootstrapCurrentUserResult(user=user, created=created, default_project=default_project)

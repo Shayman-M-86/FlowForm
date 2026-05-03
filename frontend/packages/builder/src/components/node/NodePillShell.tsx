@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
+
 import { TAG_MAX, blurOnEnter, sanitizeQuestionId } from "./NodePillUtils";
 
 import { Badge, Button, Input, LargeInput, Modal, Tooltip } from "@flowform/ui";
@@ -7,17 +8,17 @@ import {
   nodePillCollapsedShellClass,
   nodePillFieldClass,
   nodePillFieldHeadClass,
-  nodePillInputRingClass,
   nodePillLabelClass,
   nodePillLimitTextClass,
   nodePillTopbarClass,
 } from "./nodePillStyles";
 
+type MobileControls = { leading?: ReactNode; trailing?: ReactNode };
+const MobileControlsContext = createContext<MobileControls>({});
+export const NodePillMobileControlsProvider = MobileControlsContext.Provider;
+
 type TopbarProps = {
   family: string;
-  tagValue: string;
-  onTagChange: (next: string) => void;
-  idError?: string;
   isEditMode: boolean;
   onToggleEditMode: () => void;
   onDelete?: () => void;
@@ -26,44 +27,21 @@ type TopbarProps = {
 
 export function NodePillTopbar({
   family,
-  tagValue,
-  onTagChange,
-  idError,
   isEditMode,
   onToggleEditMode,
   onDelete,
   actions,
 }: TopbarProps) {
+  const { leading, trailing } = useContext(MobileControlsContext);
   return (
     <header className={nodePillTopbarClass}>
-      <div className="flex min-w-0 grow items-center gap-2">
+      <div className="flex min-w-0 grow items-center gap-3">
+        {leading && (
+          <span className="hidden max-[640px]:flex items-center">{leading}</span>
+        )}
         <Badge variant="accent" size="md">{family}</Badge>
-        <div className={nodePillInputRingClass}>
-          <Tooltip
-            title="Identifier for this question. Lowercase only; no spaces or capitals."
-            size="sm"
-          >
-            <h6 className=" pl-2 text-muted-foreground">
-              ID
-            </h6>
-          </Tooltip>
-          <Input
-            type="text"
-            className="border-l border-border rounded-xl"
-            placeholder={isEditMode ? "question_id" : ""}
-            value={tagValue}
-            size="xs"
-            maxLength={TAG_MAX}
-            readOnly={!isEditMode}
-            variant="ghost"
-            pill
-            error={idError}
-            onChange={(event) => onTagChange(sanitizeQuestionId(event.target.value))}
-            onKeyDown={blurOnEnter}
-          />
-        </div>
       </div>
-      <div className="ml-auto flex shrink-0 items-center gap-2.5">
+      <div className="ml-auto flex shrink-0 items-center gap-3">
         {isEditMode && (actions ?? (
           <>
             <Button
@@ -91,8 +69,49 @@ export function NodePillTopbar({
         >
           {isEditMode ? "Editing" : "Edit"}
         </Button>
+        {trailing && (
+          <span className="hidden max-[640px]:flex items-center gap-2">{trailing}</span>
+        )}
       </div>
     </header>
+  );
+}
+
+type IdFieldProps = {
+  tagValue: string;
+  onTagChange: (next: string) => void;
+  idError?: string;
+  isEditMode: boolean;
+};
+
+export function NodePillIdField({ tagValue, onTagChange, idError, isEditMode }: IdFieldProps) {
+  return (
+    <div className="ml-auto flex flex-col items-end gap-1">
+      <div className="flex items-center gap-1 rounded-full border border-border bg-card/60 shadow-xs">
+        <Tooltip
+          title="Identifier for this question. Lowercase only; no spaces or capitals."
+          size="sm"
+        >
+          <h6 className="pl-2 text-muted-foreground">ID</h6>
+        </Tooltip>
+        <Input
+          type="text"
+          className="border-l border-border rounded-xl"
+          placeholder={isEditMode ? "question_id" : ""}
+          value={tagValue}
+          size="xs"
+          maxLength={TAG_MAX}
+          readOnly={!isEditMode}
+          variant="ghost"
+          pill
+          onChange={(event) => onTagChange(sanitizeQuestionId(event.target.value))}
+          onKeyDown={blurOnEnter}
+        />
+      </div>
+      {idError && (
+        <span className="text-[0.78rem] text-destructive">{idError}</span>
+      )}
+    </div>
   );
 }
 
@@ -143,6 +162,7 @@ type QuestionFieldWithTitleProps = QuestionFieldProps & {
   onTitleChange?: (next: string) => void;
   titleMax?: number;
   showTitleEdit?: boolean;
+  idField?: ReactNode;
 };
 
 export function NodePillQuestionField({
@@ -154,6 +174,7 @@ export function NodePillQuestionField({
   onTitleChange,
   titleMax = 80,
   showTitleEdit = false,
+  idField,
 }: QuestionFieldWithTitleProps) {
   const [isTitleEditMode, setIsTitleEditMode] = useState(false);
   const hasTitle = titleValue !== undefined && onTitleChange !== undefined;
@@ -186,6 +207,7 @@ export function NodePillQuestionField({
             ✎
           </Button>
         )}
+        {idField}
       </div>
       {hasTitle && (
         <Modal
@@ -325,9 +347,13 @@ type CollapsedProps = {
 };
 
 export function NodePillCollapsed({ family, tagValue, title, onExpand }: CollapsedProps) {
+  const { leading } = useContext(MobileControlsContext);
   return (
     <div className={nodePillCollapsedShellClass}>
-      <div className="flex items-center gap-3 px-3.5 py-2.5">
+      <div className="flex items-center gap-3 px-3.5 py-3.5">
+        {leading && (
+          <span className="hidden max-[640px]:flex items-center">{leading}</span>
+        )}
         <Badge variant="accent" size="md">{family}</Badge>
         <div className="flex flex-1 min-w-0 items-baseline gap-2.5 overflow-hidden">
           <span className="overflow-hidden text-ellipsis whitespace-nowrap text-[0.88rem] font-semibold text-foreground">

@@ -12,9 +12,8 @@ export const PUBLIC_NAV_LINKS = [
   { href: "/docs/introduction", label: "Docs" },
 ] as const;
 
-export const ADMIN_NAV_LINKS = [
+export const STUDIO_NAV_LINKS = [
   { to: "/", label: "Dashboard" },
-  { to: "/projects", label: "Projects" },
   { to: "/surveys", label: "Surveys" },
 ] as const;
 

@@ -11,7 +11,7 @@
   --secondary: rgb(254 253 253);
   --secondary-foreground: rgb(96 155 223);
   --muted: rgb(240 239 240);
-  --muted-foreground: rgb(115 115 115);
+  --muted-foreground: rgb(80, 80, 80);
   --accent: rgb(110 164 226);
   --accent-foreground: rgb(58 60 65);
   --destructive: rgb(234 116 110);
@@ -21,6 +21,7 @@
   --hover-highlight: rgb(240 239 240);
   --toolbar-bg-solid: rgb(247 247 247);
   --toolbar-bg: rgb(247 247 247 / 0.15);
+  --topbar-shadow: 0.5px 1.5px 20px rgb(0 0 0 / 0.04);
   --node-pill-topbar-gradient: linear-gradient(
     to bottom,
     rgb(252 252 252 / 96.9%),
@@ -65,16 +66,16 @@
     "Courier New",
     monospace;
 
-  --radius: 0.625rem;
+  --radius: 0.425rem;
 
-  --app-shadow-2xs: 0.5px 1.5px 5px rgb(0 0 0 / 0.024);
-  --app-shadow-xs: 0.5px 1.5px 6px rgb(0 0 0 / 0.03);
-  --app-shadow-sm: 0.5px 2px 8px rgb(0 0 0 / 0.042), 0.5px 1px 3px rgb(0 0 0 / 0.024);
-  --app-shadow: 0.5px 3px 10px rgb(0 0 0 / 0.048), 0.5px 1.5px 4px rgb(0 0 0 / 0.026);
-  --app-shadow-md: 0.5px 5px 14px rgb(0 0 0 / 0.054), 0.5px 2px 6px rgb(0 0 0 / 0.03);
-  --app-shadow-lg: 0.5px 8px 22px rgb(0 0 0 / 0.06), 0.5px 3px 8px rgb(0 0 0 / 0.03);
-  --app-shadow-xl: 0.5px 12px 30px rgb(0 0 0 / 0.066), 0.5px 4px 10px rgb(0 0 0 / 0.03);
-  --app-shadow-2xl: 0.5px 16px 40px rgb(0 0 0 / 0.084);
+  --app-shadow-2xs: 0.5px 1.5px 5px rgb(0 0 0 / 0.018);
+  --app-shadow-xs: 0.5px 1.5px 6px rgb(0 0 0 / 0.022);
+  --app-shadow-sm: 0.5px 2px 8px rgb(0 0 0 / 0.032), 0.5px 1px 3px rgb(0 0 0 / 0.018);
+  --app-shadow: 0.5px 3px 10px rgb(0 0 0 / 0.036), 0.5px 1.5px 4px rgb(0 0 0 / 0.02);
+  --app-shadow-md: 0.5px 5px 14px rgb(0 0 0 / 0.04), 0.5px 2px 6px rgb(0 0 0 / 0.022);
+  --app-shadow-lg: 0.5px 8px 22px rgb(0 0 0 / 0.045), 0.5px 3px 8px rgb(0 0 0 / 0.024);
+  --app-shadow-xl: 0.5px 12px 30px rgb(0 0 0 / 0.05), 0.5px 4px 10px rgb(0 0 0 / 0.024);
+  --app-shadow-2xl: 0.5px 16px 40px rgb(0 0 0 / 0.062);
 
   --success: rgb(22 163 74);
   --warning: rgb(202 138 4);
@@ -93,16 +94,17 @@
   --secondary: rgb(44 43 46);
   --secondary-foreground: rgb(96 155 223);
   --muted: rgb(39 39 39);
-  --muted-foreground: rgb(161 161 161);
+  --muted-foreground: rgb(185, 185, 185);
   --accent: rgb(110 164 226);
   --accent-foreground: rgb(250 250 250);
   --destructive: rgb(234 116 110);
-  --border: rgb(255 255 255 / 0.11);
+  --border: rgb(255 255 255 / 0.09);
   --input: rgb(42 42 45 / 93.7%);
   --ring: rgb(117 117 117);
   --hover-highlight: rgb(167 167 167 / 0.2);
   --toolbar-bg-solid: rgb(30 30 32);
   --toolbar-bg: rgb(30 30 32 / 0.15);
+  --topbar-shadow: 0.5px 1.5px 16px rgb(0 0 0 / 0.14);
   --node-pill-topbar-gradient: linear-gradient(
     to bottom,
     rgb(39 39 39 / 0.3),
