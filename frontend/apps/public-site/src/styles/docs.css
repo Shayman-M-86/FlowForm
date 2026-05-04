@@ -1,5 +1,6 @@
 @reference "tailwindcss";
-@reference "@flowform/styles";
+@reference "@flowform/styles/tokens.css";
+@reference "@flowform/styles/components.css";
 
 /* ── Mobile bar ─────────────────────────────────────────── */
 .docs-mobile-bar {

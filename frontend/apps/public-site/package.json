@@ -9,6 +9,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "serve": "npx serve dist --config \"$PWD/serve.json\" --debug",
     "astro": "astro"
   },
   "dependencies": {

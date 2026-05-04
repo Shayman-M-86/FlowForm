@@ -5,6 +5,7 @@ import PinyAstro from '@pinegrow/piny-astro';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import sitemap from '@astrojs/sitemap';
+// import fontPreload from './src/integrations/font-preload.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const stylesSrc = path.resolve(__dirname, '../../packages/styles/src');
@@ -17,13 +18,18 @@ export default defineConfig({
   build: {
     inlineStylesheets: 'never',
   },
+
   integrations: [
     react(),
     PinyAstro(),
     sitemap(),
+    // fontPreload(),
   ],
   vite: {
     plugins: [tailwindcss()],
+    build: {
+      manifest: true,
+    },
     ssr: {
       noExternal: ['@flowform/ui', '@flowform/builder', '@flowform/site-shell', '@flowform/styles'],
     },
@@ -36,6 +42,7 @@ export default defineConfig({
         { find: '@flowform/builder/node-page.css', replacement: path.resolve(builderSrc, 'pages/NodePage.css') },
         { find: '@flowform/builder', replacement: path.resolve(builderSrc, 'index.ts') },
         { find: '@flowform/ui', replacement: path.resolve(uiSrc, 'index.tsx') },
+        { find: '@flowform/styles/fonts.css', replacement: path.resolve(stylesSrc, 'fonts.css') },
         { find: '@flowform/styles/tokens.css', replacement: path.resolve(stylesSrc, 'tokens.css') },
         { find: '@flowform/styles/components.css', replacement: path.resolve(stylesSrc, 'components.css') },
         { find: '@flowform/styles', replacement: path.resolve(stylesSrc, 'index.css') },
