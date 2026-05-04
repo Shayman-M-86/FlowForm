@@ -27,30 +27,6 @@ const { src, alt = '', width = 200, height = 200, class: className, style } = As
 </span>
 
 <script>
-  type ApngCacheWindow = Window & {
-    __flowformApngBlobCache?: Map<string, Promise<string>>;
-  };
-
-  const cacheWindow = window as ApngCacheWindow;
-  const apngBlobCache =
-    cacheWindow.__flowformApngBlobCache ?? new Map<string, Promise<string>>();
-  cacheWindow.__flowformApngBlobCache = apngBlobCache;
-
-  const getApngBlobUrl = (src: string) => {
-    const cached = apngBlobCache.get(src);
-    if (cached) return cached;
-
-    const blobUrlPromise = fetch(src)
-      .then((response) => {
-        if (!response.ok) throw new Error(`Failed to load APNG: ${src}`);
-        return response.blob();
-      })
-      .then((blob) => URL.createObjectURL(blob));
-
-    apngBlobCache.set(src, blobUrlPromise);
-    return blobUrlPromise;
-  };
-
   document.querySelectorAll<HTMLElement>('.apng-wrap').forEach((wrap) => {
     if (wrap.dataset.apngInitialized === 'true') return;
     wrap.dataset.apngInitialized = 'true';
@@ -76,7 +52,13 @@ const { src, alt = '', width = 200, height = 200, class: className, style } = As
 
     animatedImage.className = 'apng-clone';
     animatedImage.alt = wrap.dataset.alt ?? '';
-    wrap.appendChild(animatedImage);
+    let cloneAppended = false;
+    const ensureCloneAppended = () => {
+      if (!cloneAppended) {
+        wrap.appendChild(animatedImage);
+        cloneAppended = true;
+      }
+    };
 
     const syncCanvasSize = () => {
       const rect = wrap.getBoundingClientRect();
@@ -94,31 +76,13 @@ const { src, alt = '', width = 200, height = 200, class: className, style } = As
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
     };
 
-    getApngBlobUrl(src)
-      .then((blobUrl) => {
-        playableSrc = blobUrl;
-
-        const loader = new Image();
-        loader.onload = () => {
-          drawToCanvas(loader);
-          isLoaded = true;
-        };
-        loader.src = blobUrl;
-
-        animatedImage.src = blobUrl;
-      })
-      .catch(() => {
-        playableSrc = src;
-
-        const loader = new Image();
-        loader.onload = () => {
-          drawToCanvas(loader);
-          isLoaded = true;
-        };
-        loader.src = src;
-
-        animatedImage.src = src;
-      });
+    playableSrc = src;
+    const staticFrame = new Image();
+    staticFrame.onload = () => {
+      drawToCanvas(staticFrame);
+      isLoaded = true;
+    };
+    staticFrame.src = src;
 
     const getNextAutoPlayDelay = () => {
       return (
@@ -170,10 +134,10 @@ const { src, alt = '', width = 200, height = 200, class: className, style } = As
     const restartAnimation = () => {
       if (!playableSrc) return;
 
+      ensureCloneAppended();
       animatedImage.src = '';
-      requestAnimationFrame(() => {
-        if (playableSrc) animatedImage.src = playableSrc;
-      });
+      void animatedImage.offsetWidth;
+      animatedImage.src = playableSrc;
     };
 
     const showAnimation = () => {
@@ -192,7 +156,7 @@ const { src, alt = '', width = 200, height = 200, class: className, style } = As
     const hideAnimation = () => {
       if (!isLoaded) return;
 
-      drawToCanvas(animatedImage);
+      drawToCanvas(staticFrame);
       canvas.style.opacity = '1';
       animatedImage.style.opacity = '1';
       scheduleCloneFadeOut();

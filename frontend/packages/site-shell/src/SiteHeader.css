@@ -1,5 +1,6 @@
 @reference "tailwindcss";
-@reference "@flowform/styles";
+@reference "@flowform/styles/tokens.css";
+@reference "@flowform/styles/components.css";
 
 .site-header {
   @apply fixed inset-x-0 top-0 z-50;

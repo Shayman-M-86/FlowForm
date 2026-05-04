@@ -5,48 +5,6 @@
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 @source "../../../../packages/builder/src/**/*.{ts,tsx}";
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-/* Prevent Safari on iOS from zooming in when focusing inputs smaller than 16px.
-   Also lock horizontal panning on inputs — iOS ignores overflow-x:hidden on
-   parent elements when touch-scrolling originates inside a text field. */
-@media (max-width: 768px) {
-  input, textarea, select {
-    font-size: max(16px, 1em) !important;
-    touch-action: pan-y;
-  }
-}
-
-html {
-  margin: 0;
-  width: 100%;
-  max-width: 100%;
-  background: var(--background);
-  /* dvh tracks the dynamic viewport — updates as Safari toolbars collapse */
-
-}
-
-body {
-  margin: 0;
-  width: 100%;
-  max-width: 100%;
-  background: var(--background);
-  overscroll-behavior-x: none;
-  touch-action: pan-y;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-#root,
-#__next,
-.app {
-  width: 100%;
-  max-width: 100vw;
-  overflow-x: clip;
-}
 
 /* ── Builder island wrapper ──────────────────────────────────────────────── */
 .builder-shell {
