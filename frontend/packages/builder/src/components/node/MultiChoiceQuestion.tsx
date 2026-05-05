@@ -155,6 +155,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
+        idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
       />
 
       <div className={nodePillBodyClass}>
@@ -166,7 +167,6 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
           titleValue={titleValue}
           onTitleChange={setTitleValue}
           showTitleEdit={true}
-          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
         />
 
         <div className={nodePillFieldClass}>
@@ -261,6 +261,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                           <LargeInput
                             className="w-full"
                           shellClassName="border-0 rounded-none"
+                          variant={isEditMode ? "secondary" : "ghost"}
                           placeholder={option.placeholder}
                           rows={1}
                           maxText={fieldMax}

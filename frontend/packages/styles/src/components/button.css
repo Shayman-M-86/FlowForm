@@ -34,7 +34,7 @@
   --ui-active-bg: transparent;
   --ui-active-color: var(--ui-color);
   --ui-active-border-color: transparent;
-  --ui-active-shadow: inset 0 1px 5px 1px rgb(0 0 0 / 0.18);
+  --ui-active-shadow: inset 0 1px 5px 1px rgb(0 0 0 / 0.10);
 
   /* Default desktop press values. */
   --ui-press-shadow: none;
@@ -122,44 +122,43 @@
 
 @utility ui-button-transparent-icon {
   @apply ui-action flex size-[34px] shrink-0 items-center justify-center
-         rounded-sm border-0 bg-transparent p-0 text-muted-foreground no-underline;
+         rounded-sm border-0 bg-transparent p-0
+         text-muted-foreground no-underline;
 
   --ui-color: var(--foreground);
   --ui-hover-bg: var(--transparent-hover);
   --ui-press-bg: var(--transparent-press);
   --ui-active-bg: var(--transparent-active);
-  
   --ui-active-shadow: none;
+
   @media (hover: none) {
     --ui-press-bg: var(--transparent-mobile-press);
   }
 }
 
-@utility ui-button-transparent {
+@utility ui-button-primary {
   @apply ui-action inline-flex shrink-0 items-center justify-center gap-2
-         rounded-sm bg-transparent text-foreground;
-         
-  --ui-color: var(--foreground-fall);
-  --ui-hover-bg: var(--transparent-hover);
-  --ui-active-shadow: none;
+         rounded-sm border border-transparent bg-primary
+         font-semibold leading-[1.2] text-primary-foreground no-underline
+         shadow-sm;
 
-  --ui-press-bg: var(--transparent-press);
-
-  --ui-active-bg: var(--transparent-active);
+  --ui-color: var(--primary-foreground);
+  --ui-hover-bg: var(--primary-hover);
+  --ui-press-bg: var(--primary-press);
+  --ui-active-bg: var(--primary-active);
 
   @media (hover: none) {
-    --ui-press-bg: var(--transparent-mobile-press);
+    --ui-press-bg: var(--primary-mobile-press);
   }
-
 }
 
 @utility ui-button-secondary {
   @apply ui-action inline-flex shrink-0 items-center justify-center gap-2
-         rounded-sm bg-secondary 
+         rounded-sm border border-transparent bg-secondary
          font-semibold leading-[1.2] text-foreground no-underline
          shadow-sm;
 
-  --ui-color: var(--foreground-fall);
+  --ui-color: var(--foreground-full);
   --ui-hover-bg: var(--secondary-hover);
   --ui-press-bg: var(--secondary-press);
   --ui-active-bg: var(--secondary-active);
@@ -169,20 +168,33 @@
   }
 }
 
-@utility ui-button-primary {
+@utility ui-button-danger {
   @apply ui-action inline-flex shrink-0 items-center justify-center gap-2
-         rounded-sm border border-transparent bg-primary
-         font-semibold leading-[1.2] text-primary-foreground no-underline
+         rounded-sm border border-transparent bg-destructive
+         font-semibold leading-[1.2] text-destructive-foreground no-underline
          shadow-sm;
-  --ui-color: var(--primary-foreground);
-  --ui-hover-bg: var(--primary-hover);
-  
 
-  --ui-press-bg: var(--primary-press);
-
-  --ui-active-bg: var(--primary-active);
+  --ui-color: var(--destructive-foreground);
+  --ui-hover-bg: var(--destructive-hover);
+  --ui-press-bg: var(--destructive-press);
+  --ui-active-bg: var(--destructive-active);
 
   @media (hover: none) {
-    --ui-press-bg: var(--primary-mobile-press);
+    --ui-press-bg: var(--destructive-mobile-press);
+  }
+}
+
+@utility ui-button-ghost {
+  @apply ui-action inline-flex shrink-0 items-center justify-center gap-2
+         rounded-sm border border-transparent bg-transparent
+         font-semibold leading-[1.2] text-foreground no-underline;
+
+  --ui-color: var(--foreground);
+  --ui-hover-bg: var(--transparent-hover);
+  --ui-press-bg: var(--transparent-press);
+  --ui-active-bg: var(--transparent-active);
+
+  @media (hover: none) {
+    --ui-press-bg: var(--transparent-mobile-press);
   }
 }

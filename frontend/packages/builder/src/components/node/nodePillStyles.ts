@@ -3,7 +3,10 @@ export const nodePillShellClass = [
   "transition-colors",
 ].join(" ");
 
-export const nodePillShellEditClass = "border-accent ring-1 ring-accent";
+export const nodePillShellEditClass = [
+  "border-accent ring-1 ring-accent",
+  "max-[640px]:-mx-5 max-[640px]:w-[calc(100%+2.5rem)] max-[640px]:rounded-none max-[640px]:border-x-0 max-[640px]:shadow-none",
+].join(" ");
 
 export const nodePillCollapsedShellClass =
   "flex flex-col rounded-2xl border border-border bg-card";
@@ -45,9 +48,10 @@ export const nodePillOptionHandleClass =
   "rounded-l-2xl rounded-r-none !p-2";
 
 export const nodePillOptionFieldClass =
-  "flex flex-1 flex-col overflow-hidden rounded-2xl border border-border focus-within:border-accent transition-colors";
+  "flex flex-1 flex-col overflow-hidden";
 
-export const nodePillOptionFieldEditClass = "rounded-l-none";
+export const nodePillOptionFieldEditClass =
+  "rounded-2xl rounded-l-none border border-border focus-within:border-accent transition-colors";
 
 export const nodePillOptionMainClass = "flex items-start min-h-12 pr-0";
 

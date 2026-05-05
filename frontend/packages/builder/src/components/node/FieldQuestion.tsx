@@ -118,6 +118,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
+        idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
       />
 
       <div className={nodePillBodyClass}>
@@ -129,7 +130,6 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
           titleValue={titleValue}
           onTitleChange={setTitleValue}
           showTitleEdit={true}
-          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
         />
 
         <div className={nodePillFieldClass}>

@@ -775,6 +775,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
+        idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
       />
 
       <div className={nodePillBodyClass}>
@@ -787,12 +788,6 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
                 onChange={(event) => setMatch(event.target.value as RuleMatch)}
               />
             )}
-            <NodePillIdField
-              tagValue={tagValue}
-              onTagChange={setTagValue}
-              idError={idError}
-              isEditMode={isEditMode}
-            />
           </NodePillFieldHead>
 
           <div className="flex flex-col gap-3 px-4 py-3">

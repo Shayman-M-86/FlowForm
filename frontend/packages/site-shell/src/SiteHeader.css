@@ -54,7 +54,7 @@
 
 /* Ghost nav button */
 .site-header__nav-link {
-  @apply ui-button-transparent inline-flex min-h-[40px] items-center rounded-sm bg-transparent px-3 font-semibold text-muted-accent-foreground no-underline shadow-none;
+  @apply ui-button-ghost inline-flex min-h-[40px] items-center rounded-sm bg-transparent px-3 font-semibold text-muted-accent-foreground no-underline shadow-none;
 }
 
 /* .site-header__nav-link:active {
@@ -68,7 +68,7 @@
 
 /* Mobile dropdown trigger — hidden by default, shown via media query below */
 .site-header__nav-dropdown-button {
-  @apply ui-button-transparent min-h-[50px] min-w-[65px] list-none rounded-sm text-lg font-semibold leading-[1.2] text-accent-foreground shadow-none;
+  @apply ui-button-ghost min-h-[50px] min-w-[65px] list-none rounded-sm text-lg font-semibold leading-[1.2] text-accent-foreground shadow-none;
   display: none;
 }
 
@@ -97,7 +97,7 @@
 }
 
 .site-header__nav-dropdown-link {
-  @apply ui-button-transparent justify-start rounded-2xl px-4 py-4 text-xl font-semibold leading-[1.2] text-accent-foreground no-underline;
+  @apply ui-button-ghost justify-start rounded-2xl px-4 py-4 text-xl font-semibold leading-[1.2] text-accent-foreground no-underline;
 }
 
 .site-header__icon-link {

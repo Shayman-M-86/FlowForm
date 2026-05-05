@@ -13,20 +13,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
-const buttonBaseClasses = "ui-button";
-const activeClasses = "ui-button-active";
-const disabledClasses = "ui-button-disabled";
-
 const buttonVariantClasses: Record<ButtonVariant, string> = {
   primary: "ui-button-primary",
   secondary: "ui-button-secondary",
   danger: "ui-button-danger",
   ghost: "ui-button-ghost",
-};
-
-const borderStyleClasses: Record<ButtonBorderStyle, string> = {
-  solid: "ui-button-border-solid",
-  dotted: "ui-button-border-dotted",
 };
 
 export function Button({
@@ -43,13 +34,10 @@ export function Button({
     <button
       disabled={disabled}
       className={cn(
-        buttonBaseClasses,
-        !disabled && activeClasses,
         buttonVariantClasses[variant],
         pill ? "rounded-full" : "rounded-sm",
-        borderStyleClasses[borderStyle],
+        borderStyle === "dotted" && "border-2 border-dashed border-border",
         controlSizeClasses[size],
-        disabled && disabledClasses,
         className,
       )}
       {...props}

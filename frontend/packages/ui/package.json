@@ -9,7 +9,8 @@
     "./styles/*": "./src/styles/*"
   },
   "dependencies": {
-    "@flowform/styles": "0.0.0"
+    "@flowform/styles": "0.0.0",
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",

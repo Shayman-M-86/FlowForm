@@ -238,6 +238,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                         <LargeInput
                           className="w-full"
                           shellClassName="border-0 rounded-none"
+                          variant={isEditMode ? "secondary" : "ghost"}
                           placeholder={item.placeholder}
                           rows={1}
                           maxText={fieldMax}
@@ -350,6 +351,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
+        idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
       />
 
       <div className={nodePillBodyClass}>
@@ -361,7 +363,6 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
           titleValue={titleValue}
           onTitleChange={setTitleValue}
           showTitleEdit={true}
-          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
         />
 
         <div className={nodePillFieldClass}>

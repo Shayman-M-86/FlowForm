@@ -175,58 +175,6 @@
     @apply px-3 py-2;
   }
 
-  /* Buttons */
-  .ui-button {
-    @apply cursor-pointer border font-semibold;
-  }
-
-  .ui-button-active {
-    @apply active:scale-95;
-    -webkit-tap-highlight-color: transparent;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .ui-button-active::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: rgb(0 0 0 / 0.1);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.05s;
-  }
-
-  .ui-button-active:active::after {
-    opacity: 1;
-    transition: none;
-  }
-
-  .ui-button-disabled {
-    @apply disabled:cursor-not-allowed disabled:opacity-50;
-  }
-
-  .ui-button-primary {
-    @apply border-transparent bg-primary text-primary-foreground shadow-sm hover:bg-accent;
-  }
-
-  .ui-button-secondary {
-    @apply border-border/80 bg-input text-secondary-foreground shadow-sm hover:border-ring/80 hover:bg-transparent-hover;
-  }
-
-  .ui-button-danger {
-    @apply border-destructive/30 bg-transparent text-destructive shadow-sm hover:bg-destructive/10;
-  }
-
-  .ui-button-ghost {
-    @apply border-transparent bg-transparent text-accent-foreground shadow-none hover:border-ring/20 hover:bg-muted;
-  }
-
-  .ui-button-border-dotted {
-    @apply border-2 border-dashed;
-  }
-
   /* Stepper */
   .ui-stepper-shell {
     @apply inline-flex w-fit items-center self-start border transition-colors;

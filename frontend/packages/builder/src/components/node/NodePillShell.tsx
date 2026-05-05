@@ -23,6 +23,7 @@ type TopbarProps = {
   onToggleEditMode: () => void;
   onDelete?: () => void;
   actions?: ReactNode;
+  idField?: ReactNode;
 };
 
 export function NodePillTopbar({
@@ -31,6 +32,7 @@ export function NodePillTopbar({
   onToggleEditMode,
   onDelete,
   actions,
+  idField,
 }: TopbarProps) {
   const { leading, trailing } = useContext(MobileControlsContext);
   return (
@@ -40,6 +42,7 @@ export function NodePillTopbar({
           <span className="hidden max-[640px]:flex items-center">{leading}</span>
         )}
         <Badge variant="accent" size="md">{family}</Badge>
+        {idField}
       </div>
       <div className="ml-auto flex shrink-0 items-center gap-3">
         {isEditMode && (actions ?? (
@@ -137,6 +140,7 @@ export function NodePillTitleField({
           maxLength={max}
           value={value}
           readOnly={!isEditMode}
+          variant={isEditMode ? "secondary" : "ghost"}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={blurOnEnter}
         />
@@ -162,7 +166,6 @@ type QuestionFieldWithTitleProps = QuestionFieldProps & {
   onTitleChange?: (next: string) => void;
   titleMax?: number;
   showTitleEdit?: boolean;
-  idField?: ReactNode;
 };
 
 export function NodePillQuestionField({
@@ -174,7 +177,6 @@ export function NodePillQuestionField({
   onTitleChange,
   titleMax = 80,
   showTitleEdit = false,
-  idField,
 }: QuestionFieldWithTitleProps) {
   const [isTitleEditMode, setIsTitleEditMode] = useState(false);
   const hasTitle = titleValue !== undefined && onTitleChange !== undefined;
@@ -207,7 +209,6 @@ export function NodePillQuestionField({
             ✎
           </Button>
         )}
-        {idField}
       </div>
       {hasTitle && (
         <Modal
@@ -252,6 +253,7 @@ export function NodePillQuestionField({
           maxText={max}
           value={value}
           readOnly={!isEditMode}
+          variant={isEditMode ? "secondary" : "ghost"}
           onChange={(event) => onChange(event.target.value)}
         />
         {isEditMode && value.length === max && (

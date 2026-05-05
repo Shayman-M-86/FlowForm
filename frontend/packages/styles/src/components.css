@@ -23,6 +23,11 @@
   --color-muted-accent-foreground: var(--muted-accent-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-destructive-press: var(--destructive-press);
+  --color-destructive-mobile-press: var(--destructive-mobile-press);
+  --color-destructive-active: var(--destructive-active);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);

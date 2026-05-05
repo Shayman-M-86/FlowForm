@@ -10,15 +10,15 @@
   --accent: rgb(110 164 226);
   --accent-muted: rgb(110 164 226 / 0.6);
 
-  --destructive: rgb(234 116 110);
+  --destructive: rgb(219, 66, 61);
+  --destructive-foreground: rgb(255 255 255);
+  --destructive-hover: rgb(from var(--destructive) calc(r - 15) calc(g - 15) calc(b - 15) / 0.95);
+  --destructive-press: rgb(from var(--destructive) calc(r - 30) calc(g - 30) calc(b - 30) / 0.95);
+  --destructive-mobile-press: rgb(from var(--destructive) calc(r - 45) calc(g - 40) calc(b - 40));
+  --destructive-active: rgb(from var(--destructive) calc(r - 10) calc(g - 10) calc(b - 10) / 0.95);
 
   --secondary-foreground: rgb(96 155 223);
-  --secondary-hover: rgb(from var(--secondary) calc(r - 2) calc(g - 2) calc(b - 2) / 0.95);
-  --secondary-press: rgb(from var(--secondary) calc(r - 10) calc(g - 10) calc(b - 10) / 0.95);
-  --secondary-mobile-press: rgb(from var(--secondary) calc(r - 20) calc(g - 20) calc(b - 20));
-  --secondary-active: rgb(from var(--secondary) calc(r - 10) calc(g - 10) calc(b - 10) / 0.95);
-
-  --radius: 0.425rem;
+  --radius: 0.535rem;
 
   --font-sans:
     "Geist",
@@ -90,7 +90,7 @@
 
 
   --toolbar-bg-solid: rgb(247 247 247);
-  --toolbar-bg: rgb(247 247 247 / 0.05);
+  --toolbar-bg: rgba(247, 247, 247, 0.1);
   --topbar-shadow: 0.5px 1.5px 20px rgb(0 0 0 / 0.04);
   --node-pill-topbar-gradient: linear-gradient(to bottom,
       rgb(252 252 252 / 96.9%),
@@ -122,8 +122,8 @@
 
   --secondary: rgb(29, 29, 30);
 
-  --secondary-hover: rgb(from var(--secondary) calc(r + 3) calc(g + 3) calc(b + 3) / 0.95);
-  --secondary-press: rgb(from var(--secondary) calc(r + 10) calc(g + 10) calc(b + 10) / 0.95);
+  --secondary-hover: rgb(from var(--secondary) calc(r + 6) calc(g + 6) calc(b + 6) / 0.95);
+  --secondary-press: rgb(from var(--secondary) calc(r + 13) calc(g + 13) calc(b + 13) / 0.95);
   --secondary-mobile-press: rgb(from var(--secondary) calc(r + 20) calc(g + 20) calc(b + 20));
   --secondary-active: rgb(from var(--secondary) calc(r + 10) calc(g + 10) calc(b + 10) / 0.95);
 
@@ -144,7 +144,7 @@
 
 
   --toolbar-bg-solid: rgb(30 30 32);
-  --toolbar-bg: rgb(30 30 32 / 0.05);
+  --toolbar-bg: rgb(30 30 32 / 0.1);
   --topbar-shadow: 0.5px 1.5px 16px rgb(0 0 0 / 0.14);
   --node-pill-topbar-gradient: linear-gradient(to bottom,
       rgb(39 39 39 / 0.3),
