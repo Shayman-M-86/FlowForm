@@ -1,32 +1,24 @@
+/* ── Shared (same in light and dark) ──────────────────────────── */
 :root {
-  --background: rgb(247 247 247);
-  --foreground: rgb(44 45 48);
-  --card: rgb(254 253 253);
-  --card-foreground: rgb(32 32 34);
-  --popover: rgb(255 255 255);
-  --popover-foreground: rgb(10 10 10);
   --primary: rgb(80 145 220);
+  --primary-press: rgba(68 125 190 / 0.95);
+  --primary-mobile-press: rgb(95, 148, 212);
+  --primary-hover: rgba(84 144 213 / 0.95);
+  --primary-active: rgba(81 133 192 / 0.95);
   --primary-saturated: rgb(84 162 252);
-  --primary-foreground: rgb(253 252 253);
-  --secondary: rgb(254 253 253);
-  --secondary-foreground: rgb(96 155 223);
-  --muted: rgb(240 239 240);
-  --muted-foreground: rgb(80, 80, 80);
+
   --accent: rgb(110 164 226);
-  --accent-foreground: rgb(58 60 65);
+  --accent-muted: rgb(110 164 226 / 0.6);
+
   --destructive: rgb(234 116 110);
-  --border: rgb(229 229 229);
-  --input: rgb(244 244 244 / 93.4%);
-  --ring: rgb(161 161 161);
-  --hover-highlight: rgb(240 239 240);
-  --toolbar-bg-solid: rgb(247 247 247);
-  --toolbar-bg: rgb(247 247 247 / 0.05);
-  --topbar-shadow: 0.5px 1.5px 20px rgb(0 0 0 / 0.04);
-  --node-pill-topbar-gradient: linear-gradient(
-    to bottom,
-    rgb(252 252 252 / 96.9%),
-    rgb(248 248 248)
-  );
+
+  --secondary-foreground: rgb(96 155 223);
+  --secondary-hover: rgb(from var(--secondary) calc(r - 2) calc(g - 2) calc(b - 2) / 0.95);
+  --secondary-press: rgb(from var(--secondary) calc(r - 10) calc(g - 10) calc(b - 10) / 0.95);
+  --secondary-mobile-press: rgb(from var(--secondary) calc(r - 20) calc(g - 20) calc(b - 20));
+  --secondary-active: rgb(from var(--secondary) calc(r - 10) calc(g - 10) calc(b - 10) / 0.95);
+
+  --radius: 0.425rem;
 
   --font-sans:
     "Geist",
@@ -63,8 +55,46 @@
     "Liberation Mono",
     "Courier New",
     monospace;
+}
 
-  --radius: 0.425rem;
+/* ── Light theme ──────────────────────────────────────────────── */
+:root {
+  --background: rgb(247 247 247);
+  --foreground: rgb(44 45 48);
+  --foreground-full: rgb(0, 0, 0);
+  --card: rgb(254 253 253);
+  --card-foreground: rgb(32 32 34);
+  --popover: rgb(255 255 255);
+  --popover-foreground: rgb(10 10 10);
+  --primary-foreground: rgb(253 252 253);
+
+  --secondary: rgb(254 253 253);
+  --secondary-hover: rgb(from var(--secondary) calc(r - 2) calc(g - 2) calc(b - 2) / 0.95);
+  --secondary-press: rgb(from var(--secondary) calc(r - 5) calc(g - 5) calc(b - 5) / 0.95);
+  --secondary-mobile-press: rgb(from var(--secondary) calc(r - 20) calc(g - 20) calc(b - 20));
+  --secondary-active: rgb(from var(--secondary) calc(r - 10) calc(g - 10) calc(b - 10) / 0.95);
+
+  --muted: rgb(240 239 240);
+  --muted-foreground: rgb(80, 80, 80);
+  --muted-accent-foreground: rgb(70, 72, 77);
+  --accent-foreground: rgb(58 60 65);
+  --border: rgb(229 229 229);
+  --input: rgb(244 244 244 / 93.4%);
+  --ring: rgb(161 161 161);
+
+  --bg-hover-highlight: rgba(227, 227, 227, 0.8);
+  --transparent-hover: rgba(227, 227, 227, 0.8);
+  --transparent-active: rgba(218, 218, 218, 0.85);
+  --transparent-press: rgba(209, 209, 209, 0.728);
+  --transparent-mobile-press: rgba(200, 200, 200, 0.9);
+
+
+  --toolbar-bg-solid: rgb(247 247 247);
+  --toolbar-bg: rgb(247 247 247 / 0.05);
+  --topbar-shadow: 0.5px 1.5px 20px rgb(0 0 0 / 0.04);
+  --node-pill-topbar-gradient: linear-gradient(to bottom,
+      rgb(252 252 252 / 96.9%),
+      rgb(248 248 248));
 
   --app-shadow-2xs: 0.5px 1.5px 5px rgb(0 0 0 / 0.018);
   --app-shadow-xs: 0.5px 1.5px 6px rgb(0 0 0 / 0.022);
@@ -79,35 +109,46 @@
   --warning: rgb(202 138 4);
 }
 
+/* ── Dark theme ───────────────────────────────────────────────── */
 .dark {
   --background: rgb(30 30 32);
   --foreground: rgb(250 250 250);
+  --foreground-full: rgb(255, 255, 255);
   --card: rgb(24 24 24);
   --card-foreground: rgb(250 250 250);
   --popover: rgb(24 24 24);
   --popover-foreground: rgb(250 250 250);
-  --primary: rgb(82 149 226);
-  --primary-saturated: rgb(73 151 240);
   --primary-foreground: rgb(0 0 0);
-  --secondary: rgb(44 43 46);
-  --secondary-foreground: rgb(96 155 223);
+
+  --secondary: rgb(29, 29, 30);
+
+  --secondary-hover: rgb(from var(--secondary) calc(r + 3) calc(g + 3) calc(b + 3) / 0.95);
+  --secondary-press: rgb(from var(--secondary) calc(r + 10) calc(g + 10) calc(b + 10) / 0.95);
+  --secondary-mobile-press: rgb(from var(--secondary) calc(r + 20) calc(g + 20) calc(b + 20));
+  --secondary-active: rgb(from var(--secondary) calc(r + 10) calc(g + 10) calc(b + 10) / 0.95);
+
   --muted: rgb(39 39 39);
   --muted-foreground: rgb(185, 185, 185);
-  --accent: rgb(110 164 226);
+  --muted-accent-foreground: rgb(220, 220, 220);
   --accent-foreground: rgb(250 250 250);
-  --destructive: rgb(234 116 110);
   --border: rgb(255 255 255 / 0.09);
   --input: rgb(42 42 45 / 93.7%);
   --ring: rgb(117 117 117);
-  --hover-highlight: rgb(167 167 167 / 0.2);
+
+
+  --bg-hover-highlight: rgb(255 255 255 / 0.14);
+  --transparent-hover: rgba(167, 167, 167, 0.113);
+  --transparent-active: rgba(160, 160, 160, 0.18);
+  --transparent-press: rgba(155, 155, 155, 0.25);
+  --transparent-mobile-press: rgba(150, 150, 150, 0.32);
+
+
   --toolbar-bg-solid: rgb(30 30 32);
   --toolbar-bg: rgb(30 30 32 / 0.05);
   --topbar-shadow: 0.5px 1.5px 16px rgb(0 0 0 / 0.14);
-  --node-pill-topbar-gradient: linear-gradient(
-    to bottom,
-    rgb(39 39 39 / 0.3),
-    rgb(39 39 39 / 0.7)
-  );
+  --node-pill-topbar-gradient: linear-gradient(to bottom,
+      rgb(39 39 39 / 0.3),
+      rgb(39 39 39 / 0.7));
 
   --app-shadow-2xs: 0.5px 1px 2px rgb(0 0 0 / 0.12);
   --app-shadow-xs: 0.5px 1px 2px rgb(0 0 0 / 0.14);

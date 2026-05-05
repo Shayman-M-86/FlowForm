@@ -212,7 +212,7 @@
   }
 
   .ui-button-secondary {
-    @apply border-border/80 bg-input text-secondary-foreground shadow-sm hover:border-ring/80 hover:bg-hover-highlight;
+    @apply border-border/80 bg-input text-secondary-foreground shadow-sm hover:border-ring/80 hover:bg-transparent-hover;
   }
 
   .ui-button-danger {

@@ -1,0 +1,188 @@
+@utility ui-action {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+
+  appearance: none;
+  -webkit-appearance: none;
+  color-scheme: inherit;
+
+  /* Shorthand: sets color for all states unless overridden per-state. */
+  --ui-color: inherit;
+
+  /* Desktop hover: pass in a hover colour from the button variant. */
+  --ui-hover-bg: transparent;
+  --ui-hover-color: var(--ui-color);
+  --ui-hover-border-color: transparent;
+
+  /* Desktop press: pass in a press colour from the button variant. */
+  --ui-press-bg: transparent;
+  --ui-press-color: var(--ui-color);
+  --ui-press-border-color: transparent;
+
+  /* Mobile Press: shadow flash only. */
+  --ui-mobile-press-flash-shadow: inset 0 0 0 999px rgb(255 255 255 / 0.14);
+  --ui-mobile-press-depth-shadow: inset 0 1px 4px 1px rgb(0 0 0 / 0.12);
+
+  --ui-mobile-press-shadow:
+    var(--ui-mobile-press-flash-shadow),
+    var(--ui-mobile-press-depth-shadow);
+
+  /* Toggle / persistent active: pass in an active colour from the button variant. */
+  --ui-active-bg: transparent;
+  --ui-active-color: var(--ui-color);
+  --ui-active-border-color: transparent;
+  --ui-active-shadow: inset 0 1px 5px 1px rgb(0 0 0 / 0.18);
+
+  /* Default desktop press values. */
+  --ui-press-shadow: none;
+
+  /* Transition tuning. */
+  --ui-transition-duration: 60ms;
+  --ui-shadow-duration: 10ms;
+  --ui-transform-duration: 60ms;
+
+  transition:
+    color var(--ui-transition-duration) cubic-bezier(.22, 1, .36, 1),
+    background-color var(--ui-transition-duration) cubic-bezier(.22, 1, .36, 1),
+    border-color var(--ui-transition-duration) cubic-bezier(.22, 1, .36, 1),
+    box-shadow var(--ui-shadow-duration) cubic-bezier(.22, 1, .36, 1),
+    transform var(--ui-transform-duration) cubic-bezier(.65, 0, .35, 1);
+
+  @media (hover: none) {
+    --ui-transition-duration: 100ms;
+    --ui-transform-duration: 100ms;
+
+    --ui-press-shadow: var(--ui-mobile-press-shadow);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--ui-hover-bg);
+      color: var(--ui-hover-color);
+      border-color: var(--ui-hover-border-color);
+    }
+  }
+
+  /* Press state: desktop uses passed-in colour; mobile adds shadow flash. */
+  &:active {
+    transition: none;
+    background-color: var(--ui-press-bg);
+    color: var(--ui-press-color);
+    border-color: var(--ui-press-border-color);
+    box-shadow: var(--ui-press-shadow);
+  }
+
+  /* Persistent toggle/open/active state. */
+  &[aria-pressed="true"],
+  &[aria-expanded="true"],
+  &[data-active="true"],
+  &[data-state="open"],
+  &[data-state="checked"] {
+    background-color: var(--ui-active-bg);
+    color: var(--ui-active-color);
+    border-color: var(--ui-active-border-color);
+    box-shadow: var(--ui-active-shadow);
+  }
+
+  /* Already-active toggle press: temporarily overrides the persistent toggle state. */
+  &[aria-pressed="true"]:active,
+  &[aria-expanded="true"]:active,
+  &[data-active="true"]:active,
+  &[data-state="open"]:active,
+  &[data-state="checked"]:active {
+    transition: none;
+    background-color: var(--ui-press-bg);
+    color: var(--ui-press-color);
+    border-color: var(--ui-press-border-color);
+    box-shadow: var(--ui-press-shadow);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  &:disabled,
+  &[aria-disabled="true"],
+  &[data-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.5;
+    pointer-events: none;
+    box-shadow: none;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+@utility ui-button-transparent-icon {
+  @apply ui-action flex size-[34px] shrink-0 items-center justify-center
+         rounded-sm border-0 bg-transparent p-0 text-muted-foreground no-underline;
+
+  --ui-color: var(--foreground);
+  --ui-hover-bg: var(--transparent-hover);
+  --ui-press-bg: var(--transparent-press);
+  --ui-active-bg: var(--transparent-active);
+  
+  --ui-active-shadow: none;
+  @media (hover: none) {
+    --ui-press-bg: var(--transparent-mobile-press);
+  }
+}
+
+@utility ui-button-transparent {
+  @apply ui-action inline-flex shrink-0 items-center justify-center gap-2
+         rounded-sm bg-transparent text-foreground;
+         
+  --ui-color: var(--foreground-fall);
+  --ui-hover-bg: var(--transparent-hover);
+  --ui-active-shadow: none;
+
+  --ui-press-bg: var(--transparent-press);
+
+  --ui-active-bg: var(--transparent-active);
+
+  @media (hover: none) {
+    --ui-press-bg: var(--transparent-mobile-press);
+  }
+
+}
+
+@utility ui-button-secondary {
+  @apply ui-action inline-flex shrink-0 items-center justify-center gap-2
+         rounded-sm bg-secondary 
+         font-semibold leading-[1.2] text-foreground no-underline
+         shadow-sm;
+
+  --ui-color: var(--foreground-fall);
+  --ui-hover-bg: var(--secondary-hover);
+  --ui-press-bg: var(--secondary-press);
+  --ui-active-bg: var(--secondary-active);
+
+  @media (hover: none) {
+    --ui-press-bg: var(--secondary-mobile-press);
+  }
+}
+
+@utility ui-button-primary {
+  @apply ui-action inline-flex shrink-0 items-center justify-center gap-2
+         rounded-sm border border-transparent bg-primary
+         font-semibold leading-[1.2] text-primary-foreground no-underline
+         shadow-sm;
+  --ui-color: var(--primary-foreground);
+  --ui-hover-bg: var(--primary-hover);
+  
+
+  --ui-press-bg: var(--primary-press);
+
+  --ui-active-bg: var(--primary-active);
+
+  @media (hover: none) {
+    --ui-press-bg: var(--primary-mobile-press);
+  }
+}

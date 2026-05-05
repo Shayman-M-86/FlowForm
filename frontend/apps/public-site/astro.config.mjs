@@ -5,7 +5,7 @@ import PinyAstro from '@pinegrow/piny-astro';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import sitemap from '@astrojs/sitemap';
-// import fontPreload from './src/integrations/font-preload.mjs';
+import fontPreload from './src/integrations/font-preload.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const stylesSrc = path.resolve(__dirname, '../../packages/styles/src');
@@ -23,7 +23,7 @@ export default defineConfig({
     react(),
     PinyAstro(),
     sitemap(),
-    // fontPreload(),
+    fontPreload(),
   ],
   vite: {
     plugins: [tailwindcss()],

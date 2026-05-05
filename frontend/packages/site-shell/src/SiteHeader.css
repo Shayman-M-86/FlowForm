@@ -2,6 +2,7 @@
 @reference "@flowform/styles/tokens.css";
 @reference "@flowform/styles/components.css";
 
+
 .site-header {
   @apply fixed inset-x-0 top-0 z-50;
   height: calc(env(safe-area-inset-top) + 56px);
@@ -17,40 +18,28 @@
   box-shadow: var(--topbar-shadow);
 }
 
-
-
 .site-header__inner {
-  @apply flex flex-wrap items-center justify-between gap-x-4 mx-auto px-6;
-  max-width: 1100px;
-  min-height: 56px;
+  @apply mx-auto flex min-h-[56px] max-w-[1100px] flex-wrap items-center justify-between gap-x-4 px-6;
 }
 
 .site-header__brand {
-  @apply flex items-center gap-2.5 shrink-0;
+  @apply flex shrink-0 items-center gap-2.5;
 }
 
 .site-header__logo {
-  @apply flex items-center justify-center shrink-0 overflow-hidden rounded-lg;
-  width: 28px;
-  height: 28px;
+  @apply flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-lg;
 }
 
 .site-header__logo-image {
-  @apply block w-full h-full object-cover;
+  @apply block size-full object-cover;
 }
 
 .site-header__wordmark {
-  @apply font-bold text-foreground;
-  font-size: 1.05rem;
-  letter-spacing: -0.02em;
+  @apply font-bold text-foreground text-[1.05rem] tracking-[-0.02em];
 }
 
-/* Matches Badge variant="muted" feel but accent-coloured */
 .site-header__badge {
-  @apply text-accent border rounded-full font-semibold uppercase mt-0.5 shrink-0;
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  padding: 2px 7px;
+  @apply mt-0.5 shrink-0 rounded-full border px-[7px] py-0.5 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-accent;
   background: rgb(from var(--accent) r g b / 0.13);
   border-color: rgb(from var(--accent) r g b / 0.3);
 }
@@ -60,52 +49,29 @@
 }
 
 .site-header__actions {
-  @apply flex items-center gap-2 shrink-0;
+  @apply flex shrink-0 items-center gap-2;
 }
 
-/* Ghost button (sm) — matches Button variant="ghost" size="sm" */
+/* Ghost nav button */
 .site-header__nav-link {
-  @apply cursor-pointer bg-transparent font-semibold text-accent-foreground
-         shadow-none rounded-sm no-underline
-         active:scale-95
-         hover:bg-muted hover:text-foreground;
-  /* size="sm": min-h-[34px] px-3 text-[0.86rem] leading-[1.2] */
-  @apply inline-flex items-center min-h-[34px] px-3 text-[0.86rem] leading-[1.2];
-  -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  @apply ui-button-transparent inline-flex min-h-[40px] items-center rounded-sm bg-transparent px-3 font-semibold text-muted-accent-foreground no-underline shadow-none;
 }
 
-.site-header__nav-link:active {
-  background: var(--muted) !important;
-  color: var(--foreground) !important;
-}
+/* .site-header__nav-link:active {
+  background: var(--muted);
+  color: var(--foreground);
+} */
 
 .site-header__nav-link[data-active="true"] {
-  /* Secondary variant active state */
-  @apply border-border/80 bg-input text-secondary-foreground shadow-sm;
+  @apply border border-border/80 bg-input text-secondary-foreground shadow-sm;
 }
 
+/* Mobile dropdown trigger — hidden by default, shown via media query below */
 .site-header__nav-dropdown-button {
-  @apply hidden cursor-pointer select-none bg-transparent font-semibold text-accent-foreground
-         shadow-none rounded-sm no-underline list-none
-         items-center justify-center min-h-[34px] text-lg leading-[1.2]
-         hover:bg-muted hover:text-foreground
-         active:scale-95;
-  appearance: none;
-  -webkit-appearance: none;
-  -webkit-tap-highlight-color: transparent;
-  color-scheme: inherit;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  transition: color 0.15s, background 0.15s, border-color 0.15s;
-  border: none;
+  @apply ui-button-transparent min-h-[50px] min-w-[65px] list-none rounded-sm text-lg font-semibold leading-[1.2] text-accent-foreground shadow-none;
+  display: none;
 }
 
-.site-header__nav-dropdown-button:active {
-  background: var(--muted) !important;
-  color: var(--foreground) !important;
-}
 
 .site-header__nav-icon-close {
   opacity: 0;
@@ -120,9 +86,10 @@
 }
 
 .site-header__nav-dropdown-button path {
-  transition: opacity 0.15s;
+  transition: opacity 150ms ease;
 }
 
+/* Mobile dropdown menu */
 .site-header__nav-dropdown-menu {
   @apply fixed inset-x-0 z-40 flex flex-col gap-1 px-4 py-3 shadow-md;
   top: calc(env(safe-area-inset-top) + 56px);
@@ -130,51 +97,20 @@
 }
 
 .site-header__nav-dropdown-link {
-  @apply cursor-pointer rounded-sm px-4 py-4 text-xl font-semibold leading-[1.2]
-         text-accent-foreground no-underline
-         hover:bg-muted hover:text-foreground;
-  -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s, background 0.15s;
+  @apply ui-button-transparent justify-start rounded-2xl px-4 py-4 text-xl font-semibold leading-[1.2] text-accent-foreground no-underline;
 }
 
-.site-header__nav-dropdown-link:active {
-  background: var(--muted) !important;
-  color: var(--foreground) !important;
-  transform: scale(0.98);
+.site-header__icon-link {
+  @apply ui-button-transparent-icon;
 }
 
-/* Icon button — 34×34, same border/bg as secondary but no text, square */
+/* Icon buttons */
 .site-header__icon-link,
 .site-header__theme-toggle {
-  @apply cursor-pointer rounded-sm
-         flex items-center justify-center shrink-0 no-underline
-         active:scale-95;
-  appearance: none;
-  -webkit-appearance: none;
-  -webkit-tap-highlight-color: transparent;
-  color-scheme: inherit;
-  color: var(--muted-foreground) !important;
-  background: transparent;
-  border: none;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  @apply ui-button-transparent-icon;
 }
 
-.site-header__icon-link:active,
-.site-header__theme-toggle:active {
-  background: var(--hover-highlight) !important;
-  color: var(--foreground) !important;
-}
-
-.site-header__icon-link:hover,
-.site-header__theme-toggle:hover {
-  background: var(--hover-highlight) !important;
-  color: var(--foreground) !important;
-}
-
-/* Astro-only theme icon visibility (React uses JS conditionals instead) */
+/* Astro-only theme icon visibility */
 .site-header__theme-icon {
   display: none;
 }
@@ -184,70 +120,59 @@
   display: block;
 }
 
-/* Primary button (sm) — matches Button variant="primary" size="sm" */
+/* Primary CTA */
 .site-header__cta {
-  @apply cursor-pointer border border-transparent bg-primary font-semibold text-primary-foreground
-         shadow-sm rounded-sm no-underline shrink-0
-         inline-flex items-center min-h-[34px] px-3 text-[0.86rem] leading-[1.2]
-         hover:bg-accent active:scale-95 active:brightness-90;
-  -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.15s, background 0.15s;
+  @apply ui-button-primary inline-flex min-h-[34px] shrink-0 items-center rounded-sm border border-transparent bg-primary px-3 text-[0.86rem] font-semibold leading-[1.2] text-primary-foreground no-underline shadow-sm;
 }
 
-/* User avatar button — circular, replaces the sign-out CTA when authenticated */
+/* Avatar button */
 .site-header__avatar-btn {
-  @apply cursor-pointer shrink-0 rounded-full overflow-hidden border-0
-         flex items-center justify-center bg-transparent p-0
-         w-[38px] h-[38px]
-         hover:opacity-80 active:scale-95 active:opacity-60
-         transition-[opacity,transform] duration-150;
+  @apply ui-action flex size-[38px] shrink-0 items-center justify-center overflow-hidden rounded-full border-0 bg-transparent p-0 hover:opacity-80 active:opacity-60;
 }
 
 .site-header__avatar-img {
-  @apply block w-full h-full object-cover;
+  @apply block size-full object-cover;
 }
 
-/* Fallback when no avatar image is available — shows initials */
 .site-header__avatar-initials {
-  @apply w-full h-full flex items-center justify-center select-none
-         bg-primary text-primary-foreground font-semibold
-         text-[0.78rem] tracking-[0.01em];
+  @apply flex size-full select-none items-center justify-center bg-primary text-[0.78rem] font-semibold tracking-[0.01em] text-primary-foreground;
 }
 
 @media (max-width: 780px) {
   .site-header__inner {
-    @apply px-4 gap-2;
+    @apply gap-2 px-4;
   }
 
   .site-header__badge,
   .site-header__cta {
-    @apply hidden;
+    display: none;
   }
 }
 
 @media (max-width: 600px) {
   .site-header__icon-link {
-    @apply hidden;
-  }
-}
-@media (max-width: 510px) {
-  .site-header__theme-toggle {
-    @apply hidden;
+    display: none;
   }
 }
 
-@media (max-width: 475px) {
+@media (max-width: 560px) {
+  .site-header__theme-toggle {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
   .site-header__nav {
-    @apply hidden;
+    display: none;
   }
 
   .site-header__nav-dropdown-button {
-    @apply inline-flex;
+    display: inline-flex;
   }
 }
 
-@media (min-width: 476px) {
+@media (min-width: 520px) {
   .site-header__nav-dropdown-menu {
-    @apply hidden;
+    display: none;
   }
 }

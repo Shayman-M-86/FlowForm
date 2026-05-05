@@ -1,6 +1,6 @@
 ---
-import '@flowform/site-shell/header.css';
-import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
+import "@flowform/site-shell/header.css";
+import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from "@flowform/site-shell";
 ---
 
 <style is:inline>
@@ -14,32 +14,10 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
      on each doc navigation, which drops the external SiteHeader.css link
      and lets Starlight's base styles win. Inline styles travel with the
      persisted element and are never evicted. */
-  .site-header__icon-link,
-  .site-header__theme-toggle {
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    color-scheme: inherit !important;
-    color: var(--muted-foreground) !important;
-    background: transparent !important;
-    border: none !important;
-  }
-  .site-header__icon-link:hover,
-  .site-header__theme-toggle:hover {
-    background: var(--hover-highlight) !important;
-    color: var(--foreground) !important;
-  }
-  .site-header__nav-dropdown-button {
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    color-scheme: inherit !important;
-    border: none !important;
-    background: transparent !important;
-  }
 </style>
 
 <header class="site-header" data-site-header transition:persist="site-header">
   <div class="site-header__inner">
-
     <div class="site-header__brand">
       <div class="site-header__logo" aria-hidden="true">
         <img src={BRAND.logoSrc} alt="" class="site-header__logo-image" />
@@ -49,9 +27,13 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
     </div>
 
     <nav class="site-header__nav" aria-label="Primary">
-      {PUBLIC_NAV_LINKS.map((link: { href: string; label: string }) => (
-        <a href={link.href} class="site-header__nav-link">{link.label}</a>
-      ))}
+      {
+        PUBLIC_NAV_LINKS.map((link: { href: string; label: string }) => (
+          <a href={link.href} class="site-header__nav-link">
+            {link.label}
+          </a>
+        ))
+      }
     </nav>
 
     <div class="site-header__actions">
@@ -63,9 +45,21 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
         aria-controls="site-header-mobile-nav"
         aria-expanded="false"
       >
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path class="site-header__nav-icon-menu" d="M4 6h16M4 12h16M4 18h16" />
-          <path class="site-header__nav-icon-close" d="M6 6l12 12M18 6 6 18" />
+        <svg
+          width="30"
+          height="30"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path class="site-header__nav-icon-menu" d="M4 6h16M4 12h16M4 18h16"
+          ></path>
+          <path class="site-header__nav-icon-close" d="M6 6l12 12M18 6 6 18"
+          ></path>
         </svg>
       </button>
 
@@ -77,8 +71,18 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
         aria-label="View on GitHub"
         title="View on GitHub"
       >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8C0 11.54 2.29 14.53 5.47 15.59C5.87 15.66 6.02 15.42 6.02 15.21C6.02 15.02 6.01 14.39 6.01 13.72C4 14.09 3.48 13.23 3.32 12.78C3.23 12.55 2.84 11.84 2.5 11.65C2.22 11.5 1.82 11.13 2.49 11.12C3.12 11.11 3.57 11.7 3.72 11.94C4.44 13.15 5.59 12.81 6.05 12.6C6.12 12.08 6.33 11.73 6.56 11.53C4.78 11.33 2.92 10.64 2.92 7.58C2.92 6.71 3.23 5.99 3.74 5.43C3.66 5.23 3.38 4.41 3.82 3.31C3.82 3.31 4.49 3.1 6.02 4.13C6.66 3.95 7.34 3.86 8.02 3.86C8.7 3.86 9.38 3.95 10.02 4.13C11.55 3.09 12.22 3.31 12.22 3.31C12.66 4.41 12.38 5.23 12.3 5.43C12.81 5.99 13.12 6.7 13.12 7.58C13.12 10.65 11.25 11.33 9.47 11.53C9.76 11.78 10.01 12.26 10.01 13.01C10.01 14.08 10 14.94 10 15.21C10 15.42 10.15 15.67 10.55 15.59C13.71 14.53 16 11.53 16 8C16 3.58 12.42 0 8 0Z" />
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M8 0C3.58 0 0 3.58 0 8C0 11.54 2.29 14.53 5.47 15.59C5.87 15.66 6.02 15.42 6.02 15.21C6.02 15.02 6.01 14.39 6.01 13.72C4 14.09 3.48 13.23 3.32 12.78C3.23 12.55 2.84 11.84 2.5 11.65C2.22 11.5 1.82 11.13 2.49 11.12C3.12 11.11 3.57 11.7 3.72 11.94C4.44 13.15 5.59 12.81 6.05 12.6C6.12 12.08 6.33 11.73 6.56 11.53C4.78 11.33 2.92 10.64 2.92 7.58C2.92 6.71 3.23 5.99 3.74 5.43C3.66 5.23 3.38 4.41 3.82 3.31C3.82 3.31 4.49 3.1 6.02 4.13C6.66 3.95 7.34 3.86 8.02 3.86C8.7 3.86 9.38 3.95 10.02 4.13C11.55 3.09 12.22 3.31 12.22 3.31C12.66 4.41 12.38 5.23 12.3 5.43C12.81 5.99 13.12 6.7 13.12 7.58C13.12 10.65 11.25 11.33 9.47 11.53C9.76 11.78 10.01 12.26 10.01 13.01C10.01 14.08 10 14.94 10 15.21C10 15.42 10.15 15.67 10.55 15.59C13.71 14.53 16 11.53 16 8C16 3.58 12.42 0 8 0Z"
+          ></path>
         </svg>
       </a>
 
@@ -89,96 +93,148 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
         aria-label="Toggle color theme"
         title="Switch to dark mode"
       >
-        <svg class="site-header__theme-icon site-header__theme-icon--sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="4" />
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+        <svg
+          class="site-header__theme-icon site-header__theme-icon--sun"
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="4"></circle>
+          <path
+            d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+          ></path>
         </svg>
-        <svg class="site-header__theme-icon site-header__theme-icon--moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        <svg
+          class="site-header__theme-icon site-header__theme-icon--moon"
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
         </svg>
       </button>
 
       <a href="/#builder" class="site-header__cta">Try it free</a>
     </div>
-
   </div>
 
-  <nav id="site-header-mobile-nav" class="site-header__nav-dropdown-menu" data-mobile-nav aria-label="Primary" hidden>
-    {PUBLIC_NAV_LINKS.map((link: { href: string; label: string }) => (
-      <a href={link.href} class="site-header__nav-dropdown-link">{link.label}</a>
-    ))}
+  <nav
+    id="site-header-mobile-nav"
+    class="site-header__nav-dropdown-menu"
+    data-mobile-nav
+    aria-label="Primary"
+    hidden
+  >
+    {
+      PUBLIC_NAV_LINKS.map((link: { href: string; label: string }) => (
+        <a href={link.href} class="site-header__nav-dropdown-link">
+          {link.label}
+        </a>
+      ))
+    }
   </nav>
 </header>
 
 <script is:inline>
   (() => {
-    const STORAGE_KEY = 'flowform.theme';
+    const STORAGE_KEY = "flowform.theme";
 
     const resolveTheme = () => {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === 'light' || stored === 'dark') return stored;
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      if (stored === "light" || stored === "dark") return stored;
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
     };
 
     const applyTheme = (theme) => {
       const root = document.documentElement;
-      const isDark = theme === 'dark';
-      root.classList.toggle('dark', isDark);
+      const isDark = theme === "dark";
+      root.classList.toggle("dark", isDark);
       root.dataset.theme = theme;
-      document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
-        button.setAttribute('data-theme', theme);
-        button.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
-        button.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+      document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+        button.setAttribute("data-theme", theme);
+        button.setAttribute(
+          "title",
+          isDark ? "Switch to light mode" : "Switch to dark mode",
+        );
+        button.setAttribute(
+          "aria-label",
+          isDark ? "Switch to light mode" : "Switch to dark mode",
+        );
       });
     };
 
     const initHeaderThemeToggle = () => {
       let theme;
-      try { theme = resolveTheme(); } catch (_) {
-        theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      try {
+        theme = resolveTheme();
+      } catch (_) {
+        theme = document.documentElement.classList.contains("dark")
+          ? "dark"
+          : "light";
       }
       applyTheme(theme);
-      document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
-        if (button.dataset.bound === 'true') return;
-        button.dataset.bound = 'true';
-        button.addEventListener('click', () => {
-          const nextTheme = button.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-          try { localStorage.setItem(STORAGE_KEY, nextTheme); } catch (_) {}
+      document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+        if (button.dataset.bound === "true") return;
+        button.dataset.bound = "true";
+        button.addEventListener("click", () => {
+          const nextTheme =
+            button.getAttribute("data-theme") === "dark" ? "light" : "dark";
+          try {
+            localStorage.setItem(STORAGE_KEY, nextTheme);
+          } catch (_) {}
           applyTheme(nextTheme);
         });
       });
     };
 
     const closeMobileNav = () => {
-      const button = document.querySelector('[data-nav-toggle]');
-      const menu = document.querySelector('[data-mobile-nav]');
+      const button = document.querySelector("[data-nav-toggle]");
+      const menu = document.querySelector("[data-mobile-nav]");
       if (!button || !menu) return;
-      button.setAttribute('aria-expanded', 'false');
+      button.setAttribute("aria-expanded", "false");
       menu.hidden = true;
     };
 
     const handleNavToggleClick = () => {
-      const button = document.querySelector('[data-nav-toggle]');
-      const menu = document.querySelector('[data-mobile-nav]');
+      const button = document.querySelector("[data-nav-toggle]");
+      const menu = document.querySelector("[data-mobile-nav]");
       if (!button || !menu) return;
-      const isOpen = button.getAttribute('aria-expanded') !== 'true';
-      button.setAttribute('aria-expanded', String(isOpen));
+      const isOpen = button.getAttribute("aria-expanded") !== "true";
+      button.setAttribute("aria-expanded", String(isOpen));
       menu.hidden = !isOpen;
     };
 
     const initHeaderMobileNav = () => {
-      const button = document.querySelector('[data-nav-toggle]');
-      if (!button || button.dataset.bound === 'true') return;
+      const button = document.querySelector("[data-nav-toggle]");
+      if (!button || button.dataset.bound === "true") return;
 
-      button.dataset.bound = 'true';
-      button.addEventListener('click', handleNavToggleClick);
+      button.dataset.bound = "true";
+      button.addEventListener("click", handleNavToggleClick);
     };
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        initHeaderThemeToggle();
-        initHeaderMobileNav();
-      }, { once: true });
+    if (document.readyState === "loading") {
+      document.addEventListener(
+        "DOMContentLoaded",
+        () => {
+          initHeaderThemeToggle();
+          initHeaderMobileNav();
+        },
+        { once: true },
+      );
     } else {
       initHeaderThemeToggle();
       initHeaderMobileNav();
@@ -188,16 +244,16 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from '@flowform/site-shell';
       window.__siteHeaderListenersAttached = true;
 
       // Astro view transitions (docs ↔ docs, docs → other)
-      document.addEventListener('astro:before-navigation', closeMobileNav);
-      document.addEventListener('astro:page-load', () => {
+      document.addEventListener("astro:before-navigation", closeMobileNav);
+      document.addEventListener("astro:page-load", () => {
         closeMobileNav();
         initHeaderThemeToggle();
       });
 
       // Close when any dropdown link is clicked (covers full-page navigations
       // that don't fire astro:before-navigation on non-docs pages)
-      document.addEventListener('click', (e) => {
-        const link = e.target.closest('[data-mobile-nav] a');
+      document.addEventListener("click", (e) => {
+        const link = e.target.closest("[data-mobile-nav] a");
         if (link) closeMobileNav();
       });
     }
