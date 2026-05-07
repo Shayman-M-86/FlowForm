@@ -15,6 +15,7 @@ import { Button } from "./Button";
 export interface DropdownMenuAction {
   key: string;
   content: ReactNode;
+  variant?: "primary" | "secondary" | "danger" | "ghost";
   onSelect?: () => void;
   closeOnSelect?: boolean;
 }
@@ -24,8 +25,9 @@ export interface DropdownMenuSection {
   actions: DropdownMenuAction[];
 }
 
-type DropdownMenuSize = "sm" | "md" | "lg" | "xl";
+type DropdownMenuSize = "auto" | "sm" | "md" | "lg" | "xl";
 type DropdownMenuFullscreenAt = "never" | number;
+type DropdownMenuButtonAlign = "left" | "center" | "right";
 
 interface DropdownMenuProps {
   open: boolean;
@@ -33,12 +35,15 @@ interface DropdownMenuProps {
   trigger: React.RefObject<HTMLElement | null>;
   sections: DropdownMenuSection[];
   align?: "left" | "right";
+  buttonAlign?: DropdownMenuButtonAlign;
+  positioning?: "fixed" | "absolute";
   size?: DropdownMenuSize;
   fullscreenAt?: DropdownMenuFullscreenAt;
 }
 
 const dropdownMenuSizeClasses: Record<DropdownMenuSize, string> = {
-  sm: "w-[220px]",
+  auto: "w-max",
+  sm: "w-[190px]",
   md: "w-[280px]",
   lg: "w-[360px]",
   xl: "w-[440px]",
@@ -50,11 +55,13 @@ export function DropdownMenu({
   trigger,
   sections,
   align = "right",
+  buttonAlign = "center",
+  positioning = "fixed",
   size = "sm",
   fullscreenAt = 640,
 }: DropdownMenuProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const [position, setPosition] = useState<{ top: number; left: number; minWidth: number } | null>(null);
 
   useLayoutEffect(() => {
     if (!open || !isBrowser) return;
@@ -64,11 +71,14 @@ export function DropdownMenu({
 
     const rect = el.getBoundingClientRect();
     const gap = 6;
-    const top = rect.bottom + gap;
-    const left = align === "right" ? rect.right : rect.left;
+    const top =
+      rect.bottom + gap + (positioning === "absolute" ? window.scrollY : 0);
+    const left =
+      (align === "right" ? rect.right : rect.left) +
+      (positioning === "absolute" ? window.scrollX : 0);
 
-    setPosition({ top, left });
-  }, [open, align, trigger]);
+    setPosition({ top, left, minWidth: rect.width });
+  }, [open, align, positioning, trigger]);
 
   useEffect(() => {
     if (!open) return;
@@ -108,8 +118,9 @@ export function DropdownMenu({
         }
       : {
           top: position.top,
-          [align === "right" ? "right" : "left"]:
-            align === "right" ? window.innerWidth - position.left : position.left,
+          left: position.left,
+          minWidth: size === "auto" ? position.minWidth : undefined,
+          transform: align === "right" ? "translateX(-100%)" : undefined,
         }
     : { visibility: "hidden" };
 
@@ -138,10 +149,15 @@ export function DropdownMenu({
       <Button
         type="button"
         role="menuitem"
-        variant="ghost"
+        variant={action.variant ?? "ghost"}
         size="sm"
         onClick={handleSelect}
-        className="ui-dropdown-action-button"
+        className={cn(
+          "ui-dropdown-action-button",
+          buttonAlign === "left" && "justify-start text-left",
+          buttonAlign === "center" && "justify-center text-center",
+          buttonAlign === "right" && "justify-end text-right",
+        )}
       >
         {content}
       </Button>
@@ -157,6 +173,7 @@ export function DropdownMenu({
       tabIndex={-1}
       className={cn(
         "ui-dropdown-panel",
+        positioning === "absolute" && "ui-dropdown-panel-absolute",
         dropdownMenuSizeClasses[size],
         isFullscreenViewport && "ui-dropdown-panel-fullscreen",
       )}

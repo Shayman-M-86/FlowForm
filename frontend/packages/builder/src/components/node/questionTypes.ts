@@ -26,6 +26,7 @@ export interface ChoiceContent {
   id: string;
   title: string;
   label: string;
+  required?: boolean;
   family: "choice";
   definition: ChoiceDefinition;
 }
@@ -51,6 +52,7 @@ export interface MatchingContent {
   id: string;
   title: string;
   label: string;
+  required?: boolean;
   family: "matching";
   definition: MatchingDefinition;
 }
@@ -102,6 +104,7 @@ export interface RatingContent {
   id: string;
   title: string;
   label: string;
+  required?: boolean;
   family: "rating";
   definition: RatingDefinition;
 }
@@ -121,6 +124,7 @@ export interface FieldContent {
   id: string;
   title: string;
   label: string;
+  required?: boolean;
   family: "field";
   definition: FieldDefinition;
 }

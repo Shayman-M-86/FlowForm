@@ -14,7 +14,6 @@ export const PUBLIC_NAV_LINKS = [
 
 export const STUDIO_NAV_LINKS = [
   { to: "/", label: "Dashboard" },
-  { to: "/surveys", label: "Surveys" },
 ] as const;
 
 export const THEME_STORAGE_KEY = "flowform.theme";

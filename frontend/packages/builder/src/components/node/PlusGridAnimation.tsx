@@ -24,28 +24,40 @@ export function PlusGridAnimation() {
     const context = canvas?.getContext("2d");
     if (!canvas || !context) return;
 
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const state = {
-      canvasY: 0,
       color: getCanvasColor(),
       frameId: 0,
       height: 0,
       layerTop: 0,
-      smoothScroll: window.scrollY,
-      targetScroll: window.scrollY,
+      viewportHeight: window.innerHeight,
+      viewportOffsetTop: 0,
       width: 0,
     };
 
     const resizeCanvas = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const layer = layerRef.current;
+      const host = layer?.parentElement;
       const layerRect = layer?.getBoundingClientRect();
+      const hostRect = host?.getBoundingClientRect();
+      const viewport = window.visualViewport;
 
-      state.width = layerRect?.width || window.innerWidth;
-      state.height = window.innerHeight;
-      state.layerTop = (layerRect?.top || 0) + window.scrollY;
+      state.width = hostRect?.width || layerRect?.width || window.innerWidth;
+      state.height = Math.max(
+        host?.scrollHeight || 0,
+        hostRect?.height || 0,
+        layerRect?.height || 0,
+        window.innerHeight,
+      );
+      state.layerTop = (hostRect?.top || layerRect?.top || 0) + window.scrollY;
+      state.viewportHeight = viewport?.height || window.innerHeight;
+      state.viewportOffsetTop = viewport?.offsetTop || 0;
+      if (layer) {
+        layer.style.height = `${state.height}px`;
+      }
       canvas.width = Math.ceil(state.width * dpr);
       canvas.height = Math.ceil(state.height * dpr);
+      canvas.style.height = `${state.height}px`;
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
@@ -62,16 +74,11 @@ export function PlusGridAnimation() {
     };
 
     const draw = () => {
-      state.targetScroll = window.scrollY;
-      const scrollDelta = state.targetScroll - state.smoothScroll;
-      const scrollEase = Math.abs(scrollDelta) > 120 ? 0.9 : 0.72;
-
-      state.smoothScroll =
-        reduceMotion.matches || Math.abs(scrollDelta) < 0.5
-          ? state.targetScroll
-          : state.smoothScroll + scrollDelta * scrollEase;
-      state.canvasY = state.smoothScroll - state.layerTop;
-      canvas.style.transform = `translate3d(0, ${state.canvasY.toFixed(2)}px, 0)`;
+      const scrollY = window.scrollY;
+      const viewport = window.visualViewport;
+      const viewportHeight = viewport?.height || state.viewportHeight;
+      const viewportTop = scrollY + (viewport?.offsetTop || state.viewportOffsetTop);
+      const viewportCenterPageY = viewportTop + viewportHeight / 2;
 
       context.clearRect(0, 0, state.width, state.height);
       context.strokeStyle = state.color;
@@ -83,17 +90,14 @@ export function PlusGridAnimation() {
       const startCol = Math.floor((-gap - centerX) / gap);
       const endCol = Math.ceil((state.width + gap - centerX) / gap);
       const topInset = -gap / 2;
-      const startRow = Math.floor((state.smoothScroll - gap - topInset) / gap);
-      const endRow = Math.ceil(
-        (state.smoothScroll + state.height + gap - topInset) / gap,
-      );
-      const centerY = state.height / 2;
-      const influence = state.height * 0.5;
+      const startRow = Math.floor((-gap - topInset) / gap);
+      const endRow = Math.ceil((state.height + gap - topInset) / gap);
+      const influence = viewportHeight * 0.5;
 
       for (let row = startRow; row <= endRow; row += 1) {
-        const pageY = topInset + row * gap;
-        const y = pageY - state.smoothScroll;
-        const distance = Math.abs(y - centerY);
+        const y = topInset + row * gap;
+        const pageY = state.layerTop + y;
+        const distance = Math.abs(pageY - viewportCenterPageY);
         const centerWeight = 1 - clamp(distance / influence, 0, 1);
         const scale = 0.42 + centerWeight ** 2.2 * 0.9;
         const opacity = 0.07 + centerWeight * 0.12;
@@ -104,12 +108,7 @@ export function PlusGridAnimation() {
       }
 
       context.globalAlpha = 1;
-
-      if (Math.abs(state.targetScroll - state.smoothScroll) > 0.5) {
-        state.frameId = requestAnimationFrame(draw);
-      } else {
-        state.frameId = 0;
-      }
+      state.frameId = 0;
     };
 
     const requestDraw = () => {
@@ -126,12 +125,22 @@ export function PlusGridAnimation() {
     resizeCanvas();
     draw();
 
+    const resizeObserver = new ResizeObserver(handleResize);
+    if (layerRef.current?.parentElement) {
+      resizeObserver.observe(layerRef.current.parentElement);
+    }
+
     window.addEventListener("resize", handleResize);
+    window.visualViewport?.addEventListener("resize", handleResize);
+    window.visualViewport?.addEventListener("scroll", requestDraw);
     window.addEventListener("scroll", requestDraw, { passive: true });
 
     return () => {
       if (state.frameId) cancelAnimationFrame(state.frameId);
+      resizeObserver.disconnect();
       window.removeEventListener("resize", handleResize);
+      window.visualViewport?.removeEventListener("resize", handleResize);
+      window.visualViewport?.removeEventListener("scroll", requestDraw);
       window.removeEventListener("scroll", requestDraw);
     };
   }, []);
@@ -139,12 +148,12 @@ export function PlusGridAnimation() {
   return (
     <div
       ref={layerRef}
-      className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+      className="pointer-events-none absolute left-0 top-0 z-0 w-full overflow-hidden"
       aria-hidden="true"
     >
       <canvas
         ref={canvasRef}
-        className="absolute left-0 top-0 block h-screen w-full will-change-transform"
+        className="absolute left-0 top-0 block w-full"
       />
     </div>
   );

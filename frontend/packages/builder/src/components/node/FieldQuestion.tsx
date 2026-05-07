@@ -32,7 +32,9 @@ interface FieldQuestionProps {
   initialContent?: FieldContent;
   idError?: string;
   isCollapsed?: boolean;
+  isEditMode?: boolean;
   onExpand?: () => void;
+  onExpandInEditMode?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: FieldContent) => void;
 }
@@ -55,12 +57,12 @@ const FIELD_TYPE_PRESETS: Record<FieldType, { placeholder: string; helper: strin
   date: { placeholder: "", helper: "Calendar date input." },
 };
 
-export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>(function FieldQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, onExpand, onEditModeChange, onDataChange }, ref) {
-  const [isEditMode, setIsEditMode] = useState(true);
+export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>(function FieldQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
   const initialFieldType = initialContent?.definition.field_type ?? "short_text";
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
   const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
+  const [isRequired, setIsRequired] = useState(initialContent?.required ?? false);
   const [fieldType, setFieldType] = useState<FieldType>(initialFieldType);
   const [placeholderValue, setPlaceholderValue] = useState(
     initialContent?.definition.ui.placeholder ?? FIELD_TYPE_PRESETS[initialFieldType].placeholder,
@@ -71,6 +73,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
     id: tagValue,
     title: titleValue,
     label: questionValue,
+    ...(isRequired ? { required: true } : {}),
     family: "field",
     definition: {
       field_type: fieldType,
@@ -86,7 +89,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
 
   useEffect(() => {
     onDataChange?.(fieldQuestionData);
-  }, [titleValue, tagValue, questionValue, fieldType, placeholderValue]);
+  }, [titleValue, tagValue, questionValue, isRequired, fieldType, placeholderValue]);
 
   function updateFieldType(nextType: FieldType) {
     setFieldType(nextType);
@@ -95,11 +98,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
   }
 
   function toggleEditMode() {
-    setIsEditMode((current) => {
-      const nextMode = !current;
-      onEditModeChange?.(nextMode);
-      return nextMode;
-    });
+    onEditModeChange?.(!isEditMode);
   }
 
   const fieldLabel = FIELD_TYPE_OPTIONS.find((option) => option.value === fieldType)?.label ?? "Field";
@@ -108,7 +107,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
   const fieldMaxLength = fieldType === "short_text" ? 100 : fieldType === "long_text" ? 1000 : undefined;
 
   if (isCollapsed) {
-    return <NodePillCollapsed family="Field" tagValue={tagValue} title={titleValue} onExpand={() => { onExpand?.(); setIsEditMode(true); onEditModeChange?.(true); }} />;
+    return <NodePillCollapsed family="Field" tagValue={tagValue} title={titleValue} onExpand={() => onExpand?.()} onExpandInEditMode={() => onExpandInEditMode?.()} />;
   }
 
   return (
@@ -118,11 +117,20 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
-        idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
+        settings={{
+          tagValue,
+          onTagChange: setTagValue,
+          titleValue,
+          onTitleChange: setTitleValue,
+          required: isRequired,
+          onRequiredChange: setIsRequired,
+          idError,
+        }}
       />
 
       <div className={nodePillBodyClass}>
         <NodePillQuestionField
+          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
           value={questionValue}
           onChange={setQuestionValue}
           isEditMode={isEditMode}
@@ -133,9 +141,11 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
         />
 
         <div className={nodePillFieldClass}>
-          <NodePillFieldHead label="Field">
-            {isEditMode && <NodePillCharCount label="Type" value={fieldLabel} />}
-          </NodePillFieldHead>
+          {isEditMode && (
+            <NodePillFieldHead label="Field">
+              <NodePillCharCount label="Type" value={fieldLabel} />
+            </NodePillFieldHead>
+          )}
 
           <div className={nodePillPanelClass}>
             {isEditMode && (

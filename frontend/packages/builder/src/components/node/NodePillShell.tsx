@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useRef, useState } from "react";
 
 import { TAG_MAX, blurOnEnter, sanitizeQuestionId } from "./NodePillUtils";
 
-import { Badge, Button, Input, LargeInput, Modal, Tooltip } from "@flowform/ui";
+import { Badge, Button, DropdownMenu, Input, LargeInput, Modal, Toggle, Tooltip } from "@flowform/ui";
 import {
   nodePillCollapsedShellClass,
   nodePillFieldClass,
@@ -24,6 +24,17 @@ type TopbarProps = {
   onDelete?: () => void;
   actions?: ReactNode;
   idField?: ReactNode;
+  settings?: NodePillSettings;
+};
+
+type NodePillSettings = {
+  tagValue: string;
+  onTagChange: (next: string) => void;
+  titleValue: string;
+  onTitleChange: (next: string) => void;
+  required: boolean;
+  onRequiredChange: (next: boolean) => void;
+  idError?: string;
 };
 
 export function NodePillTopbar({
@@ -33,8 +44,38 @@ export function NodePillTopbar({
   onDelete,
   actions,
   idField,
+  settings,
 }: TopbarProps) {
   const { leading, trailing } = useContext(MobileControlsContext);
+  const mobileActionsTriggerRef = useRef<HTMLSpanElement>(null);
+  const [isMobileActionsOpen, setIsMobileActionsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const openSettings = settings ? () => setIsSettingsOpen(true) : undefined;
+  const defaultActions = (
+    <>
+      <Button
+        className="whitespace-nowrap"
+        type="button"
+        variant="danger"
+        size="xs"
+        onClick={onDelete}
+      >
+        Delete
+      </Button>
+      {settings && (
+        <Button
+          className="whitespace-nowrap"
+          type="button"
+          variant="secondary"
+          size="xs"
+          onClick={openSettings}
+        >
+          Settings
+        </Button>
+      )}
+    </>
+  );
+
   return (
     <header className={nodePillTopbarClass}>
       <div className="flex min-w-0 grow items-center gap-3">
@@ -45,29 +86,58 @@ export function NodePillTopbar({
         {idField}
       </div>
       <div className="ml-auto flex shrink-0 items-center gap-3">
-        {isEditMode && (actions ?? (
-          <>
-            <Button
-              className="whitespace-nowrap"
-              type="button"
-              variant="danger"
-              size="xs"
-              pill
-              onClick={onDelete}
-            >
-              Delete
-            </Button>
-            <Button className="whitespace-nowrap" type="button" variant="secondary" size="xs" pill>
-              Settings
-            </Button>
-          </>
-        ))}
+        {isEditMode && (
+          actions ?? (
+            <>
+              <span className="contents max-[640px]:hidden">
+                {defaultActions}
+              </span>
+              <span ref={mobileActionsTriggerRef} className="hidden max-[640px]:inline-flex">
+                <Button
+                  className="whitespace-nowrap"
+                  type="button"
+                  variant="secondary"
+                  size="xs"
+                  aria-haspopup="menu"
+                  aria-expanded={isMobileActionsOpen}
+                  onClick={() => setIsMobileActionsOpen((open) => !open)}
+                >
+                  More
+                </Button>
+              </span>
+              <DropdownMenu
+                open={isMobileActionsOpen}
+                onClose={() => setIsMobileActionsOpen(false)}
+                trigger={mobileActionsTriggerRef}
+                positioning="absolute"
+                size="sm"
+                fullscreenAt="never"
+                sections={[
+                  {
+                    actions: [
+                      ...(settings ? [{
+                        key: "settings",
+                        content: "Settings",
+                        onSelect: openSettings,
+                      }] : []),
+                      {
+                        key: "delete",
+                        content: "Delete",
+                        variant: "danger",
+                        onSelect: onDelete,
+                      },
+                    ],
+                  },
+                ]}
+              />
+            </>
+          )
+        )}
         <Button
           className="whitespace-nowrap"
           type="button"
-          variant="secondary"
+          variant={isEditMode ? "primary" : "secondary"}
           size="xs"
-          pill
           onClick={onToggleEditMode}
         >
           {isEditMode ? "Editing" : "Edit"}
@@ -76,6 +146,44 @@ export function NodePillTopbar({
           <span className="hidden max-[640px]:flex items-center gap-2">{trailing}</span>
         )}
       </div>
+      {settings && (
+        <Modal
+          open={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          title="Question settings"
+          width={460}
+          footer={(
+            <Button type="button" variant="primary" onClick={() => setIsSettingsOpen(false)}>
+              Done
+            </Button>
+          )}
+        >
+          <div className="flex flex-col gap-4">
+            <Input
+              label="ID"
+              type="text"
+              placeholder="question_id"
+              maxLength={TAG_MAX}
+              value={settings.tagValue}
+              error={settings.idError}
+              onChange={(event) => settings.onTagChange(sanitizeQuestionId(event.target.value))}
+            />
+            <Input
+              label="Title"
+              type="text"
+              placeholder="Enter a title (optional)"
+              maxLength={80}
+              value={settings.titleValue}
+              onChange={(event) => settings.onTitleChange(event.target.value)}
+            />
+            <Toggle
+              label="Required"
+              checked={settings.required}
+              onChange={settings.onRequiredChange}
+            />
+          </div>
+        </Modal>
+      )}
     </header>
   );
 }
@@ -88,32 +196,72 @@ type IdFieldProps = {
 };
 
 export function NodePillIdField({ tagValue, onTagChange, idError, isEditMode }: IdFieldProps) {
+  const [isIdEditMode, setIsIdEditMode] = useState(false);
+
+  const handleSubmit = () => {
+    setIsIdEditMode(false);
+  };
+
   return (
-    <div className="ml-auto flex flex-col items-end gap-1">
-      <div className="flex items-center gap-1 rounded-full border border-border bg-card/60 shadow-xs">
+    <div className="flex flex-col items-start gap-1">
+      <div className="flex items-center gap-1.5">
         <Tooltip
           title="Identifier for this question. Lowercase only; no spaces or capitals."
           size="sm"
         >
-          <h6 className="pl-2 text-muted-foreground">ID</h6>
+          <span
+            className={`text-[0.78rem] font-medium text-muted-foreground ${isEditMode ? "cursor-pointer hover:text-foreground" : ""}`}
+            onClick={isEditMode ? () => setIsIdEditMode(true) : undefined}
+          >
+            {tagValue || "—"}
+          </span>
         </Tooltip>
-        <Input
-          type="text"
-          className="border-l border-border rounded-xl"
-          placeholder={isEditMode ? "question_id" : ""}
-          value={tagValue}
-          size="xs"
-          maxLength={TAG_MAX}
-          readOnly={!isEditMode}
-          variant="ghost"
-          pill
-          onChange={(event) => onTagChange(sanitizeQuestionId(event.target.value))}
-          onKeyDown={blurOnEnter}
-        />
+        {isEditMode && (
+          <Button
+            className="p-1!"
+            type="button"
+            variant="ghost"
+            size="xxs"
+            onClick={() => setIsIdEditMode(true)}
+            aria-label="Edit ID"
+          >
+            ✎
+          </Button>
+        )}
       </div>
       {idError && (
         <span className="text-[0.78rem] text-destructive">{idError}</span>
       )}
+      <Modal
+        open={isIdEditMode}
+        onClose={() => setIsIdEditMode(false)}
+        title="Edit ID"
+        width={420}
+        footer={(
+          <>
+            <Button type="button" variant="secondary" onClick={() => setIsIdEditMode(false)}>
+              Cancel
+            </Button>
+            <Button type="button" variant="primary" onClick={handleSubmit}>
+              Save
+            </Button>
+          </>
+        )}
+      >
+        <Input
+          label="ID"
+          type="text"
+          placeholder="question_id"
+          maxLength={TAG_MAX}
+          value={tagValue}
+          onChange={(event) => onTagChange(sanitizeQuestionId(event.target.value))}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") handleSubmit();
+            if (event.key === "Escape") setIsIdEditMode(false);
+          }}
+          autoFocus
+        />
+      </Modal>
     </div>
   );
 }
@@ -162,6 +310,7 @@ type QuestionFieldProps = {
 };
 
 type QuestionFieldWithTitleProps = QuestionFieldProps & {
+  idField?: ReactNode;
   titleValue?: string;
   onTitleChange?: (next: string) => void;
   titleMax?: number;
@@ -173,6 +322,7 @@ export function NodePillQuestionField({
   onChange,
   isEditMode,
   max,
+  idField,
   titleValue,
   onTitleChange,
   titleMax = 80,
@@ -193,13 +343,17 @@ export function NodePillQuestionField({
 
   return (
     <div className={nodePillFieldClass}>
+      {isEditMode && idField && <div className="mb-1.5">{idField}</div>}
       <div className="mb-2 flex items-center gap-1.5">
-        <span className={nodePillLabelClass}>
+        <span
+          className={`${nodePillLabelClass} ${hasTitle && showTitleEdit && isEditMode ? "cursor-pointer hover:text-foreground" : ""}`}
+          onClick={hasTitle && showTitleEdit && isEditMode ? handleTitleClick : undefined}
+        >
           {hasTitle && titleValue ? titleValue : "Question"}
         </span>
         {hasTitle && showTitleEdit && isEditMode && (
           <Button
-            className="mt-1 !p-1"
+            className="mt-1 p-1!"
             type="button"
             variant="ghost"
             size="xxs"
@@ -346,9 +500,10 @@ type CollapsedProps = {
   tagValue: string;
   title: string;
   onExpand: () => void;
+  onExpandInEditMode: () => void;
 };
 
-export function NodePillCollapsed({ family, tagValue, title, onExpand }: CollapsedProps) {
+export function NodePillCollapsed({ family, tagValue, title, onExpand, onExpandInEditMode }: CollapsedProps) {
   const { leading } = useContext(MobileControlsContext);
   return (
     <div className={nodePillCollapsedShellClass}>
@@ -357,11 +512,11 @@ export function NodePillCollapsed({ family, tagValue, title, onExpand }: Collaps
           <span className="hidden max-[640px]:flex items-center">{leading}</span>
         )}
         <Badge variant="accent" size="md">{family}</Badge>
-        <div className="flex flex-1 min-w-0 items-baseline gap-2.5 overflow-hidden">
-          <span className="overflow-hidden text-ellipsis whitespace-nowrap text-[0.88rem] font-semibold text-foreground">
-            {title.trim() || "Untitled question"}
-          </span>
-          <span className="shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[0.78rem] text-muted-foreground">
+        <div
+          className="flex min-w-0 flex-1 cursor-pointer items-baseline justify-end overflow-hidden"
+          onClick={onExpand}
+        >
+          <span className="overflow-hidden text-ellipsis whitespace-nowrap text-[0.78rem] text-muted-foreground">
             {tagValue}
           </span>
         </div>
@@ -369,8 +524,7 @@ export function NodePillCollapsed({ family, tagValue, title, onExpand }: Collaps
           type="button"
           variant="secondary"
           size="xs"
-          pill
-          onClick={onExpand}
+          onClick={onExpandInEditMode}
         >
           Edit
         </Button>

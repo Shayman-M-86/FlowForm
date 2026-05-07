@@ -223,7 +223,7 @@
   }
 
   .ui-modal-panel {
-    @apply flex max-h-[min(90vh,760px)] w-full min-w-0 flex-col rounded-2xl border border-border bg-card shadow-lg;
+    @apply flex max-h-[min(90vh,760px)] w-full min-w-0 flex-col rounded-xl border border-border bg-card shadow-lg;
   }
 
   .ui-modal-header {
@@ -249,11 +249,11 @@
 
   /* Card tones */
     .ui-card-default {
-    @apply border-border/80 bg-card text-card-foreground;
+    @apply border-border/90 bg-card text-card-foreground;
     }
 
     .ui-card-muted {
-    @apply border-border/80 bg-muted text-foreground;
+    @apply border-border/90 bg-muted text-foreground;
     }
 
     .ui-card-ghost {
@@ -309,11 +309,15 @@
       }
 
       .ui-dropdown-action-button {
-        @apply w-full justify-start text-left max-[640px]:px-4 max-[640px]:py-3 max-[640px]:text-base;
+        @apply w-full max-[640px]:px-4 max-[640px]:py-3 max-[640px]:text-base;
       }
       
       .ui-dropdown-panel {
         @apply fixed z-[200] rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none;
+      }
+
+      .ui-dropdown-panel-absolute {
+        @apply absolute;
       }
       
       .ui-dropdown-panel-fullscreen {

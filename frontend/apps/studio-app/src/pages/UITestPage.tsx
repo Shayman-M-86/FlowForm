@@ -14,7 +14,8 @@ import {
   NumberStepper,
   NumberStepperGroup,
   ThemeToggle,
- Badge
+  Badge,
+  TabSelector,
 } from "@flowform/ui";
 
 const buttonVariants = ["primary", "secondary", "danger", "ghost"] as const;
@@ -82,6 +83,30 @@ function WideStack({ children }: { children: React.ReactNode }) {
 }
 
 export function UITestPage() {
+  const [tabActive, setTabActive] = useState("overview");
+  const [tabOverflowActive, setTabOverflowActive] = useState("surveys");
+
+  const TAB_CONTENT: Record<string, { heading: string; body: string }> = {
+    overview:   { heading: "Overview", body: "High-level summary of the project. Shows key stats, recent activity, and health indicators." },
+    surveys:    { heading: "Surveys", body: "All surveys belonging to this project. Create, publish, pause, or archive surveys from here." },
+    members:    { heading: "Members", body: "People who have access to this project. Invite new members and manage their roles." },
+    roles:      { heading: "Roles", body: "Define permission sets that can be assigned to members. Includes built-in and custom roles." },
+    responses:  { heading: "Responses", body: "Aggregated submission data across all surveys in this project." },
+    analytics:  { heading: "Analytics", body: "Charts and breakdowns for survey performance, completion rates, and answer distributions." },
+    settings:   { heading: "Settings", body: "Project-level configuration: name, slug, visibility, integrations, and danger zone." },
+    audit:      { heading: "Audit log", body: "A full history of changes made to this project and its surveys by all members." },
+  };
+
+  const NORMAL_TABS = ["overview", "surveys", "members", "roles"].map((id) => ({
+    id,
+    label: TAB_CONTENT[id].heading,
+  }));
+
+  const OVERFLOW_TABS = Object.keys(TAB_CONTENT).map((id) => ({
+    id,
+    label: TAB_CONTENT[id].heading,
+  }));
+
   const [toggleStates, setToggleStates] = useState({
     toggle1: false,
     toggle2: true,
@@ -154,6 +179,42 @@ export function UITestPage() {
           <h1 className="m-0">UI Component Test Suite</h1>
           <ThemeToggle />
         </div>
+
+        <Section title="Tab Selector">
+          <TestGrid>
+            <TestCard title="4 Tabs">
+              <TabSelector
+                items={NORMAL_TABS}
+                activeId={tabActive}
+                onChange={setTabActive}
+              />
+              <div className="pt-4">
+                <p className="text-sm font-semibold text-foreground">
+                  {TAB_CONTENT[tabActive].heading}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {TAB_CONTENT[tabActive].body}
+                </p>
+              </div>
+            </TestCard>
+
+            <TestCard title="8 Tabs — overflow scroll">
+              <TabSelector
+                items={OVERFLOW_TABS}
+                activeId={tabOverflowActive}
+                onChange={setTabOverflowActive}
+              />
+              <div className="pt-4">
+                <p className="text-sm font-semibold text-foreground">
+                  {TAB_CONTENT[tabOverflowActive].heading}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {TAB_CONTENT[tabOverflowActive].body}
+                </p>
+              </div>
+            </TestCard>
+          </TestGrid>
+        </Section>
 
         <Section title="Buttons">
           <TestGrid>

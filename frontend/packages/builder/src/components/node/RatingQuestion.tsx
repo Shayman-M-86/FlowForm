@@ -31,7 +31,9 @@ interface RatingQuestionProps {
   initialContent?: RatingContent;
   idError?: string;
   isCollapsed?: boolean;
+  isEditMode?: boolean;
   onExpand?: () => void;
+  onExpandInEditMode?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: RatingContent) => void;
 }
@@ -99,7 +101,7 @@ function getNearestValidStep(nextStep: number, validSteps: number[]) {
   }, validSteps[0]);
 }
 
-export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionProps>(function RatingQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, onExpand, onEditModeChange, onDataChange }, ref) {
+export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionProps>(function RatingQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
   const initialRatingType: RatingType =
     initialContent?.definition.variant === "slider"
       ? "numeric-slider"
@@ -108,10 +110,10 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
         : initialContent?.definition.variant === "star"
           ? "stars"
           : "numeric-slider";
-  const [isEditMode, setIsEditMode] = useState(true);
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
   const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
+  const [isRequired, setIsRequired] = useState(initialContent?.required ?? false);
   const [ratingType, setRatingType] = useState<RatingType>(initialRatingType);
   const [rangeStart, setRangeStart] = useState(initialContent?.definition.variant === "slider" ? initialContent.definition.range.min : -5);
   const [rangeEnd, setRangeEnd] = useState(initialContent?.definition.variant === "slider" ? initialContent.definition.range.max : 5);
@@ -150,6 +152,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
         id: tagValue,
         title: titleValue,
         label: questionValue,
+        ...(isRequired ? { required: true } : {}),
         family: "rating",
         definition: {
           variant: "slider",
@@ -162,6 +165,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
           id: tagValue,
           title: titleValue,
           label: questionValue,
+          ...(isRequired ? { required: true } : {}),
           family: "rating",
           definition: {
             variant: "emoji",
@@ -174,6 +178,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
           id: tagValue,
           title: titleValue,
           label: questionValue,
+          ...(isRequired ? { required: true } : {}),
           family: "rating",
           definition: {
             variant: "star",
@@ -190,7 +195,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
 
   useEffect(() => {
     onDataChange?.(ratingQuestionData);
-  }, [titleValue, tagValue, questionValue, ratingType, rangeStart, rangeEnd, stepValue, leftLabel, rightLabel, starCount, emojiScaleType, showEmojiWords]);
+  }, [titleValue, tagValue, questionValue, isRequired, ratingType, rangeStart, rangeEnd, stepValue, leftLabel, rightLabel, starCount, emojiScaleType, showEmojiWords]);
 
   function alignToStep(value: number, min: number, max: number, step: number) {
     const safeStep = Math.max(1, Math.abs(step) || 1);
@@ -261,11 +266,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
   }
 
   function toggleEditMode() {
-    setIsEditMode((current) => {
-      const nextMode = !current;
-      onEditModeChange?.(nextMode);
-      return nextMode;
-    });
+    onEditModeChange?.(!isEditMode);
   }
 
   const emojiScale = EMOJI_SCALES[emojiScaleType];
@@ -277,7 +278,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
       : rangePreview;
 
   if (isCollapsed) {
-    return <NodePillCollapsed family="Rating" tagValue={tagValue} title={titleValue} onExpand={() => { onExpand?.(); setIsEditMode(true); onEditModeChange?.(true); }} />;
+    return <NodePillCollapsed family="Rating" tagValue={tagValue} title={titleValue} onExpand={() => onExpand?.()} onExpandInEditMode={() => onExpandInEditMode?.()} />;
   }
 
   return (
@@ -287,11 +288,20 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
-        idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
+        settings={{
+          tagValue,
+          onTagChange: setTagValue,
+          titleValue,
+          onTitleChange: setTitleValue,
+          required: isRequired,
+          onRequiredChange: setIsRequired,
+          idError,
+        }}
       />
 
       <div className={nodePillBodyClass}>
         <NodePillQuestionField
+          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
           value={questionValue}
           onChange={setQuestionValue}
           isEditMode={isEditMode}
@@ -302,14 +312,14 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
         />
 
         <div className={nodePillFieldClass}>
-          <NodePillFieldHead label="Rating">
-            {isEditMode && (
+          {isEditMode && (
+            <NodePillFieldHead label="Rating">
               <NodePillCharCount
                 label="Range"
                 value={scaleSummary}
               />
-            )}
-          </NodePillFieldHead>
+            </NodePillFieldHead>
+          )}
 
           <div className={`${nodePillPanelClass} rating-question__panel`}>
             {isEditMode && (
@@ -462,15 +472,15 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
               </>
             )}
 
-            <div className={`${nodePillPreviewClass} rating-question__preview`}>
-              <div className="text-[0.88rem] text-foreground">
+            <div className={`${nodePillPreviewClass} `}>
+              <div className="text-base text-foreground">
                 Current value: <strong>{ratingType === "stars"
                   ? `${starValue} / ${starCount}`
                   : ratingType === "emoji"
                     ? (selectedEmoji ? `${selectedEmoji.emoji}${showEmojiWords ? ` ${selectedEmoji.label}` : ""}` : "None")
                     : normalizedSliderValue}</strong>
               </div>
-              <div className="flex justify-between gap-4 text-[0.95rem] text-muted-foreground [&>span:last-child]:text-right">
+              <div className="flex justify-between gap-4 text-sm text-muted-foreground [&>span:last-child]:text-right">
                 <span>{leftLabel || "Left label"}</span>
                 <span>{rightLabel || "Right label"}</span>
               </div>
@@ -581,13 +591,15 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                       }}
                     />
                   </div>
-                  <span className="min-w-7 text-center text-[0.88rem] font-semibold text-foreground">{rangeEnd}</span>
+                  <span className="min-w-7 text-center text-sm font-semibold text-foreground">{rangeEnd}</span>
                 </div>
               )}
-              <div className="flex justify-between gap-4 text-[0.95rem] text-muted-foreground [&>span:last-child]:text-right">
-                <span>{RATING_TYPE_OPTIONS.find((option) => option.value === ratingType)?.label}</span>
-                <span>{ratingType === "stars" ? `${starCount} stars` : ratingType === "emoji" ? `${emojiScaleType === "sad" ? "Sad" : emojiScaleType === "angry" ? "Angry" : "Disgust"} to happy` : `Step ${stepValue}`}</span>
-              </div>
+              {isEditMode && (
+                <div className="flex justify-between gap-4 text-sm text-muted-foreground [&>span:last-child]:text-right">
+                  <span>{RATING_TYPE_OPTIONS.find((option) => option.value === ratingType)?.label}</span>
+                  <span>{ratingType === "stars" ? `${starCount} stars` : ratingType === "emoji" ? `${emojiScaleType === "sad" ? "Sad" : emojiScaleType === "angry" ? "Angry" : "Disgust"} to happy` : `Step ${stepValue}`}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
