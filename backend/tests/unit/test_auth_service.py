@@ -58,7 +58,7 @@ def test_bootstrap_new_user_creates_default_project(monkeypatch: pytest.MonkeyPa
 
     assert call_kwargs.kwargs["created_by_user_id"] == user.id
     request_arg = call_kwargs.args[1]
-    assert request_arg.slug == user.public_id.lower()
+    assert request_arg.slug == "abcd1234"
 
 
 def test_bootstrap_existing_user_skips_default_project(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -104,11 +104,11 @@ def test_bootstrap_current_user_rejects_subject_mismatch(monkeypatch: pytest.Mon
     user_service.bootstrap_user.assert_not_called()
 
 
-def test_bootstrap_new_user_default_project_uses_public_id_as_slug(
+def test_bootstrap_new_user_default_project_slug_is_slug_safe(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The default project slug is the user's public_id."""
-    user = _make_user(public_id="xyz98765")
+    """The default project slug is derived from public_id and remains slug-safe."""
+    user = _make_user(public_id="XyZ_987-")
     project = _make_project(user.id, user.public_id)
 
     user_service = Mock()
@@ -129,4 +129,4 @@ def test_bootstrap_new_user_default_project_uses_public_id_as_slug(
         )
 
     assert result.default_project is not None
-    assert result.default_project.slug == "xyz98765"  # already lowercase in this test
+    assert result.default_project.slug == "xyz-987"
