@@ -175,58 +175,6 @@
     @apply px-3 py-2;
   }
 
-  /* Buttons */
-  .ui-button {
-    @apply cursor-pointer border font-semibold;
-  }
-
-  .ui-button-active {
-    @apply active:scale-95;
-    -webkit-tap-highlight-color: transparent;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .ui-button-active::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: rgb(0 0 0 / 0.1);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.05s;
-  }
-
-  .ui-button-active:active::after {
-    opacity: 1;
-    transition: none;
-  }
-
-  .ui-button-disabled {
-    @apply disabled:cursor-not-allowed disabled:opacity-50;
-  }
-
-  .ui-button-primary {
-    @apply border-transparent bg-primary text-primary-foreground shadow-sm hover:bg-accent;
-  }
-
-  .ui-button-secondary {
-    @apply border-border/80 bg-input text-secondary-foreground shadow-sm hover:border-ring/80 hover:bg-hover-highlight;
-  }
-
-  .ui-button-danger {
-    @apply border-destructive/30 bg-transparent text-destructive shadow-sm hover:bg-destructive/10;
-  }
-
-  .ui-button-ghost {
-    @apply border-transparent bg-transparent text-accent-foreground shadow-none hover:border-ring/20 hover:bg-muted;
-  }
-
-  .ui-button-border-dotted {
-    @apply border-2 border-dashed;
-  }
-
   /* Stepper */
   .ui-stepper-shell {
     @apply inline-flex w-fit items-center self-start border transition-colors;
@@ -275,7 +223,7 @@
   }
 
   .ui-modal-panel {
-    @apply flex max-h-[min(90vh,760px)] w-full min-w-0 flex-col rounded-2xl border border-border bg-card shadow-lg;
+    @apply flex max-h-[min(90vh,760px)] w-full min-w-0 flex-col rounded-xl border border-border bg-card shadow-lg;
   }
 
   .ui-modal-header {
@@ -301,11 +249,11 @@
 
   /* Card tones */
     .ui-card-default {
-    @apply border-border/80 bg-card text-card-foreground;
+    @apply border-border/90 bg-card text-card-foreground;
     }
 
     .ui-card-muted {
-    @apply border-border/80 bg-muted text-foreground;
+    @apply border-border/90 bg-muted text-foreground;
     }
 
     .ui-card-ghost {
@@ -361,11 +309,15 @@
       }
 
       .ui-dropdown-action-button {
-        @apply w-full justify-start text-left max-[640px]:px-4 max-[640px]:py-3 max-[640px]:text-base;
+        @apply w-full max-[640px]:px-4 max-[640px]:py-3 max-[640px]:text-base;
       }
       
       .ui-dropdown-panel {
         @apply fixed z-[200] rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none;
+      }
+
+      .ui-dropdown-panel-absolute {
+        @apply absolute;
       }
       
       .ui-dropdown-panel-fullscreen {

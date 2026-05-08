@@ -70,11 +70,11 @@
 }
 
 .docs-mobile-menu__link:hover {
-  @apply bg-hover-highlight text-foreground;
+  @apply bg-transparent-hover text-foreground;
 }
 
 .docs-mobile-menu__link:active {
-  @apply bg-hover-highlight text-foreground;
+  @apply bg-transparent-hover text-foreground;
 }
 
 .docs-mobile-menu__link--active {
@@ -127,7 +127,7 @@
 }
 
 .docs-sidebar__link:hover {
-  @apply bg-hover-highlight text-foreground;
+  @apply bg-transparent-hover text-foreground;
 }
 
 .docs-sidebar__link--active {
@@ -136,7 +136,7 @@
 }
 
 .docs-sidebar__link:active {
-  @apply bg-hover-highlight text-foreground;
+  @apply bg-transparent-hover text-foreground;
 }
 
 /* ── Main ───────────────────────────────────────────────── */

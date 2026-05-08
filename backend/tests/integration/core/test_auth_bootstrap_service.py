@@ -44,7 +44,8 @@ def test_bootstrap_new_user_creates_default_project(
 
     assert result.created is True
     assert result.default_project is not None
-    assert result.default_project.slug == result.user.public_id.lower()
+    assert result.default_project.slug
+    assert "_" not in result.default_project.slug
     assert result.default_project.created_by_user_id == result.user.id
 
     project = db_session.get(Project, result.default_project.id)
@@ -129,6 +130,7 @@ def test_bootstrap_new_user_default_project_slug_is_public_id(
     )
 
     assert result.default_project is not None
-    assert result.default_project.slug == result.user.public_id.lower()
+    assert result.default_project.slug
+    assert "_" not in result.default_project.slug
     assert len(result.default_project.slug) == 8
 

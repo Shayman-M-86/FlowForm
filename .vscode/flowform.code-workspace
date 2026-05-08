@@ -85,24 +85,32 @@
                 "pinyfakepage.html"
             ],
             "tw-external-config": {
-                "external_config_url": "frontend/apps/public-site/src/styles/tailwind.config.js",
                 "external_source_url": "frontend/apps/public-site/src/styles/global.css"
             },
-            "source-folders": null,
+            "source-folders": [
+                "frontend/apps/public-site/src/components",
+                "frontend/apps/admin/src",
+                "frontend/packages/ui/src",
+                "frontend/apps/public-site/src",
+                "frontend/apps/public-site/src/pages"
+            ],
             "preview-url": "http://localhost:4321",
             "ai-project-brief": null,
             "component-settings": {
                 "frontend/apps/public-site/src/pages/index.astro:::Temp": {
-                    "route": null
+                    "route": "/"
                 },
-                "frontend/apps/public-site/astro.config.mjs:::Temp": {
-                    "route": "/",
-                    "black-box": true
+                "frontend/apps/public-site/src/components/NodePageIsland.tsx:::NodePageIsland": {
+                    "route": "/"
+                },
+                "frontend/apps/public-site/src/layouts/Layout.astro:::Layout": {
+                    "route": "/#pricing"
                 }
             },
             "app-routes": {
                 "routes": [
                     "/",
+                    "/#builder",
                     "/#features",
                     "/#pricing",
                     "/#security",
@@ -124,18 +132,18 @@
                     "/docs/introduction",
                     "/scroll-test"
                 ],
-                "current_route": "/"
+                "current_route": "/#pricing"
             },
             "urls": {
                 "pinyfakepage.html": {
                     "open-page-views": [
                         {
-                            "w": 472.99,
+                            "w": 812.999,
                             "h": 0
                         }
                     ]
                 }
             }
-        },
+        }
     }
 }

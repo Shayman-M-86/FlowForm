@@ -11,6 +11,7 @@ from app.logging.logging_config import setup_bootstrap_logging, setup_logging
 from app.middleware.rate_limit import register_rate_limiting
 from app.services.access.permissions_service import init_seed_data
 
+
 def create_app(
     *,
     settings: Settings | None = None,

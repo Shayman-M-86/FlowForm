@@ -2,47 +2,5 @@
   "css.customData": [],
   "css.lint.unknownAtRules": "ignore",
   "scss.lint.unknownAtRules": "ignore",
-  "piny.project_settings": {
-    "open-pages": [
-      "pinyfakepage.html"
-    ],
-    "app-routes": {
-      "routes": [
-        "/",
-        "/Builder",
-        "/DashboardPage",
-        "/FormFillerPage",
-        "/HomePage",
-        "/NodePage",
-        "/ProjectDashboardPage",
-        "/ProjectSurveysPage",
-        "/ProjectsPage",
-        "/PublicSurveyBrowsePage",
-        "/QuizTakerPage",
-        "/SubmissionsPage",
-        "/SurveyEditorPage",
-        "/SurveysPage",
-        "/TakeSurveyPage",
-        "/UITestPage",
-        "/projects/customer-research",
-        "/scroll-test"
-      ],
-      "current_route": "/projects/customer-research"
-    },
-    "urls": {
-      "pinyfakepage.html": {
-        "open-page-views": [
-          {
-            "w": 1043,
-            "h": 0
-          }
-        ]
-      }
-    },
-    "component-settings": {
-      "packages/styles/src/components.css:::Temp": {
-        "route": "/"
-      }
-    }
-  }
+  
 }

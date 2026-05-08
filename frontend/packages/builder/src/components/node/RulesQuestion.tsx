@@ -42,7 +42,9 @@ interface RulesQuestionProps {
   initialContent?: RuleContent;
   idError?: string;
   isCollapsed?: boolean;
+  isEditMode?: boolean;
   onExpand?: () => void;
+  onExpandInEditMode?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: RuleContent) => void;
   previousSiblings?: QuestionContent[];
@@ -314,14 +316,13 @@ const toggleRowClass =
   "inline-flex items-center gap-1.5 whitespace-nowrap text-[0.85rem] text-muted-foreground";
 
 export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>(function RulesQuestion(
-  { onDelete, title: _title, initialTag, initialContent, idError, isCollapsed, onExpand, onEditModeChange, onDataChange, previousSiblings = [], followingSiblings = [] },
+  { onDelete, title: _title, initialTag, initialContent, idError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange, previousSiblings = [], followingSiblings = [] },
   ref,
 ) {
   const siblings = [...previousSiblings, ...followingSiblings];
   const initialThenDo = doToState(initialContent?.then.do);
   const initialElseDo = doToState(initialContent?.else?.do);
   void _title;
-  const [isEditMode, setIsEditMode] = useState(true);
   const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "r1");
   const [match, setMatch] = useState<RuleMatch>(initialContent?.if.match ?? "ALL");
   const [conditions, setConditions] = useState<ConditionDraft[]>(
@@ -406,11 +407,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
   }, [onDataChange, ruleContent]);
 
   function toggleEditMode() {
-    setIsEditMode((current) => {
-      const nextMode = !current;
-      onEditModeChange?.(nextMode);
-      return nextMode;
-    });
+    onEditModeChange?.(!isEditMode);
   }
 
   function addCondition() {
@@ -765,7 +762,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
   }
 
   if (isCollapsed) {
-    return <NodePillCollapsed family="Rule" tagValue={tagValue} title={tagValue} onExpand={() => { onExpand?.(); setIsEditMode(true); onEditModeChange?.(true); }} />;
+    return <NodePillCollapsed family="Rule" tagValue={tagValue} title={tagValue} onExpand={() => onExpand?.()} onExpandInEditMode={() => onExpandInEditMode?.()} />;
   }
 
   return (
@@ -775,6 +772,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
+        idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
       />
 
       <div className={nodePillBodyClass}>
@@ -787,12 +785,6 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
                 onChange={(event) => setMatch(event.target.value as RuleMatch)}
               />
             )}
-            <NodePillIdField
-              tagValue={tagValue}
-              onTagChange={setTagValue}
-              idError={idError}
-              isEditMode={isEditMode}
-            />
           </NodePillFieldHead>
 
           <div className="flex flex-col gap-3 px-4 py-3">
@@ -808,7 +800,6 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
                       type="button"
                       variant="danger"
                       size="xs"
-                      pill
                       onClick={() => removeCondition(draft.key)}
                     >
                       Remove
@@ -898,7 +889,6 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
                       type="button"
                       variant="danger"
                       size="xs"
-                      pill
                       onClick={() => removeSetEntry(entry.key)}
                     >
                       Remove

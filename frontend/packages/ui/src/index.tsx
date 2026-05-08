@@ -53,3 +53,5 @@ export { Tooltip } from "./components/ui/Tooltip";
 export { Badge } from "./components/ui/Badge";
 export type { DropdownMenuAction, DropdownMenuSection } from "./components/ui/DropdownMenu";
 export { DropdownMenu } from "./components/ui/DropdownMenu";
+export type { TabSelectorItem } from "./components/ui/TabSelector";
+export { TabSelector } from "./components/ui/TabSelector";

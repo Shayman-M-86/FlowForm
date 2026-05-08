@@ -16,6 +16,7 @@ import type { QuestionContent, RuleContent, SurveyNode } from "../components/nod
 import { serializeSurveyEntries, type SurveyEntry } from "../components/node/surveySerialize";
 import { incrementQuestionId } from "../components/node/NodePillUtils";
 import { NodePillMobileControlsProvider } from "../components/node/NodePillShell";
+import { PlusGridAnimation } from "../components/node/PlusGridAnimation";
 
 const DEBUG_SHOW_JSON = false;
 const NODE_PAGE_STORAGE_KEY = "flowform.node-page.schema";
@@ -448,6 +449,7 @@ export function NodePage() {
     const followingSiblings = collectContents(questions.slice(ruleIndex + 1));
 
     const isCollapsed = collapsedIds.has(question.id);
+    const isEditMode = editingQuestionIds.includes(question.id);
     const idError = duplicateQuestionIds.has(question.id) ? "ID must be unique." : undefined;
     const onExpand = () => {
       setCollapsedIds((current) => {
@@ -455,20 +457,31 @@ export function NodePage() {
         next.delete(question.id);
         return next;
       });
-      setEditingQuestionIds((current) => current.includes(question.id) ? current : [...current, question.id]);
     };
+    const onExpandInEditMode = () => {
+      setCollapsedIds((current) => {
+        const next = new Set(current);
+        next.delete(question.id);
+        return next;
+      });
+      setEditingQuestionIds((current) =>
+        current.includes(question.id) ? current : [...current, question.id],
+      );
+    };
+
+    const sharedProps = { isCollapsed, isEditMode, idError, onExpand, onExpandInEditMode, onEditModeChange: handleEditModeChange };
 
     switch (question.type) {
       case "multi-choice":
-        return <MultiChoiceQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentQuestionContent?.family === "choice" ? currentQuestionContent : undefined} idError={idError} isCollapsed={isCollapsed} onExpand={onExpand} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
+        return <MultiChoiceQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentQuestionContent?.family === "choice" ? currentQuestionContent : undefined} {...sharedProps} onDelete={() => removeQuestion(question.id)} onDataChange={handleContentChange} />;
       case "matching":
-        return <MatchingQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentQuestionContent?.family === "matching" ? currentQuestionContent : undefined} idError={idError} isCollapsed={isCollapsed} onExpand={onExpand} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
+        return <MatchingQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentQuestionContent?.family === "matching" ? currentQuestionContent : undefined} {...sharedProps} onDelete={() => removeQuestion(question.id)} onDataChange={handleContentChange} />;
       case "rating":
-        return <RatingQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentQuestionContent?.family === "rating" ? currentQuestionContent : undefined} idError={idError} isCollapsed={isCollapsed} onExpand={onExpand} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
+        return <RatingQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentQuestionContent?.family === "rating" ? currentQuestionContent : undefined} {...sharedProps} onDelete={() => removeQuestion(question.id)} onDataChange={handleContentChange} />;
       case "field":
-        return <FieldQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentQuestionContent?.family === "field" ? currentQuestionContent : undefined} idError={idError} isCollapsed={isCollapsed} onExpand={onExpand} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleContentChange} />;
+        return <FieldQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentQuestionContent?.family === "field" ? currentQuestionContent : undefined} {...sharedProps} onDelete={() => removeQuestion(question.id)} onDataChange={handleContentChange} />;
       case "rules":
-        return <RulesQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentRuleContent} idError={idError} isCollapsed={isCollapsed} onExpand={onExpand} onDelete={() => removeQuestion(question.id)} onEditModeChange={handleEditModeChange} onDataChange={handleRuleContentChange} previousSiblings={previousSiblings} followingSiblings={followingSiblings} />;
+        return <RulesQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentRuleContent} {...sharedProps} onDelete={() => removeQuestion(question.id)} onDataChange={handleRuleContentChange} previousSiblings={previousSiblings} followingSiblings={followingSiblings} />;
     }
   }
 
@@ -506,8 +519,12 @@ export function NodePage() {
   function toggleCollapsed(id: string) {
     setCollapsedIds((current) => {
       const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+        setEditingQuestionIds((editing) => editing.filter((qId) => qId !== id));
+      }
       return next;
     });
   }
@@ -560,8 +577,9 @@ export function NodePage() {
   }
 
   return (
-    <section className="node-page flex min-h-full flex-col">
+    <section className="node-page relative isolate flex min-h-full flex-col">
       <style dangerouslySetInnerHTML={{ __html: NODE_PAGE_STYLES }} />
+      <PlusGridAnimation />
       <div className="node-page__toolbar fixed left-[var(--sidebar-w)] right-0 top-0 z-20 box-border flex h-[var(--node-page-toolbar-height)] items-center justify-center border-b border-border bg-[var(--toolbar-bg)] px-6 py-[14px] backdrop-blur-[14px] max-[640px]:left-0 max-[640px]:px-4">
         <div className="node-page__toolbar-shell flex w-full max-w-[980px] items-center justify-end gap-3">
           <div className="node-page__toolbar-actions flex shrink-0 items-center gap-2.5">
@@ -586,7 +604,7 @@ export function NodePage() {
           </div>
         </div>
       </div>
-      <div className="node-page__content box-border flex w-full max-w-[calc(980px+(var(--node-page-controls-gutter)*2))] shrink-0 flex-col items-center self-center px-[var(--node-page-controls-gutter)] pb-10 pt-[calc(var(--node-page-toolbar-height)+var(--node-page-toolbar-gap))] max-[640px]:gap-[14px] max-[640px]:px-5 max-[640px]:pt-[calc(var(--node-page-toolbar-height)+var(--node-page-toolbar-gap)+10px)]">
+      <div className="node-page__content relative z-10 box-border flex w-full max-w-[calc(980px+(var(--node-page-controls-gutter)*2))] shrink-0 flex-col items-center self-center px-[var(--node-page-controls-gutter)] pb-10 pt-[calc(var(--node-page-toolbar-height)+var(--node-page-toolbar-gap))] max-[640px]:gap-[14px] max-[640px]:px-5 max-[640px]:pt-[calc(var(--node-page-toolbar-height)+var(--node-page-toolbar-gap)+10px)]">
         <div className="node-page__questions-stack flex w-full flex-col gap-5">
           {questions.map((question, index) => {
             const nextQuestion = questions[index + 1];
@@ -674,7 +692,7 @@ function QuestionRow({
         <Button
           className="node-page__question-collapse-btn absolute left-[calc(-1*var(--node-page-controls-gutter)+10px)] top-[14px] z-[1] min-h-7 min-w-7 p-0 text-[0.8rem] text-[var(--text-soft)] max-[640px]:hidden"
           type="button"
-          variant="ghost"
+          variant="secondary"
           size="xs"
           aria-label={isExpanded ? "Collapse question" : "Expand question"}
           aria-expanded={isExpanded}
@@ -686,44 +704,46 @@ function QuestionRow({
         <div className="node-page__question-container relative flex min-w-0 w-full flex-1 flex-col gap-3">
           <NodePillMobileControlsProvider value={{
             leading: (
-              <Button
-                className="min-h-7 min-w-7 p-0 text-[0.8rem] text-(--text-soft)"
-                type="button"
-                variant="ghost"
-                size="xs"
-                aria-label={isExpanded ? "Collapse question" : "Expand question"}
-                aria-expanded={isExpanded}
-                onClick={onToggleCollapse}
-              >
-                {isExpanded ? "▾" : "▸"}
-              </Button>
-            ),
-            trailing: isEditing ? (
               <>
                 <Button
-                  className="min-h-[30px] min-w-[30px] p-0"
+                  className="min-h-7 min-w-7 p-0 text-[0.8rem] text-(--text-soft)"
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={index === 0}
-                  aria-label="Move question up"
-                  onClick={() => onMoveQuestion(question.id, "up")}
+                  variant="secondary"
+                  size="xs"
+                  aria-label={isExpanded ? "Collapse question" : "Expand question"}
+                  aria-expanded={isExpanded}
+                  onClick={onToggleCollapse}
                 >
-                  ↑
+                  {isExpanded ? "▾" : "▸"}
                 </Button>
-                <Button
-                  className="min-h-[30px] min-w-[30px] p-0"
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={isLast}
-                  aria-label="Move question down"
-                  onClick={() => onMoveQuestion(question.id, "down")}
-                >
-                  ↓
-                </Button>
+                {isEditing && (
+                  <>
+                    <Button
+                      className="min-h-[30px] min-w-[30px] p-0"
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={index === 0}
+                      aria-label="Move question up"
+                      onClick={() => onMoveQuestion(question.id, "up")}
+                    >
+                      ↑
+                    </Button>
+                    <Button
+                      className="min-h-[30px] min-w-[30px] p-0"
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isLast}
+                      aria-label="Move question down"
+                      onClick={() => onMoveQuestion(question.id, "down")}
+                    >
+                      ↓
+                    </Button>
+                  </>
+                )}
               </>
-            ) : undefined,
+            ),
           }}>
             {children}
           </NodePillMobileControlsProvider>

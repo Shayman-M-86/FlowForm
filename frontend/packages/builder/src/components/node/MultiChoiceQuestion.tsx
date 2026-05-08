@@ -43,7 +43,9 @@ interface MultiChoiceQuestionProps {
   initialContent?: ChoiceContent;
   idError?: string;
   isCollapsed?: boolean;
+  isEditMode?: boolean;
   onExpand?: () => void;
+  onExpandInEditMode?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: ChoiceContent) => void;
 }
@@ -56,7 +58,7 @@ const ANSWER_POOL = 4000;
 const ANSWER_PER_FIELD_MAX = 1000;
 const MAX_ANSWERS = 10;
 
-export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, onExpand, onEditModeChange, onDataChange }, ref) {
+export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
   const initialOptions = initialContent?.definition.options.length
     ? initialContent.definition.options.map((option, index) => ({
       id: `answer-${index + 1}`,
@@ -66,10 +68,10 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
       ghost: false,
     }))
     : INITIAL_OPTIONS;
-  const [isEditMode, setIsEditMode] = useState(true);
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
   const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
+  const [isRequired, setIsRequired] = useState(initialContent?.required ?? false);
   const [minChoices, setMinChoices] = useState(initialContent?.definition.min ?? 1);
   const [maxChoices, setMaxChoices] = useState(initialContent?.definition.max ?? 1);
   const [openOptionIds, setOpenOptionIds] = useState<Set<string>>(new Set());
@@ -89,6 +91,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
     id: tagValue,
     title: titleValue,
     label: questionValue,
+    ...(isRequired ? { required: true } : {}),
     family: "choice",
     definition: {
       min: minChoices,
@@ -105,7 +108,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
 
   useEffect(() => {
     onDataChange?.(multiChoiceData);
-  }, [titleValue, tagValue, questionValue, minChoices, maxChoices, options]);
+  }, [titleValue, tagValue, questionValue, isRequired, minChoices, maxChoices, options]);
 
   function availableCharactersFor(optionId: string) {
     const usedByOthers = options
@@ -137,15 +140,11 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
   }
 
   function toggleEditMode() {
-    setIsEditMode((current) => {
-      const nextMode = !current;
-      onEditModeChange?.(nextMode);
-      return nextMode;
-    });
+    onEditModeChange?.(!isEditMode);
   }
 
   if (isCollapsed) {
-    return <NodePillCollapsed family="Multiple choice" tagValue={tagValue} title={titleValue} onExpand={() => { onExpand?.(); setIsEditMode(true); onEditModeChange?.(true); }} />;
+    return <NodePillCollapsed family="Multiple choice" tagValue={tagValue} title={titleValue} onExpand={() => onExpand?.()} onExpandInEditMode={() => onExpandInEditMode?.()} />;
   }
 
   return (
@@ -155,10 +154,20 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
+        settings={{
+          tagValue,
+          onTagChange: setTagValue,
+          titleValue,
+          onTitleChange: setTitleValue,
+          required: isRequired,
+          onRequiredChange: setIsRequired,
+          idError,
+        }}
       />
 
       <div className={nodePillBodyClass}>
         <NodePillQuestionField
+          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
           value={questionValue}
           onChange={setQuestionValue}
           isEditMode={isEditMode}
@@ -166,18 +175,17 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
           titleValue={titleValue}
           onTitleChange={setTitleValue}
           showTitleEdit={true}
-          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
         />
 
         <div className={nodePillFieldClass}>
-          <NodePillFieldHead label="Answers">
+          {isEditMode && (
+            <NodePillFieldHead label="Answers">
             {isEditMode && (
               <div className="ml-auto inline-flex items-center gap-1.5">
                 <span className="text-[0.7rem] text-muted-foreground opacity-60">Choices</span>
                 <NumberStepperGroup
                   ariaLabel="Choices range"
                   size="xs"
-                  pill
                   variant="ghost"
                   items={[
                     {
@@ -218,7 +226,8 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                 tooltip="Total characters used across all answer choices."
               />
             )}
-          </NodePillFieldHead>
+            </NodePillFieldHead>
+          )}
           <div className={nodePillOptionsListClass} ref={optionsListRef}>
             {options.map((option, index) => {
               const isOpen = openOptionIds.has(option.id);
@@ -261,6 +270,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                           <LargeInput
                             className="w-full"
                           shellClassName="border-0 rounded-none"
+                          variant={isEditMode ? "secondary" : "ghost"}
                           placeholder={option.placeholder}
                           rows={1}
                           maxText={fieldMax}
@@ -308,7 +318,6 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                             type="button"
                             variant="danger"
                             size="xs"
-                            pill={true}
                             onClick={() => deleteOption(option.id)}
                           >
                             Delete

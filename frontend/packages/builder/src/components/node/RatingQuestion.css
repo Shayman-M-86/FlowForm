@@ -1,11 +1,6 @@
 /* RatingQuestion-specific: numeric slider, emoji scales, and star rating */
 
-.rating-question__panel {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 16px;
-}
+
 
 .rating-question__labels {
   display: grid;

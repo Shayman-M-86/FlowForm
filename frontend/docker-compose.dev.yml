@@ -1,0 +1,38 @@
+services:
+  public-site:
+    build:
+      context: .
+      dockerfile: apps/public-site/Dockerfile.dev
+    ports:
+      - "${PUBLIC_SITE_PORT:-4322}:4321"
+    volumes:
+      - ./apps/public-site/src:/app/apps/public-site/src
+      - ./packages:/app/packages
+    environment:
+      - NODE_ENV=development
+
+  studio-app:
+    build:
+      context: .
+      dockerfile: apps/studio-app/Dockerfile.dev
+    ports:
+      - "5174:5174"
+    volumes:
+      - ./apps/studio-app/src:/app/apps/studio-app/src
+      - ./packages:/app/packages
+    environment:
+      - NODE_ENV=development
+
+  studio-app-preview:
+    build:
+      context: .
+      dockerfile: apps/studio-app/Dockerfile.preview
+      args:
+        - VITE_DISABLE_AUTH=true
+        - VITE_DESIGN_PREVIEW=true
+    ports:
+      - "4173:4173"
+    environment:
+      - NODE_ENV=production
+    profiles:
+      - preview

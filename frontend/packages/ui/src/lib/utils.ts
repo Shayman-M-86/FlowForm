@@ -5,11 +5,12 @@ import {
   useMemo,
   useRef,
 } from "react";
+import { twMerge } from "tailwind-merge";
 
 export type ClassValue = string | false | null | undefined;
 
 export function cn(...values: ClassValue[]) {
-  return values.filter(Boolean).join(" ");
+  return twMerge(values.filter(Boolean).join(" "));
 }
 
 export const isBrowser = typeof window !== "undefined";

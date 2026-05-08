@@ -43,7 +43,9 @@ interface MatchingQuestionProps {
   initialContent?: MatchingContent;
   idError?: string;
   isCollapsed?: boolean;
+  isEditMode?: boolean;
   onExpand?: () => void;
+  onExpandInEditMode?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
   onDataChange?: (content: MatchingContent) => void;
 }
@@ -76,7 +78,7 @@ const INITIAL_RIGHT_ITEMS: MatchItem[] = [
   { id: "right-1", placeholder: "Match A", value: "", tag: "A" },
 ];
 
-export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuestionProps>(function MatchingQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, onExpand, onEditModeChange, onDataChange }, ref) {
+export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuestionProps>(function MatchingQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
   const initialLeftItems = initialContent?.definition.prompts.length
     ? initialContent.definition.prompts.map((item, index) => ({
       id: `left-${index + 1}`,
@@ -93,10 +95,10 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
       tag: item.id,
     }))
     : INITIAL_RIGHT_ITEMS;
-  const [isEditMode, setIsEditMode] = useState(true);
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
   const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
+  const [isRequired, setIsRequired] = useState(initialContent?.required ?? false);
   const [openItemIds, setOpenItemIds] = useState<Set<string>>(new Set());
   const [leftItems, setLeftItems] = useState(initialLeftItems);
   const [rightItems, setRightItems] = useState(initialRightItems);
@@ -116,6 +118,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
     id: tagValue,
     title: titleValue,
     label: questionValue,
+    ...(isRequired ? { required: true } : {}),
     family: "matching",
     definition: {
       prompts: leftItems.map((item) => ({ id: item.tag, label: item.value })),
@@ -131,7 +134,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
 
   useEffect(() => {
     onDataChange?.(matchingData);
-  }, [titleValue, tagValue, questionValue, leftItems, rightItems]);
+  }, [titleValue, tagValue, questionValue, isRequired, leftItems, rightItems]);
 
   function availableCharactersFor(itemId: string) {
     const usedByOthers = [...leftItems, ...rightItems]
@@ -166,11 +169,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
   }
 
   function toggleEditMode() {
-    setIsEditMode((current) => {
-      const nextMode = !current;
-      onEditModeChange?.(nextMode);
-      return nextMode;
-    });
+    onEditModeChange?.(!isEditMode);
   }
 
   function renderColumn(
@@ -238,6 +237,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                         <LargeInput
                           className="w-full"
                           shellClassName="border-0 rounded-none"
+                          variant={isEditMode ? "secondary" : "ghost"}
                           placeholder={item.placeholder}
                           rows={1}
                           maxText={fieldMax}
@@ -286,7 +286,6 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                           type="button"
                           variant="danger"
                           size="xs"
-                          pill={true}
                           onClick={() => deleteItem(item.id, setItems)}
                         >
                           Delete
@@ -340,7 +339,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
   }
 
   if (isCollapsed) {
-    return <NodePillCollapsed family="Matching" tagValue={tagValue} title={titleValue} onExpand={() => { onExpand?.(); setIsEditMode(true); onEditModeChange?.(true); }} />;
+    return <NodePillCollapsed family="Matching" tagValue={tagValue} title={titleValue} onExpand={() => onExpand?.()} onExpandInEditMode={() => onExpandInEditMode?.()} />;
   }
 
   return (
@@ -350,10 +349,20 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
+        settings={{
+          tagValue,
+          onTagChange: setTagValue,
+          titleValue,
+          onTitleChange: setTitleValue,
+          required: isRequired,
+          onRequiredChange: setIsRequired,
+          idError,
+        }}
       />
 
       <div className={nodePillBodyClass}>
         <NodePillQuestionField
+          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
           value={questionValue}
           onChange={setQuestionValue}
           isEditMode={isEditMode}
@@ -361,20 +370,19 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
           titleValue={titleValue}
           onTitleChange={setTitleValue}
           showTitleEdit={true}
-          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
         />
 
         <div className={nodePillFieldClass}>
-          <NodePillFieldHead label="Pairs">
-            {isEditMode && (
+          {isEditMode && (
+            <NodePillFieldHead label="Pairs">
               <NodePillCharCount
                 label="Total"
                 value={totalCharacters}
                 max={ANSWER_POOL}
                 tooltip="Total characters used across both matching columns."
               />
-            )}
-          </NodePillFieldHead>
+            </NodePillFieldHead>
+          )}
 
           <div className="grid gap-5 lg:grid-cols-2">
             {renderColumn("Prompts", "Prompt", leftItems, setLeftItems, leftDrag, nextLeftIndexRef, "left")}
