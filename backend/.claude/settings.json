@@ -1,0 +1,59 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run:*)",
+      "Bash(uv --version)",
+      "Bash(uv pip compile:*)",
+      "Bash(uvx pip-audit:*)",
+
+      "Bash(uv run ruff check:*)",
+      "Bash(uv run ruff format --check:*)",
+      "Bash(uv run mypy:*)",
+      "Bash(uv run pyright:*)",
+
+      "Bash(uv run pytest tests/unit:*)",
+      "Bash(python -m pytest tests/unit:*)",
+      "Bash(python3 -m pytest tests/unit:*)",
+
+      "Bash(docker compose -f infra/docker/docker-compose.test.yml up:*)",
+      "Bash(docker compose -f infra/docker/docker-compose.test.yml down:*)",
+      "Bash(docker compose -f infra/docker/docker-compose.test.yml stop:*)",
+      "Bash(docker compose -f infra/docker/docker-compose.test.yml build:*)",
+      "Bash(docker exec flowform-backend-test:*)"
+    ],
+    "deny": [
+      "Bash(uv run ruff check --fix:*)",
+      "Bash(uv run ruff format:*)",
+
+      "Bash(docker compose -f infra/docker/docker-compose.dev.yml:*)",
+
+      "Bash(psql:*)",
+      "Bash(pg_dump:*)",
+      "Bash(pg_restore:*)",
+      "Bash(dropdb:*)",
+      "Bash(createdb:*)",
+
+      "Bash(uv run flask db upgrade:*)",
+      "Bash(uv run flask db downgrade:*)",
+      "Bash(uv run flask db stamp:*)",
+
+      "Bash(uv add:*)",
+      "Bash(uv remove:*)",
+      "Bash(pip install:*)",
+      "Bash(pip uninstall:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json; print(json.load(sys.stdin).get('file_path',''))\"); case \"$FILE\" in *.py) if [ -x /tmp/flowform-venv/bin/ruff ]; then VIRTUAL_ENV=/tmp/flowform-venv /tmp/flowform-venv/bin/ruff check --fix \"$FILE\" 2>/dev/null; fi ;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}

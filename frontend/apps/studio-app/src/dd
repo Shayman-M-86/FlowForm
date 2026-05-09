@@ -1,0 +1,20 @@
+FlowForm/
+├── CLAUDE.md
+├── .claude/
+│   └── settings.json
+├── backend/
+│   └── .claude/
+│       └── CLAUDE.md
+└── frontend/
+    ├── .claude/
+    │   └── CLAUDE.md
+    ├── apps/
+    │   ├── studio-app/
+    │   │   └── .claude/
+    │   │       └── CLAUDE.md
+    │   └── public-site/
+    │      └── .claude/
+    │           └── CLAUDE.md
+    └── packages/
+        └── .claude/
+            └── CLAUDE.md
