@@ -57,3 +57,4 @@ export type { TabSelectorItem } from "./components/ui/TabSelector";
 export { TabSelector } from "./components/ui/TabSelector";
 export type { TableColumn, TableProps } from "./components/ui/Table";
 export { Table } from "./components/ui/Table";
+export { Tabs, TabsList, TabsTrigger, TabsContent } from "./components/ui/tabs";

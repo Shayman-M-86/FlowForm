@@ -3,14 +3,24 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "imports": {
+    "#components/*": "./src/components/*",
+    "#ui/*": "./src/components/ui/*",
+    "#lib/*": "./src/lib/*",
+    "#hooks/*": "./src/hooks/*",
+    "#utils": "./src/lib/utils.ts"
+  },
   "exports": {
     ".": "./src/index.tsx",
     "./styles": "./src/styles/index.css",
     "./styles/*": "./src/styles/*"
   },
   "dependencies": {
+    "@base-ui/react": "^1.4.1",
     "@flowform/styles": "0.0.0",
-    "tailwind-merge": "^3.5.0"
+    "class-variance-authority": "^0.7.1",
+    "radix-ui": "^1.4.3",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",

@@ -18,6 +18,10 @@ import {
   TabSelector,
   Table,
   type TableColumn,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
 } from "@flowform/ui";
 import { StudioSidebar } from "@/components/StudioSidebar";
 
@@ -349,6 +353,83 @@ export function UITestPage() {
                   {TAB_CONTENT[tabOverflowActive].body}
                 </p>
               </div>
+            </TestCard>
+          </TestGrid>
+        </Section>
+
+        <Section title="Tabs (shadcn)">
+          <TestGrid>
+            <TestCard title="Default variant">
+              <Tabs defaultValue="account">
+                <TabsList>
+                  <TabsTrigger value="account">Account</TabsTrigger>
+                  <TabsTrigger value="password">Password</TabsTrigger>
+                  <TabsTrigger value="notifications">Notifications</TabsTrigger>
+                </TabsList>
+                <TabsContent value="account">
+                  <p className="text-sm text-muted-foreground">Manage your account settings and preferences.</p>
+                </TabsContent>
+                <TabsContent value="password">
+                  <p className="text-sm text-muted-foreground">Change your password and security options.</p>
+                </TabsContent>
+                <TabsContent value="notifications">
+                  <p className="text-sm text-muted-foreground">Configure how and when you receive notifications.</p>
+                </TabsContent>
+              </Tabs>
+            </TestCard>
+
+            <TestCard title="Line variant">
+              <Tabs defaultValue="overview">
+                <TabsList variant="line">
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="surveys">Surveys</TabsTrigger>
+                  <TabsTrigger value="members">Members</TabsTrigger>
+                </TabsList>
+                <TabsContent value="overview">
+                  <p className="text-sm text-muted-foreground">Project overview and key metrics.</p>
+                </TabsContent>
+                <TabsContent value="surveys">
+                  <p className="text-sm text-muted-foreground">All surveys in this project.</p>
+                </TabsContent>
+                <TabsContent value="members">
+                  <p className="text-sm text-muted-foreground">Team members with access to this project.</p>
+                </TabsContent>
+              </Tabs>
+            </TestCard>
+
+            <TestCard title="Vertical orientation">
+              <Tabs defaultValue="general" orientation="vertical">
+                <TabsList>
+                  <TabsTrigger value="general">General</TabsTrigger>
+                  <TabsTrigger value="integrations">Integrations</TabsTrigger>
+                  <TabsTrigger value="danger">Danger zone</TabsTrigger>
+                </TabsList>
+                <TabsContent value="general">
+                  <p className="text-sm text-muted-foreground">General project settings.</p>
+                </TabsContent>
+                <TabsContent value="integrations">
+                  <p className="text-sm text-muted-foreground">Connect third-party integrations.</p>
+                </TabsContent>
+                <TabsContent value="danger">
+                  <p className="text-sm text-muted-foreground">Irreversible and destructive actions.</p>
+                </TabsContent>
+              </Tabs>
+            </TestCard>
+
+            <TestCard title="Disabled tab">
+              <Tabs defaultValue="active">
+                <TabsList>
+                  <TabsTrigger value="active">Active</TabsTrigger>
+                  <TabsTrigger value="disabled" disabled>Disabled</TabsTrigger>
+                  <TabsTrigger value="other">Other</TabsTrigger>
+                </TabsList>
+                <TabsContent value="active">
+                  <p className="text-sm text-muted-foreground">This tab is active and selectable.</p>
+                </TabsContent>
+                <TabsContent value="other">
+                  <p className="text-sm text-muted-foreground">Another selectable tab.</p>
+                </TabsContent>
+              </Tabs>
             </TestCard>
           </TestGrid>
         </Section>
