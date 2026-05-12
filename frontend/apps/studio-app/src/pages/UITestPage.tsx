@@ -245,7 +245,7 @@ export function UITestPage() {
       <div className="mx-auto max-w-1400px">
         <Section title="Studio sidebar">
           <div className="overflow-hidden rounded-xl border border-border bg-background">
-            <StudioSidebar activeItem="surveys" />
+            <StudioSidebar />
           </div>
         </Section>
 
