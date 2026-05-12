@@ -1,0 +1,57 @@
+---
+export interface DocsNavItem {
+  label: string;
+  href: string;
+}
+
+export interface DocsNavGroup {
+  label: string;
+  items: DocsNavItem[];
+}
+
+export interface Props {
+  groups: DocsNavGroup[];
+  currentPath: string;
+  variant?: 'sidebar' | 'mobile';
+}
+
+const { groups, currentPath, variant = 'sidebar' } = Astro.props;
+
+const normalisePath = (path: string) => {
+  if (path.length > 1 && path.endsWith('/')) return path.slice(0, -1);
+  return path;
+};
+
+const current = normalisePath(currentPath);
+const isActivePath = (href: string) => current === normalisePath(href);
+---
+
+<nav class={`docs-nav docs-nav--${variant}`} aria-label="Documentation">
+  {groups.map(group => (
+    <section class="docs-nav__group" aria-labelledby={`docs-nav-${variant}-${group.label.toLowerCase().replaceAll(' ', '-')}`}>
+      <p class="docs-nav__label" id={`docs-nav-${variant}-${group.label.toLowerCase().replaceAll(' ', '-')}`}>
+        {group.label}
+      </p>
+
+      <ul class="docs-nav__list">
+        {group.items.map(item => {
+          const isActive = isActivePath(item.href);
+
+          return (
+            <li>
+              <a
+                href={item.href}
+                class="docs-nav__link"
+                aria-current={isActive ? 'page' : undefined}
+                data-active={isActive ? 'true' : undefined}
+                data-docs-menu-link={variant === 'mobile' ? true : undefined}
+              >
+                {item.label}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  ))}
+</nav>

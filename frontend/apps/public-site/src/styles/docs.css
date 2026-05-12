@@ -2,144 +2,151 @@
 @reference "@flowform/styles/tokens.css";
 @reference "@flowform/styles/components.css";
 
-/* ── Mobile bar ─────────────────────────────────────────── */
+/* ────────────────────────────────────────────────────────────── */
+/* Docs shell                                                      */
+/* Docs CSS owns layout + markdown. Shared ui-action owns controls. */
+/* ────────────────────────────────────────────────────────────── */
+
+.docs-page {
+  --docs-header-height: 56px;
+  --docs-mobile-nav-height: 45px;
+  --docs-safe-top: env(safe-area-inset-top);
+  --docs-sticky-top: calc(var(--docs-header-height) + var(--docs-safe-top));
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/* Shared docs navigation                                          */
+/* Used by both desktop sidebar and mobile dropdown.                */
+/* ────────────────────────────────────────────────────────────── */
+
+.docs-nav__group {
+  @apply mb-1 pb-1 border-b border-border;
+}
+
+.docs-nav__group:last-child {
+  @apply border-none;
+}
+
+.docs-nav__label {
+  @apply mb-1 text-[0.75rem] font-bold tracking-[0.06em] uppercase text-foreground;
+}
+
+.docs-nav--sidebar .docs-nav__label {
+  padding: 12px 8px 6px;
+}
+
+.docs-nav--mobile .docs-nav__label {
+  padding: 10px 8px 6px;
+}
+
+.docs-nav__list {
+  @apply list-none flex flex-col gap-0.5 mb-2;
+  padding: 0 0 0 8px;
+}
+
+.docs-nav__link {
+  @apply ui-action block rounded-lg font-medium no-underline;
+
+  --ui-bg: transparent;
+  --ui-color: var(--muted-foreground);
+  --ui-border-color: transparent;
+  --ui-active-shadow: none;
+}
+
+.docs-nav--sidebar .docs-nav__link {
+  @apply text-sm;
+  padding: 6px 8px;
+}
+
+.docs-nav--mobile .docs-nav__link {
+  @apply text-[0.9375rem];
+  padding: 10px 12px;
+}
+
+.docs-nav__link[aria-current="page"],
+.docs-nav__link[data-active="true"] {
+  @apply font-semibold;
+
+  --ui-color: var(--accent);
+  --ui-active-color: var(--accent);
+  --ui-active-shadow: none;
+}
+
+/* Optional: only keep this if you want the active docs item to have a pill background. */
+.docs-nav__link[aria-current="page"],
+.docs-nav__link[data-active="true"] {
+  --ui-active-bg: rgb(from var(--accent) r g b / 0.12);
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/* Mobile docs nav                                                 */
+/* ────────────────────────────────────────────────────────────── */
+
 .docs-mobile-bar {
   @apply hidden sticky inset-x-0 z-40 bg-card border-b border-border px-5;
-  top: calc(56px + env(safe-area-inset-top));
+  top: var(--docs-sticky-top);
 }
 
 .docs-mobile-bar__toggle {
-  @apply flex items-center gap-2 w-full py-3 bg-transparent border-none cursor-pointer
-         text-foreground text-sm font-semibold font-sans
-         appearance-none;
-  -webkit-tap-highlight-color: transparent;
+  @apply ui-action flex items-center gap-2 w-full py-3 border-0 bg-transparent
+         text-sm font-semibold font-sans appearance-none;
+
+  --ui-bg: transparent;
+  --ui-color: var(--foreground);
+  --ui-border-color: transparent;
+  --ui-active-shadow: none;
 }
 
-.docs-mobile-bar__toggle:active {
-  @apply opacity-70;
+.docs-mobile-bar__icon,
+.docs-mobile-bar__chevron {
+  @apply shrink-0 text-muted-foreground;
 }
 
 .docs-mobile-bar__label {
-  @apply flex-1 text-left text-accent;
+  @apply flex-1 text-left;
+  color: var(--accent);
 }
 
 .docs-mobile-bar__chevron {
-  @apply shrink-0 text-muted-foreground transition-transform duration-200;
+  @apply transition-transform duration-200;
 }
 
 .docs-mobile-bar__toggle[aria-expanded="true"] .docs-mobile-bar__chevron {
   @apply rotate-180;
 }
 
-/* ── Mobile menu ────────────────────────────────────────── */
 .docs-mobile-menu {
-  @apply hidden sticky inset-x-0 z-[39] bg-card border-b border-border
-         overflow-y-auto;
-  top: calc(56px + env(safe-area-inset-top) + 45px);
+  @apply hidden sticky inset-x-0 z-39 bg-card border-b border-border overflow-y-auto;
+  top: calc(var(--docs-sticky-top) + var(--docs-mobile-nav-height));
   padding: 16px 20px 20px;
-  max-height: calc(100vh - 56px - env(safe-area-inset-top) - 45px);
+  max-height: calc(100vh - var(--docs-sticky-top) - var(--docs-mobile-nav-height));
 }
 
 .docs-mobile-menu:not([hidden]) {
   @apply block;
 }
 
-.docs-mobile-menu__group {
-  @apply mb-1 pb-1 border-b border-border;
-}
+/* ────────────────────────────────────────────────────────────── */
+/* Layout                                                          */
+/* ────────────────────────────────────────────────────────────── */
 
-.docs-mobile-menu__group:last-child {
-  @apply border-none;
-}
-
-.docs-mobile-menu__group-label {
-  @apply mb-1 text-[0.75rem] font-bold tracking-[0.06em] uppercase text-foreground;
-  padding: 10px 8px 6px;
-}
-
-.docs-mobile-menu__list {
-  @apply list-none flex flex-col gap-0.5 mb-2;
-  padding: 0 0 0 8px;
-}
-
-.docs-mobile-menu__link {
-  @apply block rounded-lg text-[0.9375rem] font-medium text-muted-foreground
-         no-underline transition-colors duration-100;
-  padding: 10px 12px;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.docs-mobile-menu__link:hover {
-  @apply bg-transparent-hover text-foreground;
-}
-
-.docs-mobile-menu__link:active {
-  @apply bg-transparent-hover text-foreground;
-}
-
-.docs-mobile-menu__link--active {
-  @apply font-semibold text-accent;
-  background: rgb(from var(--accent) r g b / 0.12);
-}
-
-/* ── Layout ─────────────────────────────────────────────── */
 .docs-layout {
   @apply grid min-h-screen mx-auto;
   grid-template-columns: 240px 1fr 200px;
-  grid-template-areas: 'sidebar main toc';
+  grid-template-areas: "sidebar main toc";
   max-width: 1400px;
-  padding-top: calc(56px + env(safe-area-inset-top));
+  padding-top: var(--docs-sticky-top);
 }
 
-/* ── Sidebar ────────────────────────────────────────────── */
 .docs-sidebar {
   @apply sticky overflow-y-auto border-r border-border;
   grid-area: sidebar;
-  top: calc(56px + env(safe-area-inset-top));
-  height: calc(100vh - 56px - env(safe-area-inset-top));
+  top: var(--docs-sticky-top);
+  height: calc(100vh - var(--docs-sticky-top));
   padding: 32px 16px 32px 24px;
   scrollbar-width: thin;
 }
 
-.docs-sidebar__group {
-  @apply mb-1 pb-1 border-b border-border;
-}
-
-.docs-sidebar__group:last-child {
-  @apply border-none;
-}
-
-.docs-sidebar__group-label {
-  @apply mb-1 text-[0.75rem] font-bold tracking-[0.06em] uppercase text-foreground;
-  padding: 12px 8px 6px;
-}
-
-.docs-sidebar__list {
-  @apply list-none flex flex-col gap-0.5 mb-2;
-  padding: 0 0 0 8px;
-}
-
-.docs-sidebar__link {
-  @apply block rounded-lg text-sm font-medium text-muted-foreground
-         no-underline transition-colors duration-100;
-  padding: 6px 8px;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.docs-sidebar__link:hover {
-  @apply bg-transparent-hover text-foreground;
-}
-
-.docs-sidebar__link--active {
-  @apply font-semibold text-accent;
-  background: rgb(from var(--accent) r g b / 0.12);
-}
-
-.docs-sidebar__link:active {
-  @apply bg-transparent-hover text-foreground;
-}
-
-/* ── Main ───────────────────────────────────────────────── */
 .docs-main {
   @apply min-w-0;
   grid-area: main;
@@ -161,7 +168,10 @@
   padding-bottom: 28px;
 }
 
-/* ── Markdown content ───────────────────────────────────── */
+/* ────────────────────────────────────────────────────────────── */
+/* Markdown content                                                */
+/* ────────────────────────────────────────────────────────────── */
+
 .docs-content {
   @apply text-foreground;
   font-size: 0.9375rem;
@@ -175,7 +185,7 @@
   margin: 2.5em 0 0.75em;
   padding-bottom: 0.4em;
   line-height: 1.3;
-  scroll-margin-top: calc(56px + env(safe-area-inset-top) + 24px);
+  scroll-margin-top: calc(var(--docs-sticky-top) + 24px);
 }
 
 .docs-content h3 {
@@ -184,14 +194,14 @@
   letter-spacing: -0.01em;
   margin: 2em 0 0.6em;
   line-height: 1.3;
-  scroll-margin-top: calc(56px + env(safe-area-inset-top) + 24px);
+  scroll-margin-top: calc(var(--docs-sticky-top) + 24px);
 }
 
 .docs-content h4 {
   @apply font-bold text-foreground;
   font-size: 0.95rem;
   margin: 1.6em 0 0.5em;
-  scroll-margin-top: calc(56px + env(safe-area-inset-top) + 24px);
+  scroll-margin-top: calc(var(--docs-sticky-top) + 24px);
 }
 
 .docs-content p {
@@ -218,7 +228,7 @@
 
 .docs-content code {
   @apply text-foreground rounded;
-  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-family: "Geist Mono", ui-monospace, monospace;
   font-size: 0.84em;
   background: rgb(from var(--accent) r g b / 0.1);
   padding: 0.15em 0.4em;
@@ -269,11 +279,14 @@
   margin: 2em 0;
 }
 
-/* ── TOC ────────────────────────────────────────────────── */
+/* ────────────────────────────────────────────────────────────── */
+/* TOC                                                             */
+/* ────────────────────────────────────────────────────────────── */
+
 .docs-toc {
   @apply sticky h-fit;
   grid-area: toc;
-  top: calc(56px + env(safe-area-inset-top) + 32px);
+  top: calc(var(--docs-sticky-top) + 32px);
   padding: 32px 24px 32px 16px;
 }
 
@@ -297,28 +310,36 @@
 }
 
 .docs-toc__link {
-  @apply block text-[0.8rem] text-muted-foreground no-underline leading-snug
-         transition-colors duration-100;
+  @apply block text-[0.8rem] text-muted-foreground no-underline leading-snug transition-colors duration-100;
   padding: 3px 0;
 }
 
-.docs-toc__link:hover {
+.docs-toc__link:hover,
+.docs-toc__link[aria-current="true"],
+.docs-toc__link[aria-current="page"] {
   @apply text-foreground;
 }
 
-/* ── Pagination ─────────────────────────────────────────── */
+/* ────────────────────────────────────────────────────────────── */
+/* Pagination                                                      */
+/* ────────────────────────────────────────────────────────────── */
+
 .docs-pagination {
   @apply border-t border-border;
   margin-top: 48px;
   padding-top: 24px;
 }
 
-/* ── Responsive ─────────────────────────────────────────── */
+/* ────────────────────────────────────────────────────────────── */
+/* Responsive                                                       */
+/* ────────────────────────────────────────────────────────────── */
+
 @media (max-width: 1100px) {
   .docs-layout {
     grid-template-columns: 220px 1fr;
-    grid-template-areas: 'sidebar main';
+    grid-template-areas: "sidebar main";
   }
+
   .docs-toc {
     @apply hidden;
   }
@@ -328,14 +349,17 @@
   .docs-mobile-bar {
     @apply block;
   }
+
   .docs-layout {
     grid-template-columns: 1fr;
-    grid-template-areas: 'main';
+    grid-template-areas: "main";
     padding-top: 0;
   }
+
   .docs-sidebar {
     @apply hidden;
   }
+
   .docs-main {
     padding: 24px 20px 60px;
   }

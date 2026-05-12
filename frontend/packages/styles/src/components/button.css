@@ -1,3 +1,9 @@
+/* ────────────────────────────────────────────────────────────── */
+/* UI Action System                                                */
+/* Shared interaction layer for buttons, icon buttons, toggles,    */
+/* sidebar items, menu items, and other clickable controls.         */
+/* ────────────────────────────────────────────────────────────── */
+
 @utility ui-action {
   cursor: pointer;
   user-select: none;
@@ -9,20 +15,56 @@
   -webkit-appearance: none;
   color-scheme: inherit;
 
-  /* Shorthand: sets color for all states unless overridden per-state. */
-  --ui-color: inherit;
+  /*
+    Base values.
 
-  /* Desktop hover: pass in a hover colour from the button variant. */
-  --ui-hover-bg: transparent;
+    Variants usually only need to set:
+    --ui-bg
+    --ui-color
+    --ui-border-color
+
+    Everything else is derived from those values.
+  */
+  --ui-bg: transparent;
+  --ui-color: currentColor;
+  --ui-border-color: transparent;
+
+  /*
+    State mixing.
+
+    In light mode, set this globally to black.
+    In dark mode, set this globally to white.
+
+    Example in index.css:
+    :root { --ui-state-mix: black; --ui-subtle-state-rgb: 0 0 0; }
+    .dark { --ui-state-mix: white; --ui-subtle-state-rgb: 255 255 255; }
+  */
+
+  /*
+    Automatically generated states for solid/surface buttons.
+
+    These can still be overridden per variant or per component.
+  */
+  --ui-hover-bg: color-mix(in oklab, var(--ui-bg), var(--ui-state-mix) 7%);
   --ui-hover-color: var(--ui-color);
-  --ui-hover-border-color: transparent;
+  --ui-hover-border-color: var(--ui-border-color);
 
-  /* Desktop press: pass in a press colour from the button variant. */
-  --ui-press-bg: transparent;
+  --ui-press-bg: color-mix(in oklab, var(--ui-bg), var(--ui-state-mix) 13%);
   --ui-press-color: var(--ui-color);
-  --ui-press-border-color: transparent;
+  --ui-press-border-color: var(--ui-border-color);
 
-  /* Mobile Press: shadow flash only. */
+  --ui-active-bg: color-mix(in oklab, var(--ui-bg), var(--ui-state-mix) 10%);
+  --ui-active-color: var(--ui-color);
+  --ui-active-border-color: var(--ui-border-color);
+
+  /*
+    Shadows.
+  */
+  --ui-shadow: none;
+  --ui-hover-shadow: var(--ui-shadow);
+  --ui-press-shadow: none;
+  --ui-active-shadow: inset 0 1px 5px 1px rgb(0 0 0 / 0.10);
+
   --ui-mobile-press-flash-shadow: inset 0 0 0 999px rgb(255 255 255 / 0.14);
   --ui-mobile-press-depth-shadow: inset 0 1px 4px 1px rgb(0 0 0 / 0.12);
 
@@ -30,19 +72,17 @@
     var(--ui-mobile-press-flash-shadow),
     var(--ui-mobile-press-depth-shadow);
 
-  /* Toggle / persistent active: pass in an active colour from the button variant. */
-  --ui-active-bg: transparent;
-  --ui-active-color: var(--ui-color);
-  --ui-active-border-color: transparent;
-  --ui-active-shadow: inset 0 1px 5px 1px rgb(0 0 0 / 0.10);
-
-  /* Default desktop press values. */
-  --ui-press-shadow: none;
-
-  /* Transition tuning. */
-  --ui-transition-duration: 60ms;
-  --ui-shadow-duration: 10ms;
+  /*
+    Motion.
+  */
+  --ui-transition-duration: 80ms;
+  --ui-shadow-duration: 50ms;
   --ui-transform-duration: 60ms;
+
+  background-color: var(--ui-bg);
+  color: var(--ui-color);
+  border-color: var(--ui-border-color);
+  box-shadow: var(--ui-shadow);
 
   transition:
     color var(--ui-transition-duration) cubic-bezier(.22, 1, .36, 1),
@@ -51,22 +91,24 @@
     box-shadow var(--ui-shadow-duration) cubic-bezier(.22, 1, .36, 1),
     transform var(--ui-transform-duration) cubic-bezier(.65, 0, .35, 1);
 
-  @media (hover: none) {
-    --ui-transition-duration: 100ms;
-    --ui-transform-duration: 100ms;
-
-    --ui-press-shadow: var(--ui-mobile-press-shadow);
-  }
-
+  /*
+    Desktop hover only.
+    This avoids sticky hover behavior on touch devices.
+  */
   @media (hover: hover) {
     &:hover {
       background-color: var(--ui-hover-bg);
       color: var(--ui-hover-color);
       border-color: var(--ui-hover-border-color);
+      box-shadow: var(--ui-hover-shadow);
     }
   }
 
-  /* Press state: desktop uses passed-in colour; mobile adds shadow flash. */
+  /*
+    Press state.
+    Desktop gets colour feedback.
+    Mobile can additionally get a shadow flash.
+  */
   &:active {
     transition: none;
     background-color: var(--ui-press-bg);
@@ -75,7 +117,24 @@
     box-shadow: var(--ui-press-shadow);
   }
 
-  /* Persistent toggle/open/active state. */
+  @media (hover: none) {
+    --ui-transition-duration: 100ms;
+    --ui-transform-duration: 100ms;
+
+    &:active {
+      box-shadow: var(--ui-mobile-press-shadow);
+    }
+  }
+
+  /*
+    Persistent active / toggle / open state.
+
+    Covers:
+    - native toggle buttons
+    - current sidebar item
+    - Radix open / checked states
+    - menu trigger open states
+  */
   &[aria-pressed="true"],
   &[aria-expanded="true"],
   &[data-active="true"],
@@ -87,7 +146,30 @@
     box-shadow: var(--ui-active-shadow);
   }
 
-  /* Already-active toggle press: temporarily overrides the persistent toggle state. */
+  /*
+    Keep already-active items visually stable on hover.
+    Useful for sidebar/current-page buttons.
+  */
+  @media (hover: hover) {
+    &[aria-pressed="true"]:hover,
+    &[aria-expanded="true"]:hover,
+    &[data-active="true"]:hover,
+    &[data-state="open"]:hover,
+    &[data-state="checked"]:hover {
+      background-color: var(--ui-active-bg);
+      color: var(--ui-active-color);
+      border-color: var(--ui-active-border-color);
+      box-shadow: var(--ui-active-shadow);
+    }
+  }
+
+  /*
+    Already-active item being pressed.
+
+    This intentionally uses the press state so toggles still feel responsive.
+    If you want sidebar active items to never change while pressed,
+    override --ui-press-bg with --ui-active-bg on that specific variant.
+  */
   &[aria-pressed="true"]:active,
   &[aria-expanded="true"]:active,
   &[data-active="true"]:active,
@@ -120,12 +202,20 @@
   }
 }
 
+/* ────────────────────────────────────────────────────────────── */
+/* Badge / small inline action                                    */
+/* ────────────────────────────────────────────────────────────── */
+
 @utility ui-badge-action {
   position: relative;
   isolation: isolate;
   cursor: pointer;
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+
+  --ui-subtle-state-rgb: 0 0 0;
 
   &::after {
     content: "";
@@ -139,12 +229,12 @@
 
   @media (hover: hover) {
     &:hover::after {
-      background: rgb(0 0 0 / 0.1);
+      background: rgb(var(--ui-subtle-state-rgb) / 0.10);
     }
   }
 
   &:active::after {
-    background: rgb(0 0 0 / 0.18);
+    background: rgb(var(--ui-subtle-state-rgb) / 0.18);
     transition: none;
   }
 
@@ -153,88 +243,178 @@
     outline-offset: 2px;
   }
 
-  &:disabled {
+  &:disabled,
+  &[aria-disabled="true"],
+  &[data-disabled="true"] {
     cursor: not-allowed;
     opacity: 0.5;
     pointer-events: none;
   }
-}
 
-@utility ui-button-transparent-icon {
-  @apply ui-action flex size-[34px] shrink-0 items-center justify-center
-         rounded-sm border-0 bg-transparent p-0
-         text-muted-foreground no-underline;
-
-  --ui-color: var(--foreground);
-  --ui-hover-bg: var(--transparent-hover);
-  --ui-press-bg: var(--transparent-press);
-  --ui-active-bg: var(--transparent-active);
-  --ui-active-shadow: none;
-
-  @media (hover: none) {
-    --ui-press-bg: var(--transparent-mobile-press);
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      transition: none;
+    }
   }
 }
+
+/* ────────────────────────────────────────────────────────────── */
+/* Base button shapes                                              */
+/* Optional utilities you can compose with variants.               */
+/* ────────────────────────────────────────────────────────────── */
+
+@utility ui-button-base {
+  @apply ui-action inline-flex shrink-0 items-center justify-center gap-2
+         rounded-sm border font-semibold leading-[1.2] no-underline;
+}
+
+@utility ui-icon-button-base {
+  @apply ui-action flex shrink-0 items-center justify-center
+         rounded-sm border no-underline;
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/* Button variants                                                 */
+/* These now only define the base appearance.                       */
+/* Hover / press / active are generated by ui-action.               */
+/* ────────────────────────────────────────────────────────────── */
 
 @utility ui-button-primary {
-  @apply ui-action inline-flex shrink-0 items-center justify-center gap-2
-         rounded-sm border border-transparent bg-primary
-         font-semibold leading-[1.2] text-primary-foreground no-underline
-         shadow-sm;
+  @apply ui-button-base border-transparent shadow-sm;
 
+  --ui-bg: var(--primary);
   --ui-color: var(--primary-foreground);
-  --ui-hover-bg: var(--primary-hover);
-  --ui-press-bg: var(--primary-press);
-  --ui-active-bg: var(--primary-active);
-
-  @media (hover: none) {
-    --ui-press-bg: var(--primary-mobile-press);
-  }
+  --ui-border-color: transparent;
+  --ui-shadow: var(--app-shadow-xs, 0 1px 2px rgb(0 0 0 / 0.08));
 }
 
 @utility ui-button-secondary {
-  @apply ui-action inline-flex shrink-0 items-center justify-center gap-2
-         rounded-sm border border-transparent bg-secondary
-         font-semibold leading-[1.2] text-foreground no-underline
-         shadow-sm;
+  @apply ui-button-base shadow-sm;
 
-  --ui-color: var(--foreground-full);
-  --ui-hover-bg: var(--secondary-hover);
-  --ui-press-bg: var(--secondary-press);
-  --ui-active-bg: var(--secondary-active);
-
-  @media (hover: none) {
-    --ui-press-bg: var(--secondary-mobile-press);
-  }
+  --ui-bg: var(--secondary);
+  --ui-color: var(--secondary-foreground, var(--foreground-full));
+  --ui-border-color: var(--border);
+  --ui-shadow: var(--app-shadow-xs, 0 1px 2px rgb(0 0 0 / 0.08));
 }
 
 @utility ui-button-danger {
-  @apply ui-action inline-flex shrink-0 items-center justify-center gap-2
-         rounded-sm border border-transparent bg-destructive
-         font-semibold leading-[1.2] text-destructive-foreground no-underline
-         shadow-sm;
+  @apply ui-button-base border-transparent shadow-sm;
 
+  --ui-bg: var(--destructive);
   --ui-color: var(--destructive-foreground);
-  --ui-hover-bg: var(--destructive-hover);
-  --ui-press-bg: var(--destructive-press);
-  --ui-active-bg: var(--destructive-active);
-
-  @media (hover: none) {
-    --ui-press-bg: var(--destructive-mobile-press);
-  }
+  --ui-border-color: transparent;
+  --ui-shadow: var(--app-shadow-xs, 0 1px 2px rgb(0 0 0 / 0.08));
 }
 
+/*
+  Ghost/transparent buttons are special.
+
+  Because the base background is transparent, generated colour mixing is less useful.
+  So this variant uses subtle overlay tokens instead.
+*/
 @utility ui-button-ghost {
-  @apply ui-action inline-flex shrink-0 items-center justify-center gap-2
-         rounded-sm border border-transparent bg-transparent
-         font-semibold leading-[1.2] text-foreground no-underline;
+  @apply ui-button-base border-transparent bg-transparent;
 
+  --ui-bg: transparent;
   --ui-color: var(--foreground);
-  --ui-hover-bg: var(--transparent-hover);
-  --ui-press-bg: var(--transparent-press);
-  --ui-active-bg: var(--transparent-active);
+  --ui-border-color: transparent;
 
-  @media (hover: none) {
-    --ui-press-bg: var(--transparent-mobile-press);
-  }
+  --ui-hover-bg: rgb(var(--ui-subtle-state-rgb) / 0.08);
+  --ui-press-bg: rgb(var(--ui-subtle-state-rgb) / 0.14);
+  --ui-active-bg: rgb(var(--ui-subtle-state-rgb) / 0.11);
+
+  --ui-hover-border-color: transparent;
+  --ui-press-border-color: transparent;
+  --ui-active-border-color: transparent;
+
+  --ui-active-shadow: none;
+}
+
+/* Transparent icon button */
+
+@utility ui-button-transparent-icon {
+  @apply ui-icon-button-base size-[34px] border-transparent bg-transparent p-0
+         text-muted-foreground;
+
+  --ui-bg: transparent;
+  --ui-color: var(--foreground);
+  --ui-border-color: transparent;
+
+  --ui-hover-bg: rgb(var(--ui-subtle-state-rgb) / 0.08);
+  --ui-press-bg: rgb(var(--ui-subtle-state-rgb) / 0.14);
+  --ui-active-bg: rgb(var(--ui-subtle-state-rgb) / 0.11);
+
+  --ui-hover-border-color: transparent;
+  --ui-press-border-color: transparent;
+  --ui-active-border-color: transparent;
+
+  --ui-active-shadow: none;
+}
+
+/* Optional: soft/subtle surface button */
+
+@utility ui-button-soft {
+  @apply ui-button-base border-transparent;
+
+  --ui-bg: color-mix(in oklab, var(--primary), transparent 88%);
+  --ui-color: var(--primary);
+  --ui-border-color: transparent;
+
+  --ui-hover-bg: color-mix(in oklab, var(--primary), transparent 82%);
+  --ui-press-bg: color-mix(in oklab, var(--primary), transparent 76%);
+  --ui-active-bg: color-mix(in oklab, var(--primary), transparent 80%);
+
+  --ui-active-shadow: none;
+}
+
+/* Optional: outline button */
+
+@utility ui-button-outline {
+  @apply ui-button-base bg-transparent shadow-none;
+
+  --ui-bg: transparent;
+  --ui-color: var(--foreground);
+  --ui-border-color: var(--border);
+
+  --ui-hover-bg: rgb(var(--ui-subtle-state-rgb) / 0.08);
+  --ui-press-bg: rgb(var(--ui-subtle-state-rgb) / 0.14);
+  --ui-active-bg: rgb(var(--ui-subtle-state-rgb) / 0.11);
+
+  --ui-active-shadow: none;
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/* Optional intent overrides                                       */
+/* Use these when you want the same shape but different intent.     */
+/* Example: class="ui-button-outline ui-intent-danger"              */
+/* ────────────────────────────────────────────────────────────── */
+
+@utility ui-intent-primary {
+  --ui-bg: var(--primary);
+  --ui-color: var(--primary-foreground);
+  --ui-border-color: transparent;
+}
+
+@utility ui-intent-secondary {
+  --ui-bg: var(--secondary);
+  --ui-color: var(--secondary-foreground, var(--foreground-full));
+  --ui-border-color: var(--border);
+}
+
+@utility ui-intent-danger {
+  --ui-bg: var(--destructive);
+  --ui-color: var(--destructive-foreground);
+  --ui-border-color: transparent;
+}
+
+@utility ui-intent-success {
+  --ui-bg: var(--success);
+  --ui-color: var(--success-foreground, white);
+  --ui-border-color: transparent;
+}
+
+@utility ui-intent-warning {
+  --ui-bg: var(--warning);
+  --ui-color: var(--warning-foreground, black);
+  --ui-border-color: transparent;
 }

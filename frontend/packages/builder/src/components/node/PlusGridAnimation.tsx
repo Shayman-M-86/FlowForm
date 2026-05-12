@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
-const GRID_GAP = 52;
+const GRID_GAP = 35;
 
 function getCanvasColor(): string {
   const token = getComputedStyle(document.documentElement)
@@ -99,7 +99,7 @@ export function PlusGridAnimation() {
         const pageY = state.layerTop + y;
         const distance = Math.abs(pageY - viewportCenterPageY);
         const centerWeight = 1 - clamp(distance / influence, 0, 1);
-        const scale = 0.42 + centerWeight ** 2.2 * 0.9;
+        const scale = 0.25 + centerWeight ** 2.2 * 0.6;
         const opacity = 0.07 + centerWeight * 0.12;
 
         for (let col = startCol; col <= endCol; col += 1) {

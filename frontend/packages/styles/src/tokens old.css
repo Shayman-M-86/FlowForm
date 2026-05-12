@@ -1,6 +1,10 @@
 /* ── Shared (same in light and dark) ──────────────────────────── */
 :root {
   --primary: rgb(80 145 220);
+  --primary-press: rgba(68 125 190 / 0.95);
+  --primary-mobile-press: rgb(95, 148, 212);
+  --primary-hover: rgba(84 144 213 / 0.95);
+  --primary-active: rgba(81 133 192 / 0.95);
   --primary-saturated: rgb(84 162 252);
 
   --accent: rgb(110 164 226);
@@ -8,6 +12,10 @@
 
   --destructive: rgb(219, 66, 61);
   --destructive-foreground: rgb(255 255 255);
+  --destructive-hover: rgb(from var(--destructive) calc(r - 15) calc(g - 15) calc(b - 15) / 0.95);
+  --destructive-press: rgb(from var(--destructive) calc(r - 30) calc(g - 30) calc(b - 30) / 0.95);
+  --destructive-mobile-press: rgb(from var(--destructive) calc(r - 45) calc(g - 40) calc(b - 40));
+  --destructive-active: rgb(from var(--destructive) calc(r - 10) calc(g - 10) calc(b - 10) / 0.95);
 
   --secondary-foreground: rgb(96 155 223);
   --radius: 0.535rem;
@@ -62,6 +70,10 @@
   --primary-foreground: rgb(253 252 253);
 
   --secondary: rgb(254 253 253);
+  --secondary-hover: rgb(from var(--secondary) calc(r - 2) calc(g - 2) calc(b - 2) / 0.95);
+  --secondary-press: rgb(from var(--secondary) calc(r - 5) calc(g - 5) calc(b - 5) / 0.95);
+  --secondary-mobile-press: rgb(from var(--secondary) calc(r - 20) calc(g - 20) calc(b - 20));
+  --secondary-active: rgb(from var(--secondary) calc(r - 10) calc(g - 10) calc(b - 10) / 0.95);
 
   --muted: rgb(240 239 240);
   --muted-foreground: rgb(80, 80, 80);
@@ -71,11 +83,12 @@
   --input: rgb(244 244 244 / 93.4%);
   --ring: rgb(161 161 161);
 
-  /* Used by the new ui-action system to derive hover / press / active states. */
-  --ui-state-mix: black;
-  --ui-subtle-state-rgb: 0 0 0;
-
   --bg-hover-highlight: rgba(227, 227, 227, 0.8);
+  --transparent-hover: rgba(227, 227, 227, 0.8);
+  --transparent-active: rgba(218, 218, 218, 0.85);
+  --transparent-press: rgba(209, 209, 209, 0.728);
+  --transparent-mobile-press: rgba(200, 200, 200, 0.9);
+
 
   --toolbar-bg-solid: rgb(247 247 247);
   --toolbar-bg: rgba(247, 247, 247, 0.1);
@@ -111,6 +124,11 @@
 
   --secondary: rgb(29, 29, 30);
 
+  --secondary-hover: rgb(from var(--secondary) calc(r + 6) calc(g + 6) calc(b + 6) / 0.95);
+  --secondary-press: rgb(from var(--secondary) calc(r + 13) calc(g + 13) calc(b + 13) / 0.95);
+  --secondary-mobile-press: rgb(from var(--secondary) calc(r + 20) calc(g + 20) calc(b + 20));
+  --secondary-active: rgb(from var(--secondary) calc(r + 10) calc(g + 10) calc(b + 10) / 0.95);
+
   --muted: rgb(39 39 39);
   --muted-foreground: rgb(185, 185, 185);
   --muted-accent-foreground: rgb(220, 220, 220);
@@ -119,11 +137,13 @@
   --input: rgb(42 42 45 / 93.7%);
   --ring: rgb(117 117 117);
 
-  /* Used by the new ui-action system to derive hover / press / active states. */
-  --ui-state-mix: white;
-  --ui-subtle-state-rgb: 255 255 255;
 
   --bg-hover-highlight: rgb(255 255 255 / 0.14);
+  --transparent-hover: rgba(167, 167, 167, 0.113);
+  --transparent-active: rgba(160, 160, 160, 0.18);
+  --transparent-press: rgba(155, 155, 155, 0.25);
+  --transparent-mobile-press: rgba(150, 150, 150, 0.32);
+
 
   --toolbar-bg-solid: rgb(30 30 32);
   --toolbar-bg: rgb(30 30 32 / 0.1);
