@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pytest
+import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError

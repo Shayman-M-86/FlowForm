@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-import pytest
+import pytest  # type: ignore[import]
 from pydantic import SecretStr
 
 from app.core.config import DatabaseSettings

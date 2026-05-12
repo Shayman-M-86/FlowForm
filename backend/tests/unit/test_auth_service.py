@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from unittest.mock import Mock, patch
 
-import pytest
+import pytest  # type: ignore[import]
 
 from app.core.errors import AuthError
 from app.schema.api.requests.auth import BootstrapUserRequest

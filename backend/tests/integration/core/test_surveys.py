@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import cast
 
-import pytest
+import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation, ForeignKeyViolation, UniqueViolation
 from sqlalchemy import delete as sql_delete
 from sqlalchemy.exc import IntegrityError, ProgrammingError

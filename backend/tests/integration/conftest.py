@@ -4,7 +4,7 @@ import logging
 from collections.abc import Generator
 from typing import NamedTuple
 
-import pytest
+import pytest  # type: ignore[import]
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session, sessionmaker
 

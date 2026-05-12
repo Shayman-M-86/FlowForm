@@ -371,4 +371,79 @@
         @apply inline-block shrink-0 animate-spin rounded-full border-2 border-border border-t-accent;
       }
 
+  /* ── Table ──────────────────────────────────────────────────────────────── */
+
+  /* Outer clipping wrapper — never overflows, triggers scale-to-fit logic */
+  .ui-table-container {
+    @apply w-full overflow-hidden;
+  }
+
+  /* Scaled inner wrapper — width is set to naturalWidth when scale < 1 */
+  .ui-table-scaler {
+    @apply origin-top-left;
+  }
+
+  /* The table itself */
+  .ui-table {
+    @apply w-full overflow-hidden rounded-xl border border-border bg-card;
+  }
+
+  /* Header row */
+  .ui-table-header {
+    @apply grid border-b border-border;
+  }
+
+  /* Header cell */
+  .ui-table-th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground;
+  }
+
+  /* Body container */
+  .ui-table-body {
+    @apply flex flex-col;
+  }
+
+  /* Data row */
+  .ui-table-row {
+    @apply relative grid items-center transition-colors;
+  }
+
+  /* Inset row divider — doesn't touch the left/right edges */
+  .ui-table-row + .ui-table-row::before {
+    content: "";
+    @apply absolute inset-x-4 top-0 h-px bg-border;
+  }
+
+  /* Clickable row hover/focus states */
+  .ui-table-row--clickable {
+    @apply cursor-pointer hover:bg-(--bg-hover-highlight) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring;
+  }
+
+  /* Striped rows — even rows get a muted tint that fades to transparent at the edges */
+  .ui-table-row--striped:nth-child(even) {
+    background-image: linear-gradient(
+      to right,
+      transparent 0%,
+      color-mix(in srgb, var(--muted) 40%, transparent) 8%,
+      color-mix(in srgb, var(--muted) 40%, transparent) 92%,
+      transparent 100%
+    );
+  }
+
+  /* Hover overrides the stripe on clickable striped rows */
+  .ui-table-row--striped.ui-table-row--clickable:nth-child(even):hover {
+    background-image: none;
+    @apply bg-(--bg-hover-highlight);
+  }
+
+  /* Data cell */
+  .ui-table-td {
+    @apply px-4 py-3 text-sm text-foreground;
+  }
+
+  /* Empty state */
+  .ui-table-empty {
+    @apply flex items-center justify-center px-4 py-10;
+  }
+
 }

@@ -15,6 +15,14 @@ import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectsSlugRouteImport } from './routes/projects/$slug'
 import { Route as ProjectsSlugIndexRouteImport } from './routes/projects/$slug/index'
 import { Route as ProjectsSlugSurveySlugRouteImport } from './routes/projects/$slug/$surveySlug'
+import { Route as ProjectsSlugSurveySlugIndexRouteImport } from './routes/projects/$slug/$surveySlug/index'
+import { Route as ProjectsSlugSurveySlugVersionsRouteImport } from './routes/projects/$slug/$surveySlug/versions'
+import { Route as ProjectsSlugSurveySlugSettingsRouteImport } from './routes/projects/$slug/$surveySlug/settings'
+import { Route as ProjectsSlugSurveySlugResponsesRouteImport } from './routes/projects/$slug/$surveySlug/responses'
+import { Route as ProjectsSlugSurveySlugOverviewRouteImport } from './routes/projects/$slug/$surveySlug/overview'
+import { Route as ProjectsSlugSurveySlugMembersRouteImport } from './routes/projects/$slug/$surveySlug/members'
+import { Route as ProjectsSlugSurveySlugLinksRouteImport } from './routes/projects/$slug/$surveySlug/links'
+import { Route as ProjectsSlugSurveySlugBuilderRouteImport } from './routes/projects/$slug/$surveySlug/builder'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,21 +54,84 @@ const ProjectsSlugSurveySlugRoute = ProjectsSlugSurveySlugRouteImport.update({
   path: '/$surveySlug',
   getParentRoute: () => ProjectsSlugRoute,
 } as any)
+const ProjectsSlugSurveySlugIndexRoute =
+  ProjectsSlugSurveySlugIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ProjectsSlugSurveySlugRoute,
+  } as any)
+const ProjectsSlugSurveySlugVersionsRoute =
+  ProjectsSlugSurveySlugVersionsRouteImport.update({
+    id: '/versions',
+    path: '/versions',
+    getParentRoute: () => ProjectsSlugSurveySlugRoute,
+  } as any)
+const ProjectsSlugSurveySlugSettingsRoute =
+  ProjectsSlugSurveySlugSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => ProjectsSlugSurveySlugRoute,
+  } as any)
+const ProjectsSlugSurveySlugResponsesRoute =
+  ProjectsSlugSurveySlugResponsesRouteImport.update({
+    id: '/responses',
+    path: '/responses',
+    getParentRoute: () => ProjectsSlugSurveySlugRoute,
+  } as any)
+const ProjectsSlugSurveySlugOverviewRoute =
+  ProjectsSlugSurveySlugOverviewRouteImport.update({
+    id: '/overview',
+    path: '/overview',
+    getParentRoute: () => ProjectsSlugSurveySlugRoute,
+  } as any)
+const ProjectsSlugSurveySlugMembersRoute =
+  ProjectsSlugSurveySlugMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => ProjectsSlugSurveySlugRoute,
+  } as any)
+const ProjectsSlugSurveySlugLinksRoute =
+  ProjectsSlugSurveySlugLinksRouteImport.update({
+    id: '/links',
+    path: '/links',
+    getParentRoute: () => ProjectsSlugSurveySlugRoute,
+  } as any)
+const ProjectsSlugSurveySlugBuilderRoute =
+  ProjectsSlugSurveySlugBuilderRouteImport.update({
+    id: '/builder',
+    path: '/builder',
+    getParentRoute: () => ProjectsSlugSurveySlugRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/projects/$slug': typeof ProjectsSlugRouteWithChildren
   '/projects/': typeof ProjectsIndexRoute
   '/ui-test/': typeof UiTestIndexRoute
-  '/projects/$slug/$surveySlug': typeof ProjectsSlugSurveySlugRoute
+  '/projects/$slug/$surveySlug': typeof ProjectsSlugSurveySlugRouteWithChildren
   '/projects/$slug/': typeof ProjectsSlugIndexRoute
+  '/projects/$slug/$surveySlug/builder': typeof ProjectsSlugSurveySlugBuilderRoute
+  '/projects/$slug/$surveySlug/links': typeof ProjectsSlugSurveySlugLinksRoute
+  '/projects/$slug/$surveySlug/members': typeof ProjectsSlugSurveySlugMembersRoute
+  '/projects/$slug/$surveySlug/overview': typeof ProjectsSlugSurveySlugOverviewRoute
+  '/projects/$slug/$surveySlug/responses': typeof ProjectsSlugSurveySlugResponsesRoute
+  '/projects/$slug/$surveySlug/settings': typeof ProjectsSlugSurveySlugSettingsRoute
+  '/projects/$slug/$surveySlug/versions': typeof ProjectsSlugSurveySlugVersionsRoute
+  '/projects/$slug/$surveySlug/': typeof ProjectsSlugSurveySlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/ui-test': typeof UiTestIndexRoute
-  '/projects/$slug/$surveySlug': typeof ProjectsSlugSurveySlugRoute
   '/projects/$slug': typeof ProjectsSlugIndexRoute
+  '/projects/$slug/$surveySlug/builder': typeof ProjectsSlugSurveySlugBuilderRoute
+  '/projects/$slug/$surveySlug/links': typeof ProjectsSlugSurveySlugLinksRoute
+  '/projects/$slug/$surveySlug/members': typeof ProjectsSlugSurveySlugMembersRoute
+  '/projects/$slug/$surveySlug/overview': typeof ProjectsSlugSurveySlugOverviewRoute
+  '/projects/$slug/$surveySlug/responses': typeof ProjectsSlugSurveySlugResponsesRoute
+  '/projects/$slug/$surveySlug/settings': typeof ProjectsSlugSurveySlugSettingsRoute
+  '/projects/$slug/$surveySlug/versions': typeof ProjectsSlugSurveySlugVersionsRoute
+  '/projects/$slug/$surveySlug': typeof ProjectsSlugSurveySlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,8 +139,16 @@ export interface FileRoutesById {
   '/projects/$slug': typeof ProjectsSlugRouteWithChildren
   '/projects/': typeof ProjectsIndexRoute
   '/ui-test/': typeof UiTestIndexRoute
-  '/projects/$slug/$surveySlug': typeof ProjectsSlugSurveySlugRoute
+  '/projects/$slug/$surveySlug': typeof ProjectsSlugSurveySlugRouteWithChildren
   '/projects/$slug/': typeof ProjectsSlugIndexRoute
+  '/projects/$slug/$surveySlug/builder': typeof ProjectsSlugSurveySlugBuilderRoute
+  '/projects/$slug/$surveySlug/links': typeof ProjectsSlugSurveySlugLinksRoute
+  '/projects/$slug/$surveySlug/members': typeof ProjectsSlugSurveySlugMembersRoute
+  '/projects/$slug/$surveySlug/overview': typeof ProjectsSlugSurveySlugOverviewRoute
+  '/projects/$slug/$surveySlug/responses': typeof ProjectsSlugSurveySlugResponsesRoute
+  '/projects/$slug/$surveySlug/settings': typeof ProjectsSlugSurveySlugSettingsRoute
+  '/projects/$slug/$surveySlug/versions': typeof ProjectsSlugSurveySlugVersionsRoute
+  '/projects/$slug/$surveySlug/': typeof ProjectsSlugSurveySlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -80,13 +159,28 @@ export interface FileRouteTypes {
     | '/ui-test/'
     | '/projects/$slug/$surveySlug'
     | '/projects/$slug/'
+    | '/projects/$slug/$surveySlug/builder'
+    | '/projects/$slug/$surveySlug/links'
+    | '/projects/$slug/$surveySlug/members'
+    | '/projects/$slug/$surveySlug/overview'
+    | '/projects/$slug/$surveySlug/responses'
+    | '/projects/$slug/$surveySlug/settings'
+    | '/projects/$slug/$surveySlug/versions'
+    | '/projects/$slug/$surveySlug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/projects'
     | '/ui-test'
-    | '/projects/$slug/$surveySlug'
     | '/projects/$slug'
+    | '/projects/$slug/$surveySlug/builder'
+    | '/projects/$slug/$surveySlug/links'
+    | '/projects/$slug/$surveySlug/members'
+    | '/projects/$slug/$surveySlug/overview'
+    | '/projects/$slug/$surveySlug/responses'
+    | '/projects/$slug/$surveySlug/settings'
+    | '/projects/$slug/$surveySlug/versions'
+    | '/projects/$slug/$surveySlug'
   id:
     | '__root__'
     | '/'
@@ -95,6 +189,14 @@ export interface FileRouteTypes {
     | '/ui-test/'
     | '/projects/$slug/$surveySlug'
     | '/projects/$slug/'
+    | '/projects/$slug/$surveySlug/builder'
+    | '/projects/$slug/$surveySlug/links'
+    | '/projects/$slug/$surveySlug/members'
+    | '/projects/$slug/$surveySlug/overview'
+    | '/projects/$slug/$surveySlug/responses'
+    | '/projects/$slug/$surveySlug/settings'
+    | '/projects/$slug/$surveySlug/versions'
+    | '/projects/$slug/$surveySlug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -148,16 +250,100 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsSlugSurveySlugRouteImport
       parentRoute: typeof ProjectsSlugRoute
     }
+    '/projects/$slug/$surveySlug/': {
+      id: '/projects/$slug/$surveySlug/'
+      path: '/'
+      fullPath: '/projects/$slug/$surveySlug/'
+      preLoaderRoute: typeof ProjectsSlugSurveySlugIndexRouteImport
+      parentRoute: typeof ProjectsSlugSurveySlugRoute
+    }
+    '/projects/$slug/$surveySlug/versions': {
+      id: '/projects/$slug/$surveySlug/versions'
+      path: '/versions'
+      fullPath: '/projects/$slug/$surveySlug/versions'
+      preLoaderRoute: typeof ProjectsSlugSurveySlugVersionsRouteImport
+      parentRoute: typeof ProjectsSlugSurveySlugRoute
+    }
+    '/projects/$slug/$surveySlug/settings': {
+      id: '/projects/$slug/$surveySlug/settings'
+      path: '/settings'
+      fullPath: '/projects/$slug/$surveySlug/settings'
+      preLoaderRoute: typeof ProjectsSlugSurveySlugSettingsRouteImport
+      parentRoute: typeof ProjectsSlugSurveySlugRoute
+    }
+    '/projects/$slug/$surveySlug/responses': {
+      id: '/projects/$slug/$surveySlug/responses'
+      path: '/responses'
+      fullPath: '/projects/$slug/$surveySlug/responses'
+      preLoaderRoute: typeof ProjectsSlugSurveySlugResponsesRouteImport
+      parentRoute: typeof ProjectsSlugSurveySlugRoute
+    }
+    '/projects/$slug/$surveySlug/overview': {
+      id: '/projects/$slug/$surveySlug/overview'
+      path: '/overview'
+      fullPath: '/projects/$slug/$surveySlug/overview'
+      preLoaderRoute: typeof ProjectsSlugSurveySlugOverviewRouteImport
+      parentRoute: typeof ProjectsSlugSurveySlugRoute
+    }
+    '/projects/$slug/$surveySlug/members': {
+      id: '/projects/$slug/$surveySlug/members'
+      path: '/members'
+      fullPath: '/projects/$slug/$surveySlug/members'
+      preLoaderRoute: typeof ProjectsSlugSurveySlugMembersRouteImport
+      parentRoute: typeof ProjectsSlugSurveySlugRoute
+    }
+    '/projects/$slug/$surveySlug/links': {
+      id: '/projects/$slug/$surveySlug/links'
+      path: '/links'
+      fullPath: '/projects/$slug/$surveySlug/links'
+      preLoaderRoute: typeof ProjectsSlugSurveySlugLinksRouteImport
+      parentRoute: typeof ProjectsSlugSurveySlugRoute
+    }
+    '/projects/$slug/$surveySlug/builder': {
+      id: '/projects/$slug/$surveySlug/builder'
+      path: '/builder'
+      fullPath: '/projects/$slug/$surveySlug/builder'
+      preLoaderRoute: typeof ProjectsSlugSurveySlugBuilderRouteImport
+      parentRoute: typeof ProjectsSlugSurveySlugRoute
+    }
   }
 }
 
+interface ProjectsSlugSurveySlugRouteChildren {
+  ProjectsSlugSurveySlugBuilderRoute: typeof ProjectsSlugSurveySlugBuilderRoute
+  ProjectsSlugSurveySlugLinksRoute: typeof ProjectsSlugSurveySlugLinksRoute
+  ProjectsSlugSurveySlugMembersRoute: typeof ProjectsSlugSurveySlugMembersRoute
+  ProjectsSlugSurveySlugOverviewRoute: typeof ProjectsSlugSurveySlugOverviewRoute
+  ProjectsSlugSurveySlugResponsesRoute: typeof ProjectsSlugSurveySlugResponsesRoute
+  ProjectsSlugSurveySlugSettingsRoute: typeof ProjectsSlugSurveySlugSettingsRoute
+  ProjectsSlugSurveySlugVersionsRoute: typeof ProjectsSlugSurveySlugVersionsRoute
+  ProjectsSlugSurveySlugIndexRoute: typeof ProjectsSlugSurveySlugIndexRoute
+}
+
+const ProjectsSlugSurveySlugRouteChildren: ProjectsSlugSurveySlugRouteChildren =
+  {
+    ProjectsSlugSurveySlugBuilderRoute: ProjectsSlugSurveySlugBuilderRoute,
+    ProjectsSlugSurveySlugLinksRoute: ProjectsSlugSurveySlugLinksRoute,
+    ProjectsSlugSurveySlugMembersRoute: ProjectsSlugSurveySlugMembersRoute,
+    ProjectsSlugSurveySlugOverviewRoute: ProjectsSlugSurveySlugOverviewRoute,
+    ProjectsSlugSurveySlugResponsesRoute: ProjectsSlugSurveySlugResponsesRoute,
+    ProjectsSlugSurveySlugSettingsRoute: ProjectsSlugSurveySlugSettingsRoute,
+    ProjectsSlugSurveySlugVersionsRoute: ProjectsSlugSurveySlugVersionsRoute,
+    ProjectsSlugSurveySlugIndexRoute: ProjectsSlugSurveySlugIndexRoute,
+  }
+
+const ProjectsSlugSurveySlugRouteWithChildren =
+  ProjectsSlugSurveySlugRoute._addFileChildren(
+    ProjectsSlugSurveySlugRouteChildren,
+  )
+
 interface ProjectsSlugRouteChildren {
-  ProjectsSlugSurveySlugRoute: typeof ProjectsSlugSurveySlugRoute
+  ProjectsSlugSurveySlugRoute: typeof ProjectsSlugSurveySlugRouteWithChildren
   ProjectsSlugIndexRoute: typeof ProjectsSlugIndexRoute
 }
 
 const ProjectsSlugRouteChildren: ProjectsSlugRouteChildren = {
-  ProjectsSlugSurveySlugRoute: ProjectsSlugSurveySlugRoute,
+  ProjectsSlugSurveySlugRoute: ProjectsSlugSurveySlugRouteWithChildren,
   ProjectsSlugIndexRoute: ProjectsSlugIndexRoute,
 }
 

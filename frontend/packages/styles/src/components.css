@@ -2,6 +2,7 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-sidebar: var(--sidebar);
   --color-foreground: var(--foreground);
   --color-foreground-full: var(--foreground-full);
   --color-card: var(--card);

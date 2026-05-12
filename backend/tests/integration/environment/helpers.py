@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 import psycopg
-import pytest
+import pytest  # type: ignore[import]
 from psycopg import Connection
 
 
@@ -49,4 +49,4 @@ def current_database_name(prefix: str) -> str:
     if row is None:
         pytest.fail(f"No database name returned for {prefix}")
 
-    return str(row[0])
+    return str(row[0]) # type: ignore[no-any-return]

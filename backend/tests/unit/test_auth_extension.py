@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pytest
+import pytest  # type: ignore[import]
 from flask import Flask, jsonify
 
 from app.api.utils.errors import register_error_handlers
@@ -102,9 +102,7 @@ def test_optional_auth_rejects_invalid_token(
     monkeypatch.setattr(
         auth_extension,
         "_verify_access_token",
-        lambda _token: (_ for _ in ()).throw(
-            auth_errors.invalid_access_token("bad token", status_code=401)
-        ),
+        lambda _token: (_ for _ in ()).throw(auth_errors.invalid_access_token("bad token", status_code=401)),
     )
 
     response = client.get("/optional-auth", headers={"Authorization": "Bearer bad-token"})

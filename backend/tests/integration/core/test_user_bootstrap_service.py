@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pytest
+import pytest  # type: ignore[import]
 from sqlalchemy.orm import Session, scoped_session
 
 from app.domain.errors import UserBootstrapConflictError

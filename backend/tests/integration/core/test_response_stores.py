@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast
 
-import pytest
+import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation, NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session

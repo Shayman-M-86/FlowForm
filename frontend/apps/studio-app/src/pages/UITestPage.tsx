@@ -16,7 +16,10 @@ import {
   ThemeToggle,
   Badge,
   TabSelector,
+  Table,
+  type TableColumn,
 } from "@flowform/ui";
+import { StudioSidebar } from "@/components/StudioSidebar";
 
 const buttonVariants = ["primary", "secondary", "danger", "ghost"] as const;
 const buttonSizes = ["md", "sm", "xs"] as const;
@@ -83,6 +86,67 @@ function WideStack({ children }: { children: React.ReactNode }) {
 }
 
 export function UITestPage() {
+  // ── Table test data ──────────────────────────────────────────────────────────
+
+  interface SampleRow {
+    id: number
+    name: string
+    status: "Published" | "Draft" | "Archived"
+    responses: number
+    version: string
+    updatedAt: string
+  }
+
+  const TABLE_ROWS: SampleRow[] = [
+    { id: 1, name: "Customer onboarding feedback", status: "Published", responses: 128, version: "v2", updatedAt: "Apr 30, 2026" },
+    { id: 2, name: "Product discovery intake",     status: "Draft",     responses: 0,   version: "v1", updatedAt: "Apr 28, 2026" },
+    { id: 3, name: "Quarterly account health",     status: "Published", responses: 54,  version: "v1", updatedAt: "Apr 25, 2026" },
+    { id: 4, name: "Sleep study eligibility",      status: "Archived",  responses: 311, version: "v4", updatedAt: "Mar 10, 2026" },
+  ]
+
+  const STATUS_VARIANT: Record<SampleRow["status"], "success" | "muted" | "warning"> = {
+    Published: "success",
+    Draft: "muted",
+    Archived: "warning",
+  }
+
+  const ALL_COLUMNS: TableColumn<SampleRow>[] = [
+    {
+      key: "name",
+      header: "Survey",
+      minWidth: 200,
+      cell: (row) => <span className="font-medium text-foreground">{row.name}</span>,
+    },
+    {
+      key: "status",
+      header: "Status",
+      minWidth: 90,
+      cell: (row) => <Badge variant={STATUS_VARIANT[row.status]} size="xs">{row.status}</Badge>,
+    },
+    {
+      key: "version",
+      header: "Version",
+      minWidth: 70,
+      cell: (row) => <span className="text-muted-foreground">{row.version}</span>,
+    },
+    {
+      key: "responses",
+      header: "Responses",
+      minWidth: 90,
+      cell: (row) => <span className="tabular-nums">{row.responses}</span>,
+    },
+    {
+      key: "updatedAt",
+      header: "Last updated",
+      minWidth: 130,
+      cell: (row) => <span className="text-muted-foreground">{row.updatedAt}</span>,
+    },
+  ]
+
+  const HIDDEN_VERSION_COLUMNS: TableColumn<SampleRow>[] = ALL_COLUMNS.map((col) =>
+    col.key === "version" ? { ...col, visible: false } : col,
+  )
+
   const [tabActive, setTabActive] = useState("overview");
   const [tabOverflowActive, setTabOverflowActive] = useState("surveys");
 
@@ -175,10 +239,83 @@ export function UITestPage() {
   return (
     <div className="min-h-screen w-full bg-background px-4 py-5 text-foreground md:px-5 md:py-10">
       <div className="mx-auto max-w-1400px">
+        <Section title="Studio sidebar">
+          <div className="overflow-hidden rounded-xl border border-border bg-background">
+            <StudioSidebar activeItem="surveys" />
+          </div>
+        </Section>
+
         <div className="mb-8 flex items-center justify-between gap-4 border-b-2 border-border pb-5 md:mb-10">
           <h1 className="m-0">UI Component Test Suite</h1>
           <ThemeToggle />
         </div>
+
+        <Section title="Table">
+          <CardStack gap="lg">
+            <TestCard title="All columns visible">
+              <Table
+                columns={ALL_COLUMNS}
+                rows={TABLE_ROWS}
+                getRowKey={(row) => row.id}
+              />
+            </TestCard>
+
+            <TestCard title="Version column hidden">
+              <Table
+                columns={HIDDEN_VERSION_COLUMNS}
+                rows={TABLE_ROWS}
+                getRowKey={(row) => row.id}
+              />
+            </TestCard>
+
+            <TestCard title="Narrow container — scale-to-fit (max-w-xs)">
+              <div className="max-w-xs">
+                <Table
+                  columns={ALL_COLUMNS}
+                  rows={TABLE_ROWS}
+                  getRowKey={(row) => row.id}
+                />
+              </div>
+            </TestCard>
+
+            <TestCard title="Striped rows">
+              <Table
+                columns={ALL_COLUMNS}
+                rows={TABLE_ROWS}
+                getRowKey={(row) => row.id}
+                striped
+              />
+            </TestCard>
+
+            <TestCard title="Striped + clickable">
+              <Table
+                columns={ALL_COLUMNS}
+                rows={TABLE_ROWS}
+                getRowKey={(row) => row.id}
+                striped
+                onRowClick={(row) => alert(`Clicked: ${row.name}`)}
+              />
+            </TestCard>
+
+            <TestCard title="Clickable rows">
+              <Table
+                hideHeader={true}
+                columns={ALL_COLUMNS}
+                rows={TABLE_ROWS}
+                getRowKey={(row) => row.id}
+                onRowClick={(row) => alert(`Clicked: ${row.name}`)}
+              />
+            </TestCard>
+
+            <TestCard title="Empty state">
+              <Table
+                columns={ALL_COLUMNS}
+                rows={[]}
+                emptyState={<p className="text-sm text-muted-foreground">No surveys found.</p>}
+              />
+            </TestCard>
+          </CardStack>
+        </Section>
 
         <Section title="Tab Selector">
           <TestGrid>
