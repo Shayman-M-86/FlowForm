@@ -1,7 +1,15 @@
+import { Suspense, lazy } from 'react'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/router-devtools'
 import { ProtectedApp } from '@/components/auth/ProtectedApp'
 import { StudioSidebar } from '@/components/StudioSidebar'
+
+const TanStackRouterDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import('@tanstack/router-devtools').then((m) => ({
+        default: m.TanStackRouterDevtools,
+      })),
+    )
+  : null
 
 function AppLayout() {
   return (
@@ -18,7 +26,11 @@ export const Route = createRootRoute({
   component: () => (
     <ProtectedApp>
       <AppLayout />
-      <TanStackRouterDevtools />
+      {TanStackRouterDevtools && (
+        <Suspense>
+          <TanStackRouterDevtools />
+        </Suspense>
+      )}
     </ProtectedApp>
   ),
 })

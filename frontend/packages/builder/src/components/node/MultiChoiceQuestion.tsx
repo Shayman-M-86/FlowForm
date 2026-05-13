@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import { Button, Input, LargeInput, NumberStepperGroup } from "@flowform/ui";
 import { useOptionDrag } from "./useOptionDrag";
 import { QUESTION_MAX, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
@@ -59,15 +59,6 @@ const ANSWER_PER_FIELD_MAX = 1000;
 const MAX_ANSWERS = 10;
 
 export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
-  const initialOptions = initialContent?.definition.options.length
-    ? initialContent.definition.options.map((option, index) => ({
-      id: `answer-${index + 1}`,
-      placeholder: `Answer choice ${option.id || String.fromCharCode(65 + index)}`,
-      value: option.label,
-      tag: option.id,
-      ghost: false,
-    }))
-    : INITIAL_OPTIONS;
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
   const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
@@ -75,8 +66,17 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
   const [minChoices, setMinChoices] = useState(initialContent?.definition.min ?? 1);
   const [maxChoices, setMaxChoices] = useState(initialContent?.definition.max ?? 1);
   const [openOptionIds, setOpenOptionIds] = useState<Set<string>>(new Set());
-  const [options, setOptions] = useState(initialOptions);
-  const nextOptionIndexRef = useRef(initialOptions.length + 1);
+  const [options, setOptions] = useState(() => {
+    if (!initialContent?.definition.options.length) return INITIAL_OPTIONS;
+    return initialContent.definition.options.map((option, index) => ({
+      id: `answer-${index + 1}`,
+      placeholder: `Answer choice ${option.id || String.fromCharCode(65 + index)}`,
+      value: option.label,
+      tag: option.id,
+      ghost: false,
+    }));
+  });
+  const nextOptionIndexRef = useRef(options.length + 1);
 
   const {
     activeDrag,
@@ -87,7 +87,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
     getThresholdRatioForIndex,
   } = useOptionDrag(options, setOptions);
 
-  const multiChoiceData: ChoiceContent = {
+  const multiChoiceData: ChoiceContent = useMemo(() => ({
     id: tagValue,
     title: titleValue,
     label: questionValue,
@@ -98,17 +98,17 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
       max: maxChoices,
       options: options.map((opt) => ({ id: opt.tag, label: opt.value })),
     },
-  };
+  }), [tagValue, titleValue, questionValue, isRequired, minChoices, maxChoices, options]);
 
   useImperativeHandle(ref, () => ({
     getData() {
       return multiChoiceData;
     },
-  }));
+  }), [multiChoiceData]);
 
   useEffect(() => {
     onDataChange?.(multiChoiceData);
-  }, [titleValue, tagValue, questionValue, isRequired, minChoices, maxChoices, options]);
+  }, [multiChoiceData, onDataChange]);
 
   function availableCharactersFor(optionId: string) {
     const usedByOthers = options

@@ -1,8 +1,8 @@
 import { createFileRoute, Outlet, useRouterState, useNavigate } from '@tanstack/react-router'
-import { Badge, Button, TabSelector } from '@flowform/ui'
+import { Button, TabSelector } from '@flowform/ui'
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { useProject } from '@/api/projects'
-import { getMockSurvey } from '@/api/mockData'
+import { useSurvey } from '@/api/surveys'
 
 const TABS = [
   { id: 'overview',  label: 'Overview' },
@@ -19,7 +19,7 @@ type TabId = typeof TABS[number]['id']
 function SurveyLayout() {
   const { slug, surveySlug } = Route.useParams()
   const { data: project } = useProject(slug)
-  const survey = getMockSurvey(slug, surveySlug)
+  const { data: survey } = useSurvey(slug, surveySlug)
   const navigate = useNavigate()
 
   const pathname = useRouterState({ select: (s) => s.location.pathname })
@@ -28,12 +28,8 @@ function SurveyLayout() {
   const projectLabel = project?.name ?? slug
   const surveyTitle = survey?.title ?? surveySlug.replace(/-/g, ' ')
 
-  const isPublished = survey?.publishedVersionNumber != null
-  const hasDraft = survey?.draftVersionNumber != null
-  const hasDraftChanges = isPublished && hasDraft
-
   return (
-    <main className="max-w-7xl px-6 py-10 md:px-16">
+    <main className="page-main">
       <Breadcrumb segments={[
         { label: 'Projects', to: '/projects' },
         { label: projectLabel, to: `/projects/${slug}` },
@@ -45,33 +41,9 @@ function SurveyLayout() {
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <h2 className="leading-tight">{surveyTitle}</h2>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              {isPublished ? (
-                <Badge variant="success" size="xs">Published</Badge>
-              ) : (
-                <Badge variant="muted" size="xs">Draft</Badge>
-              )}
-              {hasDraftChanges && (
-                <Badge variant="warning" size="xs">Draft changes</Badge>
-              )}
-              {isPublished && (
-                <span className="text-xs text-muted-foreground">v{survey!.publishedVersionNumber} live</span>
-              )}
-              {hasDraft && (
-                <span className="text-xs text-muted-foreground">
-                  {hasDraftChanges ? '·' : ''} v{survey!.draftVersionNumber} draft
-                </span>
-              )}
-              {survey && (
-                <span className="text-xs text-muted-foreground">· {survey.responses} responses</span>
-              )}
-            </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Button variant="secondary" size="sm">Preview</Button>
-            {hasDraft && (
-              <Button variant="primary" size="sm">Publish v{survey!.draftVersionNumber}</Button>
-            )}
           </div>
         </div>
         <TabSelector

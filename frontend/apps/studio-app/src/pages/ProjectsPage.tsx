@@ -26,7 +26,7 @@ export function ProjectsPage() {
   }
 
   return (
-    <main className="max-w-7xl px-6 py-10 md:px-16">
+    <main className="page-main">
       <div className="flex items-center justify-between gap-4">
         <h1>Projects</h1>
         <Button variant="primary" onClick={() => setCreateOpen(true)}>

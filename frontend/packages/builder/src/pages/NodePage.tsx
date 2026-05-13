@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode, useEffect, useLayoutEffect, useRef, useState, } from "react";
+import { Fragment, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, } from "react";
 import { useNavigate } from "react-router-dom";
 import type { FieldQuestionHandle } from "../components/node/FieldQuestion";
 import type { MatchingQuestionHandle } from "../components/node/MatchingQuestion";
@@ -219,7 +219,7 @@ export function NodePage() {
     movedId: string;
   } | null>(null);
   const newlyAddedQuestionId = useRef<string | null>(null);
-  const duplicateQuestionIds = new Set(
+  const duplicateQuestionIds = useMemo(() => new Set(
     Object.entries(
       questions.reduce<Record<string, string[]>>((acc, question) => {
         const schemaId = getNodeSchemaId(question, questionContents, ruleContents).trim();
@@ -230,7 +230,7 @@ export function NodePage() {
     )
       .filter(([, nodeIds]) => nodeIds.length > 1)
       .flatMap(([, nodeIds]) => nodeIds),
-  );
+  ), [questions, questionContents, ruleContents]);
   const hasDuplicateIds = duplicateQuestionIds.size > 0;
 
   useLayoutEffect(() => {
@@ -320,18 +320,23 @@ export function NodePage() {
     }
   }, [questions]);
 
-  function addQuestion(type: QuestionType) {
-    const newId = `q${nextId}`;
+  const nextIdRef = useRef(nextId);
+  nextIdRef.current = nextId;
+
+  const addQuestion = useCallback((type: QuestionType) => {
+    const newId = `q${nextIdRef.current}`;
     newlyAddedQuestionId.current = newId;
     setQuestions((current) => {
       const initialTag = computeNextTag(current, type);
       return [...current, { id: newId, type, initialTag }];
     });
-    setNextId((current) => current + 1);
+    setNextId((n) => n + 1);
     setEditingQuestionIds((current) =>
       current.includes(newId) ? current : [...current, newId],
     );
-  }
+  // computeNextTag is a pure function defined in this module scope — no closure deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function computeNextTag(currentQuestions: Question[], type: QuestionType): string {
     const isRule = type === "rules";
@@ -401,6 +406,26 @@ export function NodePage() {
     newlyAddedQuestionId.current = null;
   }
 
+  // Precompute sibling content lists once per questions/questionContents change.
+  // RulesQuestion uses these to show branching targets — recomputing per-render is O(n²).
+  const siblingsMap = useMemo(() => {
+    const nonRuleContents = (slice: Question[]) =>
+      slice
+        .filter((q) => q.type !== "rules")
+        .map((q) => questionContents[q.id])
+        .filter((c): c is QuestionContent => Boolean(c));
+
+    return new Map(
+      questions.map((question, index) => [
+        question.id,
+        {
+          previous: nonRuleContents(questions.slice(0, index)),
+          following: nonRuleContents(questions.slice(index + 1)),
+        },
+      ]),
+    );
+  }, [questions, questionContents]);
+
   function renderQuestion(question: Question) {
     const key = `question-${question.id}`;
     const handleRef = (ref: any) => {
@@ -413,7 +438,6 @@ export function NodePage() {
         if (isEditMode) {
           return current.includes(question.id) ? current : [...current, question.id];
         }
-
         return current.filter((questionId) => questionId !== question.id);
       });
     };
@@ -421,32 +445,19 @@ export function NodePage() {
       setQuestionContents((current) => (
         areContentsEqual(current[question.id], content)
           ? current
-          : {
-            ...current,
-            [question.id]: content,
-          }
+          : { ...current, [question.id]: content }
       ));
     };
     const handleRuleContentChange = (content: RuleContent) => {
       setRuleContents((current) => (
         areContentsEqual(current[question.id], content)
           ? current
-          : {
-            ...current,
-            [question.id]: content,
-          }
+          : { ...current, [question.id]: content }
       ));
     };
     const currentQuestionContent = questionContents[question.id];
     const currentRuleContent = ruleContents[question.id];
-    const ruleIndex = questions.findIndex((q) => q.id === question.id);
-    const collectContents = (slice: typeof questions) =>
-      slice
-        .filter((q) => q.type !== "rules")
-        .map((q) => questionContents[q.id])
-        .filter((content): content is QuestionContent => Boolean(content));
-    const previousSiblings = collectContents(questions.slice(0, ruleIndex));
-    const followingSiblings = collectContents(questions.slice(ruleIndex + 1));
+    const siblings = siblingsMap.get(question.id);
 
     const isCollapsed = collapsedIds.has(question.id);
     const isEditMode = editingQuestionIds.includes(question.id);
@@ -481,11 +492,11 @@ export function NodePage() {
       case "field":
         return <FieldQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentQuestionContent?.family === "field" ? currentQuestionContent : undefined} {...sharedProps} onDelete={() => removeQuestion(question.id)} onDataChange={handleContentChange} />;
       case "rules":
-        return <RulesQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentRuleContent} {...sharedProps} onDelete={() => removeQuestion(question.id)} onDataChange={handleRuleContentChange} previousSiblings={previousSiblings} followingSiblings={followingSiblings} />;
+        return <RulesQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentRuleContent} {...sharedProps} onDelete={() => removeQuestion(question.id)} onDataChange={handleRuleContentChange} previousSiblings={siblings?.previous ?? []} followingSiblings={siblings?.following ?? []} />;
     }
   }
 
-  const addQuestionCard = (
+  const addQuestionCard = useMemo(() => (
     <div className="flex flex-col items-stretch gap-[18px] rounded-2xl border border-border bg-[image:var(--surface-lift-gradient-faint),var(--bg-subtle)] px-[26px] py-6 shadow-[inset_0_1px_0_var(--overlay-faint)] my-[10px] mb-[60px]">
       <div className="flex flex-col items-start gap-2">
         <Badge variant="accent" size="sm">Build</Badge>
@@ -510,7 +521,7 @@ export function NodePage() {
         ))}
       </div>
     </div>
-  );
+  ), [addQuestion]);
 
   const isQuestionExpanded = (question: Question) => {
     return !collapsedIds.has(question.id);
@@ -529,7 +540,7 @@ export function NodePage() {
     });
   }
 
-  const serializeSurvey = () => {
+  const serializedSurvey = useMemo(() => {
     const entries: SurveyEntry[] = [];
     for (const question of questions) {
       if (question.type === "rules") {
@@ -541,9 +552,7 @@ export function NodePage() {
       }
     }
     return serializeSurveyEntries(entries);
-  };
-
-  const serializedSurvey = serializeSurvey();
+  }, [questions, questionContents, ruleContents]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

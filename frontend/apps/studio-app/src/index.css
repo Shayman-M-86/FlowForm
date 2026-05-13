@@ -30,6 +30,10 @@ body {
   overflow-x: clip;
 }
 
+.page-main {
+  @apply max-w-7xl px-6 py-10 md:px-16
+}
+
 /* ── Studio Sidebar ──────────────────────────────────────────── */
 
 @layer components {
@@ -37,16 +41,16 @@ body {
 
   .sidebar {
     /* Shared */
-    @apply flex min-h-screen shrink-0 flex-col bg-sidebar py-4 text-foreground transition-[width,padding] duration-200 ease-out;
+    @apply flex min-h-screen shrink-0 flex-col bg-sidebar py-3.5 px-3 text-foreground transition-[width,padding] duration-200 ease-out;
 
     /* Collapsed (default / forced) */
-    @apply w-17 px-3;
+    @apply w-17;
 
     /* Expanded (md+, unless forced collapsed) */
-    @apply md:w-69 md:px-3;
+    @apply md:w-69;
 
     &[data-collapsed="true"] {
-      @apply w-17 px-3 md:w-17 md:px-3;
+      @apply w-17 px-3 md:w-17;
     }
   }
 

@@ -109,14 +109,33 @@ export function DropdownMenu({
       }
     };
 
+    const reposition = () => {
+      const el = trigger.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const gap = 6;
+      const scrollY = positioning === "absolute" ? window.scrollY : 0;
+      const scrollX = positioning === "absolute" ? window.scrollX : 0;
+      const left = (align === "right" ? rect.right : rect.left) + scrollX;
+      if (direction === "up") {
+        setPosition({ bottom: (window.innerHeight - rect.top + gap) - scrollY, left, minWidth: rect.width });
+      } else {
+        setPosition({ top: rect.bottom + gap + scrollY, left, minWidth: rect.width });
+      }
+    };
+
     document.addEventListener("keydown", onKey);
     document.addEventListener("mousedown", onMouse);
+    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", reposition, { capture: true, passive: true });
 
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onMouse);
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, { capture: true });
     };
-  }, [open, onClose, trigger]);
+  }, [open, onClose, trigger, align, direction, positioning]);
 
   if (!open || !isBrowser) return null;
 

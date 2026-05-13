@@ -19,7 +19,7 @@
 }
 
 .site-header__inner {
-  @apply mx-auto flex min-h-[56px] max-w-[1100px] flex-wrap items-center justify-between gap-x-4 px-6;
+  @apply mx-auto flex min-h-[56px] max-w-[1100px] flex-wrap items-center justify-between gap-x-4 px-6 pl-5;
 }
 
 .site-header__brand {

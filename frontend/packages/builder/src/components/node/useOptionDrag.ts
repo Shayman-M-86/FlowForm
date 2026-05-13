@@ -16,6 +16,15 @@ type Lock = { direction: "up" | "down"; siblingId: string };
 
 export type ActiveDrag = {
   id: string;
+  startIndex: number;
+  targetIndex: number;
+  rowHeight: number;
+  offsetY: number;
+};
+
+// Full internal drag state — kept in a ref so pointer-move updates don't trigger re-renders.
+type DragState = {
+  id: string;
   pointerOffsetY: number;
   startIndex: number;
   targetIndex: number;
@@ -34,9 +43,15 @@ export function useOptionDrag<T extends Option>(
 ) {
   const optionsListRef = useRef<HTMLDivElement | null>(null);
   const optionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  // Visual state — only offsetY + targetIndex needed to paint transforms.
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
+  // Full internal state — mutated in place during drag, never triggers re-renders.
+  const dragStateRef = useRef<DragState | null>(null);
+  // Keep a ref to current options so the stable effect closure can read them.
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
-  function getVisualIndex(index: number, drag: ActiveDrag) {
+  function getVisualIndex(index: number, drag: DragState) {
     if (drag.targetIndex < drag.startIndex) {
       if (index >= drag.targetIndex && index < drag.startIndex) return index + 1;
       return index;
@@ -48,40 +63,40 @@ export function useOptionDrag<T extends Option>(
     return index;
   }
 
-  function getThresholdRatio(index: number, drag: ActiveDrag) {
+  function getThresholdRatio(index: number, drag: DragState) {
     const siblingVisualIndex = getVisualIndex(index, drag);
     return siblingVisualIndex > drag.targetIndex
       ? OPTION_INSERT_THRESHOLD_DOWN
       : OPTION_INSERT_THRESHOLD_UP;
   }
 
-  function getOptionIdAtVisualIndex(visualIndex: number, drag: ActiveDrag) {
-    for (let index = 0; index < options.length; index += 1) {
-      const option = options[index];
+  function getOptionIdAtVisualIndex(visualIndex: number, drag: DragState) {
+    const opts = optionsRef.current;
+    for (let index = 0; index < opts.length; index += 1) {
+      const option = opts[index];
       if (option.id === drag.id) continue;
       if (getVisualIndex(index, drag) === visualIndex) return option.id;
     }
     return null;
   }
 
+  // Registered once — reads drag state from the ref, no re-subscription on each frame.
   useEffect(() => {
-    if (!activeDrag) return;
-
-    const currentDrag = activeDrag;
-
     function handlePointerMove(event: PointerEvent) {
+      const drag = dragStateRef.current;
       const listElement = optionsListRef.current;
-      if (!listElement) return;
+      if (!drag || !listElement) return;
 
+      const opts = optionsRef.current;
       const listRect = listElement.getBoundingClientRect();
-      const desiredTopInList = event.clientY - listRect.top - currentDrag.pointerOffsetY;
-      const maxTopInList = listRect.height - currentDrag.rowHeight;
+      const desiredTopInList = event.clientY - listRect.top - drag.pointerOffsetY;
+      const maxTopInList = listRect.height - drag.rowHeight;
       const nextTopInList = Math.max(0, Math.min(maxTopInList, desiredTopInList));
-      const nextOffset = nextTopInList - currentDrag.startTop;
+      const nextOffset = nextTopInList - drag.startTop;
       const draggedTopY = listRect.top + nextTopInList;
-      const draggedBottomY = draggedTopY + currentDrag.rowHeight;
+      const draggedBottomY = draggedTopY + drag.rowHeight;
 
-      let nextInsertLock = currentDrag.insertLock;
+      let nextInsertLock = drag.insertLock;
       if (nextInsertLock) {
         const siblingRect = optionRefs.current[nextInsertLock.siblingId]?.getBoundingClientRect();
         if (siblingRect) {
@@ -92,28 +107,26 @@ export function useOptionDrag<T extends Option>(
         }
       }
 
-      let nextTargetIndex = currentDrag.targetIndex;
+      let nextTargetIndex = drag.targetIndex;
       if (!nextInsertLock) {
         nextTargetIndex = 0;
-        for (let index = 0; index < options.length; index += 1) {
-          const option = options[index];
-          if (option.id === currentDrag.id) continue;
+        for (let index = 0; index < opts.length; index += 1) {
+          const option = opts[index];
+          if (option.id === drag.id) continue;
           const siblingRect = optionRefs.current[option.id]?.getBoundingClientRect();
           if (!siblingRect) continue;
-          const siblingVisualIndex = getVisualIndex(index, currentDrag);
-          const threshold = getThresholdRatio(index, currentDrag);
+          const siblingVisualIndex = getVisualIndex(index, drag);
+          const threshold = getThresholdRatio(index, drag);
           const thresholdY = siblingRect.top + siblingRect.height * threshold;
-          const draggedEdgeY = siblingVisualIndex > currentDrag.targetIndex
-            ? draggedBottomY
-            : draggedTopY;
+          const draggedEdgeY = siblingVisualIndex > drag.targetIndex ? draggedBottomY : draggedTopY;
           if (draggedEdgeY > thresholdY) nextTargetIndex += 1;
         }
       }
 
-      if (nextTargetIndex > currentDrag.targetIndex + 1) nextTargetIndex = currentDrag.targetIndex + 1;
-      if (nextTargetIndex < currentDrag.targetIndex - 1) nextTargetIndex = currentDrag.targetIndex - 1;
+      if (nextTargetIndex > drag.targetIndex + 1) nextTargetIndex = drag.targetIndex + 1;
+      if (nextTargetIndex < drag.targetIndex - 1) nextTargetIndex = drag.targetIndex - 1;
 
-      let nextReverseLock = currentDrag.reverseLock;
+      let nextReverseLock = drag.reverseLock;
       if (nextReverseLock) {
         const siblingRect = optionRefs.current[nextReverseLock.siblingId]?.getBoundingClientRect();
         if (siblingRect) {
@@ -126,8 +139,8 @@ export function useOptionDrag<T extends Option>(
 
           if (shouldReturn) {
             nextTargetIndex = nextReverseLock.direction === "down"
-              ? currentDrag.targetIndex + 1
-              : currentDrag.targetIndex - 1;
+              ? drag.targetIndex + 1
+              : drag.targetIndex - 1;
             nextReverseLock = null;
           } else if (isUnlocked && !nextInsertLock) {
             nextReverseLock = null;
@@ -136,42 +149,54 @@ export function useOptionDrag<T extends Option>(
       }
 
       if (nextReverseLock) {
-        if (nextReverseLock.direction === "down" && nextTargetIndex > currentDrag.targetIndex) {
-          nextTargetIndex = currentDrag.targetIndex;
+        if (nextReverseLock.direction === "down" && nextTargetIndex > drag.targetIndex) {
+          nextTargetIndex = drag.targetIndex;
         }
-        if (nextReverseLock.direction === "up" && nextTargetIndex < currentDrag.targetIndex) {
-          nextTargetIndex = currentDrag.targetIndex;
+        if (nextReverseLock.direction === "up" && nextTargetIndex < drag.targetIndex) {
+          nextTargetIndex = drag.targetIndex;
         }
       }
 
-      if (!nextReverseLock && nextTargetIndex !== currentDrag.targetIndex) {
-        const crossedVisualIndex = nextTargetIndex < currentDrag.targetIndex
-          ? currentDrag.targetIndex - 1
-          : currentDrag.targetIndex + 1;
-        const crossedSiblingId = getOptionIdAtVisualIndex(crossedVisualIndex, currentDrag);
+      if (!nextReverseLock && nextTargetIndex !== drag.targetIndex) {
+        const crossedVisualIndex = nextTargetIndex < drag.targetIndex
+          ? drag.targetIndex - 1
+          : drag.targetIndex + 1;
+        const crossedSiblingId = getOptionIdAtVisualIndex(crossedVisualIndex, drag);
         if (crossedSiblingId) {
-          const swapDirection = nextTargetIndex < currentDrag.targetIndex ? "down" : "up";
+          const swapDirection = nextTargetIndex < drag.targetIndex ? "down" : "up";
           nextReverseLock = { direction: swapDirection, siblingId: crossedSiblingId };
           nextInsertLock = { direction: swapDirection, siblingId: crossedSiblingId };
         }
       }
 
-      setActiveDrag((current) => current
-        ? { ...current, offsetY: nextOffset, targetIndex: nextTargetIndex, reverseLock: nextReverseLock, insertLock: nextInsertLock }
-        : current
+      // Mutate the ref in place — no re-render for lock/index bookkeeping.
+      drag.offsetY = nextOffset;
+      drag.targetIndex = nextTargetIndex;
+      drag.reverseLock = nextReverseLock;
+      drag.insertLock = nextInsertLock;
+
+      // Only setState for values consumed by render (transforms).
+      setActiveDrag((current) =>
+        current
+          ? { ...current, offsetY: nextOffset, targetIndex: nextTargetIndex }
+          : current,
       );
     }
 
     function handlePointerUp() {
+      const drag = dragStateRef.current;
+      if (!drag) return;
+
       setOptions((current) => {
-        if (!currentDrag || currentDrag.startIndex === currentDrag.targetIndex) return current;
-        const sourceIndex = current.findIndex((o) => o.id === currentDrag.id);
+        if (drag.startIndex === drag.targetIndex) return current;
+        const sourceIndex = current.findIndex((o) => o.id === drag.id);
         if (sourceIndex < 0) return current;
         const next = [...current];
         const [moved] = next.splice(sourceIndex, 1);
-        next.splice(currentDrag.targetIndex, 0, moved);
+        next.splice(drag.targetIndex, 0, moved);
         return next;
       });
+      dragStateRef.current = null;
       setActiveDrag(null);
     }
 
@@ -181,7 +206,8 @@ export function useOptionDrag<T extends Option>(
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [activeDrag, options]);
+  // Empty deps — registered once, reads live data from refs.
+  }, [setOptions]);
 
   function startDrag(
     event: React.PointerEvent,
@@ -193,7 +219,7 @@ export function useOptionDrag<T extends Option>(
     const listElement = optionsListRef.current;
     const rowRect = rowElement?.getBoundingClientRect();
     const listRect = listElement?.getBoundingClientRect();
-    setActiveDrag({
+    const state: DragState = {
       id: optionId,
       pointerOffsetY: rowRect ? event.clientY - rowRect.top : 0,
       startIndex: index,
@@ -203,6 +229,14 @@ export function useOptionDrag<T extends Option>(
       offsetY: 0,
       reverseLock: null,
       insertLock: null,
+    };
+    dragStateRef.current = state;
+    setActiveDrag({
+      id: optionId,
+      startIndex: index,
+      targetIndex: index,
+      rowHeight: rowRect?.height ?? 0,
+      offsetY: 0,
     });
   }
 
@@ -229,7 +263,8 @@ export function useOptionDrag<T extends Option>(
   }
 
   function getThresholdRatioForIndex(index: number) {
-    return activeDrag ? getThresholdRatio(index, activeDrag) : null;
+    const drag = dragStateRef.current;
+    return drag ? getThresholdRatio(index, drag) : null;
   }
 
   return {

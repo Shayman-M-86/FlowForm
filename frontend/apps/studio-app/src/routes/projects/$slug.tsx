@@ -47,7 +47,7 @@ function ProjectLayout() {
   const activeTab = TABS.find((t) => pathname.includes(`/${t.id}`))?.id ?? 'surveys'
 
   return (
-    <main className="max-w-7xl px-6 py-10 md:px-16">
+    <main className="page-main">
       <Breadcrumb segments={[
         { label: 'Projects', to: '/projects' },
         { label: project.name, current: true },

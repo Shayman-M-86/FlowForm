@@ -231,12 +231,14 @@ export function StudioSidebar() {
   return (
     <aside className="sidebar" data-collapsed={collapsed}>
       {/* Brand */}
-      <Link to="/projects" className="site-header__brand cursor-pointer justify-center pb-2 pl-2 md:justify-start">
-        <div className="site-header__logo" aria-hidden="true">
-          <img src={BRAND.logoSrc} alt="" className="site-header__logo-image" />
+      <Link to="/projects" className="site-header__brand w-fit cursor-pointer justify-center mb-2 ml-2 md:justify-start">
+        <div className="flex items-center gap-2.5">
+          <div className="site-header__logo" aria-hidden="true">
+            <img src={BRAND.logoSrc} alt="" className="site-header__logo-image" />
+          </div>
+          {!collapsed && <span className="site-header__wordmark hidden md:inline">{BRAND.name}</span>}
+          {!collapsed && <span className="site-header__badge hidden md:inline">Studio</span>}
         </div>
-        {!collapsed && <span className="site-header__wordmark hidden md:inline">{BRAND.name}</span>}
-        {!collapsed && <span className="site-header__badge hidden md:inline">Studio</span>}
       </Link>
 
       {/* Project badge + collapse button */}
