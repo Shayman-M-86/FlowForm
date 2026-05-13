@@ -231,13 +231,13 @@ export function StudioSidebar() {
   return (
     <aside className="sidebar" data-collapsed={collapsed}>
       {/* Brand */}
-      <div className="site-header__brand justify-center pb-2 pl-2 md:justify-start">
-        <Link to="/projects" aria-hidden="true" className="site-header__logo cursor-pointer">
-          <img src={BRAND.logoSrc} alt="Go to projects" className="site-header__logo-image" />
-        </Link>
-        {!collapsed && <Link to="/projects" className="site-header__wordmark hidden cursor-pointer md:inline">{BRAND.name}</Link>}
-        {!collapsed && <Link to="/projects" className="site-header__badge hidden cursor-pointer md:inline">Studio</Link>}
-      </div>
+      <Link to="/projects" className="site-header__brand cursor-pointer justify-center pb-2 pl-2 md:justify-start">
+        <div className="site-header__logo" aria-hidden="true">
+          <img src={BRAND.logoSrc} alt="" className="site-header__logo-image" />
+        </div>
+        {!collapsed && <span className="site-header__wordmark hidden md:inline">{BRAND.name}</span>}
+        {!collapsed && <span className="site-header__badge hidden md:inline">Studio</span>}
+      </Link>
 
       {/* Project badge + collapse button */}
       <div className={`my-1 hidden h-6 items-center md:flex ${collapsed ? "justify-center" : "justify-between"}`}>

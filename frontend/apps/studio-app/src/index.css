@@ -67,11 +67,6 @@ body {
       justify-content: center;
     }
 
-    & > * {
-      position: relative;
-      z-index: 1;
-    }
-
     & .sidebar-nav-item__icon {
       @apply flex shrink-0 items-center justify-center;
       width: calc(var(--spacing) * 11);
@@ -101,7 +96,7 @@ body {
       pointer-events: none;
   
       transform: translateX(110%);
-      transition: transform 200ms var(--ease-out);
+      transition: transform 150ms var(--ease-out);
     }
   
     &::after {
@@ -116,7 +111,7 @@ body {
       transform: scaleX(0);
       transform-origin: right;
   
-      transition: transform 200ms var(--ease-out);
+      transition: transform 220ms var(--ease-out);
     }
   
     & > * {
@@ -126,8 +121,6 @@ body {
   }
   
   .sidebar-nav-item[data-active="true"] {
-    --ui-color: var(--primary-saturated);
-  
     &::before {
       transform: translateX(0%);
     }
@@ -216,19 +209,17 @@ body {
 
 @layer utilities {
   .sidebar-nav-item {
-    /*
-      Keep the real ui-button active background transparent.
-      The sidebar active background is handled by ::after.
-    */
+    /* active fill is painted by ::after; keep button's own active bg out of the way */
     --ui-active-bg: transparent;
     --ui-active-shadow: none;
   }
 
   .sidebar-nav-item[data-active="true"] {
-    --ui-hover: transparent;
+    --ui-hover-bg: transparent;
+    --ui-press-bg: color-mix(in oklab, var(--primary), transparent 94%);
     --ui-color: var(--primary-saturated);
 
     color: var(--primary-saturated);
-    transition: color 200ms var(--ease-out);
+    transition: color 100ms var(--ease-out);
   }
 }
