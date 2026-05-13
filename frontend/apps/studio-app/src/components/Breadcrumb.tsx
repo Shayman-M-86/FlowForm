@@ -10,18 +10,18 @@ interface BreadcrumbProps {
 
 export function Breadcrumb({ segments }: BreadcrumbProps) {
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm">
+    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-sm">
       {segments.map((segment, index) => (
-        <span key={index} className="flex items-center gap-1.5">
+        <span key={index} className="flex items-center gap-1.5 whitespace-nowrap">
           {index > 0 && (
             <span className="text-muted-foreground/50 select-none" aria-hidden="true">›</span>
           )}
           {'current' in segment ? (
-            <span className="font-medium text-foreground">{segment.label}</span>
+            <span className="font-semibold text-foreground">{segment.label}</span>
           ) : (
             <Link
               to={segment.to}
-              className="text-muted-foreground transition-colors hover:text-foreground"
+              className="ui-button-text border-0 font-semibold"
             >
               {segment.label}
             </Link>

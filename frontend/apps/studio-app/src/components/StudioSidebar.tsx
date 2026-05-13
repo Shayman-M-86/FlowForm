@@ -139,6 +139,12 @@ function IconPublish() {
 function IconChevron() {
   return <svg {...svgProps}><path d="m6 9 6 6 6-6" /></svg>;
 }
+function IconCollapse() {
+  return <svg {...svgProps}><path d="M11 5l-7 7 7 7"/><path d="M20 5l-7 7 7 7"/></svg>;
+}
+function IconExpand() {
+  return <svg {...svgProps}><path d="M13 5l7 7-7 7"/><path d="M4 5l7 7-7 7"/></svg>;
+}
 
 // ── Nav item ───────────────────────────────────────────────────────────────
 
@@ -159,7 +165,7 @@ function NavItem({
       data-active={active}
       className="sidebar-nav-item"
     >
-      <span className="flex h-4.5 w-4.5 ml-0 md:ml-3 shrink-0 items-center justify-center">{icon}</span>
+      <span className="sidebar-nav-item__icon"><span className="flex h-4.5 w-4.5 items-center justify-center">{icon}</span></span>
       <span className="sidebar-nav-item__label">{label}</span>
     </Link>
   );
@@ -170,7 +176,7 @@ function NavItem({
 function NavSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="sidebar-nav-section-label hidden px-2 py-1 text-[0.68rem] font-semibold uppercase tracking-wider text-muted-foreground md:block">
+      <span className="sidebar-nav-section-label">
         {label}
       </span>
       {children}
@@ -191,12 +197,21 @@ export function StudioSidebar() {
   const navigate = useNavigate();
   const userRef = useRef<HTMLDivElement>(null);
   const [userOpen, setUserOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
   const ctx = useCurrentUser();
 
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      const next = !c
+      localStorage.setItem('sidebar-collapsed', String(next))
+      return next
+    })
+  };
+
   // Parse route segments
-  // A survey context requires a third segment (e.g. /projects/slug/surveySlug/overview)
+  // Survey context: /projects/$slug/surveys/$surveySlug/*
   const projectMatch = pathname.match(/^\/projects\/([^/]+)/);
-  const surveyMatch = pathname.match(/^\/projects\/([^/]+)\/([^/]+)\/[^/]+/);
+  const surveyMatch = pathname.match(/^\/projects\/([^/]+)\/surveys\/([^/]+)/);
 
   const projectSlug = projectMatch ? decodeURIComponent(projectMatch[1]) : null;
   const surveySlug = surveyMatch ? decodeURIComponent(surveyMatch[2]) : null;
@@ -208,32 +223,46 @@ export function StudioSidebar() {
   const surveyName = survey.data?.title ?? surveySlug ?? undefined;
 
   const projectBase = projectSlug ? `/projects/${projectSlug}` : null;
-  const surveyBase = projectBase && surveySlug ? `${projectBase}/${surveySlug}` : null;
+  const surveyBase = projectBase && surveySlug ? `${projectBase}/surveys/${surveySlug}` : null;
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + "/");
+  const isExactActive = (path: string) => pathname === path || pathname === path + "/";
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" data-collapsed={collapsed}>
       {/* Brand */}
-      <div className="site-header__brand justify-center pb-4 md:justify-start">
+      <Link to="/projects" className="site-header__brand cursor-pointer justify-center pb-2 pl-2 md:justify-start">
         <div className="site-header__logo" aria-hidden="true">
           <img src={BRAND.logoSrc} alt="" className="site-header__logo-image" />
         </div>
-        <span className="site-header__wordmark hidden md:inline">{BRAND.name}</span>
-        <span className="site-header__badge hidden md:inline">Studio</span>
-      </div>
+        {!collapsed && <span className="site-header__wordmark hidden md:inline">{BRAND.name}</span>}
+        {!collapsed && <span className="site-header__badge hidden md:inline">Studio</span>}
+      </Link>
 
-      {/* Selected project badge */}
-      <div className={`my-1 hidden h-6 items-center md:flex ${projectSlug ? "" : "invisible"}`}>
-        <Badge
-          variant="muted"
-          size="sm"
-          onClick={projectSlug ? () => navigate({ to: "/projects/$slug", params: { slug: projectSlug } }) : undefined}
-          className="max-w-full cursor-pointer gap-1.5 transition-colors hover:text-foreground"
+      {/* Project badge + collapse button */}
+      <div className={`my-1 hidden h-6 items-center md:flex ${collapsed ? "justify-center" : "justify-between"}`}>
+        <div className="sidebar-project-badge ">
+          {projectSlug && (
+            <Badge
+              variant="muted"
+              size="sm"
+              onClick={() => navigate({ to: "/projects/$slug", params: { slug: projectSlug! } })}
+              className="max-w-full gap-1.5"
+            >
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
+              <span className="max-w-46 truncate">{projectName}</span>
+            </Badge>
+          )}
+        </div>
+        <Button
+          variant="icon"
+          size="xs"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="shrink-0"
         >
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
-          <span className="truncate">{projectName}</span>
-        </Badge>
+          {collapsed ? <IconExpand /> : <IconCollapse />}
+        </Button>
       </div>
 
       <div aria-hidden="true" className="my-4 mt-8 h-px bg-border" />
@@ -247,39 +276,33 @@ export function StudioSidebar() {
 
         {/* Project section — visible when inside a project */}
         {projectBase && (
-          <NavSection label={projectName ?? "Project"}>
-
-            <NavItem to={`${projectBase}/surveys`} icon={<IconSurveys />} label="Surveys" active={isActive(`${projectBase}/surveys`)} />
-            <NavItem to={`${projectBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${projectBase}/members`)} />
-            <NavItem to={`${projectBase}/roles`} icon={<IconRoles />} label="Roles" active={isActive(`${projectBase}/roles`)} />
-            <NavItem to={`${projectBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${projectBase}/settings`)} />
-          </NavSection>
+          <>
+            <div aria-hidden className="h-px bg-border" />
+            <NavSection label={projectName ?? "Project"}>
+              <NavItem to={`${projectBase}/surveys`} icon={<IconSurveys />} label="Surveys" active={isExactActive(`${projectBase}/surveys`)} />
+              <NavItem to={`${projectBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${projectBase}/members`)} />
+              <NavItem to={`${projectBase}/roles`} icon={<IconRoles />} label="Roles" active={isActive(`${projectBase}/roles`)} />
+              <NavItem to={`${projectBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${projectBase}/settings`)} />
+            </NavSection>
+          </>
         )}
 
         {/* Survey section — visible when inside a survey */}
         {surveyBase && (
-          <NavSection label={surveyName ?? "Survey"}>
+          <>
+            <div aria-hidden className="h-px bg-border" />
+            <NavSection label={surveyName ?? "Survey"}>
             <NavItem to={`${surveyBase}/overview`} icon={<IconOverview />} label="Overview" active={isActive(`${surveyBase}/overview`)} />
+            <NavItem to={`${surveyBase}/builder`} icon={<IconBuilder />} label="Builder" active={isActive(`${surveyBase}/builder`)} />
             <NavItem to={`${surveyBase}/versions`} icon={<IconVersions />} label="Versions" active={isActive(`${surveyBase}/versions`)} />
+            <NavItem to={`${surveyBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${surveyBase}/members`)} />
             <NavItem to={`${surveyBase}/links`} icon={<IconLinks />} label="Links" active={isActive(`${surveyBase}/links`)} />
             <NavItem to={`${surveyBase}/responses`} icon={<IconResponses />} label="Responses" active={isActive(`${surveyBase}/responses`)} />
-            <NavItem to={`${surveyBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${surveyBase}/members`)} />
             <NavItem to={`${surveyBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${surveyBase}/settings`)} />
-          </NavSection>
-        )}
-
-        {/* Builder section — visible when inside a survey (version-level tools) */}
-        {surveyBase && (
-          <>
-            <div aria-hidden="true" className="h-px bg-border" />
-            <NavSection label="Build">
-              <NavItem to={`${surveyBase}/builder`} icon={<IconBuilder />} label="Builder" active={isActive(`${surveyBase}/builder`)} />
-              <NavItem to={`${surveyBase}/logic`} icon={<IconLogic />} label="Logic" active={isActive(`${surveyBase}/logic`)} />
-              <NavItem to={`${surveyBase}/responses`} icon={<IconResponses />} label="Responses" active={false} />
-              <NavItem to={`${surveyBase}/publish`} icon={<IconPublish />} label="Publish" active={isActive(`${surveyBase}/publish`)} />
             </NavSection>
           </>
         )}
+
       </nav>
 
       <div className="flex-1" />
@@ -297,13 +320,13 @@ export function StudioSidebar() {
             <span className="sidebar-avatar sidebar-avatar--user">
               {ctx?.displayName ? initials(ctx.displayName) : "?"}
             </span>
-            <span className="hidden min-w-0 flex-1 flex-col md:flex">
+            {!collapsed && <span className="hidden min-w-0 flex-1 flex-col md:flex">
               <span className="truncate text-sm font-semibold text-foreground">{ctx?.displayName}</span>
               <span className="truncate text-xs text-muted-foreground">{ctx?.user.email}</span>
-            </span>
-            <span className={`hidden text-muted-foreground transition-transform duration-200 md:inline-flex${userOpen ? " rotate-180" : ""}`}>
+            </span>}
+            {!collapsed && <span className={`hidden text-muted-foreground transition-transform duration-200 md:inline-flex${userOpen ? " rotate-180" : ""}`}>
               <IconChevron />
-            </span>
+            </span>}
           </Button>
         </div>
 

@@ -205,6 +205,23 @@ export function getMockPublicLinksForSurvey(surveySlug: string): MockPublicLink[
   return mockPublicLinks.filter((l) => l.surveySlug === surveySlug)
 }
 
+// ── Project member mock data ──────────────────────────────────────────────────
+
+export interface MockProjectMember {
+  id: number
+  name: string
+  email: string
+  role: 'Owner' | 'Editor' | 'Viewer'
+}
+
+export const mockProjectMembers: MockProjectMember[] = [
+  { id: 1, name: 'Testing User', email: 'testing@flowform.local', role: 'Owner' },
+  { id: 2, name: 'Amelia Chen', email: 'amelia@example.com', role: 'Editor' },
+  { id: 3, name: 'Marcus Lee', email: 'marcus@example.com', role: 'Editor' },
+  { id: 4, name: 'Priya Shah', email: 'priya@example.com', role: 'Viewer' },
+  { id: 5, name: 'Nora Evans', email: 'nora@example.com', role: 'Viewer' },
+]
+
 // ── Survey member mock data ───────────────────────────────────────────────────
 
 export interface MockSurveyMember {

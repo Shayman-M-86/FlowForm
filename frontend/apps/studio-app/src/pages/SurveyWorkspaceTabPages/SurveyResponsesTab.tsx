@@ -3,15 +3,17 @@ import { Card } from '@flowform/ui'
 import { getMockSurvey } from '@/api/mockData'
 
 export function SurveyResponsesTab() {
-  const { slug, surveySlug } = useParams({ from: '/projects/$slug/$surveySlug/responses' })
+  const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/responses' })
   const survey = getMockSurvey(slug, surveySlug)
   const responseCount = survey?.responses ?? 0
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <h2 className="text-base font-semibold">Responses</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">{responseCount} total submissions</p>
+    <section className="grid gap-6">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">Responses</h2>
+          <p className="text-sm text-muted-foreground">{responseCount} total submissions</p>
+        </div>
       </div>
 
       {responseCount === 0 ? (
@@ -38,9 +40,9 @@ export function SurveyResponsesTab() {
       <Card tone="muted">
         <p className="text-xs text-muted-foreground">
           Full response table and export will be available here. Responses are stored securely in a separate
-          database and linked via a pseudonymous respondent ID.
+          database and linked via a respondent ID.
         </p>
       </Card>
-    </div>
+    </section>
   )
 }

@@ -20,15 +20,13 @@ export function SurveyMembersTab() {
   const specific = mockSurveyMembers.filter((m) => !m.inherited)
 
   return (
-    <div className="grid gap-6">
-      <div className="flex items-start justify-between gap-4">
+    <section className="grid gap-6">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">Survey members</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Manage who can view, edit, publish, or manage this survey.
-          </p>
+          <p className="text-sm text-muted-foreground">Manage who can view, edit, publish, or manage this survey.</p>
         </div>
-        <Button variant="primary" size="sm">Add member</Button>
+        <Button variant="primary" size="sm" icon="plus">Add member</Button>
       </div>
 
       {/* Survey-specific access */}
@@ -86,6 +84,6 @@ export function SurveyMembersTab() {
           survey-specific member above.
         </p>
       </Card>
-    </div>
+    </section>
   )
 }

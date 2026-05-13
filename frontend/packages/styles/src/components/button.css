@@ -207,55 +207,12 @@
 /* ────────────────────────────────────────────────────────────── */
 
 @utility ui-badge-action {
-  position: relative;
-  isolation: isolate;
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+  @apply ui-action;
 
-  --ui-subtle-state-rgb: 0 0 0;
-
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: transparent;
-    transition: background 60ms cubic-bezier(.22, 1, .36, 1);
-    pointer-events: none;
-  }
-
-  @media (hover: hover) {
-    &:hover::after {
-      background: rgb(var(--ui-subtle-state-rgb) / 0.10);
-    }
-  }
-
-  &:active::after {
-    background: rgb(var(--ui-subtle-state-rgb) / 0.18);
-    transition: none;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
-  }
-
-  &:disabled,
-  &[aria-disabled="true"],
-  &[data-disabled="true"] {
-    cursor: not-allowed;
-    opacity: 0.5;
-    pointer-events: none;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    &::after {
-      transition: none;
-    }
-  }
+  --ui-hover-color: color-mix(in oklab, var(--ui-color), var(--foreground) 70%);
+  --ui-press-color: color-mix(in oklab, var(--ui-color), var(--foreground) 100%);
+  --ui-active-color: color-mix(in oklab, var(--ui-color), var(--foreground) 90%);
+  --ui-active-shadow: none;
 }
 
 /* ────────────────────────────────────────────────────────────── */
@@ -263,14 +220,22 @@
 /* Optional utilities you can compose with variants.               */
 /* ────────────────────────────────────────────────────────────── */
 
+@utility ui-interactive-surface {
+  @apply ui-action;
+}
+
+/* Action + chrome only — no layout opinions */
+@utility ui-button-base-bare {
+  @apply ui-action rounded-sm border font-semibold leading-tight;
+}
+
+/* Standard button — adds inline-flex layout on top of bare */
 @utility ui-button-base {
-  @apply ui-action inline-flex shrink-0 items-center justify-center gap-2
-         rounded-sm border font-semibold leading-[1.2] no-underline;
+  @apply ui-button-base-bare border inline-flex shrink-0 items-center justify-center gap-2;
 }
 
 @utility ui-icon-button-base {
-  @apply ui-action flex shrink-0 items-center justify-center
-         rounded-sm border no-underline;
+  @apply ui-button-base-bare flex shrink-0 items-center justify-center no-underline;
 }
 
 /* ────────────────────────────────────────────────────────────── */
@@ -312,6 +277,24 @@
   Because the base background is transparent, generated colour mixing is less useful.
   So this variant uses subtle overlay tokens instead.
 */
+@utility ui-button-ghost-bare {
+  @apply ui-button-base-bare border-transparent bg-transparent;
+
+  --ui-bg: transparent;
+  --ui-color: var(--foreground);
+  --ui-border-color: transparent;
+
+  --ui-hover-bg: rgb(var(--ui-subtle-state-rgb) / 0.08);
+  --ui-press-bg: rgb(var(--ui-subtle-state-rgb) / 0.14);
+  --ui-active-bg: rgb(var(--ui-subtle-state-rgb) / 0.11);
+
+  --ui-hover-border-color: transparent;
+  --ui-press-border-color: transparent;
+  --ui-active-border-color: transparent;
+
+  --ui-active-shadow: none;
+}
+
 @utility ui-button-ghost {
   @apply ui-button-base border-transparent bg-transparent;
 
@@ -326,6 +309,32 @@
   --ui-hover-border-color: transparent;
   --ui-press-border-color: transparent;
   --ui-active-border-color: transparent;
+
+  --ui-active-shadow: none;
+}
+
+/*
+  Text-only button — no background or border changes, only colour shifts on interaction.
+  Use on surfaces where you don't want any background tinting.
+*/
+@utility ui-button-text {
+  @apply ui-action border-transparent bg-transparent;
+
+  --ui-bg: transparent;
+  --ui-color: var(--muted-foreground);
+  --ui-border-color: transparent;
+
+  --ui-hover-bg: transparent;
+  --ui-press-bg: transparent;
+  --ui-active-bg: transparent;
+
+  --ui-hover-border-color: transparent;
+  --ui-press-border-color: transparent;
+  --ui-active-border-color: transparent;
+
+  --ui-hover-color: color-mix(in oklab, var(--ui-color), var(--foreground) 50%);
+  --ui-press-color: color-mix(in oklab, var(--ui-color), var(--foreground) 80%);
+  --ui-active-color: color-mix(in oklab, var(--ui-color), var(--foreground) 70%);
 
   --ui-active-shadow: none;
 }

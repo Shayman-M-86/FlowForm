@@ -9,15 +9,15 @@
   }
 
   .ui-label {
-    @apply text-[0.82rem] font-medium text-muted-foreground;
+    @apply text-xs font-medium text-muted-foreground;
   }
 
   .ui-hint {
-    @apply text-[0.8rem] text-muted-foreground;
+    @apply text-xs text-muted-foreground;
   }
 
   .ui-error {
-    @apply text-[0.8rem] text-destructive;
+    @apply text-xs text-destructive;
   }
 
   /* Shared control/surface */
@@ -78,68 +78,68 @@
 
   /* Control sizes */
   .ui-control-xxs {
-    @apply min-h-[26px] px-2 text-[0.75rem] leading-none;
+    @apply min-h-[26px] px-2 text-2xs leading-none;
   }
 
   .ui-control-xs {
-    @apply min-h-[30px] px-2.5 text-[0.8rem] leading-none;
+    @apply min-h-[30px] px-2.5 text-xs leading-none;
   }
 
   .ui-control-sm {
-    @apply min-h-[34px] px-3 text-[0.86rem] leading-[1.2];
+    @apply min-h-[34px] px-3 text-sm leading-tight;
   }
 
   .ui-control-md {
-    @apply min-h-10 px-4 text-sm leading-normal;
+    @apply min-h-10 px-4 text-base leading-normal;
   }
 
   .ui-control-lg {
-    @apply min-h-11 px-5 text-base leading-normal;
+    @apply min-h-11 px-5 text-lg leading-normal;
   }
 
   .ui-control-xl {
-    @apply min-h-12 px-6 text-[1.05rem] leading-normal;
+    @apply min-h-12 px-6 text-xl leading-normal;
   }
 
   /* Badge sizes */
   .ui-badge-xxs {
-    @apply px-1.5 py-0.5 text-[0.65rem] leading-none;
+    @apply px-1.5 py-0.5 text-2xs leading-none;
   }
 
   .ui-badge-xs {
-    @apply px-2 py-1 text-[0.72rem] leading-none;
+    @apply px-2 py-1 text-xs leading-none;
   }
 
   .ui-badge-sm {
-    @apply px-2.5 py-1 text-[0.8rem] leading-none;
+    @apply px-2.5 py-1 text-sm leading-none;
   }
 
   .ui-badge-md {
-    @apply px-3 py-1.5 text-xs leading-none;
+    @apply px-3 py-1.5 text-base leading-none;
   }
 
   .ui-badge-lg {
-    @apply px-3.5 py-2 text-sm leading-none;
+    @apply px-3.5 py-2 text-lg leading-none;
   }
 
   .ui-badge-xl {
-    @apply px-4 py-2.5 text-sm leading-none;
+    @apply px-4 py-2.5 text-xl leading-none;
   }
 
   /* Textareas */
   .ui-textarea-body-sm,
   .ui-textarea-sm {
-    @apply px-3 py-2 text-[0.86rem] leading-6;
+    @apply px-3 py-2 text-sm leading-6;
   }
 
   .ui-textarea-body-md,
   .ui-textarea-md {
-    @apply px-4 py-3 text-sm leading-6;
+    @apply px-4 py-3 text-base leading-6;
   }
 
   .ui-textarea-body-lg,
   .ui-textarea-lg {
-    @apply px-4 py-3 text-base leading-7;
+    @apply px-4 py-3 text-lg leading-7;
   }
 
   .ui-textarea-sm {
@@ -249,15 +249,15 @@
 
   /* Card tones */
     .ui-card-default {
-    @apply border-border/90 bg-card text-card-foreground;
+      @apply border-border/90 bg-card text-card-foreground;
     }
 
     .ui-card-muted {
-    @apply border-border/90 bg-muted text-foreground;
+      @apply border-border/90 bg-muted text-foreground;
     }
 
     .ui-card-ghost {
-    @apply border-transparent bg-transparent text-foreground shadow-none;
+      @apply border-transparent bg-transparent text-foreground shadow-none;
     }
 
     .ui-card {
@@ -337,7 +337,7 @@
       }
       
       .ui-dropdown-section-label {
-        @apply px-3 pb-1 pt-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.05em] text-muted-foreground;
+        @apply px-3 pb-1 pt-1.5 text-2xs font-semibold uppercase tracking-[0.05em] text-muted-foreground;
       }
       
       .ui-dropdown-actions {
@@ -446,4 +446,60 @@
     @apply flex items-center justify-center px-4 py-10;
   }
 
+}
+
+@layer utilities {
+  .ui-card-default {
+    --ui-bg: var(--card);
+    --ui-color: var(--card-foreground);
+    --ui-border-color: color-mix(in oklab, var(--border), transparent 10%);
+  }
+
+  .ui-card-muted {
+    --ui-bg: var(--muted);
+    --ui-color: var(--foreground);
+    --ui-border-color: color-mix(in oklab, var(--border), transparent 10%);
+  }
+
+  .ui-card-ghost {
+    --ui-bg: transparent;
+    --ui-color: var(--foreground);
+    --ui-border-color: transparent;
+  }
+
+  .ui-badge-default {
+    --ui-bg: color-mix(in oklab, var(--primary), transparent 80%);
+    --ui-color: var(--primary-saturated);
+    --ui-border-color: color-mix(in oklab, var(--primary), transparent 70%);
+  }
+
+  .ui-badge-muted {
+    --ui-bg: var(--muted);
+    --ui-color: var(--muted-foreground);
+    --ui-border-color: var(--border);
+  }
+
+  .ui-badge-accent {
+    --ui-bg: color-mix(in oklab, var(--accent), transparent 87%);
+    --ui-color: var(--accent);
+    --ui-border-color: color-mix(in oklab, var(--accent), transparent 70%);
+  }
+
+  .ui-badge-danger {
+    --ui-bg: color-mix(in oklab, var(--destructive), transparent 90%);
+    --ui-color: var(--destructive);
+    --ui-border-color: color-mix(in oklab, var(--destructive), transparent 75%);
+  }
+
+  .ui-badge-success {
+    --ui-bg: color-mix(in oklab, var(--success), transparent 90%);
+    --ui-color: var(--success);
+    --ui-border-color: color-mix(in oklab, var(--success), transparent 75%);
+  }
+
+  .ui-badge-warning {
+    --ui-bg: color-mix(in oklab, var(--warning), transparent 90%);
+    --ui-color: var(--warning);
+    --ui-border-color: color-mix(in oklab, var(--warning), transparent 75%);
+  }
 }

@@ -3,14 +3,14 @@ import { Card, Badge, Button } from '@flowform/ui'
 import { getMockSurvey, getMockVersionsForSurvey } from '@/api/mockData'
 
 export function SurveyBuilderTab() {
-  const { slug, surveySlug } = useParams({ from: '/projects/$slug/$surveySlug/builder' })
+  const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/builder' })
   const survey = getMockSurvey(slug, surveySlug)
   const versions = getMockVersionsForSurvey(surveySlug)
   const draftVersion = versions.find((v) => v.status === 'draft')
 
   if (!draftVersion) {
     return (
-      <div className="grid gap-4">
+      <section className="grid gap-6">
         <Card tone="muted">
           <div className="flex flex-col items-start gap-3">
             <p className="text-sm text-muted-foreground">
@@ -24,12 +24,12 @@ export function SurveyBuilderTab() {
             <Button variant="primary" size="sm">Create new draft</Button>
           </div>
         </Card>
-      </div>
+      </section>
     )
   }
 
   return (
-    <div className="grid gap-4">
+    <section className="grid gap-6">
       {/* Builder header bar */}
       <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
         <div className="flex items-center gap-3">
@@ -86,6 +86,6 @@ export function SurveyBuilderTab() {
           <p className="text-xs text-muted-foreground">Select a question to edit its settings.</p>
         </Card>
       </div>
-    </div>
+    </section>
   )
 }

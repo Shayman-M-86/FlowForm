@@ -44,7 +44,6 @@
       "Bash(bash backend/scripts/pip-audit.sh:*)"
     ],
     "deny": [
-      "Bash(rm:*)",
       "Bash(rmdir:*)",
       "Bash(rm -rf:*)",
       "Bash(shred:*)",

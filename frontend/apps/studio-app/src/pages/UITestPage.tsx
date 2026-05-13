@@ -505,6 +505,26 @@ export function UITestPage() {
                 </InlineStack>
               </TestCard>
             ))}
+
+            {buttonVariants.map((variant) => (
+              <TestCard
+                key={`${variant}-icon`}
+                title={`${buttonVariantLabels[variant]} / Icon (plus)`}
+              >
+                <InlineStack>
+                  {buttonSizes.map((size) => (
+                    <Button
+                      key={`${variant}-${size}-icon`}
+                      variant={variant}
+                      size={size}
+                      icon="plus"
+                    >
+                      {buttonSizeLabels[size]}
+                    </Button>
+                  ))}
+                </InlineStack>
+              </TestCard>
+            ))}
           </TestGrid>
         </Section>
 

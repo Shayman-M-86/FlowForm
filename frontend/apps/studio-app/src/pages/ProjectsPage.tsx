@@ -26,7 +26,7 @@ export function ProjectsPage() {
   }
 
   return (
-    <main className="max-w-4xl mx-auto px-6 py-12">
+    <main className="max-w-7xl px-6 py-10 md:px-16">
       <div className="flex items-center justify-between gap-4">
         <h1>Projects</h1>
         <Button variant="primary" onClick={() => setCreateOpen(true)}>
@@ -61,8 +61,7 @@ export function ProjectsPage() {
             params={{ slug: project.slug }}
             className="block no-underline"
           >
-            <Card className="hover:border-ring/60 transition-colors cursor-pointer"
-            size='md'>
+            <Card interactive>
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="font-semibold text-foreground">{project.name}</p>

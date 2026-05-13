@@ -3,7 +3,7 @@ import { Card, Badge, Button } from '@flowform/ui'
 import { getMockSurvey, getMockVersionsForSurvey } from '@/api/mockData'
 
 export function SurveyOverviewTab() {
-  const { slug, surveySlug } = useParams({ from: '/projects/$slug/$surveySlug/overview' })
+  const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/overview' })
   const survey = getMockSurvey(slug, surveySlug)
   const versions = getMockVersionsForSurvey(surveySlug)
   const recentVersions = versions.slice(0, 3)
@@ -12,7 +12,7 @@ export function SurveyOverviewTab() {
   const hasDraft = survey?.draftVersionNumber != null
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+    <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
       {/* Left: status + quick actions */}
       <div className="grid gap-4">
         <Card>
@@ -53,7 +53,7 @@ export function SurveyOverviewTab() {
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quick actions</p>
           <div className="grid gap-2">
             {hasDraft && (
-              <Link to="/projects/$slug/$surveySlug/builder" params={{ slug, surveySlug }}>
+              <Link to="/projects/$slug/surveys/$surveySlug/builder" params={{ slug, surveySlug }}>
                 <Button variant="secondary" size="sm" className="w-full justify-start">
                   Continue editing draft
                 </Button>
@@ -64,12 +64,12 @@ export function SurveyOverviewTab() {
                 Preview live survey
               </Button>
             )}
-            <Link to="/projects/$slug/$surveySlug/links" params={{ slug, surveySlug }}>
+            <Link to="/projects/$slug/surveys/$surveySlug/links" params={{ slug, surveySlug }}>
               <Button variant="secondary" size="sm" className="w-full justify-start">
                 Manage public links
               </Button>
             </Link>
-            <Link to="/projects/$slug/$surveySlug/responses" params={{ slug, surveySlug }}>
+            <Link to="/projects/$slug/surveys/$surveySlug/responses" params={{ slug, surveySlug }}>
               <Button variant="secondary" size="sm" className="w-full justify-start">
                 View responses
               </Button>
@@ -112,6 +112,6 @@ export function SurveyOverviewTab() {
           </div>
         </Card>
       </div>
-    </div>
+    </section>
   )
 }

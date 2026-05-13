@@ -37,27 +37,48 @@ body {
 
   .sidebar {
     /* Shared */
-    @apply flex min-h-screen shrink-0 flex-col  bg-sidebar py-4 text-foreground;
+    @apply flex min-h-screen shrink-0 flex-col bg-sidebar py-4 text-foreground transition-[width,padding] duration-200 ease-out;
 
-    /* Collapsed (default) */
-    @apply w-17 px-2.5;
+    /* Collapsed (default / forced) */
+    @apply w-17 px-3;
 
-    /* Expanded (md+) */
-    @apply md:w-60 md:px-4;
+    /* Expanded (md+, unless forced collapsed) */
+    @apply md:w-69 md:px-3;
+
+    &[data-collapsed="true"] {
+      @apply w-17 px-3 md:w-17 md:px-3;
+    }
   }
 
   /* ── Nav items ───────────────────────────────────────────────── */
   .sidebar-nav-item {
-    /* Layout overrides on top of ui-button-ghost */
-    @apply ui-action ui-button-ghost relative h-11 w-full overflow-hidden text-muted-foreground;
+    @apply ui-button-ghost-bare relative flex h-11 w-full items-center overflow-hidden text-muted-foreground border-0 ;
     justify-content: center;
+    transition: justify-content 0s;
 
     @media (min-width: theme(--breakpoint-md)) {
       justify-content: flex-start;
     }
 
+    .sidebar[data-collapsed="true"] & {
+      justify-content: center;
+    }
+
+    & .sidebar-nav-item__icon {
+      @apply flex shrink-0 items-center justify-center;
+      width: calc(var(--spacing) * 11);
+      height: calc(var(--spacing) * 11);
+    }
+
     & .sidebar-nav-item__label {
-      @apply hidden md:block truncate;
+      @apply truncate opacity-0 md:opacity-100;
+      flex: 1;
+      min-width: 0;
+      transition: opacity 150ms var(--ease-out);
+
+      .sidebar[data-collapsed="true"] & {
+        @apply opacity-0;
+      }
     }
   }
 
@@ -98,6 +119,39 @@ body {
 
   .sidebar-nav-item--nested {
     @apply md:ml-0 md:w-[calc(100%-0.25rem)];
+  }
+
+  .sidebar-nav-section-label {
+    @apply hidden text-2xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap overflow-hidden;
+
+    @media (min-width: theme(--breakpoint-md)) {
+      display: block;
+
+      .sidebar[data-collapsed="true"] & {
+        visibility: hidden;
+      }
+    }
+  }
+
+  .sidebar-project-badge {
+    overflow: hidden;
+    width: 0;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: width 200ms var(--ease-out), opacity 150ms var(--ease-out);
+
+    @media (min-width: theme(--breakpoint-md)) {
+      width: auto;
+      flex: 1;
+      min-width: 0;
+      opacity: 1;
+
+      .sidebar[data-collapsed="true"] & {
+        width: 0;
+        flex: none;
+        opacity: 0;
+      }
+    }
   }
 
   .sidebar-avatar {

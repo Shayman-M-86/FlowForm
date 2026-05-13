@@ -3,21 +3,19 @@ import { Badge, Button, Card } from '@flowform/ui'
 import { getMockPublicLinksForSurvey, getMockSurvey } from '@/api/mockData'
 
 export function SurveyLinksTab() {
-  const { slug, surveySlug } = useParams({ from: '/projects/$slug/$surveySlug/links' })
+  const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/links' })
   const survey = getMockSurvey(slug, surveySlug)
   const links = getMockPublicLinksForSurvey(surveySlug)
   const isPublished = survey?.publishedVersionNumber != null
 
   return (
-    <div className="grid gap-6">
-      <div className="flex items-start justify-between gap-4">
+    <section className="grid gap-6">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">Public links</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Share this survey with respondents via public links.
-          </p>
+          <p className="text-sm text-muted-foreground">Share this survey with respondents via public links.</p>
         </div>
-        <Button variant="primary" size="sm" disabled={!isPublished}>
+        <Button variant="primary" size="sm" icon="plus" disabled={!isPublished}>
           Create link
         </Button>
       </div>
@@ -80,6 +78,6 @@ export function SurveyLinksTab() {
           <p className="text-sm text-muted-foreground">No public links yet. Create one to start sharing this survey.</p>
         </Card>
       )}
-    </div>
+    </section>
   )
 }

@@ -9,6 +9,7 @@ interface CardProps {
   children: ReactNode;
   size?: CardSize;
   tone?: CardTone;
+  interactive?: boolean;
   className?: string;
 }
 
@@ -32,6 +33,7 @@ export function Card({
   children,
   size = "md",
   tone = "default",
+  interactive = false,
   className = "",
 }: CardProps) {
   return (
@@ -41,6 +43,7 @@ export function Card({
         cardPaddingClasses[size],
         cardToneClasses[tone],
         tone !== "ghost" && cardShadowClasses[size],
+        interactive && "ui-interactive-surface",
         className,
       )}
     >

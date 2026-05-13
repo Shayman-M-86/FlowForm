@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ProjectDashboardPage } from '@/pages/ProjectDashboardPage'
+import { SettingsTab } from '@/pages/ProjectDashboardTabPages/SettingsTab'
 
 export const Route = createFileRoute('/projects/$slug/settings')({
-  component: ProjectDashboardPage,
+  component: SettingsTab,
 })

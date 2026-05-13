@@ -4,14 +4,14 @@ import { Card, Button, Input, Toggle } from '@flowform/ui'
 import { getMockSurvey } from '@/api/mockData'
 
 export function SurveySettingsTab() {
-  const { slug, surveySlug } = useParams({ from: '/projects/$slug/$surveySlug/settings' })
+  const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/settings' })
   const [allowAnonymous, setAllowAnonymous] = useState(true)
   const [closeAfterDate, setCloseAfterDate] = useState(false)
   const survey = getMockSurvey(slug, surveySlug)
   const surveyTitle = survey?.title ?? surveySlug.replace(/-/g, ' ')
 
   return (
-    <div className="grid max-w-2xl gap-6">
+    <section className="grid max-w-2xl gap-6">
       {/* General */}
       <Card>
         <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">General</p>
@@ -77,6 +77,6 @@ export function SurveySettingsTab() {
           </div>
         </div>
       </Card>
-    </div>
+    </section>
   )
 }

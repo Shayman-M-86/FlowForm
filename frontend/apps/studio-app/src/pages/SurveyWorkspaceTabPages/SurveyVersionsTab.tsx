@@ -37,17 +37,17 @@ function versionActions(v: MockVersion) {
 }
 
 export function SurveyVersionsTab() {
-  const { surveySlug } = useParams({ from: '/projects/$slug/$surveySlug/versions' })
+  const { surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/versions' })
   const versions = getMockVersionsForSurvey(surveySlug)
 
   return (
-    <div className="grid gap-4">
-      <div className="flex items-center justify-between">
+    <section className="grid gap-6">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">Version history</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">{versions.length} versions</p>
+          <p className="text-sm text-muted-foreground">{versions.length} versions</p>
         </div>
-        <Button variant="primary" size="sm">New draft</Button>
+        <Button variant="primary" size="sm" icon="plus">New draft</Button>
       </div>
 
       <Card>
@@ -91,6 +91,6 @@ export function SurveyVersionsTab() {
           edit it, and publish. The previous published version will be archived automatically.
         </p>
       </Card>
-    </div>
+    </section>
   )
 }

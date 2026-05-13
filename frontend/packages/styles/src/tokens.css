@@ -1,3 +1,15 @@
+/* ── Type scale ───────────────────────────────────────────────── */
+:root {
+  --text-2xs: 0.7rem;
+  --text-xs:  0.75rem;
+  --text-sm:  0.875rem;
+  --text-base: 1rem;
+  --text-lg:  1.125rem;
+  --text-xl:  1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+}
+
 /* ── Shared (same in light and dark) ──────────────────────────── */
 :root {
   --primary: rgb(80 145 220);
@@ -65,6 +77,7 @@
 
   --muted: rgb(240 239 240);
   --muted-foreground: rgb(80, 80, 80);
+  --soft-foreground: rgb(60, 60, 60);
   --muted-accent-foreground: rgb(70, 72, 77);
   --accent-foreground: rgb(58 60 65);
   --border: rgb(229 229 229);
@@ -113,6 +126,7 @@
 
   --muted: rgb(39 39 39);
   --muted-foreground: rgb(185, 185, 185);
+  --soft-foreground: rgb(200, 200, 200);
   --muted-accent-foreground: rgb(220, 220, 220);
   --accent-foreground: rgb(250 250 250);
   --border: rgb(255 255 255 / 0.09);

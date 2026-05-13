@@ -1,14 +1,160 @@
 import { useEffect, useRef, useState } from 'react'
 import { Card, Button, Badge, Modal, Input, LargeInput, Tooltip, DropdownMenu } from '@flowform/ui'
-import { PERMISSION_TOOLTIP } from './projectPermissionTooltips'
-import {
-  CARD_WIDTH,
-  CARD_GAP,
-  PERMISSION_GROUPS,
-  PERMISSION_LABEL,
-  PRESET_ROLES,
-} from './constants'
-import type { CustomRole, PermissionKey, RoleEditorState, RoleFilter } from './types'
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export type RoleFilter = 'all' | 'default' | 'custom'
+
+export type PermissionKey =
+  | 'project:edit'
+  | 'project:delete'
+  | 'project:manage_members'
+  | 'project:manage_roles'
+  | 'survey:view'
+  | 'survey:create'
+  | 'survey:edit'
+  | 'survey:delete'
+  | 'survey:publish'
+  | 'survey:archive'
+  | 'submission:view'
+
+export type CustomRole = {
+  id: string
+  name: string
+  description: string
+  permissions: PermissionKey[]
+}
+
+type RoleEditorState = {
+  id: string
+  custom: boolean
+  name: string
+  description: string
+  permissions: Set<PermissionKey>
+}
+
+type PresetRoleDef = {
+  id: string
+  name: string
+  description: string
+  permissions: PermissionKey[]
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const CARD_WIDTH = 220
+const CARD_GAP = 16
+
+const ALL_PERMISSIONS: PermissionKey[] = [
+  'project:edit',
+  'project:delete',
+  'project:manage_members',
+  'project:manage_roles',
+  'survey:view',
+  'survey:create',
+  'survey:edit',
+  'survey:delete',
+  'survey:publish',
+  'survey:archive',
+  'submission:view',
+]
+
+const PERMISSION_GROUPS: { label: string; permissions: PermissionKey[] }[] = [
+  {
+    label: 'Project',
+    permissions: [
+      'project:edit',
+      'project:delete',
+      'project:manage_members',
+      'project:manage_roles',
+    ],
+  },
+  {
+    label: 'Survey',
+    permissions: [
+      'survey:view',
+      'survey:create',
+      'survey:edit',
+      'survey:delete',
+      'survey:publish',
+      'survey:archive',
+    ],
+  },
+  {
+    label: 'Submissions',
+    permissions: ['submission:view'],
+  },
+]
+
+const PERMISSION_LABEL: Record<PermissionKey, string> = {
+  'project:edit': 'Edit project',
+  'project:delete': 'Delete project',
+  'project:manage_members': 'Manage members',
+  'project:manage_roles': 'Manage roles',
+  'survey:view': 'View surveys',
+  'survey:create': 'Create surveys',
+  'survey:edit': 'Edit surveys',
+  'survey:delete': 'Delete surveys',
+  'survey:publish': 'Publish surveys',
+  'survey:archive': 'Archive surveys',
+  'submission:view': 'View submissions',
+}
+
+const PERMISSION_TOOLTIP: Record<PermissionKey, string> = {
+  'project:edit':
+    'Allows changes to project-level details such as the project name, slug, and general configuration.',
+  'project:delete':
+    'Allows permanent removal of the project and its related workspace data. Reserve this for trusted administrators.',
+  'project:manage_members':
+    'Allows inviting, removing, and changing project members, including assigning roles to other people.',
+  'project:manage_roles':
+    'Allows creating and editing roles, including changing which permissions each role grants.',
+  'survey:view':
+    'Allows viewing surveys in the project, including draft and published survey structure.',
+  'survey:create':
+    'Allows creating new surveys and starting new survey drafts within this project.',
+  'survey:edit':
+    'Allows editing survey content, question order, branching logic, and survey settings.',
+  'survey:delete':
+    'Allows deleting surveys from the project. Use carefully when surveys may contain live work.',
+  'survey:publish':
+    'Allows publishing surveys, pausing live surveys, and changing whether respondents can access them.',
+  'survey:archive':
+    'Allows archiving surveys that should no longer appear in active project workflows.',
+  'submission:view':
+    'Allows viewing collected responses, submission summaries, and respondent data available to the project.',
+}
+
+export const PRESET_ROLES: PresetRoleDef[] = [
+  {
+    id: 'admin',
+    name: 'Admin',
+    description: 'Full access to everything in this project.',
+    permissions: [...ALL_PERMISSIONS],
+  },
+  {
+    id: 'contributor',
+    name: 'Contributor',
+    description: 'Full survey and submission access. No project management.',
+    permissions: [
+      'survey:view',
+      'survey:create',
+      'survey:edit',
+      'survey:delete',
+      'survey:publish',
+      'survey:archive',
+      'submission:view',
+    ],
+  },
+  {
+    id: 'analyst',
+    name: 'Analyst',
+    description: 'Read-only access to surveys and submissions.',
+    permissions: ['survey:view', 'submission:view'],
+  },
+]
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export function RolesTab() {
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([])
@@ -117,16 +263,13 @@ export function RolesTab() {
   }
 
   return (
-    <section className="grid gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <section className="grid max-w-6xl gap-4">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">Roles</h2>
           <p className="text-sm text-muted-foreground">{allRoleCount} roles</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[0.65rem] text-muted-foreground opacity-60">
-            w:{Math.round(rolesContainerWidth)}px fit:{rolesPerPage} page:{clampedRolePage + 1}/{roleTotalPages} total:{visibleRoleColumns.length}
-          </span>
           {roleTotalPages > 1 && (
             <div className="flex items-center gap-1">
               <Button
@@ -178,7 +321,7 @@ export function RolesTab() {
               ],
             }]}
           />
-          <Button variant="secondary" size="sm" onClick={addCustomRole}>
+          <Button variant="primary" size="sm" icon="plus" onClick={addCustomRole}>
             Add role
           </Button>
         </div>

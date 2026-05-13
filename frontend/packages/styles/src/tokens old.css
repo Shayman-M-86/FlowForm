@@ -131,6 +131,7 @@
 
   --muted: rgb(39 39 39);
   --muted-foreground: rgb(185, 185, 185);
+  --muted-foreground-: rgb(185, 185, 185);
   --muted-accent-foreground: rgb(220, 220, 220);
   --accent-foreground: rgb(250 250 250);
   --border: rgb(255 255 255 / 0.09);
