@@ -1,26 +1,29 @@
-import { useState } from 'react'
-import { useParams } from '@tanstack/react-router'
+import { useParams, Link, useRouterState, useNavigate } from '@tanstack/react-router'
 import { useProject } from '@/api/projects'
-import { Spinner, Card, TabSelector } from '@flowform/ui'
+import { Spinner, Card } from '@flowform/ui'
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { SurveysTab } from './ProjectDashboardTabPages/SurveysTab'
 import { MembersTab } from './ProjectDashboardTabPages/MembersTab'
 import { RolesTab } from './ProjectDashboardTabPages/RolesTab'
 import { ManagementTab } from './ProjectDashboardTabPages/ManagementTab'
 
-type DashboardTab = 'surveys' | 'members' | 'roles' | 'management'
-
 const TABS = [
-  { id: 'surveys', label: 'Surveys' },
-  { id: 'members',   label: 'Members' },
-  { id: 'roles',     label: 'Roles' },
-  { id: 'management', label: 'Management' },
-]
+  { id: 'surveys',    label: 'Surveys' },
+  { id: 'members',    label: 'Members' },
+  { id: 'roles',      label: 'Roles' },
+  { id: 'settings', label: 'Settings' },
+] as const
+
+type DashboardTab = typeof TABS[number]['id']
 
 export function ProjectDashboardPage() {
-  const { slug } = useParams({ from: '/projects/$slug/' })
-  const { data: project, isPending, isError, error } = useProject(slug)
-  const [activeTab, setActiveTab] = useState<DashboardTab>('surveys')
+  const { slug } = useParams({ strict: false })
+  const { data: project, isPending, isError, error } = useProject(slug ?? null)
+  const navigate = useNavigate()
+
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const activeTab: DashboardTab =
+    (TABS.find((t) => pathname.endsWith(`/${t.id}`))?.id ?? 'surveys') as DashboardTab
 
   if (isPending) {
     return (
@@ -51,18 +54,36 @@ export function ProjectDashboardPage() {
       </div>
       <p className="mt-2 text-sm text-muted-foreground">{project.slug}</p>
 
-      <TabSelector
-        className="my-5"
-        items={TABS}
-        activeId={activeTab}
-        onChange={(id) => setActiveTab(id as DashboardTab)}
-      />
+      {/* Tab nav */}
+      <div className="mt-6 flex items-stretch gap-0 overflow-x-auto scrollbar-none">
+        {TABS.map((tab, i) => {
+          const isActive = tab.id === activeTab
+          return (
+            <div key={tab.id} className="relative flex items-center">
+              {i > 0 && (
+                <div aria-hidden className="my-2 w-px self-stretch bg-border" />
+              )}
+              <Link
+                to={`/projects/$slug/${tab.id}`}
+                params={{ slug: slug ?? '' }}
+                className={`ui-button-ghost h-full whitespace-nowrap border-0 px-4 py-2 text-sm font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}
+              >
+                {tab.label}
+              </Link>
+              <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-2.5 overflow-hidden">
+                <span className={`absolute inset-x-0 -bottom-px h-1 rounded-full bg-primary transition-transform duration-140 ease-out will-change-transform ${isActive ? 'translate-y-0' : 'translate-y-2'}`} />
+              </span>
+            </div>
+          )
+        })}
+      </div>
+      <div className="h-px bg-border" />
 
-      <div className="gap-3 p-3">
-        {activeTab === 'surveys'  && <SurveysTab projectSlug={slug} />}
+      <div className="mt-6">
+        {activeTab === 'surveys'    && <SurveysTab projectSlug={slug ?? ''} />}
         {activeTab === 'members'    && <MembersTab />}
         {activeTab === 'roles'      && <RolesTab />}
-        {activeTab === 'management' && <ManagementTab customRoles={[]} onAddRole={() => setActiveTab('roles')} />}
+        {activeTab === 'settings'   && <ManagementTab customRoles={[]} onAddRole={() => navigate({ to: '/projects/$slug/roles', params: { slug: slug ?? '' } })} />}
       </div>
     </main>
   )

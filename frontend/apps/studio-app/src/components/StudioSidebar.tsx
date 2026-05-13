@@ -4,6 +4,7 @@ import { Badge, Button, CardStack, DropdownMenu } from "@flowform/ui";
 import { BRAND } from "@flowform/site-shell";
 import "@flowform/site-shell/header.css";
 import { useProject } from "@/api/projects";
+import { useSurvey } from "@/api/surveys";
 import { useCurrentUser } from "@/auth/UserContext";
 
 // ── Icons ──────────────────────────────────────────────────────────────────
@@ -80,6 +81,31 @@ function IconMembers() {
     </svg>
   );
 }
+function IconRoles() {
+  return (
+    <svg {...svgProps}>
+      {/* Person */}
+      <circle cx="9" cy="7" r="4" />
+      <path d="M17 19a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+
+      {/* Gear */}
+      <circle cx="17.2" cy="17" r="3" />
+      <circle cx="17.2" cy="17" r="1" />
+
+      <path d="M17.2 12.8v1" />
+      <path d="M17.2 20.2v1" />
+      <path d="M13 17h1" />
+      <path d="M20.4 17h1" />
+
+      <path d="M14.25 14.05l.75.75" />
+      <path d="M19.4 19.2l.75.75" />
+      <path d="M14.25 19.95l.75-.75" />
+      <path d="M19.4 14.8l.75-.75" />
+    </svg>
+  );
+}
+
+
 function IconSettings() {
   return (
     <svg {...svgProps}>
@@ -131,9 +157,9 @@ function NavItem({
     <Link
       to={to}
       data-active={active}
-      className="sidebar-nav-item ui-action ui-button-ghost justify-start"
+      className="sidebar-nav-item"
     >
-      <span className="flex h-4.5 w-4.5 shrink-0 items-center justify-center">{icon}</span>
+      <span className="flex h-4.5 w-4.5 ml-0 md:ml-3 shrink-0 items-center justify-center">{icon}</span>
       <span className="sidebar-nav-item__label">{label}</span>
     </Link>
   );
@@ -168,14 +194,18 @@ export function StudioSidebar() {
   const ctx = useCurrentUser();
 
   // Parse route segments
+  // A survey context requires a third segment (e.g. /projects/slug/surveySlug/overview)
   const projectMatch = pathname.match(/^\/projects\/([^/]+)/);
-  const surveyMatch = pathname.match(/^\/projects\/([^/]+)\/([^/]+)/);
+  const surveyMatch = pathname.match(/^\/projects\/([^/]+)\/([^/]+)\/[^/]+/);
 
   const projectSlug = projectMatch ? decodeURIComponent(projectMatch[1]) : null;
   const surveySlug = surveyMatch ? decodeURIComponent(surveyMatch[2]) : null;
 
   const project = useProject(projectSlug ?? null);
   const projectName = project.data?.name ?? projectSlug ?? undefined;
+
+  const survey = useSurvey(projectSlug, surveySlug);
+  const surveyName = survey.data?.title ?? surveySlug ?? undefined;
 
   const projectBase = projectSlug ? `/projects/${projectSlug}` : null;
   const surveyBase = projectBase && surveySlug ? `${projectBase}/${surveySlug}` : null;
@@ -194,19 +224,17 @@ export function StudioSidebar() {
       </div>
 
       {/* Selected project badge */}
-      {projectSlug && (
-        <div className="my-1 hidden md:block">
-          <Badge
-            variant="muted"
-            size="sm"
-            onClick={() => navigate({ to: "/projects/$slug", params: { slug: projectSlug } })}
-            className="max-w-full cursor-pointer gap-1.5"
-          >
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
-            <span className="truncate text-muted-foreground">{projectName}</span>
-          </Badge>
-        </div>
-      )}
+      <div className={`my-1 hidden h-6 items-center md:flex ${projectSlug ? "" : "invisible"}`}>
+        <Badge
+          variant="muted"
+          size="sm"
+          onClick={projectSlug ? () => navigate({ to: "/projects/$slug", params: { slug: projectSlug } }) : undefined}
+          className="max-w-full cursor-pointer gap-1.5 transition-colors hover:text-foreground"
+        >
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
+          <span className="truncate">{projectName}</span>
+        </Badge>
+      </div>
 
       <div aria-hidden="true" className="my-4 mt-8 h-px bg-border" />
 
@@ -220,16 +248,17 @@ export function StudioSidebar() {
         {/* Project section — visible when inside a project */}
         {projectBase && (
           <NavSection label={projectName ?? "Project"}>
-            <NavItem to={`${projectBase}/`} icon={<IconOverview />} label="Overview" active={pathname === `${projectBase}/` || pathname === projectBase} />
+
             <NavItem to={`${projectBase}/surveys`} icon={<IconSurveys />} label="Surveys" active={isActive(`${projectBase}/surveys`)} />
             <NavItem to={`${projectBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${projectBase}/members`)} />
+            <NavItem to={`${projectBase}/roles`} icon={<IconRoles />} label="Roles" active={isActive(`${projectBase}/roles`)} />
             <NavItem to={`${projectBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${projectBase}/settings`)} />
           </NavSection>
         )}
 
         {/* Survey section — visible when inside a survey */}
         {surveyBase && (
-          <NavSection label="Survey">
+          <NavSection label={surveyName ?? "Survey"}>
             <NavItem to={`${surveyBase}/overview`} icon={<IconOverview />} label="Overview" active={isActive(`${surveyBase}/overview`)} />
             <NavItem to={`${surveyBase}/versions`} icon={<IconVersions />} label="Versions" active={isActive(`${surveyBase}/versions`)} />
             <NavItem to={`${surveyBase}/links`} icon={<IconLinks />} label="Links" active={isActive(`${surveyBase}/links`)} />

@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { useParams } from '@tanstack/react-router'
 import { Card, Button, Input, Toggle } from '@flowform/ui'
 import { getMockSurvey } from '@/api/mockData'
 
 export function SurveySettingsTab() {
   const { slug, surveySlug } = useParams({ from: '/projects/$slug/$surveySlug/settings' })
+  const [allowAnonymous, setAllowAnonymous] = useState(true)
+  const [closeAfterDate, setCloseAfterDate] = useState(false)
   const survey = getMockSurvey(slug, surveySlug)
   const surveyTitle = survey?.title ?? surveySlug.replace(/-/g, ' ')
 
@@ -40,14 +43,14 @@ export function SurveySettingsTab() {
               <p className="text-sm font-medium text-foreground">Allow anonymous responses</p>
               <p className="text-xs text-muted-foreground">Respondents do not need to be identified</p>
             </div>
-            <Toggle defaultChecked />
+            <Toggle checked={allowAnonymous} onChange={setAllowAnonymous} />
           </div>
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-foreground">Close after date</p>
               <p className="text-xs text-muted-foreground">Stop accepting responses after a specific date</p>
             </div>
-            <Toggle />
+            <Toggle checked={closeAfterDate} onChange={setCloseAfterDate} />
           </div>
         </div>
       </Card>

@@ -14,6 +14,11 @@ import { Route as UiTestIndexRouteImport } from './routes/ui-test/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectsSlugRouteImport } from './routes/projects/$slug'
 import { Route as ProjectsSlugIndexRouteImport } from './routes/projects/$slug/index'
+import { Route as ProjectsSlugSurveysRouteImport } from './routes/projects/$slug/surveys'
+import { Route as ProjectsSlugSettingsRouteImport } from './routes/projects/$slug/settings'
+import { Route as ProjectsSlugRolesRouteImport } from './routes/projects/$slug/roles'
+import { Route as ProjectsSlugMembersRouteImport } from './routes/projects/$slug/members'
+import { Route as ProjectsSlugManagementRouteImport } from './routes/projects/$slug/management'
 import { Route as ProjectsSlugSurveySlugRouteImport } from './routes/projects/$slug/$surveySlug'
 import { Route as ProjectsSlugSurveySlugIndexRouteImport } from './routes/projects/$slug/$surveySlug/index'
 import { Route as ProjectsSlugSurveySlugVersionsRouteImport } from './routes/projects/$slug/$surveySlug/versions'
@@ -47,6 +52,31 @@ const ProjectsSlugRoute = ProjectsSlugRouteImport.update({
 const ProjectsSlugIndexRoute = ProjectsSlugIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => ProjectsSlugRoute,
+} as any)
+const ProjectsSlugSurveysRoute = ProjectsSlugSurveysRouteImport.update({
+  id: '/surveys',
+  path: '/surveys',
+  getParentRoute: () => ProjectsSlugRoute,
+} as any)
+const ProjectsSlugSettingsRoute = ProjectsSlugSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => ProjectsSlugRoute,
+} as any)
+const ProjectsSlugRolesRoute = ProjectsSlugRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => ProjectsSlugRoute,
+} as any)
+const ProjectsSlugMembersRoute = ProjectsSlugMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => ProjectsSlugRoute,
+} as any)
+const ProjectsSlugManagementRoute = ProjectsSlugManagementRouteImport.update({
+  id: '/management',
+  path: '/management',
   getParentRoute: () => ProjectsSlugRoute,
 } as any)
 const ProjectsSlugSurveySlugRoute = ProjectsSlugSurveySlugRouteImport.update({
@@ -109,6 +139,11 @@ export interface FileRoutesByFullPath {
   '/projects/': typeof ProjectsIndexRoute
   '/ui-test/': typeof UiTestIndexRoute
   '/projects/$slug/$surveySlug': typeof ProjectsSlugSurveySlugRouteWithChildren
+  '/projects/$slug/management': typeof ProjectsSlugManagementRoute
+  '/projects/$slug/members': typeof ProjectsSlugMembersRoute
+  '/projects/$slug/roles': typeof ProjectsSlugRolesRoute
+  '/projects/$slug/settings': typeof ProjectsSlugSettingsRoute
+  '/projects/$slug/surveys': typeof ProjectsSlugSurveysRoute
   '/projects/$slug/': typeof ProjectsSlugIndexRoute
   '/projects/$slug/$surveySlug/builder': typeof ProjectsSlugSurveySlugBuilderRoute
   '/projects/$slug/$surveySlug/links': typeof ProjectsSlugSurveySlugLinksRoute
@@ -123,6 +158,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/ui-test': typeof UiTestIndexRoute
+  '/projects/$slug/management': typeof ProjectsSlugManagementRoute
+  '/projects/$slug/members': typeof ProjectsSlugMembersRoute
+  '/projects/$slug/roles': typeof ProjectsSlugRolesRoute
+  '/projects/$slug/settings': typeof ProjectsSlugSettingsRoute
+  '/projects/$slug/surveys': typeof ProjectsSlugSurveysRoute
   '/projects/$slug': typeof ProjectsSlugIndexRoute
   '/projects/$slug/$surveySlug/builder': typeof ProjectsSlugSurveySlugBuilderRoute
   '/projects/$slug/$surveySlug/links': typeof ProjectsSlugSurveySlugLinksRoute
@@ -140,6 +180,11 @@ export interface FileRoutesById {
   '/projects/': typeof ProjectsIndexRoute
   '/ui-test/': typeof UiTestIndexRoute
   '/projects/$slug/$surveySlug': typeof ProjectsSlugSurveySlugRouteWithChildren
+  '/projects/$slug/management': typeof ProjectsSlugManagementRoute
+  '/projects/$slug/members': typeof ProjectsSlugMembersRoute
+  '/projects/$slug/roles': typeof ProjectsSlugRolesRoute
+  '/projects/$slug/settings': typeof ProjectsSlugSettingsRoute
+  '/projects/$slug/surveys': typeof ProjectsSlugSurveysRoute
   '/projects/$slug/': typeof ProjectsSlugIndexRoute
   '/projects/$slug/$surveySlug/builder': typeof ProjectsSlugSurveySlugBuilderRoute
   '/projects/$slug/$surveySlug/links': typeof ProjectsSlugSurveySlugLinksRoute
@@ -158,6 +203,11 @@ export interface FileRouteTypes {
     | '/projects/'
     | '/ui-test/'
     | '/projects/$slug/$surveySlug'
+    | '/projects/$slug/management'
+    | '/projects/$slug/members'
+    | '/projects/$slug/roles'
+    | '/projects/$slug/settings'
+    | '/projects/$slug/surveys'
     | '/projects/$slug/'
     | '/projects/$slug/$surveySlug/builder'
     | '/projects/$slug/$surveySlug/links'
@@ -172,6 +222,11 @@ export interface FileRouteTypes {
     | '/'
     | '/projects'
     | '/ui-test'
+    | '/projects/$slug/management'
+    | '/projects/$slug/members'
+    | '/projects/$slug/roles'
+    | '/projects/$slug/settings'
+    | '/projects/$slug/surveys'
     | '/projects/$slug'
     | '/projects/$slug/$surveySlug/builder'
     | '/projects/$slug/$surveySlug/links'
@@ -188,6 +243,11 @@ export interface FileRouteTypes {
     | '/projects/'
     | '/ui-test/'
     | '/projects/$slug/$surveySlug'
+    | '/projects/$slug/management'
+    | '/projects/$slug/members'
+    | '/projects/$slug/roles'
+    | '/projects/$slug/settings'
+    | '/projects/$slug/surveys'
     | '/projects/$slug/'
     | '/projects/$slug/$surveySlug/builder'
     | '/projects/$slug/$surveySlug/links'
@@ -241,6 +301,41 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/projects/$slug/'
       preLoaderRoute: typeof ProjectsSlugIndexRouteImport
+      parentRoute: typeof ProjectsSlugRoute
+    }
+    '/projects/$slug/surveys': {
+      id: '/projects/$slug/surveys'
+      path: '/surveys'
+      fullPath: '/projects/$slug/surveys'
+      preLoaderRoute: typeof ProjectsSlugSurveysRouteImport
+      parentRoute: typeof ProjectsSlugRoute
+    }
+    '/projects/$slug/settings': {
+      id: '/projects/$slug/settings'
+      path: '/settings'
+      fullPath: '/projects/$slug/settings'
+      preLoaderRoute: typeof ProjectsSlugSettingsRouteImport
+      parentRoute: typeof ProjectsSlugRoute
+    }
+    '/projects/$slug/roles': {
+      id: '/projects/$slug/roles'
+      path: '/roles'
+      fullPath: '/projects/$slug/roles'
+      preLoaderRoute: typeof ProjectsSlugRolesRouteImport
+      parentRoute: typeof ProjectsSlugRoute
+    }
+    '/projects/$slug/members': {
+      id: '/projects/$slug/members'
+      path: '/members'
+      fullPath: '/projects/$slug/members'
+      preLoaderRoute: typeof ProjectsSlugMembersRouteImport
+      parentRoute: typeof ProjectsSlugRoute
+    }
+    '/projects/$slug/management': {
+      id: '/projects/$slug/management'
+      path: '/management'
+      fullPath: '/projects/$slug/management'
+      preLoaderRoute: typeof ProjectsSlugManagementRouteImport
       parentRoute: typeof ProjectsSlugRoute
     }
     '/projects/$slug/$surveySlug': {
@@ -339,11 +434,21 @@ const ProjectsSlugSurveySlugRouteWithChildren =
 
 interface ProjectsSlugRouteChildren {
   ProjectsSlugSurveySlugRoute: typeof ProjectsSlugSurveySlugRouteWithChildren
+  ProjectsSlugManagementRoute: typeof ProjectsSlugManagementRoute
+  ProjectsSlugMembersRoute: typeof ProjectsSlugMembersRoute
+  ProjectsSlugRolesRoute: typeof ProjectsSlugRolesRoute
+  ProjectsSlugSettingsRoute: typeof ProjectsSlugSettingsRoute
+  ProjectsSlugSurveysRoute: typeof ProjectsSlugSurveysRoute
   ProjectsSlugIndexRoute: typeof ProjectsSlugIndexRoute
 }
 
 const ProjectsSlugRouteChildren: ProjectsSlugRouteChildren = {
   ProjectsSlugSurveySlugRoute: ProjectsSlugSurveySlugRouteWithChildren,
+  ProjectsSlugManagementRoute: ProjectsSlugManagementRoute,
+  ProjectsSlugMembersRoute: ProjectsSlugMembersRoute,
+  ProjectsSlugRolesRoute: ProjectsSlugRolesRoute,
+  ProjectsSlugSettingsRoute: ProjectsSlugSettingsRoute,
+  ProjectsSlugSurveysRoute: ProjectsSlugSurveysRoute,
   ProjectsSlugIndexRoute: ProjectsSlugIndexRoute,
 }
 
