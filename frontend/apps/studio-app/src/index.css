@@ -51,8 +51,11 @@ body {
   }
 
   /* ── Nav items ───────────────────────────────────────────────── */
+
   .sidebar-nav-item {
-    @apply ui-button-ghost-bare relative flex h-11 w-full items-center overflow-hidden text-muted-foreground border-0 ;
+    @apply ui-button-ghost-bare relative flex h-11 w-full items-center overflow-hidden border-0 text-muted-foreground;
+
+    isolation: isolate;
     justify-content: center;
     transition: justify-content 0s;
 
@@ -62,6 +65,11 @@ body {
 
     .sidebar[data-collapsed="true"] & {
       justify-content: center;
+    }
+
+    & > * {
+      position: relative;
+      z-index: 1;
     }
 
     & .sidebar-nav-item__icon {
@@ -82,13 +90,50 @@ body {
     }
   }
 
-  .sidebar-nav-item[data-active="true"] {
-    --ui-color: var(--primary);
-    @apply bg-primary/10 text-primary-saturated;
-
+  .sidebar-nav-item {
+    --sidebar-active-bg: color-mix(in oklab, var(--primary), transparent 88%);
+  
     &::before {
       content: "";
       @apply absolute right-0 top-1/2 h-9 w-1 -translate-y-1/2 rounded-l-sm bg-primary;
+  
+      z-index: 2;
+      pointer-events: none;
+  
+      transform: translateX(110%);
+      transition: transform 200ms var(--ease-out);
+    }
+  
+    &::after {
+      content: "";
+      @apply absolute inset-0 rounded-sm;
+  
+      z-index: 0;
+      pointer-events: none;
+  
+      background-color: var(--sidebar-active-bg);
+  
+      transform: scaleX(0);
+      transform-origin: right;
+  
+      transition: transform 200ms var(--ease-out);
+    }
+  
+    & > * {
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  .sidebar-nav-item[data-active="true"] {
+    --ui-color: var(--primary-saturated);
+  
+    &::before {
+      transform: translateX(0%);
+    }
+  
+    &::after {
+      transform: scaleX(1);
     }
   }
 
@@ -122,7 +167,7 @@ body {
   }
 
   .sidebar-nav-section-label {
-    @apply hidden text-2xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap overflow-hidden;
+    @apply hidden overflow-hidden whitespace-nowrap text-2xs font-semibold uppercase tracking-wider text-muted-foreground;
 
     @media (min-width: theme(--breakpoint-md)) {
       display: block;
@@ -138,7 +183,9 @@ body {
     width: 0;
     flex-shrink: 0;
     opacity: 0;
-    transition: width 200ms var(--ease-out), opacity 150ms var(--ease-out);
+    transition:
+      width 200ms var(--ease-out),
+      opacity 150ms var(--ease-out);
 
     @media (min-width: theme(--breakpoint-md)) {
       width: auto;
@@ -155,8 +202,7 @@ body {
   }
 
   .sidebar-avatar {
-    @apply flex h-9 w-9 shrink-0 items-center justify-center
-           rounded-sm text-xs font-semibold;
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-sm text-xs font-semibold;
   }
 
   .sidebar-avatar--workspace {
@@ -168,11 +214,21 @@ body {
   }
 }
 
-/* Override --ui-active-bg for active nav items — must be in @layer utilities
-   to come after the @utility declaration in the cascade */
 @layer utilities {
-  .sidebar-nav-item[data-active="true"] {
-    --ui-active-bg: color-mix(in srgb, var(--primary) 12%, transparent);
+  .sidebar-nav-item {
+    /*
+      Keep the real ui-button active background transparent.
+      The sidebar active background is handled by ::after.
+    */
+    --ui-active-bg: transparent;
     --ui-active-shadow: none;
+  }
+
+  .sidebar-nav-item[data-active="true"] {
+    --ui-hover: transparent;
+    --ui-color: var(--primary-saturated);
+
+    color: var(--primary-saturated);
+    transition: color 200ms var(--ease-out);
   }
 }

@@ -231,13 +231,13 @@ export function StudioSidebar() {
   return (
     <aside className="sidebar" data-collapsed={collapsed}>
       {/* Brand */}
-      <Link to="/projects" className="site-header__brand cursor-pointer justify-center pb-2 pl-2 md:justify-start">
-        <div className="site-header__logo" aria-hidden="true">
-          <img src={BRAND.logoSrc} alt="" className="site-header__logo-image" />
-        </div>
-        {!collapsed && <span className="site-header__wordmark hidden md:inline">{BRAND.name}</span>}
-        {!collapsed && <span className="site-header__badge hidden md:inline">Studio</span>}
-      </Link>
+      <div className="site-header__brand justify-center pb-2 pl-2 md:justify-start">
+        <Link to="/projects" aria-hidden="true" className="site-header__logo cursor-pointer">
+          <img src={BRAND.logoSrc} alt="Go to projects" className="site-header__logo-image" />
+        </Link>
+        {!collapsed && <Link to="/projects" className="site-header__wordmark hidden cursor-pointer md:inline">{BRAND.name}</Link>}
+        {!collapsed && <Link to="/projects" className="site-header__badge hidden cursor-pointer md:inline">Studio</Link>}
+      </div>
 
       {/* Project badge + collapse button */}
       <div className={`my-1 hidden h-6 items-center md:flex ${collapsed ? "justify-center" : "justify-between"}`}>
@@ -267,7 +267,7 @@ export function StudioSidebar() {
 
       <div aria-hidden="true" className="my-4 mt-8 h-px bg-border" />
 
-      <nav aria-label="Main navigation" className="flex flex-col gap-4">
+      <nav aria-label="Main navigation" className="flex flex-col gap-3">
 
         {/* Projects list — always visible */}
         <NavSection label="Projects">
@@ -277,7 +277,7 @@ export function StudioSidebar() {
         {/* Project section — visible when inside a project */}
         {projectBase && (
           <>
-            <div aria-hidden className="h-px bg-border" />
+            <div aria-hidden className="h-px bg-border mt-3" />
             <NavSection label={projectName ?? "Project"}>
               <NavItem to={`${projectBase}/surveys`} icon={<IconSurveys />} label="Surveys" active={isExactActive(`${projectBase}/surveys`)} />
               <NavItem to={`${projectBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${projectBase}/members`)} />
@@ -290,7 +290,7 @@ export function StudioSidebar() {
         {/* Survey section — visible when inside a survey */}
         {surveyBase && (
           <>
-            <div aria-hidden className="h-px bg-border" />
+            <div aria-hidden className="h-px bg-border mt-3" />
             <NavSection label={surveyName ?? "Survey"}>
             <NavItem to={`${surveyBase}/overview`} icon={<IconOverview />} label="Overview" active={isActive(`${surveyBase}/overview`)} />
             <NavItem to={`${surveyBase}/builder`} icon={<IconBuilder />} label="Builder" active={isActive(`${surveyBase}/builder`)} />
