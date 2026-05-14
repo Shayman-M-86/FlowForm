@@ -231,7 +231,7 @@
 
 /* Standard button — adds inline-flex layout on top of bare */
 @utility ui-button-base {
-  @apply ui-button-base-bare border inline-flex shrink-0 items-center justify-center gap-2;
+  @apply ui-button-base-bare inline-flex shrink-0 items-center justify-center gap-2;
 }
 
 @utility ui-icon-button-base {
@@ -342,8 +342,19 @@
 /* Transparent icon button */
 
 @utility ui-button-transparent-icon {
-  @apply ui-icon-button-base size-[34px] border-transparent bg-transparent p-0
+  @apply ui-icon-button-base border-transparent bg-transparent p-0
          text-muted-foreground;
+
+  /* Square: width tracks height, which is set by the control-size class */
+  aspect-ratio: 1;
+  height: 34px; /* default (sm) — overridden by control-size classes below */
+
+  &:is(.ui-control-xxs) { height: 26px; }
+  &:is(.ui-control-xs)  { height: 30px; }
+  &:is(.ui-control-sm)  { height: 34px; }
+  &:is(.ui-control-md)  { height: 40px; }
+  &:is(.ui-control-lg)  { height: 44px; }
+  &:is(.ui-control-xl)  { height: 48px; }
 
   --ui-bg: transparent;
   --ui-color: var(--foreground);
@@ -392,6 +403,27 @@
   --ui-active-shadow: none;
 }
 
+@utility ui-button-destructive {
+  @apply ui-button-base;
+
+  --ui-bg: color-mix(in oklab, var(--destructive), transparent 92%);
+  --ui-color: var(--destructive);
+  --ui-border-color: color-mix(in oklab, var(--destructive), transparent 40%);
+
+  --ui-hover-bg: color-mix(in oklab, var(--destructive), transparent 82%);
+  --ui-hover-color: var(--destructive);
+  --ui-hover-border-color: color-mix(in oklab, var(--destructive), transparent 20%);
+
+  --ui-press-bg: color-mix(in oklab, var(--destructive), transparent 72%);
+  --ui-press-color: var(--destructive);
+  --ui-press-border-color: var(--destructive);
+
+  --ui-active-bg: color-mix(in oklab, var(--destructive), transparent 76%);
+  --ui-active-color: var(--destructive);
+  --ui-active-border-color: color-mix(in oklab, var(--destructive), transparent 10%);
+  --ui-active-shadow: none;
+}
+
 /* ────────────────────────────────────────────────────────────── */
 /* Optional intent overrides                                       */
 /* Use these when you want the same shape but different intent.     */
@@ -415,6 +447,7 @@
   --ui-color: var(--destructive-foreground);
   --ui-border-color: transparent;
 }
+
 
 @utility ui-intent-success {
   --ui-bg: var(--success);

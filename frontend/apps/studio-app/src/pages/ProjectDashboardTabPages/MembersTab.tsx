@@ -1,6 +1,26 @@
 import { useState } from 'react'
-import { Button, Badge, Modal } from '@flowform/ui'
+import { Button, Badge, Modal, Table, type TableColumn } from '@flowform/ui'
 import { mockProjectMembers, type MockProjectMember } from '@/api/mockData'
+
+const memberColumns: TableColumn<MockProjectMember>[] = [
+  {
+    key: 'member',
+    header: 'Member',
+    minWidth: 200,
+    cell: (row) => (
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-foreground">{row.name}</p>
+        <p className="truncate text-xs text-muted-foreground">{row.email}</p>
+      </div>
+    ),
+  },
+  {
+    key: 'role',
+    header: 'Role',
+    minWidth: 100,
+    cell: (row) => <Badge variant="muted" size="xs">{row.role}</Badge>,
+  },
+]
 
 export function MembersTab() {
   const [members, setMembers] = useState<MockProjectMember[]>(mockProjectMembers)
@@ -37,17 +57,11 @@ export function MembersTab() {
         </Button>
       </div>
 
-      <div className="divide-y divide-border rounded-xl border border-border">
-        {members.map((member) => (
-          <div key={member.id} className="flex items-center justify-between gap-4 px-4 py-3">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-foreground">{member.name}</p>
-              <p className="truncate text-xs text-muted-foreground">{member.email}</p>
-            </div>
-            <Badge variant="muted" size="xs">{member.role}</Badge>
-          </div>
-        ))}
-      </div>
+      <Table
+        columns={memberColumns}
+        rows={members}
+        getRowKey={(row) => row.id}
+      />
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Edit members">
         <div className="grid gap-5">

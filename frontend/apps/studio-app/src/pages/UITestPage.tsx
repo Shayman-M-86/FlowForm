@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Button,
+  ButtonGroup,
   Card,
   CardRow,
   CardStack,
@@ -23,7 +24,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@flowform/ui";
-import { StudioSidebar } from "@/components/StudioSidebar";
+import { ChevronDown } from "lucide-react";
 
 const buttonVariants = ["primary", "secondary", "danger", "ghost"] as const;
 const buttonSizes = ["md", "sm", "xs"] as const;
@@ -243,16 +244,53 @@ export function UITestPage() {
   return (
     <div className="min-h-screen w-full bg-background px-4 py-5 text-foreground md:px-5 md:py-10">
       <div className="mx-auto max-w-1400px">
-        <Section title="Studio sidebar">
-          <div className="overflow-hidden rounded-xl border border-border bg-background">
-            <StudioSidebar />
-          </div>
-        </Section>
-
         <div className="mb-8 flex items-center justify-between gap-4 border-b-2 border-border pb-5 md:mb-10">
           <h1 className="m-0">UI Component Test Suite</h1>
           <ThemeToggle />
         </div>
+        <Section title="Inputs">
+          <TestGrid>
+            <TestCard title="Text Input">
+              <div className="flex-1" />
+
+              {/* User menu */}
+              <div className="mx-2">
+                <Button
+                  variant="ghost"
+                  aria-expanded={false}
+                  onClick={() => {}}
+                  className="sidebar-nav-item flex w-full items-center gap-3 p-2 text-left"
+                >
+                  {/* Avatar */}
+                  <span className="sidebar-nav-item__icon shrink-0">
+                    <span className="flex h-8 w-8 items-center justify-center">
+                      <span className="sidebar-avatar sidebar-avatar--user">
+                        SM
+                      </span>
+                    </span>
+                  </span>
+
+                  {/* Name + email */}
+                  <span className="sidebar-nav-item__label flex min-w-0 flex-1 flex-col items-start">
+                    <span className="truncate text-sm font-semibold text-foreground">
+                      Shayman McGee
+                    </span>
+
+                    <span className="truncate text-xs text-muted-foreground">
+                      shayman@example.com
+                    </span>
+                  </span>
+
+                  {/* Chevron */}
+                  <span className="shrink-0 text-muted-foreground transition-transform duration-200">
+                    
+                  </span>
+                </Button>
+              </div>
+            </TestCard>
+          </TestGrid>
+        </Section>
+
 
         <Section title="Table">
           <CardStack gap="lg">
@@ -430,6 +468,77 @@ export function UITestPage() {
                   <p className="text-sm text-muted-foreground">Another selectable tab.</p>
                 </TabsContent>
               </Tabs>
+            </TestCard>
+          </TestGrid>
+        </Section>
+
+        <Section title="Button Group">
+          <TestGrid>
+            <TestCard title="3 actions — fits">
+              <ButtonGroup
+                size="sm"
+                items={[
+                  { key: "edit",   label: "Edit",   onClick: () => {} },
+                  { key: "share",  label: "Share",  onClick: () => {} },
+                  { key: "delete", label: "Delete", variant: "danger", onClick: () => {} },
+                ]}
+              />
+            </TestCard>
+
+            <TestCard title="Overflow — narrow container">
+              <div className="w-40">
+                <ButtonGroup
+                  size="sm"
+                  items={[
+                    { key: "edit",     label: "Edit",     onClick: () => {} },
+                    { key: "preview",  label: "Preview",  onClick: () => {} },
+                    { key: "share",    label: "Share",    onClick: () => {} },
+                    { key: "archive",  label: "Archive",  onClick: () => {} },
+                    { key: "delete",   label: "Delete",   variant: "danger", onClick: () => {} },
+                  ]}
+                />
+              </div>
+            </TestCard>
+
+            <TestCard title="MD size">
+              <ButtonGroup
+                size="md"
+                items={[
+                  { key: "save",    label: "Save",    variant: "primary", onClick: () => {} },
+                  { key: "discard", label: "Discard", onClick: () => {} },
+                ]}
+              />
+            </TestCard>
+
+            <TestCard title="XS size">
+              <ButtonGroup
+                size="xs"
+                items={[
+                  { key: "approve", label: "Approve", variant: "primary", onClick: () => {} },
+                  { key: "reject",  label: "Reject",  variant: "danger",  onClick: () => {} },
+                  { key: "defer",   label: "Defer",   onClick: () => {} },
+                ]}
+              />
+            </TestCard>
+
+            <TestCard title="With disabled item">
+              <ButtonGroup
+                size="sm"
+                items={[
+                  { key: "publish",  label: "Publish",  variant: "primary", onClick: () => {} },
+                  { key: "schedule", label: "Schedule", disabled: true,     onClick: () => {} },
+                  { key: "delete",   label: "Delete",   variant: "danger",  onClick: () => {} },
+                ]}
+              />
+            </TestCard>
+
+            <TestCard title="Single action">
+              <ButtonGroup
+                size="sm"
+                items={[
+                  { key: "export", label: "Export CSV", onClick: () => {} },
+                ]}
+              />
             </TestCard>
           </TestGrid>
         </Section>

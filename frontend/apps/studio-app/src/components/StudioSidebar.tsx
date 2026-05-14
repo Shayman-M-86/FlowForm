@@ -1,11 +1,14 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Badge, Button, CardStack, DropdownMenu } from "@flowform/ui";
+import { useAuth0 } from "@auth0/auth0-react";
+import { Badge, Button, DropdownMenu, useTheme } from "@flowform/ui";
 import { BRAND } from "@flowform/site-shell";
 import "@flowform/site-shell/header.css";
 import { useProject } from "@/api/projects";
 import { useSurvey } from "@/api/surveys";
 import { useCurrentUser } from "@/auth/UserContext";
+import { isAuthBypassEnabled } from "@/auth/testing";
+import { clearActiveProjectSlug } from "@/lib/activeProject";
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 
@@ -136,14 +139,218 @@ function IconPublish() {
     </svg>
   );
 }
-function IconChevron() {
-  return <svg {...svgProps}><path d="m6 9 6 6 6-6" /></svg>;
-}
 function IconCollapse() {
   return <svg {...svgProps}><path d="M11 5l-7 7 7 7"/><path d="M20 5l-7 7 7 7"/></svg>;
 }
 function IconExpand() {
   return <svg {...svgProps}><path d="M13 5l7 7-7 7"/><path d="M4 5l7 7-7 7"/></svg>;
+}
+function IconMenu() {
+  return <svg {...svgProps} width={20} height={20}><path d="M4 6h16M4 12h16M4 18h16"/></svg>;
+}
+function IconX() {
+  return <svg {...svgProps} width={20} height={20}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;
+}
+function IconChevronDown() {
+  return (
+    <svg {...svgProps} width={14} height={14}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+function IconSun() {
+  return (
+    <svg {...svgProps} width={15} height={15}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </svg>
+  );
+}
+function IconMoon() {
+  return (
+    <svg {...svgProps} width={15} height={15}>
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  );
+}
+function IconLogOut() {
+  return (
+    <svg {...svgProps} width={15} height={15}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="m16 17 5-5-5-5" />
+      <path d="M21 12H9" />
+    </svg>
+  );
+}
+function IconUserCog() {
+  return (
+    <svg {...svgProps} width={15} height={15}>
+      <circle cx="9" cy="7" r="4" />
+      <path d="M3 21v-2a4 4 0 0 1 4-4h4" />
+      <circle cx="18" cy="17" r="2.5" />
+      <path d="M18 13.5v1M18 19.5v1M14.5 17h1M20.5 17h1" />
+    </svg>
+  );
+}
+
+// ── User profile menu ──────────────────────────────────────────────────────
+
+function getInitials(displayName: string): string {
+  const parts = displayName.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return displayName.slice(0, 2).toUpperCase();
+}
+
+function SidebarUserMenu() {
+  const ctx = useCurrentUser();
+  const { theme, toggleTheme } = useTheme();
+  const { logout } = useAuth0();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+
+  if (!ctx) return null;
+
+  const displayName = ctx.displayName;
+  const email = ctx.user.email;
+  const initials = displayName ? getInitials(displayName) : "?";
+
+  const sections = [
+    {
+      actions: [
+        {
+          key: "identity",
+          closeOnSelect: false,
+          content: (
+            <div className="flex w-full min-w-0 items-center gap-3 rounded-sm px-3 py-2">
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="truncate text-sm font-semibold text-foreground">
+                  {displayName}
+                </span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {email}
+                </span>
+              </span>
+            </div>
+          ),
+        },
+      ],
+    },
+    {
+      actions: [
+        {
+          key: "theme",
+          closeOnSelect: false,
+          content: (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mx-2 my-0.5 flex w-[calc(100%-1rem)] items-center justify-start gap-2"
+              onClick={toggleTheme}
+            >
+              <span className="inline-flex h-[15px] w-[15px] shrink-0 items-center justify-center">
+                {theme === "dark" ? <IconSun /> : <IconMoon />}
+              </span>
+              <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+            </Button>
+          ),
+        },
+        {
+          key: "account-settings",
+          content: (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mx-2 my-0.5 flex w-[calc(100%-1rem)] items-center justify-start gap-2"
+            >
+              <span className="inline-flex h-[15px] w-[15px] shrink-0 items-center justify-center">
+                <IconUserCog />
+              </span>
+              <span>Account settings</span>
+            </Button>
+          ),
+        },
+      ],
+    },
+    {
+      actions: [
+        {
+          key: "sign-out",
+          content: (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              className="mx-2 my-0.5 flex w-[calc(100%-1rem)] items-center justify-start "
+            >
+              <span className="inline-flex h-[15px] w-[15px] shrink-0 items-center justify-center">
+                <IconLogOut />
+              </span>
+              <span>Sign out</span>
+            </Button>
+          ),
+          onSelect: () => {
+            clearActiveProjectSlug();
+            if (isAuthBypassEnabled) return;
+            logout({ logoutParams: { returnTo: window.location.origin } });
+          },
+        },
+      ],
+    },
+  ];
+
+  return (
+    <>
+      <Button
+        ref={triggerRef}
+        type="button"
+        variant="ghost"
+        size="sm"
+        bare
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="User menu"
+        className="sidebar-user-button px-0! min-h-0!"
+      >
+        <span className="sidebar-user-button__avatar">
+          {ctx.avatarUrl ? (
+            <img
+              src={ctx.avatarUrl}
+              alt=""
+              className="sidebar-user-button__avatar-img"
+            />
+          ) : (
+            <span className="sidebar-user-button__avatar-initials" aria-hidden="true">
+              {initials}
+            </span>
+          )}
+        </span>
+        <span className="sidebar-user-button__text">
+          <span className="sidebar-user-button__name">{displayName}</span>
+          <span className="sidebar-user-button__email">{email}</span>
+        </span>
+        <span
+          className="sidebar-user-button__caret"
+          data-open={open}
+          aria-hidden="true"
+        >
+          <IconChevronDown />
+        </span>
+      </Button>
+      <DropdownMenu
+        open={open}
+        onClose={() => setOpen(false)}
+        trigger={triggerRef}
+        sections={sections}
+        size="md"
+        align="left"
+        direction="up"
+        fullscreenAt={420}
+      />
+    </>
+  );
 }
 
 // ── Nav item ───────────────────────────────────────────────────────────────
@@ -165,7 +372,11 @@ function NavItem({
       data-active={active}
       className="sidebar-nav-item"
     >
-      <span className="sidebar-nav-item__icon"><span className="flex h-4.5 w-4.5 items-center justify-center">{icon}</span></span>
+      <span className="sidebar-nav-item__icon">
+        <span className="flex h-4.5 w-4.5 items-center justify-center">
+          {icon}
+        </span>
+      </span>
       <span className="sidebar-nav-item__label">{label}</span>
     </Link>
   );
@@ -184,21 +395,13 @@ function NavSection({ label, children }: { label: string; children: React.ReactN
   );
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-function initials(name: string): string {
-  return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
-}
-
 // ── Sidebar ────────────────────────────────────────────────────────────────
 
 export function StudioSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const userRef = useRef<HTMLDivElement>(null);
-  const [userOpen, setUserOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
-  const ctx = useCurrentUser();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {
@@ -229,142 +432,141 @@ export function StudioSidebar() {
   const isExactActive = (path: string) => pathname === path || pathname === path + "/";
 
   return (
-    <aside className="sidebar" data-collapsed={collapsed}>
-      {/* Brand */}
-      <Link to="/projects" className="site-header__brand w-fit cursor-pointer justify-center mb-2 ml-2 md:justify-start">
-        <div className="flex items-center gap-2.5">
-          <div className="site-header__logo" aria-hidden="true">
-            <img src={BRAND.logoSrc} alt="" className="site-header__logo-image" />
+    <>
+      {/* Mobile top bar — hidden on desktop */}
+      <header className="sidebar-topbar">
+        <Link to="/projects" className="site-header__brand cursor-pointer">
+          <div className="flex items-center gap-2">
+            <div className="site-header__logo" aria-hidden="true">
+              <img src={BRAND.logoSrc} alt="" className="site-header__logo-image" />
+            </div>
+            <span className="site-header__wordmark">{BRAND.name}</span>
+            <span className="site-header__badge">Studio</span>
           </div>
-          {!collapsed && <span className="site-header__wordmark hidden md:inline">{BRAND.name}</span>}
-          {!collapsed && <span className="site-header__badge hidden md:inline">Studio</span>}
-        </div>
-      </Link>
-
-      {/* Project badge + collapse button */}
-      <div className={`my-1 hidden h-6 items-center md:flex ${collapsed ? "justify-center" : "justify-between"}`}>
-        <div className="sidebar-project-badge ">
-          {projectSlug && (
-            <Badge
-              variant="muted"
-              size="sm"
-              onClick={() => navigate({ to: "/projects/$slug", params: { slug: projectSlug! } })}
-              className="max-w-full gap-1.5"
-            >
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
-              <span className="max-w-46 truncate">{projectName}</span>
-            </Badge>
-          )}
-        </div>
+        </Link>
         <Button
           variant="icon"
-          size="xs"
-          onClick={toggleCollapsed}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="shrink-0"
+          size="md"
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileOpen}
+          onClick={() => {
+            setMobileOpen((o) => !o);
+          
+            setTimeout(() => {
+              toggleCollapsed();
+            }, 200);
+          }}
         >
-          {collapsed ? <IconExpand /> : <IconCollapse />}
+          {mobileOpen ? <IconX /> : <IconMenu />}
         </Button>
-      </div>
+        {/* <Button
+          variant="icon"
+          size="md"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-expanded={collapsed}
+          onClick={toggleCollapsed}
+        >
+          {mobileOpen ? <IconX /> : <IconMenu />}
+        </Button> */}
+      </header>
 
-      <div aria-hidden="true" className="my-4 mt-8 h-px bg-border" />
+      {/* Backdrop — mobile only */}
+      {mobileOpen && (
+        <div
+          aria-hidden="true"
+          className="sidebar-backdrop"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
 
-      <nav aria-label="Main navigation" className="flex flex-col gap-3">
+    <aside className="sidebar" data-collapsed={collapsed} data-mobile-open={mobileOpen} onClick={(e) => { if ((e.target as HTMLElement).closest('a')) setMobileOpen(false); }}>
+    <div className="sidebar-content px-2">
+        {/* Brand */}
+        <Link to="/projects" className="site-header__brand w-fit cursor-pointer mb-2 ml-2">
+          <div className="flex items-center gap-2.5">
+            <div className="site-header__logo" aria-hidden="true">
+              <img src={BRAND.logoSrc} alt="" className="site-header__logo-image" />
+            </div>
+            {!collapsed && <span className="site-header__wordmark">{BRAND.name}</span>}
+            {!collapsed && <span className="site-header__badge">Studio</span>}
+          </div>
+        </Link>
 
-        {/* Projects list — always visible */}
-        <NavSection label="Projects">
-          <NavItem to="/projects" icon={<IconProjects />} label="All projects" active={pathname === "/projects"} />
-        </NavSection>
-
-        {/* Project section — visible when inside a project */}
-        {projectBase && (
-          <>
-            <div aria-hidden className="h-px bg-border mt-3" />
-            <NavSection label={projectName ?? "Project"}>
-              <NavItem to={`${projectBase}/surveys`} icon={<IconSurveys />} label="Surveys" active={isExactActive(`${projectBase}/surveys`)} />
-              <NavItem to={`${projectBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${projectBase}/members`)} />
-              <NavItem to={`${projectBase}/roles`} icon={<IconRoles />} label="Roles" active={isActive(`${projectBase}/roles`)} />
-              <NavItem to={`${projectBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${projectBase}/settings`)} />
-            </NavSection>
-          </>
-        )}
-
-        {/* Survey section — visible when inside a survey */}
-        {surveyBase && (
-          <>
-            <div aria-hidden className="h-px bg-border mt-3" />
-            <NavSection label={surveyName ?? "Survey"}>
-            <NavItem to={`${surveyBase}/overview`} icon={<IconOverview />} label="Overview" active={isActive(`${surveyBase}/overview`)} />
-            <NavItem to={`${surveyBase}/builder`} icon={<IconBuilder />} label="Builder" active={isActive(`${surveyBase}/builder`)} />
-            <NavItem to={`${surveyBase}/versions`} icon={<IconVersions />} label="Versions" active={isActive(`${surveyBase}/versions`)} />
-            <NavItem to={`${surveyBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${surveyBase}/members`)} />
-            <NavItem to={`${surveyBase}/links`} icon={<IconLinks />} label="Links" active={isActive(`${surveyBase}/links`)} />
-            <NavItem to={`${surveyBase}/responses`} icon={<IconResponses />} label="Responses" active={isActive(`${surveyBase}/responses`)} />
-            <NavItem to={`${surveyBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${surveyBase}/settings`)} />
-            </NavSection>
-          </>
-        )}
-
-      </nav>
-
-      <div className="flex-1" />
-
-      {/* User menu */}
-      <CardStack gap="xs" className="pt-4">
-        <div ref={userRef}>
+        {/* Project badge + collapse button */}
+        <div className={`mt-4 flex items-center ${collapsed ? "justify-center" : "justify-between"}`}>
+            <div className="sidebar-project-badge">
+            {projectSlug && (
+              <Badge
+                variant="muted"
+                size="sm"
+                onClick={() => navigate({ to: "/projects/$slug", params: { slug: projectSlug! } })}
+                className="max-w-full gap-1.5"
+              >
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
+                <span className="max-w-46 truncate">{projectName}</span>
+              </Badge>
+            )}
+          </div>
+          {/* Desktop: collapse/expand toggle */}
           <Button
-            variant="ghost"
-            size="xs"
-            aria-expanded={userOpen}
-            onClick={() => setUserOpen((o) => !o)}
-            className="w-full justify-center gap-3 py-2 md:justify-between"
+            variant="icon"
+            size="md"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="hidden md:flex"
           >
-            <span className="sidebar-avatar sidebar-avatar--user">
-              {ctx?.displayName ? initials(ctx.displayName) : "?"}
-            </span>
-            {!collapsed && <span className="hidden min-w-0 flex-1 flex-col md:flex">
-              <span className="truncate text-sm font-semibold text-foreground">{ctx?.displayName}</span>
-              <span className="truncate text-xs text-muted-foreground">{ctx?.user.email}</span>
-            </span>}
-            {!collapsed && <span className={`hidden text-muted-foreground transition-transform duration-200 md:inline-flex${userOpen ? " rotate-180" : ""}`}>
-              <IconChevron />
-            </span>}
+            {collapsed ? <IconExpand /> : <IconCollapse />}
           </Button>
         </div>
 
-        <DropdownMenu
-          open={userOpen}
-          onClose={() => setUserOpen(false)}
-          trigger={userRef}
-          align="left"
-          direction="up"
-          size="auto"
-          buttonAlign="left"
-          sections={[
-            {
-              actions: [
-                {
-                  key: "identity",
-                  closeOnSelect: false,
-                  content: (
-                    <div className="flex w-full min-w-0 flex-col rounded-sm px-3 py-2">
-                      <span className="truncate text-sm font-semibold text-foreground">{ctx?.displayName}</span>
-                      <span className="truncate text-xs text-muted-foreground">{ctx?.user.email}</span>
-                    </div>
-                  ),
-                },
-              ],
-            },
-            {
-              actions: [
-                { key: "account", content: "Account settings" },
-                { key: "billing", content: "Billing" },
-                { key: "sign-out", content: "Sign out", variant: "danger" },
-              ],
-            },
-          ]}
-        />
-      </CardStack>
+        <div aria-hidden="true" className="mb-2.75 mt-7.25 h-px bg-border" />
+
+        <nav aria-label="Main navigation" className="flex flex-col gap-2.5">
+
+          {/* Projects list — always visible */}
+          <NavSection label="Projects">
+            <NavItem to="/projects" icon={<IconProjects />} label="All projects" active={pathname === "/projects"} />
+          </NavSection>
+
+          {/* Project section — visible when inside a project */}
+          {projectBase && (
+            <>
+              <div aria-hidden className="h-px bg-border mt-5" />
+              <NavSection label={projectName ?? "Project"}>
+                <NavItem to={`${projectBase}/surveys`} icon={<IconSurveys />} label="Surveys" active={isExactActive(`${projectBase}/surveys`)} />
+                <NavItem to={`${projectBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${projectBase}/members`)} />
+                <NavItem to={`${projectBase}/roles`} icon={<IconRoles />} label="Roles" active={isActive(`${projectBase}/roles`)} />
+                <NavItem to={`${projectBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${projectBase}/settings`)} />
+              </NavSection>
+            </>
+          )}
+
+          {/* Survey section — visible when inside a survey */}
+          {surveyBase && (
+            <>
+              <div aria-hidden className="h-px bg-border mt-5" />
+              <NavSection label={surveyName ?? "Survey"}>
+              <NavItem to={`${surveyBase}/overview`} icon={<IconOverview />} label="Overview" active={isActive(`${surveyBase}/overview`)} />
+              <NavItem to={`${surveyBase}/builder`} icon={<IconBuilder />} label="Builder" active={isActive(`${surveyBase}/builder`)} />
+              <NavItem to={`${surveyBase}/versions`} icon={<IconVersions />} label="Versions" active={isActive(`${surveyBase}/versions`)} />
+              <NavItem to={`${surveyBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${surveyBase}/members`)} />
+              <NavItem to={`${surveyBase}/links`} icon={<IconLinks />} label="Links" active={isActive(`${surveyBase}/links`)} />
+              <NavItem to={`${surveyBase}/responses`} icon={<IconResponses />} label="Responses" active={isActive(`${surveyBase}/responses`)} />
+              <NavItem to={`${surveyBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${surveyBase}/settings`)} />
+              </NavSection>
+            </>
+          )}
+
+        </nav>
+      </div>
+
+      <div className="flex-1" />
+
+      <div aria-hidden="true" className="sidebar-user-divider" />
+      <div className="px-2">
+        <SidebarUserMenu />
+      </div>
     </aside>
+    </>
   );
 }

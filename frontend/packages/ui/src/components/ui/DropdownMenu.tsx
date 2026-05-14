@@ -28,14 +28,15 @@ export interface DropdownMenuSection {
 type DropdownMenuSize = "auto" | "sm" | "md" | "lg" | "xl";
 type DropdownMenuFullscreenAt = "never" | number;
 type DropdownMenuButtonAlign = "left" | "center" | "right";
-export type DropdownMenuDirection = "down" | "up";
+export type DropdownMenuDirection = "down" | "up" | "auto";
+export type DropdownMenuAlign = "left" | "right" | "auto";
 
 interface DropdownMenuProps {
   open: boolean;
   onClose: () => void;
   trigger: React.RefObject<HTMLElement | null>;
   sections: DropdownMenuSection[];
-  align?: "left" | "right";
+  align?: DropdownMenuAlign;
   direction?: DropdownMenuDirection;
   buttonAlign?: DropdownMenuButtonAlign;
   positioning?: "fixed" | "absolute";
@@ -50,6 +51,35 @@ const dropdownMenuSizeClasses: Record<DropdownMenuSize, string> = {
   lg: "w-[360px]",
   xl: "w-[440px]",
 };
+
+function resolvePosition(
+  rect: DOMRect,
+  alignProp: DropdownMenuAlign,
+  directionProp: DropdownMenuDirection,
+  positioning: "fixed" | "absolute",
+  gap: number,
+): { top?: number; bottom?: number; left: number; minWidth: number; resolvedAlign: "left" | "right" } {
+  const scrollY = positioning === "absolute" ? window.scrollY : 0;
+  const scrollX = positioning === "absolute" ? window.scrollX : 0;
+
+  const resolvedAlign: "left" | "right" =
+    alignProp === "auto"
+      ? rect.left > window.innerWidth / 2 ? "right" : "left"
+      : alignProp;
+
+  const resolvedDirection: "up" | "down" =
+    directionProp === "auto"
+      ? rect.top > window.innerHeight / 2 ? "up" : "down"
+      : directionProp;
+
+  const left = (resolvedAlign === "right" ? rect.right : rect.left) + scrollX;
+
+  if (resolvedDirection === "up") {
+    return { bottom: (window.innerHeight - rect.top + gap) - scrollY, left, minWidth: rect.width, resolvedAlign };
+  } else {
+    return { top: rect.bottom + gap + scrollY, left, minWidth: rect.width, resolvedAlign };
+  }
+}
 
 export function DropdownMenu({
   open,
@@ -69,27 +99,14 @@ export function DropdownMenu({
     bottom?: number;
     left: number;
     minWidth: number;
+    resolvedAlign: "left" | "right";
   } | null>(null);
 
   useLayoutEffect(() => {
     if (!open || !isBrowser) return;
-
     const el = trigger.current;
     if (!el) return;
-
-    const rect = el.getBoundingClientRect();
-    const gap = 6;
-    const scrollY = positioning === "absolute" ? window.scrollY : 0;
-    const scrollX = positioning === "absolute" ? window.scrollX : 0;
-    const left = (align === "right" ? rect.right : rect.left) + scrollX;
-
-    if (direction === "up") {
-      const bottom = (window.innerHeight - rect.top + gap) - scrollY;
-      setPosition({ bottom, left, minWidth: rect.width });
-    } else {
-      const top = rect.bottom + gap + scrollY;
-      setPosition({ top, left, minWidth: rect.width });
-    }
+    setPosition(resolvePosition(el.getBoundingClientRect(), align, direction, positioning, 6));
   }, [open, align, direction, positioning, trigger]);
 
   useEffect(() => {
@@ -112,16 +129,7 @@ export function DropdownMenu({
     const reposition = () => {
       const el = trigger.current;
       if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const gap = 6;
-      const scrollY = positioning === "absolute" ? window.scrollY : 0;
-      const scrollX = positioning === "absolute" ? window.scrollX : 0;
-      const left = (align === "right" ? rect.right : rect.left) + scrollX;
-      if (direction === "up") {
-        setPosition({ bottom: (window.innerHeight - rect.top + gap) - scrollY, left, minWidth: rect.width });
-      } else {
-        setPosition({ top: rect.bottom + gap + scrollY, left, minWidth: rect.width });
-      }
+      setPosition(resolvePosition(el.getBoundingClientRect(), align, direction, positioning, 6));
     };
 
     document.addEventListener("keydown", onKey);
@@ -142,6 +150,8 @@ export function DropdownMenu({
   const isFullscreenViewport =
     fullscreenAt !== "never" && window.innerWidth <= fullscreenAt;
 
+  const resolvedAlign = position?.resolvedAlign ?? (align === "auto" ? "right" : align);
+
   const panelStyle: React.CSSProperties = position
     ? isFullscreenViewport
       ? { inset: 0 }
@@ -150,7 +160,7 @@ export function DropdownMenu({
           bottom: position.bottom,
           left: position.left,
           minWidth: size === "auto" ? position.minWidth : undefined,
-          transform: align === "right" ? "translateX(-100%)" : undefined,
+          transform: resolvedAlign === "right" ? "translateX(-100%)" : undefined,
         }
     : { visibility: "hidden" };
 

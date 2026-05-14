@@ -1,9 +1,9 @@
-import { type ButtonHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cn } from "../../lib/utils";
 import { controlSizeClasses, type ControlSize } from "../../lib/sizes";
 import { Plus } from 'lucide-react';
 
-type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "text" | "icon";
+type ButtonVariant = "primary" | "secondary" | "danger"  | "destructive" | "ghost" | "text" | "icon";
 type ButtonBorderStyle = "solid" | "dotted";
 export type ButtonIcon = "plus";
 
@@ -21,6 +21,7 @@ const buttonVariantClasses: Record<ButtonVariant, string> = {
   primary: "ui-button-primary",
   secondary: "ui-button-secondary",
   danger: "ui-button-danger",
+  destructive: "ui-button-destructive",
   ghost: "ui-button-ghost",
   text: "ui-button-text",
   icon: "ui-button-transparent-icon",
@@ -52,7 +53,7 @@ const icons: Record<ButtonIcon, (size: number) => ReactNode> = {
   plus: (size) => <Plus size={size} />,
 };
 
-export function Button({
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
   variant = "secondary",
   size = "md",
   pill = false,
@@ -63,13 +64,14 @@ export function Button({
   children,
   disabled,
   ...props
-}: ButtonProps) {
+}, ref) {
   const variantClass = bare
     ? (buttonVariantBareClasses[variant] ?? buttonVariantClasses[variant])
     : buttonVariantClasses[variant]
 
   return (
     <button
+      ref={ref}
       disabled={disabled}
       className={cn(
         variantClass,
@@ -85,4 +87,4 @@ export function Button({
       {children}
     </button>
   );
-}
+});

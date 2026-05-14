@@ -71,7 +71,7 @@ export function SurveySettingsTab() {
               <p className="text-sm font-medium text-foreground">Delete survey</p>
               <p className="text-xs text-muted-foreground">Permanently delete this survey and all its versions.</p>
             </div>
-            <Button variant="secondary" size="sm" className="border-destructive text-destructive hover:bg-destructive/10">
+            <Button variant="destructive" size="sm" className="">
               Delete
             </Button>
           </div>
