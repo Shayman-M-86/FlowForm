@@ -586,10 +586,10 @@ export function NodePage() {
   }
 
   return (
-    <section className="node-page relative isolate flex min-h-full flex-col">
+    <section className="node-page relative isolate flex min-h-full flex-col mt-0.5">
       <style dangerouslySetInnerHTML={{ __html: NODE_PAGE_STYLES }} />
       <PlusGridAnimation />
-      <div className="node-page__toolbar fixed left-[var(--sidebar-w)] right-0 top-0 z-20 box-border flex h-[var(--node-page-toolbar-height)] items-center justify-center border-b border-border bg-[var(--toolbar-bg)] px-6 py-[14px] backdrop-blur-[14px] max-[640px]:left-0 max-[640px]:px-4">
+      <div className="node-page__toolbar sticky top-0 z-20 box-border flex h-[var(--node-page-toolbar-height)] w-full items-center justify-center border-b border-border bg-[var(--toolbar-bg)] px-6 py-[14px] backdrop-blur-[14px] max-[640px]:px-4">
         <div className="node-page__toolbar-shell flex w-full max-w-[980px] items-center justify-end gap-3">
           <div className="node-page__toolbar-actions flex shrink-0 items-center gap-2.5">
             <Button
@@ -613,7 +613,7 @@ export function NodePage() {
           </div>
         </div>
       </div>
-      <div className="node-page__content relative z-10 box-border flex w-full max-w-[calc(980px+(var(--node-page-controls-gutter)*2))] shrink-0 flex-col items-center self-center px-[var(--node-page-controls-gutter)] pb-10 pt-[calc(var(--node-page-toolbar-height)+var(--node-page-toolbar-gap))] max-[640px]:gap-[14px] max-[640px]:px-5 max-[640px]:pt-[calc(var(--node-page-toolbar-height)+var(--node-page-toolbar-gap)+10px)]">
+      <div className="node-page__content relative z-10 box-border flex w-full max-w-[calc(980px+(var(--node-page-controls-gutter)*2))] shrink-0 flex-col items-center self-center px-[var(--node-page-controls-gutter)] pb-10 pt-(--node-page-toolbar-gap) max-[640px]:gap-[14px] max-[640px]:px-5 max-[640px]:pt-[calc(var(--node-page-toolbar-gap)+10px)]">
         <div className="node-page__questions-stack flex w-full flex-col gap-5">
           {questions.map((question, index) => {
             const nextQuestion = questions[index + 1];

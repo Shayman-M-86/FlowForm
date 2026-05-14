@@ -16,7 +16,6 @@ body {
   margin: 0;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
 }
 
 body {
@@ -27,16 +26,38 @@ body {
 #root {
   width: 100%;
   max-width: 100vw;
-  overflow-x: clip;
+}
+
+.app-shell {
+  --sidebar-w: 0px;
 }
 
 .page-main {
   @apply max-w-7xl px-6 py-14 md:px-16
 }
 
+.page-main-builder {
+  @apply w-full max-w-none p-0
+}
+
 /* ── Studio Sidebar ──────────────────────────────────────────── */
 
 @layer components {
+  @media (min-width: 768px) {
+    .app-shell {
+      --sidebar-w: calc(var(--spacing) * 69);
+      align-items: flex-start;
+    }
+
+    .app-shell:has(.sidebar[data-collapsed="true"]) {
+      --sidebar-w: calc(var(--spacing) * 17);
+    }
+
+    .app-main {
+      transition: border-radius 200ms ease-out;
+    }
+  }
+
   /* ── Mobile top bar ─────────────────────────────────────────── */
 
   .sidebar-topbar {
@@ -52,22 +73,44 @@ body {
   /* ── Sidebar shell ───────────────────────────────────────────── */
 
   .sidebar {
-    @apply flex min-h-screen shrink-0 flex-col bg-sidebar py-3.5 px-1 text-foreground;
+    @apply flex shrink-0 flex-col bg-sidebar py-3.5 px-1 text-foreground;
 
-    /* Desktop: static in the flex row, animate width changes */
-    @apply md:transition-[width,padding] md:duration-200 md:ease-out;
-    @apply md:w-69;
-
-    /* Mobile: hidden fixed overlay, slides in when open */
-    @apply fixed inset-y-0 left-0 z-40 w-72 -translate-x-full overflow-y-auto transition-transform duration-200 ease-out;
-    @apply md:relative md:inset-y-auto md:translate-x-0 md:overflow-y-visible md:pt-3.5;
+    /* Mobile (default): hidden fixed overlay, slides in when open */
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    width: calc(var(--spacing) * 72);
+    transform: translateX(-100%);
+    overflow-y: auto;
+    min-height: 100vh;
+    transition: transform 200ms var(--ease-out);
 
     &[data-mobile-open="true"] {
-      @apply translate-x-0;
+      transform: translateX(0);
+    }
+
+    /* Desktop: pinned in the flex row via sticky */
+    @media (min-width: 768px) {
+      position: sticky;
+      top: 0;
+      bottom: auto;
+      left: auto;
+      z-index: auto;
+      width: calc(var(--spacing) * 69);
+      height: 100vh;
+      transform: none;
+      align-self: flex-start;
+      padding-top: calc(var(--spacing) * 3.5);
+      transition: width 200ms var(--ease-out), padding 200ms var(--ease-out);
     }
 
     &[data-collapsed="true"] {
-      @apply md:w-17 md:px-1;
+      @media (min-width: 768px) {
+        width: calc(var(--spacing) * 17);
+        padding-inline: calc(var(--spacing) * 1);
+      }
     }
   }
 
@@ -176,7 +219,7 @@ body {
   }
 
   .sidebar-nav-section-label {
-    @apply block overflow-hidden whitespace-nowrap text-2xs font-semibold uppercase tracking-wider text-muted-foreground;
+    @apply block overflow-hidden whitespace-nowrap text-2xs font-semibold uppercase tracking-wider text-muted-accent-foreground;
 
     .sidebar[data-collapsed="true"] & {
       visibility: hidden;

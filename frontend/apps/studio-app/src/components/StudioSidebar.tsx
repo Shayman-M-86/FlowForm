@@ -550,6 +550,7 @@ export function StudioSidebar() {
               <NavItem to={`${surveyBase}/builder`} icon={<IconBuilder />} label="Builder" active={isActive(`${surveyBase}/builder`)} />
               <NavItem to={`${surveyBase}/versions`} icon={<IconVersions />} label="Versions" active={isActive(`${surveyBase}/versions`)} />
               <NavItem to={`${surveyBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${surveyBase}/members`)} />
+              <NavItem to={`${surveyBase}/roles`} icon={<IconRoles />} label="Roles" active={isActive(`${surveyBase}/roles`)} />
               <NavItem to={`${surveyBase}/links`} icon={<IconLinks />} label="Links" active={isActive(`${surveyBase}/links`)} />
               <NavItem to={`${surveyBase}/responses`} icon={<IconResponses />} label="Responses" active={isActive(`${surveyBase}/responses`)} />
               <NavItem to={`${surveyBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${surveyBase}/settings`)} />

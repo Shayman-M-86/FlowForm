@@ -13,9 +13,9 @@ const TanStackRouterDevtools = import.meta.env.DEV
 
 function AppLayout() {
   return (
-    <div className="flex min-h-screen bg-sidebar">
+    <div className="app-shell flex min-h-screen bg-sidebar">
       <StudioSidebar />
-      <main className="flex min-h-screen min-w-0 flex-1 flex-col overflow-x-clip md:border-l border-border md:rounded-l-3xl bg-background md:shadow-lg pt-14 md:pt-0">
+      <main className="app-main flex min-h-screen min-w-0 flex-1 flex-col overflow-x-clip md:border-l border-border md:rounded-l-3xl bg-background md:shadow-lg pt-14 md:pt-0">
         <Outlet />
       </main>
     </div>

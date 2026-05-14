@@ -212,14 +212,15 @@ export interface MockProjectMember {
   name: string
   email: string
   role: 'Owner' | 'Editor' | 'Viewer'
+  status: 'Active' | 'Invited'
 }
 
 export const mockProjectMembers: MockProjectMember[] = [
-  { id: 1, name: 'Testing User', email: 'testing@flowform.local', role: 'Owner' },
-  { id: 2, name: 'Amelia Chen', email: 'amelia@example.com', role: 'Editor' },
-  { id: 3, name: 'Marcus Lee', email: 'marcus@example.com', role: 'Editor' },
-  { id: 4, name: 'Priya Shah', email: 'priya@example.com', role: 'Viewer' },
-  { id: 5, name: 'Nora Evans', email: 'nora@example.com', role: 'Viewer' },
+  { id: 1, name: 'Testing User', email: 'testing@flowform.local', role: 'Owner', status: 'Active' },
+  { id: 2, name: 'Amelia Chen', email: 'amelia@example.com', role: 'Editor', status: 'Active' },
+  { id: 3, name: 'Marcus Lee', email: 'marcus@example.com', role: 'Editor', status: 'Invited' },
+  { id: 4, name: 'Priya Shah', email: 'priya@example.com', role: 'Viewer', status: 'Active' },
+  { id: 5, name: 'Nora Evans', email: 'nora@example.com', role: 'Viewer', status: 'Invited' },
 ]
 
 // ── Survey member mock data ───────────────────────────────────────────────────

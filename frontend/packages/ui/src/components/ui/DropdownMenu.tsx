@@ -15,7 +15,7 @@ import { Button } from "./Button";
 export interface DropdownMenuAction {
   key: string;
   content: ReactNode;
-  variant?: "primary" | "secondary" | "danger" | "ghost";
+  variant?: "primary" | "secondary" | "danger" | "destructive" | "ghost";
   onSelect?: () => void;
   closeOnSelect?: boolean;
 }
@@ -26,6 +26,7 @@ export interface DropdownMenuSection {
 }
 
 type DropdownMenuSize = "auto" | "sm" | "md" | "lg" | "xl";
+type DropdownMenuWidth = number | string;
 type DropdownMenuFullscreenAt = "never" | number;
 type DropdownMenuButtonAlign = "left" | "center" | "right";
 export type DropdownMenuDirection = "down" | "up" | "auto";
@@ -41,6 +42,7 @@ interface DropdownMenuProps {
   buttonAlign?: DropdownMenuButtonAlign;
   positioning?: "fixed" | "absolute";
   size?: DropdownMenuSize;
+  width?: DropdownMenuWidth;
   fullscreenAt?: DropdownMenuFullscreenAt;
 }
 
@@ -91,6 +93,7 @@ export function DropdownMenu({
   buttonAlign = "center",
   positioning = "fixed",
   size = "sm",
+  width,
   fullscreenAt = 640,
 }: DropdownMenuProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -159,6 +162,7 @@ export function DropdownMenu({
           top: position.top,
           bottom: position.bottom,
           left: position.left,
+          width,
           minWidth: size === "auto" ? position.minWidth : undefined,
           transform: resolvedAlign === "right" ? "translateX(-100%)" : undefined,
         }
@@ -214,7 +218,7 @@ export function DropdownMenu({
       className={cn(
         "ui-dropdown-panel",
         positioning === "absolute" && "ui-dropdown-panel-absolute",
-        dropdownMenuSizeClasses[size],
+        width === undefined && dropdownMenuSizeClasses[size],
         isFullscreenViewport && "ui-dropdown-panel-fullscreen",
       )}
     >

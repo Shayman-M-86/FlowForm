@@ -1,11 +1,11 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cn } from "../../lib/utils";
 import { controlSizeClasses, type ControlSize } from "../../lib/sizes";
-import { Plus } from 'lucide-react';
+import { Ellipsis, Pencil, Plus, Trash2, X } from "lucide-react";
 
 type ButtonVariant = "primary" | "secondary" | "danger"  | "destructive" | "ghost" | "text" | "icon";
 type ButtonBorderStyle = "solid" | "dotted";
-export type ButtonIcon = "plus";
+export type ButtonIcon = "plus" | "edit" | "delete" | "close" | "ellipsis";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -14,7 +14,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   borderStyle?: ButtonBorderStyle;
   icon?: ButtonIcon;
   bare?: boolean;
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 const buttonVariantClasses: Record<ButtonVariant, string> = {
@@ -32,12 +32,12 @@ const buttonVariantBareClasses: Partial<Record<ButtonVariant, string>> = {
 };
 
 const iconSizeMap: Record<ControlSize, number> = {
-  xxs: 16,
-  xs: 18,
-  sm: 20,
-  md: 22,
-  lg: 24,
-  xl: 26,
+  xxs: 18,
+  xs: 20,
+  sm: 22,
+  md: 24,
+  lg: 26,
+  xl: 28,
 };
 
 const iconPaddingMap: Record<ControlSize, string> = {
@@ -51,6 +51,10 @@ const iconPaddingMap: Record<ControlSize, string> = {
 
 const icons: Record<ButtonIcon, (size: number) => ReactNode> = {
   plus: (size) => <Plus size={size} />,
+  edit: (size) => <Pencil size={size} />,
+  delete: (size) => <Trash2 size={size} />,
+  close: (size) => <X size={size} />,
+  ellipsis: (size) => <Ellipsis size={size} />,
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
@@ -68,6 +72,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   const variantClass = bare
     ? (buttonVariantBareClasses[variant] ?? buttonVariantClasses[variant])
     : buttonVariantClasses[variant]
+  const hasChildren = children !== undefined && children !== null && children !== false;
 
   return (
     <button
@@ -78,7 +83,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         pill ? "rounded-full" : "rounded-sm",
         borderStyle === "dotted" && "border-2 border-dashed border-border",
         controlSizeClasses[size],
-        icon && iconPaddingMap[size],
+        icon && hasChildren && iconPaddingMap[size],
+        icon && !hasChildren && "aspect-square items-center justify-center p-0",
         className,
       )}
       {...props}

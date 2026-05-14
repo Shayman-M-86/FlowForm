@@ -17,6 +17,8 @@ export interface TableColumn<TRow> {
    *  When the container is narrower than the sum of all minWidths, the table
    *  scales down proportionally. */
   minWidth: number;
+  /** Preferred column width in px. The column can shrink to minWidth when needed. */
+  width?: number;
   /** When false the column is completely hidden. Defaults to true. */
   visible?: boolean;
   /** Render a cell for this column given the row data and its index. */
@@ -40,6 +42,10 @@ export interface TableProps<TRow> {
   hideHeader?: boolean;
   /** Shown when rows is empty. */
   emptyState?: ReactNode;
+  /** Use "content" to size the table to preferred column widths instead of filling its container. */
+  fit?: "container" | "content";
+  /** Maximum table width. Accepts px when number, or any CSS width string. */
+  maxWidth?: number | string;
   className?: string;
 }
 
@@ -95,6 +101,8 @@ export function Table<TRow>({
   striped = false,
   hideHeader = false,
   emptyState,
+  fit = "container",
+  maxWidth,
   className,
 }: TableProps<TRow>) {
   const visibleColumns = columns.filter((c) => c.visible !== false);
@@ -105,20 +113,37 @@ export function Table<TRow>({
   );
 
   const { containerRef, scalerRef, scale, scaledHeight } = useScaleToFit(minTotalWidth);
+  const preferredTotalWidth = visibleColumns.reduce(
+    (sum, c) => sum + (c.width ?? c.minWidth),
+    0,
+  );
 
-  // Each column gets at least minWidth, then stretches equally to fill the table.
+  // Preferred-width columns can shrink to minWidth. Other columns get at least minWidth, then stretch equally.
   const gridTemplateColumns = visibleColumns
-    .map((c) => `minmax(${c.minWidth}px, 1fr)`)
+    .map((c) =>
+      c.width !== undefined
+        ? `minmax(${c.minWidth}px, ${Math.max(c.width, c.minWidth)}px)`
+        : `minmax(${c.minWidth}px, 1fr)`,
+    )
     .join(" ");
 
   // naturalWidth is still needed for the scale-to-fit scaler width.
   const naturalWidth = minTotalWidth;
+  const resolvedMaxWidth = typeof maxWidth === "number" ? `${maxWidth}px` : maxWidth;
 
   return (
     <div
       ref={containerRef}
-      className={cn("ui-table-container", className)}
-      style={scaledHeight !== undefined ? { height: `${scaledHeight}px` } : undefined}
+      className={cn(
+        "ui-table-container",
+        fit === "content" && "w-fit! max-w-full",
+        className,
+      )}
+      style={{
+        ...(scaledHeight !== undefined && { height: `${scaledHeight}px` }),
+        ...(fit === "content" && { width: `${preferredTotalWidth}px` }),
+        ...(resolvedMaxWidth !== undefined && { maxWidth: resolvedMaxWidth }),
+      }}
     >
       <div
         ref={scalerRef}

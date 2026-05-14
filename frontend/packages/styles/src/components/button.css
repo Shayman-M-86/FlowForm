@@ -257,8 +257,8 @@
   @apply ui-button-base shadow-sm;
 
   --ui-bg: var(--secondary);
-  --ui-color: var(--secondary-foreground, var(--foreground-full));
-  --ui-border-color: var(--border);
+  --ui-color: var(--muted-accent-foreground, var(--foreground-full));
+  --ui-border-color: color-mix(in oklab, var(--border), transparent 60%);
   --ui-shadow: var(--app-shadow-xs, 0 1px 2px rgb(0 0 0 / 0.08));
 }
 
@@ -347,14 +347,14 @@
 
   /* Square: width tracks height, which is set by the control-size class */
   aspect-ratio: 1;
-  height: 34px; /* default (sm) — overridden by control-size classes below */
+  height: 36px; /* default (sm) — overridden by control-size classes below */
 
-  &:is(.ui-control-xxs) { height: 26px; }
-  &:is(.ui-control-xs)  { height: 30px; }
-  &:is(.ui-control-sm)  { height: 34px; }
-  &:is(.ui-control-md)  { height: 40px; }
-  &:is(.ui-control-lg)  { height: 44px; }
-  &:is(.ui-control-xl)  { height: 48px; }
+  &:is(.ui-control-xxs) { height: 28px; }
+  &:is(.ui-control-xs)  { height: 32px; }
+  &:is(.ui-control-sm)  { height: 36px; }
+  &:is(.ui-control-md)  { height: 42px; }
+  &:is(.ui-control-lg)  { height: 46px; }
+  &:is(.ui-control-xl)  { height: 50px; }
 
   --ui-bg: transparent;
   --ui-color: var(--foreground);

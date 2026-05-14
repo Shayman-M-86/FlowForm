@@ -114,12 +114,12 @@
 .dark {
   --background: rgb(30 30 32);
   --sidebar: rgb(33 33 35);
-  --foreground: rgb(250 250 250);
+  --foreground: rgb(240 240 240);
   --foreground-full: rgb(255, 255, 255);
   --card: rgb(24 24 24);
-  --card-foreground: rgb(250 250 250);
+  --card-foreground: rgb(240 240 240);
   --popover: rgb(24 24 24);
-  --popover-foreground: rgb(250 250 250);
+  --popover-foreground: rgb(240 240 240);
   --primary-foreground: rgb(0 0 0);
 
   --secondary: rgb(29, 29, 30);
@@ -128,7 +128,7 @@
   --muted-foreground: rgb(185, 185, 185);
   --soft-foreground: rgb(200, 200, 200);
   --muted-accent-foreground: rgb(220, 220, 220);
-  --accent-foreground: rgb(250 250 250);
+  --accent-foreground: rgb(1, 0, 0);
   --border: rgb(255 255 255 / 0.09);
   --input: rgb(42 42 45 / 93.7%);
   --ring: rgb(117 117 117);

@@ -1,0 +1,181 @@
+export type PermissionKey =
+  | 'project:edit'
+  | 'project:delete'
+  | 'project:manage_members'
+  | 'project:manage_roles'
+  | 'survey:view'
+  | 'survey:create'
+  | 'survey:edit'
+  | 'survey:delete'
+  | 'survey:publish'
+  | 'survey:archive'
+  | 'submission:view'
+
+export type CustomRole = {
+  id: string
+  name: string
+  description: string
+  permissions: PermissionKey[]
+}
+
+export type PermissionGroup = { label: string; permissions: PermissionKey[] }
+
+export type RolePreset = {
+  id: string
+  name: string
+  description: string
+  permissions: PermissionKey[]
+}
+
+const ALL_PROJECT_PERMISSIONS: PermissionKey[] = [
+  'project:edit',
+  'project:delete',
+  'project:manage_members',
+  'project:manage_roles',
+  'survey:view',
+  'survey:create',
+  'survey:edit',
+  'survey:delete',
+  'survey:publish',
+  'survey:archive',
+  'submission:view',
+]
+
+export const PROJECT_PERMISSION_GROUPS: PermissionGroup[] = [
+  {
+    label: 'Project',
+    permissions: [
+      'project:edit',
+      'project:delete',
+      'project:manage_members',
+      'project:manage_roles',
+    ],
+  },
+  {
+    label: 'Survey',
+    permissions: [
+      'survey:view',
+      'survey:create',
+      'survey:edit',
+      'survey:delete',
+      'survey:publish',
+      'survey:archive',
+    ],
+  },
+  {
+    label: 'Submissions',
+    permissions: ['submission:view'],
+  },
+]
+
+export const SURVEY_PERMISSION_GROUPS: PermissionGroup[] = [
+  {
+    label: 'Survey',
+    permissions: [
+      'survey:view',
+      'survey:edit',
+      'survey:delete',
+      'survey:publish',
+      'survey:archive',
+    ],
+  },
+  {
+    label: 'Submissions',
+    permissions: ['submission:view'],
+  },
+]
+
+export const PERMISSION_LABEL: Record<PermissionKey, string> = {
+  'project:edit': 'Edit project',
+  'project:delete': 'Delete project',
+  'project:manage_members': 'Manage members',
+  'project:manage_roles': 'Manage roles',
+  'survey:view': 'View surveys',
+  'survey:create': 'Create surveys',
+  'survey:edit': 'Edit surveys',
+  'survey:delete': 'Delete surveys',
+  'survey:publish': 'Publish surveys',
+  'survey:archive': 'Archive surveys',
+  'submission:view': 'View submissions',
+}
+
+export const PERMISSION_TOOLTIP: Record<PermissionKey, string> = {
+  'project:edit':
+    'Allows changes to project-level details such as the project name, slug, and general configuration.',
+  'project:delete':
+    'Allows permanent removal of the project and its related workspace data. Reserve this for trusted administrators.',
+  'project:manage_members':
+    'Allows inviting, removing, and changing project members, including assigning roles to other people.',
+  'project:manage_roles':
+    'Allows creating and editing roles, including changing which permissions each role grants.',
+  'survey:view':
+    'Allows viewing surveys in the project, including draft and published survey structure.',
+  'survey:create':
+    'Allows creating new surveys and starting new survey drafts within this project.',
+  'survey:edit':
+    'Allows editing survey content, question order, branching logic, and survey settings.',
+  'survey:delete':
+    'Allows deleting surveys from the project. Use carefully when surveys may contain live work.',
+  'survey:publish':
+    'Allows publishing surveys, pausing live surveys, and changing whether respondents can access them.',
+  'survey:archive':
+    'Allows archiving surveys that should no longer appear in active project workflows.',
+  'submission:view':
+    'Allows viewing collected responses, submission summaries, and respondent data available to the project.',
+}
+
+export const PRESET_ROLES: RolePreset[] = [
+  {
+    id: 'admin',
+    name: 'Admin',
+    description: 'Full access to everything in this project.',
+    permissions: [...ALL_PROJECT_PERMISSIONS],
+  },
+  {
+    id: 'contributor',
+    name: 'Contributor',
+    description: 'Full survey and submission access. No project management.',
+    permissions: [
+      'survey:view',
+      'survey:create',
+      'survey:edit',
+      'survey:delete',
+      'survey:publish',
+      'survey:archive',
+      'submission:view',
+    ],
+  },
+  {
+    id: 'analyst',
+    name: 'Analyst',
+    description: 'Read-only access to surveys and submissions.',
+    permissions: ['survey:view', 'submission:view'],
+  },
+]
+
+export const SURVEY_PRESET_ROLES: RolePreset[] = [
+  {
+    id: 'survey-manager',
+    name: 'Manager',
+    description: 'Can manage this survey, publish changes, and view responses.',
+    permissions: ['survey:view', 'survey:edit', 'survey:delete', 'survey:publish', 'survey:archive', 'submission:view'],
+  },
+  {
+    id: 'survey-publisher',
+    name: 'Publisher',
+    description: 'Can edit, publish, and view responses for this survey.',
+    permissions: ['survey:view', 'survey:edit', 'survey:publish', 'submission:view'],
+  },
+  {
+    id: 'survey-editor',
+    name: 'Editor',
+    description: 'Can edit this survey and preview draft content.',
+    permissions: ['survey:view', 'survey:edit'],
+  },
+  {
+    id: 'survey-viewer',
+    name: 'Viewer',
+    description: 'Can view this survey and its available details.',
+    permissions: ['survey:view'],
+  },
+]

@@ -227,15 +227,15 @@
   }
 
   .ui-modal-header {
-    @apply flex items-center justify-between gap-3 border-b border-border px-5 pb-3 pt-4;
+    @apply flex items-center justify-between gap-3 border-b border-border px-5 pb-2.5 pt-3.5;
   }
 
   .ui-modal-body {
-    @apply flex flex-1 flex-col gap-4 overflow-y-auto p-5;
+    @apply flex flex-1 flex-col gap-4 overflow-y-auto p-6;
   }
 
   .ui-modal-footer {
-    @apply flex justify-end gap-2.5 border-t border-border px-5 pb-5 pt-3.5;
+    @apply flex justify-end gap-2.5 border-t border-border px-5 py-4;
   }
 
   /* Toggle */
@@ -309,7 +309,7 @@
       }
 
       .ui-dropdown-action-button {
-        @apply w-full max-[640px]:px-4 max-[640px]:py-3 max-[640px]:text-base;
+        @apply w-full py-2 max-[640px]:px-4 max-[640px]:py-3 max-[640px]:text-base;
       }
       
       .ui-dropdown-panel {
@@ -341,7 +341,7 @@
       }
       
       .ui-dropdown-actions {
-        @apply flex flex-col gap-1;
+        @apply flex flex-col gap-1.5;
       }
       
       .ui-dropdown-overlay {
@@ -378,11 +378,11 @@
   }
 
   .ui-button-group-measure {
-    @apply invisible pointer-events-none absolute left-0 top-0 flex w-max gap-1;
+    @apply invisible pointer-events-none absolute left-0 top-0 flex w-max;
   }
 
   .ui-button-group {
-    @apply flex items-center gap-1;
+    @apply flex items-center;
   }
 
   .ui-button-group-overflow-panel {
