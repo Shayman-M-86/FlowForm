@@ -1,165 +1,51 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { Button, Badge, DropdownMenu, Input, Modal, Select, Table, type TableColumn } from '@flowform/ui'
+import { Button, Badge, Input, Modal, Select, Table, type TableColumn } from '@flowform/ui'
 import { mockProjectMembers, type MockProjectMember } from '@/api/mockData'
 import { PERMISSION_GROUPS, PRESET_ROLES, type CustomRole } from './RolesTab'
+import {
+  DEFAULT_PROJECT_INVITE_ROLE_ID,
+  PROJECT_MEMBER_ROLE_TO_ROLE_ID,
+} from './roleDefinitions'
 import { RoleEditorModal, type RoleEditorState } from './RoleEditorModal'
-
-const actionIconProps = {
-  width: 15,
-  height: 15,
-  viewBox: '0 0 24 24',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 2,
-  strokeLinecap: 'round' as const,
-  strokeLinejoin: 'round' as const,
-  'aria-hidden': true,
-}
-
-function IconUserCog() {
-  return (
-    <svg {...actionIconProps}>
-      <circle cx="9" cy="7" r="4" />
-      <path d="M3 21v-2a4 4 0 0 1 4-4h4" />
-      <circle cx="18" cy="17" r="2.5" />
-      <path d="M18 13.5v1M18 19.5v1M14.5 17h1M20.5 17h1" />
-    </svg>
-  )
-}
-
-function IconTrash() {
-  return (
-    <svg {...actionIconProps}>
-      <path d="M3 6h18" />
-      <path d="M8 6V4h8v2" />
-      <path d="M19 6l-1 14H6L5 6" />
-      <path d="M10 11v5" />
-      <path d="M14 11v5" />
-    </svg>
-  )
-}
-
-function MemberActionsMenu({
-  member,
-  onChangeRole,
-  onRemove,
-}: {
-  member: MockProjectMember
-  onChangeRole: () => void
-  onRemove: () => void
-}) {
-  const triggerRef = useRef<HTMLButtonElement>(null)
-  const [open, setOpen] = useState(false)
-
-  const sections = [
-    {
-      actions: [
-        {
-          key: 'member',
-          closeOnSelect: false,
-          content: (
-            <div className="flex w-full min-w-0 flex-col gap-1 rounded-sm px-3 py-2">
-              <span className="truncate text-sm font-semibold text-foreground">{member.name}</span>
-              <span className="truncate text-xs text-muted-foreground">{member.email}</span>
-            </div>
-          ),
-        },
-      ],
-    },
-    {
-      actions: [
-        {
-          key: 'change-role',
-          content: (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="mx-2 my-0.5 flex w-[calc(100%-1rem)] items-center justify-start gap-2"
-            >
-              <span className="inline-flex h-[15px] w-[15px] shrink-0 items-center justify-center">
-                <IconUserCog />
-              </span>
-              <span>Change role</span>
-            </Button>
-          ),
-          onSelect: onChangeRole,
-        },
-        {
-          key: 'remove',
-          content: (
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              className="mx-2 my-0.5 flex w-[calc(100%-1rem)] items-center justify-start gap-2"
-            >
-              <span className="inline-flex h-[15px] w-[15px] shrink-0 items-center justify-center">
-                <IconTrash />
-              </span>
-              <span>Remove</span>
-            </Button>
-          ),
-          onSelect: onRemove,
-        },
-      ],
-    },
-  ]
-
-  return (
-    <>
-      <Button
-        ref={triggerRef}
-        type="button"
-        variant="icon"
-        size="xs"
-        icon="ellipsis"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={`Actions for ${member.name}`}
-        onClick={() => setOpen((o) => !o)}
-      />
-      <DropdownMenu
-        open={open}
-        onClose={() => setOpen(false)}
-        trigger={triggerRef}
-        sections={sections}
-        size="md"
-        align="right"
-        direction="auto"
-        fullscreenAt="never"
-      />
-    </>
-  )
-}
+import { useRenderDebug } from '@/debug/useRenderDebug'
+import { MemberRoleActions } from '@/components/MemberRoleActions'
+import { PermissionBadge } from '@/components/PermissionBadge'
+import { RoleBadgePreview } from '@/components/RoleBadgePreview'
 
 export function MembersTab() {
+  useRenderDebug('MembersTab')
   const [members, setMembers] = useState<MockProjectMember[]>(mockProjectMembers)
   const [memberToRemove, setMemberToRemove] = useState<MockProjectMember | null>(null)
-  const [roleChange, setRoleChange] = useState<{ member: MockProjectMember; roleId: string } | null>(null)
 
   // ── Invite modal ────────────────────────────────────────────────────────────
   const [inviteOpen, setInviteOpen] = useState(false)
   const [newEmail, setNewEmail] = useState('')
-  const [newRoleId, setNewRoleId] = useState(PRESET_ROLES[2].id) // default: analyst
+  const [newRoleId, setNewRoleId] = useState(DEFAULT_PROJECT_INVITE_ROLE_ID)
 
   // ── Role editor modal (nested) ──────────────────────────────────────────────
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([])
   const [editingRole, setEditingRole] = useState<RoleEditorState | null>(null)
+  const [roleEditorReturnTo, setRoleEditorReturnTo] = useState<'invite' | null>(null)
+  const selectCreatedRoleRef = useRef<((roleId: string) => void) | null>(null)
 
   const allRoles = useMemo(() => [
     ...PRESET_ROLES,
     ...customRoles,
   ], [customRoles])
 
-  const addCustomRole = () => {
+  const addCustomRole = (returnTo: 'invite' | null = 'invite', selectRole?: (roleId: string) => void) => {
     const id = `custom-${Date.now()}`
+    selectCreatedRoleRef.current = selectRole ?? null
+    setRoleEditorReturnTo(returnTo)
     setEditingRole({ id, custom: true, name: 'New role', description: 'Custom project role.', permissions: new Set() })
-    setInviteOpen(false)
+    if (returnTo === 'invite') {
+      setInviteOpen(false)
+    }
   }
 
   const saveRole = () => {
     if (!editingRole) return
+    const roleId = editingRole.id
     const next = {
       name: editingRole.name.trim(),
       description: editingRole.description.trim(),
@@ -171,16 +57,26 @@ export function MembersTab() {
         ? c.map((r) => r.id === editingRole.id ? { ...r, ...next } : r)
         : [...c, { id: editingRole.id, ...next }],
     )
-    setNewRoleId(editingRole.id)
+    if (selectCreatedRoleRef.current) {
+      selectCreatedRoleRef.current(roleId)
+      selectCreatedRoleRef.current = null
+    } else {
+      setNewRoleId(roleId)
+    }
     setEditingRole(null)
-    setInviteOpen(true)
+    if (roleEditorReturnTo === 'invite') {
+      setInviteOpen(true)
+    }
+    setRoleEditorReturnTo(null)
   }
 
   const deleteRole = () => {
     if (!editingRole?.custom) return
     setCustomRoles((c) => c.filter((r) => r.id !== editingRole.id))
-    if (newRoleId === editingRole.id) setNewRoleId(PRESET_ROLES[2].id)
+    if (newRoleId === editingRole.id) setNewRoleId(DEFAULT_PROJECT_INVITE_ROLE_ID)
     setEditingRole(null)
+    selectCreatedRoleRef.current = null
+    setRoleEditorReturnTo(null)
   }
 
   // ── Invite submit ───────────────────────────────────────────────────────────
@@ -209,24 +105,30 @@ export function MembersTab() {
     setMemberToRemove(null)
   }
 
-  const openRoleChange = useCallback((member: MockProjectMember) => {
-    const roleId = allRoles.find((role) => role.name === member.role)?.id ?? PRESET_ROLES[2].id
-    setRoleChange({ member, roleId })
-  }, [allRoles])
-
-  const saveRoleChange = () => {
-    if (!roleChange) return
-    const role = allRoles.find((r) => r.id === roleChange.roleId)
+  const changeMemberRole = useCallback((memberToUpdate: MockProjectMember, roleId: string) => {
+    const role = allRoles.find((r) => r.id === roleId)
     if (!role) return
     setMembers((c) =>
       c.map((member) =>
-        member.id === roleChange.member.id
+        member.id === memberToUpdate.id
           ? { ...member, role: role.name as MockProjectMember['role'] }
           : member,
       ),
     )
-    setRoleChange(null)
-  }
+  }, [allRoles])
+
+  const renderProjectPermissions = useCallback((roleId: string) => {
+    const role = allRoles.find((r) => r.id === roleId)
+    if (!role) return null
+
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {role.permissions.map((permission) => (
+          <PermissionBadge key={permission} permission={permission} />
+        ))}
+      </div>
+    )
+  }, [allRoles])
 
   // ── Table columns ───────────────────────────────────────────────────────────
   const memberColumns = useMemo<TableColumn<MockProjectMember>[]>(() => [
@@ -245,7 +147,15 @@ export function MembersTab() {
       key: 'role',
       header: 'Role',
       minWidth: 100,
-      cell: (row) => <Badge variant="muted" size="xs">{row.role}</Badge>,
+      cell: (row) => {
+        const role = allRoles.find((candidate) => candidate.id === PROJECT_MEMBER_ROLE_TO_ROLE_ID[row.role])
+        return (
+          <RoleBadgePreview
+            label={row.role}
+            permissions={(role?.permissions ?? []).map((permission) => ({ key: permission }))}
+          />
+        )
+      },
     },
     {
       key: 'status',
@@ -263,18 +173,31 @@ export function MembersTab() {
       minWidth: 50,
       cellClassName: 'flex justify-end',
       cell: (row) => (
-        <MemberActionsMenu
-          member={row}
-          onChangeRole={() => openRoleChange(row)}
-          onRemove={() => setMemberToRemove(row)}
+        <MemberRoleActions
+          memberName={row.name}
+          memberEmail={row.email}
+          editRoleLabel="Edit project role"
+          roles={allRoles}
+          selectedRoleId={PROJECT_MEMBER_ROLE_TO_ROLE_ID[row.role]}
+          onSaveRole={(roleId) => changeMemberRole(row, roleId)}
+          onAddRole={(selectRole) => addCustomRole(null, selectRole)}
+          renderEffectivePreview={renderProjectPermissions}
+          extraActions={[
+            {
+              key: 'remove-member',
+              label: 'Remove member',
+              variant: 'destructive',
+              onSelect: () => setMemberToRemove(row),
+            },
+          ]}
         />
       ),
     },
-  ], [openRoleChange])
+  ], [addCustomRole, allRoles, changeMemberRole, renderProjectPermissions])
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <section className="grid max-w-6xl gap-4">
+    <section className="grid gap-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">Members</h2>
@@ -286,6 +209,7 @@ export function MembersTab() {
       </div>
 
       <Table
+        className='max-w-6xl mx-auto'
         columns={memberColumns}
         rows={members}
         getRowKey={(row) => row.id}
@@ -324,7 +248,7 @@ export function MembersTab() {
                 options={allRoles.map((r) => ({ value: r.id, label: r.name }))}
               />
             </div>
-            <Button variant="secondary" size="md" onClick={addCustomRole}>
+            <Button variant="secondary" size="md" onClick={() => addCustomRole('invite')}>
               New role
             </Button>
           </div>
@@ -333,7 +257,14 @@ export function MembersTab() {
 
       <RoleEditorModal
         role={editingRole}
-        onClose={() => { setEditingRole(null); setInviteOpen(true); }}
+        onClose={() => {
+          setEditingRole(null)
+          selectCreatedRoleRef.current = null
+          if (roleEditorReturnTo === 'invite') {
+            setInviteOpen(true)
+          }
+          setRoleEditorReturnTo(null)
+        }}
         onChange={setEditingRole}
         onSave={saveRole}
         onDelete={deleteRole}
@@ -360,34 +291,6 @@ export function MembersTab() {
         )}
       </Modal>
 
-      <Modal
-        open={Boolean(roleChange)}
-        onClose={() => setRoleChange(null)}
-        title="Change role"
-        width={420}
-        footer={(
-          <>
-            <Button variant="secondary" onClick={() => setRoleChange(null)} className="mr-auto">Cancel</Button>
-            <Button variant="primary" onClick={saveRoleChange}>Save</Button>
-          </>
-        )}
-      >
-        {roleChange && (
-          <div className="grid gap-4">
-            <p className="text-sm leading-6 text-foreground">
-              Select a new role for {roleChange.member.name}.
-            </p>
-            <Select
-              label="Role"
-              value={roleChange.roleId}
-              onChange={(event) => setRoleChange((current) =>
-                current ? { ...current, roleId: event.target.value } : current,
-              )}
-              options={allRoles.map((role) => ({ value: role.id, label: role.name }))}
-            />
-          </div>
-        )}
-      </Modal>
     </section>
   )
 }

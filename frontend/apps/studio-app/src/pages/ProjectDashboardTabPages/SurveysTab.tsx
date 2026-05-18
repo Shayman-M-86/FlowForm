@@ -1,6 +1,11 @@
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Badge, Button, Card } from '@flowform/ui'
-import { getMockSurveysForProject, type MockSurveySummary } from '@/api/mockData'
+import { Badge, Button, Card, Modal, Toast } from '@flowform/ui'
+import { createMockSurvey, getMockSurveysForProject, type MockSurveySummary } from '@/api/mockData'
+import { CreateSurveyForm, type CreateSurveyFields } from '@/components/CreateSurveyForm'
+import { useRenderDebug } from '@/debug/useRenderDebug'
+
+const PROJECT_CREATED_KEY = 'flowform:project-created'
 
 interface SurveysTabProps {
   projectSlug: string
@@ -13,18 +18,59 @@ function surveyStatus(survey: MockSurveySummary): { label: string; variant: 'suc
 }
 
 export function SurveysTab({ projectSlug }: SurveysTabProps) {
-  const surveys = getMockSurveysForProject(projectSlug)
+  useRenderDebug('SurveysTab', { projectSlug })
+  const [refreshTick, setRefreshTick] = useState(0)
+  const surveys = useMemo(
+    () => getMockSurveysForProject(projectSlug),
+    [projectSlug, refreshTick],
+  )
+  const [createdProjectName, setCreatedProjectName] = useState<string | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [createdSurveyTitle, setCreatedSurveyTitle] = useState<string | null>(null)
+
+  useEffect(() => {
+    const name = sessionStorage.getItem(PROJECT_CREATED_KEY)
+    if (name) {
+      sessionStorage.removeItem(PROJECT_CREATED_KEY)
+      setCreatedProjectName(name)
+    }
+  }, [])
+
+  const handleCreateSurvey = (data: CreateSurveyFields) => {
+    const survey = createMockSurvey({
+      projectSlug,
+      title: data.title,
+      slug: data.slug,
+      description: data.description,
+      initialStatus: data.initialStatus,
+    })
+    setCreateOpen(false)
+    setCreatedSurveyTitle(survey.title)
+    setRefreshTick((tick) => tick + 1)
+  }
 
   return (
-    <section className="grid max-w-6xl gap-4">
+    <section className="grid gap-4">
+      {createdProjectName && (
+        <Toast variant="success" onClose={() => setCreatedProjectName(null)}>
+          Project &ldquo;{createdProjectName}&rdquo; created.
+        </Toast>
+      )}
+      {createdSurveyTitle && (
+        <Toast variant="success" onClose={() => setCreatedSurveyTitle(null)}>
+          Survey &ldquo;{createdSurveyTitle}&rdquo; created.
+        </Toast>
+      )}
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">Surveys</h2>
           <p className="text-sm text-muted-foreground">{surveys.length} in this project</p>
         </div>
-        <Button variant="primary" size="sm" icon="plus">New survey</Button>
+        <Button variant="primary" size="sm" icon="plus" onClick={() => setCreateOpen(true)}>
+          New survey
+        </Button>
       </div>
-      <div className="grid gap-3">
+      <div className="grid gap-3 mx-auto w-3xl min-w-2">
         {surveys.map((survey) => {
           const status = surveyStatus(survey)
           const hasDraftChanges = survey.publishedVersionNumber !== null && survey.draftVersionNumber !== null
@@ -57,6 +103,10 @@ export function SurveysTab({ projectSlug }: SurveysTabProps) {
           )
         })}
       </div>
+
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="New survey">
+        <CreateSurveyForm onSubmit={handleCreateSurvey} />
+      </Modal>
     </section>
   )
 }

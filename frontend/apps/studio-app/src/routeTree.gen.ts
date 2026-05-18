@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UiTestIndexRouteImport } from './routes/ui-test/index'
+import { Route as UiTest2IndexRouteImport } from './routes/ui-test-2/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectsSlugRouteImport } from './routes/projects/$slug'
 import { Route as ProjectsSlugIndexRouteImport } from './routes/projects/$slug/index'
@@ -38,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
 const UiTestIndexRoute = UiTestIndexRouteImport.update({
   id: '/ui-test/',
   path: '/ui-test/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UiTest2IndexRoute = UiTest2IndexRouteImport.update({
+  id: '/ui-test-2/',
+  path: '/ui-test-2/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/projects/$slug': typeof ProjectsSlugRouteWithChildren
   '/projects/': typeof ProjectsIndexRoute
+  '/ui-test-2/': typeof UiTest2IndexRoute
   '/ui-test/': typeof UiTestIndexRoute
   '/projects/$slug/members': typeof ProjectsSlugMembersRoute
   '/projects/$slug/roles': typeof ProjectsSlugRolesRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/ui-test-2': typeof UiTest2IndexRoute
   '/ui-test': typeof UiTestIndexRoute
   '/projects/$slug/members': typeof ProjectsSlugMembersRoute
   '/projects/$slug/roles': typeof ProjectsSlugRolesRoute
@@ -188,6 +196,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/projects/$slug': typeof ProjectsSlugRouteWithChildren
   '/projects/': typeof ProjectsIndexRoute
+  '/ui-test-2/': typeof UiTest2IndexRoute
   '/ui-test/': typeof UiTestIndexRoute
   '/projects/$slug/members': typeof ProjectsSlugMembersRoute
   '/projects/$slug/roles': typeof ProjectsSlugRolesRoute
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
     | '/'
     | '/projects/$slug'
     | '/projects/'
+    | '/ui-test-2/'
     | '/ui-test/'
     | '/projects/$slug/members'
     | '/projects/$slug/roles'
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/projects'
+    | '/ui-test-2'
     | '/ui-test'
     | '/projects/$slug/members'
     | '/projects/$slug/roles'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '/'
     | '/projects/$slug'
     | '/projects/'
+    | '/ui-test-2/'
     | '/ui-test/'
     | '/projects/$slug/members'
     | '/projects/$slug/roles'
@@ -276,6 +288,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProjectsSlugRoute: typeof ProjectsSlugRouteWithChildren
   ProjectsIndexRoute: typeof ProjectsIndexRoute
+  UiTest2IndexRoute: typeof UiTest2IndexRoute
   UiTestIndexRoute: typeof UiTestIndexRoute
 }
 
@@ -293,6 +306,13 @@ declare module '@tanstack/react-router' {
       path: '/ui-test'
       fullPath: '/ui-test/'
       preLoaderRoute: typeof UiTestIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ui-test-2/': {
+      id: '/ui-test-2/'
+      path: '/ui-test-2'
+      fullPath: '/ui-test-2/'
+      preLoaderRoute: typeof UiTest2IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects/': {
@@ -501,6 +521,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProjectsSlugRoute: ProjectsSlugRouteWithChildren,
   ProjectsIndexRoute: ProjectsIndexRoute,
+  UiTest2IndexRoute: UiTest2IndexRoute,
   UiTestIndexRoute: UiTestIndexRoute,
 }
 export const routeTree = rootRouteImport

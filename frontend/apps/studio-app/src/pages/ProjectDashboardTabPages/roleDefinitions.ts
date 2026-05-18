@@ -27,6 +27,9 @@ export type RolePreset = {
   permissions: PermissionKey[]
 }
 
+export type ProjectMemberRoleLabel = 'Owner' | 'Editor' | 'Viewer'
+export type RoleWithPermissions = RolePreset | CustomRole
+
 const ALL_PROJECT_PERMISSIONS: PermissionKey[] = [
   'project:edit',
   'project:delete',
@@ -153,6 +156,14 @@ export const PRESET_ROLES: RolePreset[] = [
   },
 ]
 
+export const DEFAULT_PROJECT_INVITE_ROLE_ID = 'analyst'
+
+export const PROJECT_MEMBER_ROLE_TO_ROLE_ID: Record<ProjectMemberRoleLabel, string> = {
+  Owner: 'admin',
+  Editor: 'contributor',
+  Viewer: 'analyst',
+}
+
 export const SURVEY_PRESET_ROLES: RolePreset[] = [
   {
     id: 'survey-manager',
@@ -167,15 +178,40 @@ export const SURVEY_PRESET_ROLES: RolePreset[] = [
     permissions: ['survey:view', 'survey:edit', 'survey:publish', 'submission:view'],
   },
   {
-    id: 'survey-editor',
-    name: 'Editor',
-    description: 'Can edit this survey and preview draft content.',
-    permissions: ['survey:view', 'survey:edit'],
-  },
-  {
     id: 'survey-viewer',
     name: 'Viewer',
     description: 'Can view this survey and its available details.',
     permissions: ['survey:view'],
   },
 ]
+
+export const PROJECT_ROLE_TO_SURVEY_ROLE_ID: Record<ProjectMemberRoleLabel, string> = {
+  Owner: 'survey-manager',
+  Editor: 'survey-viewer',
+  Viewer: 'survey-viewer',
+}
+
+export const DEFAULT_SURVEY_ROLE_ASSIGNMENTS: Record<number, string> = {
+  2: 'survey-manager',
+  4: 'survey-viewer',
+}
+
+export function roleForId<TRole extends RoleWithPermissions>(
+  roles: TRole[],
+  roleId: string,
+): TRole | undefined {
+  return roles.find((role) => role.id === roleId)
+}
+
+export function rolePermissions(roles: RoleWithPermissions[], roleId: string): PermissionKey[] {
+  return roleForId(roles, roleId)?.permissions ?? []
+}
+
+export function permissionsGained(
+  roles: RoleWithPermissions[],
+  baselineRoleId: string,
+  roleId: string,
+): PermissionKey[] {
+  const baseline = new Set(rolePermissions(roles, baselineRoleId))
+  return rolePermissions(roles, roleId).filter((permission) => !baseline.has(permission))
+}

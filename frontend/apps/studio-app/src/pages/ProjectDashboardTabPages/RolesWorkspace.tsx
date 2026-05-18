@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Badge, Button, Card, DropdownMenu } from '@flowform/ui'
 import { RoleEditorModal, type RoleEditorState } from './RoleEditorModal'
 import { PERMISSION_LABEL, type CustomRole, type PermissionGroup, type RolePreset } from './roleDefinitions'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 export type RoleFilter = 'all' | 'default' | 'custom'
 
@@ -21,8 +22,8 @@ export function RolesWorkspace({
   presets,
   permissionGroups,
 }: RolesWorkspaceProps) {
+  useRenderDebug('RolesWorkspace', { title, defaultRoleDescription, presets, permissionGroups })
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([])
-  const [roleOverrides, setRoleOverrides] = useState<Record<string, Omit<CustomRole, 'id'>>>({})
   const [editingRole, setEditingRole] = useState<RoleEditorState | null>(null)
   const [isNewRole, setIsNewRole] = useState(false)
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
@@ -50,7 +51,6 @@ export function RolesWorkspace({
   const roleColumns = [
     ...presets.map((role) => ({
       ...role,
-      ...roleOverrides[role.id],
       custom: false,
     })),
     ...customRoles.map((role) => ({ ...role, custom: true })),
@@ -108,8 +108,6 @@ export function RolesWorkspace({
           current.map((role) => role.id === editingRole.id ? { ...role, ...next } : role),
         )
       }
-    } else {
-      setRoleOverrides((current) => ({ ...current, [editingRole.id]: next }))
     }
     setEditingRole(null)
     setIsNewRole(false)
@@ -123,7 +121,7 @@ export function RolesWorkspace({
   }
 
   return (
-    <section className="grid max-w-6xl gap-4">
+    <section className="grid gap-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">{title}</h2>
@@ -187,7 +185,7 @@ export function RolesWorkspace({
         </div>
       </div>
 
-      <div ref={rolesContainerRef} className="w-full overflow-hidden">
+      <div ref={rolesContainerRef} className="w-full flex justify-center overflow-hidden">
         <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${pagedRoleColumns.length}, ${CARD_WIDTH}px)` }}>
           {pagedRoleColumns.map((role) => (
             <Card key={role.id} size="sm">
@@ -204,9 +202,11 @@ export function RolesWorkspace({
                       {role.description}
                     </p>
                   </div>
-                  <Button variant="secondary" size="sm" onClick={() => openRoleEditor(role)}>
-                    Edit
-                  </Button>
+                  {role.custom ? (
+                    <Button variant="secondary" size="sm" onClick={() => openRoleEditor(role)}>
+                      Edit
+                    </Button>
+                  ) : null}
                 </div>
                 <div className="flex flex-col gap-3 border-t border-border pt-3">
                   <p className="text-xs font-semibold text-foreground">Permissions</p>

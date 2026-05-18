@@ -103,27 +103,27 @@
 
   /* Badge sizes */
   .ui-badge-xxs {
-    @apply px-1.5 py-0.5 text-2xs leading-none;
+    @apply px-1.5 py-0 text-2xs;
   }
 
   .ui-badge-xs {
-    @apply px-2 py-1 text-xs leading-none;
+    @apply px-2 py-0.5 text-xs;
   }
 
   .ui-badge-sm {
-    @apply px-2.5 py-1 text-sm leading-none;
+    @apply px-2.5 py-0.5 text-sm;
   }
 
   .ui-badge-md {
-    @apply px-3 py-1.5 text-base leading-none;
+    @apply px-3 py-1 text-base;
   }
 
   .ui-badge-lg {
-    @apply px-3.5 py-2 text-lg leading-none;
+    @apply px-3.5 py-1.5 text-lg;
   }
 
   .ui-badge-xl {
-    @apply px-4 py-2.5 text-xl leading-none;
+    @apply px-4 py-2 text-xl;
   }
 
   /* Textareas */
@@ -214,7 +214,7 @@
   }
 
   .ui-tooltip {
-    @apply pointer-events-none fixed z-[9999] -translate-x-1/2 whitespace-nowrap rounded-sm border border-border bg-popover text-popover-foreground shadow-sm transition-opacity;
+    @apply pointer-events-none fixed z-[9999] max-w-80 -translate-x-1/2 whitespace-normal break-words rounded-sm border border-border bg-popover text-popover-foreground shadow-sm transition-opacity;
   }
 
   /* Modal */
@@ -281,7 +281,7 @@
       }
 
       .ui-badge {
-        @apply inline-flex items-center whitespace-nowrap rounded-md border font-medium leading-none;
+        @apply inline-flex items-center whitespace-nowrap rounded-md border font-medium;
       }
       
       .ui-badge-default {
@@ -395,14 +395,9 @@
 
   /* ── Table ──────────────────────────────────────────────────────────────── */
 
-  /* Outer clipping wrapper — never overflows, triggers scale-to-fit logic */
+  /* Scrolls horizontally when the inner table is wider than the container */
   .ui-table-container {
-    @apply w-full overflow-hidden;
-  }
-
-  /* Scaled inner wrapper — width is set to naturalWidth when scale < 1 */
-  .ui-table-scaler {
-    @apply origin-top-left;
+    @apply w-full overflow-x-auto;
   }
 
   /* The table itself */
@@ -412,22 +407,22 @@
 
   /* Header row */
   .ui-table-header {
-    @apply grid border-b border-border;
+    @apply grid justify-between border-b border-border pl-1.5;
   }
 
   /* Header cell */
   .ui-table-th {
-    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground;
+    @apply pl-2 pr-0 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground;
   }
 
   /* Body container */
   .ui-table-body {
-    @apply flex flex-col;
+    @apply flex flex-col pl-2;
   }
 
   /* Data row */
   .ui-table-row {
-    @apply relative grid items-center transition-colors;
+    @apply relative grid justify-between items-center transition-colors;
   }
 
   /* Inset row divider — doesn't touch the left/right edges */
@@ -460,7 +455,7 @@
 
   /* Data cell */
   .ui-table-td {
-    @apply px-4 py-3 text-sm text-foreground;
+    @apply pl-2 pr-0 py-3;
   }
 
   /* Empty state */

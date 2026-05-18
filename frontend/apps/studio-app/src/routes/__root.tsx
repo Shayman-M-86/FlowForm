@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { ProtectedApp } from '@/components/auth/ProtectedApp'
 import { StudioSidebar } from '@/components/StudioSidebar'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 const TanStackRouterDevtools = import.meta.env.DEV
   ? lazy(() =>
@@ -12,10 +13,11 @@ const TanStackRouterDevtools = import.meta.env.DEV
   : null
 
 function AppLayout() {
+  useRenderDebug('AppLayout')
   return (
     <div className="app-shell flex min-h-screen bg-sidebar">
       <StudioSidebar />
-      <main className="app-main flex min-h-screen min-w-0 flex-1 flex-col overflow-x-clip md:border-l border-border md:rounded-l-3xl bg-background md:shadow-lg pt-14 md:pt-0">
+      <main className="app-main">
         <Outlet />
       </main>
     </div>

@@ -4,6 +4,7 @@ import { setActiveProjectSlug } from '@/lib/activeProject'
 import { useProject } from '@/api/projects'
 import { Spinner, Card, TabSelector } from '@flowform/ui'
 import { Breadcrumb } from '@/components/Breadcrumb'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 const TABS = [
   { id: 'surveys',  label: 'Surveys' },
@@ -13,6 +14,7 @@ const TABS = [
 ] as const
 
 function ProjectLayout() {
+  useRenderDebug('ProjectLayout')
   const { slug } = Route.useParams()
   const { data: project, isPending, isError, error } = useProject(slug ?? null)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
@@ -74,6 +76,7 @@ function ProjectLayout() {
 }
 
 function ProjectNotFound() {
+  useRenderDebug('ProjectNotFound')
   return (
     <main className="mx-auto max-w-4xl px-6 py-12">
       <p className="text-sm text-muted-foreground">Page not found.</p>

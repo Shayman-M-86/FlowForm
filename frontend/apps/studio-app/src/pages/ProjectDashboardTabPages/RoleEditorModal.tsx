@@ -1,5 +1,6 @@
 import { Badge, Button, Input, LargeInput, Modal, Tooltip } from '@flowform/ui'
 import { PERMISSION_LABEL, PERMISSION_TOOLTIP, type PermissionGroup, type PermissionKey } from './roleDefinitions'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 export type RoleEditorState = {
   id: string
@@ -20,6 +21,7 @@ interface RoleEditorModalProps {
 }
 
 export function RoleEditorModal({ role, onClose, onChange, onSave, onDelete, isNew = false, permissionGroups }: RoleEditorModalProps) {
+  useRenderDebug('RoleEditorModal', { role, onClose, onChange, onSave, onDelete, isNew, permissionGroups })
   const togglePermission = (permission: PermissionKey) => {
     if (!role) return
     const permissions = new Set(role.permissions)

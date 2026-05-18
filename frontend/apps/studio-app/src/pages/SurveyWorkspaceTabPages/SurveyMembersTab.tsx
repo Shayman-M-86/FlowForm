@@ -1,294 +1,295 @@
-import { useMemo, useRef, useState, type MouseEventHandler, type ReactNode } from 'react'
-import { Badge, Button, DropdownMenu, Modal, PermissionTag, Select, Table, type TableColumn } from '@flowform/ui'
-import { KeyRound, Shield, Trash2, UserCog } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
+import { Badge, Button, DropdownMenu, Table, type TableColumn } from '@flowform/ui'
+import { mockProjectMembers, type MockProjectMember } from '@/api/mockData'
+import { useRenderDebug } from '@/debug/useRenderDebug'
+import { MemberRoleActions } from '@/components/MemberRoleActions'
+import { PermissionBadge } from '@/components/PermissionBadge'
+import { RoleBadgePreview } from '@/components/RoleBadgePreview'
+import { RoleEditorModal, type RoleEditorState } from '../ProjectDashboardTabPages/RoleEditorModal'
 import {
-  mockProjectMembers,
-  mockSurveyMembers,
-  type MockProjectMember,
-  type MockSurveyMember,
-} from '@/api/mockData'
+  DEFAULT_SURVEY_ROLE_ASSIGNMENTS,
+  PROJECT_ROLE_TO_SURVEY_ROLE_ID,
+  SURVEY_PERMISSION_GROUPS,
+  SURVEY_PRESET_ROLES,
+  permissionsGained,
+  roleForId,
+  rolePermissions,
+  type CustomRole,
+  type PermissionKey,
+  type RoleWithPermissions,
+} from '../ProjectDashboardTabPages/roleDefinitions'
 
-type SurveyRole = MockSurveyMember['role']
-type ProjectRole = MockProjectMember['role']
+type SurveyRoleOption = RoleWithPermissions
 
-type SurveyAccessRow = MockProjectMember & {
-  access: boolean
-  effectiveSurveyRole: SurveyRole
-  surveyRole?: SurveyRole
+type PermissionPreview = {
+  key: PermissionKey
+  variant: 'default' | 'warning'
 }
 
-const PROJECT_ROLE_TO_SURVEY_ROLE: Record<ProjectRole, SurveyRole> = {
-  Owner: 'Manager',
-  Editor: 'Editor',
-  Viewer: 'Viewer',
+interface MemberRow extends MockProjectMember {
+  overrideRoleId?: string
+  effectiveRoleId: string
 }
 
-const ROLE_BADGE_VARIANT: Record<SurveyRole, 'accent' | 'warning' | 'muted' | 'default'> = {
-  Manager: 'accent',
-  Publisher: 'warning',
-  Editor: 'default',
-  Viewer: 'muted',
-}
-
-const PROJECT_ROLE_BADGE_VARIANT: Record<ProjectRole, 'accent' | 'default' | 'muted'> = {
-  Owner: 'accent',
-  Editor: 'default',
-  Viewer: 'muted',
-}
-
-const SURVEY_ROLE_PERMISSIONS: Record<SurveyRole, string[]> = {
-  Manager: ['Manage survey', 'Publish', 'Edit', 'View responses'],
-  Publisher: ['Publish', 'Edit', 'View responses'],
-  Editor: ['Edit', 'Preview'],
-  Viewer: ['View'],
-}
-
-const PERMISSION_TOOLTIPS: Record<string, string> = {
-  'Manage survey': 'Can manage survey settings, member access, and administrative survey actions.',
-  Publish: 'Can publish survey drafts and update what respondents can access.',
-  Edit: 'Can change survey questions, structure, and draft content.',
-  'View responses': 'Can view collected survey responses and response summaries.',
-  Preview: 'Can preview draft survey content before it is published.',
-  View: 'Can view the survey setup and available survey details.',
-}
-
-const SURVEY_ROLES: SurveyRole[] = ['Manager', 'Publisher', 'Editor', 'Viewer']
-
-function ActionButton({
-  children,
-  icon,
-  variant = 'ghost',
-  onClick,
-}: {
-  children: ReactNode
-  icon: ReactNode
-  variant?: 'ghost' | 'destructive'
-  onClick?: MouseEventHandler<HTMLButtonElement>
-}) {
+function PermissionBadges({ permissions }: { permissions: PermissionPreview[] }) {
   return (
-    <Button
-      type="button"
-      variant={variant}
-      size="sm"
-      onClick={onClick}
-      className="mx-2 my-0.5 flex w-[calc(100%-1rem)] items-center justify-start gap-2"
-    >
-      <span className="inline-flex h-[15px] w-[15px] shrink-0 items-center justify-center">
-        {icon}
-      </span>
-      <span>{children}</span>
-    </Button>
+    <div className="flex flex-wrap gap-1.5">
+      {permissions.map((permission) => (
+        <PermissionBadge
+          key={permission.key}
+          permission={permission.key}
+          variant={permission.variant}
+        />
+      ))}
+    </div>
   )
 }
 
-function SurveyAccessActions({
-  member,
-  onChangeRole,
-  onRemoveSurveyRole,
+function CompactPermissionBadges({
+  permissions,
+  limit = 3,
 }: {
-  member: SurveyAccessRow
-  onChangeRole: () => void
-  onRemoveSurveyRole: (memberId: number) => void
+  permissions: PermissionPreview[]
+  limit?: number
 }) {
-  const triggerRef = useRef<HTMLButtonElement>(null)
+  const triggerRef = useRef<HTMLSpanElement>(null)
   const [open, setOpen] = useState(false)
-  const iconProps = { size: 15, strokeWidth: 2 }
-
-  const sections = [
-    {
-      actions: [
-        {
-          key: 'member',
-          closeOnSelect: false,
-          content: (
-            <div className="flex w-full min-w-0 flex-col gap-1 rounded-sm px-3 py-2">
-              <span className="truncate text-sm font-semibold text-foreground">{member.name}</span>
-              <span className="truncate text-xs text-muted-foreground">{member.email}</span>
-            </div>
-          ),
-        },
-      ],
-    },
-    {
-      actions: [
-        {
-          key: 'change-role',
-          content: (
-            <ActionButton icon={<UserCog {...iconProps} />}>
-              Change role
-            </ActionButton>
-          ),
-          onSelect: onChangeRole,
-        },
-        {
-          key: 'remove-survey-role',
-          content: (
-            <ActionButton variant="destructive" icon={<Trash2 {...iconProps} />}>
-              Remove role
-            </ActionButton>
-          ),
-          onSelect: () => onRemoveSurveyRole(member.id),
-        },
-      ],
-    },
-  ]
+  const visiblePermissions = permissions.slice(0, limit)
+  const hiddenPermissions = permissions.slice(limit)
 
   return (
-    <>
-      <Button
-        ref={triggerRef}
-        type="button"
-        variant="icon"
-        size="xs"
-        icon="ellipsis"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={`Survey access actions for ${member.name}`}
-        onClick={() => setOpen((o) => !o)}
-      />
-      <DropdownMenu
-        open={open}
-        onClose={() => setOpen(false)}
-        trigger={triggerRef}
-        width="14rem"
-        align="right"
-        direction="auto"
-        fullscreenAt="never"
-        sections={sections}
-      />
-    </>
+    <div className="flex flex-wrap gap-1.5">
+      {visiblePermissions.map((permission) => (
+        <PermissionBadge
+          key={permission.key}
+          permission={permission.key}
+          variant={permission.variant}
+        />
+      ))}
+      {hiddenPermissions.length > 0 && (
+        <>
+          <span ref={triggerRef} className="inline-flex">
+            <Badge
+              variant="muted"
+              size="xs"
+              onClick={() => setOpen((current) => !current)}
+            >
+              +{hiddenPermissions.length} more
+            </Badge>
+          </span>
+          <DropdownMenu
+            open={open}
+            onClose={() => setOpen(false)}
+            trigger={triggerRef}
+            width="18rem"
+            align="auto"
+            direction="auto"
+            fullscreenAt="never"
+            sections={[
+              {
+                actions: [
+                  {
+                    key: 'all-permissions',
+                    closeOnSelect: false,
+                    content: (
+                      <div className="grid w-full gap-3 rounded-sm px-3 py-2 text-left">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground">Effective permissions</p>
+                          <p className="text-xs text-muted-foreground">All permissions available to this member</p>
+                        </div>
+                        <PermissionBadges permissions={permissions} />
+                      </div>
+                    ),
+                  },
+                ],
+              },
+            ]}
+          />
+        </>
+      )}
+    </div>
   )
 }
 
 export function SurveyMembersTab() {
-  const [roleChange, setRoleChange] = useState<{ member: SurveyAccessRow; role: SurveyRole } | null>(null)
-  const [surveyRoles, setSurveyRoles] = useState<Record<number, SurveyRole>>(() =>
-    mockSurveyMembers.reduce<Record<number, SurveyRole>>((roles, member) => {
-      if (!member.inherited) roles[member.id] = member.role
-      return roles
-    }, {}),
+  useRenderDebug('SurveyMembersTab')
+  const [surveyRoleAssignments, setSurveyRoleAssignments] = useState<Record<number, string>>(
+    DEFAULT_SURVEY_ROLE_ASSIGNMENTS,
+  )
+  const [customSurveyRoles, setCustomSurveyRoles] = useState<CustomRole[]>([])
+  const [editingRole, setEditingRole] = useState<RoleEditorState | null>(null)
+  const selectCreatedRoleRef = useRef<((roleId: string) => void) | null>(null)
+
+  const surveyRoles = useMemo<SurveyRoleOption[]>(
+    () => [...SURVEY_PRESET_ROLES, ...customSurveyRoles],
+    [customSurveyRoles],
   )
 
-  const rows = useMemo<SurveyAccessRow[]>(
+  const rows = useMemo<MemberRow[]>(
     () =>
       mockProjectMembers.map((member) => {
-        const surveyRole = surveyRoles[member.id]
-        const effectiveSurveyRole = surveyRole ?? PROJECT_ROLE_TO_SURVEY_ROLE[member.role]
+        const overrideRoleId = surveyRoleAssignments[member.id]
         return {
           ...member,
-          access: true,
-          effectiveSurveyRole,
-          surveyRole,
+          overrideRoleId,
+          effectiveRoleId: overrideRoleId ?? PROJECT_ROLE_TO_SURVEY_ROLE_ID[member.role],
         }
       }),
-    [surveyRoles],
+    [surveyRoleAssignments],
   )
 
-  const setSurveyRole = (memberId: number, role: SurveyRole) => {
-    setSurveyRoles((current) => ({ ...current, [memberId]: role }))
-  }
-
-  const openRoleChange = (member: SurveyAccessRow) => {
-    setRoleChange({ member, role: member.surveyRole ?? member.effectiveSurveyRole })
-  }
-
-  const saveRoleChange = () => {
-    if (!roleChange) return
-    setSurveyRole(roleChange.member.id, roleChange.role)
-    setRoleChange(null)
-  }
-
-  const removeSurveyRole = (memberId: number) => {
-    setSurveyRoles((current) => {
-      const next = { ...current }
-      delete next[memberId]
-      return next
+  const addSurveyRole = (selectRole: (roleId: string) => void) => {
+    const id = `survey-custom-${Date.now()}`
+    selectCreatedRoleRef.current = selectRole
+    setEditingRole({
+      id,
+      custom: true,
+      name: 'New survey role',
+      description: 'Custom survey role.',
+      permissions: new Set(),
     })
   }
 
-  const columns: TableColumn<SurveyAccessRow>[] = [
-    {
-      key: 'access-indicator',
-      header: <span className="sr-only">Survey access</span>,
-      minWidth: 40,
-      width: 40,
-      cellClassName: 'flex justify-center p-0 pl-1',
-      headerClassName: 'p-0',
-      cell: (member) => (
-        <span
-          className={`size-2.5 rounded-full ${member.access ? 'bg-success' : 'bg-muted-foreground/40'}`}
-          aria-label={member.access ? 'Can access survey' : 'Cannot access survey'}
-        />
-      ),
-    },
+  const saveSurveyRole = () => {
+    if (!editingRole) return
+    const next = {
+      name: editingRole.name.trim(),
+      description: editingRole.description.trim(),
+      permissions: [...editingRole.permissions],
+    }
+    if (!next.name) return
+    setCustomSurveyRoles((current) =>
+      current.some((role) => role.id === editingRole.id)
+        ? current.map((role) => role.id === editingRole.id ? { ...role, ...next } : role)
+        : [...current, { id: editingRole.id, ...next }],
+    )
+    selectCreatedRoleRef.current?.(editingRole.id)
+    selectCreatedRoleRef.current = null
+    setEditingRole(null)
+  }
+
+  const deleteSurveyRole = () => {
+    if (!editingRole?.custom) return
+    setCustomSurveyRoles((current) => current.filter((role) => role.id !== editingRole.id))
+    setSurveyRoleAssignments((current) => {
+      const next = { ...current }
+      for (const [memberId, roleId] of Object.entries(next)) {
+        if (roleId === editingRole.id) {
+          delete next[Number(memberId)]
+        }
+      }
+      return next
+    })
+    selectCreatedRoleRef.current = null
+    setEditingRole(null)
+  }
+
+  const surveyPermissionPreview = (member: MemberRow, roleId: string): PermissionPreview[] => {
+    const gained = permissionsGained(surveyRoles, PROJECT_ROLE_TO_SURVEY_ROLE_ID[member.role], roleId)
+
+    return rolePermissions(surveyRoles, roleId).map((permission) => ({
+      key: permission,
+      variant: gained.includes(permission) ? 'warning' : 'default',
+    }))
+  }
+
+  const renderSurveyPermissions = (member: MemberRow, roleId: string) => {
+    return <PermissionBadges permissions={surveyPermissionPreview(member, roleId)} />
+  }
+
+  const columns: TableColumn<MemberRow>[] = [
     {
       key: 'member',
       header: 'Member',
-      headerClassName: 'pl-0',
-      cellClassName: 'pl-0',
-      minWidth: 150,
-      width: 200,
+      minWidth: 100,
+      maxWidth: 200,
       cell: (member) => (
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-foreground">{member.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{member.email}</p>
+          <p className="truncate text-2xs text-muted-foreground">{member.email}</p>
         </div>
       ),
     },
     {
       key: 'project-role',
       header: 'Project role',
-      minWidth: 120,
-      width: 130,
-      cellClassName: 'flex justify-center',
+      minWidth: 65,
+      maxWidth: 150,
       cell: (member) => (
-        <Badge variant={PROJECT_ROLE_BADGE_VARIANT[member.role]} size="xs">
-          {member.role}
-        </Badge>
+        <RoleBadgePreview
+          label={member.role}
+          permissions={rolePermissions(surveyRoles, PROJECT_ROLE_TO_SURVEY_ROLE_ID[member.role]).map(
+            (permission) => ({ key: permission }),
+          )}
+        />
       ),
     },
     {
       key: 'survey-role',
       header: 'Survey role',
-      minWidth: 120,
-      width: 130,
-      cellClassName: 'flex justify-center',
-      cell: (member) => (
-        <div className="flex items-center gap-2">
-          <Badge variant={ROLE_BADGE_VARIANT[member.effectiveSurveyRole]} size="xs">
-            {member.effectiveSurveyRole}
-          </Badge>
-        </div>
-      ),
+      minWidth: 75,
+      maxWidth: 150,
+      cell: (member) => {
+        const gained = permissionsGained(
+          surveyRoles,
+          PROJECT_ROLE_TO_SURVEY_ROLE_ID[member.role],
+          member.effectiveRoleId,
+        )
+        if (!member.overrideRoleId || gained.length === 0) {
+          return <span className="text-xs text-muted-foreground">-</span>
+        }
+        const role = roleForId(surveyRoles, member.overrideRoleId)
+        return (
+          <RoleBadgePreview
+            label={role?.name ?? 'Custom role'}
+            prefix="+"
+            variant="warning"
+            permissions={gained.map((permission) => ({
+              key: permission,
+              variant: 'warning',
+            }))}
+          />
+        )
+      },
     },
     {
-      key: 'permissions',
-      header: 'Permissions',
-      minWidth: 260,
+      key: 'effective',
+      header: 'Effective permissions',
+      minWidth: 110,
       cell: (member) => (
-        <div className="flex flex-wrap gap-1.5">
-          {SURVEY_ROLE_PERMISSIONS[member.effectiveSurveyRole].map((permission) => (
-            <PermissionTag
-              key={permission}
-              label={permission}
-              tooltip={PERMISSION_TOOLTIPS[permission] ?? permission}
-            />
-          ))}
-        </div>
+        <CompactPermissionBadges permissions={surveyPermissionPreview(member, member.effectiveRoleId)} />
       ),
     },
     {
       key: 'actions',
-      header: 'Actions',
-      minWidth: 70,
-      width: 80,
-      cellClassName: 'flex justify-center px-2',
-      headerClassName: 'justify-end text-right pl-2',
+      header: <span className="sr-only">Actions</span>,
+      minWidth: 50,
+      maxWidth: 50,
+      headerClassName: 'flex justify-center text-right pr-2',
+      cellClassName: 'flex justify-center px-0',
       cell: (member) => (
-        <SurveyAccessActions
-          member={member}
-          onChangeRole={() => openRoleChange(member)}
-          onRemoveSurveyRole={removeSurveyRole}
+        <MemberRoleActions
+          memberName={member.name}
+          memberEmail={member.email}
+          editRoleLabel="Edit survey role"
+          roles={surveyRoles}
+          selectedRoleId={member.overrideRoleId ?? member.effectiveRoleId}
+          onSaveRole={(roleId) =>
+            setSurveyRoleAssignments((current) => ({ ...current, [member.id]: roleId }))
+          }
+          onRemoveRole={
+            member.overrideRoleId
+              ? () =>
+                  setSurveyRoleAssignments((current) => {
+                    const next = { ...current }
+                    delete next[member.id]
+                    return next
+                  })
+              : undefined
+          }
+          removeRoleLabel="Remove survey role"
+          onAddRole={addSurveyRole}
+          renderEffectivePreview={(roleId) => renderSurveyPermissions(member, roleId)}
         />
       ),
     },
@@ -308,55 +309,26 @@ export function SurveyMembersTab() {
         </Button>
       </div>
 
-      <Table
-        columns={columns}
-        rows={rows}
-        getRowKey={(member) => member.id}
-      />
-
-      <div className="grid gap-2 rounded-sm border border-border bg-muted/20 p-4">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <Shield size={16} aria-hidden="true" />
-          Project and survey roles both apply
-        </div>
-        <p className="text-xs leading-5 text-muted-foreground">
-          Project roles provide baseline survey access. Survey roles can override access for this survey without changing
-          the member's project role.
-        </p>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <KeyRound size={14} aria-hidden="true" />
-          Removing a survey role returns the member to their project-role permissions.
-        </div>
+      <div className="w-full max-w-[1100px] justify-self-center">
+        <Table
+          columns={columns}
+          rows={rows}
+          getRowKey={(member) => member.id}
+        />
       </div>
 
-      <Modal
-        open={Boolean(roleChange)}
-        onClose={() => setRoleChange(null)}
-        title="Change survey role"
-        width={420}
-        footer={(
-          <>
-            <Button variant="secondary" onClick={() => setRoleChange(null)} className="mr-auto">Cancel</Button>
-            <Button variant="primary" onClick={saveRoleChange}>Save</Button>
-          </>
-        )}
-      >
-        {roleChange && (
-          <div className="grid gap-4">
-            <p className="text-sm leading-6 text-foreground">
-              Select a survey role for {roleChange.member.name}.
-            </p>
-            <Select
-              label="Survey role"
-              value={roleChange.role}
-              onChange={(event) => setRoleChange((current) =>
-                current ? { ...current, role: event.target.value as SurveyRole } : current,
-              )}
-              options={SURVEY_ROLES.map((role) => ({ value: role, label: role }))}
-            />
-          </div>
-        )}
-      </Modal>
+      <RoleEditorModal
+        role={editingRole}
+        onClose={() => {
+          setEditingRole(null)
+          selectCreatedRoleRef.current = null
+        }}
+        onChange={setEditingRole}
+        onSave={saveSurveyRole}
+        onDelete={deleteSurveyRole}
+        permissionGroups={SURVEY_PERMISSION_GROUPS}
+        isNew
+      />
     </section>
   )
 }

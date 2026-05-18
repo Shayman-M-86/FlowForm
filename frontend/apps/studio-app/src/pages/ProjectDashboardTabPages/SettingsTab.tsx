@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { Button, Card, Input, Modal } from '@flowform/ui'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 function titleFromSlug(slug: string | undefined) {
   if (!slug) return 'Untitled project'
@@ -21,6 +22,7 @@ function toUrlSafeName(value: string) {
 }
 
 export function SettingsTab() {
+  useRenderDebug('SettingsTab')
   const { slug } = useParams({ strict: false })
   const navigate = useNavigate()
   const [projectTitle, setProjectTitle] = useState(() => titleFromSlug(slug))
@@ -54,7 +56,7 @@ export function SettingsTab() {
   }
 
   return (
-    <section className="grid max-w-4xl gap-6">
+    <section className="grid gap-6 mx-auto max-w-4xl">
       <div>
         <h2 className="text-base font-semibold">Settings</h2>
         <p className="text-sm text-muted-foreground">Manage project identity and destructive actions.</p>

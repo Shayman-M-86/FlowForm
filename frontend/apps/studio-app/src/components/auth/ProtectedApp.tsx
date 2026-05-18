@@ -7,6 +7,7 @@ import { getAuthReturnTo } from '@/auth/redirect'
 import { isAuthBypassEnabled } from '@/auth/testing'
 import { UserProvider } from '@/auth/UserContext'
 import type { CurrentUserOut } from '@/api/types'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 const BOOTSTRAP_SESSION_KEY = 'flowform.bootstrapped'
 const USER_SESSION_KEY = 'flowform.user'
@@ -74,6 +75,7 @@ const TEST_USER: CurrentUserOut = {
 }
 
 export function ProtectedApp({ children }: Props) {
+  useRenderDebug('ProtectedApp', { children })
   if (isAuthBypassEnabled) {
     return (
       <UserProvider user={TEST_USER} avatarUrl={null}>
@@ -86,6 +88,7 @@ export function ProtectedApp({ children }: Props) {
 }
 
 function AuthenticatedProtectedApp({ children }: Props) {
+  useRenderDebug('AuthenticatedProtectedApp', { children })
   const { isLoading, isAuthenticated, getIdTokenClaims, loginWithRedirect, logout, error, user } =
     useAuth0()
   const { bootstrapCurrentUser } = useApi()

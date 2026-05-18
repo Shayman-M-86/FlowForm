@@ -12,6 +12,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { getMockVersionsForSurvey, type MockVersion } from '@/api/mockData'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 function versionBadge(status: MockVersion['status']) {
   if (status === 'published') return <Badge variant="success" size="xs">Published</Badge>
@@ -141,6 +142,7 @@ function formatVersionDate(date: string) {
 }
 
 export function SurveyVersionsTab() {
+  useRenderDebug('SurveyVersionsTab')
   const { surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/versions' })
   const versions = getMockVersionsForSurvey(surveySlug)
   const versionColumns: TableColumn<MockVersion>[] = [
@@ -148,7 +150,7 @@ export function SurveyVersionsTab() {
       key: 'version',
       header: 'Version',
       minWidth: 70,
-      width: 150,
+      targetWidth: 150,
       cell: (v) => <span className="text-sm font-semibold text-foreground">v{v.versionNumber}</span>,
     },
     {
@@ -181,7 +183,7 @@ export function SurveyVersionsTab() {
       key: 'actions',
       header: 'Actions',
       minWidth: 70,
-      width: 80,
+      targetWidth: 80,
       cellClassName: 'flex justify-center px-2',
       headerClassName: 'justify-end text-right pl-2',
       cell: versionActions,
@@ -198,13 +200,13 @@ export function SurveyVersionsTab() {
         <Button variant="primary" size="sm" icon="plus">New draft</Button>
       </div>
 
-      <Table
-        columns={versionColumns}
-        rows={versions}
-        getRowKey={(v) => v.id}
-        maxWidth={1000}
-        className="mx-auto"
-      />
+      <div className="mx-auto max-w-250">
+        <Table
+          columns={versionColumns}
+          rows={versions}
+          getRowKey={(v) => v.id}
+        />
+      </div>
 
       <Card tone="muted">
         <p className="text-xs text-muted-foreground">

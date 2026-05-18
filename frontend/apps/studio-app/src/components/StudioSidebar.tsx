@@ -9,6 +9,7 @@ import { useSurvey } from "@/api/surveys";
 import { useCurrentUser } from "@/auth/UserContext";
 import { isAuthBypassEnabled } from "@/auth/testing";
 import { clearActiveProjectSlug } from "@/lib/activeProject";
+import { useRenderDebug } from "@/debug/useRenderDebug";
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 
@@ -398,6 +399,7 @@ function NavSection({ label, children }: { label: string; children: React.ReactN
 // ── Sidebar ────────────────────────────────────────────────────────────────
 
 export function StudioSidebar() {
+  useRenderDebug("StudioSidebar");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');

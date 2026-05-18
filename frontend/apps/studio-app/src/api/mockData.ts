@@ -98,6 +98,32 @@ export function getMockSurveysForProject(projectSlug: string): MockSurveySummary
   return mockSurveys.filter((s) => s.projectSlug === projectSlug)
 }
 
+export type MockSurveyInitialStatus = 'draft' | 'published'
+
+export interface CreateMockSurveyInput {
+  projectSlug: string
+  title: string
+  slug: string
+  description?: string
+  initialStatus: MockSurveyInitialStatus
+}
+
+export function createMockSurvey(input: CreateMockSurveyInput): MockSurveySummary {
+  const timestamp = new Date().toISOString()
+  const survey: MockSurveySummary = {
+    id: Date.now(),
+    slug: input.slug,
+    title: input.title,
+    publishedVersionNumber: input.initialStatus === 'published' ? 1 : null,
+    draftVersionNumber: input.initialStatus === 'draft' ? 1 : null,
+    responses: 0,
+    updatedAt: timestamp,
+    projectSlug: input.projectSlug,
+  }
+  mockSurveys.push(survey)
+  return survey
+}
+
 // ── Version mock data ─────────────────────────────────────────────────────────
 
 export interface MockVersion {

@@ -1,11 +1,4 @@
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type ReactNode } from "react";
 import { cn } from "../../lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -13,12 +6,16 @@ import { cn } from "../../lib/utils";
 export interface TableColumn<TRow> {
   key: string;
   header: ReactNode;
-  /** Minimum width in px. Columns stretch equally beyond this to fill the table.
+  /** Minimum width in px. Hard floor — the column never shrinks below this.
    *  When the container is narrower than the sum of all minWidths, the table
-   *  scales down proportionally. */
+   *  overflows horizontally with a scroll bar. */
   minWidth: number;
-  /** Preferred column width in px. The column can shrink to minWidth when needed. */
-  width?: number;
+  /** Target width in px. When set, the column grows toward this value and
+   *  receives available space before regular column growth starts. After target
+   *  growth, it can continue growing up to maxWidth. */
+  targetWidth?: number;
+  /** Maximum width in px. When omitted, the column can keep growing. */
+  maxWidth?: number;
   /** When false the column is completely hidden. Defaults to true. */
   visible?: boolean;
   /** Render a cell for this column given the row data and its index. */
@@ -42,56 +39,92 @@ export interface TableProps<TRow> {
   hideHeader?: boolean;
   /** Shown when rows is empty. */
   emptyState?: ReactNode;
-  /** Use "content" to size the table to preferred column widths instead of filling its container. */
-  fit?: "container" | "content";
-  /** Maximum table width. Accepts px when number, or any CSS width string. */
-  maxWidth?: number | string;
   className?: string;
 }
 
-// ── Hook: proportional scale-to-fit ──────────────────────────────────────────
+// ── Component ─────────────────────────────────────────────────────────────────
 
-function useScaleToFit(minTotalWidth: number) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const scalerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-  const [scaledHeight, setScaledHeight] = useState<number | undefined>(undefined);
-
-  const measure = useCallback(() => {
-    const container = containerRef.current;
-    const scaler = scalerRef.current;
-    if (!container || minTotalWidth === 0) return;
-
-    const available = container.getBoundingClientRect().width;
-    const nextScale = available >= minTotalWidth ? 1 : available / minTotalWidth;
-    setScale(nextScale);
-
-    // When scaled down, compensate the container height so it doesn't collapse.
-    // We read the scaler's natural (pre-transform) height and multiply by scale.
-    if (nextScale < 1 && scaler) {
-      const naturalHeight = scaler.scrollHeight;
-      setScaledHeight(naturalHeight * nextScale);
-    } else {
-      setScaledHeight(undefined);
-    }
-  }, [minTotalWidth]);
-
-  useLayoutEffect(() => {
-    measure();
-  }, [measure]);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [measure]);
-
-  return { containerRef, scalerRef, scale, scaledHeight };
+function px(value: number): string {
+  return Number.isInteger(value) ? `${value}px` : `${value.toFixed(2)}px`;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+function trackForColumn<TRow>(
+  c: TableColumn<TRow>,
+  targetGrowthShare: string,
+  regularGrowthShare: string,
+): string {
+  const minWidth = px(c.minWidth);
+  const maxWidth = maxWidthForColumn(c);
+  const targetWidth = targetWidthForColumn(c);
+  const baseWidth =
+    targetWidth === undefined
+      ? minWidth
+      : `clamp(${minWidth}, calc(${minWidth} + ${targetGrowthShare}), ${px(
+          targetWidth,
+        )})`;
+  const preferredWidth = `calc(${baseWidth} + ${regularGrowthShare})`;
+
+  if (maxWidth === Number.POSITIVE_INFINITY) {
+    return `minmax(${minWidth}, ${preferredWidth})`;
+  }
+
+  return `clamp(${minWidth}, ${preferredWidth}, ${px(maxWidth)})`;
+}
+
+function maxWidthForColumn<TRow>(c: TableColumn<TRow>): number {
+  if (c.maxWidth === undefined) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return Math.max(c.minWidth, c.maxWidth);
+}
+
+function targetWidthForColumn<TRow>(c: TableColumn<TRow>): number | undefined {
+  if (c.targetWidth === undefined) {
+    return undefined;
+  }
+
+  return Math.min(Math.max(c.minWidth, c.targetWidth), maxWidthForColumn(c));
+}
+
+function hasRegularGrowth<TRow>(c: TableColumn<TRow>): boolean {
+  return maxWidthForColumn(c) > (targetWidthForColumn(c) ?? c.minWidth);
+}
+
+function gridTemplateForColumns<TRow>(columns: TableColumn<TRow>[]): string {
+  if (columns.length === 0) {
+    return "";
+  }
+
+  const minTotalWidth = columns.reduce((sum, c) => sum + c.minWidth, 0);
+  const targetGrowthTotal = columns.reduce((sum, c) => {
+    const targetWidth = targetWidthForColumn(c);
+
+    if (targetWidth === undefined) {
+      return sum;
+    }
+
+    return sum + targetWidth - c.minWidth;
+  }, 0);
+  const targetColumnCount = columns.filter(
+    (c) => targetWidthForColumn(c) !== undefined,
+  ).length;
+  const regularGrowthColumnCount = columns.filter(hasRegularGrowth).length;
+  const targetGrowthShare =
+    targetColumnCount === 0
+      ? "0px"
+      : `calc(max(0px, calc(100% - ${px(minTotalWidth)})) / ${targetColumnCount})`;
+  const regularGrowthShare =
+    regularGrowthColumnCount === 0
+      ? "0px"
+      : `calc(max(0px, calc(100% - ${px(
+          minTotalWidth + targetGrowthTotal,
+        )})) / ${regularGrowthColumnCount})`;
+
+  return columns
+    .map((c) => trackForColumn(c, targetGrowthShare, regularGrowthShare))
+    .join(" ");
+}
 
 export function Table<TRow>({
   columns,
@@ -101,136 +134,91 @@ export function Table<TRow>({
   striped = false,
   hideHeader = false,
   emptyState,
-  fit = "container",
-  maxWidth,
   className,
 }: TableProps<TRow>) {
   const visibleColumns = columns.filter((c) => c.visible !== false);
 
-  const minTotalWidth = visibleColumns.reduce(
-    (sum, c) => sum + c.minWidth,
-    0,
-  );
+  const minTotalWidth = visibleColumns.reduce((sum, c) => sum + c.minWidth, 0);
 
-  const { containerRef, scalerRef, scale, scaledHeight } = useScaleToFit(minTotalWidth);
-  const preferredTotalWidth = visibleColumns.reduce(
-    (sum, c) => sum + (c.width ?? c.minWidth),
-    0,
-  );
-
-  // Preferred-width columns can shrink to minWidth. Other columns get at least minWidth, then stretch equally.
-  const gridTemplateColumns = visibleColumns
-    .map((c) =>
-      c.width !== undefined
-        ? `minmax(${c.minWidth}px, ${Math.max(c.width, c.minWidth)}px)`
-        : `minmax(${c.minWidth}px, 1fr)`,
-    )
-    .join(" ");
-
-  // naturalWidth is still needed for the scale-to-fit scaler width.
-  const naturalWidth = minTotalWidth;
-  const resolvedMaxWidth = typeof maxWidth === "number" ? `${maxWidth}px` : maxWidth;
+  const gridTemplateColumns = gridTemplateForColumns(visibleColumns);
 
   return (
-    <div
-      ref={containerRef}
-      className={cn(
-        "ui-table-container",
-        fit === "content" && "w-fit! max-w-full",
-        className,
-      )}
-      style={{
-        ...(scaledHeight !== undefined && { height: `${scaledHeight}px` }),
-        ...(fit === "content" && { width: `${preferredTotalWidth}px` }),
-        ...(resolvedMaxWidth !== undefined && { maxWidth: resolvedMaxWidth }),
-      }}
-    >
+    <div className={cn("ui-table-container", className)}>
       <div
-        ref={scalerRef}
-        className="ui-table-scaler"
-        style={
-          scale < 1
-            ? {
-                width: `${naturalWidth}px`,
-                transformOrigin: "top left",
-                transform: `scale(${scale})`,
-              }
-            : { width: "100%" }
-        }
+        className="ui-table"
+        role="table"
+        aria-rowcount={rows.length + 1}
+        style={{ minWidth: `${minTotalWidth}px` }}
       >
-        <div className="ui-table" role="table" aria-rowcount={rows.length + 1}>
-          {/* Header */}
-          {!hideHeader && (
-            <div
-              className="ui-table-header"
-              role="row"
-              style={{ gridTemplateColumns }}
-            >
-              {visibleColumns.map((col) => (
-                <div
-                  key={col.key}
-                  role="columnheader"
-                  className={cn("ui-table-th", col.headerClassName)}
-                  style={{ minWidth: `${col.minWidth}px` }}
-                >
-                  {col.header}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Body */}
-          <div className="ui-table-body" role="rowgroup">
-            {rows.length === 0 ? (
-              <div className="ui-table-empty" role="row">
-                <div role="cell">
-                  {emptyState ?? (
-                    <p className="text-sm text-muted-foreground">No results.</p>
-                  )}
-                </div>
+        {/* Header */}
+        {!hideHeader && (
+          <div
+            className="ui-table-header"
+            role="row"
+            style={{ gridTemplateColumns }}
+          >
+            {visibleColumns.map((col) => (
+              <div
+                key={col.key}
+                role="columnheader"
+                className={cn("ui-table-th", col.headerClassName)}
+              >
+                {col.header}
               </div>
-            ) : (
-              rows.map((row, rowIndex) => {
-                const key = getRowKey ? getRowKey(row, rowIndex) : rowIndex;
-                return (
-                  <div
-                    key={key}
-                    role="row"
-                    aria-rowindex={rowIndex + 2}
-                    className={cn(
-                      "ui-table-row",
-                      striped && "ui-table-row--striped",
-                      onRowClick && "ui-table-row--clickable",
-                    )}
-                    style={{ gridTemplateColumns }}
-                    onClick={onRowClick ? () => onRowClick(row, rowIndex) : undefined}
-                    tabIndex={onRowClick ? 0 : undefined}
-                    onKeyDown={
-                      onRowClick
-                        ? (e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              onRowClick(row, rowIndex);
-                            }
-                          }
-                        : undefined
-                    }
-                  >
-                    {visibleColumns.map((col) => (
-                      <div
-                        key={col.key}
-                        role="cell"
-                        className={cn("ui-table-td", col.cellClassName)}
-                        style={{ minWidth: `${col.minWidth}px` }}
-                      >
-                        {col.cell(row, rowIndex)}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })
-            )}
+            ))}
           </div>
+        )}
+
+        {/* Body */}
+        <div className="ui-table-body" role="rowgroup">
+          {rows.length === 0 ? (
+            <div className="ui-table-empty" role="row">
+              <div role="cell">
+                {emptyState ?? (
+                  <p className="text-sm text-muted-foreground">No results.</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            rows.map((row, rowIndex) => {
+              const key = getRowKey ? getRowKey(row, rowIndex) : rowIndex;
+              return (
+                <div
+                  key={key}
+                  role="row"
+                  aria-rowindex={rowIndex + 2}
+                  className={cn(
+                    "ui-table-row",
+                    striped && "ui-table-row--striped",
+                    onRowClick && "ui-table-row--clickable",
+                  )}
+                  style={{ gridTemplateColumns }}
+                  onClick={onRowClick ? () => onRowClick(row, rowIndex) : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onRowClick(row, rowIndex);
+                          }
+                        }
+                      : undefined
+                  }
+                >
+                  {visibleColumns.map((col) => (
+                    <div
+                      key={col.key}
+                      role="cell"
+                      className={cn("ui-table-td", col.cellClassName)}
+                    >
+                      {col.cell(row, rowIndex)}
+                    </div>
+                  ))}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

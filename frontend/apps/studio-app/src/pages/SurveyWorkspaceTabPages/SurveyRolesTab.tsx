@@ -3,8 +3,10 @@ import {
   SURVEY_PERMISSION_GROUPS,
   SURVEY_PRESET_ROLES,
 } from '../ProjectDashboardTabPages/roleDefinitions'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 export function SurveyRolesTab() {
+  useRenderDebug('SurveyRolesTab')
   return (
     <RolesWorkspace
       presets={SURVEY_PRESET_ROLES}

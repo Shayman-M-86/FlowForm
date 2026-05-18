@@ -1,8 +1,10 @@
 import { useParams } from '@tanstack/react-router'
 import { Card } from '@flowform/ui'
 import { getMockSurvey } from '@/api/mockData'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 export function SurveyResponsesTab() {
+  useRenderDebug('SurveyResponsesTab')
   const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/responses' })
   const survey = getMockSurvey(slug, surveySlug)
   const responseCount = survey?.responses ?? 0

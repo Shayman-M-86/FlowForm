@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useParams } from '@tanstack/react-router'
 import { Card, Button, Input, Toggle } from '@flowform/ui'
 import { getMockSurvey } from '@/api/mockData'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 export function SurveySettingsTab() {
+  useRenderDebug('SurveySettingsTab')
   const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/settings' })
   const [allowAnonymous, setAllowAnonymous] = useState(true)
   const [closeAfterDate, setCloseAfterDate] = useState(false)
@@ -11,7 +13,7 @@ export function SurveySettingsTab() {
   const surveyTitle = survey?.title ?? surveySlug.replace(/-/g, ' ')
 
   return (
-    <section className="grid max-w-2xl gap-6">
+    <section className="grid max-w-2xl gap-6 mx-auto">
       {/* General */}
       <Card>
         <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">General</p>

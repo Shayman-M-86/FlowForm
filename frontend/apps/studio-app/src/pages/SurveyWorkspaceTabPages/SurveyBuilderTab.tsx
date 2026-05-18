@@ -3,8 +3,10 @@ import { MemoryRouter } from 'react-router-dom'
 import { NodePage } from '@flowform/builder'
 import { Card, Button } from '@flowform/ui'
 import { getMockSurvey, getMockVersionsForSurvey } from '@/api/mockData'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 export function SurveyBuilderTab() {
+  useRenderDebug('SurveyBuilderTab')
   const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/builder' })
   const survey = getMockSurvey(slug, surveySlug)
   const versions = getMockVersionsForSurvey(surveySlug)

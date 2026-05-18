@@ -13,7 +13,10 @@ export {
 
 export type { CustomRole, PermissionGroup, PermissionKey } from './roleDefinitions'
 
+import { useRenderDebug } from '@/debug/useRenderDebug'
+
 export function RolesTab() {
+  useRenderDebug('RolesTab')
   return (
     <RolesWorkspace
       presets={PRESET_ROLES}

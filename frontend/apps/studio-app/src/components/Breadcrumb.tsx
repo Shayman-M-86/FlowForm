@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 type BreadcrumbSegment =
   | { label: string; to: string }
@@ -9,6 +10,7 @@ interface BreadcrumbProps {
 }
 
 export function Breadcrumb({ segments }: BreadcrumbProps) {
+  useRenderDebug('Breadcrumb', { segments })
   return (
     <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-sm">
       {segments.map((segment, index) => (

@@ -3,6 +3,7 @@ import { Button, TabSelector } from '@flowform/ui'
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { useProject } from '@/api/projects'
 import { useSurvey } from '@/api/surveys'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 const TABS = [
   { id: 'overview',  label: 'Overview' },
@@ -18,6 +19,7 @@ const TABS = [
 type TabId = typeof TABS[number]['id']
 
 function SurveyLayout() {
+  useRenderDebug('SurveyLayout')
   const { slug, surveySlug } = Route.useParams()
   const { data: project } = useProject(slug)
   const { data: survey } = useSurvey(slug, surveySlug)

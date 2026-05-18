@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRenderDebug } from "@/debug/useRenderDebug";
 import {
   Button,
   ButtonGroup,
@@ -23,8 +24,13 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  PermissionTag,
 } from "@flowform/ui";
 import { ChevronDown } from "lucide-react";
+import {
+  mockProjectMembers,
+  type MockProjectMember,
+} from "@/api/mockData";
 
 const buttonVariants = ["primary", "secondary", "danger", "ghost"] as const;
 const buttonSizes = ["md", "sm", "xs"] as const;
@@ -75,7 +81,7 @@ function TestCard({
   return (
     <Card size="md">
       <CardStack gap="sm">
-        {title ? <h3 className="m-0 text-[0.9rem] font-semibold tracking-[0.04em] uppercase text-(--color-accent-foreground)">{title}</h3> : null}
+        {title ? <h3 className="m-0 text-[0.9rem] font-semibold tracking-[0.04em] uppercase ">{title}</h3> : null}
         {children}
       </CardStack>
     </Card>
@@ -90,7 +96,277 @@ function WideStack({ children }: { children: React.ReactNode }) {
   return <CardRow gap="sm">{children}</CardRow>;
 }
 
+// ── Survey member role variants ──────────────────────────────────────────────
+// Three different ways to present project-role + survey-role-override
+// for the survey members table. All three render the same five mock members
+// so they can be compared directly. See SurveyMembersTab.tsx for the current
+// production version.
+
+type SurveyRole = "Manager" | "Publisher" | "Editor" | "Viewer";
+
+const SURVEY_ROLE_OVERRIDES: Record<number, SurveyRole> = {
+  2: "Manager",
+  4: "Editor",
+};
+
+const PROJECT_ROLE_TO_SURVEY_ROLE: Record<MockProjectMember["role"], SurveyRole> = {
+  Owner: "Manager",
+  Editor: "Editor",
+  Viewer: "Viewer",
+};
+
+const SURVEY_ROLE_PERMISSIONS: Record<SurveyRole, string[]> = {
+  Manager: ["Manage survey", "Publish", "Edit", "View responses"],
+  Publisher: ["Publish", "Edit", "View responses"],
+  Editor: ["Edit", "Preview"],
+  Viewer: ["View"],
+};
+
+const PERMISSION_TOOLTIPS: Record<string, string> = {
+  "Manage survey": "Can manage survey settings, member access, and admin actions.",
+  Publish: "Can publish drafts and update what respondents can access.",
+  Edit: "Can change survey questions and structure.",
+  "View responses": "Can view collected responses and summaries.",
+  Preview: "Can preview draft content before it is published.",
+  View: "Can view the survey setup and details.",
+};
+
+const PROJECT_ROLE_BADGE: Record<MockProjectMember["role"], "default" | "default" | "default"> = {
+  Owner: "default",
+  Editor: "default",
+  Viewer: "default",
+};
+
+const SURVEY_ROLE_BADGE: Record<SurveyRole, "accent" | "warning" | "default" | "muted"> = {
+  Manager: "accent",
+  Publisher: "warning",
+  Editor: "default",
+  Viewer: "muted",
+};
+
+function permissionsGained(projectRole: MockProjectMember["role"], override: SurveyRole): string[] {
+  const baseline = new Set(SURVEY_ROLE_PERMISSIONS[PROJECT_ROLE_TO_SURVEY_ROLE[projectRole]]);
+  return SURVEY_ROLE_PERMISSIONS[override].filter((p) => !baseline.has(p));
+}
+
+interface MemberRow extends MockProjectMember {
+  override?: SurveyRole;
+  effective: SurveyRole;
+}
+
+function buildMemberRows(): MemberRow[] {
+  return mockProjectMembers.map((m) => {
+    const override = SURVEY_ROLE_OVERRIDES[m.id];
+    return {
+      ...m,
+      override,
+      effective: override ?? PROJECT_ROLE_TO_SURVEY_ROLE[m.role],
+    };
+  });
+}
+
+function VariantEffectivePermissions() {
+  const rows = buildMemberRows();
+  const columns: TableColumn<MemberRow>[] = [
+    {
+      key: "member",
+      header: "Member",
+      minWidth: 180,
+      cell: (m) => (
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-foreground">{m.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{m.email}</p>
+        </div>
+      ),
+    },
+    {
+      key: "permissions",
+      header: "Can do on this survey",
+      minWidth: 280,
+      cell: (m) => (
+        <div className="flex flex-wrap gap-1.5">
+          {SURVEY_ROLE_PERMISSIONS[m.effective].map((p) => (
+            <PermissionTag key={p} label={p} tooltip={PERMISSION_TOOLTIPS[p] ?? p} />
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: "source",
+      header: "Source",
+      minWidth: 220,
+      cell: (m) => (
+        <div className="flex flex-col gap-0.5 text-xs">
+          <span className="text-muted-foreground">
+            via <span className="text-foreground">{m.role}</span> (project)
+            {m.override && (
+              <>
+                {" + "}
+                <span className="text-foreground">{m.override}</span> (survey)
+              </>
+            )}
+          </span>
+          {m.override && (
+            <span className="text-[0.68rem] text-accent-foreground">
+              +{permissionsGained(m.role, m.override).length} permission(s) from override
+            </span>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  return <Table columns={columns} rows={rows} getRowKey={(m) => m.id} />;
+}
+
+const ADDITIVE_GRANT_LABEL: Record<SurveyRole, string> = {
+  Manager: "+ Manage",
+  Publisher: "+ Publish",
+  Editor: "+ Edit",
+  Viewer: "",
+};
+
+function VariantAdditiveNaming() {
+  const rows = buildMemberRows();
+  const columns: TableColumn<MemberRow>[] = [
+    {
+      key: "member",
+      header: "Member",
+      minWidth: 180,
+      cell: (m) => (
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-foreground">{m.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{m.email}</p>
+        </div>
+      ),
+    },
+    {
+      key: "project-role",
+      header: "Project role",
+      minWidth: 110,
+      cell: (m) => (
+        <Badge variant={PROJECT_ROLE_BADGE[m.role]} size="xs">
+          {m.role}
+        </Badge>
+      ),
+    },
+    {
+      key: "survey-grant",
+      header: "Survey grant",
+      minWidth: 140,
+      cell: (m) => {
+        const gained = m.override ? permissionsGained(m.role, m.override) : [];
+        if (!m.override || gained.length === 0) {
+          return <span className="text-xs text-muted-foreground">—</span>;
+        }
+        return (
+          <Badge variant="warning" size="xs">
+            {ADDITIVE_GRANT_LABEL[m.override] || `+ ${m.override}`}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: "effective",
+      header: "Effective permissions",
+      minWidth: 260,
+      cell: (m) => {
+        const gained = m.override ? permissionsGained(m.role, m.override) : [];
+        return (
+          <div className="flex flex-wrap gap-1.5">
+            {SURVEY_ROLE_PERMISSIONS[m.effective].map((p) => {
+              const isGained = gained.includes(p);
+              return (
+                <Badge key={p} variant={isGained ? "warning" : "default"} size="xs">
+                  {p}
+                </Badge>
+              );
+            })}
+          </div>
+        );
+      },
+    },
+  ];
+
+  return <Table className="w-[clamp(16rem,50vw,48rem)]" columns={columns} rows={rows} getRowKey={(m) => m.id} />;
+}
+
+function VariantCollapsedDefault() {
+  const rows = buildMemberRows();
+  const columns: TableColumn<MemberRow>[] = [
+    {
+      key: "member",
+      header: "Member",
+      minWidth: 180,
+      cell: (m) => (
+        <div className={`min-w-0 ${m.override ? "border-l-2 border-accent pl-2" : ""}`}>
+          <p className="truncate text-sm font-semibold text-foreground">{m.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{m.email}</p>
+        </div>
+      ),
+    },
+    {
+      key: "role",
+      header: "Role",
+      minWidth: 240,
+      cell: (m) => (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant={PROJECT_ROLE_BADGE[m.role]} size="xs">
+            {m.role}
+          </Badge>
+          {m.override && (
+            <>
+              <span aria-hidden className="text-xs text-muted-foreground">+</span>
+              <Badge variant={SURVEY_ROLE_BADGE[m.override]} size="xs">
+                {m.override}
+              </Badge>
+              <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[0.62rem] font-semibold uppercase tracking-wider text-accent-foreground">
+                Override
+              </span>
+            </>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "effective",
+      header: "Effective access",
+      minWidth: 260,
+      cell: (m) => {
+        if (!m.override) {
+          const count = SURVEY_ROLE_PERMISSIONS[m.effective].length;
+          return (
+            <span className="text-xs text-muted-foreground">
+              Inherits {count} permission{count === 1 ? "" : "s"} from project role
+            </span>
+          );
+        }
+        const gained = permissionsGained(m.role, m.override);
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-[0.68rem] font-semibold uppercase tracking-wider text-accent-foreground">
+              Gains on this survey
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {gained.length === 0 ? (
+                <span className="text-xs text-muted-foreground">No additional permissions</span>
+              ) : (
+                gained.map((p) => (
+                  <PermissionTag key={p} label={p} tooltip={PERMISSION_TOOLTIPS[p] ?? p} />
+                ))
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+  ];
+
+  return <Table columns={columns} rows={rows} getRowKey={(m) => m.id} />;
+}
+
 export function UITestPage() {
+  useRenderDebug("UITestPage");
   // ── Table test data ──────────────────────────────────────────────────────────
 
   interface SampleRow {
@@ -292,6 +568,35 @@ export function UITestPage() {
         </Section>
 
 
+        <Section title="Survey member role variants">
+          <CardStack gap="lg">
+            <TestCard title="Variant A — Effective permissions first">
+              <p className="mb-3 text-xs leading-5 text-muted-foreground">
+                Lead with what the person can actually do. Roles are pushed to a "Source" column as the
+                <em> how</em>, not the headline. Best when reviewers ask "what can this person do?"
+              </p>
+              <VariantEffectivePermissions />
+            </TestCard>
+
+            <TestCard title="Variant B — Additive naming (+ Grant)">
+              <p className="mb-3 text-xs leading-5 text-muted-foreground">
+                Survey grants are named after what they <em>add</em> ("+ Publish", "+ Manage"), not as a parallel
+                hierarchy. Gained permissions are highlighted in the effective list. Makes the additive nature literal.
+              </p>
+              <VariantAdditiveNaming />
+            </TestCard>
+
+            <TestCard title="Variant C — Collapsed default case">
+              <p className="mb-3 text-xs leading-5 text-muted-foreground">
+                Members without an override show only their project role and a quiet summary line. Overridden rows
+                get a left-border accent, an "Override" pill, and an explicit "Gains on this survey" block.
+                Optimizes for the common case where most rows have no overrides.
+              </p>
+              <VariantCollapsedDefault />
+            </TestCard>
+          </CardStack>
+        </Section>
+
         <Section title="Table">
           <CardStack gap="lg">
             <TestCard title="All columns visible">
@@ -342,6 +647,7 @@ export function UITestPage() {
             <TestCard title="Clickable rows">
               <Table
                 hideHeader={true}
+                className=""
                 columns={ALL_COLUMNS}
                 rows={TABLE_ROWS}
                 getRowKey={(row) => row.id}

@@ -1,8 +1,10 @@
 import { useParams } from '@tanstack/react-router'
 import { Badge, Button, Card } from '@flowform/ui'
 import { getMockPublicLinksForSurvey, getMockSurvey } from '@/api/mockData'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 export function SurveyLinksTab() {
+  useRenderDebug('SurveyLinksTab')
   const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/links' })
   const survey = getMockSurvey(slug, surveySlug)
   const links = getMockPublicLinksForSurvey(surveySlug)

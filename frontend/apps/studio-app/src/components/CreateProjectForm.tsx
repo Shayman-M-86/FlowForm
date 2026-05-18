@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button, Input, LargeInput } from '@flowform/ui'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 function toUrlSafeName(value: string): string {
   return value
@@ -29,6 +30,7 @@ interface CreateProjectFormProps {
 }
 
 export function CreateProjectForm({ onSubmit }: CreateProjectFormProps) {
+  useRenderDebug('CreateProjectForm', { onSubmit })
   const [urlSafeNameEdited, setUrlSafeNameEdited] = useState(false)
   const {
     register,
@@ -38,6 +40,7 @@ export function CreateProjectForm({ onSubmit }: CreateProjectFormProps) {
     formState: { errors, isSubmitting },
   } = useForm<CreateProjectFields>({
     resolver: zodResolver(createProjectSchema),
+    mode: 'onTouched',
   })
 
   const name = watch('name')

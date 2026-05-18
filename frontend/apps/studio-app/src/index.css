@@ -32,12 +32,16 @@ body {
   --sidebar-w: 0px;
 }
 
+.app-main {
+  @apply min-h-screen min-w-0 flex-1 overflow-x-clip bg-background pt-14 md:pt-0;
+}
+
 .page-main {
-  @apply max-w-7xl px-6 py-14 md:px-16
+  @apply py-4 md:py-14 px-[max(0.75rem,3vw)] md:px-[clamp(0.75rem,calc(0.75rem+10vw-77px),4rem)] ;
 }
 
 .page-main-builder {
-  @apply w-full max-w-none p-0
+  @apply w-full max-w-none p-0;
 }
 
 /* ── Studio Sidebar ──────────────────────────────────────────── */
@@ -54,6 +58,7 @@ body {
     }
 
     .app-main {
+      @apply border-l border-border rounded-l-3xl shadow-lg;
       transition: border-radius 200ms ease-out;
     }
   }
