@@ -126,20 +126,6 @@ function IconBuilder() {
     </svg>
   );
 }
-function IconLogic() {
-  return (
-    <svg {...svgProps}>
-      <path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" />
-    </svg>
-  );
-}
-function IconPublish() {
-  return (
-    <svg {...svgProps}>
-      <path d="M12 19V5" /><path d="m5 12 7-7 7 7" />
-    </svg>
-  );
-}
 function IconCollapse() {
   return <svg {...svgProps}><path d="M11 5l-7 7 7 7"/><path d="M20 5l-7 7 7 7"/></svg>;
 }

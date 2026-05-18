@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from app.core.errors import ForbiddenError
+from app.domain.errors import ForbiddenError
 
 if TYPE_CHECKING:
     from app.services.access.access_service import ProjectAccess, SurveyAccess

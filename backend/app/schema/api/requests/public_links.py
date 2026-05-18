@@ -26,11 +26,27 @@ def _normalize_assigned_email(value: str | None) -> str | None:
     return normalized
 
 
+def _validate_name(value: str) -> str:
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError("name must not be blank.")
+    if len(normalized) > 120:
+        raise ValueError("name must be at most 120 characters.")
+    return normalized
+
+
 class CreatePublicLinkRequest(BaseModel):
     """Request body for creating a survey link."""
 
+    name: str
     assigned_email: str | None = None
+    requires_auth: bool = False
     expires_at: AwareDatetime | None = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        return _validate_name(value)
 
     @field_validator("assigned_email")
     @classmethod
@@ -47,8 +63,17 @@ class UpdatePublicLinkRequest(BaseModel):
     """Request body for partially updating a survey link."""
 
     is_active: bool | None = None
+    name: str | None = None
     assigned_email: str | None = None
+    requires_auth: bool | None = None
     expires_at: AwareDatetime | None = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _validate_name(value)
 
     @field_validator("assigned_email")
     @classmethod

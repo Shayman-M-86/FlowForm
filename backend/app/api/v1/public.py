@@ -59,13 +59,18 @@ def get_public_survey(public_slug: str):
 
 
 @public_bp.route("/links/resolve", methods=["GET"])
-@auth.require_auth()
+@auth.optional_auth()
 def resolve_link():
     payload = parse_query(ResolveTokenRequest, request)
 
     core_db = get_core_db()
 
-    user = users_service.get_user_by_sub(db=core_db, auth0_user_id=auth.get_current_user_sub())
+    current_sub = auth.get_optional_current_user_sub()
+    user = (
+        users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub)
+        if current_sub is not None
+        else None
+    )
     result = survey_link_service.resolve_link(core_db, payload=payload, actor=user)
     response = ResolveLinkOut(
         link=PublicLinkOut.model_validate(result.link),
@@ -101,12 +106,17 @@ def create_slug_submission():
 
 
 @public_bp.route("/submissions/link", methods=["POST"])
-@auth.require_auth()
+@auth.optional_auth()
 def create_link_submission():
     payload = parse(LinkSubmissionRequest, request)
     core_db = get_core_db()
     response_db = get_response_db()
-    user = users_service.get_user_by_sub(db=core_db, auth0_user_id=auth.get_current_user_sub())
+    current_sub = auth.get_optional_current_user_sub()
+    user = (
+        users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub)
+        if current_sub is not None
+        else None
+    )
     linked = submission_intake_service.create_link_submission(
         core_db,
         response_db,

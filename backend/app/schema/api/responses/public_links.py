@@ -12,10 +12,13 @@ class PublicLinkOut(BaseModel):
 
     id: int
     survey_id: int
+    name: str
     token_prefix: str
     is_active: bool
+    requires_auth: bool
     assigned_email: str | None
     expires_at: datetime | None
+    used_at: datetime | None
     created_at: datetime
 
 
@@ -26,11 +29,14 @@ class PublicLinkCreatedOut(BaseModel):
 
     id: int
     survey_id: int
+    name: str
     token: str  # plaintext — returned once only, never stored
     token_prefix: str
     is_active: bool
+    requires_auth: bool
     assigned_email: str | None
     expires_at: datetime | None
+    used_at: datetime | None
     created_at: datetime
 
 class CreatePublicLinkOut(BaseModel):

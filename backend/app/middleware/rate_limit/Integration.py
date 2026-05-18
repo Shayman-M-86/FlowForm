@@ -6,7 +6,7 @@ from collections.abc import Callable
 from flask import Flask, request
 
 from app.core.config import Settings
-from app.core.errors import RateLimitExceededError
+from app.middleware.rate_limit.errors import RateLimitExceededError
 from app.middleware.rate_limit.service import RateLimitConfig, RateLimitService
 from app.utils.general import get_client_ip
 

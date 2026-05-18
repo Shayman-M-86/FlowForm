@@ -1,4 +1,4 @@
-import type { CreateProjectRequest, ProjectOut, SurveyOut, SurveyVersionOut, PublicLinkOut } from './types'
+import type { CreateProjectRequest, ProjectOut } from './types'
 
 export const mockProjects: ProjectOut[] = [
   {

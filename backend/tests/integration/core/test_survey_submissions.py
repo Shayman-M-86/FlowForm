@@ -396,9 +396,8 @@ def test_survey_submission_rejects_invalid_channel(
 ) -> None:
     """submission_channel must be one of: link, slug, system.
 
-    No user or link is set so that link_requires_user and
-    link_requires_link_id both pass, leaving only submission_channel_valid
-    to fire.
+    No user or link is set so that link_requires_link_id passes, leaving only
+    submission_channel_valid to fire.
     """
     sub = SurveySubmission()
     sub.project_id = project.id
@@ -594,40 +593,9 @@ def test_survey_submission_slug_rejects_link_id(
     db_session.rollback()
 
 
-def test_survey_submission_link_requires_user(
-    db_session: scoped_session[Session],
-    project: Project,
-    survey: Survey,
-    survey_version: SurveyVersion,
-    response_store: ResponseStore,
-) -> None:
-    """link channel must have submitted_by_user_id set."""
-    link = make_survey_public_link(survey.id)
-    db_session.add(link)
-    db_session.flush()
-
-    sub = SurveySubmission()
-    sub.project_id = project.id
-    sub.survey_id = survey.id
-    sub.survey_version_id = survey_version.id
-    sub.response_store_id = response_store.id
-    sub.submission_channel = "link"
-    sub.survey_link_id = link.id
-    sub.status = "pending"
-    sub.is_anonymous = False
-    db_session.add(sub)
-
-    with pytest.raises(IntegrityError) as exc_info:
-        db_session.flush()
-
-    orig = cast(CheckViolation, exc_info.value.orig)
-    constraint = orig.diag.constraint_name
-    assert constraint == "ck_survey_submissions_link_requires_user", (
-        f"Expected constraint 'ck_survey_submissions_link_requires_user', got '{constraint}'\n"
-        f"DB error: {exc_info.value}"
-    )
-
-    db_session.rollback()
+# Note: link submissions no longer require submitted_by_user_id at the DB level.
+# Per-link auth requirement (general/assigned/private-invite) is enforced in the
+# service layer via survey_links.requires_auth.
 
 
 # ---------------------------------------------------------------------------

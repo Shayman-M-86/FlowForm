@@ -1,8 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Any
 
-from pydantic import ValidationError
-
 # ----------------------------------------------------------
 # Application errors
 # ----------------------------------------------------------
@@ -27,7 +25,12 @@ class ConfigError(Exception):
 
 
 # ----------------------------------------------------------
-# Domain errors
+# API-surface error base classes
+#
+# Concrete subclasses live in their respective layers:
+#   - app/domain/errors.py        domain rule violations
+#   - app/middleware/auth/...     auth middleware errors built from auth_errors.py
+#   - app/middleware/rate_limit/  rate-limit errors
 # ----------------------------------------------------------
 
 
@@ -48,83 +51,21 @@ class AppError(Exception):
     details: dict[str, Any] = field(default_factory=dict)
 
 
-class SurveyNotFoundError(AppError):
-    """Error raised when a requested survey is not found in the database."""
-
-    def __init__(self, survey_id: int, project_id: int) -> None:
-        super().__init__(
-            status_code=404,
-            code="SURVEY_NOT_FOUND",
-            message=f"Survey {survey_id} was not found in project {project_id}.",
-        )
-
-
-class PermissionDeniedError(AppError):
-    """Error raised when a user attempts to perform an action they do not have permission for."""
-
-    def __init__(self, message: str = "Permission denied.") -> None:
-        super().__init__(
-            status_code=403,
-            code="FORBIDDEN",
-            message=message,
-        )
-
-
-class SurveyPublishError(AppError):
-    """Error raised when a survey cannot be published due to validation issues."""
-
-    def __init__(self, message: str) -> None:
-        super().__init__(
-            status_code=409,
-            code="SURVEY_PUBLISH_ERROR",
-            message=message,
-        )
-
-
-# ----------------------------------------------------------
-# API errors
-# ----------------------------------------------------------
-class ParsingValidationError(ValidationError):
-    """Error raised when parsing validation fails."""
-
-    description = "A parsing validation error occurred."
-
-
-class RateLimitExceededError(AppError):
-    """Error raised when a user exceeds the allowed rate limit."""
-
-    def __init__(self, retry_after_seconds: int | None = None) -> None:
-        super().__init__(
-            status_code=429,
-            code="RATE_LIMIT_EXCEEDED",
-            message=f"Rate limit exceeded. Please retry after {retry_after_seconds} seconds."
-            if retry_after_seconds is not None
-            else "Rate limit exceeded. Please retry after some time.",
-        )
-        self.retry_after_seconds = retry_after_seconds
-
-
 class AuthError(AppError):
-    """Base auth error that flows through the normal AppError handler."""
+    """Base auth error that flows through the normal AppError handler.
+
+    Carries an optional ``headers`` dict (e.g. ``WWW-Authenticate``) that the
+    error handler attaches to the response.
+    """
 
     def __init__(
         self,
         *,
         message: str,
-        code: str = "AUTH_ERROR",
+        code: str,
         status_code: int = 401,
         details: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
     ) -> None:
         super().__init__(message=message, code=code, status_code=status_code, details=details or {})
         self.headers = headers or {}
-
-class ForbiddenError(AppError):
-    """Error raised when a user attempts to access a resource they do not have permission for."""
-
-    def __init__(self, message: str = "You do not have permission to access this resource.") -> None:
-        super().__init__(
-            status_code=403,
-            code="FORBIDDEN",
-            message=message,
-        )

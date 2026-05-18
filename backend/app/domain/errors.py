@@ -3,6 +3,17 @@ from typing import Any
 from app.core.errors import AppError, AuthError
 
 
+class ForbiddenError(AppError):
+    """Error raised when a user attempts to access a resource they do not have permission for."""
+
+    def __init__(self, message: str = "You do not have permission to access this resource.") -> None:
+        super().__init__(
+            status_code=403,
+            code="FORBIDDEN",
+            message=message,
+        )
+
+
 class InvalidIdTokenSubjectError(AuthError):
     """Error raised when an ID token does not contain a valid subject."""
 
@@ -98,6 +109,39 @@ class LinkAssignmentMismatchError(AppError):
         )
 
 
+class LinkAuthAssignmentRequiredError(AppError):
+    """Error raised when an authenticated link is not assigned to an email."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=422,
+            code="LINK_ASSIGNED_EMAIL_REQUIRED",
+            message="Links that require authentication must be assigned to an email.",
+        )
+
+
+class LinkAuthRequiredError(AppError):
+    """Error raised when a link requires authentication but the caller is anonymous."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=401,
+            code="LINK_AUTH_REQUIRED",
+            message="This link requires authentication.",
+        )
+
+
+class LinkAlreadyUsedError(AppError):
+    """Error raised when a single-use link has already been consumed."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="LINK_ALREADY_USED",
+            message="This link has already been used.",
+        )
+
+
 class PrivateSurveyAssignedEmailRequiredError(AppError):
     """Error raised when a private survey link is not assigned to a specific email."""
 
@@ -106,17 +150,6 @@ class PrivateSurveyAssignedEmailRequiredError(AppError):
             status_code=422,
             code="ASSIGNED_EMAIL_REQUIRED",
             message="Private surveys require links assigned to a specific email.",
-        )
-
-
-class NonPrivateSurveyAssignedEmailForbiddenError(AppError):
-    """Error raised when a non-private survey link is assigned to a specific email."""
-
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=422,
-            code="ASSIGNED_EMAIL_NOT_ALLOWED",
-            message="Only private surveys can use links assigned to a specific email.",
         )
 
 
@@ -172,6 +205,22 @@ class SurveyNotFoundBySlugError(AppError):
             status_code=404,
             code="NOT_FOUND",
             message="Survey not found",
+        )
+
+
+class SurveyVisibilityMismatchError(AppError):
+    """Error raised when a survey's visibility and public_slug fields are inconsistent.
+
+    A survey is publicly browsable iff ``visibility == "public"`` AND
+    ``public_slug`` is set. Any other combination is invalid and rejected
+    before the row is committed.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(
+            status_code=422,
+            code="SURVEY_VISIBILITY_MISMATCH",
+            message=message,
         )
 
 

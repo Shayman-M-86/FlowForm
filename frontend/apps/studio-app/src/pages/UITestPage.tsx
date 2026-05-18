@@ -26,7 +26,6 @@ import {
   TabsContent,
   PermissionTag,
 } from "@flowform/ui";
-import { ChevronDown } from "lucide-react";
 import {
   mockProjectMembers,
   type MockProjectMember,

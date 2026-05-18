@@ -92,6 +92,18 @@ class SurveyService:
     ) -> Survey:
         survey = self._get_survey(db, project_id, survey_id)
 
+        changed = data.model_fields_set
+        merged_visibility = (
+            data.visibility
+            if "visibility" in changed and data.visibility is not None
+            else survey.visibility
+        )
+        merged_public_slug = data.public_slug if "public_slug" in changed else survey.public_slug
+        survey_rules.ensure_visibility_slug_coherent(
+            visibility=merged_visibility,
+            public_slug=merged_public_slug,
+        )
+
         updated = surveys_repo.update_survey(db, survey, data)
         commit_with_err_handle(db, contexts=[updated])
         return updated

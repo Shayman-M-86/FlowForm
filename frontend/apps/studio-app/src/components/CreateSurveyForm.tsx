@@ -4,6 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button, Input, LargeInput, Select } from '@flowform/ui'
 import { useRenderDebug } from '@/debug/useRenderDebug'
+import { SurveyAccessModeSelector } from '@/components/SurveyAccess'
+import { SURVEY_ACCESS_MODE_IDS } from '@/lib/surveyAccessDesign'
 
 function toUrlSafeName(value: string): string {
   return value
@@ -22,6 +24,7 @@ const createSurveySchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Use lowercase letters, numbers, and hyphens only'),
   description: z.string().max(500).optional(),
   initialStatus: z.enum(['draft', 'published']),
+  accessMode: z.enum(SURVEY_ACCESS_MODE_IDS),
 })
 
 export type CreateSurveyFields = z.infer<typeof createSurveySchema>
@@ -48,7 +51,7 @@ export function CreateSurveyForm({ onSubmit }: CreateSurveyFormProps) {
   } = useForm<CreateSurveyFields>({
     resolver: zodResolver(createSurveySchema),
     mode: 'onTouched',
-    defaultValues: { initialStatus: 'draft' },
+    defaultValues: { initialStatus: 'draft', accessMode: 'link_only' },
   })
 
   const title = watch('title')
@@ -88,6 +91,17 @@ export function CreateSurveyForm({ onSubmit }: CreateSurveyFormProps) {
         error={errors.description?.message}
         autoGrow
         {...register('description')}
+      />
+      <Controller
+        control={control}
+        name="accessMode"
+        render={({ field }) => (
+          <SurveyAccessModeSelector
+            value={field.value}
+            onChange={field.onChange}
+            compact
+          />
+        )}
       />
       <Controller
         control={control}

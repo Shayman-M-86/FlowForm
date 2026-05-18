@@ -6,6 +6,7 @@ from app.domain.errors import (
     SurveyNotFoundBySlugError,
     SurveyNotFoundError,
     SurveyNotPublishedError,
+    SurveyVisibilityMismatchError,
 )
 from app.schema.orm.core.survey import Survey, SurveyVersion
 
@@ -58,6 +59,20 @@ def ensure_default_response_store(
     if survey.default_response_store_id is None:
         survey.default_response_store_id = default_response_store_id
     return survey.default_response_store_id
+
+
+def ensure_visibility_slug_coherent(*, visibility: str, public_slug: str | None) -> None:
+    """Validate that ``visibility`` and ``public_slug`` form a coherent pair.
+
+    Mirrors the database CHECK constraints ``ck_surveys_public_requires_slug``
+    and ``ck_surveys_slug_requires_public_visibility``. Call this before any
+    write that may change either field so the request fails fast with a clean
+    422 instead of tripping the CHECK at COMMIT time.
+    """
+    if visibility == "public" and not public_slug:
+        raise SurveyVisibilityMismatchError("public_slug is required when visibility is 'public'.")
+    if public_slug and visibility != "public":
+        raise SurveyVisibilityMismatchError("public_slug requires visibility 'public'.")
 
 
 def ensure_can_delete_survey(survey: Survey) -> None:

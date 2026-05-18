@@ -1,16 +1,56 @@
 import { useState } from 'react'
 import { useParams } from '@tanstack/react-router'
-import { Card, Button, Input, Toggle } from '@flowform/ui'
-import { getMockSurvey } from '@/api/mockData'
+import { Card, Button, Input, Toast, Toggle } from '@flowform/ui'
+import { getMockPublicLinksForSurvey, getMockSurvey } from '@/api/mockData'
 import { useRenderDebug } from '@/debug/useRenderDebug'
+import { SurveyAccessSettingsPanel } from '@/components/SurveyAccess'
+import {
+  SURVEY_ACCESS_CONCEPTS,
+  SURVEY_ACCESS_ENTRIES,
+  SURVEY_ACCESS_MODES,
+  type SurveyAccessEntry,
+  type SurveyAccessMode,
+} from '@/lib/surveyAccessDesign'
+
+function uniqueEntries(entries: SurveyAccessEntry[]): SurveyAccessEntry[] {
+  return [...new Set(entries)]
+}
 
 export function SurveySettingsTab() {
   useRenderDebug('SurveySettingsTab')
   const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/settings' })
+  const [savedAccessMode, setSavedAccessMode] = useState<SurveyAccessMode>('link_only')
+  const [accessMode, setAccessMode] = useState<SurveyAccessMode>(savedAccessMode)
   const [allowAnonymous, setAllowAnonymous] = useState(true)
   const [closeAfterDate, setCloseAfterDate] = useState(false)
+  const [accessWarning, setAccessWarning] = useState<string | null>(null)
   const survey = getMockSurvey(slug, surveySlug)
+  const publicLinks = getMockPublicLinksForSurvey(surveySlug)
   const surveyTitle = survey?.title ?? surveySlug.replace(/-/g, ' ')
+  const ResponseIdentityIcon = SURVEY_ACCESS_CONCEPTS.responseIdentity.icon
+  const accessChanged = accessMode !== savedAccessMode
+
+  function saveAccessChanges() {
+    const currentEntries = new Set(SURVEY_ACCESS_MODES[savedAccessMode].allowedEntries)
+    const nextEntries = new Set(SURVEY_ACCESS_MODES[accessMode].allowedEntries)
+    const entriesInUse = uniqueEntries([
+      ...publicLinks
+        .filter((link) => link.isActive)
+        .map((link) => (link.assignedEmail ? 'authenticated_assigned_link' : 'general_link') as SurveyAccessEntry),
+      ...(savedAccessMode === 'public' ? ['public_slug' as SurveyAccessEntry] : []),
+    ])
+    const invalidatedEntries = entriesInUse.filter((entry) => currentEntries.has(entry) && !nextEntries.has(entry))
+
+    setSavedAccessMode(accessMode)
+
+    if (invalidatedEntries.length > 0) {
+      const labels = invalidatedEntries.map((entry) => SURVEY_ACCESS_ENTRIES[entry].label).join(', ')
+      setAccessWarning(`Access saved, but this change makes these existing access methods invalid: ${labels}.`)
+      return
+    }
+
+    setAccessWarning(null)
+  }
 
   return (
     <section className="grid max-w-2xl gap-6 mx-auto">
@@ -36,24 +76,19 @@ export function SurveySettingsTab() {
         </div>
       </Card>
 
-      {/* Behaviour */}
+      {/* Respondent access */}
       <Card>
-        <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Behaviour</p>
-        <div className="grid gap-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">Allow anonymous responses</p>
-              <p className="text-xs text-muted-foreground">Respondents do not need to be identified</p>
-            </div>
-            <Toggle checked={allowAnonymous} onChange={setAllowAnonymous} />
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">Close after date</p>
-              <p className="text-xs text-muted-foreground">Stop accepting responses after a specific date</p>
-            </div>
-            <Toggle checked={closeAfterDate} onChange={setCloseAfterDate} />
-          </div>
+        <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Respondent access</p>
+        {accessWarning && (
+          <Toast variant="warning" className="mb-4" onClose={() => setAccessWarning(null)}>
+            {accessWarning}
+          </Toast>
+        )}
+        <SurveyAccessSettingsPanel mode={accessMode} onModeChange={setAccessMode} />
+        <div className="mt-4 flex justify-start">
+          <Button variant="primary" size="sm" disabled={!accessChanged} onClick={saveAccessChanges}>
+            Save changes
+          </Button>
         </div>
       </Card>
 

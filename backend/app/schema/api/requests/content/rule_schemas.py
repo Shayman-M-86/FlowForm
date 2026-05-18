@@ -4,8 +4,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-
 # ── Condition requirements per question family ─────────────────────────────────
+
 
 class ChoiceRequirementsIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -72,6 +72,7 @@ class DateFieldRequirementsIn(BaseModel):
     @classmethod
     def validate_date_value(cls, value: str) -> str:
         import re
+
         if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
             raise ValueError("date value must be in YYYY-MM-DD format")
         return value
@@ -81,6 +82,7 @@ FieldRequirementsIn = NumberFieldRequirementsIn | DateFieldRequirementsIn
 
 
 # ── Per-family condition blocks ────────────────────────────────────────────────
+
 
 class ChoiceConditionIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -169,6 +171,7 @@ class RuleIfIn(BaseModel):
 
 # ── Then / Else blocks ────────────────────────────────────────────────────────
 
+
 class ThenSetItemIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -228,6 +231,7 @@ class RuleElseIn(BaseModel):
 
 
 # ── Top-level rule content schema ─────────────────────────────────────────────
+
 
 class RuleSchemaIn(BaseModel):
     """Represents the full rule content stored in question_schema for a rule node."""

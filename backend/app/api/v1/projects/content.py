@@ -5,6 +5,7 @@ from app.api.v1.projects import content_svc, projects_bp, users_service
 from app.api.v1.projects.resolver import resolve_project_ref
 from app.core.extensions import auth
 from app.db.context import get_core_db
+from app.openapi import openapi_route
 from app.schema.api.requests.content import (
     CreateNodeRequest,
     CreateScoringRuleRequest,
@@ -33,6 +34,15 @@ def list_nodes(project_ref: str, survey_id: int, version_number: int):
     return [NodeOut.model_validate(n).model_dump(mode="json") for n in nodes], 200
 
 
+@openapi_route(
+    method="POST",
+    path="/api/v1/projects/<project_ref>/surveys/<int:survey_id>/versions/<int:version_number>/nodes",
+    summary="Create survey content node",
+    request_model=CreateNodeRequest,
+    response_model=NodeOut,
+    status_code=201,
+    tags=["Survey Content"],
+)
 @projects_bp.route(_NBASE, methods=["POST"])
 @auth.require_auth()
 def create_node(project_ref: str, survey_id: int, version_number: int):

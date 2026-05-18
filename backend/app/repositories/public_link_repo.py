@@ -1,6 +1,6 @@
 import hashlib
 import secrets
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -42,16 +42,20 @@ def create_link(
     db: Session,
     *,
     survey_id: int,
+    name: str,
     assigned_email: str | None,
+    requires_auth: bool,
     expires_at: datetime | None,
 ) -> tuple[SurveyLink, str]:
     token, prefix, token_hash = _make_token()
 
     link = SurveyLink(
         survey_id=survey_id,
+        name=name,
         token_prefix=prefix,
         token_hash=token_hash,
         assigned_email=assigned_email,
+        requires_auth=requires_auth,
         expires_at=expires_at,
     )
     db.add(link)
@@ -64,11 +68,19 @@ def update_link(
     *,
     link: SurveyLink,
     is_active: bool | None = None,
+    name: str | None = None,
+    requires_auth: bool | None = None,
     assigned_email: str | None | _UnsetType = _UNSET,
     expires_at: datetime | None | _UnsetType = _UNSET,
 ) -> SurveyLink:
     if is_active is not None:
         link.is_active = is_active
+
+    if name is not None:
+        link.name = name
+
+    if requires_auth is not None:
+        link.requires_auth = requires_auth
 
     if not isinstance(assigned_email, _UnsetType):
         link.assigned_email = assigned_email
@@ -76,6 +88,14 @@ def update_link(
     if not isinstance(expires_at, _UnsetType):
         link.expires_at = expires_at
 
+    flush_with_err_handle(db, contexts=[link])
+    return link
+
+
+def mark_used(db: Session, *, link: SurveyLink) -> SurveyLink:
+    """Mark a single-use link as used. No-op if already used."""
+    if link.used_at is None:
+        link.used_at = datetime.now(UTC)
     flush_with_err_handle(db, contexts=[link])
     return link
 

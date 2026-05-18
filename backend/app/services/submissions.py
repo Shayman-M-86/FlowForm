@@ -4,6 +4,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.db.error_handling import commit_with_err_handle
 from app.domain import public_link_rules, submission_rules, survey_rules
 from app.gateway.submission_gateway import SubmissionGateway
 from app.repositories import public_link_repo, response_stores_repo, submissions_repo, surveys_repo
@@ -81,12 +82,15 @@ class SubmissionIntakeService:
         response_db: Session,
         *,
         payload: LinkSubmissionRequest,
-        actor: User,
+        actor: User | None,
     ) -> LinkedSubmissionResult:
         link = public_link_rules.ensure_is_not_none(link=public_link_repo.resolve_token(core_db, payload.token))
         public_link_rules.ensure_is_active(link=link)
         public_link_rules.ensure_not_expired(link=link)
-        public_link_rules.ensure_actor_matches_assignment(link=link, actor_email=actor.email)
+        actor_email = actor.email if actor is not None else None
+        public_link_rules.ensure_auth_satisfied(link=link, actor_email=actor_email)
+        public_link_rules.ensure_actor_matches_assignment(link=link, actor_email=actor_email)
+        public_link_rules.ensure_not_used(link=link)
 
         survey = link.survey
         survey_rules.ensure_is_published(
@@ -95,10 +99,14 @@ class SubmissionIntakeService:
             project_id=survey.project_id,
         )
 
+        actor_id = actor.id if actor is not None else None
+        # Private-invite links allow anonymous (unauthenticated) submissions.
+        is_anonymous = actor_id is None
+
         response_store_id = self._ensure_survey_response_store(
             core_db,
             survey=survey,
-            created_by_user_id=actor.id,
+            created_by_user_id=actor_id or survey.created_by_user_id,
         )
 
         context = SubmissionContext(
@@ -107,22 +115,27 @@ class SubmissionIntakeService:
             survey_version_id=payload.survey_version_id,
             response_store_id=response_store_id,
             submission_channel="link",
-            submitted_by_user_id=actor.id,
+            submitted_by_user_id=actor_id,
             survey_link_id=link.id,
             pseudonymous_subject_id=self._resolve_subject_id(
                 core_db,
                 project_id=survey.project_id,
-                submitted_by_user_id=actor.id,
-                is_anonymous=False,
+                submitted_by_user_id=actor_id,
+                is_anonymous=is_anonymous,
             ),
-            is_anonymous=False,
+            is_anonymous=is_anonymous,
             started_at=payload.started_at,
             submitted_at=payload.submitted_at,
             answers=[a.model_dump() for a in payload.answers],
             metadata=payload.metadata,
         )
 
-        return self._create_submission_from_context(core_db, response_db, context=context)
+        result = self._create_submission_from_context(core_db, response_db, context=context)
+        # Mark single-use links consumed after successful intake.
+        if link.is_single_use:
+            public_link_repo.mark_used(core_db, link=link)
+            commit_with_err_handle(core_db, contexts=[link])
+        return result
 
     def create_slug_submission(
         self,
