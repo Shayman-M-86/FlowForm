@@ -5,11 +5,13 @@ from app.api.v1.projects import projects_bp, survey_service, users_service
 from app.api.v1.projects.resolver import resolve_project_ref
 from app.core.extensions import auth
 from app.db.context import get_core_db
+from app.openapi import openapi_route
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.api.responses.surveys import SurveyOut
 from app.schema.orm.core.user import User
 
 
+@openapi_route(summary="List surveys", response_model=list[SurveyOut], tags=["Surveys"])
 @projects_bp.route("/<project_ref>/surveys", methods=["GET"])
 @auth.require_auth()
 def list_surveys(project_ref: str):
@@ -20,6 +22,13 @@ def list_surveys(project_ref: str):
     return [SurveyOut.model_validate(s).model_dump(mode="json") for s in surveys], 200
 
 
+@openapi_route(
+    summary="Create survey",
+    request_model=CreateSurveyRequest,
+    response_model=SurveyOut,
+    status_code=201,
+    tags=["Surveys"],
+)
 @projects_bp.route("/<project_ref>/surveys", methods=["POST"])
 @auth.require_auth()
 def create_survey(project_ref: str):
@@ -31,6 +40,7 @@ def create_survey(project_ref: str):
     return SurveyOut.model_validate(survey).model_dump(mode="json"), 201
 
 
+@openapi_route(summary="Get survey", response_model=SurveyOut, tags=["Surveys"])
 @projects_bp.route("/<project_ref>/surveys/<int:survey_id>", methods=["GET"])
 @auth.require_auth()
 def get_survey(project_ref: str, survey_id: int):
@@ -41,6 +51,12 @@ def get_survey(project_ref: str, survey_id: int):
     return SurveyOut.model_validate(survey).model_dump(mode="json"), 200
 
 
+@openapi_route(
+    summary="Update survey",
+    request_model=UpdateSurveyRequest,
+    response_model=SurveyOut,
+    tags=["Surveys"],
+)
 @projects_bp.route("/<project_ref>/surveys/<int:survey_id>", methods=["PATCH"])
 @auth.require_auth()
 def update_survey(project_ref: str, survey_id: int):
@@ -52,6 +68,7 @@ def update_survey(project_ref: str, survey_id: int):
     return SurveyOut.model_validate(survey).model_dump(mode="json"), 200
 
 
+@openapi_route(summary="Delete survey", tags=["Surveys"])
 @projects_bp.route("/<project_ref>/surveys/<int:survey_id>", methods=["DELETE"])
 @auth.require_auth()
 def delete_survey(project_ref: str, survey_id: int):

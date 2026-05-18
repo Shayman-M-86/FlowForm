@@ -22,6 +22,7 @@ _SBASE = "/<project_ref>/surveys/<int:survey_id>/versions/<int:version_number>/s
 # ── Nodes ─────────────────────────────────────────────────────────────────────
 
 
+@openapi_route(summary="List survey content nodes", response_model=list[NodeOut], tags=["Survey Content"])
 @projects_bp.route(_NBASE, methods=["GET"])
 @auth.require_auth()
 def list_nodes(project_ref: str, survey_id: int, version_number: int):
@@ -35,8 +36,6 @@ def list_nodes(project_ref: str, survey_id: int, version_number: int):
 
 
 @openapi_route(
-    method="POST",
-    path="/api/v1/projects/<project_ref>/surveys/<int:survey_id>/versions/<int:version_number>/nodes",
     summary="Create survey content node",
     request_model=CreateNodeRequest,
     response_model=NodeOut,
@@ -56,6 +55,7 @@ def create_node(project_ref: str, survey_id: int, version_number: int):
     return NodeOut.model_validate(node).model_dump(mode="json"), 201
 
 
+@openapi_route(summary="Get survey content node", response_model=NodeOut, tags=["Survey Content"])
 @projects_bp.route(f"{_NBASE}/<int:node_id>", methods=["GET"])
 @auth.require_auth()
 def get_node(project_ref: str, survey_id: int, version_number: int, node_id: int):
@@ -73,6 +73,12 @@ def get_node(project_ref: str, survey_id: int, version_number: int, node_id: int
     return NodeOut.model_validate(node).model_dump(mode="json"), 200
 
 
+@openapi_route(
+    summary="Update survey content node",
+    request_model=UpdateNodeRequest,
+    response_model=NodeOut,
+    tags=["Survey Content"],
+)
 @projects_bp.route(f"{_NBASE}/<int:node_id>", methods=["PATCH"])
 @auth.require_auth()
 def update_node(project_ref: str, survey_id: int, version_number: int, node_id: int):
@@ -92,6 +98,7 @@ def update_node(project_ref: str, survey_id: int, version_number: int, node_id: 
     return NodeOut.model_validate(node).model_dump(mode="json"), 200
 
 
+@openapi_route(summary="Delete survey content node", tags=["Survey Content"])
 @projects_bp.route(f"{_NBASE}/<int:node_id>", methods=["DELETE"])
 @auth.require_auth()
 def delete_node(project_ref: str, survey_id: int, version_number: int, node_id: int):
@@ -112,6 +119,7 @@ def delete_node(project_ref: str, survey_id: int, version_number: int, node_id: 
 # ── Scoring rules ─────────────────────────────────────────────────────────────
 
 
+@openapi_route(summary="List scoring rules", response_model=list[ScoringRuleOut], tags=["Scoring Rules"])
 @projects_bp.route(_SBASE, methods=["GET"])
 @auth.require_auth()
 def list_scoring_rules(project_ref: str, survey_id: int, version_number: int):
@@ -124,6 +132,13 @@ def list_scoring_rules(project_ref: str, survey_id: int, version_number: int):
     return [ScoringRuleOut.model_validate(r).model_dump(mode="json") for r in rules], 200
 
 
+@openapi_route(
+    summary="Create scoring rule",
+    request_model=CreateScoringRuleRequest,
+    response_model=ScoringRuleOut,
+    status_code=201,
+    tags=["Scoring Rules"],
+)
 @projects_bp.route(_SBASE, methods=["POST"])
 @auth.require_auth()
 def create_scoring_rule(project_ref: str, survey_id: int, version_number: int):
@@ -137,6 +152,12 @@ def create_scoring_rule(project_ref: str, survey_id: int, version_number: int):
     return ScoringRuleOut.model_validate(rule).model_dump(mode="json"), 201
 
 
+@openapi_route(
+    summary="Update scoring rule",
+    request_model=UpdateScoringRuleRequest,
+    response_model=ScoringRuleOut,
+    tags=["Scoring Rules"],
+)
 @projects_bp.route(f"{_SBASE}/<int:scoring_rule_id>", methods=["PATCH"])
 @auth.require_auth()
 def update_scoring_rule(project_ref: str, survey_id: int, version_number: int, scoring_rule_id: int):
@@ -156,6 +177,7 @@ def update_scoring_rule(project_ref: str, survey_id: int, version_number: int, s
     return ScoringRuleOut.model_validate(rule).model_dump(mode="json"), 200
 
 
+@openapi_route(summary="Delete scoring rule", tags=["Scoring Rules"])
 @projects_bp.route(f"{_SBASE}/<int:scoring_rule_id>", methods=["DELETE"])
 @auth.require_auth()
 def delete_scoring_rule(project_ref: str, survey_id: int, version_number: int, scoring_rule_id: int):

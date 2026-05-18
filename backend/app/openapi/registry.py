@@ -10,25 +10,29 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any, TypeVar
+from typing import Any, Literal, TypeVar
 
 from pydantic import BaseModel
 
 F = TypeVar("F", bound=Callable[..., Any])
+ResponseModel = type[BaseModel] | Any
+AuthMode = Literal["required", "optional", "none"]
 
 
 @dataclass(slots=True, frozen=True)
 class RouteMetadata:
     """OpenAPI metadata captured for a single route handler."""
 
-    method: str
-    path: str
+    method: str | None
+    path: str | None
     summary: str
     tags: tuple[str, ...]
     request_model: type[BaseModel] | None
-    response_model: type[BaseModel] | None
+    query_model: type[BaseModel] | None
+    response_model: ResponseModel | None
     status_code: int
     description: str | None
+    auth: AuthMode
     handler_qualname: str
 
 
@@ -37,34 +41,41 @@ _REGISTRY: list[RouteMetadata] = []
 
 def openapi_route(
     *,
-    method: str,
-    path: str,
     summary: str,
+    method: str | None = None,
+    path: str | None = None,
     tags: Sequence[str] = (),
     request_model: type[BaseModel] | None = None,
-    response_model: type[BaseModel] | None = None,
+    query_model: type[BaseModel] | None = None,
+    response_model: ResponseModel | None = None,
     status_code: int = 200,
     description: str | None = None,
+    auth: AuthMode = "required",
+    auth_required: bool | None = None,
 ) -> Callable[[F], F]:
     """Register OpenAPI metadata for a Flask view function.
 
     This decorator is documentation-only: it records metadata in the registry
-    and returns the original function unchanged. It must be stacked above the
-    Flask ``@bp.route(...)`` decorator so the underlying handler is what Flask
-    registers.
+    and returns the original function unchanged. When ``method`` or ``path`` is
+    omitted, the spec builder derives it from the Flask rule registered for the
+    wrapped handler. Stack this above the Flask ``@bp.route(...)`` decorator so
+    the registered handler can be matched later.
     """
+    auth_mode: AuthMode = ("required" if auth_required else "none") if auth_required is not None else auth
 
     def decorator(func: F) -> F:
         _REGISTRY.append(
             RouteMetadata(
-                method=method.upper(),
+                method=method.upper() if method is not None else None,
                 path=path,
                 summary=summary,
                 tags=tuple(tags),
                 request_model=request_model,
+                query_model=query_model,
                 response_model=response_model,
                 status_code=status_code,
                 description=description,
+                auth=auth_mode,
                 handler_qualname=f"{func.__module__}.{func.__qualname__}",
             )
         )

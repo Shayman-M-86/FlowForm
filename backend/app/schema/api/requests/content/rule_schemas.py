@@ -8,6 +8,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 class ChoiceRequirementsIn(BaseModel):
+    """Validation requirements for a choice-question condition."""
+
     model_config = ConfigDict(extra="forbid")
 
     required: list[str] | None = None
@@ -22,6 +24,8 @@ class ChoiceRequirementsIn(BaseModel):
 
 
 class MatchingRequirementsIn(BaseModel):
+    """Validation requirements for a matching-question condition."""
+
     model_config = ConfigDict(extra="forbid")
 
     required: list[dict[str, str]]
@@ -38,6 +42,8 @@ class MatchingRequirementsIn(BaseModel):
 
 
 class RatingRequirementsIn(BaseModel):
+    """Validation requirements for a rating-question condition."""
+
     model_config = ConfigDict(extra="forbid")
 
     min: int | float | None = None
@@ -54,6 +60,8 @@ FieldOperator = Literal["LT", "LTE", "GT", "GTE", "EQ", "NEQ", "before", "after"
 
 
 class NumberFieldRequirementsIn(BaseModel):
+    """Validation requirements for a numeric field-question condition."""
+
     model_config = ConfigDict(extra="forbid")
 
     type: Literal["number"]
@@ -62,6 +70,8 @@ class NumberFieldRequirementsIn(BaseModel):
 
 
 class DateFieldRequirementsIn(BaseModel):
+    """Validation requirements for a date field-question condition."""
+
     model_config = ConfigDict(extra="forbid")
 
     type: Literal["date"]
@@ -85,6 +95,7 @@ FieldRequirementsIn = NumberFieldRequirementsIn | DateFieldRequirementsIn
 
 
 class ChoiceConditionIn(BaseModel):
+    """Represents a condition block targeting a choice question."""
     model_config = ConfigDict(extra="forbid")
 
     target_id: str
@@ -100,6 +111,8 @@ class ChoiceConditionIn(BaseModel):
 
 
 class MatchingConditionIn(BaseModel):
+    """Represents a condition block targeting a matching question."""
+
     model_config = ConfigDict(extra="forbid")
 
     target_id: str
@@ -115,6 +128,8 @@ class MatchingConditionIn(BaseModel):
 
 
 class RatingConditionIn(BaseModel):
+    """Represents a condition block targeting a rating question."""
+
     model_config = ConfigDict(extra="forbid")
 
     target_id: str
@@ -130,6 +145,8 @@ class RatingConditionIn(BaseModel):
 
 
 class FieldConditionIn(BaseModel):
+    """Represents a condition block targeting a field question."""
+
     model_config = ConfigDict(extra="forbid")
 
     target_id: str
@@ -156,6 +173,8 @@ IfMatch = Literal["ALL", "ANY", "NONE"]
 
 
 class RuleIfIn(BaseModel):
+    """Represents the rule predicate and how its conditions are matched."""
+
     model_config = ConfigDict(extra="forbid")
 
     match: IfMatch
@@ -173,6 +192,8 @@ class RuleIfIn(BaseModel):
 
 
 class ThenSetItemIn(BaseModel):
+    """Represents one visibility or required-state effect in a then block."""
+
     model_config = ConfigDict(extra="forbid")
 
     target_id: str
@@ -197,6 +218,8 @@ SkipAction = Literal["skip_to", "end_and_submit", "end_and_discard"]
 
 
 class ElseDoIn(BaseModel):
+    """Represents the single navigation action performed by an else block."""
+
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     skip_to: str | None = None
@@ -212,6 +235,8 @@ class ElseDoIn(BaseModel):
 
 
 class RuleThenIn(BaseModel):
+    """Represents the effects applied when a rule predicate matches."""
+
     model_config = ConfigDict(extra="forbid")
 
     set: list[ThenSetItemIn]
@@ -225,6 +250,8 @@ class RuleThenIn(BaseModel):
 
 
 class RuleElseIn(BaseModel):
+    """Represents the fallback action when a rule predicate does not match."""
+
     model_config = ConfigDict(extra="forbid")
 
     do: ElseDoIn

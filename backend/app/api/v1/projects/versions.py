@@ -2,10 +2,12 @@ from app.api.v1.projects import projects_bp, survey_service, users_service
 from app.api.v1.projects.resolver import resolve_project_ref
 from app.core.extensions import auth
 from app.db.context import get_core_db
+from app.openapi import openapi_route
 from app.schema.api.responses.surveys import SurveyVersionOut
 from app.schema.orm.core.user import User
 
 
+@openapi_route(summary="List survey versions", response_model=list[SurveyVersionOut], tags=["Survey Versions"])
 @projects_bp.route("/<project_ref>/surveys/<int:survey_id>/versions", methods=["GET"])
 @auth.require_auth()
 def list_versions(project_ref: str, survey_id: int):
@@ -16,6 +18,12 @@ def list_versions(project_ref: str, survey_id: int):
     return [SurveyVersionOut.model_validate(v).model_dump(mode="json") for v in versions], 200
 
 
+@openapi_route(
+    summary="Create survey version",
+    response_model=SurveyVersionOut,
+    status_code=201,
+    tags=["Survey Versions"],
+)
 @projects_bp.route("/<project_ref>/surveys/<int:survey_id>/versions", methods=["POST"])
 @auth.require_auth()
 def create_version(project_ref: str, survey_id: int):
@@ -26,6 +34,12 @@ def create_version(project_ref: str, survey_id: int):
     return SurveyVersionOut.model_validate(version).model_dump(mode="json"), 201
 
 
+@openapi_route(
+    summary="Copy survey version to draft",
+    response_model=SurveyVersionOut,
+    status_code=201,
+    tags=["Survey Versions"],
+)
 @projects_bp.route(
     "/<project_ref>/surveys/<int:survey_id>/versions/<int:version_number>/copy-to-draft",
     methods=["POST"],
@@ -45,6 +59,7 @@ def copy_version_to_draft(project_ref: str, survey_id: int, version_number: int)
     return SurveyVersionOut.model_validate(version).model_dump(mode="json"), 201
 
 
+@openapi_route(summary="Get survey version", response_model=SurveyVersionOut, tags=["Survey Versions"])
 @projects_bp.route("/<project_ref>/surveys/<int:survey_id>/versions/<int:version_number>", methods=["GET"])
 @auth.require_auth()
 def get_version(project_ref: str, survey_id: int, version_number: int):
@@ -57,6 +72,7 @@ def get_version(project_ref: str, survey_id: int, version_number: int):
     return SurveyVersionOut.model_validate(version).model_dump(mode="json"), 200
 
 
+@openapi_route(summary="Publish survey version", response_model=SurveyVersionOut, tags=["Survey Versions"])
 @projects_bp.route(
     "/<project_ref>/surveys/<int:survey_id>/versions/<int:version_number>/publish",
     methods=["POST"],
@@ -72,6 +88,7 @@ def publish_version(project_ref: str, survey_id: int, version_number: int):
     return SurveyVersionOut.model_validate(version).model_dump(mode="json"), 200
 
 
+@openapi_route(summary="Archive survey version", response_model=SurveyVersionOut, tags=["Survey Versions"])
 @projects_bp.route(
     "/<project_ref>/surveys/<int:survey_id>/versions/<int:version_number>/archive",
     methods=["POST"],

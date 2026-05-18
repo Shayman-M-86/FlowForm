@@ -3,6 +3,7 @@ from flask import Blueprint, request
 from app.api.utils.validation import parse
 from app.core.extensions import auth
 from app.db.context import get_core_db
+from app.openapi import openapi_route
 from app.schema.api.requests.auth import BootstrapUserRequest
 from app.schema.api.responses.auth import BootstrapUserOut, CurrentUserOut
 from app.schema.api.responses.projects import ProjectOut
@@ -13,6 +14,13 @@ auth_bp = Blueprint("auth_v1", __name__)
 auth_service = AuthService()
 
 
+@openapi_route(
+    summary="Bootstrap current user",
+    request_model=BootstrapUserRequest,
+    response_model=BootstrapUserOut,
+    status_code=201,
+    tags=["Auth"],
+)
 @auth_bp.route("/bootstrap-user", methods=["POST"])
 @auth.require_auth()
 def bootstrap_user():

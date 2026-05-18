@@ -20,3 +20,7 @@ BEARER_SECURITY_SCHEME: dict[str, Any] = {
 
 def global_security() -> list[dict[str, list[str]]]:
     return [{BEARER_SCHEME_NAME: []}]
+
+
+def optional_security() -> list[dict[str, list[str]]]:
+    return [{}, {BEARER_SCHEME_NAME: []}]

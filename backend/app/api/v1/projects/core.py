@@ -5,11 +5,13 @@ from app.api.v1.projects import project_service, projects_bp, users_service
 from app.api.v1.projects.resolver import resolve_project_ref
 from app.core.extensions import auth
 from app.db.context import get_core_db
+from app.openapi import openapi_route
 from app.schema.api.requests.projects import CreateProjectRequest, UpdateProjectRequest
 from app.schema.api.responses.projects import ProjectOut
 from app.schema.orm.core.user import User
 
 
+@openapi_route(summary="List projects", response_model=list[ProjectOut], tags=["Projects"])
 @projects_bp.route("", methods=["GET"])
 @auth.require_auth()
 def list_projects():
@@ -19,6 +21,13 @@ def list_projects():
     return [ProjectOut.model_validate(p).model_dump(mode="json") for p in projects], 200
 
 
+@openapi_route(
+    summary="Create project",
+    request_model=CreateProjectRequest,
+    response_model=ProjectOut,
+    status_code=201,
+    tags=["Projects"],
+)
 @projects_bp.route("", methods=["POST"])
 @auth.require_auth()
 def create_project():
@@ -29,6 +38,7 @@ def create_project():
     return ProjectOut.model_validate(project).model_dump(mode="json"), 201
 
 
+@openapi_route(summary="Get project", response_model=ProjectOut, tags=["Projects"])
 @projects_bp.route("/<project_ref>", methods=["GET"])
 @auth.require_auth()
 def get_project(project_ref: str):
@@ -38,6 +48,12 @@ def get_project(project_ref: str):
     return ProjectOut.model_validate(project).model_dump(mode="json"), 200
 
 
+@openapi_route(
+    summary="Update project",
+    request_model=UpdateProjectRequest,
+    response_model=ProjectOut,
+    tags=["Projects"],
+)
 @projects_bp.route("/<project_ref>", methods=["PATCH"])
 @auth.require_auth()
 def update_project(project_ref: str):
@@ -49,6 +65,7 @@ def update_project(project_ref: str):
     return ProjectOut.model_validate(project).model_dump(mode="json"), 200
 
 
+@openapi_route(summary="Delete project", tags=["Projects"])
 @projects_bp.route("/<project_ref>", methods=["DELETE"])
 @auth.require_auth()
 def delete_project(project_ref: str):

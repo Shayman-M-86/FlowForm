@@ -5,6 +5,7 @@ from app.api.v1.projects import projects_bp, submission_query_service, users_ser
 from app.api.v1.projects.resolver import resolve_project_ref
 from app.core.extensions import auth
 from app.db.context import get_core_db, get_response_db
+from app.openapi import openapi_route
 from app.schema.api.requests.submissions.query import GetSubmissionRequest, ListSubmissionsRequest
 from app.schema.api.responses.submissions import (
     AnswerOut,
@@ -15,6 +16,12 @@ from app.schema.api.responses.submissions import (
 from app.schema.orm.core.user import User
 
 
+@openapi_route(
+    summary="List submissions",
+    query_model=ListSubmissionsRequest,
+    response_model=PaginatedSubmissionsOut,
+    tags=["Submissions"],
+)
 @projects_bp.route("/<project_ref>/submissions", methods=["GET"])
 @auth.require_auth()
 def list_submissions(project_ref: str):
@@ -39,6 +46,12 @@ def list_submissions(project_ref: str):
     return response.model_dump(mode="json"), 200
 
 
+@openapi_route(
+    summary="Get submission",
+    query_model=GetSubmissionRequest,
+    response_model=LinkedSubmissionOut,
+    tags=["Submissions"],
+)
 @projects_bp.route("/<project_ref>/submissions/<int:submission_id>", methods=["GET"])
 @auth.require_auth()
 def get_submission(project_ref: str, submission_id: int):

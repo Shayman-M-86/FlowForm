@@ -13,11 +13,12 @@ from __future__ import annotations
 
 import re
 import threading
-from typing import Any
+from typing import Any, get_args, get_origin
 
 from apispec import APISpec
 from flask import Blueprint, Flask, jsonify
 from pydantic import BaseModel
+from werkzeug.routing import Rule
 
 from app.openapi.errors import (
     ERROR_SCHEMA,
@@ -29,6 +30,7 @@ from app.openapi.security import (
     BEARER_SCHEME_NAME,
     BEARER_SECURITY_SCHEME,
     global_security,
+    optional_security,
 )
 
 # Flask uses ``<type:name>`` path converters; OpenAPI uses ``{name}``.
@@ -47,6 +49,7 @@ _DEFAULT_PARAM_SCHEMA: dict[str, Any] = {"type": "string"}
 
 _spec_cache: dict[str, Any] | None = None
 _spec_lock = threading.Lock()
+_AUTO_METHODS = {"HEAD", "OPTIONS"}
 
 
 def _flask_path_to_openapi(path: str) -> tuple[str, list[dict[str, Any]]]:
@@ -131,6 +134,43 @@ def _register_model(spec: APISpec, model: type[BaseModel]) -> str:
     return name
 
 
+def _schema_for_response_model(spec: APISpec, model: Any) -> dict[str, Any]:
+    origin = get_origin(model)
+    args = get_args(model)
+
+    if origin is list and len(args) == 1 and isinstance(args[0], type) and issubclass(args[0], BaseModel):
+        item_name = _register_model(spec, args[0])
+        return {
+            "type": "array",
+            "items": {"$ref": f"#/components/schemas/{item_name}"},
+        }
+
+    if isinstance(model, type) and issubclass(model, BaseModel):
+        response_name = _register_model(spec, model)
+        return {"$ref": f"#/components/schemas/{response_name}"}
+
+    raise TypeError(f"Unsupported OpenAPI response model: {model!r}")
+
+
+def _query_parameters_for_model(model: type[BaseModel]) -> list[dict[str, Any]]:
+    schema = model.model_json_schema(ref_template="#/components/schemas/{model}")
+    properties = schema.get("properties", {})
+    required = set(schema.get("required", []))
+    parameters: list[dict[str, Any]] = []
+
+    for name, property_schema in properties.items():
+        parameters.append(
+            {
+                "name": name,
+                "in": "query",
+                "required": name in required,
+                "schema": _rewrite_refs(property_schema),
+            }
+        )
+
+    return parameters
+
+
 def _build_operation(
     spec: APISpec, route: RouteMetadata, path_parameters: list[dict[str, Any]]
 ) -> dict[str, Any]:
@@ -140,8 +180,15 @@ def _build_operation(
     }
     if route.description:
         operation["description"] = route.description
-    if path_parameters:
-        operation["parameters"] = path_parameters
+    if route.auth == "none":
+        operation["security"] = []
+    elif route.auth == "optional":
+        operation["security"] = optional_security()
+    parameters = list(path_parameters)
+    if route.query_model is not None:
+        parameters.extend(_query_parameters_for_model(route.query_model))
+    if parameters:
+        operation["parameters"] = parameters
 
     if route.request_model is not None and route.method in {"POST", "PUT", "PATCH", "DELETE"}:
         request_name = _register_model(spec, route.request_model)
@@ -156,12 +203,11 @@ def _build_operation(
 
     responses: dict[str, Any] = {}
     if route.response_model is not None:
-        response_name = _register_model(spec, route.response_model)
         responses[str(route.status_code)] = {
             "description": "Successful response.",
             "content": {
                 "application/json": {
-                    "schema": {"$ref": f"#/components/schemas/{response_name}"},
+                    "schema": _schema_for_response_model(spec, route.response_model),
                 }
             },
         }
@@ -172,6 +218,52 @@ def _build_operation(
     operation["responses"] = responses
 
     return operation
+
+
+def _handler_qualname(app: Flask, rule: Rule) -> str | None:
+    handler = app.view_functions.get(rule.endpoint)
+    if handler is None:
+        return None
+    return f"{handler.__module__}.{handler.__qualname__}"
+
+
+def _explicit_methods(rule: Rule) -> set[str]:
+    return {method for method in rule.methods or set() if method not in _AUTO_METHODS}
+
+
+def _resolve_route_locations(app: Flask, route: RouteMetadata) -> list[tuple[str, str]]:
+    """Return concrete method/path pairs for a route metadata entry."""
+    if route.method is not None and route.path is not None:
+        return [(route.method, route.path)]
+
+    matches: list[tuple[str, Rule]] = []
+    for rule in app.url_map.iter_rules():
+        if _handler_qualname(app, rule) != route.handler_qualname:
+            continue
+        for method in sorted(_explicit_methods(rule)):
+            if route.method is None or method == route.method:
+                matches.append((method, rule))
+
+    if route.path is not None:
+        matches = [(method, rule) for method, rule in matches if rule.rule == route.path]
+
+    if not matches:
+        raise RuntimeError(f"Could not derive OpenAPI route for {route.handler_qualname}.")
+
+    if route.method is None and len(matches) > 1:
+        raise RuntimeError(
+            f"Could not derive a single OpenAPI method for {route.handler_qualname}; "
+            "set method=... explicitly."
+        )
+
+    rules_by_path = {rule.rule for _, rule in matches}
+    if route.path is None and len(rules_by_path) > 1:
+        raise RuntimeError(
+            f"Could not derive a single OpenAPI path for {route.handler_qualname}; "
+            "set path=... explicitly."
+        )
+
+    return [(method, route.path or rule.rule) for method, rule in matches]
 
 
 def build_spec(app: Flask) -> dict[str, Any]:
@@ -198,9 +290,23 @@ def build_spec(app: Flask) -> dict[str, Any]:
 
     grouped: dict[str, dict[str, Any]] = {}
     for route in get_registered_routes():
-        openapi_path, path_params = _normalize_openapi_path(route.path)
-        operation = _build_operation(spec, route, path_params)
-        grouped.setdefault(openapi_path, {})[route.method.lower()] = operation
+        for method, path in _resolve_route_locations(app, route):
+            resolved_route = RouteMetadata(
+                method=method,
+                path=path,
+                summary=route.summary,
+                tags=route.tags,
+                request_model=route.request_model,
+                query_model=route.query_model,
+                response_model=route.response_model,
+                status_code=route.status_code,
+                description=route.description,
+                auth=route.auth,
+                handler_qualname=route.handler_qualname,
+            )
+            openapi_path, path_params = _normalize_openapi_path(path)
+            operation = _build_operation(spec, resolved_route, path_params)
+            grouped.setdefault(openapi_path, {})[method.lower()] = operation
 
     document = spec.to_dict()
     document["security"] = global_security()

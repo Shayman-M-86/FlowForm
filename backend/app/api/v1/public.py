@@ -5,6 +5,7 @@ from flask import Blueprint, request
 from app.api.utils.validation import parse, parse_query
 from app.core.extensions import auth
 from app.db.context import get_core_db, get_response_db
+from app.openapi import openapi_route
 from app.schema.api.requests.public_links import ResolveTokenRequest
 from app.schema.api.requests.submissions.create import (
     LinkSubmissionRequest,
@@ -29,6 +30,13 @@ submission_intake_service = SubmissionIntakeService()
 public_survey_service = PublicSurveyService()
 
 
+@openapi_route(
+    summary="List public surveys",
+    query_model=ListPublicSurveysRequest,
+    response_model=PaginatedPublicSurveysOut,
+    tags=["Public"],
+    auth_required=False,
+)
 @public_bp.route("/surveys", methods=["GET"])
 def list_public_surveys():
     params = parse_query(ListPublicSurveysRequest, request)
@@ -44,6 +52,12 @@ def list_public_surveys():
     return response.model_dump(mode="json"), 200
 
 
+@openapi_route(
+    summary="Get public survey",
+    response_model=PublicSurveyOut,
+    tags=["Public"],
+    auth_required=False,
+)
 @public_bp.route("/surveys/<string:public_slug>", methods=["GET"])
 def get_public_survey(public_slug: str):
     core_db = get_core_db()
@@ -58,6 +72,17 @@ def get_public_survey(public_slug: str):
     return response.model_dump(mode="json"), 200
 
 
+@openapi_route(
+    summary="Resolve survey link",
+    query_model=ResolveTokenRequest,
+    response_model=ResolveLinkOut,
+    tags=["Public Links"],
+    auth="optional",
+    description=(
+        "Anonymous access is allowed for links that do not require authentication. "
+        "If the resolved link requires authentication, a bearer token must be supplied."
+    ),
+)
 @public_bp.route("/links/resolve", methods=["GET"])
 @auth.optional_auth()
 def resolve_link():
@@ -81,6 +106,14 @@ def resolve_link():
     return response.model_dump(mode="json"), 200
 
 
+@openapi_route(
+    summary="Create slug submission",
+    request_model=SlugSubmissionRequest,
+    response_model=LinkedSubmissionOut,
+    status_code=201,
+    tags=["Public Submissions"],
+    auth="optional",
+)
 @public_bp.route("/submissions/slug", methods=["POST"])
 @auth.optional_auth()
 def create_slug_submission():
@@ -105,6 +138,14 @@ def create_slug_submission():
     return response.model_dump(mode="json"), 201
 
 
+@openapi_route(
+    summary="Create link submission",
+    request_model=LinkSubmissionRequest,
+    response_model=LinkedSubmissionOut,
+    status_code=201,
+    tags=["Public Submissions"],
+    auth="optional",
+)
 @public_bp.route("/submissions/link", methods=["POST"])
 @auth.optional_auth()
 def create_link_submission():
