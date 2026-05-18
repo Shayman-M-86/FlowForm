@@ -184,7 +184,7 @@ def build_spec(app: Flask) -> dict[str, Any]:
     spec = APISpec(
         title=app.config.get("OPENAPI_TITLE", "FlowForm API"),
         version=app.config.get("OPENAPI_VERSION", "1.0.0"),
-        openapi_version="3.0.3",
+        openapi_version="3.2.0",
         info={
             "description": app.config.get(
                 "OPENAPI_DESCRIPTION",
