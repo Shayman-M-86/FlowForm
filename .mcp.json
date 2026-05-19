@@ -13,6 +13,10 @@
         "--autoConnect",
         "-y"
       ]
+    },
+    "flowform-dev": {
+      "command": "/usr/bin/bash",
+      "args": ["${CLAUDE_PROJECT_DIR:-.}/tools/mcp/run.sh"]
     }
   }
 }

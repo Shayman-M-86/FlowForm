@@ -133,3 +133,47 @@ def test_openapi_route_emits_query_model_parameters() -> None:
             "schema": {"default": 1, "title": "Page", "type": "integer"},
         },
     ]
+
+
+def test_operation_id_is_derived_from_handler_function_name() -> None:
+    app = Flask(__name__)
+
+    @openapi_route(summary="List widgets", tags=["Widgets"])
+    @app.route("/widgets", methods=["GET"])
+    def list_widgets():  # pragma: no cover
+        return []
+
+    @openapi_route(summary="Get widget", tags=["Widgets"])
+    @app.route("/widgets/<int:widget_id>", methods=["GET"])
+    def get_widget(widget_id: int):  # pragma: no cover
+        return {"id": widget_id}
+
+    document = build_spec(app)
+
+    assert document["paths"]["/widgets"]["get"]["operationId"] == "listWidgets"
+    assert document["paths"]["/widgets/{widget_id}"]["get"]["operationId"] == "getWidget"
+
+
+def test_operation_ids_are_unique_across_the_document() -> None:
+    app = Flask(__name__)
+
+    @openapi_route(summary="Create widget", tags=["Widgets"])
+    @app.route("/widgets", methods=["POST"])
+    def create_widget():  # pragma: no cover
+        return {}, 201
+
+    @openapi_route(summary="Delete widget", tags=["Widgets"])
+    @app.route("/widgets/<int:widget_id>", methods=["DELETE"])
+    def delete_widget(widget_id: int):  # pragma: no cover
+        return "", 204
+
+    document = build_spec(app)
+
+    seen: list[str] = []
+    for path_item in document["paths"].values():
+        for operation in path_item.values():
+            if isinstance(operation, dict) and "operationId" in operation:
+                seen.append(operation["operationId"])
+
+    assert seen, "expected at least one operationId in the document"
+    assert len(seen) == len(set(seen)), f"duplicate operationIds: {seen}"

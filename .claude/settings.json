@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "Bash(/path/to/FlowForm/tools/mcp/run.sh)",
       "Read(/home/shayman86/my-repos/FlowForm/**)",
       "Edit(/home/shayman86/my-repos/FlowForm/**)",
       "Write(/home/shayman86/my-repos/FlowForm/**)",

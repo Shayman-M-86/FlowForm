@@ -78,6 +78,12 @@
             "**/.ruff_cache": true,
             "**/node_modules": true,
         },
+        "json.schemas": [
+            {
+                "fileMatch": [".mcp.json"],
+                "schema": {}
+            }
+        ],
         "hide-files.files": [],
         "folder-color.pathColors": [],
         "piny.project_settings": {

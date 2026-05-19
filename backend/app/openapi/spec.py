@@ -47,6 +47,20 @@ _CONVERTER_SCHEMA: dict[str, dict[str, Any]] = {
 
 _DEFAULT_PARAM_SCHEMA: dict[str, Any] = {"type": "string"}
 
+
+def _operation_id_from_qualname(handler_qualname: str) -> str:
+    """Derive a camelCase operationId from the handler's qualified name.
+
+    ``app.api.v1.projects.core.list_projects`` → ``listProjects``. The handler
+    function name is the source of truth so spec consumers (codegen, MCP
+    tools) get stable, unique identifiers without per-route boilerplate.
+    """
+    func_name = handler_qualname.rsplit(".", 1)[-1]
+    parts = func_name.split("_")
+    if not parts:
+        return func_name
+    return parts[0] + "".join(p[:1].upper() + p[1:] for p in parts[1:] if p)
+
 _spec_cache: dict[str, Any] | None = None
 _spec_lock = threading.Lock()
 _AUTO_METHODS = {"HEAD", "OPTIONS"}
@@ -175,6 +189,7 @@ def _build_operation(
     spec: APISpec, route: RouteMetadata, path_parameters: list[dict[str, Any]]
 ) -> dict[str, Any]:
     operation: dict[str, Any] = {
+        "operationId": _operation_id_from_qualname(route.handler_qualname),
         "summary": route.summary,
         "tags": list(route.tags) if route.tags else [],
     }
