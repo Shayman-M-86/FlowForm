@@ -2,8 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.db.error_handling import commit_with_err_handle, flush_with_err_handle
 from app.db.transaction import rollback_safely
