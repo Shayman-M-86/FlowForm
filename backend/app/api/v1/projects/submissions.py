@@ -37,7 +37,7 @@ def list_submissions(project_ref: str):
     )
 
     response = PaginatedSubmissionsOut(
-        items=[CoreSubmissionOut.from_submission(s) for s in items],
+        items=[CoreSubmissionOut.model_validate(s) for s in items],
         page=payload.page,
         page_size=payload.page_size,
         total=total,
@@ -70,7 +70,7 @@ def get_submission(project_ref: str, submission_id: int):
     )
 
     response = LinkedSubmissionOut(
-        core=CoreSubmissionOut.from_submission(linked.core_submission),
+        core=CoreSubmissionOut.model_validate(linked.core_submission),
         answers=[AnswerOut.model_validate(a) for a in linked.answers],
     )
 

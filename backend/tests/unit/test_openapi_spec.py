@@ -14,10 +14,10 @@ def clean_openapi_registry():
     clear_registry()
 
 
-def test_openapi_spec_uses_version_3_2_0() -> None:
+def test_openapi_spec_uses_version_3_1_1() -> None:
     document = build_spec(Flask(__name__))
 
-    assert document["openapi"] == "3.2.0"
+    assert document["openapi"] == "3.1.1"
 
 
 def test_openapi_route_derives_method_and_path_from_flask_rule() -> None:

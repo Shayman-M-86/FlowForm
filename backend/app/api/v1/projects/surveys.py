@@ -68,7 +68,7 @@ def update_survey(project_ref: str, survey_id: int):
     return SurveyOut.model_validate(survey).model_dump(mode="json"), 200
 
 
-@openapi_route(summary="Delete survey", tags=["Surveys"])
+@openapi_route(summary="Delete survey", tags=["Surveys"], status_code=204)
 @projects_bp.route("/<project_ref>/surveys/<int:survey_id>", methods=["DELETE"])
 @auth.require_auth()
 def delete_survey(project_ref: str, survey_id: int):
@@ -76,4 +76,4 @@ def delete_survey(project_ref: str, survey_id: int):
     user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     project_id = resolve_project_ref(db, project_ref, user).id
     survey_service.delete_survey(db=db, project_id=project_id, survey_id=survey_id, actor=user)
-    return {"message": "Survey deleted"}, 200
+    return "", 204

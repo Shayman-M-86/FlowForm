@@ -1,10 +1,12 @@
 from datetime import datetime
-from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict
 
-if TYPE_CHECKING:
-    from app.schema.orm.core.survey_submission import SurveySubmission
+from app.schema.api.enums import (
+    AnswerFamily,
+    SubmissionChannel,
+    SubmissionStatus,
+)
 
 
 class AnswerOut(BaseModel):
@@ -14,7 +16,7 @@ class AnswerOut(BaseModel):
 
     id: int
     question_key: str
-    answer_family: str
+    answer_family: AnswerFamily
     answer_value: dict
     created_at: datetime
 
@@ -39,38 +41,15 @@ class CoreSubmissionOut(BaseModel):
     survey_id: int
     survey_version_id: int
     response_store_id: int
-    submission_channel: str
+    submission_channel: SubmissionChannel
     submitted_by_user_id: int | None
     survey_link_id: int | None
     submitter: SubmitterOut | None = None
     is_anonymous: bool
-    status: str
+    status: SubmissionStatus
     started_at: datetime | None
     submitted_at: datetime | None
     created_at: datetime
-
-    @classmethod
-    def from_submission(cls, submission: "SurveySubmission") -> "CoreSubmissionOut":
-        return cls(
-            id=submission.id,
-            project_id=submission.project_id,
-            survey_id=submission.survey_id,
-            survey_version_id=submission.survey_version_id,
-            response_store_id=submission.response_store_id,
-            submission_channel=submission.submission_channel,
-            submitted_by_user_id=submission.submitted_by_user_id,
-            survey_link_id=submission.survey_link_id,
-            submitter=(
-                SubmitterOut.model_validate(submission.submitted_by)
-                if submission.submitted_by is not None
-                else None
-            ),
-            is_anonymous=submission.is_anonymous,
-            status=submission.status,
-            started_at=submission.started_at,
-            submitted_at=submission.submitted_at,
-            created_at=submission.created_at,
-        )
 
 
 class LinkedSubmissionOut(BaseModel):

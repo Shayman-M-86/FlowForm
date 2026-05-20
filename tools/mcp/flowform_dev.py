@@ -57,14 +57,7 @@ def _fetch_spec() -> dict[str, Any]:
             file=sys.stderr,
         )
         raise SystemExit(1) from exc
-    spec = response.json()
-    # FastMCP's parser only accepts OpenAPI 3.1.x. The backend emits 3.2.0,
-    # but the document body is parser-compatible — downgrade the version
-    # string so FastMCP accepts it.
-    version = spec.get("openapi", "")
-    if isinstance(version, str) and version.startswith("3.2"):
-        spec["openapi"] = "3.1.0"
-    return spec
+    return response.json()
 
 
 SPEC = _fetch_spec()

@@ -65,7 +65,7 @@ def update_project(project_ref: str):
     return ProjectOut.model_validate(project).model_dump(mode="json"), 200
 
 
-@openapi_route(summary="Delete project", tags=["Projects"])
+@openapi_route(summary="Delete project", tags=["Projects"], status_code=204)
 @projects_bp.route("/<project_ref>", methods=["DELETE"])
 @auth.require_auth()
 def delete_project(project_ref: str):
@@ -73,4 +73,4 @@ def delete_project(project_ref: str):
     actor: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     project_id = resolve_project_ref(db, project_ref, actor).id
     project_service.delete_project(db=db, project_id=project_id, actor=actor)
-    return {"message": "Project deleted"}, 200
+    return "", 204

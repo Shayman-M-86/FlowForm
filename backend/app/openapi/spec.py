@@ -270,6 +270,9 @@ def _build_operation(
                 }
             },
         }
+    elif route.status_code == 204:
+        # 204 No Content must not declare a response body per RFC 9110.
+        responses["204"] = {"description": "No content."}
     else:
         responses[str(route.status_code)] = {"description": "Successful response."}
 
@@ -333,7 +336,7 @@ def build_spec(app: Flask) -> dict[str, Any]:
     spec = APISpec(
         title=app.config.get("OPENAPI_TITLE", "FlowForm API"),
         version=app.config.get("OPENAPI_VERSION") or _backend_package_version(),
-        openapi_version="3.2.0",
+        openapi_version="3.1.1",
         info={
             "description": app.config.get(
                 "OPENAPI_DESCRIPTION",

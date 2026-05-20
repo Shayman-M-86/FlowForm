@@ -79,7 +79,7 @@ def update_public_link(project_ref: str, survey_id: int, link_id: int):
     return PublicLinkOut.model_validate(updated_link).model_dump(mode="json"), 200
 
 
-@openapi_route(summary="Delete survey link", tags=["Survey Links"])
+@openapi_route(summary="Delete survey link", tags=["Survey Links"], status_code=204)
 @projects_bp.route(f"{_LBASE}/<int:link_id>", methods=["DELETE"])
 @auth.require_auth()
 def delete_public_link(project_ref: str, survey_id: int, link_id: int):
@@ -87,4 +87,4 @@ def delete_public_link(project_ref: str, survey_id: int, link_id: int):
     user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     project_id = resolve_project_ref(db, project_ref, user).id
     survey_link_service.delete_link(db=db, survey_id=survey_id, project_id=project_id, link_id=link_id, actor=user)
-    return {"message": "Link deleted"}, 200
+    return "", 204

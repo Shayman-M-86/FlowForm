@@ -36,8 +36,9 @@ def create_app(
     from app.api.utils.errors import register_error_handlers
     register_error_handlers(app)
 
-    from app.openapi import register_openapi_blueprint
+    from app.openapi import register_openapi_blueprint, register_openapi_cli
     register_openapi_blueprint(app)
+    register_openapi_cli(app)
 
     import app.schema.orm as _  # noqa: F401 - Ensure models are registered with SQLAlchemy before migrations
     init_seed_data(app)

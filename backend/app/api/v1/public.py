@@ -132,7 +132,7 @@ def create_slug_submission():
         submitted_by_user_id=submitted_by_user_id,
     )
     response = LinkedSubmissionOut(
-        core=CoreSubmissionOut.from_submission(linked.core_submission),
+        core=CoreSubmissionOut.model_validate(linked.core_submission),
         answers=[AnswerOut.model_validate(a) for a in linked.answers],
     )
     return response.model_dump(mode="json"), 201
@@ -165,7 +165,7 @@ def create_link_submission():
         actor=user,
     )
     response = LinkedSubmissionOut(
-        core=CoreSubmissionOut.from_submission(linked.core_submission),
+        core=CoreSubmissionOut.model_validate(linked.core_submission),
         answers=[AnswerOut.model_validate(a) for a in linked.answers],
     )
     return response.model_dump(mode="json"), 201

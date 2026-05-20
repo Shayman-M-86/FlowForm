@@ -47,6 +47,38 @@ npm run astro build
 
 ---
 
+## Discovering the API
+
+The backend exposes its full REST surface — endpoints, request bodies,
+response payloads, error codes, and examples — through an **OpenAPI MCP
+tool** (`flowform-dev`). Treat it as the source of truth when wiring up
+API hooks, defining response types, or handling errors.
+
+Use the MCP operations rather than greping for existing handlers or
+guessing the shape:
+
+- `list_operations` — every endpoint, grouped and tagged
+- `find_operations` — keyword / path search when you know roughly what you want
+- `describe_schema` — full request/response schema for a specific operation, including the unified `ErrorResponse` shape used by every error
+
+Why this matters:
+
+- Response types in `studio-app/src/api/types.ts` must match the backend
+  exactly. The MCP tool gives you the authoritative shape; deriving it
+  from another component's usage risks copying a stale type.
+- The backend uses a single `ErrorResponse` shape (`{code, message, details?}`)
+  everywhere, with `details.errors[]` carrying Pydantic field failures on
+  422s. New error-handling code should consume that shape — confirm via
+  `describe_schema` before branching on response keys.
+- New backend endpoints are auto-documented; if you cannot find an
+  operation in the MCP tool, it does not exist yet and frontend work
+  should not assume it.
+
+Swagger UI for the same spec is available at `<backend>/docs` and the raw
+JSON at `<backend>/openapi.json` for human browsing.
+
+---
+
 ## Sub-guides
 
 | Area | Guide |

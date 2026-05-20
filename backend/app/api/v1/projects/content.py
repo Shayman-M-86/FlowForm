@@ -98,7 +98,7 @@ def update_node(project_ref: str, survey_id: int, version_number: int, node_id: 
     return NodeOut.model_validate(node).model_dump(mode="json"), 200
 
 
-@openapi_route(summary="Delete survey content node", tags=["Survey Content"])
+@openapi_route(summary="Delete survey content node", tags=["Survey Content"], status_code=204)
 @projects_bp.route(f"{_NBASE}/<int:node_id>", methods=["DELETE"])
 @auth.require_auth()
 def delete_node(project_ref: str, survey_id: int, version_number: int, node_id: int):
@@ -113,7 +113,7 @@ def delete_node(project_ref: str, survey_id: int, version_number: int, node_id: 
         node_id=node_id,
         actor=user,
     )
-    return {"message": "Node deleted"}, 200
+    return "", 204
 
 
 # ── Scoring rules ─────────────────────────────────────────────────────────────
@@ -177,7 +177,7 @@ def update_scoring_rule(project_ref: str, survey_id: int, version_number: int, s
     return ScoringRuleOut.model_validate(rule).model_dump(mode="json"), 200
 
 
-@openapi_route(summary="Delete scoring rule", tags=["Scoring Rules"])
+@openapi_route(summary="Delete scoring rule", tags=["Scoring Rules"], status_code=204)
 @projects_bp.route(f"{_SBASE}/<int:scoring_rule_id>", methods=["DELETE"])
 @auth.require_auth()
 def delete_scoring_rule(project_ref: str, survey_id: int, version_number: int, scoring_rule_id: int):
@@ -192,4 +192,4 @@ def delete_scoring_rule(project_ref: str, survey_id: int, version_number: int, s
         scoring_rule_id=scoring_rule_id,
         actor=user,
     )
-    return {"message": "Scoring rule deleted"}, 200
+    return "", 204

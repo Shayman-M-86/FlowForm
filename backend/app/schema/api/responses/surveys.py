@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schema.api.enums import SurveyVersionStatus, SurveyVisibility
+
 
 class SurveyOut(BaseModel):
     """API response shape for a survey."""
@@ -11,7 +13,7 @@ class SurveyOut(BaseModel):
     id: int
     project_id: int
     title: str
-    visibility: str
+    visibility: SurveyVisibility
     public_slug: str | None
     default_response_store_id: int | None
     published_version_id: int | None
@@ -28,7 +30,7 @@ class SurveyVersionOut(BaseModel):
     id: int
     survey_id: int
     version_number: int
-    status: str
+    status: SurveyVersionStatus
     compiled_schema: dict | None
     published_at: datetime | None
     created_by_user_id: int | None
