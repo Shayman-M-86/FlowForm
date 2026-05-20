@@ -350,6 +350,10 @@ def build_spec(app: Flask) -> dict[str, Any]:
                 "OPENAPI_DESCRIPTION",
                 "REST API for the FlowForm survey platform.",
             ),
+            "contact": {
+                "name": "FlowForm Support",
+                "email": "support@flow-form.com.au",
+            },
         },
     )
 
