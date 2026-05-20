@@ -80,6 +80,8 @@ services:
     build:
       context: ../..
       dockerfile: infra/docker/backend.Dockerfile
+      args:
+        UV_SYNC_FLAGS: "--extra dev"
     container_name: flowform-backend
     env_file:
       - ./.backend.env

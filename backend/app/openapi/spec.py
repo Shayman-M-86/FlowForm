@@ -11,6 +11,7 @@ parsing, validation, or error formatting.
 
 from __future__ import annotations
 
+import logging
 import re
 import threading
 import tomllib
@@ -38,6 +39,8 @@ from app.openapi.security import (
     global_security,
     optional_security,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 # Flask uses ``<type:name>`` path converters; OpenAPI uses ``{name}``.
 _FLASK_PARAM_RE = re.compile(r"<(?:(?P<conv>[^:>]+):)?(?P<name>[^>]+)>")
@@ -531,10 +534,11 @@ def register_openapi_blueprint(
     docs_path: str = "/api/v1/docs",
     oauth2_redirect_path: str = "/api/v1/docs/oauth2-redirect",
 ) -> None:
-    """Mount ``/openapi.json``, versioned docs, and the OAuth callback on the app.
+    """Mount the OpenAPI endpoints on the Flask app.
 
-    These endpoints are unauthenticated by design — they expose the API
-    surface for internal developer tooling.
+    The caller (typically ``openapi_register_options``) is responsible for
+    only invoking this in environments where the spec should be exposed —
+    in prod, nothing in this module loads at all.
     """
     bp = Blueprint("openapi", __name__)
 
@@ -557,3 +561,7 @@ def register_openapi_blueprint(
         return _SWAGGER_UI_OAUTH2_REDIRECT_HTML, 200, {"Content-Type": "text/html; charset=utf-8"}
 
     app.register_blueprint(bp)
+
+    LOGGER.info("Registered OpenAPI spec endpoint at %s", spec_path)
+    LOGGER.info("Registered Swagger UI at %s", docs_path)
+    LOGGER.info("Registered Swagger UI OAuth redirect at %s", oauth2_redirect_path)

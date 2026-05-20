@@ -175,6 +175,23 @@ def test_swagger_ui_serves_oauth_redirect_page() -> None:
     assert "swaggerUIRedirectOauth2" in response.get_data(as_text=True)
 
 
+def test_register_openapi_blueprint_exposes_openapi_json() -> None:
+    """Smoke-test that /openapi.json is served when the blueprint is registered.
+
+    Whether the blueprint gets registered at all is the caller's decision —
+    see ``app.core.register_options.openapi_register_options``, which only
+    invokes this in non-prod environments.
+    """
+    app = Flask(__name__)
+    register_openapi_blueprint(app)
+
+    response = app.test_client().get("/openapi.json")
+
+    assert response.status_code == 200
+    assert response.is_json
+    assert response.get_json()["openapi"] == "3.1.1"
+
+
 def test_openapi_route_emits_query_model_parameters() -> None:
     class WidgetQuery(BaseModel):
         token: str

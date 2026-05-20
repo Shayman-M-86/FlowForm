@@ -6,6 +6,7 @@ from flask import Flask
 from app.api.v1 import register_api_v1
 from app.core.config import Settings, apply_settings_to_flask, get_settings
 from app.core.extensions import init_extensions
+from app.core.register_options import openapi_register_options
 from app.db.session import init_db_sessions
 from app.logging.logging_config import setup_bootstrap_logging, setup_logging
 from app.middleware.rate_limit import register_rate_limiting
@@ -29,17 +30,17 @@ def create_app(
     apply_settings_to_flask(app, resolved_settings)
     init_extensions(app)
     init_db_sessions(app)
-    
+
     register_api_v1(app)
     register_rate_limiting(app, resolved_settings)
 
     from app.api.utils.errors import register_error_handlers
+
     register_error_handlers(app)
 
-    from app.openapi import register_openapi_blueprint, register_openapi_cli
-    register_openapi_blueprint(app)
-    register_openapi_cli(app)
+    openapi_register_options(app)
 
     import app.schema.orm as _  # noqa: F401 - Ensure models are registered with SQLAlchemy before migrations
+
     init_seed_data(app)
     return app

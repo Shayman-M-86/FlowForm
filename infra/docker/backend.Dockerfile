@@ -16,7 +16,11 @@ WORKDIR /app
 COPY backend/pyproject.toml .
 COPY backend/uv.lock .
 
-RUN uv sync --frozen --no-dev
+# Dev/staging builds pass --build-arg UV_SYNC_FLAGS="--extra dev" so the
+# OpenAPI export tool (PyYAML) is available. Prod keeps the default
+# --no-dev so optional tooling stays out of the runtime image.
+ARG UV_SYNC_FLAGS="--no-dev"
+RUN uv sync --frozen ${UV_SYNC_FLAGS}
 
 COPY backend .
 
