@@ -2,14 +2,18 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.schema.api import limits
+
+SchemaIdStr = Annotated[str, Field(max_length=limits.SCHEMA_ID_MAX)]
+
 
 class ChoiceOptionIn(BaseModel):
     """Represents a single selectable option for a choice question."""
 
     model_config = ConfigDict(extra="forbid")
 
-    id: str
-    label: str = Field(max_length=1000)
+    id: SchemaIdStr
+    label: str = Field(max_length=limits.CHOICE_OPTION_LABEL_MAX)
 
     @field_validator("id", "label")
     @classmethod
@@ -24,8 +28,8 @@ class MatchingItemIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: str
-    label: str = Field(max_length=250)
+    id: SchemaIdStr
+    label: str = Field(max_length=limits.MATCHING_ITEM_LABEL_MAX)
 
     @field_validator("id", "label")
     @classmethod
@@ -55,7 +59,7 @@ class ChoiceQuestionConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    options: list[ChoiceOptionIn] = Field(max_length=10)
+    options: list[ChoiceOptionIn] = Field(max_length=limits.QUESTION_ITEMS_MAX)
     min_selected: int = Field(ge=0)
     max_selected: int = Field(ge=1)
 
@@ -65,8 +69,8 @@ class ChoiceQuestionConfig(BaseModel):
         if not value:
             raise ValueError("options must contain at least one item")
 
-        if len(value) > 10:
-            raise ValueError("options cannot contain more than 10 items")
+        if len(value) > limits.QUESTION_ITEMS_MAX:
+            raise ValueError(f"options cannot contain more than {limits.QUESTION_ITEMS_MAX} items")
 
         ids = [item.id for item in value]
         if len(ids) != len(set(ids)):
@@ -88,9 +92,10 @@ class ChoiceQuestionConfig(BaseModel):
     def validate_total_option_characters(self) -> ChoiceQuestionConfig:
         total_chars = sum(len(option.label) for option in self.options)
 
-        if total_chars > 4000:
+        if total_chars > limits.CHOICE_OPTION_LABELS_TOTAL_MAX:
             raise ValueError(
-                f"total characters across all option labels cannot exceed 4000 (current: {total_chars})"
+                "total characters across all option labels cannot exceed "
+                f"{limits.CHOICE_OPTION_LABELS_TOTAL_MAX} (current: {total_chars})"
             )
 
         return self
@@ -109,8 +114,8 @@ class MatchingQuestionConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    prompts: list[MatchingItemIn] = Field(max_length=10)
-    matches: list[MatchingItemIn] = Field(max_length=10)
+    prompts: list[MatchingItemIn] = Field(max_length=limits.QUESTION_ITEMS_MAX)
+    matches: list[MatchingItemIn] = Field(max_length=limits.QUESTION_ITEMS_MAX)
 
     @field_validator("prompts", "matches")
     @classmethod
@@ -118,8 +123,8 @@ class MatchingQuestionConfig(BaseModel):
         if not value:
             raise ValueError("must contain at least one item")
 
-        if len(value) > 10:
-            raise ValueError("cannot contain more than 10 items")
+        if len(value) > limits.QUESTION_ITEMS_MAX:
+            raise ValueError(f"cannot contain more than {limits.QUESTION_ITEMS_MAX} items")
 
         return value
 
@@ -138,13 +143,12 @@ class MatchingQuestionConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_total_characters(self) -> MatchingQuestionConfig:
-        total_chars = sum(len(item.label) for item in self.prompts) + sum(
-            len(item.label) for item in self.matches
-        )
+        total_chars = sum(len(item.label) for item in self.prompts) + sum(len(item.label) for item in self.matches)
 
-        if total_chars > 2000:
+        if total_chars > limits.MATCHING_ITEMS_TOTAL_LABEL_MAX:
             raise ValueError(
-                f"total characters across prompts and matches cannot exceed 2000 (current: {total_chars})"
+                "total characters across prompts and matches cannot exceed "
+                f"{limits.MATCHING_ITEMS_TOTAL_LABEL_MAX} (current: {total_chars})"
             )
 
         return self
@@ -155,8 +159,8 @@ class RatingUIIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    left_label: str = Field(max_length=50)
-    right_label: str = Field(max_length=50)
+    left_label: str = Field(max_length=limits.RATING_LABEL_MAX)
+    right_label: str = Field(max_length=limits.RATING_LABEL_MAX)
 
     @field_validator("left_label", "right_label")
     @classmethod
@@ -224,7 +228,7 @@ class FieldQuestionUIIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    placeholder: str = Field(max_length=50, default="")
+    placeholder: str = Field(max_length=limits.FIELD_PLACEHOLDER_MAX, default="")
 
     @field_validator("placeholder")
     @classmethod
@@ -314,10 +318,10 @@ class ChoiceQuestionSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: str
+    id: SchemaIdStr
     family: Literal["choice"]
-    label: str = Field(max_length=5000)
-    title: str | None = None
+    label: str = Field(max_length=limits.QUESTION_LABEL_MAX)
+    title: str | None = Field(default=None, max_length=limits.QUESTION_TITLE_MAX)
     choice: ChoiceQuestionNestedIn
 
     @field_validator("id")
@@ -340,10 +344,10 @@ class FieldQuestionSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: str
+    id: SchemaIdStr
     family: Literal["field"]
-    label: str = Field(max_length=5000)
-    title: str | None = None
+    label: str = Field(max_length=limits.QUESTION_LABEL_MAX)
+    title: str | None = Field(default=None, max_length=limits.QUESTION_TITLE_MAX)
     field: FieldQuestionNestedIn
 
     @field_validator("id")
@@ -366,10 +370,10 @@ class MatchingQuestionSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: str
+    id: SchemaIdStr
     family: Literal["matching"]
-    label: str = Field(max_length=5000)
-    title: str | None = None
+    label: str = Field(max_length=limits.QUESTION_LABEL_MAX)
+    title: str | None = Field(default=None, max_length=limits.QUESTION_TITLE_MAX)
     matching: MatchingQuestionNestedIn
 
     @field_validator("id")
@@ -392,10 +396,10 @@ class RatingQuestionSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: str
+    id: SchemaIdStr
     family: Literal["rating"]
-    label: str = Field(max_length=5000)
-    title: str | None = None
+    label: str = Field(max_length=limits.QUESTION_LABEL_MAX)
+    title: str | None = Field(default=None, max_length=limits.QUESTION_TITLE_MAX)
     rating: RatingQuestionNestedIn
 
     @field_validator("id")
@@ -417,5 +421,3 @@ QuestionSchemaIn = Annotated[
     ChoiceQuestionSchemaIn | FieldQuestionSchemaIn | MatchingQuestionSchemaIn | RatingQuestionSchemaIn,
     Field(discriminator="family"),
 ]
-
-

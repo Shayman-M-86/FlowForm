@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.schema.api import limits
 from app.schema.api.requests.content.questions_schemas import QuestionSchemaIn
 from app.schema.api.requests.content.rule_schemas import RuleSchemaIn
 
@@ -19,7 +20,7 @@ NodeContentIn = Annotated[
 # ``ck_survey_questions_schema_size`` (length(question_schema::text) <= 10000).
 # The CHECK remains as defence in depth; this guard fails fast at request time
 # so the client gets a clean 422 instead of a DB error.
-_MAX_NODE_CONTENT_BYTES = 10_000
+_MAX_NODE_CONTENT_BYTES = limits.NODE_CONTENT_BYTES_MAX
 
 
 def _ensure_content_within_size_budget(content: QuestionSchemaIn | RuleSchemaIn) -> None:

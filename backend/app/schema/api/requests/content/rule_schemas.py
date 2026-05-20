@@ -4,6 +4,11 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.schema.api import limits
+
+SchemaIdStr = Annotated[str, Field(max_length=limits.SCHEMA_ID_MAX)]
+DateValueStr = Annotated[str, Field(max_length=limits.DATE_VALUE_MAX)]
+
 # ── Condition requirements per question family ─────────────────────────────────
 
 
@@ -12,9 +17,9 @@ class ChoiceRequirementsIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    required: list[str] | None = None
-    forbidden: list[str] | None = None
-    any_of: list[str] | None = None
+    required: list[SchemaIdStr] | None = None
+    forbidden: list[SchemaIdStr] | None = None
+    any_of: list[SchemaIdStr] | None = None
 
     @model_validator(mode="after")
     def validate_has_at_least_one(self) -> ChoiceRequirementsIn:
@@ -28,11 +33,11 @@ class MatchingRequirementsIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    required: list[dict[str, str]]
+    required: list[dict[SchemaIdStr, SchemaIdStr]]
 
     @field_validator("required")
     @classmethod
-    def validate_required(cls, value: list[dict[str, str]]) -> list[dict[str, str]]:
+    def validate_required(cls, value: list[dict[SchemaIdStr, SchemaIdStr]]) -> list[dict[SchemaIdStr, SchemaIdStr]]:
         if not value:
             raise ValueError("matching requirements must have at least one required pair")
         for pair in value:
@@ -76,7 +81,7 @@ class DateFieldRequirementsIn(BaseModel):
 
     type: Literal["date"]
     operator: Literal["before", "after"]
-    value: str
+    value: DateValueStr
 
     @field_validator("value")
     @classmethod
@@ -96,9 +101,10 @@ FieldRequirementsIn = NumberFieldRequirementsIn | DateFieldRequirementsIn
 
 class ChoiceConditionIn(BaseModel):
     """Represents a condition block targeting a choice question."""
+
     model_config = ConfigDict(extra="forbid")
 
-    target_id: str
+    target_id: SchemaIdStr
     family: Literal["choice"]
     requirements: ChoiceRequirementsIn
 
@@ -115,7 +121,7 @@ class MatchingConditionIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    target_id: str
+    target_id: SchemaIdStr
     family: Literal["matching"]
     requirements: MatchingRequirementsIn
 
@@ -132,7 +138,7 @@ class RatingConditionIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    target_id: str
+    target_id: SchemaIdStr
     family: Literal["rating"]
     requirements: RatingRequirementsIn
 
@@ -149,7 +155,7 @@ class FieldConditionIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    target_id: str
+    target_id: SchemaIdStr
     family: Literal["field"]
     requirements: FieldRequirementsIn
 
@@ -196,7 +202,7 @@ class ThenSetItemIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    target_id: str
+    target_id: SchemaIdStr
     visible: bool | None = None
     required: bool | None = None
 
@@ -222,7 +228,7 @@ class ElseDoIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    skip_to: str | None = None
+    skip_to: SchemaIdStr | None = None
     end_and_submit: bool | None = None
     end_and_discard: bool | None = None
 
@@ -265,7 +271,7 @@ class RuleSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: str
+    id: SchemaIdStr
     if_: RuleIfIn = Field(validation_alias="if", serialization_alias="if")
     then: RuleThenIn
     else_: RuleElseIn | None = Field(default=None, validation_alias="else", serialization_alias="else")

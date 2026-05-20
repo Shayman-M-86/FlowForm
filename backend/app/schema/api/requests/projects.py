@@ -1,5 +1,6 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
+from app.schema.api import limits
 from app.schema.api.requests.helpers import validate_slug
 
 
@@ -7,16 +8,14 @@ def _validate_name(value: str) -> str:
     value = value.strip()
     if not value:
         raise ValueError("Name must not be blank.")
-    if len(value) > 100:
-        raise ValueError("Name must be 100 characters or fewer.")
     return value
 
 
 class CreateProjectRequest(BaseModel):
     """Request body for creating a new project."""
 
-    name: str
-    slug: str
+    name: str = Field(max_length=limits.PROJECT_NAME_MAX)
+    slug: str = Field(max_length=limits.SLUG_MAX)
 
     @field_validator("name")
     @classmethod
@@ -32,8 +31,8 @@ class CreateProjectRequest(BaseModel):
 class UpdateProjectRequest(BaseModel):
     """Request body for partially updating a project."""
 
-    name: str | None = None
-    slug: str | None = None
+    name: str | None = Field(default=None, max_length=limits.PROJECT_NAME_MAX)
+    slug: str | None = Field(default=None, max_length=limits.SLUG_MAX)
 
     @field_validator("name")
     @classmethod

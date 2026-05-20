@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.schema.api import limits
 from app.schema.api.requests.content.rule_schemas import RuleSchemaIn
 
 
@@ -8,7 +9,7 @@ class CreateRuleRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    rule_key: str
+    rule_key: str = Field(max_length=limits.SCHEMA_ID_MAX)
     sort_key: int = Field(gt=0)
     rule_schema: RuleSchemaIn
 
@@ -23,8 +24,7 @@ class CreateRuleRequest(BaseModel):
     def validate_id_matches_rule_key(self) -> CreateRuleRequest:
         if self.rule_schema.id != self.rule_key:
             raise ValueError(
-                f"rule_schema.id must match rule_key "
-                f"(id: '{self.rule_schema.id}', rule_key: '{self.rule_key}')"
+                f"rule_schema.id must match rule_key (id: '{self.rule_schema.id}', rule_key: '{self.rule_key}')"
             )
         return self
 
@@ -34,7 +34,7 @@ class UpdateRuleRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    rule_key: str | None = None
+    rule_key: str | None = Field(default=None, max_length=limits.SCHEMA_ID_MAX)
     sort_key: int | None = Field(default=None, gt=0)
     rule_schema: RuleSchemaIn | None = None
 

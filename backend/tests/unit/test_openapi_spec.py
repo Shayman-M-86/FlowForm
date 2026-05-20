@@ -1,6 +1,6 @@
 import pytest  # type: ignore[import]
 from flask import Flask
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.openapi import openapi_route
 from app.openapi.registry import clear_registry
@@ -123,8 +123,7 @@ def test_openapi_spec_uses_auth0_oauth_when_configured() -> None:
         "flows": {
             "authorizationCode": {
                 "authorizationUrl": (
-                    "https://flowform.eu.auth0.com/authorize?"
-                    "audience=https%3A%2F%2Fapi.flowform.example"
+                    "https://flowform.eu.auth0.com/authorize?audience=https%3A%2F%2Fapi.flowform.example"
                 ),
                 "tokenUrl": "https://flowform.eu.auth0.com/oauth/token",
                 "scopes": {},
@@ -223,6 +222,73 @@ def test_openapi_route_emits_query_model_parameters() -> None:
     ]
 
 
+def test_query_model_preserves_explicit_string_max_length() -> None:
+    class WidgetQuery(BaseModel):
+        token: str = Field(max_length=64)
+
+    app = Flask(__name__)
+
+    @openapi_route(summary="Resolve widget", query_model=WidgetQuery)
+    @app.route("/widgets/resolve", methods=["GET"])
+    def resolve_widget():  # pragma: no cover
+        return {}
+
+    document = build_spec(app)
+
+    [param] = document["paths"]["/widgets/resolve"]["get"]["parameters"]
+    assert param == {
+        "name": "token",
+        "in": "query",
+        "required": True,
+        "schema": {"title": "Token", "type": "string", "maxLength": 64},
+    }
+
+
+def test_string_path_params_are_not_synthetically_bounded() -> None:
+    app = Flask(__name__)
+
+    @openapi_route(summary="Get widget by slug", tags=["Widgets"])
+    @app.route("/widgets/<slug>", methods=["GET"])
+    def get_widget_by_slug(slug: str):  # pragma: no cover
+        return {}
+
+    document = build_spec(app)
+
+    [param] = document["paths"]["/widgets/{slug}"]["get"]["parameters"]
+    assert param["schema"] == {"type": "string"}
+
+
+def test_uuid_path_params_keep_format_without_maxlength() -> None:
+    """Path params with a format (uuid, etc) are already length-bounded by
+    their format spec — adding maxLength on top would be redundant."""
+    app = Flask(__name__)
+
+    @openapi_route(summary="Get widget by token", tags=["Widgets"])
+    @app.route("/widgets/<uuid:token>", methods=["GET"])
+    def get_widget_by_token(token):  # pragma: no cover
+        return {}
+
+    document = build_spec(app)
+
+    [param] = document["paths"]["/widgets/{token}"]["get"]["parameters"]
+    assert param["schema"] == {"type": "string", "format": "uuid"}
+
+
+def test_integer_path_params_are_not_modified() -> None:
+    """maxLength is meaningless on integers — only string params should change."""
+    app = Flask(__name__)
+
+    @openapi_route(summary="Get widget by id", tags=["Widgets"])
+    @app.route("/widgets/<int:widget_id>", methods=["GET"])
+    def get_widget_by_id(widget_id: int):  # pragma: no cover
+        return {}
+
+    document = build_spec(app)
+
+    [param] = document["paths"]["/widgets/{widget_id}"]["get"]["parameters"]
+    assert param["schema"] == {"type": "integer"}
+
+
 def test_operation_id_is_derived_from_handler_function_name() -> None:
     app = Flask(__name__)
 
@@ -271,9 +337,9 @@ def test_info_version_defaults_to_pyproject_version() -> None:
     import tomllib
     from pathlib import Path
 
-    pyproject_version = tomllib.loads(
-        (Path(__file__).resolve().parents[2] / "pyproject.toml").read_text()
-    )["project"]["version"]
+    pyproject_version = tomllib.loads((Path(__file__).resolve().parents[2] / "pyproject.toml").read_text())["project"][
+        "version"
+    ]
 
     document = build_spec(Flask(__name__))
 
@@ -292,9 +358,7 @@ def test_info_version_can_be_overridden_via_config() -> None:
 def test_servers_block_falls_back_to_localhost() -> None:
     document = build_spec(Flask(__name__))
 
-    assert document["servers"] == [
-        {"url": "http://localhost:5000", "description": "Local development"}
-    ]
+    assert document["servers"] == [{"url": "http://localhost:5000", "description": "Local development"}]
 
 
 def test_servers_block_respects_configured_list() -> None:
@@ -319,6 +383,4 @@ def test_servers_block_respects_single_url_override() -> None:
 
     document = build_spec(app)
 
-    assert document["servers"] == [
-        {"url": "https://api.flowform.example", "description": "Production"}
-    ]
+    assert document["servers"] == [{"url": "https://api.flowform.example", "description": "Production"}]

@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.schema.api import limits
 from app.schema.api.requests.helpers import validate_slug
 
 
@@ -9,17 +10,15 @@ def _validate_title(value: str) -> str:
     value = value.strip()
     if not value:
         raise ValueError("Title must not be blank.")
-    if len(value) > 200:
-        raise ValueError("Title must be 200 characters or fewer.")
     return value
 
 
 class CreateSurveyRequest(BaseModel):
     """Request body for creating a new survey."""
 
-    title: str
+    title: str = Field(max_length=limits.SURVEY_TITLE_MAX)
     visibility: Literal["private", "link_only", "public"] = "private"
-    public_slug: str | None = None
+    public_slug: str | None = Field(default=None, max_length=limits.SLUG_MAX)
     default_response_store_id: int | None = None
 
     @field_validator("title")
@@ -44,9 +43,9 @@ class CreateSurveyRequest(BaseModel):
 class UpdateSurveyRequest(BaseModel):
     """Request body for partially updating a survey."""
 
-    title: str | None = None
+    title: str | None = Field(default=None, max_length=limits.SURVEY_TITLE_MAX)
     visibility: Literal["private", "link_only", "public"] | None = None
-    public_slug: str | None = None
+    public_slug: str | None = Field(default=None, max_length=limits.SLUG_MAX)
     default_response_store_id: int | None = None
 
     @field_validator("title")

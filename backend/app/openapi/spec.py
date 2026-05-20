@@ -79,7 +79,7 @@ def _backend_package_version() -> str:
             continue
         try:
             data = tomllib.loads(path.read_text(encoding="utf-8"))
-        except (OSError, tomllib.TOMLDecodeError):
+        except OSError, tomllib.TOMLDecodeError:
             continue
         version = data.get("project", {}).get("version")
         if isinstance(version, str) and version:
@@ -235,13 +235,17 @@ def _build_operation(
     path_parameters: list[dict[str, Any]],
     security_scheme_name: str,
 ) -> dict[str, Any]:
+    # Always emit a non-empty description so OpenAPI linters (Spectral,
+    # openapi-cop, etc.) stop flagging the operation as undocumented. If
+    # the @openapi_route decorator didn't pass an explicit description,
+    # fall back to the summary — better than leaving the field absent.
+    description = route.description or route.summary
     operation: dict[str, Any] = {
         "operationId": _operation_id_from_qualname(route.handler_qualname),
         "summary": route.summary,
+        "description": description,
         "tags": list(route.tags) if route.tags else [],
     }
-    if route.description:
-        operation["description"] = route.description
     if route.auth == "none":
         operation["security"] = []
     elif route.auth == "optional":
@@ -379,9 +383,29 @@ def build_spec(app: Flask) -> dict[str, Any]:
     document = spec.to_dict()
     document["servers"] = _servers_for(app)
     document["security"] = global_security(security_scheme_name)
+    document["tags"] = _global_tags(grouped)
     document["paths"] = grouped
 
     return document
+
+
+def _global_tags(paths: dict[str, dict[str, Any]]) -> list[dict[str, str]]:
+    """Collect every tag used on any operation into the top-level ``tags`` list.
+
+    OpenAPI linters expect operation tags to be declared at the document
+    level. We don't currently carry per-tag descriptions, so each entry is
+    just ``{"name": "..."}``; descriptions can be added later if needed
+    without changing this function's signature.
+    """
+    names: set[str] = set()
+    for path_item in paths.values():
+        for operation in path_item.values():
+            if not isinstance(operation, dict):
+                continue
+            for tag in operation.get("tags") or []:
+                if isinstance(tag, str):
+                    names.add(tag)
+    return [{"name": name} for name in sorted(names)]
 
 
 def _register_security_scheme(spec: APISpec, app: Flask) -> str:

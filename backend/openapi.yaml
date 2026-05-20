@@ -8,11 +8,25 @@ servers:
   description: Local development
 security:
 - BearerAuth: []
+tags:
+- name: Auth
+- name: Health
+- name: Projects
+- name: Public
+- name: Public Links
+- name: Public Submissions
+- name: Scoring Rules
+- name: Submissions
+- name: Survey Content
+- name: Survey Links
+- name: Survey Versions
+- name: Surveys
 paths:
   /api/v1/auth/bootstrap-user:
     post:
       operationId: bootstrapUser
       summary: Bootstrap current user
+      description: Bootstrap current user
       tags:
       - Auth
       requestBody:
@@ -485,10 +499,11 @@ paths:
                   value:
                     code: INTERNAL_SERVER_ERROR
                     message: An unexpected error occurred.
-  /api/v1/health/:
+  /api/v1/health:
     get:
       operationId: healthCheck
       summary: Health check
+      description: Health check
       tags:
       - Health
       security: []
@@ -956,6 +971,7 @@ paths:
     get:
       operationId: readinessCheck
       summary: Readiness check
+      description: Readiness check
       tags:
       - Health
       security: []
@@ -1423,6 +1439,7 @@ paths:
     get:
       operationId: listNodes
       summary: List survey content nodes
+      description: List survey content nodes
       tags:
       - Survey Content
       parameters:
@@ -1910,6 +1927,7 @@ paths:
     post:
       operationId: createNode
       summary: Create survey content node
+      description: Create survey content node
       tags:
       - Survey Content
       parameters:
@@ -2402,6 +2420,7 @@ paths:
     get:
       operationId: getNode
       summary: Get survey content node
+      description: Get survey content node
       tags:
       - Survey Content
       parameters:
@@ -2892,6 +2911,7 @@ paths:
     patch:
       operationId: updateNode
       summary: Update survey content node
+      description: Update survey content node
       tags:
       - Survey Content
       parameters:
@@ -3388,6 +3408,7 @@ paths:
     delete:
       operationId: deleteNode
       summary: Delete survey content node
+      description: Delete survey content node
       tags:
       - Survey Content
       parameters:
@@ -3875,6 +3896,7 @@ paths:
     get:
       operationId: listScoringRules
       summary: List scoring rules
+      description: List scoring rules
       tags:
       - Scoring Rules
       parameters:
@@ -4362,6 +4384,7 @@ paths:
     post:
       operationId: createScoringRule
       summary: Create scoring rule
+      description: Create scoring rule
       tags:
       - Scoring Rules
       parameters:
@@ -4854,6 +4877,7 @@ paths:
     patch:
       operationId: updateScoringRule
       summary: Update scoring rule
+      description: Update scoring rule
       tags:
       - Scoring Rules
       parameters:
@@ -5350,6 +5374,7 @@ paths:
     delete:
       operationId: deleteScoringRule
       summary: Delete scoring rule
+      description: Delete scoring rule
       tags:
       - Scoring Rules
       parameters:
@@ -5837,6 +5862,7 @@ paths:
     get:
       operationId: listProjects
       summary: List projects
+      description: List projects
       tags:
       - Projects
       responses:
@@ -6308,6 +6334,7 @@ paths:
     post:
       operationId: createProject
       summary: Create project
+      description: Create project
       tags:
       - Projects
       requestBody:
@@ -6784,6 +6811,7 @@ paths:
     get:
       operationId: getProject
       summary: Get project
+      description: Get project
       tags:
       - Projects
       parameters:
@@ -7259,6 +7287,7 @@ paths:
     patch:
       operationId: updateProject
       summary: Update project
+      description: Update project
       tags:
       - Projects
       parameters:
@@ -7740,6 +7769,7 @@ paths:
     delete:
       operationId: deleteProject
       summary: Delete project
+      description: Delete project
       tags:
       - Projects
       parameters:
@@ -8212,6 +8242,7 @@ paths:
     get:
       operationId: listPublicLinks
       summary: List survey links
+      description: List survey links
       tags:
       - Survey Links
       parameters:
@@ -8692,6 +8723,7 @@ paths:
     post:
       operationId: createPublicLink
       summary: Create survey link
+      description: Create survey link
       tags:
       - Survey Links
       parameters:
@@ -9179,6 +9211,7 @@ paths:
     patch:
       operationId: updatePublicLink
       summary: Update survey link
+      description: Update survey link
       tags:
       - Survey Links
       parameters:
@@ -9670,6 +9703,7 @@ paths:
     delete:
       operationId: deletePublicLink
       summary: Delete survey link
+      description: Delete survey link
       tags:
       - Survey Links
       parameters:
@@ -10152,6 +10186,7 @@ paths:
     get:
       operationId: listSubmissions
       summary: List submissions
+      description: List submissions
       tags:
       - Submissions
       parameters:
@@ -10680,6 +10715,7 @@ paths:
     get:
       operationId: getSubmission
       summary: Get submission
+      description: Get submission
       tags:
       - Submissions
       parameters:
@@ -11175,6 +11211,7 @@ paths:
     get:
       operationId: listSurveys
       summary: List surveys
+      description: List surveys
       tags:
       - Surveys
       parameters:
@@ -11652,6 +11689,7 @@ paths:
     post:
       operationId: createSurvey
       summary: Create survey
+      description: Create survey
       tags:
       - Surveys
       parameters:
@@ -12134,6 +12172,7 @@ paths:
     get:
       operationId: getSurvey
       summary: Get survey
+      description: Get survey
       tags:
       - Surveys
       parameters:
@@ -12614,6 +12653,7 @@ paths:
     patch:
       operationId: updateSurvey
       summary: Update survey
+      description: Update survey
       tags:
       - Surveys
       parameters:
@@ -13100,6 +13140,7 @@ paths:
     delete:
       operationId: deleteSurvey
       summary: Delete survey
+      description: Delete survey
       tags:
       - Surveys
       parameters:
@@ -13577,6 +13618,7 @@ paths:
     get:
       operationId: listVersions
       summary: List survey versions
+      description: List survey versions
       tags:
       - Survey Versions
       parameters:
@@ -14059,6 +14101,7 @@ paths:
     post:
       operationId: createVersion
       summary: Create survey version
+      description: Create survey version
       tags:
       - Survey Versions
       parameters:
@@ -14540,6 +14583,7 @@ paths:
     post:
       operationId: copyVersionToDraft
       summary: Copy survey version to draft
+      description: Copy survey version to draft
       tags:
       - Survey Versions
       parameters:
@@ -15026,6 +15070,7 @@ paths:
     get:
       operationId: getVersion
       summary: Get survey version
+      description: Get survey version
       tags:
       - Survey Versions
       parameters:
@@ -15512,6 +15557,7 @@ paths:
     post:
       operationId: publishVersion
       summary: Publish survey version
+      description: Publish survey version
       tags:
       - Survey Versions
       parameters:
@@ -15998,6 +16044,7 @@ paths:
     post:
       operationId: archiveVersion
       summary: Archive survey version
+      description: Archive survey version
       tags:
       - Survey Versions
       parameters:
@@ -16484,6 +16531,7 @@ paths:
     get:
       operationId: listPublicSurveys
       summary: List public surveys
+      description: List public surveys
       tags:
       - Public
       security: []
@@ -16973,6 +17021,7 @@ paths:
     get:
       operationId: getPublicSurvey
       summary: Get public survey
+      description: Get public survey
       tags:
       - Public
       security: []
@@ -17450,10 +17499,10 @@ paths:
     get:
       operationId: resolveLink
       summary: Resolve survey link
-      tags:
-      - Public Links
       description: Anonymous access is allowed for links that do not require authentication. If the resolved link requires
         authentication, a bearer token must be supplied.
+      tags:
+      - Public Links
       security:
       - {}
       - BearerAuth: []
@@ -17462,6 +17511,7 @@ paths:
         in: query
         required: true
         schema:
+          maxLength: 256
           title: Token
           type: string
       responses:
@@ -17932,6 +17982,7 @@ paths:
     post:
       operationId: createSlugSubmission
       summary: Create slug submission
+      description: Create slug submission
       tags:
       - Public Submissions
       security:
@@ -18411,6 +18462,7 @@ paths:
     post:
       operationId: createLinkSubmission
       summary: Create link submission
+      description: Create link submission
       tags:
       - Public Submissions
       security:
@@ -18908,6 +18960,7 @@ components:
       description: Request body for post-auth user bootstrap.
       properties:
         id_token:
+          maxLength: 8192
           title: Id Token
           type: string
       required:
@@ -19034,6 +19087,7 @@ components:
       description: Represents a condition block targeting a choice question.
       properties:
         target_id:
+          maxLength: 128
           title: Target Id
           type: string
         family:
@@ -19053,6 +19107,7 @@ components:
       description: Represents a single selectable option for a choice question.
       properties:
         id:
+          maxLength: 128
           title: Id
           type: string
         label:
@@ -19107,6 +19162,7 @@ components:
       description: Accepts an incoming choice-question schema payload (nested structure).
       properties:
         id:
+          maxLength: 128
           title: Id
           type: string
         family:
@@ -19119,7 +19175,8 @@ components:
           type: string
         title:
           anyOf:
-          - type: string
+          - maxLength: 500
+            type: string
           - type: 'null'
           default: null
           title: Title
@@ -19139,6 +19196,7 @@ components:
         required:
           anyOf:
           - items:
+              maxLength: 128
               type: string
             type: array
           - type: 'null'
@@ -19147,6 +19205,7 @@ components:
         forbidden:
           anyOf:
           - items:
+              maxLength: 128
               type: string
             type: array
           - type: 'null'
@@ -19155,6 +19214,7 @@ components:
         any_of:
           anyOf:
           - items:
+              maxLength: 128
               type: string
             type: array
           - type: 'null'
@@ -19177,6 +19237,7 @@ components:
           title: Operator
           type: string
         value:
+          maxLength: 10
           title: Value
           type: string
       required:
@@ -19191,7 +19252,8 @@ components:
       properties:
         skip_to:
           anyOf:
-          - type: string
+          - maxLength: 128
+            type: string
           - type: 'null'
           default: null
           title: Skip To
@@ -19214,6 +19276,7 @@ components:
       description: Represents a condition block targeting a field question.
       properties:
         target_id:
+          maxLength: 128
           title: Target Id
           type: string
         family:
@@ -19266,6 +19329,7 @@ components:
       description: Accepts an incoming field-question schema payload (nested structure).
       properties:
         id:
+          maxLength: 128
           title: Id
           type: string
         family:
@@ -19278,7 +19342,8 @@ components:
           type: string
         title:
           anyOf:
-          - type: string
+          - maxLength: 500
+            type: string
           - type: 'null'
           default: null
           title: Title
@@ -19307,6 +19372,7 @@ components:
       description: Represents a condition block targeting a matching question.
       properties:
         target_id:
+          maxLength: 128
           title: Target Id
           type: string
         family:
@@ -19326,6 +19392,7 @@ components:
       description: Represents one item on either side of a matching question.
       properties:
         id:
+          maxLength: 128
           title: Id
           type: string
         label:
@@ -19377,6 +19444,7 @@ components:
       description: Accepts an incoming matching-question schema payload (nested structure).
       properties:
         id:
+          maxLength: 128
           title: Id
           type: string
         family:
@@ -19389,7 +19457,8 @@ components:
           type: string
         title:
           anyOf:
-          - type: string
+          - maxLength: 500
+            type: string
           - type: 'null'
           default: null
           title: Title
@@ -19409,7 +19478,10 @@ components:
         required:
           items:
             additionalProperties:
+              maxLength: 128
               type: string
+            propertyNames:
+              maxLength: 128
             type: object
           title: Required
           type: array
@@ -19474,6 +19546,7 @@ components:
       description: Represents a condition block targeting a rating question.
       properties:
         target_id:
+          maxLength: 128
           title: Target Id
           type: string
         family:
@@ -19530,6 +19603,7 @@ components:
       description: Accepts an incoming rating-question schema payload (nested structure).
       properties:
         id:
+          maxLength: 128
           title: Id
           type: string
         family:
@@ -19542,7 +19616,8 @@ components:
           type: string
         title:
           anyOf:
-          - type: string
+          - maxLength: 500
+            type: string
           - type: 'null'
           default: null
           title: Title
@@ -19715,6 +19790,7 @@ components:
       description: Represents the full rule content stored in question_schema for a rule node.
       properties:
         id:
+          maxLength: 128
           title: Id
           type: string
         if:
@@ -19750,6 +19826,7 @@ components:
       description: Represents one visibility or required-state effect in a then block.
       properties:
         target_id:
+          maxLength: 128
           title: Target Id
           type: string
         visible:
@@ -19882,6 +19959,8 @@ components:
             anyOf:
             - type: integer
             - type: number
+          propertyNames:
+            maxLength: 128
           title: Option Scores
           type: object
         combine:
@@ -19905,9 +19984,11 @@ components:
         and optionally filtered by a condition.'
       properties:
         target:
+          maxLength: 128
           title: Target
           type: string
         bucket:
+          maxLength: 128
           title: Bucket
           type: string
         condition:
@@ -19958,9 +20039,11 @@ components:
         targeting a specific bucket and optionally filtered by a condition.'
       properties:
         target:
+          maxLength: 128
           title: Target
           type: string
         bucket:
+          maxLength: 128
           title: Bucket
           type: string
         condition:
@@ -20030,9 +20113,11 @@ components:
         Targets a specific bucket and optionally filtered by a condition.'
       properties:
         target:
+          maxLength: 128
           title: Target
           type: string
         bucket:
+          maxLength: 128
           title: Bucket
           type: string
         condition:
@@ -20063,9 +20148,11 @@ components:
         Validates that both left and right IDs are non-blank strings.'
       properties:
         left_id:
+          maxLength: 128
           title: Left Id
           type: string
         right_id:
+          maxLength: 128
           title: Right Id
           type: string
       required:
@@ -20126,9 +20213,11 @@ components:
         specific bucket and optionally filtered by a condition.'
       properties:
         target:
+          maxLength: 128
           title: Target
           type: string
         bucket:
+          maxLength: 128
           title: Bucket
           type: string
         condition:
@@ -20156,6 +20245,7 @@ components:
       description: Validates requests that create a new scoring rule schema entry.
       properties:
         scoring_key:
+          maxLength: 128
           title: Scoring Key
           type: string
         scoring_schema:
@@ -20183,7 +20273,8 @@ components:
       properties:
         scoring_key:
           anyOf:
-          - type: string
+          - maxLength: 128
+            type: string
           - type: 'null'
           default: null
           title: Scoring Key
@@ -20210,9 +20301,11 @@ components:
       description: Request body for creating a new project.
       properties:
         name:
+          maxLength: 100
           title: Name
           type: string
         slug:
+          maxLength: 80
           title: Slug
           type: string
       required:
@@ -20225,13 +20318,15 @@ components:
       properties:
         name:
           anyOf:
-          - type: string
+          - maxLength: 100
+            type: string
           - type: 'null'
           default: null
           title: Name
         slug:
           anyOf:
-          - type: string
+          - maxLength: 80
+            type: string
           - type: 'null'
           default: null
           title: Slug
@@ -20308,11 +20403,13 @@ components:
       description: Request body for creating a survey link.
       properties:
         name:
+          maxLength: 120
           title: Name
           type: string
         assigned_email:
           anyOf:
-          - type: string
+          - maxLength: 254
+            type: string
           - type: 'null'
           default: null
           title: Assigned Email
@@ -20359,13 +20456,15 @@ components:
           title: Is Active
         name:
           anyOf:
-          - type: string
+          - maxLength: 120
+            type: string
           - type: 'null'
           default: null
           title: Name
         assigned_email:
           anyOf:
-          - type: string
+          - maxLength: 254
+            type: string
           - type: 'null'
           default: null
           title: Assigned Email
@@ -20622,6 +20721,7 @@ components:
       description: Request body for creating a new survey.
       properties:
         title:
+          maxLength: 200
           title: Title
           type: string
         visibility:
@@ -20634,7 +20734,8 @@ components:
           type: string
         public_slug:
           anyOf:
-          - type: string
+          - maxLength: 80
+            type: string
           - type: 'null'
           default: null
           title: Public Slug
@@ -20653,7 +20754,8 @@ components:
       properties:
         title:
           anyOf:
-          - type: string
+          - maxLength: 200
+            type: string
           - type: 'null'
           default: null
           title: Title
@@ -20669,7 +20771,8 @@ components:
           title: Visibility
         public_slug:
           anyOf:
-          - type: string
+          - maxLength: 80
+            type: string
           - type: 'null'
           default: null
           title: Public Slug
@@ -20799,6 +20902,7 @@ components:
       description: A single answer payload for a choice-based question within a submission.
       properties:
         question_key:
+          maxLength: 128
           title: Question Key
           type: string
         answer_family:
@@ -20819,6 +20923,7 @@ components:
       properties:
         selected:
           items:
+            maxLength: 128
             type: string
           title: Selected
           type: array
@@ -20831,6 +20936,7 @@ components:
       description: A single answer payload for an open-ended question within a submission.
       properties:
         question_key:
+          maxLength: 128
           title: Question Key
           type: string
         answer_family:
@@ -20851,7 +20957,8 @@ components:
       properties:
         value:
           anyOf:
-          - type: string
+          - maxLength: 5000
+            type: string
           - type: integer
           - type: number
           - type: boolean
@@ -20868,9 +20975,11 @@ components:
       description: A single pair of matched items for matching questions.
       properties:
         left_id:
+          maxLength: 128
           title: Left Id
           type: string
         right_id:
+          maxLength: 128
           title: Right Id
           type: string
       required:
@@ -20883,6 +20992,7 @@ components:
       description: A single answer payload for a matching question within a submission.
       properties:
         question_key:
+          maxLength: 128
           title: Question Key
           type: string
         answer_family:
@@ -20915,6 +21025,7 @@ components:
       description: A single answer payload for a rating question within a submission.
       properties:
         question_key:
+          maxLength: 128
           title: Question Key
           type: string
         answer_family:
@@ -20980,6 +21091,7 @@ components:
           title: Metadata
           type: object
         public_slug:
+          maxLength: 80
           title: Public Slug
           type: string
         survey_version_id:
@@ -21028,6 +21140,7 @@ components:
           title: Metadata
           type: object
         token:
+          maxLength: 256
           title: Token
           type: string
         survey_version_id:

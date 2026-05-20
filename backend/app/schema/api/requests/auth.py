@@ -1,10 +1,12 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
+
+from app.schema.api import limits
 
 
 class BootstrapUserRequest(BaseModel):
     """Request body for post-auth user bootstrap."""
 
-    id_token: str
+    id_token: str = Field(max_length=limits.ID_TOKEN_MAX)
 
     @field_validator("id_token")
     @classmethod

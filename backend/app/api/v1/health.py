@@ -13,7 +13,7 @@ logger = getLogger(__name__)
 
 
 @openapi_route(summary="Health check", tags=["Health"], auth_required=False)
-@health_bp.route("/", methods=["GET"])
+@health_bp.route("", methods=["GET"])
 def health_check():
     """Return a simple health check response with the current UTC timestamp.
 

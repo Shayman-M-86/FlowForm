@@ -4,11 +4,14 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.schema.api import limits
+
 # A simple condition used as an optional filter on scoring rules.
 # This is separate from the survey-level rule if/then/else schema.
 ConditionIn = dict[str, Any]
 
 ScoreNumber = int | float
+SchemaIdStr = Annotated[str, Field(max_length=limits.SCHEMA_ID_MAX)]
 
 
 class MatchingPairIn(BaseModel):
@@ -19,8 +22,8 @@ class MatchingPairIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    left_id: str
-    right_id: str
+    left_id: SchemaIdStr
+    right_id: SchemaIdStr
 
     @field_validator("left_id", "right_id")
     @classmethod
@@ -58,12 +61,12 @@ class ChoiceOptionMapConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    option_scores: dict[str, ScoreNumber]
+    option_scores: dict[SchemaIdStr, ScoreNumber]
     combine: Literal["sum", "max"] = "sum"
 
     @field_validator("option_scores")
     @classmethod
-    def validate_option_scores(cls, value: dict[str, ScoreNumber]) -> dict[str, ScoreNumber]:
+    def validate_option_scores(cls, value: dict[SchemaIdStr, ScoreNumber]) -> dict[SchemaIdStr, ScoreNumber]:
         if not value:
             raise ValueError("option_scores must not be empty")
         if any(not key.strip() for key in value):
@@ -141,8 +144,8 @@ class ChoiceOptionMapScoringSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    target: str
-    bucket: str
+    target: SchemaIdStr
+    bucket: SchemaIdStr
     condition: ConditionIn | None = None
     strategy: Literal["choice_option_map"]
     config: ChoiceOptionMapConfig
@@ -164,8 +167,8 @@ class MatchingAnswerKeyScoringSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    target: str
-    bucket: str
+    target: SchemaIdStr
+    bucket: SchemaIdStr
     condition: ConditionIn | None = None
     strategy: Literal["matching_answer_key"]
     config: MatchingAnswerKeyConfig
@@ -187,8 +190,8 @@ class RatingDirectScoringSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    target: str
-    bucket: str
+    target: SchemaIdStr
+    bucket: SchemaIdStr
     condition: ConditionIn | None = None
     strategy: Literal["rating_direct"]
     config: RatingDirectConfig
@@ -210,8 +213,8 @@ class FieldNumericRangesScoringSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    target: str
-    bucket: str
+    target: SchemaIdStr
+    bucket: SchemaIdStr
     condition: ConditionIn | None = None
     strategy: Literal["field_numeric_ranges"]
     config: FieldNumericRangesConfig

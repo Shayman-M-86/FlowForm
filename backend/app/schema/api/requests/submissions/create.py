@@ -5,6 +5,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.schema.api import limits
+from app.schema.api.requests.helpers import validate_slug
 from app.schema.api.requests.submissions.answers import AnswerIn
 
 
@@ -33,7 +35,7 @@ class SubmissionBaseRequest(BaseModel):
 class LinkSubmissionRequest(SubmissionBaseRequest):
     """Request body for creating a survey submission from an authenticated link."""
 
-    token: str
+    token: str = Field(max_length=limits.TOKEN_MAX)
     survey_version_id: int
 
     @field_validator("token")
@@ -47,15 +49,13 @@ class LinkSubmissionRequest(SubmissionBaseRequest):
 class SlugSubmissionRequest(SubmissionBaseRequest):
     """Request body for creating a public-slug survey submission."""
 
-    public_slug: str
+    public_slug: str = Field(max_length=limits.SLUG_MAX)
     survey_version_id: int
 
     @field_validator("public_slug")
     @classmethod
     def validate_public_slug(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("public_slug must not be blank.")
-        return value
+        return validate_slug(value, field_label="public_slug")
 
 
 PublicSubmissionRequest = LinkSubmissionRequest
