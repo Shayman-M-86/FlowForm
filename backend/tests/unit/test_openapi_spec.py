@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from app.openapi import openapi_route
 from app.openapi.registry import clear_registry
-from app.openapi.spec import build_spec
+from app.openapi.spec import build_spec, register_openapi_blueprint
 
 
 @pytest.fixture(autouse=True)
@@ -104,6 +104,77 @@ def test_openapi_route_can_make_auth_optional() -> None:
     assert document["paths"]["/widgets"]["get"]["security"] == [{}, {"BearerAuth": []}]
 
 
+def test_openapi_spec_uses_auth0_oauth_when_configured() -> None:
+    app = Flask(__name__)
+    app.config.update(
+        AUTH0_DOMAIN="flowform.eu.auth0.com",
+        AUTH0_AUDIENCE="https://api.flowform.example",
+        AUTH0_CLIENT_ID="docs-client-id",
+    )
+
+    document = build_spec(app)
+
+    assert document["security"] == [{"Auth0OAuth": []}]
+    security_schemes = document["components"]["securitySchemes"]
+    assert "BearerAuth" not in security_schemes
+    assert security_schemes["Auth0OAuth"] == {
+        "type": "oauth2",
+        "description": "Log in with Auth0 to get an access token for this API.",
+        "flows": {
+            "authorizationCode": {
+                "authorizationUrl": (
+                    "https://flowform.eu.auth0.com/authorize?"
+                    "audience=https%3A%2F%2Fapi.flowform.example"
+                ),
+                "tokenUrl": "https://flowform.eu.auth0.com/oauth/token",
+                "scopes": {},
+            }
+        },
+    }
+
+
+def test_optional_auth_uses_auth0_oauth_when_configured() -> None:
+    app = Flask(__name__)
+    app.config.update(
+        AUTH0_DOMAIN="flowform.eu.auth0.com",
+        AUTH0_AUDIENCE="flowform-api",
+        AUTH0_CLIENT_ID="docs-client-id",
+    )
+
+    @openapi_route(summary="Optional auth widgets", auth="optional")
+    @app.route("/widgets", methods=["GET"])
+    def optional_auth_widgets():  # pragma: no cover
+        return []
+
+    document = build_spec(app)
+
+    assert document["paths"]["/widgets"]["get"]["security"] == [{}, {"Auth0OAuth": []}]
+
+
+def test_swagger_ui_initializes_auth0_oauth() -> None:
+    app = Flask(__name__)
+    app.config["AUTH0_CLIENT_ID"] = "docs-client-id"
+    register_openapi_blueprint(app)
+
+    response = app.test_client().get("/docs")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'oauth2RedirectUrl: window.location.origin + "/docs/oauth2-redirect"' in html
+    assert 'clientId: "docs-client-id"' in html
+    assert "usePkceWithAuthorizationCodeGrant: true" in html
+
+
+def test_swagger_ui_serves_oauth_redirect_page() -> None:
+    app = Flask(__name__)
+    register_openapi_blueprint(app)
+
+    response = app.test_client().get("/docs/oauth2-redirect")
+
+    assert response.status_code == 200
+    assert "swaggerUIRedirectOauth2" in response.get_data(as_text=True)
+
+
 def test_openapi_route_emits_query_model_parameters() -> None:
     class WidgetQuery(BaseModel):
         token: str
@@ -177,3 +248,60 @@ def test_operation_ids_are_unique_across_the_document() -> None:
 
     assert seen, "expected at least one operationId in the document"
     assert len(seen) == len(set(seen)), f"duplicate operationIds: {seen}"
+
+
+def test_info_version_defaults_to_pyproject_version() -> None:
+    import tomllib
+    from pathlib import Path
+
+    pyproject_version = tomllib.loads(
+        (Path(__file__).resolve().parents[2] / "pyproject.toml").read_text()
+    )["project"]["version"]
+
+    document = build_spec(Flask(__name__))
+
+    assert document["info"]["version"] == pyproject_version
+
+
+def test_info_version_can_be_overridden_via_config() -> None:
+    app = Flask(__name__)
+    app.config["OPENAPI_VERSION"] = "2.5.1"
+
+    document = build_spec(app)
+
+    assert document["info"]["version"] == "2.5.1"
+
+
+def test_servers_block_falls_back_to_localhost() -> None:
+    document = build_spec(Flask(__name__))
+
+    assert document["servers"] == [
+        {"url": "http://localhost:5000", "description": "Local development"}
+    ]
+
+
+def test_servers_block_respects_configured_list() -> None:
+    app = Flask(__name__)
+    app.config["OPENAPI_SERVERS"] = [
+        {"url": "https://api.flowform.example", "description": "Production"},
+        {"url": "https://staging.api.flowform.example", "description": "Staging"},
+    ]
+
+    document = build_spec(app)
+
+    assert document["servers"] == [
+        {"url": "https://api.flowform.example", "description": "Production"},
+        {"url": "https://staging.api.flowform.example", "description": "Staging"},
+    ]
+
+
+def test_servers_block_respects_single_url_override() -> None:
+    app = Flask(__name__)
+    app.config["OPENAPI_SERVER_URL"] = "https://api.flowform.example"
+    app.config["OPENAPI_SERVER_DESCRIPTION"] = "Production"
+
+    document = build_spec(app)
+
+    assert document["servers"] == [
+        {"url": "https://api.flowform.example", "description": "Production"}
+    ]

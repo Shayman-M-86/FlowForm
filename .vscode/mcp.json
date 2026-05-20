@@ -1,9 +1,0 @@
-{
-  "servers": {
-    "flowform-dev": {
-      "type": "stdio",
-      "command": "/usr/bin/bash",
-      "args": ["${workspaceFolder}/tools/mcp/run.sh"]
-    }
-  }
-}

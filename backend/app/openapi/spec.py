@@ -13,6 +13,10 @@ from __future__ import annotations
 
 import re
 import threading
+import tomllib
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
+from pathlib import Path
 from typing import Any, get_args, get_origin
 
 from apispec import APISpec
@@ -27,8 +31,10 @@ from app.openapi.errors import (
 )
 from app.openapi.registry import RouteMetadata, get_registered_routes
 from app.openapi.security import (
+    AUTH0_OAUTH_SCHEME_NAME,
     BEARER_SCHEME_NAME,
     BEARER_SECURITY_SCHEME,
+    auth0_oauth_security_scheme,
     global_security,
     optional_security,
 )
@@ -47,6 +53,40 @@ _CONVERTER_SCHEMA: dict[str, dict[str, Any]] = {
 
 _DEFAULT_PARAM_SCHEMA: dict[str, Any] = {"type": "string"}
 
+# Fallback when the package metadata can't be read (e.g. running from a source
+# checkout that was never installed). Keep in sync with backend/pyproject.toml
+# if you ever care, but the lookup below is the primary source.
+_VERSION_FALLBACK = "0.0.0"
+
+
+def _backend_package_version() -> str:
+    """Return the backend's declared version.
+
+    Reads ``backend/pyproject.toml`` directly so the source of truth works
+    whether the project is installed (``uv sync``) or running from a source
+    checkout. Falls back to ``importlib.metadata`` when the file isn't
+    findable from the current working directory, then to a static fallback.
+    """
+    candidates = [
+        Path("pyproject.toml"),
+        Path(__file__).resolve().parents[2] / "pyproject.toml",
+    ]
+    for path in candidates:
+        if not path.is_file():
+            continue
+        try:
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
+        except (OSError, tomllib.TOMLDecodeError):
+            continue
+        version = data.get("project", {}).get("version")
+        if isinstance(version, str) and version:
+            return version
+
+    try:
+        return _pkg_version("backend")
+    except PackageNotFoundError:
+        return _VERSION_FALLBACK
+
 
 def _operation_id_from_qualname(handler_qualname: str) -> str:
     """Derive a camelCase operationId from the handler's qualified name.
@@ -60,6 +100,7 @@ def _operation_id_from_qualname(handler_qualname: str) -> str:
     if not parts:
         return func_name
     return parts[0] + "".join(p[:1].upper() + p[1:] for p in parts[1:] if p)
+
 
 _spec_cache: dict[str, Any] | None = None
 _spec_lock = threading.Lock()
@@ -186,7 +227,10 @@ def _query_parameters_for_model(model: type[BaseModel]) -> list[dict[str, Any]]:
 
 
 def _build_operation(
-    spec: APISpec, route: RouteMetadata, path_parameters: list[dict[str, Any]]
+    spec: APISpec,
+    route: RouteMetadata,
+    path_parameters: list[dict[str, Any]],
+    security_scheme_name: str,
 ) -> dict[str, Any]:
     operation: dict[str, Any] = {
         "operationId": _operation_id_from_qualname(route.handler_qualname),
@@ -198,7 +242,7 @@ def _build_operation(
     if route.auth == "none":
         operation["security"] = []
     elif route.auth == "optional":
-        operation["security"] = optional_security()
+        operation["security"] = optional_security(security_scheme_name)
     parameters = list(path_parameters)
     if route.query_model is not None:
         parameters.extend(_query_parameters_for_model(route.query_model))
@@ -267,15 +311,13 @@ def _resolve_route_locations(app: Flask, route: RouteMetadata) -> list[tuple[str
 
     if route.method is None and len(matches) > 1:
         raise RuntimeError(
-            f"Could not derive a single OpenAPI method for {route.handler_qualname}; "
-            "set method=... explicitly."
+            f"Could not derive a single OpenAPI method for {route.handler_qualname}; set method=... explicitly."
         )
 
     rules_by_path = {rule.rule for _, rule in matches}
     if route.path is None and len(rules_by_path) > 1:
         raise RuntimeError(
-            f"Could not derive a single OpenAPI path for {route.handler_qualname}; "
-            "set path=... explicitly."
+            f"Could not derive a single OpenAPI path for {route.handler_qualname}; set path=... explicitly."
         )
 
     return [(method, route.path or rule.rule) for method, rule in matches]
@@ -290,7 +332,7 @@ def build_spec(app: Flask) -> dict[str, Any]:
     """
     spec = APISpec(
         title=app.config.get("OPENAPI_TITLE", "FlowForm API"),
-        version=app.config.get("OPENAPI_VERSION", "1.0.0"),
+        version=app.config.get("OPENAPI_VERSION") or _backend_package_version(),
         openapi_version="3.2.0",
         info={
             "description": app.config.get(
@@ -301,7 +343,7 @@ def build_spec(app: Flask) -> dict[str, Any]:
     )
 
     spec.components.schema(ERROR_SCHEMA_NAME, ERROR_SCHEMA)
-    spec.components.security_scheme(BEARER_SCHEME_NAME, BEARER_SECURITY_SCHEME)
+    security_scheme_name = _register_security_scheme(spec, app)
 
     grouped: dict[str, dict[str, Any]] = {}
     for route in get_registered_routes():
@@ -320,14 +362,57 @@ def build_spec(app: Flask) -> dict[str, Any]:
                 handler_qualname=route.handler_qualname,
             )
             openapi_path, path_params = _normalize_openapi_path(path)
-            operation = _build_operation(spec, resolved_route, path_params)
+            operation = _build_operation(
+                spec,
+                resolved_route,
+                path_params,
+                security_scheme_name,
+            )
             grouped.setdefault(openapi_path, {})[method.lower()] = operation
 
     document = spec.to_dict()
-    document["security"] = global_security()
+    document["servers"] = _servers_for(app)
+    document["security"] = global_security(security_scheme_name)
     document["paths"] = grouped
 
     return document
+
+
+def _register_security_scheme(spec: APISpec, app: Flask) -> str:
+    """Register OAuth2 docs auth when Auth0 config is complete."""
+    domain = app.config.get("AUTH0_DOMAIN")
+    audience = app.config.get("AUTH0_AUDIENCE")
+    client_id = app.config.get("AUTH0_CLIENT_ID")
+
+    if isinstance(domain, str) and domain and isinstance(audience, str) and audience and client_id:
+        spec.components.security_scheme(
+            AUTH0_OAUTH_SCHEME_NAME,
+            auth0_oauth_security_scheme(domain, audience),
+        )
+        return AUTH0_OAUTH_SCHEME_NAME
+
+    spec.components.security_scheme(BEARER_SCHEME_NAME, BEARER_SECURITY_SCHEME)
+    return BEARER_SCHEME_NAME
+
+
+def _servers_for(app: Flask) -> list[dict[str, str]]:
+    """Build the OpenAPI ``servers`` block from Flask config.
+
+    Codegen tools and MCP clients need at least one server URL to anchor
+    relative paths against. ``OPENAPI_SERVERS`` overrides with a fully
+    structured list when prod/staging/etc. need to be declared; otherwise
+    we fall back to a single dev entry.
+    """
+    configured = app.config.get("OPENAPI_SERVERS")
+    if configured:
+        return list(configured)
+
+    return [
+        {
+            "url": app.config.get("OPENAPI_SERVER_URL", "http://localhost:5000"),
+            "description": app.config.get("OPENAPI_SERVER_DESCRIPTION", "Local development"),
+        }
+    ]
 
 
 def _get_or_build_spec(app: Flask) -> dict[str, Any]:
@@ -356,8 +441,80 @@ _SWAGGER_UI_HTML = """<!DOCTYPE html>
                 url: "{spec_url}",
                 dom_id: "#swagger-ui",
                 deepLinking: true,
+                oauth2RedirectUrl: window.location.origin + "{oauth2_redirect_path}",
+            }});
+            window.ui.initOAuth({{
+                clientId: "{oauth_client_id}",
+                usePkceWithAuthorizationCodeGrant: true,
             }});
         }};
+    </script>
+</body>
+</html>
+"""
+
+
+_SWAGGER_UI_OAUTH2_REDIRECT_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Swagger UI: OAuth2 Redirect</title>
+</head>
+<body>
+    <script>
+        "use strict";
+        function run() {
+            const oauth2 = window.opener.swaggerUIRedirectOauth2;
+            const sentState = oauth2.state;
+            const redirectUrl = oauth2.redirectUrl;
+            const rawParams = (/code|token|error/.test(window.location.hash))
+                ? window.location.hash.substring(1).replace("?", "&")
+                : window.location.search.substring(1);
+            const params = new URLSearchParams(rawParams);
+            const query = Object.fromEntries(params.entries());
+            const isValid = query.state === sentState;
+
+            if (
+                (
+                    oauth2.auth.schema.get("flow") === "accessCode" ||
+                    oauth2.auth.schema.get("flow") === "authorizationCode" ||
+                    oauth2.auth.schema.get("flow") === "authorization_code"
+                ) &&
+                !oauth2.auth.code
+            ) {
+                if (!isValid) {
+                    oauth2.errCb({
+                        authId: oauth2.auth.name,
+                        source: "auth",
+                        level: "warning",
+                        message: "Authorization may be unsafe; the returned state did not match.",
+                    });
+                }
+                if (query.code) {
+                    delete oauth2.state;
+                    oauth2.auth.code = query.code;
+                    oauth2.callback({ auth: oauth2.auth, redirectUrl });
+                } else {
+                    oauth2.errCb({
+                        authId: oauth2.auth.name,
+                        source: "auth",
+                        level: "error",
+                        message: query.error
+                            ? `[${query.error}]: ${query.error_description || "no authorization code received."}`
+                            : "[Authorization failed]: no authorization code received from the server.",
+                    });
+                }
+            } else {
+                oauth2.callback({ auth: oauth2.auth, token: query, isValid, redirectUrl });
+            }
+            window.close();
+        }
+
+        if (document.readyState !== "loading") {
+            run();
+        } else {
+            document.addEventListener("DOMContentLoaded", run);
+        }
     </script>
 </body>
 </html>
@@ -369,8 +526,9 @@ def register_openapi_blueprint(
     *,
     spec_path: str = "/openapi.json",
     docs_path: str = "/docs",
+    oauth2_redirect_path: str = "/docs/oauth2-redirect",
 ) -> None:
-    """Mount ``/openapi.json`` and ``/docs`` on the Flask app.
+    """Mount ``/openapi.json``, ``/docs``, and the OAuth callback on the app.
 
     These endpoints are unauthenticated by design — they expose the API
     surface for internal developer tooling.
@@ -386,7 +544,13 @@ def register_openapi_blueprint(
         html = _SWAGGER_UI_HTML.format(
             title=app.config.get("OPENAPI_TITLE", "FlowForm API"),
             spec_url=spec_path,
+            oauth_client_id=app.config.get("AUTH0_CLIENT_ID") or "",
+            oauth2_redirect_path=oauth2_redirect_path,
         )
         return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+    @bp.route(oauth2_redirect_path, methods=["GET"])
+    def swagger_ui_oauth2_redirect():
+        return _SWAGGER_UI_OAUTH2_REDIRECT_HTML, 200, {"Content-Type": "text/html; charset=utf-8"}
 
     app.register_blueprint(bp)

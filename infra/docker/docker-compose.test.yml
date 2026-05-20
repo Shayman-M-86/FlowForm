@@ -15,7 +15,9 @@ services:
 
       DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
     ports:
-      - "127.0.0.1:5432:${DATABASE_CORE_PORT}"
+      # Host-side ports for the test stack are offset by 10 so the test
+      # stack can run side-by-side with the dev stack (5432/5433/5000).
+      - "127.0.0.1:5442:${DATABASE_CORE_PORT}"
     command: [
       "postgres", 
       "-c", "password_encryption=scram-sha-256", 
@@ -52,7 +54,7 @@ services:
 
       DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
     ports:
-      - "127.0.0.1:5433:${DATABASE_RESPONSE_PORT}"
+      - "127.0.0.1:5443:${DATABASE_RESPONSE_PORT}"
     command: [
       "postgres", 
       "-c", "password_encryption=scram-sha-256", 
@@ -114,7 +116,7 @@ services:
     networks:
       - flowform_net
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5010:5000"
 
 volumes:
   flowform_postgres_core_data:

@@ -1,27 +1,33 @@
 """Auth0 Device Authorization Flow for the FlowForm dev MCP.
 
 Same UX as the GitHub CLI: print a URL, the user logs in once in their
-browser, the CLI polls Auth0 until the user finishes, then caches the
-resulting access + refresh tokens to disk.
+browser, the CLI polls Auth0 until the user finishes, then caches token
+metadata to disk and stores the tokens in the OS credential store.
 
 Subsequent runs reuse the cached access token. When it expires, the refresh
 token is exchanged silently. If refresh fails (revoked, refresh token
 expired), we fall back to re-running the device flow.
 
-Cache location: ``~/.config/flowform/token.json`` (override via
-``FLOWFORM_TOKEN_PATH``).
+Cache metadata location: ``~/.config/flowform/token.json`` (override via
+``FLOWFORM_TOKEN_PATH``). Tokens are encrypted with AES-GCM, then stored via
+Python keyring.
 
 Required env (set in tools/mcp/.env):
 
     FLOWFORM_AUTH0_DOMAIN     e.g. flowform.eu.auth0.com
     FLOWFORM_AUTH0_CLIENT_ID  Auth0 application client_id (SPA or Native)
     FLOWFORM_AUTH0_AUDIENCE   API audience identifier
+    FLOWFORM_TOKEN_ENCRYPTION_KEY  base64:<32 random bytes, base64-encoded>
 """
 
 from __future__ import annotations
 
+import base64
+import binascii
+import hashlib
 import json
 import os
+import secrets
 import shutil
 import subprocess
 import sys
@@ -32,6 +38,10 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+import keyring
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from keyring.errors import KeyringError
 
 
 def _is_wsl() -> bool:
@@ -89,6 +99,11 @@ SCOPE = "openid profile email offline_access"
 # Treat tokens as expired this many seconds before their stated expiry so we
 # never hand the backend a token that's about to die mid-request.
 EXPIRY_SLACK_SECONDS = 60
+KEYRING_SERVICE = "flowform-mcp"
+ACCESS_TOKEN_KEY = "access_token"
+REFRESH_TOKEN_KEY = "refresh_token"
+TOKEN_ENCRYPTION_KEY_ENV = "FLOWFORM_TOKEN_ENCRYPTION_KEY"
+ENCRYPTED_SECRET_PREFIX = "flowform:aesgcm:v1:"
 
 
 def _token_path() -> Path:
@@ -96,6 +111,92 @@ def _token_path() -> Path:
     if override:
         return Path(override).expanduser()
     return Path.home() / ".config" / "flowform" / "token.json"
+
+
+def _keyring_account(cfg: "Auth0Config", key: str) -> str:
+    return f"{cfg.domain}|{cfg.client_id}|{cfg.audience}|{key}"
+
+
+def _encryption_key() -> bytes:
+    value = _require_env(TOKEN_ENCRYPTION_KEY_ENV)
+
+    if value.startswith("base64:"):
+        encoded = value.removeprefix("base64:")
+        try:
+            key = base64.urlsafe_b64decode(encoded)
+        except (ValueError, binascii.Error) as exc:
+            print(
+                f"[flowform-mcp] {TOKEN_ENCRYPTION_KEY_ENV} is not valid base64.",
+                file=sys.stderr,
+            )
+            raise SystemExit(9) from exc
+        if len(key) != 32:
+            print(
+                f"[flowform-mcp] {TOKEN_ENCRYPTION_KEY_ENV} must decode to 32 bytes.",
+                file=sys.stderr,
+            )
+            raise SystemExit(9)
+        return key
+
+    return hashlib.sha256(value.encode()).digest()
+
+
+def _encrypt_secret(cfg: "Auth0Config", key: str, value: str) -> str:
+    account = _keyring_account(cfg, key).encode()
+    nonce = secrets.token_bytes(12)
+    ciphertext = AESGCM(_encryption_key()).encrypt(nonce, value.encode(), account)
+    return (
+        ENCRYPTED_SECRET_PREFIX
+        + base64.urlsafe_b64encode(nonce).decode()
+        + ":"
+        + base64.urlsafe_b64encode(ciphertext).decode()
+    )
+
+
+def _decrypt_secret(cfg: "Auth0Config", key: str, value: str) -> str:
+    if not value.startswith(ENCRYPTED_SECRET_PREFIX):
+        return value
+
+    encrypted = value.removeprefix(ENCRYPTED_SECRET_PREFIX)
+    try:
+        nonce_text, ciphertext_text = encrypted.split(":", 1)
+        nonce = base64.urlsafe_b64decode(nonce_text)
+        ciphertext = base64.urlsafe_b64decode(ciphertext_text)
+        account = _keyring_account(cfg, key).encode()
+        return AESGCM(_encryption_key()).decrypt(nonce, ciphertext, account).decode()
+    except (ValueError, UnicodeDecodeError, binascii.Error, InvalidTag) as exc:
+        print(
+            f"[flowform-mcp] Could not decrypt cached token. Check {TOKEN_ENCRYPTION_KEY_ENV}.",
+            file=sys.stderr,
+        )
+        raise SystemExit(9) from exc
+
+
+def _get_secret(cfg: "Auth0Config", key: str) -> str | None:
+    try:
+        stored = keyring.get_password(KEYRING_SERVICE, _keyring_account(cfg, key))
+    except KeyringError as exc:
+        print(f"[flowform-mcp] Could not read token from OS keyring: {exc}", file=sys.stderr)
+        raise SystemExit(8) from exc
+    if stored is None:
+        return None
+
+    secret = _decrypt_secret(cfg, key, stored)
+    if not stored.startswith(ENCRYPTED_SECRET_PREFIX):
+        _set_secret(cfg, key, secret)
+    return secret
+
+
+def _set_secret(cfg: "Auth0Config", key: str, value: str) -> None:
+    try:
+        keyring.set_password(
+            KEYRING_SERVICE,
+            _keyring_account(cfg, key),
+            _encrypt_secret(cfg, key, value),
+        )
+    except KeyringError as exc:
+        print(f"[flowform-mcp] Could not save token to OS keyring: {exc}", file=sys.stderr)
+        raise SystemExit(8) from exc
 
 
 def _require_env(name: str) -> str:
@@ -133,19 +234,34 @@ class Auth0Config:
         )
 
 
-def _load_cached() -> dict[str, Any] | None:
+def _load_cached(cfg: Auth0Config) -> dict[str, Any] | None:
     path = _token_path()
     if not path.exists():
         return None
     try:
-        return json.loads(path.read_text())
+        cached = json.loads(path.read_text())
     except (json.JSONDecodeError, OSError):
         return None
+    if not isinstance(cached, dict):
+        return None
+
+    legacy_access_token = cached.pop("access_token", None)
+    legacy_refresh_token = cached.pop("refresh_token", None)
+    if isinstance(legacy_access_token, str):
+        _set_secret(cfg, ACCESS_TOKEN_KEY, legacy_access_token)
+    if isinstance(legacy_refresh_token, str):
+        _set_secret(cfg, REFRESH_TOKEN_KEY, legacy_refresh_token)
+    if legacy_access_token or legacy_refresh_token:
+        _save_cached(cached)
+
+    return cached
 
 
 def _save_cached(data: dict[str, Any]) -> None:
     path = _token_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    path.touch(mode=0o600, exist_ok=True)
+    path.chmod(0o600)
     path.write_text(json.dumps(data, indent=2))
     try:
         path.chmod(0o600)
@@ -160,20 +276,26 @@ def _is_fresh(cached: dict[str, Any]) -> bool:
     return time.time() < expires_at - EXPIRY_SLACK_SECONDS
 
 
-def _store_tokens(payload: dict[str, Any], previous: dict[str, Any] | None) -> dict[str, Any]:
+def _store_tokens(
+    cfg: Auth0Config,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
     expires_in = int(payload.get("expires_in", 0))
+    refresh_token = payload.get("refresh_token") or _get_secret(cfg, REFRESH_TOKEN_KEY)
+
+    _set_secret(cfg, ACCESS_TOKEN_KEY, payload["access_token"])
+    if refresh_token:
+        _set_secret(cfg, REFRESH_TOKEN_KEY, refresh_token)
+
     stored = {
-        "access_token": payload["access_token"],
         "expires_at": time.time() + expires_in,
-        # Auth0 only returns refresh_token on the initial exchange; keep the
-        # previous one when refreshing.
-        "refresh_token": payload.get("refresh_token")
-        or (previous or {}).get("refresh_token"),
         "token_type": payload.get("token_type", "Bearer"),
         "scope": payload.get("scope"),
+        "storage": "keyring",
+        "encryption": "aesgcm",
     }
     _save_cached(stored)
-    return stored
+    return {**stored, "access_token": payload["access_token"], "refresh_token": refresh_token}
 
 
 def _device_authorize(cfg: Auth0Config) -> dict[str, Any]:
@@ -279,11 +401,11 @@ def _run_device_flow(cfg: Auth0Config) -> dict[str, Any]:
 
     tokens = _poll_for_token(cfg, auth["device_code"], interval)
     print("[flowform-mcp] Login complete. Token cached.", file=sys.stderr)
-    return _store_tokens(tokens, previous=None)
+    return _store_tokens(cfg, tokens)
 
 
 def _refresh(cfg: Auth0Config, cached: dict[str, Any]) -> dict[str, Any] | None:
-    refresh_token = cached.get("refresh_token")
+    refresh_token = _get_secret(cfg, REFRESH_TOKEN_KEY)
     if not refresh_token:
         return None
     response = httpx.post(
@@ -297,7 +419,7 @@ def _refresh(cfg: Auth0Config, cached: dict[str, Any]) -> dict[str, Any] | None:
     )
     if response.status_code != 200:
         return None
-    return _store_tokens(response.json(), previous=cached)
+    return _store_tokens(cfg, response.json())
 
 
 def get_access_token(*, force_login: bool = False) -> str:
@@ -305,9 +427,11 @@ def get_access_token(*, force_login: bool = False) -> str:
     cfg = Auth0Config.from_env()
 
     if not force_login:
-        cached = _load_cached()
+        cached = _load_cached(cfg)
         if cached and _is_fresh(cached):
-            return cached["access_token"]
+            access_token = _get_secret(cfg, ACCESS_TOKEN_KEY)
+            if access_token:
+                return access_token
         if cached:
             refreshed = _refresh(cfg, cached)
             if refreshed:
@@ -319,9 +443,9 @@ def get_access_token(*, force_login: bool = False) -> str:
 def login_cli() -> None:
     """Entry point for `python auth.py login` (and run.sh login)."""
     token = get_access_token(force_login=True)
-    # Print the token path, not the token itself, to stderr/stdout.
+    # Print the metadata path, not the token itself, to stderr/stdout.
     print(
-        f"[flowform-mcp] Cached access token at {_token_path()}",
+        f"[flowform-mcp] Cached token metadata at {_token_path()}",
         file=sys.stderr,
     )
     # Output a marker so the calling shell can confirm success.
