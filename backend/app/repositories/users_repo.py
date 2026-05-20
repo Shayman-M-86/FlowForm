@@ -3,7 +3,6 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.user import User
 
 _PUBLIC_ID_CONSTRAINT = "uq_users_public_id"
@@ -23,7 +22,9 @@ def create_user(
     display_name: str | None,
 ) -> User:
     """Create and flush a new user row, retrying on public_id collisions."""
-    for attempt in range(_MAX_PUBLIC_ID_RETRIES):
+    attempt = 0
+    while True:
+        attempt += 1
         user = User(
             auth0_user_id=auth0_user_id,
             email=email,
@@ -31,20 +32,19 @@ def create_user(
         )
         db.add(user)
         try:
-            flush_with_err_handle(db)
+            db.flush()
             return user
         except IntegrityError as exc:
+            db.rollback()
             constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", "") or ""
             is_public_id_collision = (
                 isinstance(exc.orig, UniqueViolation)
                 and constraint == _PUBLIC_ID_CONSTRAINT
-                and attempt < _MAX_PUBLIC_ID_RETRIES - 1
+                and attempt < _MAX_PUBLIC_ID_RETRIES
             )
             if is_public_id_collision:
                 continue
             raise
-
-    raise RuntimeError("Failed to generate a unique public_id after retries")
 
 
 def update_user(

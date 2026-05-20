@@ -52,6 +52,17 @@ _STATUS_DESCRIPTIONS: dict[int, str] = {
     500: "Internal server error.",
 }
 
+_STATUS_RESPONSE_COMPONENTS: dict[int, str] = {
+    400: "BadRequestError",
+    401: "UnauthorizedError",
+    403: "ForbiddenError",
+    404: "NotFoundError",
+    409: "ConflictError",
+    422: "ValidationError",
+    429: "RateLimitError",
+    500: "InternalServerError",
+}
+
 
 def _error_ref() -> dict[str, Any]:
     return {"$ref": f"#/components/schemas/{ERROR_SCHEMA_NAME}"}
@@ -71,8 +82,15 @@ def _response_with_examples(
     }
 
 
-def default_error_responses(*, include_auth: bool = True) -> dict[str, Any]:
-    """Return the default error responses block attached to every operation.
+def _default_error_statuses(*, include_auth: bool = True) -> list[int]:
+    statuses: list[int] = [400, 404, 409, 422, 429, 500]
+    if include_auth:
+        statuses.extend([401, 403])
+    return sorted(set(statuses))
+
+
+def default_error_response_components(*, include_auth: bool = True) -> dict[str, dict[str, Any]]:
+    """Return reusable default error response components.
 
     Examples are derived from real error classes via
     :func:`build_examples_by_status`; descriptions come from a small static
@@ -80,15 +98,26 @@ def default_error_responses(*, include_auth: bool = True) -> dict[str, Any]:
     """
     by_status = build_examples_by_status()
 
-    statuses: list[int] = [400, 404, 409, 422, 429, 500]
-    if include_auth:
-        statuses.extend([401, 403])
-    statuses = sorted(set(statuses))
-
     return {
-        str(status): _response_with_examples(
+        _STATUS_RESPONSE_COMPONENTS[status]: _response_with_examples(
             _STATUS_DESCRIPTIONS.get(status, ""),
             by_status.get(status, {}),
         )
-        for status in statuses
+        for status in _default_error_statuses(include_auth=include_auth)
+    }
+
+
+def default_error_response_refs(*, include_auth: bool = True) -> dict[str, dict[str, str]]:
+    """Return default operation responses as refs to reusable components.
+
+    OpenAPI 3.1 requires every response entry to have a description unless the
+    validator treats the entry strictly as a Reference Object. Keep the local
+    description small and repeat the full content/examples only in components.
+    """
+    return {
+        str(status): {
+            "$ref": f"#/components/responses/{_STATUS_RESPONSE_COMPONENTS[status]}",
+            "description": _STATUS_DESCRIPTIONS.get(status, ""),
+        }
+        for status in _default_error_statuses(include_auth=include_auth)
     }

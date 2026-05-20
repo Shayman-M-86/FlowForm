@@ -1,0 +1,3 @@
+[mcp_servers.flowform-dev]
+command = "/usr/bin/bash"
+args = ["/home/shayman86/my-repos/FlowForm/tools/mcp/run.sh"]

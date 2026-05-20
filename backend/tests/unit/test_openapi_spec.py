@@ -76,6 +76,60 @@ def test_openapi_route_supports_array_response_models() -> None:
     }
 
 
+def test_default_error_responses_are_component_refs() -> None:
+    app = Flask(__name__)
+
+    @openapi_route(summary="Get widget", tags=["Widgets"])
+    @app.route("/widgets", methods=["GET"])
+    def get_widget():  # pragma: no cover
+        return {}
+
+    document = build_spec(app)
+
+    responses = document["paths"]["/widgets"]["get"]["responses"]
+    assert responses["400"] == {
+        "$ref": "#/components/responses/BadRequestError",
+        "description": "Bad request.",
+    }
+    assert responses["401"] == {
+        "$ref": "#/components/responses/UnauthorizedError",
+        "description": "Authentication required or token invalid.",
+    }
+    assert responses["403"] == {
+        "$ref": "#/components/responses/ForbiddenError",
+        "description": "Authenticated but not authorized for this resource.",
+    }
+    assert responses["404"] == {
+        "$ref": "#/components/responses/NotFoundError",
+        "description": "Resource not found.",
+    }
+    assert responses["409"] == {
+        "$ref": "#/components/responses/ConflictError",
+        "description": "Conflict with the current resource state.",
+    }
+    assert responses["422"] == {
+        "$ref": "#/components/responses/ValidationError",
+        "description": "Request was syntactically valid but semantically invalid.",
+    }
+    assert responses["429"] == {
+        "$ref": "#/components/responses/RateLimitError",
+        "description": "Rate limit exceeded.",
+    }
+    assert responses["500"] == {
+        "$ref": "#/components/responses/InternalServerError",
+        "description": "Internal server error.",
+    }
+
+
+def test_default_error_response_examples_are_registered_once() -> None:
+    document = build_spec(Flask(__name__))
+
+    bad_request = document["components"]["responses"]["BadRequestError"]
+    media_type = bad_request["content"]["application/json"]
+    assert media_type["schema"] == {"$ref": "#/components/schemas/ErrorResponse"}
+    assert media_type["examples"]
+
+
 def test_openapi_route_can_disable_auth_requirement() -> None:
     app = Flask(__name__)
 

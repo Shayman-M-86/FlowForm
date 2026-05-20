@@ -28,7 +28,8 @@ from werkzeug.routing import Rule
 from app.openapi.errors import (
     ERROR_SCHEMA,
     ERROR_SCHEMA_NAME,
-    default_error_responses,
+    default_error_response_components,
+    default_error_response_refs,
 )
 from app.openapi.registry import RouteMetadata, get_registered_routes
 from app.openapi.security import (
@@ -283,7 +284,7 @@ def _build_operation(
     else:
         responses[str(route.status_code)] = {"description": "Successful response."}
 
-    responses.update(default_error_responses())
+    responses.update(default_error_response_refs())
     operation["responses"] = responses
 
     return operation
@@ -353,6 +354,8 @@ def build_spec(app: Flask) -> dict[str, Any]:
     )
 
     spec.components.schema(ERROR_SCHEMA_NAME, ERROR_SCHEMA)
+    for name, response in default_error_response_components().items():
+        spec.components.response(name, response)
     security_scheme_name = _register_security_scheme(spec, app)
 
     grouped: dict[str, dict[str, Any]] = {}
