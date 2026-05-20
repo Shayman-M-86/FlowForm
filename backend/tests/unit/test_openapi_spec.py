@@ -156,11 +156,11 @@ def test_swagger_ui_initializes_auth0_oauth() -> None:
     app.config["AUTH0_CLIENT_ID"] = "docs-client-id"
     register_openapi_blueprint(app)
 
-    response = app.test_client().get("/docs")
+    response = app.test_client().get("/api/v1/docs")
 
     assert response.status_code == 200
     html = response.get_data(as_text=True)
-    assert 'oauth2RedirectUrl: window.location.origin + "/docs/oauth2-redirect"' in html
+    assert 'oauth2RedirectUrl: window.location.origin + "/api/v1/docs/oauth2-redirect"' in html
     assert 'clientId: "docs-client-id"' in html
     assert "usePkceWithAuthorizationCodeGrant: true" in html
 
@@ -169,7 +169,7 @@ def test_swagger_ui_serves_oauth_redirect_page() -> None:
     app = Flask(__name__)
     register_openapi_blueprint(app)
 
-    response = app.test_client().get("/docs/oauth2-redirect")
+    response = app.test_client().get("/api/v1/docs/oauth2-redirect")
 
     assert response.status_code == 200
     assert "swaggerUIRedirectOauth2" in response.get_data(as_text=True)

@@ -525,10 +525,10 @@ def register_openapi_blueprint(
     app: Flask,
     *,
     spec_path: str = "/openapi.json",
-    docs_path: str = "/docs",
-    oauth2_redirect_path: str = "/docs/oauth2-redirect",
+    docs_path: str = "/api/v1/docs",
+    oauth2_redirect_path: str = "/api/v1/docs/oauth2-redirect",
 ) -> None:
-    """Mount ``/openapi.json``, ``/docs``, and the OAuth callback on the app.
+    """Mount ``/openapi.json``, versioned docs, and the OAuth callback on the app.
 
     These endpoints are unauthenticated by design — they expose the API
     surface for internal developer tooling.

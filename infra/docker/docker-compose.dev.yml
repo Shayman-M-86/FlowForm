@@ -99,6 +99,7 @@ services:
     volumes:
       - ../../backend:/app
       - ../../backend/logs:/app/logs
+      - flowform_backend_dev_venv:/opt/flowform/backend-venv
     ports:
       - "5000:5000"
     depends_on:
@@ -125,6 +126,7 @@ services:
 volumes:
   flowform_postgres_core_data:
   flowform_postgres_response_data:
+  flowform_backend_dev_venv:
 
 networks:
   flowform_net_dev:
