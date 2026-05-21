@@ -46,13 +46,53 @@ LOGGER = logging.getLogger(__name__)
 # Flask uses ``<type:name>`` path converters; OpenAPI uses ``{name}``.
 _FLASK_PARAM_RE = re.compile(r"<(?:(?P<conv>[^:>]+):)?(?P<name>[^>]+)>")
 
-# Maps Flask path converters to OpenAPI parameter schemas.
+
+def _custom_converter_schemas() -> dict[str, dict[str, Any]]:
+    """Schemas for our custom URL converters, keyed by converter name.
+
+    Built dynamically so the spec stays in sync with the runtime:
+
+    - Converters with ``MAX_LENGTH`` produce a string schema with
+      ``maxLength``.
+    - Converters with ``MIN_VALUE`` / ``MAX_VALUE`` produce an integer
+      schema with ``minimum`` / ``maximum``.
+
+    Imported lazily to avoid a circular dependency (middleware imports
+    limits, which is fine; spec doesn't need to load middleware at import
+    time).
+    """
+    from app.middleware.url_converters import URL_CONVERTERS
+
+    schemas: dict[str, dict[str, Any]] = {}
+    for name, converter_cls in URL_CONVERTERS.items():
+        max_value = getattr(converter_cls, "MAX_VALUE", None)
+        min_value = getattr(converter_cls, "MIN_VALUE", None)
+        if isinstance(max_value, int) and isinstance(min_value, int):
+            schemas[name] = {
+                "type": "integer",
+                "minimum": min_value,
+                "maximum": max_value,
+            }
+            continue
+
+        schema: dict[str, Any] = {"type": "string"}
+        max_length = getattr(converter_cls, "MAX_LENGTH", None)
+        if isinstance(max_length, int) and max_length > 0:
+            schema["maxLength"] = max_length
+        schemas[name] = schema
+    return schemas
+
+
+# Maps Flask path converters to OpenAPI parameter schemas. Built once on
+# import — custom converters are merged in so their MAX_LENGTH lands in
+# the spec.
 _CONVERTER_SCHEMA: dict[str, dict[str, Any]] = {
     "int": {"type": "integer"},
     "float": {"type": "number"},
     "path": {"type": "string"},
     "uuid": {"type": "string", "format": "uuid"},
     "string": {"type": "string"},
+    **_custom_converter_schemas(),
 }
 
 _DEFAULT_PARAM_SCHEMA: dict[str, Any] = {"type": "string"}

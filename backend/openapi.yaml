@@ -139,7 +139,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/nodes:
+  /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes:
     get:
       operationId: listNodes
       summary: List survey content nodes
@@ -147,21 +147,27 @@ paths:
       tags:
       - Survey Content
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: version_number
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '200':
           description: Successful response.
@@ -202,21 +208,27 @@ paths:
       tags:
       - Survey Content
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: version_number
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       requestBody:
         required: true
         content:
@@ -254,7 +266,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}:
+  /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}:
     get:
       operationId: getNode
       summary: Get survey content node
@@ -262,26 +274,34 @@ paths:
       tags:
       - Survey Content
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: version_number
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: node_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '200':
           description: Successful response.
@@ -320,26 +340,34 @@ paths:
       tags:
       - Survey Content
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: version_number
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: node_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       requestBody:
         required: true
         content:
@@ -384,26 +412,34 @@ paths:
       tags:
       - Survey Content
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: version_number
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: node_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '204':
           description: No content.
@@ -431,7 +467,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/scoring-rules:
+  /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules:
     get:
       operationId: listScoringRules
       summary: List scoring rules
@@ -439,21 +475,27 @@ paths:
       tags:
       - Scoring Rules
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: version_number
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '200':
           description: Successful response.
@@ -494,21 +536,27 @@ paths:
       tags:
       - Scoring Rules
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: version_number
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       requestBody:
         required: true
         content:
@@ -546,7 +594,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/scoring-rules/{scoring_rule_id}:
+  /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules/{scoring_rule_id}:
     patch:
       operationId: updateScoringRule
       summary: Update scoring rule
@@ -554,26 +602,34 @@ paths:
       tags:
       - Scoring Rules
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: version_number
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: scoring_rule_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       requestBody:
         required: true
         content:
@@ -618,26 +674,34 @@ paths:
       tags:
       - Scoring Rules
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: version_number
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: scoring_rule_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '204':
           description: No content.
@@ -748,7 +812,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}:
+  /api/v1/projects/{project_id}:
     get:
       operationId: getProject
       summary: Get project
@@ -756,11 +820,13 @@ paths:
       tags:
       - Projects
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '200':
           description: Successful response.
@@ -799,11 +865,13 @@ paths:
       tags:
       - Projects
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       requestBody:
         required: true
         content:
@@ -848,11 +916,13 @@ paths:
       tags:
       - Projects
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '204':
           description: No content.
@@ -880,7 +950,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/surveys/{survey_id}/links:
+  /api/v1/projects/{project_id}/surveys/{survey_id}/links:
     get:
       operationId: listPublicLinks
       summary: List survey links
@@ -888,16 +958,20 @@ paths:
       tags:
       - Survey Links
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '200':
           description: Successful response.
@@ -936,16 +1010,20 @@ paths:
       tags:
       - Survey Links
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       requestBody:
         required: true
         content:
@@ -983,7 +1061,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/surveys/{survey_id}/links/{link_id}:
+  /api/v1/projects/{project_id}/surveys/{survey_id}/links/{link_id}:
     patch:
       operationId: updatePublicLink
       summary: Update survey link
@@ -991,21 +1069,27 @@ paths:
       tags:
       - Survey Links
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: link_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       requestBody:
         required: true
         content:
@@ -1050,21 +1134,27 @@ paths:
       tags:
       - Survey Links
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: link_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '204':
           description: No content.
@@ -1092,7 +1182,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/submissions:
+  /api/v1/projects/{project_id}/submissions:
     get:
       operationId: listSubmissions
       summary: List submissions
@@ -1100,11 +1190,13 @@ paths:
       tags:
       - Submissions
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: query
         required: false
@@ -1188,7 +1280,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/submissions/{submission_id}:
+  /api/v1/projects/{project_id}/submissions/{submission_id}:
     get:
       operationId: getSubmission
       summary: Get submission
@@ -1196,16 +1288,20 @@ paths:
       tags:
       - Submissions
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: submission_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: include_answers
         in: query
         required: false
@@ -1251,7 +1347,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/surveys:
+  /api/v1/projects/{project_id}/surveys:
     get:
       operationId: listSurveys
       summary: List surveys
@@ -1259,11 +1355,13 @@ paths:
       tags:
       - Surveys
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '200':
           description: Successful response.
@@ -1304,11 +1402,13 @@ paths:
       tags:
       - Surveys
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       requestBody:
         required: true
         content:
@@ -1346,7 +1446,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/surveys/{survey_id}:
+  /api/v1/projects/{project_id}/surveys/{survey_id}:
     get:
       operationId: getSurvey
       summary: Get survey
@@ -1354,16 +1454,20 @@ paths:
       tags:
       - Surveys
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '200':
           description: Successful response.
@@ -1402,16 +1506,20 @@ paths:
       tags:
       - Surveys
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       requestBody:
         required: true
         content:
@@ -1456,16 +1564,20 @@ paths:
       tags:
       - Surveys
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '204':
           description: No content.
@@ -1493,7 +1605,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/surveys/{survey_id}/versions:
+  /api/v1/projects/{project_id}/surveys/{survey_id}/versions:
     get:
       operationId: listVersions
       summary: List survey versions
@@ -1501,16 +1613,20 @@ paths:
       tags:
       - Survey Versions
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '200':
           description: Successful response.
@@ -1551,16 +1667,20 @@ paths:
       tags:
       - Survey Versions
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '201':
           description: Successful response.
@@ -1592,7 +1712,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/copy-to-draft:
+  /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/copy-to-draft:
     post:
       operationId: copyVersionToDraft
       summary: Copy survey version to draft
@@ -1600,21 +1720,27 @@ paths:
       tags:
       - Survey Versions
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: version_number
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '201':
           description: Successful response.
@@ -1646,7 +1772,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}:
+  /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}:
     get:
       operationId: getVersion
       summary: Get survey version
@@ -1654,21 +1780,27 @@ paths:
       tags:
       - Survey Versions
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: version_number
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '200':
           description: Successful response.
@@ -1700,7 +1832,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/publish:
+  /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/publish:
     post:
       operationId: publishVersion
       summary: Publish survey version
@@ -1708,21 +1840,27 @@ paths:
       tags:
       - Survey Versions
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: version_number
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '200':
           description: Successful response.
@@ -1754,7 +1892,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
-  /api/v1/projects/{project_ref}/surveys/{survey_id}/versions/{version_number}/archive:
+  /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/archive:
     post:
       operationId: archiveVersion
       summary: Archive survey version
@@ -1762,21 +1900,27 @@ paths:
       tags:
       - Survey Versions
       parameters:
-      - name: project_ref
+      - name: project_id
         in: path
         required: true
         schema:
-          type: string
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: survey_id
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: version_number
         in: path
         required: true
         schema:
           type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '200':
           description: Successful response.
@@ -1879,6 +2023,7 @@ paths:
         required: true
         schema:
           type: string
+          maxLength: 80
       responses:
         '200':
           description: Successful response.

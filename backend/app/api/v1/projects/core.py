@@ -2,7 +2,6 @@ from flask import request
 
 from app.api.utils.validation import parse
 from app.api.v1.projects import project_service, projects_bp, users_service
-from app.api.v1.projects.resolver import resolve_project_ref
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.openapi import openapi_route
@@ -39,12 +38,12 @@ def create_project():
 
 
 @openapi_route(summary="Get project", response_model=ProjectOut, tags=["Projects"])
-@projects_bp.route("/<project_ref>", methods=["GET"])
+@projects_bp.route("/<bint:project_id>", methods=["GET"])
 @auth.require_auth()
-def get_project(project_ref: str):
+def get_project(project_id: int):
     db = get_core_db()
     actor: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
-    project = resolve_project_ref(db, project_ref, actor)
+    project = project_service.get_project(db=db, project_id=project_id, actor=actor)
     return ProjectOut.model_validate(project).model_dump(mode="json"), 200
 
 
@@ -54,23 +53,21 @@ def get_project(project_ref: str):
     response_model=ProjectOut,
     tags=["Projects"],
 )
-@projects_bp.route("/<project_ref>", methods=["PATCH"])
+@projects_bp.route("/<bint:project_id>", methods=["PATCH"])
 @auth.require_auth()
-def update_project(project_ref: str):
+def update_project(project_id: int):
     payload = parse(UpdateProjectRequest, request)
     db = get_core_db()
     actor: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
-    project_id = resolve_project_ref(db, project_ref, actor).id
     project = project_service.update_project(db=db, project_id=project_id, data=payload, actor=actor)
     return ProjectOut.model_validate(project).model_dump(mode="json"), 200
 
 
 @openapi_route(summary="Delete project", tags=["Projects"], status_code=204)
-@projects_bp.route("/<project_ref>", methods=["DELETE"])
+@projects_bp.route("/<bint:project_id>", methods=["DELETE"])
 @auth.require_auth()
-def delete_project(project_ref: str):
+def delete_project(project_id: int):
     db = get_core_db()
     actor: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
-    project_id = resolve_project_ref(db, project_ref, actor).id
     project_service.delete_project(db=db, project_id=project_id, actor=actor)
     return "", 204

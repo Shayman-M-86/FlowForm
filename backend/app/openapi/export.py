@@ -75,8 +75,12 @@ def _build_minimal_spec_app() -> Flask:
     ``@openapi_route``) and ``app.openapi`` (which registers this command).
     """
     from app.api.v1 import register_api_v1
+    from app.middleware.url_converters import register_url_converters
 
     app = Flask("flowform-openapi-export")
+    # Custom URL converters must attach to ``url_map`` before any route
+    # references them, otherwise ``register_api_v1`` raises LookupError.
+    register_url_converters(app)
     register_api_v1(app)
     return app
 

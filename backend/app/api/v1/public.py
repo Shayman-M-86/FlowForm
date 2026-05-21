@@ -58,7 +58,7 @@ def list_public_surveys():
     tags=["Public"],
     auth_required=False,
 )
-@public_bp.route("/surveys/<string:public_slug>", methods=["GET"])
+@public_bp.route("/surveys/<public_slug:public_slug>", methods=["GET"])
 def get_public_survey(public_slug: str):
     core_db = get_core_db()
 

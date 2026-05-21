@@ -2,6 +2,14 @@
 
 SLUG_MAX = 80
 
+# Upper bound for numeric resource identifiers in URL paths. Matches the
+# PostgreSQL ``INTEGER`` ceiling. Anything larger can't physically exist
+# in any of our serial columns; reject at the routing layer instead of
+# parsing into a bigint and missing the DB lookup.
+INT_ID_MAX = 2**31 - 1
+# Resource ids are always positive — Postgres ``SERIAL`` starts at 1.
+INT_ID_MIN = 1
+
 PROJECT_NAME_MAX = 100
 SURVEY_TITLE_MAX = 200
 PUBLIC_LINK_NAME_MAX = 120
