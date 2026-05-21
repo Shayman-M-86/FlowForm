@@ -40,6 +40,7 @@ from app.openapi.security import (
     global_security,
     optional_security,
 )
+from app.schema.api import limits
 
 LOGGER = logging.getLogger(__name__)
 
@@ -96,6 +97,62 @@ _CONVERTER_SCHEMA: dict[str, dict[str, Any]] = {
 }
 
 _DEFAULT_PARAM_SCHEMA: dict[str, Any] = {"type": "string"}
+
+_FORMAT_STRING_MAX_LENGTHS = {
+    "date": limits.DATE_VALUE_MAX,
+    "date-time": limits.ISO_DATETIME_MAX,
+    "email": limits.EMAIL_MAX,
+    "uri": limits.URL_MAX,
+    "uuid": limits.UUID_STRING_MAX,
+}
+
+_STRING_FIELD_MAX_LENGTHS = {
+    "answer_family": limits.SCHEMA_ID_MAX,
+    "assigned_email": limits.EMAIL_MAX,
+    "auth0_user_id": limits.AUTH0_USER_ID_MAX,
+    "code": limits.ERROR_CODE_MAX,
+    "display_name": limits.PROJECT_NAME_MAX,
+    "email": limits.EMAIL_MAX,
+    "family": limits.SCHEMA_ID_MAX,
+    "message": limits.ERROR_MESSAGE_MAX,
+    "name": max(limits.PROJECT_NAME_MAX, limits.PUBLIC_LINK_NAME_MAX),
+    "node_key": limits.SCHEMA_ID_MAX,
+    "public_slug": limits.SLUG_MAX,
+    "question_key": limits.SCHEMA_ID_MAX,
+    "scoring_key": limits.SCHEMA_ID_MAX,
+    "slug": limits.SLUG_MAX,
+    "strategy": limits.SCHEMA_ID_MAX,
+    "style": limits.SCHEMA_ID_MAX,
+    "title": limits.SURVEY_TITLE_MAX,
+    "token": limits.TOKEN_MAX,
+    "token_prefix": limits.TOKEN_PREFIX_MAX,
+    "type": limits.SCHEMA_ID_MAX,
+    "url": limits.URL_MAX,
+}
+
+_COMPONENT_STRING_FIELD_MAX_LENGTHS = {
+    "CurrentUserOut": {
+        "auth0_user_id": limits.AUTH0_USER_ID_MAX,
+        "email": limits.EMAIL_MAX,
+    },
+    "ProjectOut": {
+        "name": limits.PROJECT_NAME_MAX,
+        "slug": limits.SLUG_MAX,
+    },
+    "PublicLinkCreatedOut": {
+        "name": limits.PUBLIC_LINK_NAME_MAX,
+        "token": limits.TOKEN_MAX,
+        "token_prefix": limits.TOKEN_PREFIX_MAX,
+    },
+    "PublicLinkOut": {
+        "name": limits.PUBLIC_LINK_NAME_MAX,
+        "token_prefix": limits.TOKEN_PREFIX_MAX,
+    },
+    "SurveyOut": {
+        "public_slug": limits.SLUG_MAX,
+        "title": limits.SURVEY_TITLE_MAX,
+    },
+}
 
 # Fallback when the package metadata can't be read (e.g. running from a source
 # checkout that was never installed). Keep in sync with backend/pyproject.toml
@@ -209,6 +266,100 @@ def _rewrite_refs(node: Any) -> Any:
     if isinstance(node, list):
         return [_rewrite_refs(item) for item in node]
     return node
+
+
+def _static_string_value_max_length(schema: dict[str, Any]) -> int | None:
+    const_value = schema.get("const")
+    if isinstance(const_value, str):
+        return len(const_value)
+
+    enum_values = schema.get("enum")
+    if isinstance(enum_values, list):
+        string_values = [value for value in enum_values if isinstance(value, str)]
+        if string_values:
+            return max(len(value) for value in string_values)
+
+    return None
+
+
+def _default_string_max_length(
+    schema: dict[str, Any],
+    *,
+    component_name: str | None,
+    property_name: str | None,
+) -> int | None:
+    static_max_length = _static_string_value_max_length(schema)
+    if static_max_length is not None:
+        return static_max_length
+
+    schema_format = schema.get("format")
+    if isinstance(schema_format, str) and schema_format in _FORMAT_STRING_MAX_LENGTHS:
+        return _FORMAT_STRING_MAX_LENGTHS[schema_format]
+
+    component_fields = _COMPONENT_STRING_FIELD_MAX_LENGTHS.get(component_name or "")
+    if component_fields is not None and property_name in component_fields:
+        return component_fields[property_name]
+
+    if property_name is not None and property_name in _STRING_FIELD_MAX_LENGTHS:
+        return _STRING_FIELD_MAX_LENGTHS[property_name]
+
+    return None
+
+
+def _is_string_schema(schema: dict[str, Any]) -> bool:
+    enum_values = schema.get("enum")
+    return (
+        schema.get("type") == "string"
+        or isinstance(schema.get("const"), str)
+        or (isinstance(enum_values, list) and any(isinstance(value, str) for value in enum_values))
+    )
+
+
+def _apply_string_max_lengths(
+    node: Any,
+    *,
+    component_name: str | None = None,
+    property_name: str | None = None,
+) -> None:
+    """Fill OpenAPI ``maxLength`` gaps for bounded string schemas.
+
+    Pydantic emits good ``maxLength`` values when a model field uses
+    ``Field(max_length=...)``. This pass covers schema strings whose bounds
+    are implicit in constants, enums, formats, or shared field names so spec
+    linting matches runtime constraints without duplicating every response
+    model annotation.
+    """
+    if isinstance(node, list):
+        for item in node:
+            _apply_string_max_lengths(item, component_name=component_name, property_name=property_name)
+        return
+
+    if not isinstance(node, dict):
+        return
+
+    if _is_string_schema(node) and "maxLength" not in node:
+        max_length = _default_string_max_length(
+            node,
+            component_name=component_name,
+            property_name=property_name,
+        )
+        if max_length is not None:
+            node["maxLength"] = max_length
+
+    properties = node.get("properties")
+    if isinstance(properties, dict):
+        for child_property_name, property_schema in properties.items():
+            _apply_string_max_lengths(
+                property_schema,
+                component_name=component_name,
+                property_name=child_property_name,
+            )
+
+    for key, value in node.items():
+        if key == "properties":
+            continue
+        if isinstance(value, (dict, list)):
+            _apply_string_max_lengths(value, component_name=component_name, property_name=property_name)
 
 
 def _register_model(spec: APISpec, model: type[BaseModel]) -> str:
@@ -432,6 +583,10 @@ def build_spec(app: Flask) -> dict[str, Any]:
     document["security"] = global_security(security_scheme_name)
     document["tags"] = _global_tags(grouped)
     document["paths"] = grouped
+    component_schemas = document.get("components", {}).get("schemas", {})
+    if isinstance(component_schemas, dict):
+        for component_name, component_schema in component_schemas.items():
+            _apply_string_max_lengths(component_schema, component_name=component_name)
 
     return document
 

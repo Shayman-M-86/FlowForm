@@ -2210,9 +2210,11 @@ components:
         code:
           type: string
           description: Machine-readable error code.
+          maxLength: 128
         message:
           type: string
           description: Human-readable error message.
+          maxLength: 1000
         details:
           type: object
           description: Optional structured extras. Pydantic validation errors place their per-field failures here as ``details.errors``.
@@ -2237,12 +2239,15 @@ components:
         auth0_user_id:
           title: Auth0 User Id
           type: string
+          maxLength: 255
         email:
           title: Email
           type: string
+          maxLength: 254
         display_name:
           anyOf:
           - type: string
+            maxLength: 100
           - type: 'null'
           title: Display Name
       required:
@@ -2261,9 +2266,11 @@ components:
         name:
           title: Name
           type: string
+          maxLength: 100
         slug:
           title: Slug
           type: string
+          maxLength: 80
         created_by_user_id:
           anyOf:
           - type: integer
@@ -2273,6 +2280,7 @@ components:
           format: date-time
           title: Created At
           type: string
+          maxLength: 35
       required:
       - id
       - name
@@ -2311,6 +2319,7 @@ components:
         question_key:
           title: Question Key
           type: string
+          maxLength: 128
         sort_key:
           title: Sort Key
           type: integer
@@ -2320,6 +2329,7 @@ components:
           - rule
           title: Node Type
           type: string
+          maxLength: 8
         question_schema:
           additionalProperties: true
           title: Question Schema
@@ -2328,10 +2338,12 @@ components:
           format: date-time
           title: Created At
           type: string
+          maxLength: 35
         updated_at:
           format: date-time
           title: Updated At
           type: string
+          maxLength: 35
       required:
       - id
       - survey_version_id
@@ -2355,6 +2367,7 @@ components:
           const: choice
           title: Family
           type: string
+          maxLength: 6
         requirements:
           $ref: '#/components/schemas/ChoiceRequirementsIn'
       required:
@@ -2430,6 +2443,7 @@ components:
           const: choice
           title: Family
           type: string
+          maxLength: 6
         label:
           maxLength: 5000
           title: Label
@@ -2491,12 +2505,14 @@ components:
           const: date
           title: Type
           type: string
+          maxLength: 4
         operator:
           enum:
           - before
           - after
           title: Operator
           type: string
+          maxLength: 6
         value:
           maxLength: 10
           title: Value
@@ -2544,6 +2560,7 @@ components:
           const: field
           title: Family
           type: string
+          maxLength: 5
         requirements:
           anyOf:
           - $ref: '#/components/schemas/NumberFieldRequirementsIn'
@@ -2569,6 +2586,7 @@ components:
           - phone
           title: Field Type
           type: string
+          maxLength: 10
       required:
       - field_type
       title: FieldQuestionConfig
@@ -2597,6 +2615,7 @@ components:
           const: field
           title: Family
           type: string
+          maxLength: 5
         label:
           maxLength: 5000
           title: Label
@@ -2640,6 +2659,7 @@ components:
           const: matching
           title: Family
           type: string
+          maxLength: 8
         requirements:
           $ref: '#/components/schemas/MatchingRequirementsIn'
       required:
@@ -2712,6 +2732,7 @@ components:
           const: matching
           title: Family
           type: string
+          maxLength: 8
         label:
           maxLength: 5000
           title: Label
@@ -2758,6 +2779,7 @@ components:
           const: number
           title: Type
           type: string
+          maxLength: 6
         operator:
           enum:
           - LT
@@ -2768,6 +2790,7 @@ components:
           - NEQ
           title: Operator
           type: string
+          maxLength: 3
         value:
           anyOf:
           - type: integer
@@ -2814,6 +2837,7 @@ components:
           const: rating
           title: Family
           type: string
+          maxLength: 6
         requirements:
           $ref: '#/components/schemas/RatingRequirementsIn'
       required:
@@ -2830,6 +2854,7 @@ components:
           const: emoji
           title: Style
           type: string
+          maxLength: 5
         schema:
           $ref: '#/components/schemas/RatingEmojiSchemaIn'
         ui:
@@ -2851,6 +2876,7 @@ components:
           - disgust_to_happy
           title: Emoji List
           type: string
+          maxLength: 16
         words:
           default: false
           title: Words
@@ -2871,6 +2897,7 @@ components:
           const: rating
           title: Family
           type: string
+          maxLength: 6
         label:
           maxLength: 5000
           title: Label
@@ -2929,6 +2956,7 @@ components:
           const: slider
           title: Style
           type: string
+          maxLength: 6
         schema:
           $ref: '#/components/schemas/RatingSliderSchemaIn'
         ui:
@@ -2964,6 +2992,7 @@ components:
           const: star
           title: Style
           type: string
+          maxLength: 4
         schema:
           $ref: '#/components/schemas/RatingStarSchemaIn'
         ui:
@@ -3025,6 +3054,7 @@ components:
           - NONE
           title: Match
           type: string
+          maxLength: 4
         conditions:
           items:
             discriminator:
@@ -3116,6 +3146,7 @@ components:
           - rule
           title: Type
           type: string
+          maxLength: 8
         sort_key:
           exclusiveMinimum: 0
           title: Sort Key
@@ -3185,6 +3216,7 @@ components:
         scoring_key:
           title: Scoring Key
           type: string
+          maxLength: 128
         scoring_schema:
           additionalProperties: true
           title: Scoring Schema
@@ -3193,10 +3225,12 @@ components:
           format: date-time
           title: Created At
           type: string
+          maxLength: 35
         updated_at:
           format: date-time
           title: Updated At
           type: string
+          maxLength: 35
       required:
       - id
       - survey_version_id
@@ -3231,6 +3265,7 @@ components:
           - max
           title: Combine
           type: string
+          maxLength: 3
       required:
       - option_scores
       title: ChoiceOptionMapConfig
@@ -3263,6 +3298,7 @@ components:
           const: choice_option_map
           title: Strategy
           type: string
+          maxLength: 17
         config:
           $ref: '#/components/schemas/ChoiceOptionMapConfig'
       required:
@@ -3318,6 +3354,7 @@ components:
           const: field_numeric_ranges
           title: Strategy
           type: string
+          maxLength: 20
         config:
           $ref: '#/components/schemas/FieldNumericRangesConfig'
       required:
@@ -3392,6 +3429,7 @@ components:
           const: matching_answer_key
           title: Strategy
           type: string
+          maxLength: 19
         config:
           $ref: '#/components/schemas/MatchingAnswerKeyConfig'
       required:
@@ -3492,6 +3530,7 @@ components:
           const: rating_direct
           title: Strategy
           type: string
+          maxLength: 13
         config:
           $ref: '#/components/schemas/RatingDirectConfig'
       required:
@@ -3605,9 +3644,11 @@ components:
         name:
           title: Name
           type: string
+          maxLength: 120
         token_prefix:
           title: Token Prefix
           type: string
+          maxLength: 32
         is_active:
           title: Is Active
           type: boolean
@@ -3617,24 +3658,28 @@ components:
         assigned_email:
           anyOf:
           - type: string
+            maxLength: 254
           - type: 'null'
           title: Assigned Email
         expires_at:
           anyOf:
           - format: date-time
             type: string
+            maxLength: 35
           - type: 'null'
           title: Expires At
         used_at:
           anyOf:
           - format: date-time
             type: string
+            maxLength: 35
           - type: 'null'
           title: Used At
         created_at:
           format: date-time
           title: Created At
           type: string
+          maxLength: 35
       required:
       - id
       - survey_id
@@ -3682,6 +3727,7 @@ components:
           anyOf:
           - format: date-time
             type: string
+            maxLength: 35
           - type: 'null'
           default: null
           title: Expires At
@@ -3697,9 +3743,11 @@ components:
         token:
           title: Token
           type: string
+          maxLength: 256
         url:
           title: Url
           type: string
+          maxLength: 2048
       required:
       - link
       - token
@@ -3739,6 +3787,7 @@ components:
           anyOf:
           - format: date-time
             type: string
+            maxLength: 35
           - type: 'null'
           default: null
           title: Expires At
@@ -3769,6 +3818,7 @@ components:
           - system
           title: Submission Channel
           type: string
+          maxLength: 6
         submitted_by_user_id:
           anyOf:
           - type: integer
@@ -3794,22 +3844,26 @@ components:
           - failed
           title: Status
           type: string
+          maxLength: 7
         started_at:
           anyOf:
           - format: date-time
             type: string
+            maxLength: 35
           - type: 'null'
           title: Started At
         submitted_at:
           anyOf:
           - format: date-time
             type: string
+            maxLength: 35
           - type: 'null'
           title: Submitted At
         created_at:
           format: date-time
           title: Created At
           type: string
+          maxLength: 35
       required:
       - id
       - project_id
@@ -3835,9 +3889,11 @@ components:
         email:
           title: Email
           type: string
+          maxLength: 254
         display_name:
           anyOf:
           - type: string
+            maxLength: 100
           - type: 'null'
           title: Display Name
       required:
@@ -3879,6 +3935,7 @@ components:
         question_key:
           title: Question Key
           type: string
+          maxLength: 128
         answer_family:
           enum:
           - choice
@@ -3887,6 +3944,7 @@ components:
           - rating
           title: Answer Family
           type: string
+          maxLength: 8
         answer_value:
           additionalProperties: true
           title: Answer Value
@@ -3895,6 +3953,7 @@ components:
           format: date-time
           title: Created At
           type: string
+          maxLength: 35
       required:
       - id
       - question_key
@@ -3930,6 +3989,7 @@ components:
         title:
           title: Title
           type: string
+          maxLength: 200
         visibility:
           enum:
           - private
@@ -3937,9 +3997,11 @@ components:
           - public
           title: Visibility
           type: string
+          maxLength: 9
         public_slug:
           anyOf:
           - type: string
+            maxLength: 80
           - type: 'null'
           title: Public Slug
         default_response_store_id:
@@ -3961,10 +4023,12 @@ components:
           format: date-time
           title: Created At
           type: string
+          maxLength: 35
         updated_at:
           format: date-time
           title: Updated At
           type: string
+          maxLength: 35
       required:
       - id
       - project_id
@@ -3993,6 +4057,7 @@ components:
           - public
           title: Visibility
           type: string
+          maxLength: 9
         public_slug:
           anyOf:
           - maxLength: 80
@@ -4027,6 +4092,7 @@ components:
             - link_only
             - public
             type: string
+            maxLength: 9
           - type: 'null'
           default: null
           title: Visibility
@@ -4064,6 +4130,7 @@ components:
           - archived
           title: Status
           type: string
+          maxLength: 9
         compiled_schema:
           anyOf:
           - additionalProperties: true
@@ -4074,6 +4141,7 @@ components:
           anyOf:
           - format: date-time
             type: string
+            maxLength: 35
           - type: 'null'
           title: Published At
         created_by_user_id:
@@ -4085,10 +4153,12 @@ components:
           format: date-time
           title: Created At
           type: string
+          maxLength: 35
         updated_at:
           format: date-time
           title: Updated At
           type: string
+          maxLength: 35
       required:
       - id
       - survey_id
@@ -4170,6 +4240,7 @@ components:
           const: choice
           title: Answer Family
           type: string
+          maxLength: 6
         answer_value:
           $ref: '#/components/schemas/ChoiceAnswerValue'
       required:
@@ -4204,6 +4275,7 @@ components:
           const: field
           title: Answer Family
           type: string
+          maxLength: 5
         answer_value:
           $ref: '#/components/schemas/FieldAnswerValue'
       required:
@@ -4225,6 +4297,7 @@ components:
           - type: boolean
           - format: date
             type: string
+            maxLength: 10
           - type: 'null'
           title: Value
       required:
@@ -4260,6 +4333,7 @@ components:
           const: matching
           title: Answer Family
           type: string
+          maxLength: 8
         answer_value:
           $ref: '#/components/schemas/MatchingAnswerValue'
       required:
@@ -4293,6 +4367,7 @@ components:
           const: rating
           title: Answer Family
           type: string
+          maxLength: 6
         answer_value:
           $ref: '#/components/schemas/RatingAnswerValue'
       required:
@@ -4321,6 +4396,7 @@ components:
           anyOf:
           - format: date-time
             type: string
+            maxLength: 35
           - type: 'null'
           default: null
           title: Started At
@@ -4328,6 +4404,7 @@ components:
           anyOf:
           - format: date-time
             type: string
+            maxLength: 35
           - type: 'null'
           default: null
           title: Submitted At
@@ -4370,6 +4447,7 @@ components:
           anyOf:
           - format: date-time
             type: string
+            maxLength: 35
           - type: 'null'
           default: null
           title: Started At
@@ -4377,6 +4455,7 @@ components:
           anyOf:
           - format: date-time
             type: string
+            maxLength: 35
           - type: 'null'
           default: null
           title: Submitted At

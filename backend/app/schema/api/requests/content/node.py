@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -9,11 +9,6 @@ from app.schema.api.requests.content.questions_schemas import QuestionSchemaIn
 from app.schema.api.requests.content.rule_schemas import RuleSchemaIn
 
 NodeType = Literal["question", "rule"]
-
-NodeContentIn = Annotated[
-    QuestionSchemaIn | RuleSchemaIn,
-    Field(discriminator=None),
-]
 
 # Maximum size in bytes of the serialized JSON content for a single node.
 # Must stay in sync with the database CHECK constraint

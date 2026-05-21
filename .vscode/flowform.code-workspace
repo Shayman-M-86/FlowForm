@@ -39,6 +39,9 @@
             "**/node_modules/**",
             "${workspaceFolder:frontend}/**"
         ],
+        "python-hover.diagnostics.enabled": false,
+        "python-hover.ui.showBadges": false,
+        "python-hover.ui.showCallouts": false,
         "python.testing.pytestEnabled": true,
         "python.testing.unittestEnabled": false,
         "python.testing.pytestArgs": [
