@@ -5,17 +5,21 @@ inside Claude Code while developing the Studio frontend.
 
 ## What you get
 
-- **Auto-generated tools** for every backend endpoint (POST/PUT/PATCH/DELETE),
-  derived from `/openapi.json`. Calls go through `httpx` with a bearer token
-  injected from the environment.
-- **GET endpoints as MCP resources** rather than tools — the model can browse
-  reads cheaply without polluting the tool list.
-- **Custom helpers** for spec navigation:
+- **Compact custom tools** for navigating the live OpenAPI spec without
+  exposing every endpoint as a separate MCP tool.
+- **Endpoint discovery**:
+  - `list_endpoints(tag, method, include_internal)` — list API endpoints.
+  - `find_endpoints(keyword, include_internal)` — free-text search across
+    operation IDs, summaries, paths, and tags.
+- **Endpoint details**:
+  - `describe_endpoint(operation_id, method, path, include_internal)` — inspect
+    params, request body, responses, and referenced schemas.
+  - `list_endpoint_errors(operation_id, method, path, include_internal)` — list
+    documented non-success responses for one route.
+- **Schema lookup**:
   - `describe_schema(name)` — return the JSON schema for a component.
-  - `list_operations(tag)` — list operations, optionally filtered by tag.
-  - `find_operations(keyword)` — free-text search across IDs/summaries/paths.
-- **Filtered surface** — `/api/v1/health`, `/api/v1/auth`, and the docs
-  endpoints are hidden so they don't clutter the tool list.
+- **Filtered surface** — health/auth/docs routes are hidden from discovery
+  unless `include_internal=true`.
 
 ## Prerequisites
 
@@ -68,7 +72,7 @@ the `mcpServers` key, or via `claude mcp add`):
 ```json
 {
   "mcpServers": {
-    "flowform-dev": {
+    "flowform-openapi": {
       "command": "uv",
       "args": [
         "run",

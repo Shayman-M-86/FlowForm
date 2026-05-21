@@ -23,4 +23,14 @@ if [[ "${1:-}" == "login" ]]; then
     exec uv run --project "$SCRIPT_DIR" python auth.py login
 fi
 
+# `run.sh tools` lists the MCP tools exposed by this server. It starts a child
+# server through this same wrapper so .env loading stays identical to normal use.
+if [[ "${1:-}" == "tools" || "${1:-}" == "list-tools" ]]; then
+    exec uv run --project "$SCRIPT_DIR" fastmcp list --command "bash $SCRIPT_DIR/run.sh"
+fi
+
+if [[ "${1:-}" == "tool-schemas" || "${1:-}" == "tools-schema" ]]; then
+    exec uv run --project "$SCRIPT_DIR" fastmcp list --command "bash $SCRIPT_DIR/run.sh" --input-schema
+fi
+
 exec uv run --project "$SCRIPT_DIR" python flowform_dev.py "$@"

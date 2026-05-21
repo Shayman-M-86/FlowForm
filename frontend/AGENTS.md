@@ -51,7 +51,7 @@ npm run astro build
 
 The backend exposes its full REST surface - endpoints, request bodies,
 response payloads, error codes, and examples - through an **OpenAPI MCP
-tool** (`flowform-dev`). Treat it as the source of truth when wiring up
+tool** (`flowform-openapi`). Treat it as the source of truth when wiring up
 API hooks, defining response types, or handling errors.
 
 Use the MCP operations rather than greping for existing handlers or
