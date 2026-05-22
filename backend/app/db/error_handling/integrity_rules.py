@@ -83,6 +83,7 @@ from app.db.error_handling.error_translation import (
 from app.db.error_handling.errors import DbIntegrityError
 from app.schema.orm.core import (
     Project,
+    ProjectInvitation,
     ProjectMembership,
     ProjectRole,
     ResponseSubjectMapping,
@@ -97,6 +98,7 @@ from app.schema.orm.core import (
 
 type RuleContext = (
     Project
+    | ProjectInvitation
     | Survey
     | SurveyVersion
     | SurveyLink
@@ -137,6 +139,8 @@ allowed_parameters = {
     "role_id",
     "default_response_store_id",
     "published_version_id",
+    "invitation_id",
+    "invited_email",
 }
 
 
@@ -231,6 +235,7 @@ def _project_membership_ctx(membership: ProjectMembership) -> dict[str, object]:
         "project_id": membership.project_id,
         "user_id": membership.user_id,
         "role_id": membership.role_id,
+        "status": membership.status,
     }
 
 
@@ -238,6 +243,16 @@ def _survey_membership_role_ctx(membership_role: SurveyMembershipRole) -> dict[s
     return {
         "survey_id": membership_role.survey_id,
         "role_id": membership_role.role_id,
+    }
+
+
+def _invitation_ctx(invitation: ProjectInvitation) -> dict[str, object]:
+    return {
+        "invitation_id": invitation.id,
+        "project_id": invitation.project_id,
+        "invited_email": invitation.invited_email,
+        "role_id": invitation.role_id,
+        "status": invitation.status,
     }
 
 
@@ -574,6 +589,20 @@ PROJECT_MEMBERSHIP_RULES: tuple[DbErrorRule, ...] = (
         ),
         extractor=_project_membership_ctx,
     ),
+    # ck_project_memberships_status_valid
+    #
+    # status is server-controlled — clients cannot set it. If this CHECK fires,
+    # internal code wrote an invalid value. Return 500 so the bug is surfaced.
+    check_rule(
+        "ck_project_memberships_status_valid",
+        lambda ctx, _exc: DbIntegrityError(
+            500,
+            "MEMBERSHIP_STATE_INVALID",
+            f"Server invariant violated: membership for user id={ctx['user_id']}"
+            f" in project id={ctx['project_id']} was written with invalid status={ctx['status']!r}.",
+        ),
+        extractor=_project_membership_ctx,
+    ),
 )
 SURVEY_MEMBERSHIP_ROLE_RULES: tuple[DbErrorRule, ...] = (
     foreign_key_rule(
@@ -605,8 +634,46 @@ SURVEY_MEMBERSHIP_ROLE_RULES: tuple[DbErrorRule, ...] = (
     ),
 )
 
+PROJECT_INVITATION_RULES: tuple[DbErrorRule, ...] = (
+    unique_rule(
+        "uq_project_invitations_pending_project_email",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "INVITATION_EXISTS",
+            f"A pending invitation already exists for {ctx['invited_email']!r}"
+            f" in project id={ctx['project_id']}.",
+        ),
+        extractor=_invitation_ctx,
+    ),
+    foreign_key_rule(
+        "fk_project_invitations_role_same_project",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "INVITATION_ROLE_MISMATCH",
+            f"Role id={ctx['role_id']} does not belong to project id={ctx['project_id']}.",
+        ),
+        extractor=_invitation_ctx,
+    ),
+    # ck_project_invitations_status_valid
+    #
+    # status is server-controlled — only MembersService writes it. If this CHECK
+    # fires, a code path wrote an invalid status value. Return 500 so the bug
+    # is visible rather than disguised as a client error.
+    check_rule(
+        "ck_project_invitations_status_valid",
+        lambda ctx, _exc: DbIntegrityError(
+            500,
+            "INVITATION_STATE_INVALID",
+            f"Server invariant violated: invitation id={ctx['invitation_id']} was written"
+            f" with invalid status={ctx['status']!r}.",
+        ),
+        extractor=_invitation_ctx,
+    ),
+)
+
 RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
     Project: PROJECT_RULES,
+    ProjectInvitation: PROJECT_INVITATION_RULES,
     Survey: SURVEY_RULES,
     SurveyVersion: SURVEY_VERSION_RULES,
     SurveyLink: SURVEY_LINK_RULES,

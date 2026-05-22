@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, Link, useRouterState, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { setActiveProjectSlug } from '@/lib/activeProject'
-import { useProject } from '@/api/projects'
+import { useProject } from '@/api/projects/hooks'
 import { Spinner, Card, TabSelector } from '@flowform/ui'
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { useRenderDebug } from '@/debug/useRenderDebug'

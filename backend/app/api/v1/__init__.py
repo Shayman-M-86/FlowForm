@@ -4,6 +4,7 @@ from flask import Blueprint, Flask
 
 from app.api.v1.auth import auth_bp
 from app.api.v1.health import health_bp
+from app.api.v1.me import me_bp
 from app.api.v1.projects import projects_bp  # triggers sub-module route registration
 from app.api.v1.public import public_bp
 
@@ -14,6 +15,7 @@ LOGGER = logging.getLogger(__name__)
 ROUTES: list[Blueprint] = [
     auth_bp,
     health_bp,
+    me_bp,
     projects_bp,
     public_bp,
 ]

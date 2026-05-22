@@ -123,7 +123,7 @@ class ProjectMembership(CoreBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     __table_args__ = (
-        CheckConstraint("status IN ('active', 'invited')", name="ck_project_memberships_status_valid"),
+        CheckConstraint("status IN ('active', 'suspended')", name="ck_project_memberships_status_valid"),
         UniqueConstraint("user_id", "project_id", name="uq_project_memberships_user_project"),
         UniqueConstraint("project_id", "id", name="uq_project_memberships_project_id_id"),
         ForeignKeyConstraint(

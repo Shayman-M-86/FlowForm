@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Button, Card, CardStack, Modal, Toast } from '@flowform/ui'
-import { useCreateProject, useProjects } from '@/api/projects'
+import { useCreateProject, useProjects } from '@/api/projects/hooks'
 import { CreateProjectForm } from '@/components/CreateProjectForm'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
@@ -105,7 +105,7 @@ export function ProjectsPage() {
         <div className="flex flex-col gap-4">
           {createProject.isError && (
             <Toast variant="error" onClose={() => createProject.reset()}>
-              {createProject.error.message}
+              {createProject.error?.message}
             </Toast>
           )}
           <CreateProjectForm onSubmit={handleCreateProject} />

@@ -14,6 +14,8 @@ security:
 tags:
 - name: Auth
 - name: Health
+- name: Me
+- name: Members
 - name: Projects
 - name: Public
 - name: Public Links
@@ -112,6 +114,134 @@ paths:
       tags:
       - Health
       security: []
+      responses:
+        '200':
+          description: Successful response.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/me/invitations:
+    get:
+      operationId: getMyInvitations
+      summary: Get my invitations
+      description: Get my invitations
+      tags:
+      - Me
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectInvitationOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/me/invitations/{invitation_id}/accept:
+    post:
+      operationId: acceptInvitation
+      summary: Accept invitation
+      description: Accept invitation
+      tags:
+      - Me
+      parameters:
+      - name: invitation_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMemberOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/me/invitations/{invitation_id}/decline:
+    post:
+      operationId: declineInvitation
+      summary: Decline invitation
+      description: Decline invitation
+      tags:
+      - Me
+      parameters:
+      - name: invitation_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       responses:
         '200':
           description: Successful response.
@@ -926,6 +1056,309 @@ paths:
       responses:
         '204':
           description: No content.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/projects/{project_id}/members:
+    get:
+      operationId: listMembers
+      summary: List project members
+      description: List project members
+      tags:
+      - Members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectMemberOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/projects/{project_id}/invitations:
+    get:
+      operationId: listInvitations
+      summary: List project invitations
+      description: List project invitations
+      tags:
+      - Members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectInvitationOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+    post:
+      operationId: sendInvitation
+      summary: Invite member
+      description: Invite member
+      tags:
+      - Members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendInvitationRequest'
+      responses:
+        '201':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectInvitationOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/projects/{project_id}/invitations/{invitation_id}:
+    delete:
+      operationId: revokeInvitation
+      summary: Revoke invitation
+      description: Revoke invitation
+      tags:
+      - Members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: invitation_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/projects/{project_id}/members/{membership_id}:
+    patch:
+      operationId: updateMember
+      summary: Update member
+      description: Update member
+      tags:
+      - Members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: membership_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMemberRequest'
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMemberOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+    delete:
+      operationId: removeMember
+      summary: Remove member
+      description: Remove member
+      tags:
+      - Members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: membership_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
           description: Bad request.
@@ -2307,6 +2740,139 @@ components:
       - user
       title: BootstrapUserOut
       type: object
+    ProjectInvitationOut:
+      description: API response shape for a project invitation.
+      properties:
+        id:
+          title: Id
+          type: integer
+        project_id:
+          title: Project Id
+          type: integer
+        project_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Project Name
+        invited_email:
+          title: Invited Email
+          type: string
+        invite_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Invite Message
+        invited_by_user_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Invited By User Id
+        invited_by_display:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Invited By Display
+        role_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Role Id
+        status:
+          title: Status
+          type: string
+        expires_at:
+          anyOf:
+          - format: date-time
+            type: string
+            maxLength: 35
+          - type: 'null'
+          title: Expires At
+        accepted_at:
+          anyOf:
+          - format: date-time
+            type: string
+            maxLength: 35
+          - type: 'null'
+          title: Accepted At
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+          maxLength: 35
+      required:
+      - id
+      - project_id
+      - invited_email
+      - invited_by_user_id
+      - role_id
+      - status
+      - expires_at
+      - accepted_at
+      - created_at
+      title: ProjectInvitationOut
+      type: object
+    MemberUserOut:
+      description: Embedded user details on a project member response.
+      properties:
+        id:
+          title: Id
+          type: integer
+        email:
+          title: Email
+          type: string
+          maxLength: 254
+        display_name:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Display Name
+      required:
+      - id
+      - email
+      - display_name
+      title: MemberUserOut
+      type: object
+    ProjectMemberOut:
+      description: API response shape for a project membership.
+      properties:
+        id:
+          title: Id
+          type: integer
+        user_id:
+          title: User Id
+          type: integer
+        project_id:
+          title: Project Id
+          type: integer
+        role_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Role Id
+        status:
+          title: Status
+          type: string
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+          maxLength: 35
+        user:
+          $ref: '#/components/schemas/MemberUserOut'
+      required:
+      - id
+      - user_id
+      - project_id
+      - role_id
+      - status
+      - created_at
+      - user
+      title: ProjectMemberOut
+      type: object
     NodeOut:
       description: API response shape for a survey content node (question or rule).
       properties:
@@ -3632,6 +4198,59 @@ components:
           title: Slug
       title: UpdateProjectRequest
       type: object
+    SendInvitationRequest:
+      description: Request body for inviting a user to a project by email.
+      properties:
+        email:
+          format: email
+          maxLength: 254
+          title: Email
+          type: string
+        role_id:
+          anyOf:
+          - maximum: 2147483647
+            minimum: 1
+            type: integer
+          - type: 'null'
+          default: null
+          title: Role Id
+        invite_message:
+          anyOf:
+          - maxLength: 500
+            type: string
+          - type: 'null'
+          default: null
+          title: Invite Message
+      required:
+      - email
+      title: SendInvitationRequest
+      type: object
+    UpdateMemberRequest:
+      description: 'Request body for updating a project membership (role and/or status).
+
+
+        Omit a field to leave it unchanged. Pass role_id: null to clear the role.'
+      properties:
+        role_id:
+          anyOf:
+          - maximum: 2147483647
+            minimum: 1
+            type: integer
+          - type: 'null'
+          default: null
+          title: Role Id
+        status:
+          anyOf:
+          - enum:
+            - active
+            - suspended
+            maxLength: 9
+            type: string
+          - type: 'null'
+          default: null
+          title: Status
+      title: UpdateMemberRequest
+      type: object
     PublicLinkOut:
       description: API response shape for a survey link.
       properties:
@@ -4588,6 +5207,11 @@ components:
               value:
                 code: SURVEY_NOT_ACCESSIBLE
                 message: This survey is not accessible in this context.
+            member_self_action:
+              summary: MemberSelfActionError
+              value:
+                code: MEMBER_SELF_ACTION
+                message: You cannot modify your own membership.
     NotFoundError:
       description: Resource not found.
       content:
@@ -4650,6 +5274,16 @@ components:
               value:
                 code: USER_NOT_FOUND
                 message: User <example> not found.
+            invitation_not_found:
+              summary: InvitationNotFoundError
+              value:
+                code: NOT_FOUND
+                message: Invitation not found.
+            member_not_found:
+              summary: MemberNotFoundError
+              value:
+                code: NOT_FOUND
+                message: Member not found.
     ConflictError:
       description: Conflict with the current resource state.
       content:
@@ -4709,11 +5343,41 @@ components:
               value:
                 code: CONFLICT
                 message: <example>
+            invitation_already_exists:
+              summary: InvitationAlreadyExistsError
+              value:
+                code: INVITATION_EXISTS
+                message: A pending invitation already exists for <example>.
+            invitation_not_pending:
+              summary: InvitationNotPendingError
+              value:
+                code: INVITATION_NOT_PENDING
+                message: This invitation is no longer pending.
+            already_amember:
+              summary: AlreadyAMemberError
+              value:
+                code: ALREADY_A_MEMBER
+                message: This user is already a member of the project.
+            member_owner_protected:
+              summary: MemberOwnerProtectedError
+              value:
+                code: MEMBER_OWNER_PROTECTED
+                message: Members with a system role cannot be removed or suspended.
             projects_slug_key:
               summary: 'DB rule: PROJECT_SLUG_CONFLICT'
               value:
                 code: PROJECT_SLUG_CONFLICT
                 message: Project slug '<slug>' is already in use.
+            uq_project_invitations_pending_project_email:
+              summary: 'DB rule: INVITATION_EXISTS'
+              value:
+                code: INVITATION_EXISTS
+                message: A pending invitation already exists for '<invited_email>' in project id=<project_id>.
+            fk_project_invitations_role_same_project:
+              summary: 'DB rule: INVITATION_ROLE_MISMATCH'
+              value:
+                code: INVITATION_ROLE_MISMATCH
+                message: Role id=<role_id> does not belong to project id=<project_id>.
             surveys_public_slug_key:
               summary: 'DB rule: SURVEY_SLUG_CONFLICT'
               value:
@@ -4931,6 +5595,11 @@ components:
                   constraint_name: null
                   error_key: null
                   context: {}
+            ck_project_invitations_status_valid:
+              summary: 'DB rule: INVITATION_STATE_INVALID'
+              value:
+                code: INVITATION_STATE_INVALID
+                message: 'Server invariant violated: invitation id=<invitation_id> was written with invalid status=''<status>''.'
             ck_survey_versions_published_requires_schema_and_timestamp:
               summary: 'DB rule: VERSION_PUBLISH_STATE_INVALID'
               value:
@@ -4943,6 +5612,12 @@ components:
                 code: SUBMISSION_STATE_INVALID
                 message: 'Server invariant violated: submission id=<submission_id> was written with invalid status=''<status>''.
                   Status is server-controlled and must be one of ''pending'', ''stored'', ''failed''.'
+            ck_project_memberships_status_valid:
+              summary: 'DB rule: MEMBERSHIP_STATE_INVALID'
+              value:
+                code: MEMBERSHIP_STATE_INVALID
+                message: 'Server invariant violated: membership for user id=<user_id> in project id=<project_id> was written
+                  with invalid status=''<status>''.'
             internal_server_error:
               summary: Generic server error
               value:

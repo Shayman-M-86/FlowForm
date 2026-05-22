@@ -9,6 +9,11 @@ _PUBLIC_ID_CONSTRAINT = "uq_users_public_id"
 _MAX_PUBLIC_ID_RETRIES = 5
 
 
+def get_user_by_email(db: Session, email: str) -> User | None:
+    """Return the user row for a given email address, if it exists."""
+    return db.scalar(select(User).where(User.email == email))
+
+
 def get_user_by_auth0_user_id(db: Session, auth0_user_id: str) -> User | None:
     """Return the user row for an Auth0 subject, if it exists."""
     return db.scalar(select(User).where(User.auth0_user_id == auth0_user_id))

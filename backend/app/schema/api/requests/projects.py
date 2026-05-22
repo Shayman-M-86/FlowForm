@@ -1,7 +1,14 @@
-from pydantic import BaseModel, Field, field_validator
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.schema.api import limits
 from app.schema.api.requests.helpers import validate_slug
+
+ProjectMemberStatus = Annotated[
+    Literal["active", "suspended"],
+    Field(max_length=limits.PROJECT_MEMBER_STATUS_MAX),
+]
 
 
 def _validate_name(value: str) -> str:
@@ -26,6 +33,43 @@ class CreateProjectRequest(BaseModel):
     @classmethod
     def validate_slug(cls, value: str) -> str:
         return validate_slug(value, field_label="URL-safe name")
+
+
+class UpdateMemberRequest(BaseModel):
+    """Request body for updating a project membership (role and/or status).
+
+    Omit a field to leave it unchanged. Pass role_id: null to clear the role.
+    """
+
+    role_id: int | None = Field(default=None, ge=limits.INT_ID_MIN, le=limits.INT_ID_MAX)
+    status: ProjectMemberStatus | None = None
+
+
+class SendInvitationRequest(BaseModel):
+    """Request body for inviting a user to a project by email."""
+
+    email: EmailStr = Field(max_length=limits.EMAIL_MAX)
+    role_id: int | None = Field(default=None, ge=limits.INT_ID_MIN, le=limits.INT_ID_MAX)
+    invite_message: str | None = Field(default=None, max_length=limits.INVITE_MESSAGE_MAX)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        value = value.strip().lower()
+        if not value:
+            raise ValueError("Email must not be blank.")
+        return value
+
+    @field_validator("invite_message")
+    @classmethod
+    def validate_invite_message(cls, value: str | None) -> str | None:
+        if value is not None:
+            value = value.strip()
+            if not value:
+                return None
+        return value
 
 
 class UpdateProjectRequest(BaseModel):

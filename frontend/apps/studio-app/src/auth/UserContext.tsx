@@ -1,14 +1,7 @@
-import { createContext, useContext, type ReactNode } from 'react'
-import type { CurrentUserOut } from '@/api/types'
-
-interface UserContextValue {
-  user: CurrentUserOut
-  // Auth0 profile fields — available from the ID token
-  avatarUrl: string | null
-  displayName: string
-}
-
-const UserContext = createContext<UserContextValue | null>(null)
+import type { ReactNode } from 'react'
+import type { CurrentUserOut } from '@/api/generated/schema'
+import { UserContext } from './userContextCore'
+import type { UserContextValue } from './userContextCore'
 
 export function UserProvider({
   user,
@@ -26,8 +19,4 @@ export function UserProvider({
   }
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>
-}
-
-export function useCurrentUser(): UserContextValue | null {
-  return useContext(UserContext)
 }

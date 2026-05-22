@@ -60,8 +60,8 @@ function trackForColumn<TRow>(
     targetWidth === undefined
       ? minWidth
       : `clamp(${minWidth}, calc(${minWidth} + ${targetGrowthShare}), ${px(
-          targetWidth,
-        )})`;
+        targetWidth,
+      )})`;
   const preferredWidth = `calc(${baseWidth} + ${regularGrowthShare})`;
 
   if (maxWidth === Number.POSITIVE_INFINITY) {
@@ -118,8 +118,8 @@ function gridTemplateForColumns<TRow>(columns: TableColumn<TRow>[]): string {
     regularGrowthColumnCount === 0
       ? "0px"
       : `calc(max(0px, calc(100% - ${px(
-          minTotalWidth + targetGrowthTotal,
-        )})) / ${regularGrowthColumnCount})`;
+        minTotalWidth + targetGrowthTotal,
+      )})) / ${regularGrowthColumnCount})`;
 
   return columns
     .map((c) => trackForColumn(c, targetGrowthShare, regularGrowthShare))
@@ -169,7 +169,6 @@ export function Table<TRow>({
           </div>
         )}
 
-        {/* Body */}
         <div className="ui-table-body" role="rowgroup">
           {rows.length === 0 ? (
             <div className="ui-table-empty" role="row">
@@ -198,11 +197,11 @@ export function Table<TRow>({
                   onKeyDown={
                     onRowClick
                       ? (e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            onRowClick(row, rowIndex);
-                          }
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onRowClick(row, rowIndex);
                         }
+                      }
                       : undefined
                   }
                 >

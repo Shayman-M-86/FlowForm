@@ -425,3 +425,72 @@ class UserNotFoundError(AppError):
             code="USER_NOT_FOUND",
             message=f"User {user_id} not found.",
         )
+
+
+class InvitationNotFoundError(AppError):
+    """Error raised when an invitation cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Invitation not found.")
+
+
+class InvitationAlreadyExistsError(AppError):
+    """Error raised when a pending invitation already exists for an email in a project."""
+
+    def __init__(self, email: str) -> None:
+        super().__init__(
+            status_code=409,
+            code="INVITATION_EXISTS",
+            message=f"A pending invitation already exists for {email}.",
+        )
+
+
+class InvitationNotPendingError(AppError):
+    """Error raised when an action requires a pending invitation but it is no longer pending."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="INVITATION_NOT_PENDING",
+            message="This invitation is no longer pending.",
+        )
+
+
+class AlreadyAMemberError(AppError):
+    """Error raised when a user is already an active member of the project."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="ALREADY_A_MEMBER",
+            message="This user is already a member of the project.",
+        )
+
+
+class MemberNotFoundError(AppError):
+    """Error raised when a project membership cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Member not found.")
+
+
+class MemberSelfActionError(AppError):
+    """Error raised when an actor tries to modify their own membership."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="MEMBER_SELF_ACTION",
+            message="You cannot modify your own membership.",
+        )
+
+
+class MemberOwnerProtectedError(AppError):
+    """Error raised when trying to remove or suspend a member with a system role."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="MEMBER_OWNER_PROTECTED",
+            message="Members with a system role cannot be removed or suspended.",
+        )

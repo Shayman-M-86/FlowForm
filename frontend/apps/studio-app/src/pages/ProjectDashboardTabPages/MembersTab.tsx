@@ -1,25 +1,38 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { Button, Badge, Input, Modal, Select, Table, type TableColumn } from '@flowform/ui'
-import { mockProjectMembers, type MockProjectMember } from '@/api/mockData'
-import { PERMISSION_GROUPS, PRESET_ROLES, type CustomRole } from './RolesTab'
-import {
-  DEFAULT_PROJECT_INVITE_ROLE_ID,
-  PROJECT_MEMBER_ROLE_TO_ROLE_ID,
-} from './roleDefinitions'
+import { Button, Badge, Card, Input, LargeInput, Modal, Select, Spinner, Table, Toast, type TableColumn } from '@flowform/ui'
+import { useProjectMembers, useProjectInvitations, useSendInvitation, useDeleteProjectMember, useRevokeInvitation } from '@/api/members/hooks'
+import type { ProjectInvitationOut, ProjectMemberOut } from '@/api/members/types'
+import { getInviteErrorMessage } from '@/api/errors'
+import { PRESET_ROLES } from './RolesTab'
+import { DEFAULT_PROJECT_INVITE_ROLE_ID } from './roleDefinitions'
 import { RoleEditorModal, type RoleEditorState } from './RoleEditorModal'
+import type { CustomRole } from './RolesTab'
+import type { PermissionKey } from './roleDefinitions'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 import { MemberRoleActions } from '@/components/MemberRoleActions'
 import { PermissionBadge } from '@/components/PermissionBadge'
 import { RoleBadgePreview } from '@/components/RoleBadgePreview'
+import { PERMISSION_GROUPS } from './RolesTab'
 
-export function MembersTab() {
+type Props = { projectId: number }
+
+export function MembersTab({ projectId }: Props) {
   useRenderDebug('MembersTab')
-  const [members, setMembers] = useState<MockProjectMember[]>(mockProjectMembers)
-  const [memberToRemove, setMemberToRemove] = useState<MockProjectMember | null>(null)
+
+  const { data: members = [], isLoading } = useProjectMembers(projectId)
+  const { data: invitations = [] } = useProjectInvitations(projectId)
+  const sendInvitation = useSendInvitation(projectId)
+  const deleteMember = useDeleteProjectMember(projectId)
+  const revokeInvitation = useRevokeInvitation(projectId)
+
+  const [memberToRemove, setMemberToRemove] = useState<ProjectMemberOut | null>(null)
+  const [invitationToRevoke, setInvitationToRevoke] = useState<ProjectInvitationOut | null>(null)
+  const [inviteSentTo, setInviteSentTo] = useState<string | null>(null)
 
   // ── Invite modal ────────────────────────────────────────────────────────────
   const [inviteOpen, setInviteOpen] = useState(false)
   const [newEmail, setNewEmail] = useState('')
+  const [newMessage, setNewMessage] = useState('')
   const [newRoleId, setNewRoleId] = useState(DEFAULT_PROJECT_INVITE_ROLE_ID)
 
   // ── Role editor modal (nested) ──────────────────────────────────────────────
@@ -28,19 +41,14 @@ export function MembersTab() {
   const [roleEditorReturnTo, setRoleEditorReturnTo] = useState<'invite' | null>(null)
   const selectCreatedRoleRef = useRef<((roleId: string) => void) | null>(null)
 
-  const allRoles = useMemo(() => [
-    ...PRESET_ROLES,
-    ...customRoles,
-  ], [customRoles])
+  const allRoles = useMemo(() => [...PRESET_ROLES, ...customRoles], [customRoles])
 
   const addCustomRole = (returnTo: 'invite' | null = 'invite', selectRole?: (roleId: string) => void) => {
     const id = `custom-${Date.now()}`
     selectCreatedRoleRef.current = selectRole ?? null
     setRoleEditorReturnTo(returnTo)
-    setEditingRole({ id, custom: true, name: 'New role', description: 'Custom project role.', permissions: new Set() })
-    if (returnTo === 'invite') {
-      setInviteOpen(false)
-    }
+    setEditingRole({ id, custom: true, name: 'New role', description: 'Custom project role.', permissions: new Set<PermissionKey>() })
+    if (returnTo === 'invite') setInviteOpen(false)
   }
 
   const saveRole = () => {
@@ -49,7 +57,7 @@ export function MembersTab() {
     const next = {
       name: editingRole.name.trim(),
       description: editingRole.description.trim(),
-      permissions: [...editingRole.permissions],
+      permissions: [...editingRole.permissions] as PermissionKey[],
     }
     if (!next.name) return
     setCustomRoles((c) =>
@@ -64,9 +72,7 @@ export function MembersTab() {
       setNewRoleId(roleId)
     }
     setEditingRole(null)
-    if (roleEditorReturnTo === 'invite') {
-      setInviteOpen(true)
-    }
+    if (roleEditorReturnTo === 'invite') setInviteOpen(true)
     setRoleEditorReturnTo(null)
   }
 
@@ -83,44 +89,36 @@ export function MembersTab() {
   const sendInvite = () => {
     const email = newEmail.trim()
     if (!email) return
-    const name = email.split('@')[0].replace(/[._-]+/g, ' ')
-    const role = allRoles.find((r) => r.id === newRoleId)
-    setMembers((c) => [
-      ...c,
+    sendInvitation.mutate(
+      { email, role_id: null, invite_message: newMessage.trim() || null },
       {
-        id: Date.now(),
-        name: name.replace(/\b\w/g, (l) => l.toUpperCase()),
-        email,
-        role: (role?.name ?? 'Viewer') as MockProjectMember['role'],
-        status: 'Invited',
+        onSuccess: () => {
+          setInviteSentTo(email)
+          setNewEmail('')
+          setNewMessage('')
+          setInviteOpen(false)
+        },
       },
-    ])
-    setNewEmail('')
-    setInviteOpen(false)
+    )
   }
 
   const removeMember = () => {
     if (!memberToRemove) return
-    setMembers((c) => c.filter((m) => m.id !== memberToRemove.id))
-    setMemberToRemove(null)
+    deleteMember.mutate(memberToRemove.id, {
+      onSuccess: () => setMemberToRemove(null),
+    })
   }
 
-  const changeMemberRole = useCallback((memberToUpdate: MockProjectMember, roleId: string) => {
-    const role = allRoles.find((r) => r.id === roleId)
-    if (!role) return
-    setMembers((c) =>
-      c.map((member) =>
-        member.id === memberToUpdate.id
-          ? { ...member, role: role.name as MockProjectMember['role'] }
-          : member,
-      ),
-    )
-  }, [allRoles])
+  const doRevokeInvitation = () => {
+    if (!invitationToRevoke) return
+    revokeInvitation.mutate(invitationToRevoke.id, {
+      onSuccess: () => setInvitationToRevoke(null),
+    })
+  }
 
   const renderProjectPermissions = useCallback((roleId: string) => {
     const role = allRoles.find((r) => r.id === roleId)
     if (!role) return null
-
     return (
       <div className="flex flex-wrap gap-1.5">
         {role.permissions.map((permission) => (
@@ -131,15 +129,17 @@ export function MembersTab() {
   }, [allRoles])
 
   // ── Table columns ───────────────────────────────────────────────────────────
-  const memberColumns = useMemo<TableColumn<MockProjectMember>[]>(() => [
+  const memberColumns = useMemo<TableColumn<ProjectMemberOut>[]>(() => [
     {
       key: 'member',
       header: 'Member',
       minWidth: 200,
       cell: (row) => (
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">{row.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{row.email}</p>
+          <p className="truncate text-sm font-semibold text-foreground">
+            {row.user.display_name ?? row.user.email}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">{row.user.email}</p>
         </div>
       ),
     },
@@ -148,10 +148,10 @@ export function MembersTab() {
       header: 'Role',
       minWidth: 100,
       cell: (row) => {
-        const role = allRoles.find((candidate) => candidate.id === PROJECT_MEMBER_ROLE_TO_ROLE_ID[row.role])
+        const role = allRoles.find((r) => r.id === String(row.role_id ?? ''))
         return (
           <RoleBadgePreview
-            label={row.role}
+            label={role?.name ?? '—'}
             permissions={(role?.permissions ?? []).map((permission) => ({ key: permission }))}
           />
         )
@@ -162,8 +162,8 @@ export function MembersTab() {
       header: 'Status',
       minWidth: 100,
       cell: (row) => (
-        <Badge variant={row.status === 'Active' ? 'success' : 'warning'} size="xs">
-          {row.status}
+        <Badge variant={row.status === 'active' ? 'success' : 'warning'} size="xs">
+          {row.status === 'active' ? 'Active' : 'Suspended'}
         </Badge>
       ),
     },
@@ -171,15 +171,17 @@ export function MembersTab() {
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
       minWidth: 50,
-      cellClassName: 'flex justify-end',
+      maxWidth: 50,
+      headerClassName: 'flex justify-center text-right pr-2',
+      cellClassName: 'flex justify-center px-0',
       cell: (row) => (
         <MemberRoleActions
-          memberName={row.name}
-          memberEmail={row.email}
+          memberName={row.user.display_name ?? row.user.email}
+          memberEmail={row.user.email}
           editRoleLabel="Edit project role"
           roles={allRoles}
-          selectedRoleId={PROJECT_MEMBER_ROLE_TO_ROLE_ID[row.role]}
-          onSaveRole={(roleId) => changeMemberRole(row, roleId)}
+          selectedRoleId={String(row.role_id ?? '')}
+          onSaveRole={() => {}}
           onAddRole={(selectRole) => addCustomRole(null, selectRole)}
           renderEffectivePreview={renderProjectPermissions}
           extraActions={[
@@ -193,11 +195,44 @@ export function MembersTab() {
         />
       ),
     },
-  ], [addCustomRole, allRoles, changeMemberRole, renderProjectPermissions])
+  ], [addCustomRole, allRoles, renderProjectPermissions])
+
+  const invitationColumns = useMemo<TableColumn<ProjectInvitationOut>[]>(() => [
+    {
+      key: 'email',
+      header: 'Email',
+      minWidth: 120,
+      cell: (row) => (
+        <p className="truncate text-xs text-foreground">{row.invited_email}</p>
+      ),
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      minWidth: 90,
+      maxWidth: 90,
+      headerClassName: 'flex justify-center text-right pr-2',
+      cellClassName: 'flex justify-center px-0',
+      cell: (row) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setInvitationToRevoke(row)}
+        >
+          Revoke
+        </Button>
+      ),
+    },
+  ], [])
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <section className="grid gap-4">
+      {inviteSentTo && (
+        <Toast variant="success" onClose={() => setInviteSentTo(null)}>
+          Invitation sent to {inviteSentTo}.
+        </Toast>
+      )}
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">Members</h2>
@@ -208,24 +243,61 @@ export function MembersTab() {
         </Button>
       </div>
 
-      <Table
-        className='max-w-6xl mx-auto'
-        columns={memberColumns}
-        rows={members}
-        getRowKey={(row) => row.id}
-      />
+      {/* ── Two-column layout: members table + invitations card ─────────────── */}
+      <div className="flex flex-col xl:flex-row gap-6 items-start">
+
+        {/* Members table — grows to fill available space */}
+        <div className="min-w-0 w-full flex-1">
+          {isLoading ? (
+            <div className="flex justify-center py-10"><Spinner size={24} /></div>
+          ) : (
+            <Table
+              columns={memberColumns}
+              rows={members}
+              getRowKey={(row) => row.id}
+            />
+          )}
+        </div>
+
+        {/* Invitations card — fixed width, stacks below on small screens */}
+        <Card size="sm" tone="muted" className="w-full xl:w-92 shrink-0">
+          <div className="flex items-baseline justify-between gap-2 mb-3">
+            <h3 className="text-sm font-semibold">Pending invitations</h3>
+            {invitations.length > 0 && (
+              <Badge variant="warning" size="xs">{invitations.length}</Badge>
+            )}
+          </div>
+
+          {invitations.length === 0 ? (
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Invitations you send will appear here until accepted or revoked.
+            </p>
+          ) : (
+            <Table
+              columns={invitationColumns}
+              rows={invitations}
+              getRowKey={(row) => row.id}
+              hideHeader
+            />
+          )}
+        </Card>
+      </div>
 
       {/* ── Invite modal ─────────────────────────────────────────────────────── */}
       <Modal
         open={inviteOpen}
-        onClose={() => setInviteOpen(false)}
+        onClose={() => { setInviteOpen(false); setNewMessage('') }}
         title="Invite member"
         width={780}
         footer={(
           <>
-            <Button variant="secondary" onClick={() => setInviteOpen(false)}>Cancel</Button>
-            <Button variant="primary" onClick={sendInvite} disabled={!newEmail.trim()}>
-              Send invite
+            <Button variant="secondary" onClick={() => { setInviteOpen(false); setNewMessage('') }}>Cancel</Button>
+            <Button
+              variant="primary"
+              onClick={sendInvite}
+              disabled={!newEmail.trim() || sendInvitation.isPending}
+            >
+              {sendInvitation.isPending ? 'Sending…' : 'Send invite'}
             </Button>
           </>
         )}
@@ -237,6 +309,8 @@ export function MembersTab() {
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
             placeholder="name@example.com"
+            maxLength={254}
+            hint={`${newEmail.length}/254`}
           />
           <div className="flex items-end gap-2">
             <div className="flex-0">
@@ -252,6 +326,21 @@ export function MembersTab() {
               New role
             </Button>
           </div>
+          <LargeInput
+            label="Message (optional)"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Add a personal note to your invitation…"
+            maxText={500}
+            showCount
+            autoGrow
+            rows={3}
+          />
+          {sendInvitation.isError && (
+            <p className="text-sm text-destructive">
+              {getInviteErrorMessage(sendInvitation.error)}
+            </p>
+          )}
         </div>
       </Modal>
 
@@ -260,9 +349,7 @@ export function MembersTab() {
         onClose={() => {
           setEditingRole(null)
           selectCreatedRoleRef.current = null
-          if (roleEditorReturnTo === 'invite') {
-            setInviteOpen(true)
-          }
+          if (roleEditorReturnTo === 'invite') setInviteOpen(true)
           setRoleEditorReturnTo(null)
         }}
         onChange={setEditingRole}
@@ -280,17 +367,47 @@ export function MembersTab() {
         footer={(
           <>
             <Button variant="secondary" onClick={() => setMemberToRemove(null)} className="mr-auto">Cancel</Button>
-            <Button variant="destructive" onClick={removeMember}>Remove</Button>
+            <Button
+              variant="destructive"
+              onClick={removeMember}
+              disabled={deleteMember.isPending}
+            >
+              {deleteMember.isPending ? 'Removing…' : 'Remove'}
+            </Button>
           </>
         )}
       >
         {memberToRemove && (
           <p className="text-base leading-6 text-foreground">
-            Are you sure you want to remove {memberToRemove.name} from this project?
+            Are you sure you want to remove {memberToRemove.user.display_name ?? memberToRemove.user.email} from this project?
           </p>
         )}
       </Modal>
 
+      <Modal
+        open={Boolean(invitationToRevoke)}
+        onClose={() => setInvitationToRevoke(null)}
+        title="Revoke invitation"
+        width={420}
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setInvitationToRevoke(null)} className="mr-auto">Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={doRevokeInvitation}
+              disabled={revokeInvitation.isPending}
+            >
+              {revokeInvitation.isPending ? 'Revoking…' : 'Revoke'}
+            </Button>
+          </>
+        )}
+      >
+        {invitationToRevoke && (
+          <p className="text-base leading-6 text-foreground">
+            Revoke the invitation for {invitationToRevoke.invited_email}? They will no longer be able to accept it.
+          </p>
+        )}
+      </Modal>
     </section>
   )
 }

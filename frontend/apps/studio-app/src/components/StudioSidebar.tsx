@@ -4,9 +4,10 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Badge, Button, DropdownMenu, useTheme } from "@flowform/ui";
 import { BRAND } from "@flowform/site-shell";
 import "@flowform/site-shell/header.css";
-import { useProject } from "@/api/projects";
-import { useSurvey } from "@/api/surveys";
-import { useCurrentUser } from "@/auth/UserContext";
+import { useProject } from "@/api/projects/hooks";
+import { useSurvey } from "@/api/surveys/hooks";
+import { SidebarNotifications } from "@/components/SidebarNotifications";
+import { useCurrentUser } from "@/auth/useCurrentUser";
 import { isAuthBypassEnabled } from "@/auth/testing";
 import { clearActiveProjectSlug } from "@/lib/activeProject";
 import { useRenderDebug } from "@/debug/useRenderDebug";
@@ -550,6 +551,10 @@ export function StudioSidebar() {
       </div>
 
       <div className="flex-1" />
+
+      <div className="px-2">
+        <SidebarNotifications collapsed={collapsed} />
+      </div>
 
       <div aria-hidden="true" className="sidebar-user-divider" />
       <div className="px-2">
