@@ -1,5 +1,6 @@
-import pytest
 from typing import Any, cast
+
+import pytest
 from pydantic import ValidationError
 
 from app.schema.api import limits
