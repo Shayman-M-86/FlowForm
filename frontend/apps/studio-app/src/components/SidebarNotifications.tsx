@@ -8,8 +8,8 @@ import type { ProjectInvitationOut } from '@/api/members/types'
 function IconMail() {
   return (
     <svg
-      width={16}
-      height={16}
+      width={18}
+      height={18}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -159,19 +159,18 @@ export function SidebarNotifications({ collapsed: _collapsed }: Props) {
         data-active="false"
         disabled={count === 0}
       >
-        <span className="sidebar-nav-item__icon relative">
-          <IconMail />
-          {count > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
-              {count > 9 ? '9+' : count}
-            </span>
-          )}
+        <span className="sidebar-nav-item__icon">
+          <span className="relative inline-flex">
+            <IconMail />
+            {count > 0 && (
+              <span className="absolute -top-2 -right-3 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
+                {count > 9 ? '9+' : count}
+              </span>
+            )}
+          </span>
         </span>
         <span className="sidebar-nav-item__label">
           Notifications
-          {count > 0 && (
-            <Badge size="xs" className="ml-2">{count}</Badge>
-          )}
         </span>
       </button>
 

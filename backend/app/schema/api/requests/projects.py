@@ -11,6 +11,53 @@ ProjectMemberStatus = Annotated[
 ]
 
 
+ROLE_NAME_MAX = 80
+PERMISSION_NAME_MAX = 64
+
+
+class CreateProjectRoleRequest(BaseModel):
+    """Request body for creating a project role."""
+
+    name: str = Field(max_length=ROLE_NAME_MAX)
+    permissions: list[str] = Field(default_factory=list)
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Role name must not be blank.")
+        return value
+
+    @field_validator("permissions")
+    @classmethod
+    def validate_permissions(cls, values: list[str]) -> list[str]:
+        return [v.strip() for v in values if v.strip()]
+
+
+class UpdateProjectRoleRequest(BaseModel):
+    """Request body for partially updating a project role."""
+
+    name: str | None = Field(default=None, max_length=ROLE_NAME_MAX)
+    permissions: list[str] | None = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str | None) -> str | None:
+        if value is not None:
+            value = value.strip()
+            if not value:
+                raise ValueError("Role name must not be blank.")
+        return value
+
+    @field_validator("permissions")
+    @classmethod
+    def validate_permissions(cls, values: list[str] | None) -> list[str] | None:
+        if values is None:
+            return None
+        return [v.strip() for v in values if v.strip()]
+
+
 def _validate_name(value: str) -> str:
     value = value.strip()
     if not value:

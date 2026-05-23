@@ -467,6 +467,24 @@ class AlreadyAMemberError(AppError):
         )
 
 
+class ProjectRoleNotFoundError(AppError):
+    """Error raised when a project role cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Project role not found.")
+
+
+class ProjectRoleSystemProtectedError(AppError):
+    """Error raised when trying to mutate or delete a system role."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="ROLE_SYSTEM_PROTECTED",
+            message="System roles cannot be modified or deleted.",
+        )
+
+
 class MemberNotFoundError(AppError):
     """Error raised when a project membership cannot be found."""
 

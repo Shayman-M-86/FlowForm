@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Button, Card, CardStack, Modal, Toast } from '@flowform/ui'
+import { Badge, Button, Card, CardStack, Modal, Toast } from '@flowform/ui'
 import { useCreateProject, useProjects } from '@/api/projects/hooks'
 import { CreateProjectForm } from '@/components/CreateProjectForm'
+import { useCurrentUser } from '@/auth/useCurrentUser'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
 function ProjectCardSkeleton() {
@@ -23,6 +24,7 @@ export function ProjectsPage() {
   const navigate = useNavigate()
   const { data: projects, isPending, isError, error } = useProjects()
   const createProject = useCreateProject()
+  const ctx = useCurrentUser()
   const [createOpen, setCreateOpen] = useState(false)
 
   const closeCreateModal = () => {
@@ -81,24 +83,34 @@ export function ProjectsPage() {
           </Card>
         )}
 
-        {projects?.map((project) => (
-          <Link
-            key={project.id}
-            to="/projects/$slug"
-            params={{ slug: project.slug }}
-            className="block no-underline"
-          >
-            <Card interactive>
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-semibold text-foreground">{project.name}</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">{project.slug}</p>
+        {projects?.map((project) => {
+          const isOwner = ctx?.user.id === project.created_by_user_id
+          return (
+            <Link
+              key={project.id}
+              to="/projects/$slug"
+              params={{ slug: project.slug }}
+              className="block no-underline"
+            >
+              <Card interactive>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-foreground truncate">{project.name}</p>
+                      {isOwner ? (
+                        <Badge variant="default" size="xs">Owner</Badge>
+                      ) : (
+                        <Badge variant="muted" size="xs">Member</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-0.5">{project.slug}</p>
+                  </div>
+                  <span className="text-muted-foreground text-sm shrink-0">→</span>
                 </div>
-                <span className="text-muted-foreground text-sm shrink-0">→</span>
-              </div>
-            </Card>
-          </Link>
-        ))}
+              </Card>
+            </Link>
+          )
+        })}
       </CardStack>
 
       <Modal open={createOpen} onClose={closeCreateModal} title="New project">

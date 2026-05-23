@@ -412,6 +412,54 @@ export interface paths {
         patch: operations["updatePublicLink"];
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project roles
+         * @description List project roles
+         */
+        get: operations["listRoles"];
+        put?: never;
+        /**
+         * Create project role
+         * @description Create project role
+         */
+        post: operations["createRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/roles/{role_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete project role
+         * @description Delete project role
+         */
+        delete: operations["deleteRole"];
+        options?: never;
+        head?: never;
+        /**
+         * Update project role
+         * @description Update project role
+         */
+        patch: operations["updateRole"];
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/submissions": {
         parameters: {
             query?: never;
@@ -1823,6 +1871,53 @@ export interface components {
             expires_at: string | null;
         };
         /**
+         * ProjectRoleOut
+         * @description API response shape for a project role.
+         */
+        ProjectRoleOut: {
+            /** Id */
+            id: number;
+            /** Project Id */
+            project_id: number;
+            /** Name */
+            name: string;
+            /** Is System Role */
+            is_system_role: boolean;
+            /** Permissions */
+            permissions: string[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * CreateProjectRoleRequest
+         * @description Request body for creating a project role.
+         */
+        CreateProjectRoleRequest: {
+            /** Name */
+            name: string;
+            /** Permissions */
+            permissions?: string[];
+        };
+        /**
+         * UpdateProjectRoleRequest
+         * @description Request body for partially updating a project role.
+         */
+        UpdateProjectRoleRequest: {
+            /**
+             * Name
+             * @default null
+             */
+            name: string | null;
+            /**
+             * Permissions
+             * @default null
+             */
+            permissions: string[] | null;
+        };
+        /**
          * CoreSubmissionOut
          * @description API response shape for a core submission record.
          */
@@ -2377,6 +2472,9 @@ export type ListPublicLinksOut = components['schemas']['ListPublicLinksOut'];
 export type CreatePublicLinkRequest = components['schemas']['CreatePublicLinkRequest'];
 export type CreatePublicLinkOut = components['schemas']['CreatePublicLinkOut'];
 export type UpdatePublicLinkRequest = components['schemas']['UpdatePublicLinkRequest'];
+export type ProjectRoleOut = components['schemas']['ProjectRoleOut'];
+export type CreateProjectRoleRequest = components['schemas']['CreateProjectRoleRequest'];
+export type UpdateProjectRoleRequest = components['schemas']['UpdateProjectRoleRequest'];
 export type CoreSubmissionOut = components['schemas']['CoreSubmissionOut'];
 export type SubmitterOut = components['schemas']['SubmitterOut'];
 export type PaginatedSubmissionsOut = components['schemas']['PaginatedSubmissionsOut'];
@@ -3576,6 +3674,166 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicLinkOut"];
+                };
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRoleOut"][];
+                };
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProjectRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRoleOut"];
+                };
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                role_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                role_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProjectRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRoleOut"];
                 };
             };
             /** @description Bad request. */

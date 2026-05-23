@@ -20,6 +20,7 @@ tags:
 - name: Public
 - name: Public Links
 - name: Public Submissions
+- name: Roles
 - name: Scoring Rules
 - name: Submissions
 - name: Survey Content
@@ -1591,6 +1592,212 @@ paths:
       responses:
         '204':
           description: No content.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/projects/{project_id}/roles:
+    get:
+      operationId: listRoles
+      summary: List project roles
+      description: List project roles
+      tags:
+      - Roles
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectRoleOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+    post:
+      operationId: createRole
+      summary: Create project role
+      description: Create project role
+      tags:
+      - Roles
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectRoleRequest'
+      responses:
+        '201':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectRoleOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/projects/{project_id}/roles/{role_id}:
+    patch:
+      operationId: updateRole
+      summary: Update project role
+      description: Update project role
+      tags:
+      - Roles
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: role_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectRoleRequest'
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectRoleOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+    delete:
+      operationId: deleteRole
+      summary: Delete project role
+      description: Delete project role
+      tags:
+      - Roles
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: role_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
           description: Bad request.
@@ -4412,6 +4619,77 @@ components:
           title: Expires At
       title: UpdatePublicLinkRequest
       type: object
+    ProjectRoleOut:
+      description: API response shape for a project role.
+      properties:
+        id:
+          title: Id
+          type: integer
+        project_id:
+          title: Project Id
+          type: integer
+        name:
+          title: Name
+          type: string
+          maxLength: 120
+        is_system_role:
+          title: Is System Role
+          type: boolean
+        permissions:
+          items:
+            type: string
+          title: Permissions
+          type: array
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+          maxLength: 35
+      required:
+      - id
+      - project_id
+      - name
+      - is_system_role
+      - permissions
+      - created_at
+      title: ProjectRoleOut
+      type: object
+    CreateProjectRoleRequest:
+      description: Request body for creating a project role.
+      properties:
+        name:
+          maxLength: 80
+          title: Name
+          type: string
+        permissions:
+          items:
+            type: string
+          title: Permissions
+          type: array
+      required:
+      - name
+      title: CreateProjectRoleRequest
+      type: object
+    UpdateProjectRoleRequest:
+      description: Request body for partially updating a project role.
+      properties:
+        name:
+          anyOf:
+          - maxLength: 80
+            type: string
+          - type: 'null'
+          default: null
+          title: Name
+        permissions:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Permissions
+      title: UpdateProjectRoleRequest
+      type: object
     CoreSubmissionOut:
       description: API response shape for a core submission record.
       properties:
@@ -5279,6 +5557,11 @@ components:
               value:
                 code: NOT_FOUND
                 message: Invitation not found.
+            project_role_not_found:
+              summary: ProjectRoleNotFoundError
+              value:
+                code: NOT_FOUND
+                message: Project role not found.
             member_not_found:
               summary: MemberNotFoundError
               value:
@@ -5358,6 +5641,11 @@ components:
               value:
                 code: ALREADY_A_MEMBER
                 message: This user is already a member of the project.
+            project_role_system_protected:
+              summary: ProjectRoleSystemProtectedError
+              value:
+                code: ROLE_SYSTEM_PROTECTED
+                message: System roles cannot be modified or deleted.
             member_owner_protected:
               summary: MemberOwnerProtectedError
               value:

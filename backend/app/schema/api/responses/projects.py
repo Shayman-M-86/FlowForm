@@ -15,6 +15,25 @@ class ProjectOut(BaseModel):
     created_at: datetime
 
 
+class ProjectRoleOut(BaseModel):
+    """API response shape for a project role."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    project_id: int
+    name: str
+    is_system_role: bool
+    permissions: list[str]
+    created_at: datetime
+
+    @classmethod
+    def from_orm_with_permissions(cls, role: object) -> "ProjectRoleOut":
+        data = cls.model_validate(role)
+        data.permissions = [p.name for p in getattr(role, "permissions", [])]
+        return data
+
+
 class MemberUserOut(BaseModel):
     """Embedded user details on a project member response."""
 
