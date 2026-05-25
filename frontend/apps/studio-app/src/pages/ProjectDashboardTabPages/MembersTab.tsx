@@ -1,27 +1,33 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Button, Badge, Card, Input, LargeInput, Modal, Select, Spinner, Table, Toast, type TableColumn } from '@flowform/ui'
-import { useProjectMembers, useProjectInvitations, useSendInvitation, useDeleteProjectMember, useRevokeInvitation } from '@/api/members/hooks'
+import { useProjectMembers, useProjectInvitations, useSendInvitation, useDeleteProjectMember, useRevokeInvitation, useUpdateProjectMember } from '@/api/members/hooks'
 import type { ProjectInvitationOut, ProjectMemberOut } from '@/api/members/types'
 import { getInviteErrorMessage } from '@/api/errors'
-import { PRESET_ROLES } from './RolesTab'
-import { DEFAULT_PROJECT_INVITE_ROLE_ID } from './roleDefinitions'
 import { RoleEditorModal, type RoleEditorState } from './RoleEditorModal'
 import type { CustomRole } from './RolesTab'
-import type { PermissionKey } from './roleDefinitions'
+import { normalizePermissionKeys, type PermissionKey } from './roleDefinitions'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 import { MemberRoleActions } from '@/components/MemberRoleActions'
 import { PermissionBadge } from '@/components/PermissionBadge'
 import { RoleBadgePreview } from '@/components/RoleBadgePreview'
 import { PERMISSION_GROUPS } from './RolesTab'
+import { useProjectRoles } from '@/api/roles/hooks'
 
 type Props = { projectId: number }
+
+function projectRoleIdFromUiId(roleId: string) {
+  const parsed = Number(roleId)
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null
+}
 
 export function MembersTab({ projectId }: Props) {
   useRenderDebug('MembersTab')
 
   const { data: members = [], isLoading } = useProjectMembers(projectId)
   const { data: invitations = [] } = useProjectInvitations(projectId)
+  const { data: projectRoles = [], isLoading: rolesLoading } = useProjectRoles(projectId)
   const sendInvitation = useSendInvitation(projectId)
+  const updateMember = useUpdateProjectMember(projectId)
   const deleteMember = useDeleteProjectMember(projectId)
   const revokeInvitation = useRevokeInvitation(projectId)
 
@@ -33,7 +39,7 @@ export function MembersTab({ projectId }: Props) {
   const [inviteOpen, setInviteOpen] = useState(false)
   const [newEmail, setNewEmail] = useState('')
   const [newMessage, setNewMessage] = useState('')
-  const [newRoleId, setNewRoleId] = useState(DEFAULT_PROJECT_INVITE_ROLE_ID)
+  const [newRoleId, setNewRoleId] = useState('')
 
   // ── Role editor modal (nested) ──────────────────────────────────────────────
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([])
@@ -41,15 +47,23 @@ export function MembersTab({ projectId }: Props) {
   const [roleEditorReturnTo, setRoleEditorReturnTo] = useState<'invite' | null>(null)
   const selectCreatedRoleRef = useRef<((roleId: string) => void) | null>(null)
 
-  const allRoles = useMemo(() => [...PRESET_ROLES, ...customRoles], [customRoles])
+  const persistedRoles = useMemo<CustomRole[]>(() => projectRoles.map((role) => ({
+    id: String(role.id),
+    name: role.name,
+    description: role.is_system_role ? 'System project role.' : 'Custom project role.',
+    permissions: normalizePermissionKeys(role.permissions),
+  })), [projectRoles])
+  const allRoles = useMemo(() => [...persistedRoles, ...customRoles], [customRoles, persistedRoles])
+  const roleById = useMemo(() => new Map(allRoles.map((role) => [role.id, role])), [allRoles])
+  const selectedInviteRoleId = newRoleId && roleById.has(newRoleId) ? newRoleId : allRoles[0]?.id ?? ''
 
-  const addCustomRole = (returnTo: 'invite' | null = 'invite', selectRole?: (roleId: string) => void) => {
+  const addCustomRole = useCallback((returnTo: 'invite' | null = 'invite', selectRole?: (roleId: string) => void) => {
     const id = `custom-${Date.now()}`
     selectCreatedRoleRef.current = selectRole ?? null
     setRoleEditorReturnTo(returnTo)
     setEditingRole({ id, custom: true, name: 'New role', description: 'Custom project role.', permissions: new Set<PermissionKey>() })
     if (returnTo === 'invite') setInviteOpen(false)
-  }
+  }, [])
 
   const saveRole = () => {
     if (!editingRole) return
@@ -79,7 +93,7 @@ export function MembersTab({ projectId }: Props) {
   const deleteRole = () => {
     if (!editingRole?.custom) return
     setCustomRoles((c) => c.filter((r) => r.id !== editingRole.id))
-    if (newRoleId === editingRole.id) setNewRoleId(DEFAULT_PROJECT_INVITE_ROLE_ID)
+    if (newRoleId === editingRole.id) setNewRoleId('')
     setEditingRole(null)
     selectCreatedRoleRef.current = null
     setRoleEditorReturnTo(null)
@@ -89,8 +103,9 @@ export function MembersTab({ projectId }: Props) {
   const sendInvite = () => {
     const email = newEmail.trim()
     if (!email) return
+    const roleId = projectRoleIdFromUiId(selectedInviteRoleId)
     sendInvitation.mutate(
-      { email, role_id: null, invite_message: newMessage.trim() || null },
+      { email, role_id: roleId, invite_message: newMessage.trim() || null },
       {
         onSuccess: () => {
           setInviteSentTo(email)
@@ -117,7 +132,7 @@ export function MembersTab({ projectId }: Props) {
   }
 
   const renderProjectPermissions = useCallback((roleId: string) => {
-    const role = allRoles.find((r) => r.id === roleId)
+    const role = roleById.get(roleId)
     if (!role) return null
     return (
       <div className="flex flex-wrap gap-1.5">
@@ -126,7 +141,7 @@ export function MembersTab({ projectId }: Props) {
         ))}
       </div>
     )
-  }, [allRoles])
+  }, [roleById])
 
   // ── Table columns ───────────────────────────────────────────────────────────
   const memberColumns = useMemo<TableColumn<ProjectMemberOut>[]>(() => [
@@ -148,7 +163,7 @@ export function MembersTab({ projectId }: Props) {
       header: 'Role',
       minWidth: 100,
       cell: (row) => {
-        const role = allRoles.find((r) => r.id === String(row.role_id ?? ''))
+        const role = roleById.get(String(row.role_id ?? ''))
         return (
           <RoleBadgePreview
             label={role?.name ?? '—'}
@@ -181,7 +196,14 @@ export function MembersTab({ projectId }: Props) {
           editRoleLabel="Edit project role"
           roles={allRoles}
           selectedRoleId={String(row.role_id ?? '')}
-          onSaveRole={() => {}}
+          onSaveRole={(roleId) => {
+            const projectRoleId = projectRoleIdFromUiId(roleId)
+            if (projectRoleId === null) return
+            updateMember.mutate({
+              membershipId: row.id,
+              body: { role_id: projectRoleId, status: null },
+            })
+          }}
           onAddRole={(selectRole) => addCustomRole(null, selectRole)}
           renderEffectivePreview={renderProjectPermissions}
           extraActions={[
@@ -195,7 +217,7 @@ export function MembersTab({ projectId }: Props) {
         />
       ),
     },
-  ], [addCustomRole, allRoles, renderProjectPermissions])
+  ], [addCustomRole, allRoles, renderProjectPermissions, roleById, updateMember])
 
   const invitationColumns = useMemo<TableColumn<ProjectInvitationOut>[]>(() => [
     {
@@ -248,7 +270,7 @@ export function MembersTab({ projectId }: Props) {
 
         {/* Members table — grows to fill available space */}
         <div className="min-w-0 w-full flex-1">
-          {isLoading ? (
+          {isLoading || rolesLoading ? (
             <div className="flex justify-center py-10"><Spinner size={24} /></div>
           ) : (
             <Table
@@ -316,7 +338,7 @@ export function MembersTab({ projectId }: Props) {
             <div className="flex-0">
               <Select
                 label="Role"
-                value={newRoleId}
+                value={selectedInviteRoleId}
                 className='w-50'
                 onChange={(e) => setNewRoleId(e.target.value)}
                 options={allRoles.map((r) => ({ value: r.id, label: r.name }))}

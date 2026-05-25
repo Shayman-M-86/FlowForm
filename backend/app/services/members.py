@@ -68,7 +68,7 @@ class MembersService:
 
     @require_project_permission(PERMISSIONS.project.manage_members)
     def revoke_invitation(
-        self, db: Session, *, project_id: int, invitation_id: int, actor: User
+        self, db: Session, *, project_id: int, invitation_id: int, actor: User # noqa: ARG002
     ) -> None:
         invitation = invitations_repo.get_by_id(db, invitation_id)
         if invitation is None or invitation.project_id != project_id:

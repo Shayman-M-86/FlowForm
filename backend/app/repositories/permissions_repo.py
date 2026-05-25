@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -10,7 +12,7 @@ def list_permission_names(db: Session) -> set[str]:
     return set(db.scalars(select(Permission.name)))
 
 
-def get_permissions_by_names(db: Session, names: list[str]) -> list[Permission]:
+def get_permissions_by_names(db: Session, names: Iterable[str]) -> list[Permission]:
     """Fetch Permission rows for the given names."""
     return list(db.scalars(select(Permission).where(Permission.name.in_(names))))
 

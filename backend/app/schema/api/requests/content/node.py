@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from typing import Literal
-
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schema.api import limits
+from app.schema.api.enums import SurveyNodeType
 from app.schema.api.requests.content.questions_schemas import QuestionSchemaIn
 from app.schema.api.requests.content.rule_schemas import RuleSchemaIn
 
-NodeType = Literal["question", "rule"]
+NodeType = SurveyNodeType
 
 # Maximum size in bytes of the serialized JSON content for a single node.
 # Must stay in sync with the database CHECK constraint
@@ -33,7 +32,7 @@ class CreateNodeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     type: NodeType
-    sort_key: int = Field(gt=0)
+    sort_key: int = Field(gt=limits.CONTENT_SORT_KEY_MIN_EXCLUSIVE)
     content: QuestionSchemaIn | RuleSchemaIn
 
     @model_validator(mode="after")
@@ -57,7 +56,7 @@ class UpdateNodeRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    sort_key: int | None = Field(default=None, gt=0)
+    sort_key: int | None = Field(default=None, gt=limits.CONTENT_SORT_KEY_MIN_EXCLUSIVE)
     content: QuestionSchemaIn | RuleSchemaIn | None = None
 
     @model_validator(mode="after")

@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
+from app.schema.api import limits
 from app.schema.api.enums import (
     AnswerFamily,
     SubmissionChannel,
@@ -58,12 +59,13 @@ class LinkedSubmissionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     core: CoreSubmissionOut
-    answers: list[AnswerOut]
+    answers: list[AnswerOut] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
 
 
 class PaginatedSubmissionsOut(BaseModel):
     """API response shape for a paginated list of submissions."""
-    items: list[CoreSubmissionOut]
+
+    items: list[CoreSubmissionOut] = Field(max_length=limits.LIST_PAGE_SIZE_MAX)
     total: int
     page: int
     page_size: int

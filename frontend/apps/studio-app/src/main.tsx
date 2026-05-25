@@ -30,6 +30,8 @@ createRoot(document.getElementById('root')!).render(
         audience: auth0Audience,
         scope: 'openid profile email',
       }}
+      cacheLocation="localstorage"
+      useRefreshTokens={true}
     >
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>

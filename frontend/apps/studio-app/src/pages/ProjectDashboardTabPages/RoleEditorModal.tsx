@@ -18,10 +18,24 @@ interface RoleEditorModalProps {
   onDelete?: () => void
   isNew?: boolean
   permissionGroups: PermissionGroup[]
+  showDescription?: boolean
+  isSaving?: boolean
+  isDeleting?: boolean
 }
 
-export function RoleEditorModal({ role, onClose, onChange, onSave, onDelete, isNew = false, permissionGroups }: RoleEditorModalProps) {
-  useRenderDebug('RoleEditorModal', { role, onClose, onChange, onSave, onDelete, isNew, permissionGroups })
+export function RoleEditorModal({
+  role,
+  onClose,
+  onChange,
+  onSave,
+  onDelete,
+  isNew = false,
+  permissionGroups,
+  showDescription = true,
+  isSaving = false,
+  isDeleting = false,
+}: RoleEditorModalProps) {
+  useRenderDebug('RoleEditorModal', { role, onClose, onChange, onSave, onDelete, isNew, permissionGroups, showDescription, isSaving, isDeleting })
   const togglePermission = (permission: PermissionKey) => {
     if (!role) return
     const permissions = new Set(role.permissions)
@@ -40,12 +54,12 @@ export function RoleEditorModal({ role, onClose, onChange, onSave, onDelete, isN
         <>
           <Button variant="secondary" onClick={onClose} className="mr-auto">Cancel</Button>
           {!isNew && role?.custom && onDelete && (
-            <Button variant="danger" onClick={onDelete}>Delete</Button>
+            <Button variant="danger" onClick={onDelete} disabled={isDeleting || isSaving}>Delete</Button>
           )}
           <Button
             variant="primary"
             onClick={onSave}
-            disabled={!role?.name.trim() || (role?.permissions.size ?? 0) === 0}
+            disabled={isSaving || isDeleting || !role?.name.trim() || (role?.permissions.size ?? 0) === 0}
           >
             Save
           </Button>
@@ -71,13 +85,15 @@ export function RoleEditorModal({ role, onClose, onChange, onSave, onDelete, isN
                 </div>
               </div>
             </div>
-            <LargeInput
-              label="Description"
-              rows={3}
-              value={role.description}
-              onChange={(e) => onChange({ ...role, description: e.target.value })}
-              placeholder="Role description"
-            />
+            {showDescription && (
+              <LargeInput
+                label="Description"
+                rows={3}
+                value={role.description}
+                onChange={(e) => onChange({ ...role, description: e.target.value })}
+                placeholder="Role description"
+              />
+            )}
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             {permissionGroups.map((group) => (

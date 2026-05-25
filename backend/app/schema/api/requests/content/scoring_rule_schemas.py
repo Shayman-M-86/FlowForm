@@ -1,10 +1,17 @@
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schema.api import limits
+from app.schema.api.enums import (
+    ChoiceOptionMapStrategy,
+    FieldNumericRangesStrategy,
+    MatchingAnswerKeyStrategy,
+    RatingDirectStrategy,
+    ScoringCombine,
+)
 
 # A simple condition used as an optional filter on scoring rules.
 # This is separate from the survey-level rule if/then/else schema.
@@ -62,7 +69,7 @@ class ChoiceOptionMapConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     option_scores: dict[SchemaIdStr, ScoreNumber]
-    combine: Literal["sum", "max"] = "sum"
+    combine: ScoringCombine = "sum"
 
     @field_validator("option_scores")
     @classmethod
@@ -83,7 +90,7 @@ class MatchingAnswerKeyConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    correct_pairs: list[MatchingPairIn]
+    correct_pairs: list[MatchingPairIn] = Field(max_length=limits.SCORING_RULE_ITEMS_MAX)
     points_per_correct: ScoreNumber = 1
     penalty_per_incorrect: ScoreNumber = 0
     max_score: ScoreNumber | None = None
@@ -122,7 +129,7 @@ class FieldNumericRangesConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    ranges: list[NumericRangeScoreIn]
+    ranges: list[NumericRangeScoreIn] = Field(max_length=limits.SCORING_RULE_ITEMS_MAX)
 
     @field_validator("ranges")
     @classmethod
@@ -147,7 +154,7 @@ class ChoiceOptionMapScoringSchemaIn(BaseModel):
     target: SchemaIdStr
     bucket: SchemaIdStr
     condition: ConditionIn | None = None
-    strategy: Literal["choice_option_map"]
+    strategy: ChoiceOptionMapStrategy
     config: ChoiceOptionMapConfig
 
     @field_validator("target", "bucket")
@@ -170,7 +177,7 @@ class MatchingAnswerKeyScoringSchemaIn(BaseModel):
     target: SchemaIdStr
     bucket: SchemaIdStr
     condition: ConditionIn | None = None
-    strategy: Literal["matching_answer_key"]
+    strategy: MatchingAnswerKeyStrategy
     config: MatchingAnswerKeyConfig
 
     @field_validator("target", "bucket")
@@ -193,7 +200,7 @@ class RatingDirectScoringSchemaIn(BaseModel):
     target: SchemaIdStr
     bucket: SchemaIdStr
     condition: ConditionIn | None = None
-    strategy: Literal["rating_direct"]
+    strategy: RatingDirectStrategy
     config: RatingDirectConfig
 
     @field_validator("target", "bucket")
@@ -216,7 +223,7 @@ class FieldNumericRangesScoringSchemaIn(BaseModel):
     target: SchemaIdStr
     bucket: SchemaIdStr
     condition: ConditionIn | None = None
-    strategy: Literal["field_numeric_ranges"]
+    strategy: FieldNumericRangesStrategy
     config: FieldNumericRangesConfig
 
     @field_validator("target", "bucket")

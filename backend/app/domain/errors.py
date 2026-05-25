@@ -504,11 +504,11 @@ class MemberSelfActionError(AppError):
 
 
 class MemberOwnerProtectedError(AppError):
-    """Error raised when trying to remove or suspend a member with a system role."""
+    """Error raised when trying to reassign, remove, or suspend an owner/system role."""
 
     def __init__(self) -> None:
         super().__init__(
             status_code=409,
             code="MEMBER_OWNER_PROTECTED",
-            message="Members with a system role cannot be removed or suspended.",
+            message="Owner roles cannot be assigned, reassigned, removed, or suspended.",
         )

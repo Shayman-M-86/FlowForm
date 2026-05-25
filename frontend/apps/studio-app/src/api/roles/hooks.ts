@@ -10,15 +10,19 @@ import type { CreateProjectRoleRequest, ProjectRoleOut, UpdateProjectRoleRequest
 
 export const roleKeys = {
   all: () => ['roles'] as const,
-  list: (projectId: number) => [...roleKeys.all(), 'list', projectId] as const,
+  list: (projectId: number | null) => [...roleKeys.all(), 'list', projectId] as const,
 }
 
-export function useProjectRoles(projectId: number) {
+export function useProjectRoles(projectId: number | null) {
   const apiClient = useOpenApiClient()
 
   return useQuery({
     queryKey: roleKeys.list(projectId),
-    queryFn: () => getProjectRoles(apiClient, projectId),
+    queryFn: () => {
+      if (projectId === null) throw new Error('Project id is required')
+      return getProjectRoles(apiClient, projectId)
+    },
+    enabled: projectId !== null,
   })
 }
 

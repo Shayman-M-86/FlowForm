@@ -1,10 +1,21 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schema.api import limits
+from app.schema.api.enums import (
+    ChoiceFamily,
+    DateFieldOperator,
+    DateFieldType,
+    FieldFamily,
+    IfMatch,
+    MatchingFamily,
+    NumberFieldType,
+    NumericFieldOperator,
+    RatingFamily,
+)
 
 SchemaIdStr = Annotated[str, Field(max_length=limits.SCHEMA_ID_MAX)]
 DateValueStr = Annotated[str, Field(max_length=limits.DATE_VALUE_MAX)]
@@ -17,9 +28,9 @@ class ChoiceRequirementsIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    required: list[SchemaIdStr] | None = None
-    forbidden: list[SchemaIdStr] | None = None
-    any_of: list[SchemaIdStr] | None = None
+    required: list[SchemaIdStr] | None = Field(default=None, max_length=limits.RULE_ITEMS_MAX)
+    forbidden: list[SchemaIdStr] | None = Field(default=None, max_length=limits.RULE_ITEMS_MAX)
+    any_of: list[SchemaIdStr] | None = Field(default=None, max_length=limits.RULE_ITEMS_MAX)
 
     @model_validator(mode="after")
     def validate_has_at_least_one(self) -> ChoiceRequirementsIn:
@@ -33,7 +44,7 @@ class MatchingRequirementsIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    required: list[dict[SchemaIdStr, SchemaIdStr]]
+    required: list[dict[SchemaIdStr, SchemaIdStr]] = Field(max_length=limits.RULE_ITEMS_MAX)
 
     @field_validator("required")
     @classmethod
@@ -61,16 +72,13 @@ class RatingRequirementsIn(BaseModel):
         return self
 
 
-FieldOperator = Literal["LT", "LTE", "GT", "GTE", "EQ", "NEQ", "before", "after"]
-
-
 class NumberFieldRequirementsIn(BaseModel):
     """Validation requirements for a numeric field-question condition."""
 
     model_config = ConfigDict(extra="forbid")
 
-    type: Literal["number"]
-    operator: Literal["LT", "LTE", "GT", "GTE", "EQ", "NEQ"]
+    type: NumberFieldType
+    operator: NumericFieldOperator
     value: int | float
 
 
@@ -79,8 +87,8 @@ class DateFieldRequirementsIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    type: Literal["date"]
-    operator: Literal["before", "after"]
+    type: DateFieldType
+    operator: DateFieldOperator
     value: DateValueStr
 
     @field_validator("value")
@@ -105,7 +113,7 @@ class ChoiceConditionIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     target_id: SchemaIdStr
-    family: Literal["choice"]
+    family: ChoiceFamily
     requirements: ChoiceRequirementsIn
 
     @field_validator("target_id")
@@ -122,7 +130,7 @@ class MatchingConditionIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     target_id: SchemaIdStr
-    family: Literal["matching"]
+    family: MatchingFamily
     requirements: MatchingRequirementsIn
 
     @field_validator("target_id")
@@ -139,7 +147,7 @@ class RatingConditionIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     target_id: SchemaIdStr
-    family: Literal["rating"]
+    family: RatingFamily
     requirements: RatingRequirementsIn
 
     @field_validator("target_id")
@@ -156,7 +164,7 @@ class FieldConditionIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     target_id: SchemaIdStr
-    family: Literal["field"]
+    family: FieldFamily
     requirements: FieldRequirementsIn
 
     @field_validator("target_id")
@@ -175,16 +183,13 @@ RuleConditionIn = Annotated[
 
 # ── If block ──────────────────────────────────────────────────────────────────
 
-IfMatch = Literal["ALL", "ANY", "NONE"]
-
-
 class RuleIfIn(BaseModel):
     """Represents the rule predicate and how its conditions are matched."""
 
     model_config = ConfigDict(extra="forbid")
 
     match: IfMatch
-    conditions: list[RuleConditionIn]
+    conditions: list[RuleConditionIn] = Field(max_length=limits.RULE_ITEMS_MAX)
 
     @field_validator("conditions")
     @classmethod
@@ -220,9 +225,6 @@ class ThenSetItemIn(BaseModel):
         return self
 
 
-SkipAction = Literal["skip_to", "end_and_submit", "end_and_discard"]
-
-
 class ElseDoIn(BaseModel):
     """Represents the single navigation action performed by an else block."""
 
@@ -245,7 +247,7 @@ class RuleThenIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    set: list[ThenSetItemIn]
+    set: list[ThenSetItemIn] = Field(max_length=limits.RULE_ITEMS_MAX)
 
     @field_validator("set")
     @classmethod

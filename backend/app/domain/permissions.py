@@ -1,4 +1,19 @@
 from dataclasses import dataclass, fields
+from typing import Literal
+
+ProjectPermission = Literal[
+    "project:edit",
+    "project:delete",
+    "project:manage_members",
+    "project:manage_roles",
+    "survey:view",
+    "survey:create",
+    "survey:edit",
+    "survey:delete",
+    "survey:publish",
+    "survey:archive",
+    "submission:view",
+]
 
 
 @dataclass(frozen=True)

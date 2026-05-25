@@ -1,32 +1,47 @@
 """Shared request-schema limits for API validation and OpenAPI output."""
 
+from app.domain.permissions import PERMISSIONS
+
+# Generic string and token limits.
+# These are reused across multiple request/response schemas.
 SLUG_MAX = 80
 AUTH0_USER_ID_MAX = 255
-
-# Upper bound for numeric resource identifiers in URL paths. Matches the
-# PostgreSQL ``INTEGER`` ceiling. Anything larger can't physically exist
-# in any of our serial columns; reject at the routing layer instead of
-# parsing into a bigint and missing the DB lookup.
-INT_ID_MAX = 2**31 - 1
-# Resource ids are always positive — Postgres ``SERIAL`` starts at 1.
-INT_ID_MIN = 1
-
-PROJECT_NAME_MAX = 100
-PROJECT_MEMBER_STATUS_MAX = 9
-SURVEY_TITLE_MAX = 200
-PUBLIC_LINK_NAME_MAX = 120
-TOKEN_PREFIX_MAX = 32
 EMAIL_MAX = 254
-INVITE_MESSAGE_MAX = 500
 TOKEN_MAX = 256
+TOKEN_PREFIX_MAX = 32
 URL_MAX = 2048
 ID_TOKEN_MAX = 8192
 
+
+# Integer ID limits. Match PostgreSQL INTEGER-backed positive resource IDs.
+INT_ID_MAX = 2**31 - 1
+INT_ID_MIN = 1
+
+
+# Project, membership, role, and invitation limits.
+PROJECT_NAME_MAX = 100
+PROJECT_MEMBER_STATUS_MAX = 9
+PROJECT_INVITATION_STATUS_MAX = 8
+PROJECT_ROLE_NAME_MAX = 80
+PROJECT_ROLE_PERMISSION_NAME_MAX = 64
+# One project role cannot grant more permissions than the platform defines.
+PROJECT_ROLE_PERMISSIONS_MAX = len(PERMISSIONS.all())
+INVITE_MESSAGE_MAX = 500
+
+
+# Survey and public-link limits.
+SURVEY_TITLE_MAX = 200
+PUBLIC_LINK_NAME_MAX = 120
+
+
+# Standard API error and serialized scalar limits.
 ERROR_CODE_MAX = 128
 ERROR_MESSAGE_MAX = 1000
 ISO_DATETIME_MAX = 35
 UUID_STRING_MAX = 36
 
+
+# Survey content schema string limits.
 SCHEMA_ID_MAX = 128
 QUESTION_TITLE_MAX = 500
 QUESTION_LABEL_MAX = 5000
@@ -35,9 +50,34 @@ MATCHING_ITEM_LABEL_MAX = 250
 RATING_LABEL_MAX = 50
 FIELD_PLACEHOLDER_MAX = 50
 ANSWER_TEXT_MAX = 5000
+ANSWER_LIST_ITEMS_MAX = 50
+SUBMISSION_METADATA_ITEMS_MAX = 50
 DATE_VALUE_MAX = 10
 
+
+# Standard list pagination limits.
+LIST_PAGE_DEFAULT = 1
+LIST_PAGE_MIN = 1
+LIST_PAGE_SIZE_DEFAULT = 20
+LIST_PAGE_SIZE_MIN = 1
+LIST_PAGE_SIZE_MAX = 100
+
+
+# Survey content collection and serialized-size limits.
 QUESTION_ITEMS_MAX = 10
+RULE_ITEMS_MAX = 50
+SCORING_RULE_ITEMS_MAX = 50
 CHOICE_OPTION_LABELS_TOTAL_MAX = 4000
 MATCHING_ITEMS_TOTAL_LABEL_MAX = 2000
 NODE_CONTENT_BYTES_MAX = 10_000
+
+
+# Survey content numeric bounds.
+CONTENT_SORT_KEY_MIN_EXCLUSIVE = 0
+RATING_RANGE_MIN = -1000
+RATING_RANGE_MAX = 1000
+CHOICE_MIN_SELECTED_MIN = 0
+CHOICE_MAX_SELECTED_MIN = 1
+RATING_STEP_MIN_EXCLUSIVE = 0
+RATING_STARS_MIN = 1
+RATING_STARS_MAX = 12

@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
+from app.schema.api import limits
 from app.schema.api.enums import SurveyVersionStatus, SurveyVisibility
 
 
@@ -48,7 +49,7 @@ class PublicSurveyOut(BaseModel):
 class PaginatedPublicSurveysOut(BaseModel):
     """API response shape for a paginated list of public surveys."""
 
-    items: list[SurveyOut]
+    items: list[SurveyOut] = Field(max_length=limits.LIST_PAGE_SIZE_MAX)
     total: int
     page: int
     page_size: int

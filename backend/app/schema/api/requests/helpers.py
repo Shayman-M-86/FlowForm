@@ -1,8 +1,19 @@
 import re
+from typing import Any
+
+from pydantic import Field
 
 from app.schema.api import limits
 
 _SLUG_RE = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")
+
+
+def int_id_field(*, default: int | None = None) -> Any:
+    return Field(default=default, ge=limits.INT_ID_MIN, le=limits.INT_ID_MAX)
+
+
+def required_int_id_field() -> Any:
+    return Field(..., ge=limits.INT_ID_MIN, le=limits.INT_ID_MAX)
 
 
 def validate_slug(value: str, *, field_label: str = "Slug") -> str:

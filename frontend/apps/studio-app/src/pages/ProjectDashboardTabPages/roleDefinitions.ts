@@ -44,6 +44,33 @@ const ALL_PROJECT_PERMISSIONS: PermissionKey[] = [
   'submission:view',
 ]
 
+const PERMISSION_KEY_SET = new Set<string>(ALL_PROJECT_PERMISSIONS)
+
+export function isPermissionKey(permission: string): permission is PermissionKey {
+  return PERMISSION_KEY_SET.has(permission)
+}
+
+export function permissionKeyFromValue(value: unknown): PermissionKey | null {
+  if (typeof value === 'string') return isPermissionKey(value) ? value : null
+  if (!value || typeof value !== 'object') return null
+
+  for (const field of ['name', 'key', 'permission']) {
+    const permission = (value as Record<string, unknown>)[field]
+    if (typeof permission === 'string' && isPermissionKey(permission)) return permission
+  }
+
+  return null
+}
+
+export function normalizePermissionKeys(values: readonly unknown[]): PermissionKey[] {
+  const permissions = new Set<PermissionKey>()
+  values.forEach((value) => {
+    const permission = permissionKeyFromValue(value)
+    if (permission) permissions.add(permission)
+  })
+  return [...permissions]
+}
+
 export const PROJECT_PERMISSION_GROUPS: PermissionGroup[] = [
   {
     label: 'Project',

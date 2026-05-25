@@ -1,16 +1,41 @@
-import { useEffect, useRef, useState } from 'react'
-import { Badge, Button, Card, DropdownMenu } from '@flowform/ui'
+import { useRef, useState } from 'react'
+import { Badge, Button, Card, DropdownMenu, Toast } from '@flowform/ui'
 import { RoleEditorModal, type RoleEditorState } from './RoleEditorModal'
-import { PERMISSION_LABEL, type CustomRole, type PermissionGroup, type RolePreset } from './roleDefinitions'
+import {
+  PERMISSION_LABEL,
+  normalizePermissionKeys,
+  type CustomRole,
+  type PermissionGroup,
+  type PermissionKey,
+  type RolePreset,
+} from './roleDefinitions'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
 export type RoleFilter = 'all' | 'default' | 'custom'
+
+export type PersistedRole = {
+  id: number
+  name: string
+  permissions: unknown[]
+  is_system_role: boolean
+}
+
+type RoleMutationInput = {
+  name: string
+  permissions: PermissionKey[]
+}
 
 interface RolesWorkspaceProps {
   title?: string
   defaultRoleDescription: string
   presets: RolePreset[]
   permissionGroups: PermissionGroup[]
+  persistedRoles?: PersistedRole[]
+  onCreateRole?: (role: RoleMutationInput) => Promise<void> | void
+  onUpdateRole?: (roleId: number, role: RoleMutationInput) => Promise<void> | void
+  onDeleteRole?: (roleId: number) => Promise<void> | void
+  isSaving?: boolean
+  isDeleting?: boolean
 }
 
 const CARD_WIDTH = 220
@@ -21,11 +46,18 @@ export function RolesWorkspace({
   defaultRoleDescription,
   presets,
   permissionGroups,
+  persistedRoles,
+  onCreateRole,
+  onUpdateRole,
+  onDeleteRole,
+  isSaving = false,
+  isDeleting = false,
 }: RolesWorkspaceProps) {
-  useRenderDebug('RolesWorkspace', { title, defaultRoleDescription, presets, permissionGroups })
+  useRenderDebug('RolesWorkspace', { title, defaultRoleDescription, presets, permissionGroups, persistedRoles, isSaving, isDeleting })
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([])
   const [editingRole, setEditingRole] = useState<RoleEditorState | null>(null)
   const [isNewRole, setIsNewRole] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
   const [roleFilterOpen, setRoleFilterOpen] = useState(false)
   const roleFilterTriggerRef = useRef<HTMLSpanElement>(null)
@@ -47,14 +79,26 @@ export function RolesWorkspace({
     rolesObserverRef.current = ro
   }
 
-  const allRoleCount = presets.length + customRoles.length
-  const roleColumns = [
-    ...presets.map((role) => ({
-      ...role,
-      custom: false,
-    })),
-    ...customRoles.map((role) => ({ ...role, custom: true })),
-  ]
+  const usesPersistedRoles = Boolean(persistedRoles)
+  const allRoleCount = usesPersistedRoles ? (persistedRoles?.length ?? 0) : presets.length + customRoles.length
+  const roleColumns = usesPersistedRoles
+    ? (persistedRoles ?? []).map((role) => {
+      const fallbackPreset = presets.find((preset) => preset.name.toLowerCase() === role.name.toLowerCase())
+      return {
+        id: String(role.id),
+        name: role.name,
+        description: fallbackPreset?.description ?? defaultRoleDescription,
+        permissions: normalizePermissionKeys(role.permissions),
+        custom: !role.is_system_role,
+      }
+    })
+    : [
+      ...presets.map((role) => ({
+        ...role,
+        custom: false,
+      })),
+      ...customRoles.map((role) => ({ ...role, custom: true })),
+    ]
   const visibleRoleColumns = roleColumns.filter((role) => {
     if (roleFilter === 'default') return !role.custom
     if (roleFilter === 'custom') return role.custom
@@ -65,17 +109,15 @@ export function RolesWorkspace({
   const clampedRolePage = Math.min(rolePage, roleTotalPages - 1)
   const pagedRoleColumns = visibleRoleColumns.slice(clampedRolePage * rolesPerPage, (clampedRolePage + 1) * rolesPerPage)
 
-  useEffect(() => {
-    setRolePage((p) => Math.min(p, roleTotalPages - 1))
-  }, [roleTotalPages])
-
   const addCustomRole = () => {
     const id = `custom-${Date.now()}`
+    setActionError(null)
     setEditingRole({ id, custom: true, name: 'New role', description: defaultRoleDescription, permissions: new Set() })
     setIsNewRole(true)
   }
 
   const openRoleEditor = (role: (typeof roleColumns)[number]) => {
+    setActionError(null)
     setEditingRole({
       id: role.id,
       custom: role.custom,
@@ -86,42 +128,76 @@ export function RolesWorkspace({
     setIsNewRole(false)
   }
 
-  const saveRole = () => {
+  const getActionErrorMessage = (error: unknown) => {
+    if (error instanceof Error) return error.message
+    if (typeof error === 'object' && error && 'message' in error && typeof error.message === 'string') return error.message
+    return 'Role changes could not be saved.'
+  }
+
+  const saveRole = async () => {
     if (!editingRole) return
     const next = {
       name: editingRole.name.trim(),
       description: editingRole.description.trim(),
-      permissions: [...editingRole.permissions],
+      permissions: normalizePermissionKeys([...editingRole.permissions]),
     }
     if (!next.name) return
-    if (editingRole.custom) {
-      if (isNewRole) {
-        setCustomRoles((current) => {
-          const roles = [...current, { id: editingRole.id, ...next }]
-          const newTotal = presets.length + roles.length
-          setRolePage(Math.floor((newTotal - 1) / rolesPerPage))
-          return roles
-        })
-        if (roleFilter === 'default') setRoleFilter('all')
-      } else {
-        setCustomRoles((current) =>
-          current.map((role) => role.id === editingRole.id ? { ...role, ...next } : role),
-        )
+    setActionError(null)
+
+    try {
+      if (usesPersistedRoles) {
+        if (isNewRole) {
+          await onCreateRole?.({ name: next.name, permissions: next.permissions })
+          setRolePage(Math.floor(allRoleCount / rolesPerPage))
+          if (roleFilter === 'default') setRoleFilter('all')
+        } else if (editingRole.custom) {
+          await onUpdateRole?.(Number(editingRole.id), { name: next.name, permissions: next.permissions })
+        }
+      } else if (editingRole.custom) {
+        if (isNewRole) {
+          setCustomRoles((current) => {
+            const roles = [...current, { id: editingRole.id, ...next }]
+            const newTotal = presets.length + roles.length
+            setRolePage(Math.floor((newTotal - 1) / rolesPerPage))
+            return roles
+          })
+          if (roleFilter === 'default') setRoleFilter('all')
+        } else {
+          setCustomRoles((current) =>
+            current.map((role) => role.id === editingRole.id ? { ...role, ...next } : role),
+          )
+        }
       }
+      setEditingRole(null)
+      setIsNewRole(false)
+    } catch (error) {
+      setActionError(getActionErrorMessage(error))
     }
-    setEditingRole(null)
-    setIsNewRole(false)
   }
 
-  const deleteRole = () => {
+  const deleteRole = async () => {
     if (!editingRole?.custom) return
-    setCustomRoles((current) => current.filter((r) => r.id !== editingRole.id))
-    setEditingRole(null)
-    setIsNewRole(false)
+    setActionError(null)
+    try {
+      if (usesPersistedRoles) {
+        await onDeleteRole?.(Number(editingRole.id))
+      } else {
+        setCustomRoles((current) => current.filter((r) => r.id !== editingRole.id))
+      }
+      setEditingRole(null)
+      setIsNewRole(false)
+    } catch (error) {
+      setActionError(getActionErrorMessage(error))
+    }
   }
 
   return (
     <section className="grid gap-4">
+      {actionError && (
+        <Toast variant="error" onClose={() => setActionError(null)}>
+          {actionError}
+        </Toast>
+      )}
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">{title}</h2>
@@ -133,7 +209,7 @@ export function RolesWorkspace({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setRolePage((p) => p - 1)}
+                onClick={() => setRolePage(clampedRolePage - 1)}
                 disabled={clampedRolePage === 0}
                 aria-label="Previous page"
               >
@@ -143,7 +219,7 @@ export function RolesWorkspace({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setRolePage((p) => p + 1)}
+                onClick={() => setRolePage(clampedRolePage + 1)}
                 disabled={clampedRolePage >= roleTotalPages - 1}
                 aria-label="Next page"
               >
@@ -254,6 +330,9 @@ export function RolesWorkspace({
         onSave={saveRole}
         onDelete={deleteRole}
         isNew={isNewRole}
+        showDescription={!usesPersistedRoles}
+        isSaving={isSaving}
+        isDeleting={isDeleting}
       />
     </section>
   )

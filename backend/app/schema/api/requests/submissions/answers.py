@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schema.api import limits
+from app.schema.api.enums import ChoiceFamily, FieldFamily, MatchingFamily, RatingFamily
 
 # =============================================================================
 # Constrained String Types
@@ -25,7 +26,7 @@ class ChoiceAnswerValue(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    selected: list[SchemaIdStr]
+    selected: list[SchemaIdStr] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
 
     @field_validator("selected")
     @classmethod
@@ -59,7 +60,7 @@ class MatchingAnswerValue(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    matches: list[MatchPair]
+    matches: list[MatchPair] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
 
 
 class RatingAnswerValue(BaseModel):
@@ -81,7 +82,7 @@ class ChoiceAnswerIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     question_key: SchemaIdStr
-    answer_family: Literal["choice"]
+    answer_family: ChoiceFamily
     answer_value: ChoiceAnswerValue
 
 
@@ -91,7 +92,7 @@ class FieldAnswerIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     question_key: SchemaIdStr
-    answer_family: Literal["field"]
+    answer_family: FieldFamily
     answer_value: FieldAnswerValue
 
 
@@ -101,7 +102,7 @@ class MatchingAnswerIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     question_key: SchemaIdStr
-    answer_family: Literal["matching"]
+    answer_family: MatchingFamily
     answer_value: MatchingAnswerValue
 
 
@@ -111,7 +112,7 @@ class RatingAnswerIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     question_key: SchemaIdStr
-    answer_family: Literal["rating"]
+    answer_family: RatingFamily
     answer_value: RatingAnswerValue
 
 

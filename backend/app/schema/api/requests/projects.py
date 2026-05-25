@@ -1,25 +1,23 @@
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.domain.permissions import ProjectPermission
 from app.schema.api import limits
-from app.schema.api.requests.helpers import validate_slug
+from app.schema.api.enums import ProjectMemberStatus as ProjectMemberStatusValue
+from app.schema.api.requests.helpers import int_id_field, validate_slug
 
 ProjectMemberStatus = Annotated[
-    Literal["active", "suspended"],
+    ProjectMemberStatusValue,
     Field(max_length=limits.PROJECT_MEMBER_STATUS_MAX),
 ]
-
-
-ROLE_NAME_MAX = 80
-PERMISSION_NAME_MAX = 64
 
 
 class CreateProjectRoleRequest(BaseModel):
     """Request body for creating a project role."""
 
-    name: str = Field(max_length=ROLE_NAME_MAX)
-    permissions: list[str] = Field(default_factory=list)
+    name: str = Field(max_length=limits.PROJECT_ROLE_NAME_MAX)
+    permissions: set[ProjectPermission] = Field(default_factory=set, max_length=limits.PROJECT_ROLE_PERMISSIONS_MAX)
 
     @field_validator("name")
     @classmethod
@@ -29,17 +27,12 @@ class CreateProjectRoleRequest(BaseModel):
             raise ValueError("Role name must not be blank.")
         return value
 
-    @field_validator("permissions")
-    @classmethod
-    def validate_permissions(cls, values: list[str]) -> list[str]:
-        return [v.strip() for v in values if v.strip()]
-
 
 class UpdateProjectRoleRequest(BaseModel):
     """Request body for partially updating a project role."""
 
-    name: str | None = Field(default=None, max_length=ROLE_NAME_MAX)
-    permissions: list[str] | None = None
+    name: str | None = Field(default=None, max_length=limits.PROJECT_ROLE_NAME_MAX)
+    permissions: set[ProjectPermission] | None = Field(default=None, max_length=limits.PROJECT_ROLE_PERMISSIONS_MAX)
 
     @field_validator("name")
     @classmethod
@@ -49,13 +42,6 @@ class UpdateProjectRoleRequest(BaseModel):
             if not value:
                 raise ValueError("Role name must not be blank.")
         return value
-
-    @field_validator("permissions")
-    @classmethod
-    def validate_permissions(cls, values: list[str] | None) -> list[str] | None:
-        if values is None:
-            return None
-        return [v.strip() for v in values if v.strip()]
 
 
 def _validate_name(value: str) -> str:
@@ -88,7 +74,7 @@ class UpdateMemberRequest(BaseModel):
     Omit a field to leave it unchanged. Pass role_id: null to clear the role.
     """
 
-    role_id: int | None = Field(default=None, ge=limits.INT_ID_MIN, le=limits.INT_ID_MAX)
+    role_id: int | None = int_id_field()
     status: ProjectMemberStatus | None = None
 
 
@@ -96,7 +82,7 @@ class SendInvitationRequest(BaseModel):
     """Request body for inviting a user to a project by email."""
 
     email: EmailStr = Field(max_length=limits.EMAIL_MAX)
-    role_id: int | None = Field(default=None, ge=limits.INT_ID_MIN, le=limits.INT_ID_MAX)
+    role_id: int | None = int_id_field()
     invite_message: str | None = Field(default=None, max_length=limits.INVITE_MESSAGE_MAX)
 
     @field_validator("email", mode="before")
@@ -112,7 +98,7 @@ class SendInvitationRequest(BaseModel):
     @field_validator("invite_message")
     @classmethod
     def validate_invite_message(cls, value: str | None) -> str | None:
-        if value is not None:
+        if value:
             value = value.strip()
             if not value:
                 return None

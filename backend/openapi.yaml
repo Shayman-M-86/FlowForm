@@ -2963,11 +2963,13 @@ components:
           default: null
           title: Project Name
         invited_email:
+          maxLength: 254
           title: Invited Email
           type: string
         invite_message:
           anyOf:
-          - type: string
+          - maxLength: 500
+            type: string
           - type: 'null'
           default: null
           title: Invite Message
@@ -2988,6 +2990,12 @@ components:
           - type: 'null'
           title: Role Id
         status:
+          enum:
+          - pending
+          - accepted
+          - declined
+          - revoked
+          maxLength: 8
           title: Status
           type: string
         expires_at:
@@ -3061,6 +3069,10 @@ components:
           - type: 'null'
           title: Role Id
         status:
+          enum:
+          - active
+          - suspended
+          maxLength: 9
           title: Status
           type: string
         created_at:
@@ -3246,6 +3258,7 @@ components:
           - items:
               maxLength: 128
               type: string
+            maxItems: 50
             type: array
           - type: 'null'
           default: null
@@ -3255,6 +3268,7 @@ components:
           - items:
               maxLength: 128
               type: string
+            maxItems: 50
             type: array
           - type: 'null'
           default: null
@@ -3264,6 +3278,7 @@ components:
           - items:
               maxLength: 128
               type: string
+            maxItems: 50
             type: array
           - type: 'null'
           default: null
@@ -3538,6 +3553,7 @@ components:
             propertyNames:
               maxLength: 128
             type: object
+          maxItems: 50
           title: Required
           type: array
       required:
@@ -3842,6 +3858,7 @@ components:
             - $ref: '#/components/schemas/MatchingConditionIn'
             - $ref: '#/components/schemas/RatingConditionIn'
             - $ref: '#/components/schemas/FieldConditionIn'
+          maxItems: 50
           title: Conditions
           type: array
       required:
@@ -3879,6 +3896,7 @@ components:
         set:
           items:
             $ref: '#/components/schemas/ThenSetItemIn'
+          maxItems: 50
           title: Set
           type: array
       required:
@@ -4093,6 +4111,7 @@ components:
         ranges:
           items:
             $ref: '#/components/schemas/NumericRangeScoreIn'
+          maxItems: 50
           title: Ranges
           type: array
       required:
@@ -4149,6 +4168,7 @@ components:
         correct_pairs:
           items:
             $ref: '#/components/schemas/MatchingPairIn'
+          maxItems: 50
           title: Correct Pairs
           type: array
         points_per_correct:
@@ -4637,7 +4657,21 @@ components:
           type: boolean
         permissions:
           items:
+            enum:
+            - project:edit
+            - project:delete
+            - project:manage_members
+            - project:manage_roles
+            - survey:view
+            - survey:create
+            - survey:edit
+            - survey:delete
+            - survey:publish
+            - survey:archive
+            - submission:view
             type: string
+            maxLength: 22
+          maxItems: 11
           title: Permissions
           type: array
         created_at:
@@ -4663,9 +4697,24 @@ components:
           type: string
         permissions:
           items:
+            enum:
+            - project:edit
+            - project:delete
+            - project:manage_members
+            - project:manage_roles
+            - survey:view
+            - survey:create
+            - survey:edit
+            - survey:delete
+            - survey:publish
+            - survey:archive
+            - submission:view
             type: string
+            maxLength: 22
+          maxItems: 11
           title: Permissions
           type: array
+          uniqueItems: true
       required:
       - name
       title: CreateProjectRoleRequest
@@ -4683,8 +4732,23 @@ components:
         permissions:
           anyOf:
           - items:
+              enum:
+              - project:edit
+              - project:delete
+              - project:manage_members
+              - project:manage_roles
+              - survey:view
+              - survey:create
+              - survey:edit
+              - survey:delete
+              - survey:publish
+              - survey:archive
+              - submission:view
               type: string
+              maxLength: 22
+            maxItems: 11
             type: array
+            uniqueItems: true
           - type: 'null'
           default: null
           title: Permissions
@@ -4805,6 +4869,7 @@ components:
         items:
           items:
             $ref: '#/components/schemas/CoreSubmissionOut'
+          maxItems: 100
           title: Items
           type: array
         total:
@@ -4867,6 +4932,7 @@ components:
         answers:
           items:
             $ref: '#/components/schemas/AnswerOut'
+          maxItems: 50
           title: Answers
           type: array
       required:
@@ -4964,7 +5030,9 @@ components:
           title: Public Slug
         default_response_store_id:
           anyOf:
-          - type: integer
+          - maximum: 2147483647
+            minimum: 1
+            type: integer
           - type: 'null'
           default: null
           title: Default Response Store Id
@@ -5002,7 +5070,9 @@ components:
           title: Public Slug
         default_response_store_id:
           anyOf:
-          - type: integer
+          - maximum: 2147483647
+            minimum: 1
+            type: integer
           - type: 'null'
           default: null
           title: Default Response Store Id
@@ -5074,6 +5144,7 @@ components:
         items:
           items:
             $ref: '#/components/schemas/SurveyOut'
+          maxItems: 100
           title: Items
           type: array
         total:
@@ -5154,6 +5225,7 @@ components:
           items:
             maxLength: 128
             type: string
+          maxItems: 50
           title: Selected
           type: array
       required:
@@ -5246,6 +5318,7 @@ components:
         matches:
           items:
             $ref: '#/components/schemas/MatchPair'
+          maxItems: 50
           title: Matches
           type: array
       required:
@@ -5319,10 +5392,12 @@ components:
             - $ref: '#/components/schemas/FieldAnswerIn'
             - $ref: '#/components/schemas/MatchingAnswerIn'
             - $ref: '#/components/schemas/RatingAnswerIn'
+          maxItems: 50
           title: Answers
           type: array
         metadata:
           additionalProperties: true
+          maxProperties: 50
           title: Metadata
           type: object
         public_slug:
@@ -5330,6 +5405,8 @@ components:
           title: Public Slug
           type: string
         survey_version_id:
+          maximum: 2147483647
+          minimum: 1
           title: Survey Version Id
           type: integer
       required:
@@ -5370,10 +5447,12 @@ components:
             - $ref: '#/components/schemas/FieldAnswerIn'
             - $ref: '#/components/schemas/MatchingAnswerIn'
             - $ref: '#/components/schemas/RatingAnswerIn'
+          maxItems: 50
           title: Answers
           type: array
         metadata:
           additionalProperties: true
+          maxProperties: 50
           title: Metadata
           type: object
         token:
@@ -5381,6 +5460,8 @@ components:
           title: Token
           type: string
         survey_version_id:
+          maximum: 2147483647
+          minimum: 1
           title: Survey Version Id
           type: integer
       required:

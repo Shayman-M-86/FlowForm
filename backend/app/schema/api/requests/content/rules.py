@@ -10,7 +10,7 @@ class CreateRuleRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     rule_key: str = Field(max_length=limits.SCHEMA_ID_MAX)
-    sort_key: int = Field(gt=0)
+    sort_key: int = Field(gt=limits.CONTENT_SORT_KEY_MIN_EXCLUSIVE)
     rule_schema: RuleSchemaIn
 
     @field_validator("rule_key")
@@ -35,7 +35,7 @@ class UpdateRuleRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     rule_key: str | None = Field(default=None, max_length=limits.SCHEMA_ID_MAX)
-    sort_key: int | None = Field(default=None, gt=0)
+    sort_key: int | None = Field(default=None, gt=limits.CONTENT_SORT_KEY_MIN_EXCLUSIVE)
     rule_schema: RuleSchemaIn | None = None
 
     @field_validator("rule_key")

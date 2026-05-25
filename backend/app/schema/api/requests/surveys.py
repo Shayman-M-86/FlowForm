@@ -1,9 +1,8 @@
-from typing import Literal
-
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schema.api import limits
-from app.schema.api.requests.helpers import validate_slug
+from app.schema.api.enums import SurveyVisibility
+from app.schema.api.requests.helpers import int_id_field, validate_slug
 
 
 def _validate_title(value: str) -> str:
@@ -17,9 +16,9 @@ class CreateSurveyRequest(BaseModel):
     """Request body for creating a new survey."""
 
     title: str = Field(max_length=limits.SURVEY_TITLE_MAX)
-    visibility: Literal["private", "link_only", "public"] = "private"
+    visibility: SurveyVisibility = "private"
     public_slug: str | None = Field(default=None, max_length=limits.SLUG_MAX)
-    default_response_store_id: int | None = None
+    default_response_store_id: int | None = int_id_field()
 
     @field_validator("title")
     @classmethod
@@ -44,9 +43,9 @@ class UpdateSurveyRequest(BaseModel):
     """Request body for partially updating a survey."""
 
     title: str | None = Field(default=None, max_length=limits.SURVEY_TITLE_MAX)
-    visibility: Literal["private", "link_only", "public"] | None = None
+    visibility: SurveyVisibility | None = None
     public_slug: str | None = Field(default=None, max_length=limits.SLUG_MAX)
-    default_response_store_id: int | None = None
+    default_response_store_id: int | None = int_id_field()
 
     @field_validator("title")
     @classmethod
@@ -68,5 +67,9 @@ class CreateVersionRequest(BaseModel):
 class ListPublicSurveysRequest(BaseModel):
     """Query parameters for listing public surveys."""
 
-    page: int = Field(default=1, ge=1)
-    page_size: int = Field(default=20, ge=1, le=100)
+    page: int = Field(default=limits.LIST_PAGE_DEFAULT, ge=limits.LIST_PAGE_MIN)
+    page_size: int = Field(
+        default=limits.LIST_PAGE_SIZE_DEFAULT,
+        ge=limits.LIST_PAGE_SIZE_MIN,
+        le=limits.LIST_PAGE_SIZE_MAX,
+    )

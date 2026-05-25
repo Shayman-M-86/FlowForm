@@ -1,8 +1,19 @@
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schema.api import limits
+from app.schema.api.enums import (
+    ChoiceFamily,
+    FieldFamily,
+    FieldQuestionType,
+    MatchingFamily,
+    RatingEmojiList,
+    RatingEmojiStyle,
+    RatingFamily,
+    RatingSliderStyle,
+    RatingStarStyle,
+)
 
 SchemaIdStr = Annotated[str, Field(max_length=limits.SCHEMA_ID_MAX)]
 
@@ -44,8 +55,8 @@ class RangeIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    min: int | float = Field(ge=-1000, le=1000)
-    max: int | float = Field(ge=-1000, le=1000)
+    min: int | float = Field(ge=limits.RATING_RANGE_MIN, le=limits.RATING_RANGE_MAX)
+    max: int | float = Field(ge=limits.RATING_RANGE_MIN, le=limits.RATING_RANGE_MAX)
 
     @model_validator(mode="after")
     def validate_range(self):
@@ -60,8 +71,8 @@ class ChoiceQuestionConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     options: list[ChoiceOptionIn] = Field(max_length=limits.QUESTION_ITEMS_MAX)
-    min_selected: int = Field(ge=0)
-    max_selected: int = Field(ge=1)
+    min_selected: int = Field(ge=limits.CHOICE_MIN_SELECTED_MIN)
+    max_selected: int = Field(ge=limits.CHOICE_MAX_SELECTED_MIN)
 
     @field_validator("options")
     @classmethod
@@ -106,7 +117,7 @@ class FieldQuestionConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    field_type: Literal["short_text", "long_text", "email", "number", "date", "phone"]
+    field_type: FieldQuestionType
 
 
 class MatchingQuestionConfig(BaseModel):
@@ -176,7 +187,7 @@ class RatingSliderSchemaIn(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     range: RangeIn
-    step: int | float = Field(gt=0)
+    step: int | float = Field(gt=limits.RATING_STEP_MIN_EXCLUSIVE)
 
     @model_validator(mode="after")
     def validate_step_divides_range(self):
@@ -194,7 +205,7 @@ class RatingEmojiSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    emoji_list: Literal["sad_to_happy", "angry_to_happy", "disgust_to_happy"]
+    emoji_list: RatingEmojiList
     words: bool = False
 
 
@@ -203,7 +214,7 @@ class RatingStarSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    stars: int = Field(ge=1, le=12)
+    stars: int = Field(ge=limits.RATING_STARS_MIN, le=limits.RATING_STARS_MAX)
 
 
 # ============================================================================
@@ -268,7 +279,7 @@ class RatingSliderNestedIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    style: Literal["slider"]
+    style: RatingSliderStyle
     schema_: RatingSliderSchemaIn = Field(
         validation_alias="schema",
         serialization_alias="schema",
@@ -281,7 +292,7 @@ class RatingEmojiNestedIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    style: Literal["emoji"]
+    style: RatingEmojiStyle
     schema_: RatingEmojiSchemaIn = Field(
         validation_alias="schema",
         serialization_alias="schema",
@@ -294,7 +305,7 @@ class RatingStarNestedIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    style: Literal["star"]
+    style: RatingStarStyle
     schema_: RatingStarSchemaIn = Field(
         validation_alias="schema",
         serialization_alias="schema",
@@ -319,7 +330,7 @@ class ChoiceQuestionSchemaIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: SchemaIdStr
-    family: Literal["choice"]
+    family: ChoiceFamily
     label: str = Field(max_length=limits.QUESTION_LABEL_MAX)
     title: str | None = Field(default=None, max_length=limits.QUESTION_TITLE_MAX)
     choice: ChoiceQuestionNestedIn
@@ -345,7 +356,7 @@ class FieldQuestionSchemaIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: SchemaIdStr
-    family: Literal["field"]
+    family: FieldFamily
     label: str = Field(max_length=limits.QUESTION_LABEL_MAX)
     title: str | None = Field(default=None, max_length=limits.QUESTION_TITLE_MAX)
     field: FieldQuestionNestedIn
@@ -371,7 +382,7 @@ class MatchingQuestionSchemaIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: SchemaIdStr
-    family: Literal["matching"]
+    family: MatchingFamily
     label: str = Field(max_length=limits.QUESTION_LABEL_MAX)
     title: str | None = Field(default=None, max_length=limits.QUESTION_TITLE_MAX)
     matching: MatchingQuestionNestedIn
@@ -397,7 +408,7 @@ class RatingQuestionSchemaIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: SchemaIdStr
-    family: Literal["rating"]
+    family: RatingFamily
     label: str = Field(max_length=limits.QUESTION_LABEL_MAX)
     title: str | None = Field(default=None, max_length=limits.QUESTION_TITLE_MAX)
     rating: RatingQuestionNestedIn

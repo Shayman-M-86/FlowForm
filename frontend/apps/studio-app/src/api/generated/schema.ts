@@ -852,8 +852,11 @@ export interface components {
             invited_by_display: string | null;
             /** Role Id */
             role_id: number | null;
-            /** Status */
-            status: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "accepted" | "declined" | "revoked";
             /** Expires At */
             expires_at: string | null;
             /** Accepted At */
@@ -889,8 +892,11 @@ export interface components {
             project_id: number;
             /** Role Id */
             role_id: number | null;
-            /** Status */
-            status: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "suspended";
             /**
              * Created At
              * Format: date-time
@@ -1884,7 +1890,7 @@ export interface components {
             /** Is System Role */
             is_system_role: boolean;
             /** Permissions */
-            permissions: string[];
+            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
             /**
              * Created At
              * Format: date-time
@@ -1899,7 +1905,7 @@ export interface components {
             /** Name */
             name: string;
             /** Permissions */
-            permissions?: string[];
+            permissions?: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
         };
         /**
          * UpdateProjectRoleRequest
@@ -1915,7 +1921,7 @@ export interface components {
              * Permissions
              * @default null
              */
-            permissions: string[] | null;
+            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
         };
         /**
          * CoreSubmissionOut
