@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Button, Badge, Modal } from '@flowform/ui'
-import { useMyInvitations, useAcceptInvitation, useDeclineInvitation } from '@/api/members/hooks'
-import type { ProjectInvitationOut } from '@/api/members/types'
+import { useMyInvitations, useAcceptInvitation, useDeclineInvitation } from '@/api/project/members/hooks'
+import type { ProjectInvitationOut } from '@/api/project/members/types'
 
 // ── Icon ──────────────────────────────────────────────────────────────────────
 

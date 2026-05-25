@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { isDesignPreviewMode } from '../designPreview'
-import { createMockProject, getMockProject, mockProjects } from '../mockData'
-import { useOpenApiClient } from '../openapi'
-import { createProject, deleteProject, getProject, getProjects } from './requests'
-import type { CreateProjectRequest, ProjectOut } from './types'
+import { isDesignPreviewMode } from '../../designPreview'
+import { createMockProject, getMockProject, mockProjects } from '../../mockData'
+import { useOpenApiClient } from '../../openapi'
+import { createProject, deleteProject, getProject, getProjects, updateProject } from './requests'
+import type { CreateProjectRequest, ProjectOut, UpdateProjectRequest } from './types'
 
 export const projectKeys = {
   all: () => ['projects'] as const,
@@ -51,6 +51,21 @@ export function useCreateProject() {
       }
 
       void queryClient.invalidateQueries({ queryKey: projectKeys.list() })
+    },
+  })
+}
+
+export function useUpdateProject(projectId: number) {
+  const apiClient = useOpenApiClient()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (body: UpdateProjectRequest) => updateProject(apiClient, projectId, body),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<ProjectOut>(projectKeys.detail(updated.slug), updated)
+      queryClient.setQueryData<ProjectOut[]>(projectKeys.list(), (current) =>
+        current?.map((p) => (p.id === updated.id ? updated : p)),
+      )
     },
   })
 }

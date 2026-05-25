@@ -1,12 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { MembersTab } from '@/pages/ProjectDashboardTabPages/MembersTab'
-import { useProject } from '@/api/projects/hooks'
+import { useProject } from '@/api/project/projects/hooks'
+import { ProjectPermissionGate } from '@/components/ProjectPermissionGate'
 
 function MembersTabRoute() {
   const { slug } = Route.useParams()
   const { data: project } = useProject(slug)
-  if (!project) return null
-  return <MembersTab projectId={project.id} />
+  return (
+    <ProjectPermissionGate anyOf={['project:manage_members']}>
+      {project ? <MembersTab projectId={project.id} /> : null}
+    </ProjectPermissionGate>
+  )
 }
 
 export const Route = createFileRoute('/projects/$slug/members')({

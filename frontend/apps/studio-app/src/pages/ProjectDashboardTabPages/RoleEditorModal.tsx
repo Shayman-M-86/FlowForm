@@ -14,7 +14,7 @@ interface RoleEditorModalProps {
   role: RoleEditorState | null
   onClose: () => void
   onChange: (role: RoleEditorState) => void
-  onSave: () => void
+  onSave: () => void | Promise<void>
   onDelete?: () => void
   isNew?: boolean
   permissionGroups: PermissionGroup[]

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useOpenApiClient } from '../openapi'
+import { useOpenApiClient } from '../../openapi'
 import { projectKeys } from '../projects/hooks'
 import { acceptInvitation, declineInvitation, deleteProjectMember, getMyInvitations, getProjectInvitations, getProjectMembers, revokeInvitation, sendInvitation, updateProjectMember } from './requests'
 import type { ProjectInvitationOut, ProjectMemberOut, SendInvitationRequest, UpdateMemberRequest } from './types'

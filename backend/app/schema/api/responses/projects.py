@@ -18,6 +18,12 @@ ProjectInvitationStatusOut = Annotated[
 ]
 
 
+class MyProjectPermissionsOut(BaseModel):
+    """API response shape for the current user's effective permissions in a project."""
+
+    permissions: list[ProjectPermission]
+
+
 class ProjectOut(BaseModel):
     """API response shape for a project."""
 

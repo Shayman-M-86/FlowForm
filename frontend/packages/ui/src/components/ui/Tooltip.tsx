@@ -6,6 +6,7 @@ interface TooltipProps {
   title?: string;
   content?: ReactNode;
   size?: "sm" | "md" | "lg";
+  placement?: "top" | "right";
   pinOnClick?: boolean;
   children: ReactNode;
   className?: string;
@@ -23,6 +24,7 @@ export function Tooltip({
   title,
   content,
   size = "md",
+  placement = "top",
   pinOnClick = false,
   children,
   className = "",
@@ -50,23 +52,36 @@ export function Tooltip({
       const gap = 8;
       const triggerRect = trigger.getBoundingClientRect();
       const contentRect = content.getBoundingClientRect();
-      const fitsAbove = triggerRect.top >= contentRect.height + gap + viewportPadding;
-      const fitsBelow = window.innerHeight - triggerRect.bottom >= contentRect.height + gap + viewportPadding;
-      const shouldPlaceAbove = fitsAbove || !fitsBelow;
-      const preferredTop = shouldPlaceAbove
-        ? triggerRect.top - contentRect.height - gap
-        : triggerRect.bottom + gap;
-      const top = clampNumber(
-        preferredTop,
-        viewportPadding,
-        window.innerHeight - contentRect.height - viewportPadding,
-      );
-      const preferredLeft = triggerRect.left + triggerRect.width / 2 - contentRect.width / 2;
-      const left = clampNumber(
-        preferredLeft,
-        viewportPadding,
-        window.innerWidth - contentRect.width - viewportPadding,
-      );
+
+      let top: number;
+      let left: number;
+
+      if (placement === "right") {
+        left = clampNumber(
+          triggerRect.right + 24,
+          viewportPadding,
+          window.innerWidth - contentRect.width - viewportPadding,
+        );
+        top = clampNumber(
+          triggerRect.top - contentRect.height / 1.2,
+          viewportPadding,
+          window.innerHeight - contentRect.height - viewportPadding,
+        );
+      } else {
+        const fitsAbove = triggerRect.top >= contentRect.height + gap + viewportPadding;
+        const fitsBelow = window.innerHeight - triggerRect.bottom >= contentRect.height + gap + viewportPadding;
+        const shouldPlaceAbove = fitsAbove || !fitsBelow;
+        top = clampNumber(
+          shouldPlaceAbove ? triggerRect.top - contentRect.height - gap : triggerRect.bottom + gap,
+          viewportPadding,
+          window.innerHeight - contentRect.height - viewportPadding,
+        );
+        left = clampNumber(
+          triggerRect.left + triggerRect.width / 2 - contentRect.width / 2,
+          viewportPadding,
+          window.innerWidth - contentRect.width - viewportPadding,
+        );
+      }
 
       setPosition({ top, left });
     };

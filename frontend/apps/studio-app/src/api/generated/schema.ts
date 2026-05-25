@@ -276,6 +276,26 @@ export interface paths {
         patch: operations["updateProject"];
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/my-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my project permissions
+         * @description Get my project permissions
+         */
+        get: operations["getMyProjectPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/members": {
         parameters: {
             query?: never;
@@ -1720,6 +1740,14 @@ export interface components {
             slug: string;
         };
         /**
+         * MyProjectPermissionsOut
+         * @description API response shape for the current user's effective permissions in a project.
+         */
+        MyProjectPermissionsOut: {
+            /** Permissions */
+            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+        };
+        /**
          * UpdateProjectRequest
          * @description Request body for partially updating a project.
          */
@@ -2470,6 +2498,7 @@ export type RatingDirectScoringSchemaIn = components['schemas']['RatingDirectSco
 export type CreateScoringRuleRequest = components['schemas']['CreateScoringRuleRequest'];
 export type UpdateScoringRuleRequest = components['schemas']['UpdateScoringRuleRequest'];
 export type CreateProjectRequest = components['schemas']['CreateProjectRequest'];
+export type MyProjectPermissionsOut = components['schemas']['MyProjectPermissionsOut'];
 export type UpdateProjectRequest = components['schemas']['UpdateProjectRequest'];
 export type SendInvitationRequest = components['schemas']['SendInvitationRequest'];
 export type UpdateMemberRequest = components['schemas']['UpdateMemberRequest'];
@@ -3281,6 +3310,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getMyProjectPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyProjectPermissionsOut"];
                 };
             };
             /** @description Bad request. */

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button, Input, LargeInput, Select } from '@flowform/ui'
+import { Button, Input, LargeInput } from '@flowform/ui'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 import { SurveyAccessModeSelector } from '@/components/SurveyAccess'
 import { SURVEY_ACCESS_MODE_IDS } from '@/lib/surveyAccessDesign'
@@ -23,7 +23,6 @@ const createSurveySchema = z.object({
     .max(100)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Use lowercase letters, numbers, and hyphens only'),
   description: z.string().max(500).optional(),
-  initialStatus: z.enum(['draft', 'published']),
   accessMode: z.enum(SURVEY_ACCESS_MODE_IDS),
 })
 
@@ -32,11 +31,6 @@ export type CreateSurveyFields = z.infer<typeof createSurveySchema>
 interface CreateSurveyFormProps {
   onSubmit: (data: CreateSurveyFields) => void
 }
-
-const initialStatusOptions = [
-  { value: 'draft', label: 'Draft' },
-  { value: 'published', label: 'Published' },
-]
 
 export function CreateSurveyForm({ onSubmit }: CreateSurveyFormProps) {
   useRenderDebug('CreateSurveyForm', { onSubmit })
@@ -51,7 +45,7 @@ export function CreateSurveyForm({ onSubmit }: CreateSurveyFormProps) {
   } = useForm<CreateSurveyFields>({
     resolver: zodResolver(createSurveySchema),
     mode: 'onTouched',
-    defaultValues: { initialStatus: 'draft', accessMode: 'link_only' },
+    defaultValues: { accessMode: 'link_only' },
   })
 
   const title = watch('title')
@@ -100,19 +94,6 @@ export function CreateSurveyForm({ onSubmit }: CreateSurveyFormProps) {
             value={field.value}
             onChange={field.onChange}
             compact
-          />
-        )}
-      />
-      <Controller
-        control={control}
-        name="initialStatus"
-        render={({ field }) => (
-          <Select
-            label="Initial status"
-            options={initialStatusOptions}
-            value={field.value}
-            onValueChange={field.onChange}
-            error={errors.initialStatus?.message}
           />
         )}
       />

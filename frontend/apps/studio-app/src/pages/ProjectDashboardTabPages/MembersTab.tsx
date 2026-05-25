@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Button, Badge, Card, Input, LargeInput, Modal, Select, Spinner, Table, Toast, type TableColumn } from '@flowform/ui'
-import { useProjectMembers, useProjectInvitations, useSendInvitation, useDeleteProjectMember, useRevokeInvitation, useUpdateProjectMember } from '@/api/members/hooks'
-import type { ProjectInvitationOut, ProjectMemberOut } from '@/api/members/types'
+import { useProjectMembers, useProjectInvitations, useSendInvitation, useDeleteProjectMember, useRevokeInvitation, useUpdateProjectMember } from '@/api/project/members/hooks'
+import type { ProjectInvitationOut, ProjectMemberOut } from '@/api/project/members/types'
 import { getInviteErrorMessage } from '@/api/errors'
 import { RoleEditorModal, type RoleEditorState } from './RoleEditorModal'
 import type { CustomRole } from './RolesTab'
@@ -11,9 +11,11 @@ import { MemberRoleActions } from '@/components/MemberRoleActions'
 import { PermissionBadge } from '@/components/PermissionBadge'
 import { RoleBadgePreview } from '@/components/RoleBadgePreview'
 import { PERMISSION_GROUPS } from './RolesTab'
-import { useProjectRoles } from '@/api/roles/hooks'
+import { useProjectRoles, useCreateProjectRole } from '@/api/project/roles/hooks'
+import { useHasProjectPermission } from '@/api/project/permissions/hooks'
 
 type Props = { projectId: number }
+type ProjectMemberRole = CustomRole & { isSystemRole: boolean }
 
 function projectRoleIdFromUiId(roleId: string) {
   const parsed = Number(roleId)
@@ -23,9 +25,11 @@ function projectRoleIdFromUiId(roleId: string) {
 export function MembersTab({ projectId }: Props) {
   useRenderDebug('MembersTab')
 
+  const canManageMembers = useHasProjectPermission(projectId, 'project:manage_members')
   const { data: members = [], isLoading } = useProjectMembers(projectId)
   const { data: invitations = [] } = useProjectInvitations(projectId)
   const { data: projectRoles = [], isLoading: rolesLoading } = useProjectRoles(projectId)
+  const createProjectRole = useCreateProjectRole(projectId)
   const sendInvitation = useSendInvitation(projectId)
   const updateMember = useUpdateProjectMember(projectId)
   const deleteMember = useDeleteProjectMember(projectId)
@@ -47,15 +51,22 @@ export function MembersTab({ projectId }: Props) {
   const [roleEditorReturnTo, setRoleEditorReturnTo] = useState<'invite' | null>(null)
   const selectCreatedRoleRef = useRef<((roleId: string) => void) | null>(null)
 
-  const persistedRoles = useMemo<CustomRole[]>(() => projectRoles.map((role) => ({
+  const persistedRoles = useMemo<ProjectMemberRole[]>(() => projectRoles.map((role) => ({
     id: String(role.id),
     name: role.name,
     description: role.is_system_role ? 'System project role.' : 'Custom project role.',
     permissions: normalizePermissionKeys(role.permissions),
+    isSystemRole: role.is_system_role,
   })), [projectRoles])
-  const allRoles = useMemo(() => [...persistedRoles, ...customRoles], [customRoles, persistedRoles])
+  const localCustomRoles = useMemo<ProjectMemberRole[]>(() => customRoles.map((role) => ({
+    ...role,
+    isSystemRole: false,
+  })), [customRoles])
+  const allRoles = useMemo(() => [...persistedRoles, ...localCustomRoles], [localCustomRoles, persistedRoles])
+  const assignableRoles = useMemo(() => allRoles.filter((role) => !role.isSystemRole), [allRoles])
   const roleById = useMemo(() => new Map(allRoles.map((role) => [role.id, role])), [allRoles])
-  const selectedInviteRoleId = newRoleId && roleById.has(newRoleId) ? newRoleId : allRoles[0]?.id ?? ''
+  const assignableRoleById = useMemo(() => new Map(assignableRoles.map((role) => [role.id, role])), [assignableRoles])
+  const selectedInviteRoleId = newRoleId && assignableRoleById.has(newRoleId) ? newRoleId : assignableRoles[0]?.id ?? ''
 
   const addCustomRole = useCallback((returnTo: 'invite' | null = 'invite', selectRole?: (roleId: string) => void) => {
     const id = `custom-${Date.now()}`
@@ -65,25 +76,35 @@ export function MembersTab({ projectId }: Props) {
     if (returnTo === 'invite') setInviteOpen(false)
   }, [])
 
-  const saveRole = () => {
+  const saveRole = async () => {
     if (!editingRole) return
-    const roleId = editingRole.id
     const next = {
       name: editingRole.name.trim(),
       description: editingRole.description.trim(),
       permissions: [...editingRole.permissions] as PermissionKey[],
     }
     if (!next.name) return
+
+    let resolvedId = editingRole.id
+    if (editingRole.custom) {
+      try {
+        const created = await createProjectRole.mutateAsync({ name: next.name, permissions: next.permissions })
+        resolvedId = String(created.id)
+      } catch {
+        return
+      }
+    }
+
     setCustomRoles((c) =>
       c.some((r) => r.id === editingRole.id)
-        ? c.map((r) => r.id === editingRole.id ? { ...r, ...next } : r)
-        : [...c, { id: editingRole.id, ...next }],
+        ? c.map((r) => r.id === editingRole.id ? { ...r, ...next, id: resolvedId } : r)
+        : [...c, { id: resolvedId, ...next }],
     )
     if (selectCreatedRoleRef.current) {
-      selectCreatedRoleRef.current(roleId)
+      selectCreatedRoleRef.current(resolvedId)
       selectCreatedRoleRef.current = null
     } else {
-      setNewRoleId(roleId)
+      setNewRoleId(resolvedId)
     }
     setEditingRole(null)
     if (roleEditorReturnTo === 'invite') setInviteOpen(true)
@@ -164,10 +185,12 @@ export function MembersTab({ projectId }: Props) {
       minWidth: 100,
       cell: (row) => {
         const role = roleById.get(String(row.role_id ?? ''))
+        const variant = role?.isSystemRole ? 'accent' : 'default'
         return (
           <RoleBadgePreview
             label={role?.name ?? '—'}
             permissions={(role?.permissions ?? []).map((permission) => ({ key: permission }))}
+            variant={variant}
           />
         )
       },
@@ -189,35 +212,39 @@ export function MembersTab({ projectId }: Props) {
       maxWidth: 50,
       headerClassName: 'flex justify-center text-right pr-2',
       cellClassName: 'flex justify-center px-0',
-      cell: (row) => (
-        <MemberRoleActions
-          memberName={row.user.display_name ?? row.user.email}
-          memberEmail={row.user.email}
-          editRoleLabel="Edit project role"
-          roles={allRoles}
-          selectedRoleId={String(row.role_id ?? '')}
-          onSaveRole={(roleId) => {
-            const projectRoleId = projectRoleIdFromUiId(roleId)
-            if (projectRoleId === null) return
-            updateMember.mutate({
-              membershipId: row.id,
-              body: { role_id: projectRoleId, status: null },
-            })
-          }}
-          onAddRole={(selectRole) => addCustomRole(null, selectRole)}
-          renderEffectivePreview={renderProjectPermissions}
-          extraActions={[
-            {
-              key: 'remove-member',
-              label: 'Remove member',
-              variant: 'destructive',
-              onSelect: () => setMemberToRemove(row),
-            },
-          ]}
-        />
-      ),
+      cell: (row) => {
+        const role = roleById.get(String(row.role_id ?? ''))
+        if (role?.isSystemRole || !canManageMembers) return null
+        return (
+          <MemberRoleActions
+            memberName={row.user.display_name ?? row.user.email}
+            memberEmail={row.user.email}
+            editRoleLabel="Edit project role"
+            roles={assignableRoles}
+            selectedRoleId={row.role_id === null ? undefined : String(row.role_id)}
+            onSaveRole={(roleId) => {
+              const projectRoleId = projectRoleIdFromUiId(roleId)
+              if (projectRoleId === null) return
+              updateMember.mutate({
+                membershipId: row.id,
+                body: { role_id: projectRoleId, status: null },
+              })
+            }}
+            onAddRole={(selectRole) => addCustomRole(null, selectRole)}
+            renderEffectivePreview={renderProjectPermissions}
+            extraActions={[
+              {
+                key: 'remove-member',
+                label: 'Remove member',
+                variant: 'destructive',
+                onSelect: () => setMemberToRemove(row),
+              },
+            ]}
+          />
+        )
+      },
     },
-  ], [addCustomRole, allRoles, renderProjectPermissions, roleById, updateMember])
+  ], [addCustomRole, assignableRoles, renderProjectPermissions, roleById, updateMember])
 
   const invitationColumns = useMemo<TableColumn<ProjectInvitationOut>[]>(() => [
     {
@@ -235,7 +262,7 @@ export function MembersTab({ projectId }: Props) {
       maxWidth: 90,
       headerClassName: 'flex justify-center text-right pr-2',
       cellClassName: 'flex justify-center px-0',
-      cell: (row) => (
+      cell: (row) => canManageMembers ? (
         <Button
           variant="ghost"
           size="sm"
@@ -243,7 +270,7 @@ export function MembersTab({ projectId }: Props) {
         >
           Revoke
         </Button>
-      ),
+      ) : null,
     },
   ], [])
 
@@ -260,9 +287,11 @@ export function MembersTab({ projectId }: Props) {
           <h2 className="text-base font-semibold">Members</h2>
           <p className="text-sm text-muted-foreground">{members.length} total</p>
         </div>
-        <Button variant="primary" size="sm" icon="plus" onClick={() => setInviteOpen(true)}>
-          Invite member
-        </Button>
+        {canManageMembers && (
+          <Button variant="primary" size="sm" icon="plus" onClick={() => setInviteOpen(true)}>
+            Invite member
+          </Button>
+        )}
       </div>
 
       {/* ── Two-column layout: members table + invitations card ─────────────── */}
@@ -341,7 +370,7 @@ export function MembersTab({ projectId }: Props) {
                 value={selectedInviteRoleId}
                 className='w-50'
                 onChange={(e) => setNewRoleId(e.target.value)}
-                options={allRoles.map((r) => ({ value: r.id, label: r.name }))}
+                options={assignableRoles.map((r) => ({ value: r.id, label: r.name }))}
               />
             </div>
             <Button variant="secondary" size="md" onClick={() => addCustomRole('invite')}>

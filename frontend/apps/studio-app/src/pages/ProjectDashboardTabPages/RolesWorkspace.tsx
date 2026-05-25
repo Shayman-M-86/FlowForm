@@ -36,6 +36,7 @@ interface RolesWorkspaceProps {
   onDeleteRole?: (roleId: number) => Promise<void> | void
   isSaving?: boolean
   isDeleting?: boolean
+  readOnly?: boolean
 }
 
 const CARD_WIDTH = 220
@@ -52,6 +53,7 @@ export function RolesWorkspace({
   onDeleteRole,
   isSaving = false,
   isDeleting = false,
+  readOnly = false,
 }: RolesWorkspaceProps) {
   useRenderDebug('RolesWorkspace', { title, defaultRoleDescription, presets, permissionGroups, persistedRoles, isSaving, isDeleting })
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([])
@@ -255,9 +257,11 @@ export function RolesWorkspace({
               ],
             }]}
           />
-          <Button variant="primary" size="sm" icon="plus" onClick={addCustomRole}>
-            Add role
-          </Button>
+          {!readOnly && (
+            <Button variant="primary" size="sm" icon="plus" onClick={addCustomRole}>
+              Add role
+            </Button>
+          )}
         </div>
       </div>
 
@@ -278,7 +282,7 @@ export function RolesWorkspace({
                       {role.description}
                     </p>
                   </div>
-                  {role.custom ? (
+                  {role.custom && !readOnly ? (
                     <Button variant="secondary" size="sm" onClick={() => openRoleEditor(role)}>
                       Edit
                     </Button>

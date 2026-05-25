@@ -1,11 +1,13 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth0 } from "@auth0/auth0-react";
-import { Badge, Button, DropdownMenu, useTheme } from "@flowform/ui";
+import { Badge, Button, DropdownMenu, Tooltip, useTheme } from "@flowform/ui";
 import { BRAND } from "@flowform/site-shell";
 import "@flowform/site-shell/header.css";
-import { useProject } from "@/api/projects/hooks";
-import { useSurvey } from "@/api/surveys/hooks";
+import { useProject } from "@/api/project/projects/hooks";
+import { useSurvey } from "@/api/project/surveys/hooks";
+import { useHasProjectPermission } from "@/api/project/permissions/hooks";
+import { PERMISSION_REQUIRED_TOOLTIP } from "@/api/project/permissions/types";
 import { SidebarNotifications } from "@/components/SidebarNotifications";
 import { useCurrentUser } from "@/auth/useCurrentUser";
 import { isAuthBypassEnabled } from "@/auth/testing";
@@ -348,23 +350,38 @@ function NavItem({
   icon,
   label,
   active,
+  disabled,
+  tooltip,
 }: {
   to: string;
   icon: React.ReactNode;
   label: string;
   active: boolean;
+  disabled?: boolean;
+  tooltip?: string;
 }) {
-  return (
-    <Link
-      to={to}
-      data-active={active}
-      className="sidebar-nav-item"
-    >
-      <span className="sidebar-nav-item__icon">
-        <span className="flex h-4.5 w-4.5 items-center justify-center">
-          {icon}
-        </span>
+  const inner = (
+    <span className="sidebar-nav-item__icon">
+      <span className="flex h-4.5 w-4.5 items-center justify-center">
+        {icon}
       </span>
+    </span>
+  );
+
+  if (disabled) {
+    return (
+      <Tooltip content={tooltip} placement="right">
+        <span className="sidebar-nav-item opacity-40 cursor-not-allowed pointer-events-none">
+          {inner}
+          <span className="sidebar-nav-item__label">{label}</span>
+        </span>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <Link to={to} data-active={active} className="sidebar-nav-item">
+      {inner}
       <span className="sidebar-nav-item__label">{label}</span>
     </Link>
   );
@@ -410,6 +427,13 @@ export function StudioSidebar() {
 
   const project = useProject(projectSlug ?? null);
   const projectName = project.data?.name ?? projectSlug ?? undefined;
+  const projectId = project.data?.id ?? null;
+
+  const canViewSurveys    = useHasProjectPermission(projectId, 'survey:view');
+  const canManageMembers  = useHasProjectPermission(projectId, 'project:manage_members');
+  const canManageRoles    = useHasProjectPermission(projectId, 'project:manage_roles');
+  const canEditSettings   = useHasProjectPermission(projectId, 'project:edit');
+  const canDeleteProject  = useHasProjectPermission(projectId, 'project:delete');
 
   const survey = useSurvey(projectSlug, surveySlug);
   const surveyName = survey.data?.title ?? surveySlug ?? undefined;
@@ -522,10 +546,10 @@ export function StudioSidebar() {
             <>
               <div aria-hidden className="h-px bg-border mt-5" />
               <NavSection label={projectName ?? "Project"}>
-                <NavItem to={`${projectBase}/surveys`} icon={<IconSurveys />} label="Surveys" active={isExactActive(`${projectBase}/surveys`)} />
-                <NavItem to={`${projectBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${projectBase}/members`)} />
-                <NavItem to={`${projectBase}/roles`} icon={<IconRoles />} label="Roles" active={isActive(`${projectBase}/roles`)} />
-                <NavItem to={`${projectBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${projectBase}/settings`)} />
+                <NavItem to={`${projectBase}/surveys`} icon={<IconSurveys />} label="Surveys" active={isExactActive(`${projectBase}/surveys`)} disabled={!canViewSurveys} tooltip={PERMISSION_REQUIRED_TOOLTIP.surveys} />
+                <NavItem to={`${projectBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${projectBase}/members`)} disabled={!canManageMembers} tooltip={PERMISSION_REQUIRED_TOOLTIP.members} />
+                <NavItem to={`${projectBase}/roles`} icon={<IconRoles />} label="Roles" active={isActive(`${projectBase}/roles`)} disabled={!canManageRoles} tooltip={PERMISSION_REQUIRED_TOOLTIP.roles} />
+                <NavItem to={`${projectBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${projectBase}/settings`)} disabled={!canEditSettings && !canDeleteProject} tooltip={PERMISSION_REQUIRED_TOOLTIP.settings} />
               </NavSection>
             </>
           )}

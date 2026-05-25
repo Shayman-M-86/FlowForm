@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Badge, Button, Card, CardStack, Modal, Toast } from '@flowform/ui'
-import { useCreateProject, useProjects } from '@/api/projects/hooks'
+import { useCreateProject, useProjects } from '@/api/project/projects/hooks'
 import { CreateProjectForm } from '@/components/CreateProjectForm'
 import { useCurrentUser } from '@/auth/useCurrentUser'
 import { useRenderDebug } from '@/debug/useRenderDebug'

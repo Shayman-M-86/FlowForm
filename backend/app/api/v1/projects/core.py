@@ -6,8 +6,9 @@ from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.openapi import openapi_route
 from app.schema.api.requests.projects import CreateProjectRequest, UpdateProjectRequest
-from app.schema.api.responses.projects import ProjectOut
+from app.schema.api.responses.projects import MyProjectPermissionsOut, ProjectOut
 from app.schema.orm.core.user import User
+from app.services.access.access_service import access_service
 
 
 @openapi_route(summary="List projects", response_model=list[ProjectOut], tags=["Projects"])
@@ -45,6 +46,16 @@ def get_project(project_id: int):
     actor: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     project = project_service.get_project(db=db, project_id=project_id, actor=actor)
     return ProjectOut.model_validate(project).model_dump(mode="json"), 200
+
+
+@openapi_route(summary="Get my project permissions", response_model=MyProjectPermissionsOut, tags=["Projects"])
+@projects_bp.route("/<bint:project_id>/my-permissions", methods=["GET"])
+@auth.require_auth()
+def get_my_project_permissions(project_id: int):
+    db = get_core_db()
+    actor: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
+    project_access = access_service.get_project_access(db=db, project_id=project_id, user_id=actor.id)
+    return MyProjectPermissionsOut.model_validate({"permissions": sorted(project_access.permissions)}).model_dump(mode="json"), 200
 
 
 @openapi_route(

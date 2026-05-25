@@ -1,8 +1,8 @@
 import { createFileRoute, Outlet, useRouterState, useNavigate } from '@tanstack/react-router'
 import { Button, TabSelector } from '@flowform/ui'
 import { Breadcrumb } from '@/components/Breadcrumb'
-import { useProject } from '@/api/projects/hooks'
-import { useSurvey } from '@/api/surveys/hooks'
+import { useProject } from '@/api/project/projects/hooks'
+import { useSurvey } from '@/api/project/surveys/hooks'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
 const TABS = [

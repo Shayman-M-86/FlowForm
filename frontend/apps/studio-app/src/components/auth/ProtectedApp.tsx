@@ -7,6 +7,7 @@ import { getAuthReturnTo } from '@/auth/redirect'
 import { isAuthBypassEnabled } from '@/auth/testing'
 import { UserProvider } from '@/auth/UserContext'
 import type { CurrentUserOut } from '@/api/generated/schema'
+import { clearAllCachedPermissions } from '@/api/project/permissions/hooks'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
 const BOOTSTRAP_SESSION_KEY = 'flowform.bootstrapped'
@@ -91,6 +92,8 @@ function AuthenticatedProtectedApp({ children }: Props) {
   useRenderDebug('AuthenticatedProtectedApp', { children })
   const { isLoading, isAuthenticated, getIdTokenClaims, getAccessTokenSilently, loginWithRedirect, logout, error, user } =
     useAuth0()
+  // Clear permissions cache on every page load so refresh always fetches fresh data.
+  useState(() => { clearAllCachedPermissions() })
   // True immediately on refresh if a bootstrapped session exists.
   // Stays true while Auth0 does its silent check — only resets if Auth0
   // comes back saying the session is gone or a different user is now active.
@@ -140,6 +143,7 @@ function AuthenticatedProtectedApp({ children }: Props) {
 
     // Different user or no session flag — run bootstrap.
     clearBootstrapped()
+    clearAllCachedPermissions()
     let cancelled = false
     queueMicrotask(() => {
       setBootstrapReady(false)

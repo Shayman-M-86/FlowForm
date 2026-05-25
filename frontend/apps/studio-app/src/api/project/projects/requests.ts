@@ -1,8 +1,10 @@
-import type { OpenApiFetchClient } from '../openapi'
-import type { CreateProjectRequest, ProjectOut } from './types'
+import type { OpenApiFetchClient } from '../../openapi'
+import type { CreateProjectRequest, ProjectOut, UpdateProjectRequest } from './types'
 
 function findProject(projects: ProjectOut[], ref: string | number): ProjectOut {
-  const project = projects.find((item) => item.id === Number(ref) || item.slug === String(ref))
+  const project = typeof ref === 'number'
+    ? projects.find((item) => item.id === ref)
+    : projects.find((item) => item.slug === ref)
   if (!project) throw new Error('Project not found')
   return project
 }
@@ -33,6 +35,19 @@ export async function createProject(
   body: CreateProjectRequest,
 ): Promise<ProjectOut> {
   const { data, error } = await apiClient.POST('/api/v1/projects', { body })
+  if (error) throw error
+  return data
+}
+
+export async function updateProject(
+  apiClient: OpenApiFetchClient,
+  projectId: number,
+  body: UpdateProjectRequest,
+): Promise<ProjectOut> {
+  const { data, error } = await apiClient.PATCH('/api/v1/projects/{project_id}', {
+    params: { path: { project_id: projectId } },
+    body,
+  })
   if (error) throw error
   return data
 }

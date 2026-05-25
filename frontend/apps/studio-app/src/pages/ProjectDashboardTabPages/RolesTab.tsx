@@ -10,8 +10,9 @@ import {
   useDeleteProjectRole,
   useProjectRoles,
   useUpdateProjectRole,
-} from '@/api/roles/hooks'
-import { useProject } from '@/api/projects/hooks'
+} from '@/api/project/roles/hooks'
+import { useProject } from '@/api/project/projects/hooks'
+import { useHasProjectPermission } from '@/api/project/permissions/hooks'
 
 export {
   PERMISSION_LABEL,
@@ -35,6 +36,7 @@ export function RolesTab() {
   const { slug } = useParams({ strict: false })
   const projectQuery = useProject(slug ?? null)
   const projectId = projectQuery.data?.id ?? null
+  const canManageRoles = useHasProjectPermission(projectId, 'project:manage_roles')
   const { data: roles = [], isLoading, isError, error } = useProjectRoles(projectId)
   const mutationProjectId = projectId ?? 0
   const createRole = useCreateProjectRole(mutationProjectId)
@@ -79,6 +81,7 @@ export function RolesTab() {
       isSaving={createRole.isPending || updateRole.isPending}
       isDeleting={deleteRole.isPending}
       defaultRoleDescription="Custom project role."
+      readOnly={!canManageRoles}
     />
   )
 }

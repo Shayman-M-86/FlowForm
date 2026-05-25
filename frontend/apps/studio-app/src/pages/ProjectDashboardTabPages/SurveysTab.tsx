@@ -42,7 +42,7 @@ export function SurveysTab({ projectSlug }: SurveysTabProps) {
       title: data.title,
       slug: data.slug,
       description: data.description,
-      initialStatus: data.initialStatus,
+      initialStatus: 'draft',
     })
     setCreateOpen(false)
     setCreatedSurveyTitle(survey.title)

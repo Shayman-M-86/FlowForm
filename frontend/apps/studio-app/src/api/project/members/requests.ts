@@ -1,4 +1,4 @@
-import type { OpenApiFetchClient } from '../openapi'
+import type { OpenApiFetchClient } from '../../openapi'
 import type { ProjectInvitationOut, ProjectMemberOut, SendInvitationRequest, UpdateMemberRequest } from './types'
 
 export async function getMyInvitations(

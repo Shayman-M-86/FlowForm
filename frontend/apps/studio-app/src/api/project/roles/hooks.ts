@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useOpenApiClient } from '../openapi'
+import { useOpenApiClient } from '../../openapi'
 import {
   createProjectRole,
   deleteProjectRole,

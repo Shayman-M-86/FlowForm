@@ -10,12 +10,13 @@ from app.domain.errors import (
     MemberNotFoundError,
     MemberOwnerProtectedError,
     MemberSelfActionError,
+    ProjectRoleNotFoundError,
 )
 from app.domain.permissions import PERMISSIONS
-from app.repositories import invitations_repo, members_repo, users_repo
+from app.repositories import invitations_repo, members_repo, roles_repo, users_repo
 from app.schema.api.requests.projects import SendInvitationRequest, UpdateMemberRequest
 from app.schema.orm.core.invitation import ProjectInvitation
-from app.schema.orm.core.project import ProjectMembership
+from app.schema.orm.core.project import ProjectMembership, ProjectRole
 from app.schema.orm.core.user import User
 from app.services.access.access_service import require_project_permission
 
@@ -23,15 +24,33 @@ from app.services.access.access_service import require_project_permission
 class MembersService:
     """Service for project member and invitation management."""
 
+    def _get_assignable_role(self, db: Session, *, project_id: int, role_id: int | None) -> ProjectRole | None:
+        if role_id is None:
+            return None
+        role = roles_repo.get_by_id(db, role_id=role_id, project_id=project_id)
+        if role is None:
+            raise ProjectRoleNotFoundError()
+        if role.is_system_role:
+            raise MemberOwnerProtectedError()
+        return role
+
     @require_project_permission(PERMISSIONS.project.manage_members)
     def list_project_members(
-        self, db: Session, *, project_id: int, actor: User  # noqa: ARG002
+        self,
+        db: Session,
+        *,
+        project_id: int,
+        actor: User,  # noqa: ARG002
     ) -> list[ProjectMembership]:
         return members_repo.list_by_project(db, project_id)
 
     @require_project_permission(PERMISSIONS.project.manage_members)
     def list_project_invitations(
-        self, db: Session, *, project_id: int, actor: User  # noqa: ARG002
+        self,
+        db: Session,
+        *,
+        project_id: int,
+        actor: User,  # noqa: ARG002
     ) -> list[ProjectInvitation]:
         return invitations_repo.list_pending_by_project(db, project_id)
 
@@ -52,6 +71,7 @@ class MembersService:
             )
             if existing_membership is not None:
                 raise AlreadyAMemberError()
+        self._get_assignable_role(db, project_id=project_id, role_id=data.role_id)
 
         invitation = invitations_repo.create_invitation(
             db,
@@ -68,7 +88,12 @@ class MembersService:
 
     @require_project_permission(PERMISSIONS.project.manage_members)
     def revoke_invitation(
-        self, db: Session, *, project_id: int, invitation_id: int, actor: User # noqa: ARG002
+        self,
+        db: Session,
+        *,
+        project_id: int,
+        invitation_id: int,
+        actor: User,  # noqa: ARG002
     ) -> None:
         invitation = invitations_repo.get_by_id(db, invitation_id)
         if invitation is None or invitation.project_id != project_id:
@@ -81,20 +106,17 @@ class MembersService:
     def get_my_invitations(self, db: Session, *, actor: User) -> list[ProjectInvitation]:
         return invitations_repo.get_pending_by_email(db, email=actor.email)
 
-    def accept_invitation(
-        self, db: Session, *, invitation_id: int, actor: User
-    ) -> ProjectMembership:
+    def accept_invitation(self, db: Session, *, invitation_id: int, actor: User) -> ProjectMembership:
         invitation = invitations_repo.get_by_id(db, invitation_id)
         if invitation is None or invitation.invited_email != actor.email:
             raise InvitationNotFoundError()
         if invitation.status != "pending":
             raise InvitationNotPendingError()
 
-        existing = members_repo.get_by_user_and_project(
-            db, user_id=actor.id, project_id=invitation.project_id
-        )
+        existing = members_repo.get_by_user_and_project(db, user_id=actor.id, project_id=invitation.project_id)
         if existing is not None:
             raise AlreadyAMemberError()
+        self._get_assignable_role(db, project_id=invitation.project_id, role_id=invitation.role_id)
 
         membership = members_repo.create_membership(
             db,
@@ -112,9 +134,7 @@ class MembersService:
         commit_with_err_handle(db)
         return membership
 
-    def decline_invitation(
-        self, db: Session, *, invitation_id: int, actor: User
-    ) -> None:
+    def decline_invitation(self, db: Session, *, invitation_id: int, actor: User) -> None:
         invitation = invitations_repo.get_by_id(db, invitation_id)
         if invitation is None or invitation.invited_email != actor.email:
             raise InvitationNotFoundError()
@@ -130,9 +150,7 @@ class MembersService:
         return membership
 
     @require_project_permission(PERMISSIONS.project.manage_members)
-    def remove_member(
-        self, db: Session, *, project_id: int, membership_id: int, actor: User
-    ) -> None:
+    def remove_member(self, db: Session, *, project_id: int, membership_id: int, actor: User) -> None:
         membership = self._get_member(db, membership_id=membership_id, project_id=project_id)
         if membership.user_id == actor.id:
             raise MemberSelfActionError()
@@ -148,11 +166,17 @@ class MembersService:
         membership = self._get_member(db, membership_id=membership_id, project_id=project_id)
         if membership.user_id == actor.id:
             raise MemberSelfActionError()
-        # Guard suspend/role-strip on system-role members
+        role_changed = "role_id" in data.model_fields_set and data.role_id != membership.role_id
         suspending = "status" in data.model_fields_set and data.status == "suspended"
         clearing_role = "role_id" in data.model_fields_set and data.role_id is None
-        if (suspending or clearing_role) and membership.role is not None and membership.role.is_system_role:
+        if (
+            (role_changed or suspending or clearing_role)
+            and membership.role is not None
+            and membership.role.is_system_role
+        ):
             raise MemberOwnerProtectedError()
+        if role_changed:
+            self._get_assignable_role(db, project_id=project_id, role_id=data.role_id)
         updated = members_repo.update_membership(
             db,
             membership,

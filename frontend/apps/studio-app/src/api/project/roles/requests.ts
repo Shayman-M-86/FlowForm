@@ -1,4 +1,4 @@
-import type { OpenApiFetchClient } from '../openapi'
+import type { OpenApiFetchClient } from '../../openapi'
 import type { CreateProjectRoleRequest, ProjectRoleOut, UpdateProjectRoleRequest } from './types'
 
 export async function getProjectRoles(

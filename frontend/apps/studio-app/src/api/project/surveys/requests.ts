@@ -1,5 +1,5 @@
 import { getProjects, toProjectId } from '../projects/requests'
-import type { OpenApiFetchClient } from '../openapi'
+import type { OpenApiFetchClient } from '../../openapi'
 import type { CreateSurveyRequest, SurveyOut, UpdateSurveyRequest } from './types'
 
 async function toProjectAndSurveyId(

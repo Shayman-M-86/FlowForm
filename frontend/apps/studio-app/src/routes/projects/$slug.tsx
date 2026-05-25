@@ -1,17 +1,12 @@
 import { createFileRoute, Outlet, Link, useRouterState, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { setActiveProjectSlug } from '@/lib/activeProject'
-import { useProject } from '@/api/projects/hooks'
+import { useProject } from '@/api/project/projects/hooks'
+import { useHasProjectPermission } from '@/api/project/permissions/hooks'
+import { PERMISSION_REQUIRED_TOOLTIP } from '@/api/project/permissions/types'
 import { Spinner, Card, TabSelector } from '@flowform/ui'
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { useRenderDebug } from '@/debug/useRenderDebug'
-
-const TABS = [
-  { id: 'surveys',  label: 'Surveys' },
-  { id: 'members',  label: 'Members' },
-  { id: 'roles',    label: 'Roles' },
-  { id: 'settings', label: 'Settings' },
-] as const
 
 function ProjectLayout() {
   useRenderDebug('ProjectLayout')
@@ -19,6 +14,13 @@ function ProjectLayout() {
   const { data: project, isPending, isError, error } = useProject(slug ?? null)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const navigate = useNavigate()
+
+  const projectId = project?.id ?? null
+  const canViewSurveys = useHasProjectPermission(projectId, 'survey:view')
+  const canManageMembers = useHasProjectPermission(projectId, 'project:manage_members')
+  const canManageRoles = useHasProjectPermission(projectId, 'project:manage_roles')
+  const canEditSettings = useHasProjectPermission(projectId, 'project:edit')
+  const canDeleteProject = useHasProjectPermission(projectId, 'project:delete')
 
   useEffect(() => {
     setActiveProjectSlug(slug)
@@ -46,7 +48,14 @@ function ProjectLayout() {
     )
   }
 
-  const activeTab = TABS.find((t) => pathname.includes(`/${t.id}`))?.id ?? 'surveys'
+  const activeTab = ['surveys', 'members', 'roles', 'settings'].find((t) => pathname.includes(`/${t}`)) ?? 'surveys'
+
+  const tabs = [
+    { id: 'surveys',  label: 'Surveys',  disabled: !canViewSurveys,                      tooltip: PERMISSION_REQUIRED_TOOLTIP.surveys },
+    { id: 'members',  label: 'Members',  disabled: !canManageMembers,                     tooltip: PERMISSION_REQUIRED_TOOLTIP.members },
+    { id: 'roles',    label: 'Roles',    disabled: !canManageRoles,                       tooltip: PERMISSION_REQUIRED_TOOLTIP.roles },
+    { id: 'settings', label: 'Settings', disabled: !canEditSettings && !canDeleteProject, tooltip: PERMISSION_REQUIRED_TOOLTIP.settings },
+  ]
 
   return (
     <main className="page-main">
@@ -62,7 +71,7 @@ function ProjectLayout() {
           </div>
         </div>
         <TabSelector
-          items={TABS.map((t) => ({ id: t.id, label: t.label }))}
+          items={tabs}
           activeId={activeTab}
           onChange={(id) => navigate({ to: `/projects/${slug}/${id}` as any })}
         />
