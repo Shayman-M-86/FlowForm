@@ -142,6 +142,307 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error.
+  /api/v1/me/profile:
+    get:
+      operationId: getMyProfile
+      summary: Get my profile
+      description: Get my profile
+      tags:
+      - Me
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserProfileOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+    patch:
+      operationId: updateMyProfile
+      summary: Update my profile
+      description: Update my profile
+      tags:
+      - Me
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/me/change-email:
+    post:
+      operationId: changeEmail
+      summary: Change email
+      description: Change email
+      tags:
+      - Me
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeEmailRequest'
+      responses:
+        '200':
+          description: Successful response.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/me/change-username:
+    post:
+      operationId: changeUsername
+      summary: Change username
+      description: Change username
+      tags:
+      - Me
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeUsernameRequest'
+      responses:
+        '200':
+          description: Successful response.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/me/change-password:
+    post:
+      operationId: changePassword
+      summary: Change password
+      description: Change password
+      tags:
+      - Me
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordChangeTicketOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/me/clear-mfa:
+    post:
+      operationId: clearMfa
+      summary: Clear MFA devices
+      description: Clear MFA devices
+      tags:
+      - Me
+      responses:
+        '200':
+          description: Successful response.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/me/resend-verification:
+    post:
+      operationId: resendVerification
+      summary: Resend email verification
+      description: Resend email verification
+      tags:
+      - Me
+      responses:
+        '200':
+          description: Successful response.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/me:
+    delete:
+      operationId: deleteMyAccount
+      summary: Delete my account
+      description: Delete my account
+      tags:
+      - Me
+      responses:
+        '200':
+          description: Successful response.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
   /api/v1/me/invitations:
     get:
       operationId: getMyInvitations
@@ -2993,6 +3294,97 @@ components:
       - user
       title: BootstrapUserOut
       type: object
+    CurrentUserProfileOut:
+      description: API response shape for the current user's profile.
+      properties:
+        id:
+          title: Id
+          type: integer
+        auth0_user_id:
+          title: Auth0 User Id
+          type: string
+          maxLength: 255
+        email:
+          title: Email
+          type: string
+          maxLength: 254
+        display_name:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Display Name
+        email_verified:
+          title: Email Verified
+          type: boolean
+      required:
+      - id
+      - auth0_user_id
+      - email
+      - display_name
+      - email_verified
+      title: CurrentUserProfileOut
+      type: object
+    UpdateProfileRequest:
+      description: Update display name, nickname, and/or profile picture.
+      properties:
+        display_name:
+          anyOf:
+          - maxLength: 100
+            type: string
+          - type: 'null'
+          default: null
+          title: Display Name
+        nickname:
+          anyOf:
+          - maxLength: 100
+            type: string
+          - type: 'null'
+          default: null
+          title: Nickname
+        picture:
+          anyOf:
+          - maxLength: 2048
+            type: string
+          - type: 'null'
+          default: null
+          title: Picture
+      title: UpdateProfileRequest
+      type: object
+    ChangeEmailRequest:
+      description: Request body for changing the account email address.
+      properties:
+        email:
+          maxLength: 254
+          title: Email
+          type: string
+      required:
+      - email
+      title: ChangeEmailRequest
+      type: object
+    ChangeUsernameRequest:
+      description: Request body for changing the Auth0 username.
+      properties:
+        username:
+          maxLength: 128
+          minLength: 1
+          title: Username
+          type: string
+      required:
+      - username
+      title: ChangeUsernameRequest
+      type: object
+    PasswordChangeTicketOut:
+      description: Hosted Auth0 password-change ticket URL.
+      properties:
+        ticket_url:
+          maxLength: 2048
+          title: Ticket Url
+          type: string
+      required:
+      - ticket_url
+      title: PasswordChangeTicketOut
+      type: object
     ProjectInvitationOut:
       description: API response shape for a project invitation.
       properties:
@@ -5099,14 +5491,6 @@ components:
           - type: 'null'
           default: null
           title: Public Slug
-        default_response_store_id:
-          anyOf:
-          - maximum: 2147483647
-            minimum: 1
-            type: integer
-          - type: 'null'
-          default: null
-          title: Default Response Store Id
       required:
       - title
       title: CreateSurveyRequest
@@ -5139,14 +5523,6 @@ components:
           - type: 'null'
           default: null
           title: Public Slug
-        default_response_store_id:
-          anyOf:
-          - maximum: 2147483647
-            minimum: 1
-            type: integer
-          - type: 'null'
-          default: null
-          title: Default Response Store Id
       title: UpdateSurveyRequest
       type: object
     SurveyVersionOut:
@@ -5803,6 +6179,16 @@ components:
               value:
                 code: MEMBER_OWNER_PROTECTED
                 message: Owner roles cannot be assigned, reassigned, removed, or suspended.
+            users_email_key:
+              summary: 'DB rule: EMAIL_CONFLICT'
+              value:
+                code: EMAIL_CONFLICT
+                message: An account with email '<email>' already exists.
+            users_auth0_user_id_key:
+              summary: 'DB rule: AUTH0_ID_CONFLICT'
+              value:
+                code: AUTH0_ID_CONFLICT
+                message: Auth0 user id '<auth0_user_id>' is already associated with another account.
             projects_slug_key:
               summary: 'DB rule: PROJECT_SLUG_CONFLICT'
               value:

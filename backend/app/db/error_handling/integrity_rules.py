@@ -94,10 +94,12 @@ from app.schema.orm.core import (
     SurveyScoringRule,
     SurveySubmission,
     SurveyVersion,
+    User,
 )
 
 type RuleContext = (
-    Project
+    User
+    | Project
     | ProjectInvitation
     | Survey
     | SurveyVersion
@@ -111,6 +113,8 @@ type RuleContext = (
     | SurveyMembershipRole
 )
 allowed_parameters = {
+    "auth0_user_id",
+    "email",
     "survey_id",
     "project_id",
     "slug",
@@ -142,6 +146,13 @@ allowed_parameters = {
     "invitation_id",
     "invited_email",
 }
+
+
+def _user_ctx(user: User) -> dict[str, object]:
+    return {
+        "auth0_user_id": user.auth0_user_id,
+        "email": user.email,
+    }
 
 
 def _project_ctx(project: Project) -> dict[str, object]:
@@ -255,6 +266,27 @@ def _invitation_ctx(invitation: ProjectInvitation) -> dict[str, object]:
         "status": invitation.status,
     }
 
+
+USER_RULES: tuple[DbErrorRule, ...] = (
+    unique_rule(
+        "users_email_key",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "EMAIL_CONFLICT",
+            f"An account with email {ctx['email']!r} already exists.",
+        ),
+        extractor=_user_ctx,
+    ),
+    unique_rule(
+        "users_auth0_user_id_key",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "AUTH0_ID_CONFLICT",
+            f"Auth0 user id {ctx['auth0_user_id']!r} is already associated with another account.",
+        ),
+        extractor=_user_ctx,
+    ),
+)
 
 PROJECT_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
@@ -672,6 +704,7 @@ PROJECT_INVITATION_RULES: tuple[DbErrorRule, ...] = (
 )
 
 RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
+    User: USER_RULES,
     Project: PROJECT_RULES,
     ProjectInvitation: PROJECT_INVITATION_RULES,
     Survey: SURVEY_RULES,

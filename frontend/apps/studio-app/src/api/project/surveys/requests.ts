@@ -12,7 +12,10 @@ async function toProjectAndSurveyId(
       ? projectRef
       : toProjectId(projectRef, await getProjects(apiClient))
 
-  const survey_id = typeof surveyRef === 'number' ? surveyRef : await resolveSurveyId(apiClient, project_id, surveyRef)
+  const numericSurveyRef = typeof surveyRef === 'string' ? parseInt(surveyRef, 10) : surveyRef
+  const survey_id = Number.isFinite(numericSurveyRef)
+    ? numericSurveyRef
+    : await resolveSurveyId(apiClient, project_id, surveyRef as string)
 
   return { project_id, survey_id }
 }

@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Mapping
 from typing import Any
 
@@ -12,6 +13,8 @@ from app.logging.logging_config import setup_bootstrap_logging, setup_logging
 from app.middleware.rate_limit import register_rate_limiting
 from app.services.access.permissions_service import init_seed_data
 
+logger = logging.getLogger(__name__)
+
 
 def create_app(
     *,
@@ -20,27 +23,31 @@ def create_app(
 ) -> Flask:
     """Application factory function."""
     setup_bootstrap_logging()
-    resolved_settings: Settings = settings or get_settings()
-    app = Flask(__name__)
-    setup_logging(app, resolved_settings)
+    try:
+        resolved_settings: Settings = settings or get_settings()
+        app = Flask(__name__)
+        setup_logging(app, resolved_settings)
 
-    if flask_config:
-        app.config.update(flask_config)
+        if flask_config:
+            app.config.update(flask_config)
 
-    apply_settings_to_flask(app, resolved_settings)
-    init_extensions(app)
-    init_db_sessions(app)
+        apply_settings_to_flask(app, resolved_settings)
+        init_extensions(app)
+        init_db_sessions(app)
 
-    register_api_v1(app)
-    register_rate_limiting(app, resolved_settings)
+        register_api_v1(app)
+        register_rate_limiting(app, resolved_settings)
 
-    from app.api.utils.errors import register_error_handlers
+        from app.api.utils.errors import register_error_handlers
 
-    register_error_handlers(app)
+        register_error_handlers(app)
 
-    openapi_register_options(app)
+        openapi_register_options(app)
 
-    import app.schema.orm as _  # noqa: F401 - Ensure models are registered with SQLAlchemy before migrations
+        import app.schema.orm as _  # noqa: F401 - Ensure models are registered with SQLAlchemy before migrations
 
-    init_seed_data(app)
-    return app
+        init_seed_data(app)
+        return app
+    except Exception:
+        logger.exception("Application startup failed")
+        raise

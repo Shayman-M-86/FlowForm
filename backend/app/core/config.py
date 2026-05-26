@@ -96,12 +96,39 @@ class ServerSettings(BaseModel):
     port: int = 5000
 
 
+class Auth0MgmtSettings(BaseModel):
+    """Auth0 Management API credentials for user and role management."""
+
+    id: str
+    secret: SecretStr
+
+
 class Auth0Settings(BaseModel):
     """Auth0 configuration for authentication and authorization."""
 
     domain: str
     audience: str
     client_id: str | None = None
+    mgmt: Auth0MgmtSettings | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_mgmt_env_keys(cls, data: Any) -> Any:
+        if not isinstance(data, dict) or data.get("mgmt") is not None:
+            return data
+
+        mgmt_id = data.get("mgmt_id")
+        mgmt_secret = data.get("mgmt_secret")
+        if mgmt_id is None and mgmt_secret is None:
+            return data
+
+        return {
+            **data,
+            "mgmt": {
+                "id": mgmt_id,
+                "secret": mgmt_secret,
+            },
+        }
 
 
 class AppSettings(BaseModel):

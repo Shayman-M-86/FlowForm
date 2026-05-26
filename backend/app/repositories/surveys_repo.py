@@ -24,6 +24,8 @@ def create_survey(
     db: Session,
     project_id: int,
     data: CreateSurveyRequest,
+    *,
+    default_response_store_id: int,
     created_by_user_id: int | None = None,
 ) -> Survey:
     survey = Survey(
@@ -31,7 +33,7 @@ def create_survey(
         title=data.title,
         visibility=data.visibility,
         public_slug=data.public_slug,
-        default_response_store_id=data.default_response_store_id,
+        default_response_store_id=default_response_store_id,
         created_by_user_id=created_by_user_id,
     )
     db.add(survey)
@@ -47,8 +49,6 @@ def update_survey(db: Session, survey: Survey, data: UpdateSurveyRequest) -> Sur
         survey.visibility = data.visibility
     if "public_slug" in changed:
         survey.public_slug = data.public_slug
-    if "default_response_store_id" in changed:
-        survey.default_response_store_id = data.default_response_store_id
     flush_with_err_handle(db, contexts=[survey])
     return survey
 

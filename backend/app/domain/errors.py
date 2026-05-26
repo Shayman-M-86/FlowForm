@@ -512,3 +512,25 @@ class MemberOwnerProtectedError(AppError):
             code="MEMBER_OWNER_PROTECTED",
             message="Owner roles cannot be assigned, reassigned, removed, or suspended.",
         )
+
+
+class ManagementApiUnavailableError(AppError):
+    """Error raised when the Auth0 Management API is not configured."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=503,
+            code="MGMT_API_UNAVAILABLE",
+            message="Account management is not available at this time.",
+        )
+
+
+class ManagementApiCallError(AppError):
+    """Error raised when a call to the Auth0 Management API fails."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=502,
+            code="MGMT_API_ERROR",
+            message="Account management could not be completed at this time.",
+        )

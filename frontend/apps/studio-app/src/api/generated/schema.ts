@@ -64,6 +64,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my profile
+         * @description Get my profile
+         */
+        get: operations["getMyProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update my profile
+         * @description Update my profile
+         */
+        patch: operations["updateMyProfile"];
+        trace?: never;
+    };
+    "/api/v1/me/change-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change email
+         * @description Change email
+         */
+        post: operations["changeEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/change-username": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change username
+         * @description Change username
+         */
+        post: operations["changeUsername"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/change-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change password
+         * @description Change password
+         */
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/clear-mfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clear MFA devices
+         * @description Clear MFA devices
+         */
+        post: operations["clearMfa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/resend-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resend email verification
+         * @description Resend email verification
+         */
+        post: operations["resendVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete my account
+         * @description Delete my account
+         */
+        delete: operations["deleteMyAccount"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/invitations": {
         parameters: {
             query?: never;
@@ -841,6 +985,67 @@ export interface components {
             user: components["schemas"]["CurrentUserOut"];
             /** @default null */
             default_project: components["schemas"]["ProjectOut"] | null;
+        };
+        /**
+         * CurrentUserProfileOut
+         * @description API response shape for the current user's profile.
+         */
+        CurrentUserProfileOut: {
+            /** Id */
+            id: number;
+            /** Auth0 User Id */
+            auth0_user_id: string;
+            /** Email */
+            email: string;
+            /** Display Name */
+            display_name: string | null;
+            /** Email Verified */
+            email_verified: boolean;
+        };
+        /**
+         * UpdateProfileRequest
+         * @description Update display name, nickname, and/or profile picture.
+         */
+        UpdateProfileRequest: {
+            /**
+             * Display Name
+             * @default null
+             */
+            display_name: string | null;
+            /**
+             * Nickname
+             * @default null
+             */
+            nickname: string | null;
+            /**
+             * Picture
+             * @default null
+             */
+            picture: string | null;
+        };
+        /**
+         * ChangeEmailRequest
+         * @description Request body for changing the account email address.
+         */
+        ChangeEmailRequest: {
+            /** Email */
+            email: string;
+        };
+        /**
+         * ChangeUsernameRequest
+         * @description Request body for changing the Auth0 username.
+         */
+        ChangeUsernameRequest: {
+            /** Username */
+            username: string;
+        };
+        /**
+         * PasswordChangeTicketOut
+         * @description Hosted Auth0 password-change ticket URL.
+         */
+        PasswordChangeTicketOut: {
+            /** Ticket Url */
+            ticket_url: string;
         };
         /**
          * ProjectInvitationOut
@@ -2106,11 +2311,6 @@ export interface components {
              * @default null
              */
             public_slug: string | null;
-            /**
-             * Default Response Store Id
-             * @default null
-             */
-            default_response_store_id: number | null;
         };
         /**
          * UpdateSurveyRequest
@@ -2132,11 +2332,6 @@ export interface components {
              * @default null
              */
             public_slug: string | null;
-            /**
-             * Default Response Store Id
-             * @default null
-             */
-            default_response_store_id: number | null;
         };
         /**
          * SurveyVersionOut
@@ -2442,6 +2637,11 @@ export type BootstrapUserRequest = components['schemas']['BootstrapUserRequest']
 export type CurrentUserOut = components['schemas']['CurrentUserOut'];
 export type ProjectOut = components['schemas']['ProjectOut'];
 export type BootstrapUserOut = components['schemas']['BootstrapUserOut'];
+export type CurrentUserProfileOut = components['schemas']['CurrentUserProfileOut'];
+export type UpdateProfileRequest = components['schemas']['UpdateProfileRequest'];
+export type ChangeEmailRequest = components['schemas']['ChangeEmailRequest'];
+export type ChangeUsernameRequest = components['schemas']['ChangeUsernameRequest'];
+export type PasswordChangeTicketOut = components['schemas']['PasswordChangeTicketOut'];
 export type ProjectInvitationOut = components['schemas']['ProjectInvitationOut'];
 export type MemberUserOut = components['schemas']['MemberUserOut'];
 export type ProjectMemberOut = components['schemas']['ProjectMemberOut'];
@@ -2618,6 +2818,296 @@ export interface operations {
         };
     };
     readinessCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getMyProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentUserProfileOut"];
+                };
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateMyProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentUserOut"];
+                };
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    changeEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    changeUsername: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeUsernameRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordChangeTicketOut"];
+                };
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    clearMfa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    resendVerification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteMyAccount: {
         parameters: {
             query?: never;
             header?: never;

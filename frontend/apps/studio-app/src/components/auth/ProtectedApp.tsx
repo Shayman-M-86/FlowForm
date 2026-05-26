@@ -117,6 +117,12 @@ function AuthenticatedProtectedApp({ children }: Props) {
     }
   }
 
+  function updateCurrentUser(updatedUser: CurrentUserOut) {
+    const currentAvatarUrl = avatarUrl ?? user?.picture ?? null
+    setCurrentUser(updatedUser)
+    saveUserToSession(updatedUser, currentAvatarUrl)
+  }
+
   useEffect(() => {
     // Still waiting for Auth0 — don't touch bootstrapReady, let the optimistic
     // value hold so the app stays visible during the silent session check.
@@ -199,6 +205,7 @@ function AuthenticatedProtectedApp({ children }: Props) {
       <UserProvider
         user={currentUser}
         avatarUrl={avatarUrl ?? user?.picture ?? null}
+        updateUser={updateCurrentUser}
       >
         {children}
       </UserProvider>

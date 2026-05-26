@@ -55,7 +55,9 @@ def get_my_project_permissions(project_id: int):
     db = get_core_db()
     actor: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     project_access = access_service.get_project_access(db=db, project_id=project_id, user_id=actor.id)
-    return MyProjectPermissionsOut.model_validate({"permissions": sorted(project_access.permissions)}).model_dump(mode="json"), 200
+    return MyProjectPermissionsOut.model_validate({"permissions": sorted(project_access.permissions)}).model_dump(
+        mode="json"
+    ), 200
 
 
 @openapi_route(

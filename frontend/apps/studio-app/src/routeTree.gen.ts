@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as UiTestIndexRouteImport } from './routes/ui-test/index'
 import { Route as UiTest2IndexRouteImport } from './routes/ui-test-2/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
+import { Route as AccountIndexRouteImport } from './routes/account/index'
 import { Route as ProjectsSlugRouteImport } from './routes/projects/$slug'
 import { Route as ProjectsSlugIndexRouteImport } from './routes/projects/$slug/index'
 import { Route as ProjectsSlugSurveysRouteImport } from './routes/projects/$slug/surveys'
@@ -49,6 +50,11 @@ const UiTest2IndexRoute = UiTest2IndexRouteImport.update({
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountIndexRoute = AccountIndexRouteImport.update({
+  id: '/account/',
+  path: '/account/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsSlugRoute = ProjectsSlugRouteImport.update({
@@ -151,6 +157,7 @@ const ProjectsSlugSurveysSurveySlugBuilderRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/projects/$slug': typeof ProjectsSlugRouteWithChildren
+  '/account/': typeof AccountIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/ui-test-2/': typeof UiTest2IndexRoute
   '/ui-test/': typeof UiTestIndexRoute
@@ -173,6 +180,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/ui-test-2': typeof UiTest2IndexRoute
   '/ui-test': typeof UiTestIndexRoute
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/projects/$slug': typeof ProjectsSlugRouteWithChildren
+  '/account/': typeof AccountIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/ui-test-2/': typeof UiTest2IndexRoute
   '/ui-test/': typeof UiTestIndexRoute
@@ -220,6 +229,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/projects/$slug'
+    | '/account/'
     | '/projects/'
     | '/ui-test-2/'
     | '/ui-test/'
@@ -242,6 +252,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account'
     | '/projects'
     | '/ui-test-2'
     | '/ui-test'
@@ -263,6 +274,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/projects/$slug'
+    | '/account/'
     | '/projects/'
     | '/ui-test-2/'
     | '/ui-test/'
@@ -287,6 +299,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProjectsSlugRoute: typeof ProjectsSlugRouteWithChildren
+  AccountIndexRoute: typeof AccountIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   UiTest2IndexRoute: typeof UiTest2IndexRoute
   UiTestIndexRoute: typeof UiTestIndexRoute
@@ -320,6 +333,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects/'
       preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/': {
+      id: '/account/'
+      path: '/account'
+      fullPath: '/account/'
+      preLoaderRoute: typeof AccountIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects/$slug': {
@@ -520,6 +540,7 @@ const ProjectsSlugRouteWithChildren = ProjectsSlugRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProjectsSlugRoute: ProjectsSlugRouteWithChildren,
+  AccountIndexRoute: AccountIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   UiTest2IndexRoute: UiTest2IndexRoute,
   UiTestIndexRoute: UiTestIndexRoute,

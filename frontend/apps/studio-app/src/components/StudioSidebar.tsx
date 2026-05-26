@@ -248,17 +248,15 @@ function SidebarUserMenu() {
         {
           key: "account-settings",
           content: (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="mx-2 my-0.5 flex w-[calc(100%-1rem)] items-center justify-start gap-2"
+            <Link
+              to="/account"
+              className="mx-2 my-0.5 flex w-[calc(100%-1rem)] items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-transparent-hover"
             >
               <span className="inline-flex h-[15px] w-[15px] shrink-0 items-center justify-center">
                 <IconUserCog />
               </span>
               <span>Account settings</span>
-            </Button>
+            </Link>
           ),
         },
       ],

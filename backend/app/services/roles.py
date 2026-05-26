@@ -19,7 +19,7 @@ class RolesService:
             raise ProjectRoleNotFoundError()
         return role
 
-    @require_project_permission(PERMISSIONS.project.manage_roles)
+
     def list_project_roles(
         self, db: Session, *, project_id: int, actor: User  # noqa: ARG002
     ) -> list[ProjectRole]:

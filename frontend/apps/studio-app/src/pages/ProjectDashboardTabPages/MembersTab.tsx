@@ -26,6 +26,7 @@ export function MembersTab({ projectId }: Props) {
   useRenderDebug('MembersTab')
 
   const canManageMembers = useHasProjectPermission(projectId, 'project:manage_members')
+  const canManageRoles = useHasProjectPermission(projectId, 'project:manage_roles')
   const { data: members = [], isLoading } = useProjectMembers(projectId)
   const { data: invitations = [] } = useProjectInvitations(projectId)
   const { data: projectRoles = [], isLoading: rolesLoading } = useProjectRoles(projectId)
@@ -230,7 +231,7 @@ export function MembersTab({ projectId }: Props) {
                 body: { role_id: projectRoleId, status: null },
               })
             }}
-            onAddRole={(selectRole) => addCustomRole(null, selectRole)}
+            onAddRole={canManageRoles ? (selectRole) => addCustomRole(null, selectRole) : undefined}
             renderEffectivePreview={renderProjectPermissions}
             extraActions={[
               {
@@ -373,9 +374,11 @@ export function MembersTab({ projectId }: Props) {
                 options={assignableRoles.map((r) => ({ value: r.id, label: r.name }))}
               />
             </div>
-            <Button variant="secondary" size="md" onClick={() => addCustomRole('invite')}>
-              New role
-            </Button>
+            {canManageRoles && (
+              <Button variant="secondary" size="md" onClick={() => addCustomRole('invite')}>
+                New role
+              </Button>
+            )}
           </div>
           <LargeInput
             label="Message (optional)"

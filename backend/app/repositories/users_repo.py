@@ -62,3 +62,14 @@ def update_user(
     user.email = email
     user.display_name = display_name
     return user
+
+
+def update_user_email(user: User, *, email: str) -> User:
+    """Update only the email field on a user row."""
+    user.email = email
+    return user
+
+
+def delete_user(db: Session, user: User) -> None:
+    """Mark a user row for deletion (flushed on the next commit)."""
+    db.delete(user)

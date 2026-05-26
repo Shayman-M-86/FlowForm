@@ -51,18 +51,18 @@ class SurveyService:
 
     @require_project_permission(PERMISSIONS.survey.create)
     def create_survey(self, db: Session, *, project_id: int, data: CreateSurveyRequest, actor: User) -> Survey:
-
-        if data.default_response_store_id is None:
-            data = data.model_copy(
-                update={
-                    "default_response_store_id": self._ensure_project_default_response_store_id(
-                        db,
-                        project_id=project_id,
-                        created_by_user_id=actor.id,
-                    )
-                }
-            )
-        survey = surveys_repo.create_survey(db, project_id, data)
+        default_response_store_id = self._ensure_project_default_response_store_id(
+            db,
+            project_id=project_id,
+            created_by_user_id=actor.id,
+        )
+        survey = surveys_repo.create_survey(
+            db,
+            project_id,
+            data,
+            default_response_store_id=default_response_store_id,
+            created_by_user_id=actor.id,
+        )
         commit_with_err_handle(db, contexts=[survey])
         return survey
 

@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Badge, Button, Card, Modal, Toast } from '@flowform/ui'
-import { createMockSurvey, getMockSurveysForProject, type MockSurveySummary } from '@/api/mockData'
+import { Badge, Button, Card, Modal, Spinner, Toast } from '@flowform/ui'
 import { CreateSurveyForm, type CreateSurveyFields } from '@/components/CreateSurveyForm'
 import { useRenderDebug } from '@/debug/useRenderDebug'
+import { useProject } from '@/api/project/projects/hooks'
+import { useCreateSurvey, useSurveys } from '@/api/project/surveys/hooks'
+import type { SurveyOut } from '@/api/project/surveys/types'
 
 const PROJECT_CREATED_KEY = 'flowform:project-created'
 
@@ -11,22 +13,22 @@ interface SurveysTabProps {
   projectSlug: string
 }
 
-function surveyStatus(survey: MockSurveySummary): { label: string; variant: 'success' | 'muted' } {
-  return survey.publishedVersionNumber !== null
+function surveyStatus(survey: SurveyOut): { label: string; variant: 'success' | 'muted' } {
+  return survey.published_version_id !== null
     ? { label: 'Published', variant: 'success' }
     : { label: 'Draft', variant: 'muted' }
 }
 
 export function SurveysTab({ projectSlug }: SurveysTabProps) {
   useRenderDebug('SurveysTab', { projectSlug })
-  const [refreshTick, setRefreshTick] = useState(0)
-  const surveys = useMemo(
-    () => getMockSurveysForProject(projectSlug),
-    [projectSlug, refreshTick],
-  )
   const [createdProjectName, setCreatedProjectName] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
-  const [createdSurveyTitle, setCreatedSurveyTitle] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+
+  const project = useProject(projectSlug)
+  const projectId = project.data?.id ?? null
+  const surveys = useSurveys(projectId ?? 0)
+  const createSurvey = useCreateSurvey(projectId ?? 0)
 
   useEffect(() => {
     const name = sessionStorage.getItem(PROJECT_CREATED_KEY)
@@ -36,18 +38,22 @@ export function SurveysTab({ projectSlug }: SurveysTabProps) {
     }
   }, [])
 
-  const handleCreateSurvey = (data: CreateSurveyFields) => {
-    const survey = createMockSurvey({
-      projectSlug,
-      title: data.title,
-      slug: data.slug,
-      description: data.description,
-      initialStatus: 'draft',
-    })
-    setCreateOpen(false)
-    setCreatedSurveyTitle(survey.title)
-    setRefreshTick((tick) => tick + 1)
+  async function handleCreateSurvey(data: CreateSurveyFields) {
+    if (projectId === null) return
+    try {
+      const survey = await createSurvey.mutateAsync({
+        title: data.title,
+        visibility: data.accessMode === 'public' ? 'public' : data.accessMode === 'link_only' ? 'link_only' : 'private',
+        public_slug: data.accessMode === 'public' ? data.slug : null,
+      })
+      setCreateOpen(false)
+      setToast(`Survey "${survey.title}" created.`)
+    } catch {
+      setToast('Failed to create survey. Please try again.')
+    }
   }
+
+  const surveyList = surveys.data ?? []
 
   return (
     <section className="grid gap-4">
@@ -56,56 +62,66 @@ export function SurveysTab({ projectSlug }: SurveysTabProps) {
           Project &ldquo;{createdProjectName}&rdquo; created.
         </Toast>
       )}
-      {createdSurveyTitle && (
-        <Toast variant="success" onClose={() => setCreatedSurveyTitle(null)}>
-          Survey &ldquo;{createdSurveyTitle}&rdquo; created.
+      {toast && (
+        <Toast variant="success" onClose={() => setToast(null)}>
+          {toast}
         </Toast>
       )}
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">Surveys</h2>
-          <p className="text-sm text-muted-foreground">{surveys.length} in this project</p>
+          <p className="text-sm text-muted-foreground">{surveyList.length} in this project</p>
         </div>
         <Button variant="primary" size="sm" icon="plus" onClick={() => setCreateOpen(true)}>
           New survey
         </Button>
       </div>
-      <div className="grid gap-3 mx-auto w-3xl min-w-2">
-        {surveys.map((survey) => {
-          const status = surveyStatus(survey)
-          const hasDraftChanges = survey.publishedVersionNumber !== null && survey.draftVersionNumber !== null
-          return (
-            <Link
-              key={survey.id}
-              to="/projects/$slug/surveys/$surveySlug/overview"
-              params={{ slug: projectSlug, surveySlug: survey.slug }}
-              className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
-            >
-              <Card interactive>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate text-sm font-semibold text-foreground">{survey.title}</p>
-                      <Badge variant={status.variant} size="xs">{status.label}</Badge>
-                      {hasDraftChanges && <Badge variant="warning" size="xs">Draft changes</Badge>}
+
+      {surveys.isLoading && (
+        <div className="flex justify-center py-12">
+          <Spinner size="md" />
+        </div>
+      )}
+
+      {surveys.isError && (
+        <p className="text-sm text-destructive">Failed to load surveys.</p>
+      )}
+
+      {!surveys.isLoading && !surveys.isError && (
+        <div className="grid gap-3 mx-auto w-3xl min-w-2">
+          {surveyList.map((survey) => {
+            const status = surveyStatus(survey)
+            return (
+              <Link
+                key={survey.id}
+                to="/projects/$slug/surveys/$surveySlug/overview"
+                params={{ slug: projectSlug, surveySlug: String(survey.id) }}
+                className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+              >
+                <Card interactive>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-semibold text-foreground">{survey.title}</p>
+                        <Badge variant={status.variant} size="xs">{status.label}</Badge>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Created {new Date(survey.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Updated {new Date(survey.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </p>
                   </div>
-                  <div className="text-xs text-muted-foreground sm:text-right">
-                    <p className="font-semibold text-foreground">{survey.responses}</p>
-                    <p>Responses</p>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          )
-        })}
-      </div>
+                </Card>
+              </Link>
+            )
+          })}
+          {surveyList.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-8">No surveys yet. Create your first one.</p>
+          )}
+        </div>
+      )}
 
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="New survey">
-        <CreateSurveyForm onSubmit={handleCreateSurvey} />
+        <CreateSurveyForm onSubmit={(data) => void handleCreateSurvey(data)} />
       </Modal>
     </section>
   )

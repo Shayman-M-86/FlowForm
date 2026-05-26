@@ -18,7 +18,7 @@ class CreateSurveyRequest(BaseModel):
     title: str = Field(max_length=limits.SURVEY_TITLE_MAX)
     visibility: SurveyVisibility = "private"
     public_slug: str | None = Field(default=None, max_length=limits.SLUG_MAX)
-    default_response_store_id: int | None = int_id_field()
+    # default_response_store_id: int | None = int_id_field()
 
     @field_validator("title")
     @classmethod
@@ -45,7 +45,7 @@ class UpdateSurveyRequest(BaseModel):
     title: str | None = Field(default=None, max_length=limits.SURVEY_TITLE_MAX)
     visibility: SurveyVisibility | None = None
     public_slug: str | None = Field(default=None, max_length=limits.SLUG_MAX)
-    default_response_store_id: int | None = int_id_field()
+    # default_response_store_id: int | None = int_id_field()
 
     @field_validator("title")
     @classmethod
