@@ -40,6 +40,14 @@ type DisplayPublicLink = MockPublicLink & {
   requiresAuth?: boolean
 }
 
+type SurveyAccessLinksSectionProps = {
+  slug: string
+  surveySlug: string
+  accessMode?: SurveyAccessMode
+  showHeading?: boolean
+  showSummary?: boolean
+}
+
 function isCreatableLinkType(entry: SurveyAccessEntry): entry is CreatableLinkType {
   return (CREATABLE_LINK_TYPES as readonly SurveyAccessEntry[]).includes(entry)
 }
@@ -65,10 +73,23 @@ function publicLinkStatus(link: MockPublicLink): 'active' | 'disabled' | 'expire
 export function SurveyLinksTab() {
   useRenderDebug('SurveyLinksTab')
   const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/links' })
+
+  return (
+    <SurveyAccessLinksSection slug={slug} surveySlug={surveySlug} />
+  )
+}
+
+export function SurveyAccessLinksSection({
+  slug,
+  surveySlug,
+  accessMode: accessModeOverride,
+  showHeading = true,
+  showSummary = true,
+}: SurveyAccessLinksSectionProps) {
   const survey = getMockSurvey(slug, surveySlug)
   const links = getMockPublicLinksForSurvey(surveySlug)
   const isPublished = survey?.publishedVersionNumber != null
-  const accessMode = (isPublished ? 'link_only' : 'private') as SurveyAccessMode
+  const accessMode = accessModeOverride ?? ((isPublished ? 'link_only' : 'private') as SurveyAccessMode)
   const allowedCreateLinkTypes = useMemo(
     () => SURVEY_ACCESS_MODES[accessMode].allowedEntries.filter(isCreatableLinkType),
     [accessMode],
@@ -120,20 +141,22 @@ export function SurveyLinksTab() {
 
   return (
     <section className="grid gap-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold">Respondent access</h2>
-          <p className="text-sm text-muted-foreground">Manage how respondents open and complete this survey.</p>
+      {showHeading && (
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold">Respondent access</h2>
+            <p className="text-sm text-muted-foreground">Manage how respondents open and complete this survey.</p>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
+      <div className={showSummary ? 'grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start' : 'grid gap-4'}>
         <div className="grid gap-4">
-          {!isPublished && (
+          {accessMode === 'private' && (
             <PrivateAccessEmptyState onEnableLinkAccess={openCreateLinkModal} />
           )}
 
-          {isPublished && (
+          {accessMode !== 'private' && allowedCreateLinkTypes.length > 0 && (
             <LinkOnlyAccessLinksPanel onCreateLink={openCreateLinkModal} />
           )}
 
@@ -193,9 +216,11 @@ export function SurveyLinksTab() {
           )}
         </div>
 
-        <aside className="lg:sticky lg:top-4">
-          <SurveyAccessSummary mode={accessMode} />
-        </aside>
+        {showSummary && (
+          <aside className="lg:sticky lg:top-4">
+            <SurveyAccessSummary mode={accessMode} />
+          </aside>
+        )}
       </div>
 
       <Modal

@@ -31,6 +31,10 @@ interface MemberRow extends MockProjectMember {
   effectiveRoleId: string
 }
 
+type SurveyMembersSectionProps = {
+  showHeading?: boolean
+}
+
 function PermissionBadges({ permissions }: { permissions: PermissionPreview[] }) {
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -113,6 +117,13 @@ function CompactPermissionBadges({
 
 export function SurveyMembersTab() {
   useRenderDebug('SurveyMembersTab')
+
+  return <SurveyMembersSection />
+}
+
+export function SurveyMembersSection({
+  showHeading = true,
+}: SurveyMembersSectionProps) {
   const [surveyRoleAssignments, setSurveyRoleAssignments] = useState<Record<number, string>>(
     DEFAULT_SURVEY_ROLE_ASSIGNMENTS,
   )
@@ -297,17 +308,19 @@ export function SurveyMembersTab() {
 
   return (
     <section className="grid gap-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold">Survey members</h2>
-          <p className="text-sm text-muted-foreground">
-            Review project members, their survey access, and survey-specific role overrides.
-          </p>
+      {showHeading && (
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold">Survey members</h2>
+            <p className="text-sm text-muted-foreground">
+              Review project members, their survey access, and survey-specific role overrides.
+            </p>
+          </div>
+          <Button variant="primary" size="sm" icon="plus">
+            Add member
+          </Button>
         </div>
-        <Button variant="primary" size="sm" icon="plus">
-          Add member
-        </Button>
-      </div>
+      )}
 
       <div className="w-full max-w-[1100px] justify-self-center">
         <Table
