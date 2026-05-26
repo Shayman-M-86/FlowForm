@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from '@tanstack/react-router'
 import {
   Badge,
@@ -10,7 +10,6 @@ import {
   Modal,
   Select,
   Table,
-  Toast,
   Toggle,
   Tooltip,
   type TableColumn,
@@ -19,13 +18,10 @@ import {
   Ban,
   CheckCircle2,
   ChevronRight,
-  Copy,
-  ExternalLink,
   Globe2,
   Link,
   LockKeyhole,
   MailCheck,
-  MoreHorizontal,
   RefreshCw,
   Shield,
   ShieldCheck,
@@ -111,10 +107,6 @@ function publicLinkStatus(link: MockPublicLink): 'active' | 'disabled' | 'expire
   return link.isActive ? 'active' : 'disabled'
 }
 
-function uniqueEntries(entries: SurveyAccessEntry[]): SurveyAccessEntry[] {
-  return [...new Set(entries)]
-}
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
@@ -178,7 +170,7 @@ function AccessSidebarSummary({
                 <Icon size={20} strokeWidth={2.5} aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <p className="text-md font-semibold uppercase tracking-widest text-muted-foreground">Active mode</p>
+                <p className="text-md font-semibold uppercase tracking-widest text-muted-foreground">Access mode</p>
                 <p className="text-md font-semibold text-foreground">{def.label}</p>
               </div>
             </div>
@@ -261,95 +253,139 @@ function AccessSidebarSummary({
 function LinkCard({ link }: { link: DisplayPublicLink }) {
   const status = publicLinkStatus(link)
   const moreRef = useRef<HTMLSpanElement>(null)
+  const metadataRef = useRef<HTMLDivElement>(null)
+  const emailRef = useRef<HTMLDivElement>(null)
   const [moreOpen, setMoreOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [stackUrl, setStackUrl] = useState(false)
+  const linkTitle = link.name ?? `Link ${link.tokenPrefix}`
+
+  useEffect(() => {
+    const metadata = metadataRef.current
+    const email = emailRef.current
+    if (!metadata || !email) {
+      setStackUrl(false)
+      return
+    }
+
+    const updateStacking = () => {
+      const gap = 12
+      const urlColumnWidth = Math.min(metadata.clientWidth, 256)
+      setStackUrl(email.scrollWidth + urlColumnWidth + gap > metadata.clientWidth)
+    }
+
+    updateStacking()
+    const observer = new ResizeObserver(updateStacking)
+    observer.observe(metadata)
+    observer.observe(email)
+
+    return () => observer.disconnect()
+  }, [link.assignedEmail, link.url])
+
+  function copyLink() {
+    navigator.clipboard.writeText(link.url).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <Card size="sm">
-      <div className="grid gap-3">
+      <div className="grid gap-2">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <LinkStateBadge state={status} />
+            {link.linkType && (
+              <Badge variant="muted" size="xs">
+                {SURVEY_ACCESS_ENTRIES[link.linkType].label}
+              </Badge>
+            )}
+            <span className="text-xs text-muted-foreground">{link.submissions} submissions</span>
+          </div>
+          <div className="flex flex-wrap justify-end gap-x-3 gap-y-0.5 text-right text-xs text-muted-foreground">
+            <span>Created {formatDate(link.createdAt)}</span>
+            <span>Expires {link.expiresAt ? formatDate(link.expiresAt) : 'Never'}</span>
+          </div>
+        </div>
+
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <LinkStateBadge state={status} />
-              {link.linkType && (
-                <Badge variant="muted" size="xs">
-                  {SURVEY_ACCESS_ENTRIES[link.linkType].label}
-                </Badge>
+          <div className="min-w-0 flex-1">
+            <p className="min-w-3 text-sm font-medium text-foreground">{linkTitle}</p>
+            <div ref={metadataRef} className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+              {link.assignedEmail && (
+                <div ref={emailRef} className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                  <MailCheck size={13} strokeWidth={2} aria-hidden="true" className="shrink-0 text-muted-foreground" />
+                  <span className="truncate">{link.assignedEmail}</span>
+                </div>
               )}
+              <p
+                className={`min-w-[min(100%,16rem)] max-w-full truncate font-mono text-xs text-muted-foreground ${
+                  stackUrl ? 'basis-full text-left' : 'ml-auto text-right'
+                }`}
+              >
+                {link.url}
+              </p>
             </div>
-            {link.assignedEmail && (
-              <div className="mt-1.5 flex items-center gap-1.5 text-sm text-foreground">
-                <MailCheck size={13} strokeWidth={2} aria-hidden="true" className="shrink-0 text-muted-foreground" />
-                {link.assignedEmail}
-              </div>
-            )}
-            {link.name && (
-              <p className="mt-1.5 text-sm font-medium text-foreground">{link.name}</p>
-            )}
-            <p className="mt-2 truncate font-mono text-xs text-muted-foreground">{link.url}</p>
           </div>
 
-          <div className="flex shrink-0 flex-col items-end gap-2 pl-2">
-            <div className="flex flex-col items-end gap-0.5 text-right text-xs text-muted-foreground">
-              <span>Created {formatDate(link.createdAt)}</span>
-              <span>Expires {link.expiresAt ? formatDate(link.expiresAt) : 'Never'}</span>
-              <span>{link.submissions} submissions</span>
-              {link.requiresAuth && <span>Requires sign-in</span>}
-            </div>
-            <div className="flex items-center gap-1.5">
-            <Tooltip content="Copy link" size="sm">
-              <Button variant="ghost" size="xs" aria-label="Copy link">
-                <Copy size={13} strokeWidth={2} aria-hidden="true" />
-              </Button>
-            </Tooltip>
-            <Tooltip content="Open link" size="sm">
-              <Button variant="ghost" size="xs" aria-label="Open link">
-                <ExternalLink size={13} strokeWidth={2} aria-hidden="true" />
-              </Button>
-            </Tooltip>
-            <span ref={moreRef} className="inline-flex">
-              <Tooltip content="More options" size="sm">
+          <div className="flex shrink-0 flex-col items-end justify-between gap-2 pl-2 self-stretch">
+            {link.requiresAuth && (
+              <span className="text-right text-xs text-muted-foreground">Requires sign-in</span>
+            )}
+            <div className="flex items-center gap-1.5 mt-auto">
+              <Tooltip content={copied ? 'Copied!' : 'Copy link'} size="sm">
                 <Button
-                  variant="ghost"
-                  size="xs"
-                  aria-label="More options"
-                  aria-haspopup="menu"
-                  aria-expanded={moreOpen}
-                  onClick={() => setMoreOpen((o) => !o)}
-                >
-                  <MoreHorizontal size={14} strokeWidth={2} aria-hidden="true" />
-                </Button>
+                  type="button"
+                  variant="icon"
+                  size="sm"
+                  icon={copied ? 'check' : 'copy'}
+                  aria-label={copied ? 'Link copied' : 'Copy link'}
+                  onClick={copyLink}
+                />
               </Tooltip>
-            </span>
-            <DropdownMenu
-              open={moreOpen}
-              onClose={() => setMoreOpen(false)}
-              trigger={moreRef}
-              align="right"
-              fullscreenAt="never"
-              sections={[{
-                actions: [
-                  {
-                    key: 'toggle',
-                    content: (
-                      <span className="flex items-center gap-2">
-                        {link.isActive
-                          ? <><Ban size={13} strokeWidth={2} aria-hidden="true" /> Disable link</>
-                          : <><CheckCircle2 size={13} strokeWidth={2} aria-hidden="true" /> Enable link</>
-                        }
-                      </span>
-                    ),
-                  },
-                  {
-                    key: 'regenerate',
-                    content: (
-                      <span className="flex items-center gap-2">
-                        <RefreshCw size={13} strokeWidth={2} aria-hidden="true" /> Regenerate token
-                      </span>
-                    ),
-                  },
-                ],
-              }]}
-            />
+              <span ref={moreRef} className="inline-flex">
+                <Tooltip content="More options" size="sm">
+                  <Button
+                    type="button"
+                    variant="icon"
+                    size="sm"
+                    icon="ellipsis"
+                    aria-label="More options"
+                    aria-haspopup="menu"
+                    aria-expanded={moreOpen}
+                    onClick={() => setMoreOpen((o) => !o)}
+                  />
+                </Tooltip>
+              </span>
+              <DropdownMenu
+                open={moreOpen}
+                onClose={() => setMoreOpen(false)}
+                trigger={moreRef}
+                align="right"
+                fullscreenAt="never"
+                sections={[{
+                  actions: [
+                    {
+                      key: 'toggle',
+                      content: (
+                        <span className="flex items-center gap-2">
+                          {link.isActive
+                            ? <><Ban size={13} strokeWidth={2} aria-hidden="true" /> Disable link</>
+                            : <><CheckCircle2 size={13} strokeWidth={2} aria-hidden="true" /> Enable link</>
+                          }
+                        </span>
+                      ),
+                    },
+                    {
+                      key: 'regenerate',
+                      content: (
+                        <span className="flex items-center gap-2">
+                          <RefreshCw size={13} strokeWidth={2} aria-hidden="true" /> Regenerate token
+                        </span>
+                      ),
+                    },
+                  ],
+                }]}
+              />
             </div>
           </div>
         </div>
@@ -419,14 +455,14 @@ function LinksSection({
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <SectionLabel
           label="Sharing"
           title="Links and public entry points"
           description="Create, disable, or regenerate the link methods permitted by the active access model."
         />
         {canAddLinks && (
-          <Button variant="primary" size="sm" icon="plus" className="shrink-0 self-start" onClick={openModal}>
+          <Button variant="primary" size="sm" icon="plus" className="shrink-0 self-end" onClick={openModal}>
             Create link
           </Button>
         )}
@@ -462,8 +498,7 @@ function LinksSection({
                 </code>
               </div>
             </div>
-            <Button variant="secondary" size="xs" className="shrink-0">
-              <Copy size={12} strokeWidth={2} aria-hidden="true" />
+            <Button type="button" variant="secondary" size="xs" icon="copy" className="shrink-0">
               Copy URL
             </Button>
           </div>
@@ -471,17 +506,17 @@ function LinksSection({
       )}
 
       {savedAccessMode === 'link_only' && (
-        <Card tone="muted" size="sm">
-          <div className="flex items-center gap-3">
-            <span className="grid size-8 shrink-0 place-items-center rounded-md bg-accent/10 text-accent">
-              <Link size={18} strokeWidth={2} aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
+        <Card tone="ghost" size="sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-accent/10 text-accent">
+                <Link size={18} strokeWidth={2} aria-hidden="true" />
+              </span>
               <p className="text-sm font-semibold text-foreground">Invite links only</p>
-              <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-                No public URL. Respondents need a valid link to access this survey.
-              </p>
             </div>
+            <p className="text-xs leading-5 text-muted-foreground sm:max-w-md sm:text-right">
+              No public URL. Respondents need a valid link to access this survey.
+            </p>
           </div>
         </Card>
       )}
@@ -493,16 +528,16 @@ function LinksSection({
           ))}
         </CardStack>
       ) : (
-        canAddLinks && (
-          <button
-            type="button"
-            onClick={openModal}
-            className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-border px-4 py-3 text-left transition-colors hover:border-accent/40 hover:bg-accent/5"
-          >
-            <p className="text-sm text-muted-foreground">No access links yet — create the first one.</p>
-            <ChevronRight size={14} strokeWidth={2} className="shrink-0 text-muted-foreground" aria-hidden="true" />
-          </button>
-        )
+        <button
+          type="button"
+          onClick={openModal}
+          className="ui-button-ghost flex w-full flex-col gap-2 rounded-md border border-dashed border-border bg-muted/20 p-3 text-left sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+        >
+          <p className="text-sm font-medium text-muted-foreground">No active links</p>
+          <p className="text-xs leading-5 text-muted-foreground sm:max-w-md sm:text-right">
+            Create invite links to share the survey with respondents.
+          </p>
+        </button>
       )}
 
       <Modal
@@ -793,10 +828,10 @@ function MembersSection() {
           onRemoveRole={
             member.overrideRoleId
               ? () => setSurveyRoleAssignments((current) => {
-                  const next = { ...current }
-                  delete next[member.id]
-                  return next
-                })
+                const next = { ...current }
+                delete next[member.id]
+                return next
+              })
               : undefined
           }
           removeRoleLabel="Remove survey role"
@@ -811,13 +846,13 @@ function MembersSection() {
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <SectionLabel
           label="Assignment"
           title="Members and role overrides"
           description="Review project members' inherited roles and apply survey-specific overrides where needed."
         />
-        <Button variant="primary" size="sm" icon="plus" className="shrink-0 self-start">
+        <Button variant="primary" size="sm" icon="plus" className="shrink-0 self-end">
           Add member
         </Button>
       </div>
@@ -975,19 +1010,7 @@ function SurveyRolesReferenceCard() {
 
 // ── Stat pill ─────────────────────────────────────────────────────────────────
 
-function StatPill({ icon: Icon, value, label }: { icon: React.ElementType; value: string; label: string }) {
-  return (
-    <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 shadow-2xs">
-      <span className="grid size-6 shrink-0 place-items-center rounded-sm bg-muted text-muted-foreground">
-        <Icon size={13} strokeWidth={2} aria-hidden="true" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-xs font-semibold text-foreground">{value}</p>
-        <p className="text-[0.65rem] text-muted-foreground">{label}</p>
-      </div>
-    </div>
-  )
-}
+
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 
@@ -996,35 +1019,10 @@ export function SurveyAccessTab() {
   const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/access' })
 
   const [savedAccessMode, setSavedAccessMode] = useState<SurveyAccessMode>('link_only')
-  const [accessMode, setAccessMode] = useState<SurveyAccessMode>(savedAccessMode)
-  const [accessWarning, setAccessWarning] = useState<string | null>(null)
 
   const publicLinks = getMockPublicLinksForSurvey(surveySlug)
   const activeLinkCount = publicLinks.filter((l) => l.isActive).length
-  const accessChanged = accessMode !== savedAccessMode
   const savedAccessDefinition = SURVEY_ACCESS_MODES[savedAccessMode]
-
-  function saveAccessChanges() {
-    const currentEntries = new Set(SURVEY_ACCESS_MODES[savedAccessMode].allowedEntries)
-    const nextEntries = new Set(SURVEY_ACCESS_MODES[accessMode].allowedEntries)
-    const entriesInUse = uniqueEntries([
-      ...publicLinks
-        .filter((l) => l.isActive)
-        .map((l) => (l.assignedEmail ? 'authenticated_assigned_link' : 'general_link') as SurveyAccessEntry),
-      ...(savedAccessMode === 'public' ? ['public_slug' as SurveyAccessEntry] : []),
-    ])
-    const invalidated = entriesInUse.filter((e) => currentEntries.has(e) && !nextEntries.has(e))
-
-    setSavedAccessMode(accessMode)
-
-    if (invalidated.length > 0) {
-      const labels = invalidated.map((e) => SURVEY_ACCESS_ENTRIES[e].label).join(', ')
-      setAccessWarning(`Access saved, but this change invalidates active access methods: ${labels}.`)
-      return
-    }
-
-    setAccessWarning(null)
-  }
 
   return (
     <section className="mx-auto grid w-full gap-8">
@@ -1033,41 +1031,16 @@ export function SurveyAccessTab() {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base font-semibold text-foreground">Access</h2>
-            <Badge variant={accessChanged ? 'accent' : 'muted'} size="xxs">
-              {accessChanged ? 'Unsaved changes' : savedAccessDefinition.label}
-            </Badge>
           </div>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
             Control who can open the survey, how links are issued, and which project members can work on it.
           </p>
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          disabled={!accessChanged}
-          onClick={saveAccessChanges}
-          className="shrink-0 self-start"
-        >
-          Save changes
-        </Button>
       </div>
 
-      {/* Stats row */}
-      <div className="flex flex-wrap gap-2">
-        <StatPill icon={ShieldCheck} value={savedAccessDefinition.label} label="Respondent mode" />
-        <StatPill icon={Link} value={String(activeLinkCount)} label={`of ${publicLinks.length} links active`} />
-        <StatPill icon={Users} value={String(mockProjectMembers.length)} label="Project members" />
-        <StatPill icon={Shield} value={String(SURVEY_PRESET_ROLES.length)} label="Survey roles" />
-      </div>
-
-      {accessWarning && (
-        <Toast variant="warning" onClose={() => setAccessWarning(null)}>
-          {accessWarning}
-        </Toast>
-      )}
 
       {/* Main two-column layout */}
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_21rem] xl:items-start">
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,78rem)_23rem] xl:justify-between xl:items-start">
         {/* Left column — primary content */}
         <div className="grid gap-8">
           {/* Section 1: Links */}
@@ -1080,9 +1053,9 @@ export function SurveyAccessTab() {
         </div>
 
         {/* Right column — sticky sidebar */}
-        <aside className="grid gap-4 xl:sticky xl:top-4">
+        <aside className="grid gap-4 sm:grid-cols-2 xl:sticky xl:top-4 xl:grid-cols-1">
           {/* Access summary */}
-          <AccessSidebarSummary mode={savedAccessMode} onModeChange={setAccessMode} />
+          <AccessSidebarSummary mode={savedAccessMode} onModeChange={setSavedAccessMode} />
 
           {/* Quick reference: survey roles */}
           <SurveyRolesReferenceCard />

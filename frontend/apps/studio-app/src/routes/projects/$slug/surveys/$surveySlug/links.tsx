@@ -1,6 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { SurveyLinksTab } from '@/pages/SurveyWorkspaceTabPages/SurveyLinksTab'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/projects/$slug/surveys/$surveySlug/links')({
-  component: SurveyLinksTab,
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: '/projects/$slug/surveys/$surveySlug/access',
+      params,
+    })
+  },
 })

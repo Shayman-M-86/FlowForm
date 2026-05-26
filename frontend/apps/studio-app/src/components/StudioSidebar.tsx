@@ -62,11 +62,12 @@ function IconVersions() {
     </svg>
   );
 }
-function IconLinks() {
+function IconAccess() {
   return (
     <svg {...svgProps}>
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      <path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6l-7-3Z" />
+      <path d="M9 12h6" />
+      <path d="M12 9v6" />
     </svg>
   );
 }
@@ -560,9 +561,7 @@ export function StudioSidebar() {
               <NavItem to={`${surveyBase}/overview`} icon={<IconOverview />} label="Overview" active={isActive(`${surveyBase}/overview`)} />
               <NavItem to={`${surveyBase}/builder`} icon={<IconBuilder />} label="Builder" active={isActive(`${surveyBase}/builder`)} />
               <NavItem to={`${surveyBase}/versions`} icon={<IconVersions />} label="Versions" active={isActive(`${surveyBase}/versions`)} />
-              <NavItem to={`${surveyBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${surveyBase}/members`)} />
-              <NavItem to={`${surveyBase}/roles`} icon={<IconRoles />} label="Roles" active={isActive(`${surveyBase}/roles`)} />
-              <NavItem to={`${surveyBase}/links`} icon={<IconLinks />} label="Links" active={isActive(`${surveyBase}/links`)} />
+              <NavItem to={`${surveyBase}/access`} icon={<IconAccess />} label="Access" active={isActive(`${surveyBase}/access`)} />
               <NavItem to={`${surveyBase}/responses`} icon={<IconResponses />} label="Responses" active={isActive(`${surveyBase}/responses`)} />
               <NavItem to={`${surveyBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${surveyBase}/settings`)} />
               </NavSection>

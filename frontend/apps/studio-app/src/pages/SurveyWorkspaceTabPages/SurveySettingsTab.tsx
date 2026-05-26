@@ -76,21 +76,6 @@ export function SurveySettingsTab() {
         </div>
       </Card>
 
-      {/* Respondent access */}
-      <Card>
-        <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Respondent access</p>
-        {accessWarning && (
-          <Toast variant="warning" className="mb-4" onClose={() => setAccessWarning(null)}>
-            {accessWarning}
-          </Toast>
-        )}
-        <SurveyAccessSettingsPanel mode={accessMode} onModeChange={setAccessMode} />
-        <div className="mt-4 flex justify-start">
-          <Button variant="primary" size="sm" disabled={!accessChanged} onClick={saveAccessChanges}>
-            Save changes
-          </Button>
-        </div>
-      </Card>
 
       {/* Danger zone */}
       <Card>

@@ -10,9 +10,6 @@ const TABS = [
   { id: 'builder',   label: 'Builder' },
   { id: 'versions',  label: 'Versions' },
   { id: 'access',    label: 'Access' },
-  { id: 'members',   label: 'Members' },
-  { id: 'roles',     label: 'Roles' },
-  { id: 'links',     label: 'Links' },
   { id: 'responses', label: 'Responses' },
   { id: 'settings',  label: 'Settings' },
 ] as const

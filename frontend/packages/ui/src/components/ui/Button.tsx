@@ -1,11 +1,11 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cn } from "../../lib/utils";
 import { controlSizeClasses, type ControlSize } from "../../lib/sizes";
-import { Ellipsis, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, Copy, Ellipsis, Pencil, Plus, Trash2, X } from "lucide-react";
 
 type ButtonVariant = "primary" | "secondary" | "danger"  | "destructive" | "ghost" | "text" | "icon";
 type ButtonBorderStyle = "solid" | "dotted";
-export type ButtonIcon = "plus" | "edit" | "delete" | "close" | "ellipsis";
+export type ButtonIcon = "plus" | "edit" | "delete" | "close" | "ellipsis" | "copy" | "check";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -49,12 +49,19 @@ const iconPaddingMap: Record<ControlSize, string> = {
   xl: "pl-3.5 gap-1",
 };
 
+const decorativeIconProps = {
+  "aria-hidden": true,
+  focusable: false,
+} as const;
+
 const icons: Record<ButtonIcon, (size: number) => ReactNode> = {
-  plus: (size) => <Plus size={size} />,
-  edit: (size) => <Pencil size={size} />,
-  delete: (size) => <Trash2 size={size} />,
-  close: (size) => <X size={size} />,
-  ellipsis: (size) => <Ellipsis size={size} />,
+  plus: (size) => <Plus size={size} {...decorativeIconProps} />,
+  edit: (size) => <Pencil size={size} {...decorativeIconProps} />,
+  delete: (size) => <Trash2 size={size} {...decorativeIconProps} />,
+  close: (size) => <X size={size} {...decorativeIconProps} />,
+  ellipsis: (size) => <Ellipsis size={size} {...decorativeIconProps} />,
+  copy: (size) => <Copy size={size} {...decorativeIconProps} />,
+  check: (size) => <Check size={size} {...decorativeIconProps} />,
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
