@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useOpenApiClient } from '../../openapi'
+import { loadCachedQuery, loadCachedQueryUpdatedAt, saveCachedQuery } from '../../queryStorage'
 import {
   createProjectRole,
   deleteProjectRole,
@@ -8,6 +9,8 @@ import {
 } from './requests'
 import type { CreateProjectRoleRequest, ProjectRoleOut, UpdateProjectRoleRequest } from './types'
 
+const FIVE_MINUTES = 5 * 60 * 1000
+
 export const roleKeys = {
   all: () => ['roles'] as const,
   list: (projectId: number | null) => [...roleKeys.all(), 'list', projectId] as const,
@@ -15,14 +18,22 @@ export const roleKeys = {
 
 export function useProjectRoles(projectId: number | null) {
   const apiClient = useOpenApiClient()
+  const queryKey = roleKeys.list(projectId)
 
   return useQuery({
-    queryKey: roleKeys.list(projectId),
-    queryFn: () => {
+    queryKey,
+    queryFn: async () => {
       if (projectId === null) throw new Error('Project id is required')
-      return getProjectRoles(apiClient, projectId)
+      const roles = await getProjectRoles(apiClient, projectId)
+      saveCachedQuery(queryKey, roles)
+      return roles
     },
-    enabled: projectId !== null,
+    enabled: projectId !== null && projectId > 0,
+    staleTime: FIVE_MINUTES,
+    initialData: projectId !== null && projectId > 0
+      ? loadCachedQuery<ProjectRoleOut[]>(queryKey, FIVE_MINUTES)
+      : undefined,
+    initialDataUpdatedAt: () => projectId !== null && projectId > 0 ? loadCachedQueryUpdatedAt(queryKey) : undefined,
   })
 }
 
@@ -33,9 +44,12 @@ export function useCreateProjectRole(projectId: number) {
   return useMutation({
     mutationFn: (body: CreateProjectRoleRequest) => createProjectRole(apiClient, projectId, body),
     onSuccess: (role) => {
-      queryClient.setQueryData<ProjectRoleOut[]>(roleKeys.list(projectId), (current) =>
-        current ? [...current, role] : [role],
-      )
+      const queryKey = roleKeys.list(projectId)
+      queryClient.setQueryData<ProjectRoleOut[]>(queryKey, (current) => {
+        const next = current ? [...current, role] : [role]
+        saveCachedQuery(queryKey, next)
+        return next
+      })
     },
   })
 }
@@ -48,9 +62,12 @@ export function useUpdateProjectRole(projectId: number) {
     mutationFn: ({ roleId, body }: { roleId: number; body: UpdateProjectRoleRequest }) =>
       updateProjectRole(apiClient, projectId, roleId, body),
     onSuccess: (updated) => {
-      queryClient.setQueryData<ProjectRoleOut[]>(roleKeys.list(projectId), (current) =>
-        current?.map((r) => (r.id === updated.id ? updated : r)),
-      )
+      const queryKey = roleKeys.list(projectId)
+      queryClient.setQueryData<ProjectRoleOut[]>(queryKey, (current) => {
+        const next = current?.map((r) => (r.id === updated.id ? updated : r))
+        if (next) saveCachedQuery(queryKey, next)
+        return next
+      })
     },
   })
 }
@@ -62,9 +79,12 @@ export function useDeleteProjectRole(projectId: number) {
   return useMutation({
     mutationFn: (roleId: number) => deleteProjectRole(apiClient, projectId, roleId),
     onSuccess: (_result, roleId) => {
-      queryClient.setQueryData<ProjectRoleOut[]>(roleKeys.list(projectId), (current) =>
-        current?.filter((r) => r.id !== roleId),
-      )
+      const queryKey = roleKeys.list(projectId)
+      queryClient.setQueryData<ProjectRoleOut[]>(queryKey, (current) => {
+        const next = current?.filter((r) => r.id !== roleId)
+        if (next) saveCachedQuery(queryKey, next)
+        return next
+      })
     },
   })
 }

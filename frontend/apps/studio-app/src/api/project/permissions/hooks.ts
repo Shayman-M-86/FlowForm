@@ -5,9 +5,6 @@ import type { ProjectPermission } from './types'
 
 const TEN_MINUTES = 10 * 60 * 1000
 
-// Clear all cached permissions on every page load so a refresh always fetches
-// fresh data. The localStorage entries are only used to seed the cache within
-// the same JS session (navigation between routes), not across page loads.
 export function clearAllCachedPermissions() {
   try {
     const toRemove = Object.keys(localStorage).filter((k) => k.startsWith('ff.permissions.'))

@@ -26,4 +26,7 @@ survey_service = SurveyService()
 submission_query_service = SubmissionQueryService()
 
 # Import sub-modules to register their routes on projects_bp
-from app.api.v1.projects import content, core, members, public_links, roles, submissions, surveys, versions  # noqa: E402, I001
+from app.api.v1.projects import (  # noqa: E402, I001
+    content, core, members, public_links, roles, submissions,
+    survey_members, survey_roles, surveys, versions,
+)

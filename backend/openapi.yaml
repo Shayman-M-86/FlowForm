@@ -25,6 +25,8 @@ tags:
 - name: Submissions
 - name: Survey Content
 - name: Survey Links
+- name: Survey Members
+- name: Survey Roles
 - name: Survey Versions
 - name: Surveys
 paths:
@@ -2310,6 +2312,446 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LinkedSubmissionOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/projects/{project_id}/surveys/{survey_id}/members:
+    get:
+      operationId: listSurveyMembers
+      summary: List survey member role assignments
+      description: List survey member role assignments
+      tags:
+      - Survey Members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SurveyMemberRoleOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+    post:
+      operationId: assignSurveyMemberRole
+      summary: Assign survey role to member
+      description: Assign survey role to member
+      tags:
+      - Survey Members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignSurveyMemberRoleRequest'
+      responses:
+        '201':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyMemberRoleOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/projects/{project_id}/surveys/{survey_id}/members/{membership_id}:
+    patch:
+      operationId: updateSurveyMemberRole
+      summary: Update survey member role assignment
+      description: Update survey member role assignment
+      tags:
+      - Survey Members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: membership_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSurveyMemberRoleRequest'
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyMemberRoleOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+    delete:
+      operationId: removeSurveyMemberRole
+      summary: Remove survey member role assignment
+      description: Remove survey member role assignment
+      tags:
+      - Survey Members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: membership_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/projects/{project_id}/survey-roles:
+    get:
+      operationId: listSurveyRoles
+      summary: List survey roles
+      description: List survey roles
+      tags:
+      - Survey Roles
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SurveyRoleOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+    post:
+      operationId: createSurveyRole
+      summary: Create survey role
+      description: Create survey role
+      tags:
+      - Survey Roles
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSurveyRoleRequest'
+      responses:
+        '201':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyRoleOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+  /api/v1/projects/{project_id}/survey-roles/{role_id}:
+    patch:
+      operationId: updateSurveyRole
+      summary: Update survey role
+      description: Update survey role
+      tags:
+      - Survey Roles
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: role_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSurveyRoleRequest'
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyRoleOut'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+          description: Bad request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+          description: Authentication required or token invalid.
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+          description: Authenticated but not authorized for this resource.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+          description: Resource not found.
+        '409':
+          $ref: '#/components/responses/ConflictError'
+          description: Conflict with the current resource state.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+          description: Request was syntactically valid but semantically invalid.
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+          description: Rate limit exceeded.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error.
+    delete:
+      operationId: deleteSurveyRole
+      summary: Delete survey role
+      description: Delete survey role
+      tags:
+      - Survey Roles
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: role_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
           description: Bad request.
@@ -5403,6 +5845,201 @@ components:
       - answers
       title: LinkedSubmissionOut
       type: object
+    SurveyMemberOut:
+      description: Embedded user details on a survey member row.
+      properties:
+        id:
+          title: Id
+          type: integer
+        user_id:
+          title: User Id
+          type: integer
+        project_id:
+          title: Project Id
+          type: integer
+        role_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Role Id
+        status:
+          title: Status
+          type: string
+      required:
+      - id
+      - user_id
+      - project_id
+      - role_id
+      - status
+      title: SurveyMemberOut
+      type: object
+    SurveyRoleOut:
+      description: API response shape for a survey role.
+      properties:
+        id:
+          title: Id
+          type: integer
+        project_id:
+          title: Project Id
+          type: integer
+        name:
+          title: Name
+          type: string
+          maxLength: 120
+        permissions:
+          items:
+            enum:
+            - survey:view
+            - survey:create
+            - survey:edit
+            - survey:delete
+            - survey:publish
+            - survey:archive
+            - submission:view
+            type: string
+            maxLength: 15
+          maxItems: 7
+          title: Permissions
+          type: array
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+          maxLength: 35
+      required:
+      - id
+      - project_id
+      - name
+      - permissions
+      - created_at
+      title: SurveyRoleOut
+      type: object
+    SurveyMemberRoleOut:
+      description: API response shape for a survey membership role assignment.
+      properties:
+        project_id:
+          title: Project Id
+          type: integer
+        survey_id:
+          title: Survey Id
+          type: integer
+        membership_id:
+          title: Membership Id
+          type: integer
+        role_id:
+          title: Role Id
+          type: integer
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+          maxLength: 35
+        member:
+          anyOf:
+          - $ref: '#/components/schemas/SurveyMemberOut'
+          - type: 'null'
+          default: null
+        role:
+          anyOf:
+          - $ref: '#/components/schemas/SurveyRoleOut'
+          - type: 'null'
+          default: null
+      required:
+      - project_id
+      - survey_id
+      - membership_id
+      - role_id
+      - created_at
+      title: SurveyMemberRoleOut
+      type: object
+    AssignSurveyMemberRoleRequest:
+      description: Request body for assigning a survey role to a project member for a survey.
+      properties:
+        membership_id:
+          maximum: 2147483647
+          minimum: 1
+          title: Membership Id
+          type: integer
+        role_id:
+          maximum: 2147483647
+          minimum: 1
+          title: Role Id
+          type: integer
+      required:
+      - membership_id
+      - role_id
+      title: AssignSurveyMemberRoleRequest
+      type: object
+    UpdateSurveyMemberRoleRequest:
+      description: Request body for updating a survey member role assignment.
+      properties:
+        role_id:
+          maximum: 2147483647
+          minimum: 1
+          title: Role Id
+          type: integer
+      required:
+      - role_id
+      title: UpdateSurveyMemberRoleRequest
+      type: object
+    CreateSurveyRoleRequest:
+      description: Request body for creating a survey role.
+      properties:
+        name:
+          maxLength: 80
+          title: Name
+          type: string
+        permissions:
+          items:
+            enum:
+            - survey:view
+            - survey:create
+            - survey:edit
+            - survey:delete
+            - survey:publish
+            - survey:archive
+            - submission:view
+            type: string
+            maxLength: 15
+          maxItems: 7
+          title: Permissions
+          type: array
+          uniqueItems: true
+      required:
+      - name
+      title: CreateSurveyRoleRequest
+      type: object
+    UpdateSurveyRoleRequest:
+      description: Request body for partially updating a survey role.
+      properties:
+        name:
+          anyOf:
+          - maxLength: 80
+            type: string
+          - type: 'null'
+          default: null
+          title: Name
+        permissions:
+          anyOf:
+          - items:
+              enum:
+              - survey:view
+              - survey:create
+              - survey:edit
+              - survey:delete
+              - survey:publish
+              - survey:archive
+              - submission:view
+              type: string
+              maxLength: 15
+            maxItems: 7
+            type: array
+            uniqueItems: true
+          - type: 'null'
+          default: null
+          title: Permissions
+      title: UpdateSurveyRoleRequest
+      type: object
     SurveyOut:
       description: API response shape for a survey.
       properties:
@@ -6095,6 +6732,16 @@ components:
               value:
                 code: NOT_FOUND
                 message: Member not found.
+            survey_role_not_found:
+              summary: SurveyRoleNotFoundError
+              value:
+                code: NOT_FOUND
+                message: Survey role not found.
+            survey_member_role_not_found:
+              summary: SurveyMemberRoleNotFoundError
+              value:
+                code: NOT_FOUND
+                message: Survey member role assignment not found.
     ConflictError:
       description: Conflict with the current resource state.
       content:
@@ -6179,6 +6826,16 @@ components:
               value:
                 code: MEMBER_OWNER_PROTECTED
                 message: Owner roles cannot be assigned, reassigned, removed, or suspended.
+            survey_role_name_conflict:
+              summary: SurveyRoleNameConflictError
+              value:
+                code: CONFLICT
+                message: A survey role with that name already exists.
+            survey_member_role_already_assigned:
+              summary: SurveyMemberRoleAlreadyAssignedError
+              value:
+                code: SURVEY_MEMBER_ROLE_CONFLICT
+                message: This member already has a survey role assigned for this survey.
             users_email_key:
               summary: 'DB rule: EMAIL_CONFLICT'
               value:
@@ -6259,6 +6916,11 @@ components:
               value:
                 code: LINK_PREFIX_CONFLICT
                 message: Survey id=<survey_id> already has a link with this token prefix.
+            uq_survey_roles_project_id_name:
+              summary: 'DB rule: SURVEY_ROLE_NAME_CONFLICT'
+              value:
+                code: SURVEY_ROLE_NAME_CONFLICT
+                message: Project already has a survey role named '<name>'.
             uq_response_subject_mappings_project_id_user_id:
               summary: 'DB rule: SUBJECT_USER_CONFLICT'
               value:

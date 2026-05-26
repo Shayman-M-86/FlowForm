@@ -91,6 +91,7 @@ from app.schema.orm.core import (
     SurveyLink,
     SurveyMembershipRole,
     SurveyQuestion,
+    SurveyRole,
     SurveyScoringRule,
     SurveySubmission,
     SurveyVersion,
@@ -107,6 +108,7 @@ type RuleContext = (
     | ResponseSubjectMapping
     | SurveySubmission
     | SurveyQuestion
+    | SurveyRole
     | SurveyScoringRule
     | ProjectRole
     | ProjectMembership
@@ -591,6 +593,25 @@ SURVEY_SCORING_RULE_RULES: tuple[DbErrorRule, ...] = (
         extractor=_survey_scoring_rule_ctx,
     ),
 )
+def _survey_role_ctx(role: SurveyRole) -> dict[str, object]:
+    return {
+        "project_id": role.project_id,
+        "name": role.name,
+    }
+
+
+SURVEY_ROLE_RULES: tuple[DbErrorRule, ...] = (
+    unique_rule(
+        "uq_survey_roles_project_id_name",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "SURVEY_ROLE_NAME_CONFLICT",
+            f"Project already has a survey role named {ctx['name']!r}.",
+        ),
+        extractor=_survey_role_ctx,
+    ),
+)
+
 PROJECT_ROLE_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
         "uq_project_roles_project_name",
@@ -710,6 +731,7 @@ RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
     Survey: SURVEY_RULES,
     SurveyVersion: SURVEY_VERSION_RULES,
     SurveyLink: SURVEY_LINK_RULES,
+    SurveyRole: SURVEY_ROLE_RULES,
     ResponseSubjectMapping: RESPONSE_SUBJECT_MAPPING_RULES,
     SurveySubmission: SURVEY_SUBMISSION_RULES,
     SurveyQuestion: SURVEY_QUESTION_RULES,

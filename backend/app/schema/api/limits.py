@@ -26,6 +26,8 @@ PROJECT_ROLE_NAME_MAX = 80
 PROJECT_ROLE_PERMISSION_NAME_MAX = 64
 # One project role cannot grant more permissions than the platform defines.
 PROJECT_ROLE_PERMISSIONS_MAX = len(PERMISSIONS.all())
+# One survey role can only grant survey-scoped permissions.
+SURVEY_ROLE_PERMISSIONS_MAX = len(PERMISSIONS.survey.values()) + len(PERMISSIONS.submission.values())
 INVITE_MESSAGE_MAX = 500
 
 

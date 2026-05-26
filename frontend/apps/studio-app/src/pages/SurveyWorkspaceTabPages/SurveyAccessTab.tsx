@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useParams } from '@tanstack/react-router'
 import {
   Badge,
@@ -9,7 +9,9 @@ import {
   Input,
   Modal,
   Select,
+  Spinner,
   Table,
+  Toast,
   Toggle,
   Tooltip,
   type TableColumn,
@@ -22,18 +24,32 @@ import {
   Link,
   LockKeyhole,
   MailCheck,
-  RefreshCw,
-  Shield,
-  ShieldCheck,
-  Users,
 } from 'lucide-react'
+import { useProject } from '@/api/project/projects/hooks'
+import { useProjectMembers } from '@/api/project/members/hooks'
+import { useProjectRoles } from '@/api/project/roles/hooks'
+import { useSurvey, useUpdateSurvey } from '@/api/project/surveys/hooks'
 import {
-  getMockPublicLinksForSurvey,
-  getMockSurvey,
-  mockProjectMembers,
-  type MockProjectMember,
-  type MockPublicLink,
-} from '@/api/mockData'
+  useCreatePublicLink,
+  useDeletePublicLink,
+  usePublicLinks,
+  useUpdatePublicLink,
+} from '@/api/survey/links/hooks'
+import {
+  useAssignSurveyMemberRole,
+  useRemoveSurveyMemberRole,
+  useSurveyMembers,
+  useUpdateSurveyMemberRole,
+} from '@/api/survey/members/hooks'
+import {
+  useCreateSurveyRole,
+  useDeleteSurveyRole,
+  useSurveyRoles,
+  useUpdateSurveyRole,
+} from '@/api/survey/roles/hooks'
+import type { PublicLinkOut } from '@/api/survey/links/types'
+import type { ProjectMemberOut } from '@/api/project/members/types'
+import type { CreateSurveyRoleRequest } from '@/api/survey/roles/types'
 import {
   LinkStateBadge,
   SurveyAccessModeSelector,
@@ -50,16 +66,8 @@ import {
 } from '@/lib/surveyAccessDesign'
 import { RoleEditorModal, type RoleEditorState } from '../ProjectDashboardTabPages/RoleEditorModal'
 import {
-  DEFAULT_SURVEY_ROLE_ASSIGNMENTS,
-  PROJECT_ROLE_TO_SURVEY_ROLE_ID,
   SURVEY_PERMISSION_GROUPS,
-  SURVEY_PRESET_ROLES,
-  permissionsGained,
-  roleForId,
-  rolePermissions,
-  type CustomRole,
   type PermissionKey,
-  type RoleWithPermissions,
 } from '../ProjectDashboardTabPages/roleDefinitions'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -79,17 +87,11 @@ type CreateLinkFormState = {
   requireAuthForGeneralLink: boolean
 }
 
-type DisplayPublicLink = MockPublicLink & {
-  name?: string
-  linkType?: CreatableLinkType
-  requiresAuth?: boolean
-}
-
 type PermissionPreview = { key: PermissionKey; variant: 'default' | 'warning' }
+type SurveyPermissionKey = NonNullable<CreateSurveyRoleRequest['permissions']>[number]
 
-interface MemberRow extends MockProjectMember {
-  overrideRoleId?: string
-  effectiveRoleId: string
+interface MemberRow extends ProjectMemberOut {
+  surveyRoleId: number | null
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -102,13 +104,29 @@ function createDefaultLinkForm(type: CreatableLinkType): CreateLinkFormState {
   return { type, name: '', assignedEmail: '', expiresAt: '', requireAuthForGeneralLink: false }
 }
 
-function publicLinkStatus(link: MockPublicLink): 'active' | 'disabled' | 'expired' {
-  if (link.expiresAt && new Date(link.expiresAt).getTime() < Date.now()) return 'expired'
-  return link.isActive ? 'active' : 'disabled'
+function publicLinkStatus(link: PublicLinkOut): 'active' | 'disabled' | 'expired' {
+  if (link.expires_at && new Date(link.expires_at).getTime() < Date.now()) return 'expired'
+  return link.is_active ? 'active' : 'disabled'
 }
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function isSurveyPermissionKey(permission: PermissionKey): permission is SurveyPermissionKey {
+  return SURVEY_PERMISSION_GROUPS.some((group) => group.permissions.includes(permission))
+}
+
+function surveyPermissionsFromEditor(role: RoleEditorState): SurveyPermissionKey[] {
+  return [...role.permissions].filter(isSurveyPermissionKey)
+}
+
+function toUrlSafeName(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
 // ── Section header ────────────────────────────────────────────────────────────
@@ -133,22 +151,38 @@ function SectionDivider() {
 
 function AccessSidebarSummary({
   mode,
+  publicSlug,
+  surveyTitle,
+  isSaving,
   onModeChange,
 }: {
   mode: SurveyAccessMode
-  onModeChange: (mode: SurveyAccessMode) => void
+  publicSlug: string | null
+  surveyTitle: string
+  isSaving: boolean
+  onModeChange: (mode: SurveyAccessMode, publicSlug: string | null) => Promise<boolean>
 }) {
   const [modalOpen, setModalOpen] = useState(false)
   const [draftMode, setDraftMode] = useState<SurveyAccessMode>(mode)
+  const [draftPublicSlug, setDraftPublicSlug] = useState(publicSlug ?? '')
+  const [slugError, setSlugError] = useState<string | null>(null)
 
   function openModal() {
     setDraftMode(mode)
+    setDraftPublicSlug(publicSlug ?? toUrlSafeName(surveyTitle))
+    setSlugError(null)
     setModalOpen(true)
   }
 
-  function applyModal() {
-    onModeChange(draftMode)
-    setModalOpen(false)
+  async function applyModal() {
+    const nextPublicSlug = toUrlSafeName(draftPublicSlug)
+    if (draftMode === 'public' && !nextPublicSlug) {
+      setSlugError('Public mode needs a URL-safe name.')
+      return
+    }
+
+    const updated = await onModeChange(draftMode, draftMode === 'public' ? nextPublicSlug : null)
+    if (updated) setModalOpen(false)
   }
 
   const def = SURVEY_ACCESS_MODES[mode]
@@ -219,7 +253,9 @@ function AccessSidebarSummary({
         footer={
           <>
             <Button variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button variant="primary" onClick={applyModal}>Apply</Button>
+            <Button variant="primary" disabled={isSaving} onClick={applyModal}>
+              {isSaving ? 'Applying...' : 'Apply'}
+            </Button>
           </>
         }
       >
@@ -228,6 +264,20 @@ function AccessSidebarSummary({
             Choose who can open and complete the survey. The sharing controls adapt to the saved model.
           </p>
           <SurveyAccessModeSelector value={draftMode} onChange={setDraftMode} />
+          <Input
+            label="Public URL slug"
+            value={draftPublicSlug}
+            disabled={draftMode !== 'public'}
+            placeholder="my-survey"
+            error={slugError ?? undefined}
+            hint={draftMode === 'public'
+              ? 'Used in the public survey URL. Use lowercase letters, numbers, and hyphens.'
+              : 'This survey is not in public mode, so the public URL is disabled.'}
+            onChange={(event) => {
+              setSlugError(null)
+              setDraftPublicSlug(toUrlSafeName(event.target.value))
+            }}
+          />
           <div className="rounded-md border border-border bg-muted/20 p-3">
             <p className="text-xs font-semibold text-foreground">{SURVEY_ACCESS_MODES[draftMode].label}</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">{SURVEY_ACCESS_MODES[draftMode].description}</p>
@@ -250,40 +300,27 @@ function AccessSidebarSummary({
 
 // ── Links section ─────────────────────────────────────────────────────────────
 
-function LinkCard({ link }: { link: DisplayPublicLink }) {
+function linkUrl(link: PublicLinkOut): string {
+  return `${window.location.origin}/s/${link.token_prefix}`
+}
+
+function LinkCard({
+  link,
+  onToggle,
+  onDelete,
+}: {
+  link: PublicLinkOut
+  onToggle: (linkId: number, isActive: boolean) => void
+  onDelete: (linkId: number) => void
+}) {
   const status = publicLinkStatus(link)
   const moreRef = useRef<HTMLSpanElement>(null)
-  const metadataRef = useRef<HTMLDivElement>(null)
-  const emailRef = useRef<HTMLDivElement>(null)
   const [moreOpen, setMoreOpen] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [stackUrl, setStackUrl] = useState(false)
-  const linkTitle = link.name ?? `Link ${link.tokenPrefix}`
-
-  useEffect(() => {
-    const metadata = metadataRef.current
-    const email = emailRef.current
-    if (!metadata || !email) {
-      setStackUrl(false)
-      return
-    }
-
-    const updateStacking = () => {
-      const gap = 12
-      const urlColumnWidth = Math.min(metadata.clientWidth, 256)
-      setStackUrl(email.scrollWidth + urlColumnWidth + gap > metadata.clientWidth)
-    }
-
-    updateStacking()
-    const observer = new ResizeObserver(updateStacking)
-    observer.observe(metadata)
-    observer.observe(email)
-
-    return () => observer.disconnect()
-  }, [link.assignedEmail, link.url])
+  const url = linkUrl(link)
 
   function copyLink() {
-    navigator.clipboard.writeText(link.url).catch(() => {})
+    navigator.clipboard.writeText(url).catch(() => {})
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -294,43 +331,33 @@ function LinkCard({ link }: { link: DisplayPublicLink }) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-wrap items-center gap-1.5">
             <LinkStateBadge state={status} />
-            {link.linkType && (
-              <Badge variant="muted" size="xs">
-                {SURVEY_ACCESS_ENTRIES[link.linkType].label}
-              </Badge>
+            {link.requires_auth && (
+              <Badge variant="muted" size="xs">Requires sign-in</Badge>
             )}
-            <span className="text-xs text-muted-foreground">{link.submissions} submissions</span>
           </div>
           <div className="flex flex-wrap justify-end gap-x-3 gap-y-0.5 text-right text-xs text-muted-foreground">
-            <span>Created {formatDate(link.createdAt)}</span>
-            <span>Expires {link.expiresAt ? formatDate(link.expiresAt) : 'Never'}</span>
+            <span>Created {formatDate(link.created_at)}</span>
+            <span>Expires {link.expires_at ? formatDate(link.expires_at) : 'Never'}</span>
           </div>
         </div>
 
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="min-w-3 text-sm font-medium text-foreground">{linkTitle}</p>
-            <div ref={metadataRef} className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-              {link.assignedEmail && (
-                <div ref={emailRef} className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+            <p className="min-w-3 text-sm font-medium text-foreground">{link.name}</p>
+            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+              {link.assigned_email && (
+                <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                   <MailCheck size={13} strokeWidth={2} aria-hidden="true" className="shrink-0 text-muted-foreground" />
-                  <span className="truncate">{link.assignedEmail}</span>
+                  <span className="truncate">{link.assigned_email}</span>
                 </div>
               )}
-              <p
-                className={`min-w-[min(100%,16rem)] max-w-full truncate font-mono text-xs text-muted-foreground ${
-                  stackUrl ? 'basis-full text-left' : 'ml-auto text-right'
-                }`}
-              >
-                {link.url}
+              <p className="min-w-[min(100%,16rem)] max-w-full truncate font-mono text-xs text-muted-foreground ml-auto text-right">
+                {url}
               </p>
             </div>
           </div>
 
           <div className="flex shrink-0 flex-col items-end justify-between gap-2 pl-2 self-stretch">
-            {link.requiresAuth && (
-              <span className="text-right text-xs text-muted-foreground">Requires sign-in</span>
-            )}
             <div className="flex items-center gap-1.5 mt-auto">
               <Tooltip content={copied ? 'Copied!' : 'Copy link'} size="sm">
                 <Button
@@ -361,27 +388,51 @@ function LinkCard({ link }: { link: DisplayPublicLink }) {
                 onClose={() => setMoreOpen(false)}
                 trigger={moreRef}
                 align="right"
+                width="15rem"
                 fullscreenAt="never"
                 sections={[{
+                  label: 'Link actions',
                   actions: [
                     {
                       key: 'toggle',
                       content: (
-                        <span className="flex items-center gap-2">
-                          {link.isActive
-                            ? <><Ban size={13} strokeWidth={2} aria-hidden="true" /> Disable link</>
-                            : <><CheckCircle2 size={13} strokeWidth={2} aria-hidden="true" /> Enable link</>
-                          }
-                        </span>
+                        <Button
+                          type="button"
+                          role="menuitem"
+                          variant="secondary"
+                          size="sm"
+                          className="w-full justify-start gap-2"
+                        >
+                          {link.is_active ? (
+                            <>
+                              <Ban size={14} strokeWidth={2} aria-hidden="true" />
+                              <span>Disable link</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 size={14} strokeWidth={2} aria-hidden="true" />
+                              <span>Enable link</span>
+                            </>
+                          )}
+                        </Button>
                       ),
+                      onSelect: () => onToggle(link.id, !link.is_active),
                     },
                     {
-                      key: 'regenerate',
+                      key: 'delete',
                       content: (
-                        <span className="flex items-center gap-2">
-                          <RefreshCw size={13} strokeWidth={2} aria-hidden="true" /> Regenerate token
-                        </span>
+                        <Button
+                          type="button"
+                          role="menuitem"
+                          variant="destructive"
+                          size="sm"
+                          className="w-full justify-start gap-2"
+                        >
+                          <Ban size={14} strokeWidth={2} aria-hidden="true" />
+                          <span>Delete link</span>
+                        </Button>
                       ),
+                      onSelect: () => onDelete(link.id),
                     },
                   ],
                 }]}
@@ -395,16 +446,21 @@ function LinkCard({ link }: { link: DisplayPublicLink }) {
 }
 
 function LinksSection({
-  slug,
-  surveySlug,
+  projectId,
+  surveyId,
+  publicSlug,
   savedAccessMode,
 }: {
-  slug: string
-  surveySlug: string
+  projectId: number
+  surveyId: number
+  publicSlug: string | null
   savedAccessMode: SurveyAccessMode
 }) {
-  const survey = getMockSurvey(slug, surveySlug)
-  const links = getMockPublicLinksForSurvey(surveySlug)
+  const { data: links = [], isLoading: linksLoading } = usePublicLinks(projectId, surveyId)
+  const createLink = useCreatePublicLink(projectId, surveyId)
+  const updateLink = useUpdatePublicLink(projectId, surveyId)
+  const deleteLink = useDeletePublicLink(projectId, surveyId)
+
   const allowedCreateLinkTypes = useMemo(
     () => SURVEY_ACCESS_MODES[savedAccessMode].allowedEntries.filter(isCreatableLinkType),
     [savedAccessMode],
@@ -412,14 +468,14 @@ function LinksSection({
   const firstCreateLinkType = allowedCreateLinkTypes[0] ?? 'authenticated_assigned_link'
 
   const [createLinkOpen, setCreateLinkOpen] = useState(false)
-  const [createdLinks, setCreatedLinks] = useState<DisplayPublicLink[]>([])
+  const [linkError, setLinkError] = useState<string | null>(null)
   const [form, setForm] = useState<CreateLinkFormState>(() => createDefaultLinkForm(firstCreateLinkType))
 
   const selectedLinkDef = SURVEY_ACCESS_ENTRIES[form.type]
   const requiresAssignedEmail = form.type !== 'general_link'
   const requiresAuth = form.type === 'authenticated_assigned_link'
   const canCreate = form.name.trim().length > 0 && (!requiresAssignedEmail || form.assignedEmail.trim().length > 0)
-  const visibleLinks: DisplayPublicLink[] = [...createdLinks, ...links]
+  const canAddLinks = savedAccessMode !== 'private' && allowedCreateLinkTypes.length > 0
 
   function openModal() {
     const type = allowedCreateLinkTypes[0]
@@ -428,33 +484,35 @@ function LinksSection({
     setCreateLinkOpen(true)
   }
 
-  function createLink() {
+  async function handleCreateLink() {
     if (!canCreate) return
-    const tokenPrefix = Math.random().toString(36).slice(2, 10)
-    setCreatedLinks((current) => [
-      {
-        id: Date.now(),
-        surveySlug,
-        tokenPrefix,
-        isActive: true,
-        assignedEmail: requiresAssignedEmail ? form.assignedEmail.trim() : null,
-        expiresAt: form.expiresAt ? `${form.expiresAt}T00:00:00Z` : null,
-        submissions: 0,
-        createdAt: new Date().toISOString(),
-        url: `https://flowform.app/s/${tokenPrefix}`,
+    setLinkError(null)
+    try {
+      await createLink.mutateAsync({
         name: form.name.trim(),
-        linkType: form.type,
-        requiresAuth: requiresAuth || form.requireAuthForGeneralLink,
-      },
-      ...current,
-    ])
-    setCreateLinkOpen(false)
+        assigned_email: requiresAssignedEmail ? form.assignedEmail.trim() : null,
+        expires_at: form.expiresAt ? `${form.expiresAt}T00:00:00Z` : null,
+        requires_auth: requiresAuth || form.requireAuthForGeneralLink,
+      })
+      setCreateLinkOpen(false)
+    } catch {
+      setLinkError('Failed to create link. Please try again.')
+    }
   }
 
-  const canAddLinks = savedAccessMode !== 'private' && allowedCreateLinkTypes.length > 0
+  function handleToggle(linkId: number, isActive: boolean) {
+    updateLink.mutate({ linkId, body: { is_active: isActive } })
+  }
+
+  function handleDelete(linkId: number) {
+    deleteLink.mutate(linkId)
+  }
 
   return (
     <div className="grid gap-4">
+      {linkError && (
+        <Toast variant="error" onClose={() => setLinkError(null)}>{linkError}</Toast>
+      )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <SectionLabel
           label="Sharing"
@@ -484,7 +542,7 @@ function LinksSection({
         </Card>
       )}
 
-      {savedAccessMode === 'public' && survey && (
+      {savedAccessMode === 'public' && publicSlug && (
         <Card tone="muted" size="sm">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
@@ -494,11 +552,18 @@ function LinksSection({
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground">Public URL active</p>
                 <code className="mt-0.5 block truncate font-mono text-xs text-muted-foreground">
-                  https://flowform.app/s/{survey.slug}
+                  {window.location.origin}/s/{publicSlug}
                 </code>
               </div>
             </div>
-            <Button type="button" variant="secondary" size="xs" icon="copy" className="shrink-0">
+            <Button
+              type="button"
+              variant="secondary"
+              size="xs"
+              icon="copy"
+              className="shrink-0"
+              onClick={() => navigator.clipboard.writeText(`${window.location.origin}/s/${publicSlug}`).catch(() => {})}
+            >
               Copy URL
             </Button>
           </div>
@@ -521,10 +586,12 @@ function LinksSection({
         </Card>
       )}
 
-      {visibleLinks.length > 0 ? (
+      {linksLoading ? (
+        <div className="flex justify-center py-6"><Spinner size={20} /></div>
+      ) : links.length > 0 ? (
         <CardStack gap="sm">
-          {visibleLinks.map((link) => (
-            <LinkCard key={link.id} link={link} />
+          {links.map((link) => (
+            <LinkCard key={link.id} link={link} onToggle={handleToggle} onDelete={handleDelete} />
           ))}
         </CardStack>
       ) : (
@@ -548,7 +615,13 @@ function LinksSection({
         footer={
           <>
             <Button variant="secondary" onClick={() => setCreateLinkOpen(false)}>Cancel</Button>
-            <Button variant="primary" disabled={!canCreate} onClick={createLink}>Create link</Button>
+            <Button
+              variant="primary"
+              disabled={!canCreate || createLink.isPending}
+              onClick={handleCreateLink}
+            >
+              {createLink.isPending ? 'Creating…' : 'Create link'}
+            </Button>
           </>
         }
       >
@@ -682,76 +755,102 @@ function CompactPermissionBadges({ permissions, limit = 3 }: { permissions: Perm
   )
 }
 
-function MembersSection() {
-  const [surveyRoleAssignments, setSurveyRoleAssignments] = useState<Record<number, string>>(
-    DEFAULT_SURVEY_ROLE_ASSIGNMENTS,
-  )
-  const [customSurveyRoles, setCustomSurveyRoles] = useState<CustomRole[]>([])
-  const [editingRole, setEditingRole] = useState<RoleEditorState | null>(null)
+function MembersSection({ projectId, surveyId }: { projectId: number; surveyId: number }) {
+  const { data: projectMembers = [], isLoading: membersLoading } = useProjectMembers(projectId)
+  const { data: projectRoles = [] } = useProjectRoles(projectId > 0 ? projectId : null)
+  const { data: surveyAssignments = [] } = useSurveyMembers(projectId, surveyId)
+  const { data: surveyRoles = [] } = useSurveyRoles(projectId)
+
+  const assignRole = useAssignSurveyMemberRole(projectId, surveyId)
+  const updateRole = useUpdateSurveyMemberRole(projectId, surveyId)
+  const removeRole = useRemoveSurveyMemberRole(projectId, surveyId)
+  const createSurveyRole = useCreateSurveyRole(projectId)
+  const [newRoleEditor, setNewRoleEditor] = useState<RoleEditorState | null>(null)
   const selectCreatedRoleRef = useRef<((roleId: string) => void) | null>(null)
 
-  const surveyRoles = useMemo<RoleWithPermissions[]>(
-    () => [...SURVEY_PRESET_ROLES, ...customSurveyRoles],
-    [customSurveyRoles],
+  const assignmentByMembership = useMemo(
+    () => new Map(surveyAssignments.map((a) => [a.membership_id, a])),
+    [surveyAssignments],
   )
 
   const rows = useMemo<MemberRow[]>(
-    () =>
-      mockProjectMembers.map((member) => {
-        const overrideRoleId = surveyRoleAssignments[member.id]
-        return {
-          ...member,
-          overrideRoleId,
-          effectiveRoleId: overrideRoleId ?? PROJECT_ROLE_TO_SURVEY_ROLE_ID[member.role],
-        }
-      }),
-    [surveyRoleAssignments],
+    () => projectMembers.map((m) => ({
+      ...m,
+      surveyRoleId: assignmentByMembership.get(m.id)?.role_id ?? null,
+    })),
+    [projectMembers, assignmentByMembership],
   )
 
-  const addSurveyRole = (selectRole: (roleId: string) => void) => {
-    const id = `survey-custom-${Date.now()}`
-    selectCreatedRoleRef.current = selectRole
-    setEditingRole({ id, custom: true, name: 'New survey role', description: 'Custom survey role.', permissions: new Set() })
+  function surveyPermissionPreview(roleId: number): PermissionPreview[] {
+    const role = surveyRoles.find((r) => r.id === roleId)
+    return (role?.permissions ?? []).map((p) => ({ key: p as PermissionKey, variant: 'warning' as const }))
   }
 
-  const saveSurveyRole = () => {
-    if (!editingRole) return
-    const next = {
-      name: editingRole.name.trim(),
-      description: editingRole.description.trim(),
-      permissions: [...editingRole.permissions],
+  function projectPermissionPreview(roleId: number | null): PermissionPreview[] {
+    const role = projectRoles.find((r) => r.id === roleId)
+    return (role?.permissions ?? [])
+      .filter((p): p is SurveyPermissionKey => isSurveyPermissionKey(p as PermissionKey))
+      .map((p) => ({ key: p, variant: 'default' as const }))
+  }
+
+  function effectivePermissionPreview(member: MemberRow, surveyRoleId = member.surveyRoleId): PermissionPreview[] {
+    const permissions = new Map<PermissionKey, PermissionPreview>()
+
+    for (const permission of projectPermissionPreview(member.role_id)) {
+      permissions.set(permission.key, permission)
     }
-    if (!next.name) return
-    setCustomSurveyRoles((current) =>
-      current.some((r) => r.id === editingRole.id)
-        ? current.map((r) => r.id === editingRole.id ? { ...r, ...next } : r)
-        : [...current, { id: editingRole.id, ...next }],
-    )
-    selectCreatedRoleRef.current?.(editingRole.id)
-    selectCreatedRoleRef.current = null
-    setEditingRole(null)
-  }
 
-  const deleteSurveyRole = () => {
-    if (!editingRole?.custom) return
-    setCustomSurveyRoles((current) => current.filter((r) => r.id !== editingRole.id))
-    setSurveyRoleAssignments((current) => {
-      const next = { ...current }
-      for (const [memberId, roleId] of Object.entries(next)) {
-        if (roleId === editingRole.id) delete next[Number(memberId)]
+    if (surveyRoleId) {
+      for (const permission of surveyPermissionPreview(surveyRoleId)) {
+        if (!permissions.has(permission.key)) {
+          permissions.set(permission.key, permission)
+        }
       }
-      return next
-    })
-    selectCreatedRoleRef.current = null
-    setEditingRole(null)
+    }
+
+    return [...permissions.values()]
   }
 
-  const surveyPermissionPreview = (member: MemberRow, roleId: string): PermissionPreview[] => {
-    const gained = permissionsGained(surveyRoles, PROJECT_ROLE_TO_SURVEY_ROLE_ID[member.role], roleId)
-    return rolePermissions(surveyRoles, roleId).map((permission) => ({
-      key: permission,
-      variant: gained.includes(permission) ? 'warning' : 'default',
-    }))
+  function handleSaveRole(member: MemberRow, roleId: string) {
+    const numericRoleId = Number(roleId)
+    const existing = assignmentByMembership.get(member.id)
+    if (existing) {
+      updateRole.mutate({ membershipId: member.id, body: { role_id: numericRoleId } })
+    } else {
+      assignRole.mutate({ membership_id: member.id, role_id: numericRoleId })
+    }
+  }
+
+  function handleRemoveRole(member: MemberRow) {
+    removeRole.mutate(member.id)
+  }
+
+  function addSurveyRole(selectRole: (roleId: string) => void) {
+    selectCreatedRoleRef.current = selectRole
+    setNewRoleEditor({
+      id: `survey-new-${Date.now()}`,
+      custom: true,
+      name: 'New survey role',
+      description: '',
+      permissions: new Set(),
+    })
+  }
+
+  function saveNewSurveyRole() {
+    if (!newRoleEditor) return
+    const name = newRoleEditor.name.trim()
+    if (!name) return
+
+    createSurveyRole.mutate(
+      { name, permissions: surveyPermissionsFromEditor(newRoleEditor) },
+      {
+        onSuccess: (role) => {
+          selectCreatedRoleRef.current?.(String(role.id))
+          selectCreatedRoleRef.current = null
+          setNewRoleEditor(null)
+        },
+      },
+    )
   }
 
   const columns: TableColumn<MemberRow>[] = [
@@ -762,40 +861,38 @@ function MembersSection() {
       maxWidth: 200,
       cell: (member) => (
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">{member.name}</p>
-          <p className="truncate text-2xs text-muted-foreground">{member.email}</p>
+          <p className="truncate text-sm font-semibold text-foreground">
+            {member.user.display_name ?? member.user.email}
+          </p>
+          <p className="truncate text-2xs text-muted-foreground">{member.user.email}</p>
         </div>
       ),
     },
     {
-      key: 'project-role',
-      header: 'Project role',
-      minWidth: 65,
-      maxWidth: 150,
+      key: 'status',
+      header: 'Status',
+      minWidth: 60,
+      maxWidth: 100,
       cell: (member) => (
-        <RoleBadgePreview
-          label={member.role}
-          permissions={rolePermissions(surveyRoles, PROJECT_ROLE_TO_SURVEY_ROLE_ID[member.role]).map((p) => ({ key: p }))}
-        />
+        <Badge variant={member.status === 'active' ? 'success' : 'muted'} size="xs">
+          {member.status === 'active' ? 'Active' : 'Suspended'}
+        </Badge>
       ),
     },
     {
       key: 'survey-role',
-      header: 'Survey role override',
+      header: 'Survey role',
       minWidth: 75,
       maxWidth: 160,
       cell: (member) => {
-        const gained = permissionsGained(surveyRoles, PROJECT_ROLE_TO_SURVEY_ROLE_ID[member.role], member.effectiveRoleId)
-        if (!member.overrideRoleId || gained.length === 0) {
-          return <span className="text-xs text-muted-foreground">—</span>
-        }
-        const role = roleForId(surveyRoles, member.overrideRoleId)
+        if (!member.surveyRoleId) return <span className="text-xs text-muted-foreground">—</span>
+        const role = surveyRoles.find((r) => r.id === member.surveyRoleId)
         return (
           <RoleBadgePreview
-            label={role?.name ?? 'Custom role'}
-            prefix="+"
+            label={role?.name ?? 'Role'}
+            prefix=""
             variant="warning"
-            permissions={gained.map((p) => ({ key: p, variant: 'warning' as const }))}
+            permissions={surveyPermissionPreview(member.surveyRoleId)}
           />
         )
       },
@@ -805,7 +902,9 @@ function MembersSection() {
       header: 'Effective permissions',
       minWidth: 110,
       cell: (member) => (
-        <CompactPermissionBadges permissions={surveyPermissionPreview(member, member.effectiveRoleId)} />
+        <CompactPermissionBadges
+          permissions={effectivePermissionPreview(member)}
+        />
       ),
     },
     {
@@ -817,27 +916,22 @@ function MembersSection() {
       cellClassName: 'flex justify-center px-0',
       cell: (member) => (
         <MemberRoleActions
-          memberName={member.name}
-          memberEmail={member.email}
+          memberName={member.user.display_name ?? member.user.email}
+          memberEmail={member.user.email}
           editRoleLabel="Edit survey role"
-          roles={surveyRoles}
-          selectedRoleId={member.overrideRoleId ?? member.effectiveRoleId}
-          onSaveRole={(roleId) =>
-            setSurveyRoleAssignments((current) => ({ ...current, [member.id]: roleId }))
-          }
-          onRemoveRole={
-            member.overrideRoleId
-              ? () => setSurveyRoleAssignments((current) => {
-                const next = { ...current }
-                delete next[member.id]
-                return next
-              })
-              : undefined
-          }
+          roles={surveyRoles.map((r) => ({
+            id: String(r.id),
+            name: r.name,
+            description: '',
+            permissions: r.permissions as PermissionKey[],
+          }))}
+          selectedRoleId={member.surveyRoleId ? String(member.surveyRoleId) : undefined}
+          onSaveRole={(roleId) => handleSaveRole(member, roleId)}
+          onRemoveRole={member.surveyRoleId ? () => handleRemoveRole(member) : undefined}
           removeRoleLabel="Remove survey role"
           onAddRole={addSurveyRole}
           renderEffectivePreview={(roleId) => (
-            <PermissionBadges permissions={surveyPermissionPreview(member, roleId)} />
+            <PermissionBadges permissions={effectivePermissionPreview(member, Number(roleId))} />
           )}
         />
       ),
@@ -846,30 +940,28 @@ function MembersSection() {
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <SectionLabel
-          label="Assignment"
-          title="Members and role overrides"
-          description="Review project members' inherited roles and apply survey-specific overrides where needed."
-        />
-        <Button variant="primary" size="sm" icon="plus" className="shrink-0 self-end">
-          Add member
-        </Button>
-      </div>
+      <SectionLabel
+        label="Assignment"
+        title="Members and role overrides"
+        description="Review project members and apply survey-specific role overrides where needed."
+      />
 
-      <div className="w-full overflow-hidden">
-        <Table columns={columns} rows={rows} getRowKey={(member) => member.id} />
-      </div>
+      {membersLoading ? (
+        <div className="flex justify-center py-6"><Spinner size={20} /></div>
+      ) : (
+        <div className="w-full overflow-hidden">
+          <Table columns={columns} rows={rows} getRowKey={(member) => member.id} />
+        </div>
+      )}
 
       <RoleEditorModal
-        role={editingRole}
+        role={newRoleEditor}
         onClose={() => {
-          setEditingRole(null)
+          setNewRoleEditor(null)
           selectCreatedRoleRef.current = null
         }}
-        onChange={setEditingRole}
-        onSave={saveSurveyRole}
-        onDelete={deleteSurveyRole}
+        onChange={setNewRoleEditor}
+        onSave={saveNewSurveyRole}
         permissionGroups={SURVEY_PERMISSION_GROUPS}
         isNew
       />
@@ -879,20 +971,22 @@ function MembersSection() {
 
 // ── Survey roles reference card ───────────────────────────────────────────────
 
-function SurveyRolesReferenceCard() {
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+function SurveyRolesReferenceCard({ projectId }: { projectId: number }) {
+  const { data: roles = [], isLoading } = useSurveyRoles(projectId)
+  const createRole = useCreateSurveyRole(projectId)
+  const updateRole = useUpdateSurveyRole(projectId)
+  const deleteRoleMutation = useDeleteSurveyRole(projectId)
+
+  const [expandedId, setExpandedId] = useState<number | null>(null)
   const [editingRole, setEditingRole] = useState<RoleEditorState | null>(null)
   const [isNew, setIsNew] = useState(false)
-  const [customRoles, setCustomRoles] = useState<CustomRole[]>([])
-
-  const allRoles = [...SURVEY_PRESET_ROLES, ...customRoles]
 
   function openAddRole() {
     setEditingRole({
-      id: `survey-custom-${Date.now()}`,
+      id: `survey-new-${Date.now()}`,
       custom: true,
       name: 'New survey role',
-      description: 'Custom survey role.',
+      description: '',
       permissions: new Set(),
     })
     setIsNew(true)
@@ -900,27 +994,34 @@ function SurveyRolesReferenceCard() {
 
   function saveRole() {
     if (!editingRole) return
-    const next = {
-      name: editingRole.name.trim(),
-      description: editingRole.description.trim(),
-      permissions: [...editingRole.permissions],
+    const name = editingRole.name.trim()
+    if (!name) return
+    const permissions = surveyPermissionsFromEditor(editingRole)
+
+    if (isNew) {
+      createRole.mutate(
+        { name, permissions },
+        { onSuccess: (role) => { setExpandedId(role.id); setEditingRole(null); setIsNew(false) } },
+      )
+    } else {
+      const roleId = Number(editingRole.id)
+      updateRole.mutate(
+        { roleId, body: { name, permissions } },
+        { onSuccess: () => { setEditingRole(null) } },
+      )
     }
-    if (!next.name) return
-    setCustomRoles((current) =>
-      current.some((r) => r.id === editingRole.id)
-        ? current.map((r) => r.id === editingRole.id ? { ...r, ...next } : r)
-        : [...current, { id: editingRole.id, ...next }],
-    )
-    setExpandedId(editingRole.id)
-    setEditingRole(null)
-    setIsNew(false)
   }
 
   function deleteRole() {
-    if (!editingRole?.custom) return
-    setCustomRoles((current) => current.filter((r) => r.id !== editingRole.id))
-    setEditingRole(null)
-    setIsNew(false)
+    if (!editingRole) return
+    const roleId = Number(editingRole.id)
+    deleteRoleMutation.mutate(roleId, {
+      onSuccess: () => {
+        if (expandedId === roleId) setExpandedId(null)
+        setEditingRole(null)
+        setIsNew(false)
+      },
+    })
   }
 
   return (
@@ -928,70 +1029,69 @@ function SurveyRolesReferenceCard() {
       <Card size="sm">
         <div className="grid gap-3">
           <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="mt-0.5 text-lg font-semibold text-foreground">Survey roles</p>
-            </div>
+            <p className="text-lg font-semibold text-foreground">Survey roles</p>
             <Button variant="secondary" size="xs" icon="plus" className="shrink-0" onClick={openAddRole}>
               Add role
             </Button>
           </div>
-          <div className="grid gap-1.5">
-            {allRoles.map((role) => {
-              const isExpanded = expandedId === role.id
-              const isCustom = customRoles.some((r) => r.id === role.id)
-              return (
-                <div key={role.id} className="overflow-hidden rounded-md border border-border bg-muted/30">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedId(isExpanded ? null : role.id)}
-                    className="ui-button-ghost w-full justify-between rounded-none px-2.5 py-2 text-left"
-                    aria-expanded={isExpanded}
-                  >
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <p className="truncate text-lg font-semibold text-foreground">{role.name}</p>
-                      {isCustom && <Badge variant="accent" size="xxs">Custom</Badge>}
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
+
+          {isLoading ? (
+            <div className="flex justify-center py-3"><Spinner size={16} /></div>
+          ) : roles.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No survey roles defined yet.</p>
+          ) : (
+            <div className="grid gap-1.5">
+              {roles.map((role) => {
+                const isExpanded = expandedId === role.id
+                return (
+                  <div key={role.id} className="overflow-hidden rounded-md border border-border bg-muted/30">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId(isExpanded ? null : role.id)}
+                      className="ui-button-ghost w-full justify-between rounded-none px-2.5 py-2 text-left"
+                      aria-expanded={isExpanded}
+                    >
+                      <p className="truncate text-sm font-semibold text-foreground">{role.name}</p>
                       <ChevronRight
                         size={12}
                         strokeWidth={2}
                         aria-hidden="true"
-                        className={`text-muted-foreground transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                        className={`shrink-0 text-muted-foreground transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                       />
-                    </div>
-                  </button>
-                  {isExpanded && (
-                    <div className="grid gap-2 border-t border-border px-2.5 py-2.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex flex-wrap gap-1.5">
-                          {role.permissions.map((permission) => (
-                            <PermissionBadge key={permission} permission={permission} />
-                          ))}
-                          {role.permissions.length === 0 && (
-                            <p className="text-xs text-muted-foreground">No permissions assigned.</p>
-                          )}
+                    </button>
+                    {isExpanded && (
+                      <div className="grid gap-2 border-t border-border px-2.5 py-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex flex-wrap gap-1.5">
+                            {role.permissions.length === 0
+                              ? <p className="text-xs text-muted-foreground">No permissions assigned.</p>
+                              : role.permissions.map((p) => (
+                                <PermissionBadge key={p} permission={p as PermissionKey} variant="warning" />
+                              ))
+                            }
+                          </div>
+                          <Button
+                            variant="secondary"
+                            size="xs"
+                            className="shrink-0"
+                            onClick={() => setEditingRole({
+                              id: String(role.id),
+                              custom: true,
+                              name: role.name,
+                              description: '',
+                              permissions: new Set(role.permissions as PermissionKey[]),
+                            })}
+                          >
+                            Edit
+                          </Button>
                         </div>
-                        <Button
-                          variant="secondary"
-                          size="xs"
-                          className="shrink-0"
-                          onClick={() => setEditingRole({
-                            id: role.id,
-                            custom: isCustom,
-                            name: role.name,
-                            description: role.description,
-                            permissions: new Set(role.permissions),
-                          })}
-                        >
-                          Edit
-                        </Button>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </Card>
 
@@ -1000,7 +1100,7 @@ function SurveyRolesReferenceCard() {
         onClose={() => { setEditingRole(null); setIsNew(false) }}
         onChange={setEditingRole}
         onSave={saveRole}
-        onDelete={deleteRole}
+        onDelete={isNew ? undefined : deleteRole}
         permissionGroups={SURVEY_PERMISSION_GROUPS}
         isNew={isNew}
       />
@@ -1018,14 +1118,44 @@ export function SurveyAccessTab() {
   useRenderDebug('SurveyAccessTab')
   const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/access' })
 
-  const [savedAccessMode, setSavedAccessMode] = useState<SurveyAccessMode>('link_only')
+  const { data: project } = useProject(slug)
+  const surveyProjectRef = project?.id ?? null
+  const { data: survey } = useSurvey(surveyProjectRef, surveySlug)
+  const updateSurvey = useUpdateSurvey(project?.id ?? slug, surveySlug)
+  const [accessToast, setAccessToast] = useState<{ message: string; variant: 'success' | 'error' } | null>(null)
 
-  const publicLinks = getMockPublicLinksForSurvey(surveySlug)
-  const activeLinkCount = publicLinks.filter((l) => l.isActive).length
-  const savedAccessDefinition = SURVEY_ACCESS_MODES[savedAccessMode]
+  const projectId = project?.id ?? 0
+  const surveyId = survey?.id ?? 0
+  const savedAccessMode = (survey?.visibility ?? 'link_only') as SurveyAccessMode
+
+  function showAccessToast(message: string, variant: 'success' | 'error') {
+    setAccessToast({ message, variant })
+    setTimeout(() => setAccessToast(null), 4000)
+  }
+
+  async function handleModeChange(mode: SurveyAccessMode, publicSlug: string | null): Promise<boolean> {
+    try {
+      const updatedSurvey = await updateSurvey.mutateAsync({
+        visibility: mode,
+        title: null,
+        public_slug: mode === 'public' ? publicSlug : null,
+      })
+      showAccessToast(`Access mode changed to ${SURVEY_ACCESS_MODES[updatedSurvey.visibility].label}.`, 'success')
+      return true
+    } catch {
+      showAccessToast('Failed to change access mode. Please check the public URL slug and try again.', 'error')
+      return false
+    }
+  }
 
   return (
     <section className="mx-auto grid w-full gap-8">
+      {accessToast && (
+        <Toast variant={accessToast.variant} onClose={() => setAccessToast(null)}>
+          {accessToast.message}
+        </Toast>
+      )}
+
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
@@ -1038,28 +1168,32 @@ export function SurveyAccessTab() {
         </div>
       </div>
 
-
       {/* Main two-column layout */}
       <div className="grid gap-8 xl:grid-cols-[minmax(0,78rem)_23rem] xl:justify-between xl:items-start">
         {/* Left column — primary content */}
         <div className="grid gap-8">
-          {/* Section 1: Links */}
-          <LinksSection slug={slug} surveySlug={surveySlug} savedAccessMode={savedAccessMode} />
+          <LinksSection
+            projectId={projectId}
+            surveyId={surveyId}
+            publicSlug={survey?.public_slug ?? null}
+            savedAccessMode={savedAccessMode}
+          />
 
           <SectionDivider />
 
-          {/* Section 3: Members */}
-          <MembersSection />
+          <MembersSection projectId={projectId} surveyId={surveyId} />
         </div>
 
         {/* Right column — sticky sidebar */}
         <aside className="grid gap-4 sm:grid-cols-2 xl:sticky xl:top-4 xl:grid-cols-1">
-          {/* Access summary */}
-          <AccessSidebarSummary mode={savedAccessMode} onModeChange={setSavedAccessMode} />
-
-          {/* Quick reference: survey roles */}
-          <SurveyRolesReferenceCard />
-
+          <AccessSidebarSummary
+            mode={savedAccessMode}
+            publicSlug={survey?.public_slug ?? null}
+            surveyTitle={survey?.title ?? ''}
+            isSaving={updateSurvey.isPending}
+            onModeChange={handleModeChange}
+          />
+          <SurveyRolesReferenceCard projectId={projectId} />
         </aside>
       </div>
     </section>

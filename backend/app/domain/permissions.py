@@ -15,6 +15,16 @@ ProjectPermission = Literal[
     "submission:view",
 ]
 
+SurveyPermission = Literal[
+    "survey:view",
+    "survey:create",
+    "survey:edit",
+    "survey:delete",
+    "survey:publish",
+    "survey:archive",
+    "submission:view",
+]
+
 
 @dataclass(frozen=True)
 class PermissionGroup:

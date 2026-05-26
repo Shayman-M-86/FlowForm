@@ -92,8 +92,6 @@ function AuthenticatedProtectedApp({ children }: Props) {
   useRenderDebug('AuthenticatedProtectedApp', { children })
   const { isLoading, isAuthenticated, getIdTokenClaims, getAccessTokenSilently, loginWithRedirect, logout, error, user } =
     useAuth0()
-  // Clear permissions cache on every page load so refresh always fetches fresh data.
-  useState(() => { clearAllCachedPermissions() })
   // True immediately on refresh if a bootstrapped session exists.
   // Stays true while Auth0 does its silent check — only resets if Auth0
   // comes back saying the session is gone or a different user is now active.

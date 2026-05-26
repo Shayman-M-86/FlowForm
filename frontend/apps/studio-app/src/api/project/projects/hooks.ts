@@ -2,8 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isDesignPreviewMode } from '../../designPreview'
 import { createMockProject, getMockProject, mockProjects } from '../../mockData'
 import { useOpenApiClient } from '../../openapi'
+import { loadCachedQuery, loadCachedQueryUpdatedAt, saveCachedQuery } from '../../queryStorage'
 import { createProject, deleteProject, getProject, getProjects, updateProject } from './requests'
 import type { CreateProjectRequest, ProjectOut, UpdateProjectRequest } from './types'
+
+const FIVE_MINUTES = 5 * 60 * 1000
 
 export const projectKeys = {
   all: () => ['projects'] as const,
@@ -13,23 +16,37 @@ export const projectKeys = {
 
 export function useProjects() {
   const apiClient = useOpenApiClient()
+  const queryKey = projectKeys.list()
 
   return useQuery({
-    queryKey: projectKeys.list(),
-    queryFn: () => (isDesignPreviewMode ? Promise.resolve([...mockProjects]) : getProjects(apiClient)),
+    queryKey,
+    queryFn: async () => {
+      const projects = isDesignPreviewMode ? [...mockProjects] : await getProjects(apiClient)
+      if (!isDesignPreviewMode) saveCachedQuery(queryKey, projects)
+      return projects
+    },
+    staleTime: FIVE_MINUTES,
+    initialData: isDesignPreviewMode ? undefined : loadCachedQuery<ProjectOut[]>(queryKey, FIVE_MINUTES),
+    initialDataUpdatedAt: () => isDesignPreviewMode ? undefined : loadCachedQueryUpdatedAt(queryKey),
   })
 }
 
 export function useProject(ref: string | number | null) {
   const apiClient = useOpenApiClient()
+  const queryKey = projectKeys.detail(ref)
 
   return useQuery({
-    queryKey: projectKeys.detail(ref),
-    queryFn: () => {
+    queryKey,
+    queryFn: async () => {
       if (ref === null) throw new Error('Project ref is required')
-      return isDesignPreviewMode ? Promise.resolve(getMockProject(ref)) : getProject(apiClient, ref)
+      const project = isDesignPreviewMode ? getMockProject(ref) : await getProject(apiClient, ref)
+      if (!isDesignPreviewMode) saveCachedQuery(queryKey, project)
+      return project
     },
     enabled: ref !== null,
+    staleTime: FIVE_MINUTES,
+    initialData: ref !== null && !isDesignPreviewMode ? loadCachedQuery<ProjectOut>(queryKey, FIVE_MINUTES) : undefined,
+    initialDataUpdatedAt: () => ref !== null && !isDesignPreviewMode ? loadCachedQueryUpdatedAt(queryKey) : undefined,
   })
 }
 

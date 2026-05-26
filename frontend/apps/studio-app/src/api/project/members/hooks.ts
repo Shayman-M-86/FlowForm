@@ -1,15 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useOpenApiClient } from '../../openapi'
+import { loadCachedQuery, loadCachedQueryUpdatedAt, saveCachedQuery } from '../../queryStorage'
 import { projectKeys } from '../projects/hooks'
 import { acceptInvitation, declineInvitation, deleteProjectMember, getMyInvitations, getProjectInvitations, getProjectMembers, revokeInvitation, sendInvitation, updateProjectMember } from './requests'
 import type { ProjectInvitationOut, ProjectMemberOut, SendInvitationRequest, UpdateMemberRequest } from './types'
 
+const FIFTEEN_SECONDS = 15 * 1000
+const TWO_MINUTES = 2 * 60 * 1000
+
 export const memberKeys = {
   all: () => ['members'] as const,
-  list: (projectId: number) => [...memberKeys.all(), 'list', projectId] as const,
+  list: (projectId: number | null) => [...memberKeys.all(), 'list', projectId] as const,
   detail: (projectId: number, membershipId: number) =>
     [...memberKeys.all(), 'detail', projectId, membershipId] as const,
-  invitations: (projectId: number) => [...memberKeys.all(), 'invitations', projectId] as const,
+  invitations: (projectId: number | null) => [...memberKeys.all(), 'invitations', projectId] as const,
 }
 
 export const myInvitationKeys = {
@@ -18,10 +22,18 @@ export const myInvitationKeys = {
 
 export function useMyInvitations() {
   const apiClient = useOpenApiClient()
+  const queryKey = myInvitationKeys.all()
 
   return useQuery({
-    queryKey: myInvitationKeys.all(),
-    queryFn: () => getMyInvitations(apiClient),
+    queryKey,
+    queryFn: async () => {
+      const invitations = await getMyInvitations(apiClient)
+      saveCachedQuery(queryKey, invitations)
+      return invitations
+    },
+    staleTime: FIFTEEN_SECONDS,
+    initialData: loadCachedQuery<ProjectInvitationOut[]>(queryKey, FIFTEEN_SECONDS),
+    initialDataUpdatedAt: () => loadCachedQueryUpdatedAt(queryKey),
   })
 }
 
@@ -50,21 +62,45 @@ export function useDeclineInvitation() {
   })
 }
 
-export function useProjectMembers(projectId: number) {
+export function useProjectMembers(projectId: number | null) {
   const apiClient = useOpenApiClient()
+  const queryKey = memberKeys.list(projectId)
 
   return useQuery({
-    queryKey: memberKeys.list(projectId),
-    queryFn: () => getProjectMembers(apiClient, projectId),
+    queryKey,
+    queryFn: async () => {
+      if (projectId === null) throw new Error('Project id is required')
+      const members = await getProjectMembers(apiClient, projectId)
+      saveCachedQuery(queryKey, members)
+      return members
+    },
+    enabled: projectId !== null && projectId > 0,
+    staleTime: TWO_MINUTES,
+    initialData: projectId !== null && projectId > 0
+      ? loadCachedQuery<ProjectMemberOut[]>(queryKey, TWO_MINUTES)
+      : undefined,
+    initialDataUpdatedAt: () => projectId !== null && projectId > 0 ? loadCachedQueryUpdatedAt(queryKey) : undefined,
   })
 }
 
-export function useProjectInvitations(projectId: number) {
+export function useProjectInvitations(projectId: number | null) {
   const apiClient = useOpenApiClient()
+  const queryKey = memberKeys.invitations(projectId)
 
   return useQuery({
-    queryKey: memberKeys.invitations(projectId),
-    queryFn: () => getProjectInvitations(apiClient, projectId),
+    queryKey,
+    queryFn: async () => {
+      if (projectId === null) throw new Error('Project id is required')
+      const invitations = await getProjectInvitations(apiClient, projectId)
+      saveCachedQuery(queryKey, invitations)
+      return invitations
+    },
+    enabled: projectId !== null && projectId > 0,
+    staleTime: TWO_MINUTES,
+    initialData: projectId !== null && projectId > 0
+      ? loadCachedQuery<ProjectInvitationOut[]>(queryKey, TWO_MINUTES)
+      : undefined,
+    initialDataUpdatedAt: () => projectId !== null && projectId > 0 ? loadCachedQueryUpdatedAt(queryKey) : undefined,
   })
 }
 
@@ -102,9 +138,12 @@ export function useUpdateProjectMember(projectId: number) {
     mutationFn: ({ membershipId, body }: { membershipId: number; body: UpdateMemberRequest }) =>
       updateProjectMember(apiClient, projectId, membershipId, body),
     onSuccess: (updated) => {
-      queryClient.setQueryData<ProjectMemberOut[]>(memberKeys.list(projectId), (current) =>
-        current?.map((m) => (m.id === updated.id ? updated : m)),
-      )
+      const queryKey = memberKeys.list(projectId)
+      queryClient.setQueryData<ProjectMemberOut[]>(queryKey, (current) => {
+        const next = current?.map((m) => (m.id === updated.id ? updated : m))
+        if (next) saveCachedQuery(queryKey, next)
+        return next
+      })
     },
   })
 }
@@ -116,9 +155,12 @@ export function useDeleteProjectMember(projectId: number) {
   return useMutation({
     mutationFn: (membershipId: number) => deleteProjectMember(apiClient, projectId, membershipId),
     onSuccess: (_result, membershipId) => {
-      queryClient.setQueryData<ProjectMemberOut[]>(memberKeys.list(projectId), (current) =>
-        current?.filter((m) => m.id !== membershipId),
-      )
+      const queryKey = memberKeys.list(projectId)
+      queryClient.setQueryData<ProjectMemberOut[]>(queryKey, (current) => {
+        const next = current?.filter((m) => m.id !== membershipId)
+        if (next) saveCachedQuery(queryKey, next)
+        return next
+      })
     },
   })
 }

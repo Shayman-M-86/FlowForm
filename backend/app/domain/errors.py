@@ -514,6 +514,38 @@ class MemberOwnerProtectedError(AppError):
         )
 
 
+class SurveyRoleNotFoundError(AppError):
+    """Error raised when a survey role cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Survey role not found.")
+
+
+class SurveyRoleNameConflictError(AppError):
+    """Error raised when a survey role name is already taken within the project."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=409, code="CONFLICT", message="A survey role with that name already exists.")
+
+
+class SurveyMemberRoleNotFoundError(AppError):
+    """Error raised when a survey membership role assignment cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Survey member role assignment not found.")
+
+
+class SurveyMemberRoleAlreadyAssignedError(AppError):
+    """Error raised when a member already has a survey role assigned for a given survey."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="SURVEY_MEMBER_ROLE_CONFLICT",
+            message="This member already has a survey role assigned for this survey.",
+        )
+
+
 class ManagementApiUnavailableError(AppError):
     """Error raised when the Auth0 Management API is not configured."""
 

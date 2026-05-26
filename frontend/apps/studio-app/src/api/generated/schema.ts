@@ -664,6 +664,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/surveys/{survey_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List survey member role assignments
+         * @description List survey member role assignments
+         */
+        get: operations["listSurveyMembers"];
+        put?: never;
+        /**
+         * Assign survey role to member
+         * @description Assign survey role to member
+         */
+        post: operations["assignSurveyMemberRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/surveys/{survey_id}/members/{membership_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove survey member role assignment
+         * @description Remove survey member role assignment
+         */
+        delete: operations["removeSurveyMemberRole"];
+        options?: never;
+        head?: never;
+        /**
+         * Update survey member role assignment
+         * @description Update survey member role assignment
+         */
+        patch: operations["updateSurveyMemberRole"];
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/survey-roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List survey roles
+         * @description List survey roles
+         */
+        get: operations["listSurveyRoles"];
+        put?: never;
+        /**
+         * Create survey role
+         * @description Create survey role
+         */
+        post: operations["createSurveyRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/survey-roles/{role_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete survey role
+         * @description Delete survey role
+         */
+        delete: operations["deleteSurveyRole"];
+        options?: never;
+        head?: never;
+        /**
+         * Update survey role
+         * @description Update survey role
+         */
+        patch: operations["updateSurveyRole"];
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/surveys": {
         parameters: {
             query?: never;
@@ -2259,6 +2355,108 @@ export interface components {
             answers: components["schemas"]["AnswerOut"][];
         };
         /**
+         * SurveyMemberOut
+         * @description Embedded user details on a survey member row.
+         */
+        SurveyMemberOut: {
+            /** Id */
+            id: number;
+            /** User Id */
+            user_id: number;
+            /** Project Id */
+            project_id: number;
+            /** Role Id */
+            role_id: number | null;
+            /** Status */
+            status: string;
+        };
+        /**
+         * SurveyRoleOut
+         * @description API response shape for a survey role.
+         */
+        SurveyRoleOut: {
+            /** Id */
+            id: number;
+            /** Project Id */
+            project_id: number;
+            /** Name */
+            name: string;
+            /** Permissions */
+            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * SurveyMemberRoleOut
+         * @description API response shape for a survey membership role assignment.
+         */
+        SurveyMemberRoleOut: {
+            /** Project Id */
+            project_id: number;
+            /** Survey Id */
+            survey_id: number;
+            /** Membership Id */
+            membership_id: number;
+            /** Role Id */
+            role_id: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** @default null */
+            member: components["schemas"]["SurveyMemberOut"] | null;
+            /** @default null */
+            role: components["schemas"]["SurveyRoleOut"] | null;
+        };
+        /**
+         * AssignSurveyMemberRoleRequest
+         * @description Request body for assigning a survey role to a project member for a survey.
+         */
+        AssignSurveyMemberRoleRequest: {
+            /** Membership Id */
+            membership_id: number;
+            /** Role Id */
+            role_id: number;
+        };
+        /**
+         * UpdateSurveyMemberRoleRequest
+         * @description Request body for updating a survey member role assignment.
+         */
+        UpdateSurveyMemberRoleRequest: {
+            /** Role Id */
+            role_id: number;
+        };
+        /**
+         * CreateSurveyRoleRequest
+         * @description Request body for creating a survey role.
+         */
+        CreateSurveyRoleRequest: {
+            /** Name */
+            name: string;
+            /** Permissions */
+            permissions?: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+        };
+        /**
+         * UpdateSurveyRoleRequest
+         * @description Request body for partially updating a survey role.
+         */
+        UpdateSurveyRoleRequest: {
+            /**
+             * Name
+             * @default null
+             */
+            name: string | null;
+            /**
+             * Permissions
+             * @default null
+             */
+            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
+        };
+        /**
          * SurveyOut
          * @description API response shape for a survey.
          */
@@ -2715,6 +2913,13 @@ export type SubmitterOut = components['schemas']['SubmitterOut'];
 export type PaginatedSubmissionsOut = components['schemas']['PaginatedSubmissionsOut'];
 export type AnswerOut = components['schemas']['AnswerOut'];
 export type LinkedSubmissionOut = components['schemas']['LinkedSubmissionOut'];
+export type SurveyMemberOut = components['schemas']['SurveyMemberOut'];
+export type SurveyRoleOut = components['schemas']['SurveyRoleOut'];
+export type SurveyMemberRoleOut = components['schemas']['SurveyMemberRoleOut'];
+export type AssignSurveyMemberRoleRequest = components['schemas']['AssignSurveyMemberRoleRequest'];
+export type UpdateSurveyMemberRoleRequest = components['schemas']['UpdateSurveyMemberRoleRequest'];
+export type CreateSurveyRoleRequest = components['schemas']['CreateSurveyRoleRequest'];
+export type UpdateSurveyRoleRequest = components['schemas']['UpdateSurveyRoleRequest'];
 export type SurveyOut = components['schemas']['SurveyOut'];
 export type CreateSurveyRequest = components['schemas']['CreateSurveyRequest'];
 export type UpdateSurveyRequest = components['schemas']['UpdateSurveyRequest'];
@@ -4483,6 +4688,330 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LinkedSubmissionOut"];
+                };
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listSurveyMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyMemberRoleOut"][];
+                };
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    assignSurveyMemberRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignSurveyMemberRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyMemberRoleOut"];
+                };
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    removeSurveyMemberRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateSurveyMemberRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSurveyMemberRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyMemberRoleOut"];
+                };
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listSurveyRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyRoleOut"][];
+                };
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createSurveyRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSurveyRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyRoleOut"];
+                };
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteSurveyRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                role_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request. */
+            400: components["responses"]["BadRequestError"];
+            /** @description Authentication required or token invalid. */
+            401: components["responses"]["UnauthorizedError"];
+            /** @description Authenticated but not authorized for this resource. */
+            403: components["responses"]["ForbiddenError"];
+            /** @description Resource not found. */
+            404: components["responses"]["NotFoundError"];
+            /** @description Conflict with the current resource state. */
+            409: components["responses"]["ConflictError"];
+            /** @description Request was syntactically valid but semantically invalid. */
+            422: components["responses"]["ValidationError"];
+            /** @description Rate limit exceeded. */
+            429: components["responses"]["RateLimitError"];
+            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateSurveyRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                role_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSurveyRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyRoleOut"];
                 };
             };
             /** @description Bad request. */
