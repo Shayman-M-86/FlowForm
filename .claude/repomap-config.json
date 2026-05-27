@@ -36,7 +36,8 @@
     {
       "name": "backend-tests",
       "paths": [
-        "backend/tests/"
+        "backend/tests/",
+        "tools/mcp/"
       ]
     },
     {
@@ -51,8 +52,7 @@
       "name": "public-and-shared",
       "paths": [
         "frontend/apps/public-site/src/pages/",
-        "frontend/packages/",
-        "tools/mcp/"
+        "frontend/packages/"
       ]
     }
   ]
