@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import { Button, Badge, Modal } from '@flowform/ui'
+import { useState } from 'react'
+import { Button, Modal } from '@flowform/ui'
 import { useMyInvitations, useAcceptInvitation, useDeclineInvitation } from '@/api/project/members/hooks'
 import type { ProjectInvitationOut } from '@/api/project/members/types'
 
@@ -29,9 +29,11 @@ function IconMail() {
 function InvitationModal({
   invitation,
   onClose,
+  required = false,
 }: {
   invitation: ProjectInvitationOut
   onClose: () => void
+  required?: boolean
 }) {
   const accept = useAcceptInvitation()
   const decline = useDeclineInvitation()
@@ -43,6 +45,7 @@ function InvitationModal({
       onClose={onClose}
       title="Project invitation"
       width={440}
+      required={required}
       footer={
         <>
           <Button
@@ -176,7 +179,7 @@ export function SidebarNotifications({ collapsed: _collapsed }: Props) {
 
       {open && count > 0 && (
         activeInvitation ? (
-          <InvitationModal invitation={activeInvitation} onClose={() => setOpen(false)} />
+          <InvitationModal invitation={activeInvitation} onClose={() => setOpen(false)} required />
         ) : (
           <AllInvitationsModal invitations={invitations} onClose={() => setOpen(false)} />
         )

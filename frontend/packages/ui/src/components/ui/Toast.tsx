@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "./Button";
@@ -33,11 +33,14 @@ const toastRoles: Record<ToastVariant, "status" | "alert"> = {
 const AUTO_DISMISS_MS = 20_000;
 
 export function Toast({ variant, children, className, onClose }: ToastProps) {
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
-    if (!onClose) return;
-    const timer = setTimeout(onClose, AUTO_DISMISS_MS);
+    if (!onCloseRef.current) return;
+    const timer = setTimeout(() => onCloseRef.current?.(), AUTO_DISMISS_MS);
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, []);
 
   return (
     <div

@@ -198,18 +198,34 @@ const QUESTION_TYPE_OPTIONS: Array<{ value: QuestionType; label: string }> = [
 
 const SWAP_ANIMATION_MS = 280;
 
-export function NodePage() {
+interface NodePageProps {
+  initialNodes?: SurveyNode[];
+  onNodesChange?: (nodes: SurveyNode[]) => void;
+}
+
+export function NodePage({ initialNodes, onNodesChange }: NodePageProps = {}) {
   const navigate = useNavigate();
-  const persistedState = useRef<PersistedNodePageState | null>(loadPersistedNodePageState());
-  const persistedUiState = useRef<PersistedNodePageUiState | null>(loadPersistedNodePageUiState());
-  const [questions, setQuestions] = useState<Question[]>(() => persistedState.current?.questions ?? []);
-  const [nextId, setNextId] = useState(() => persistedState.current?.nextId ?? 1);
+  const controlled = initialNodes !== undefined;
+
+  const persistedState = useRef<PersistedNodePageState | null>(
+    controlled ? null : loadPersistedNodePageState(),
+  );
+  const persistedUiState = useRef<PersistedNodePageUiState | null>(
+    controlled ? null : loadPersistedNodePageUiState(),
+  );
+
+  const initialState = useRef<PersistedNodePageState | null>(
+    controlled ? deserializeSurveyNodes(initialNodes) : persistedState.current,
+  );
+
+  const [questions, setQuestions] = useState<Question[]>(() => initialState.current?.questions ?? []);
+  const [nextId, setNextId] = useState(() => initialState.current?.nextId ?? 1);
   const [editingQuestionIds, setEditingQuestionIds] = useState<string[]>([]);
   const [questionContents, setQuestionContents] = useState<Record<string, QuestionContent>>(
-    () => persistedState.current?.questionContents ?? {},
+    () => initialState.current?.questionContents ?? {},
   );
   const [ruleContents, setRuleContents] = useState<Record<string, RuleContent>>(
-    () => persistedState.current?.ruleContents ?? {},
+    () => initialState.current?.ruleContents ?? {},
   );
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set(persistedUiState.current?.collapsedIds ?? []));
   const questionRefsMap = useRef<Map<string, FieldQuestionHandle | MatchingQuestionHandle | MultiChoiceQuestionHandle | RatingQuestionHandle | RulesQuestionHandle>>(new Map());
@@ -389,7 +405,7 @@ export function NodePage() {
   }
 
   function clearSchema() {
-    if (typeof window !== "undefined") {
+    if (!controlled && typeof window !== "undefined") {
       window.localStorage.removeItem(NODE_PAGE_STORAGE_KEY);
       window.localStorage.removeItem(NODE_PAGE_UI_STORAGE_KEY);
     }
@@ -554,17 +570,25 @@ export function NodePage() {
     return serializeSurveyEntries(entries);
   }, [questions, questionContents, ruleContents]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  const onNodesChangeRef = useRef(onNodesChange);
+  onNodesChangeRef.current = onNodesChange;
 
+  useEffect(() => {
+    if (controlled) {
+      onNodesChangeRef.current?.(serializedSurvey);
+      return;
+    }
+
+    if (typeof window === "undefined") return;
     try {
       window.localStorage.setItem(NODE_PAGE_STORAGE_KEY, JSON.stringify(serializedSurvey));
     } catch {
       // Ignore persistence failures.
     }
-  }, [serializedSurvey]);
+  }, [serializedSurvey, controlled]);
 
   useEffect(() => {
+    if (controlled) return;
     if (typeof window === "undefined") return;
 
     const questionIds = new Set(questions.map((question) => question.id));
@@ -577,7 +601,7 @@ export function NodePage() {
     } catch {
       // Ignore persistence failures.
     }
-  }, [collapsedIds, questions]);
+  }, [collapsedIds, questions, controlled]);
 
   function handlePreview() {
     if (serializedSurvey.length === 0) return;

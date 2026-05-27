@@ -12,6 +12,7 @@ import { SidebarNotifications } from "@/components/SidebarNotifications";
 import { useCurrentUser } from "@/auth/useCurrentUser";
 import { isAuthBypassEnabled } from "@/auth/testing";
 import { clearActiveProjectSlug } from "@/lib/activeProject";
+import { clearQueryCache } from "@/api/queryStorage";
 import { useRenderDebug } from "@/debug/useRenderDebug";
 
 // ── Icons ──────────────────────────────────────────────────────────────────
@@ -51,14 +52,6 @@ function IconOverview() {
       <rect x="14" y="3" width="7" height="5" rx="1.5" />
       <rect x="14" y="12" width="7" height="9" rx="1.5" />
       <rect x="3" y="15" width="7" height="6" rx="1.5" />
-    </svg>
-  );
-}
-function IconVersions() {
-  return (
-    <svg {...svgProps}>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
     </svg>
   );
 }
@@ -281,6 +274,7 @@ function SidebarUserMenu() {
           ),
           onSelect: () => {
             clearActiveProjectSlug();
+            clearQueryCache();
             if (isAuthBypassEnabled) return;
             logout({ logoutParams: { returnTo: window.location.origin } });
           },
@@ -434,6 +428,12 @@ export function StudioSidebar() {
   const canEditSettings   = useHasProjectPermission(projectId, 'project:edit');
   const canDeleteProject  = useHasProjectPermission(projectId, 'project:delete');
 
+  const canEditSurvey     = useHasProjectPermission(projectId, 'survey:edit');
+  const canViewResponses  = useHasProjectPermission(projectId, 'submission:view');
+  const canArchiveSurvey  = useHasProjectPermission(projectId, 'survey:archive');
+  const canDeleteSurvey   = useHasProjectPermission(projectId, 'survey:delete');
+  const canPublishSurvey  = useHasProjectPermission(projectId, 'survey:publish');
+
   const survey = useSurvey(projectSlug, surveySlug);
   const surveyName = survey.data?.title ?? surveySlug ?? undefined;
 
@@ -559,11 +559,10 @@ export function StudioSidebar() {
               <div aria-hidden className="h-px bg-border mt-5" />
               <NavSection label={surveyName ?? "Survey"}>
               <NavItem to={`${surveyBase}/overview`} icon={<IconOverview />} label="Overview" active={isActive(`${surveyBase}/overview`)} />
-              <NavItem to={`${surveyBase}/builder`} icon={<IconBuilder />} label="Builder" active={isActive(`${surveyBase}/builder`)} />
-              <NavItem to={`${surveyBase}/versions`} icon={<IconVersions />} label="Versions" active={isActive(`${surveyBase}/versions`)} />
+              <NavItem to={`${surveyBase}/builder`} icon={<IconBuilder />} label="Builder" active={isActive(`${surveyBase}/builder`)} disabled={!canEditSurvey} tooltip={PERMISSION_REQUIRED_TOOLTIP.surveyBuilder} />
               <NavItem to={`${surveyBase}/access`} icon={<IconAccess />} label="Access" active={isActive(`${surveyBase}/access`)} />
-              <NavItem to={`${surveyBase}/responses`} icon={<IconResponses />} label="Responses" active={isActive(`${surveyBase}/responses`)} />
-              <NavItem to={`${surveyBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${surveyBase}/settings`)} />
+              <NavItem to={`${surveyBase}/responses`} icon={<IconResponses />} label="Responses" active={isActive(`${surveyBase}/responses`)} disabled={!canViewResponses} tooltip={PERMISSION_REQUIRED_TOOLTIP.surveyResponses} />
+              <NavItem to={`${surveyBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${surveyBase}/settings`)} disabled={!canEditSurvey && !canArchiveSurvey && !canDeleteSurvey && !canPublishSurvey} tooltip={PERMISSION_REQUIRED_TOOLTIP.surveySettings} />
               </NavSection>
             </>
           )}

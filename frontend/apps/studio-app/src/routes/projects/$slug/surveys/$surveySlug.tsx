@@ -3,17 +3,12 @@ import { Button, TabSelector } from '@flowform/ui'
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { useProject } from '@/api/project/projects/hooks'
 import { useSurvey } from '@/api/project/surveys/hooks'
+import { useHasProjectPermission } from '@/api/project/permissions/hooks'
+import { PERMISSION_REQUIRED_TOOLTIP } from '@/api/project/permissions/types'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
-const TABS = [
-  { id: 'overview',  label: 'Overview' },
-  { id: 'builder',   label: 'Builder' },
-  { id: 'access',    label: 'Access' },
-  { id: 'responses', label: 'Responses' },
-  { id: 'settings',  label: 'Settings' },
-] as const
-
-type TabId = typeof TABS[number]['id']
+const TAB_IDS = ['overview', 'builder', 'access', 'responses', 'settings'] as const
+type TabId = typeof TAB_IDS[number]
 
 function SurveyLayout() {
   useRenderDebug('SurveyLayout')
@@ -22,12 +17,27 @@ function SurveyLayout() {
   const { data: survey } = useSurvey(slug, surveySlug)
   const navigate = useNavigate()
 
+  const projectId = project?.id ?? null
+  const canEditSurvey    = useHasProjectPermission(projectId, 'survey:edit')
+  const canViewResponses = useHasProjectPermission(projectId, 'submission:view')
+  const canArchiveSurvey = useHasProjectPermission(projectId, 'survey:archive')
+  const canDeleteSurvey  = useHasProjectPermission(projectId, 'survey:delete')
+  const canPublishSurvey = useHasProjectPermission(projectId, 'survey:publish')
+
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const activeTab: TabId = (TABS.find((t) => pathname.endsWith(`/${t.id}`))?.id ?? 'overview') as TabId
+  const activeTab: TabId = (TAB_IDS.find((id) => pathname.endsWith(`/${id}`)) ?? 'overview') as TabId
   const isBuilderTab = activeTab === 'builder'
 
   const projectLabel = project?.name ?? slug
   const surveyTitle = survey?.title ?? surveySlug.replace(/-/g, ' ')
+
+  const tabs = [
+    { id: 'overview',  label: 'Overview' },
+    { id: 'builder',   label: 'Builder',   disabled: !canEditSurvey,                                                       tooltip: PERMISSION_REQUIRED_TOOLTIP.surveyBuilder },
+    { id: 'access',    label: 'Access' },
+    { id: 'responses', label: 'Responses', disabled: !canViewResponses,                                                    tooltip: PERMISSION_REQUIRED_TOOLTIP.surveyResponses },
+    { id: 'settings',  label: 'Settings',  disabled: !canEditSurvey && !canArchiveSurvey && !canDeleteSurvey && !canPublishSurvey, tooltip: PERMISSION_REQUIRED_TOOLTIP.surveySettings },
+  ]
 
   return (
     <main className={isBuilderTab ? 'page-main page-main-builder' : 'page-main'}>
@@ -49,7 +59,7 @@ function SurveyLayout() {
             </div>
           </div>
           <TabSelector
-            items={TABS.map((t) => ({ id: t.id, label: t.label }))}
+            items={tabs}
             activeId={activeTab}
             onChange={(id) => navigate({ to: `/projects/${slug}/surveys/${surveySlug}/${id}` as any })}
           />

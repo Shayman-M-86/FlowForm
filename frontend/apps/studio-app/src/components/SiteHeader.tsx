@@ -7,6 +7,7 @@ import { useCurrentUser } from '@/auth/useCurrentUser'
 import { isAuthBypassEnabled } from '@/auth/testing'
 import { useProject } from '@/api/project/projects/hooks'
 import { clearActiveProjectSlug, getActiveProjectSlug } from '@/lib/activeProject'
+import { clearQueryCache } from '@/api/queryStorage'
 import '@flowform/site-shell/header.css'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
@@ -144,6 +145,7 @@ export function SiteHeader() {
           ),
           onSelect: () => {
             clearActiveProjectSlug()
+            clearQueryCache()
             if (isAuthBypassEnabled) return
             logout({ logoutParams: { returnTo: window.location.origin } })
           },

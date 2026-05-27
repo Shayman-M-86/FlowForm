@@ -67,12 +67,12 @@ export function RolesTab() {
       permissionGroups={PROJECT_PERMISSION_GROUPS}
       persistedRoles={roles}
       onCreateRole={async (role) => {
-        await createRole.mutateAsync({ name: role.name, permissions: role.permissions })
+        await createRole.mutateAsync({ name: role.name, description: role.description, permissions: role.permissions })
       }}
       onUpdateRole={async (roleId, role) => {
         await updateRole.mutateAsync({
           roleId,
-          body: { name: role.name, permissions: role.permissions },
+          body: { name: role.name, description: role.description, permissions: role.permissions },
         })
       }}
       onDeleteRole={async (roleId) => {

@@ -39,3 +39,16 @@ export function saveCachedQuery<T>(key: readonly unknown[], data: T) {
     // Storage can be unavailable or full. The network cache still works.
   }
 }
+
+export function clearQueryCache() {
+  try {
+    const toRemove: string[] = []
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const k = sessionStorage.key(i)
+      if (k?.startsWith(CACHE_PREFIX)) toRemove.push(k)
+    }
+    toRemove.forEach((k) => sessionStorage.removeItem(k))
+  } catch {
+    // Storage can be unavailable — safe to ignore.
+  }
+}

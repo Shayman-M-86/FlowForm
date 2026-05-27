@@ -16,12 +16,14 @@ export type RoleFilter = 'all' | 'default' | 'custom'
 export type PersistedRole = {
   id: number
   name: string
+  description?: string | null
   permissions: unknown[]
   is_system_role: boolean
 }
 
 type RoleMutationInput = {
   name: string
+  description: string | null
   permissions: PermissionKey[]
 }
 
@@ -89,7 +91,7 @@ export function RolesWorkspace({
       return {
         id: String(role.id),
         name: role.name,
-        description: fallbackPreset?.description ?? defaultRoleDescription,
+        description: role.description ?? fallbackPreset?.description ?? defaultRoleDescription,
         permissions: normalizePermissionKeys(role.permissions),
         custom: !role.is_system_role,
       }
@@ -149,11 +151,11 @@ export function RolesWorkspace({
     try {
       if (usesPersistedRoles) {
         if (isNewRole) {
-          await onCreateRole?.({ name: next.name, permissions: next.permissions })
+          await onCreateRole?.({ name: next.name, description: next.description || null, permissions: next.permissions })
           setRolePage(Math.floor(allRoleCount / rolesPerPage))
           if (roleFilter === 'default') setRoleFilter('all')
         } else if (editingRole.custom) {
-          await onUpdateRole?.(Number(editingRole.id), { name: next.name, permissions: next.permissions })
+          await onUpdateRole?.(Number(editingRole.id), { name: next.name, description: next.description || null, permissions: next.permissions })
         }
       } else if (editingRole.custom) {
         if (isNewRole) {
@@ -334,7 +336,7 @@ export function RolesWorkspace({
         onSave={saveRole}
         onDelete={deleteRole}
         isNew={isNewRole}
-        showDescription={!usesPersistedRoles}
+        showDescription
         isSaving={isSaving}
         isDeleting={isDeleting}
       />

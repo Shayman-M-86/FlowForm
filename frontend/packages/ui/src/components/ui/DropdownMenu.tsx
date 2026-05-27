@@ -44,6 +44,7 @@ interface DropdownMenuProps {
   size?: DropdownMenuSize;
   width?: DropdownMenuWidth;
   fullscreenAt?: DropdownMenuFullscreenAt;
+  maxHeight?: string;
 }
 
 const dropdownMenuSizeClasses: Record<DropdownMenuSize, string> = {
@@ -95,6 +96,7 @@ export function DropdownMenu({
   size = "sm",
   width,
   fullscreenAt = 640,
+  maxHeight,
 }: DropdownMenuProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [position, setPosition] = useState<{
@@ -262,7 +264,10 @@ export function DropdownMenu({
             </div>
           ) : null}
 
-          <div className="ui-dropdown-actions">
+          <div
+            className="ui-dropdown-actions"
+            style={maxHeight ? { maxHeight, overflowY: "auto" } : undefined}
+          >
             {section.actions.map((action) => (
               <div key={action.key}>{renderAction(action)}</div>
             ))}

@@ -29,6 +29,7 @@ import { useProject } from '@/api/project/projects/hooks'
 import { useProjectMembers } from '@/api/project/members/hooks'
 import { useProjectRoles } from '@/api/project/roles/hooks'
 import { useSurvey, useUpdateSurvey } from '@/api/project/surveys/hooks'
+import { useHasProjectPermission } from '@/api/project/permissions/hooks'
 import {
   useCreatePublicLink,
   useDeletePublicLink,
@@ -154,12 +155,14 @@ function AccessSidebarSummary({
   publicSlug,
   surveyTitle,
   isSaving,
+  canEdit,
   onModeChange,
 }: {
   mode: SurveyAccessMode
   publicSlug: string | null
   surveyTitle: string
   isSaving: boolean
+  canEdit: boolean
   onModeChange: (mode: SurveyAccessMode, publicSlug: string | null) => Promise<boolean>
 }) {
   const [modalOpen, setModalOpen] = useState(false)
@@ -208,9 +211,11 @@ function AccessSidebarSummary({
                 <p className="text-md font-semibold text-foreground">{def.label}</p>
               </div>
             </div>
-            <Button variant="secondary" size="sm" className="shrink-0" onClick={openModal}>
-              Edit
-            </Button>
+            {canEdit && (
+              <Button variant="secondary" size="sm" className="shrink-0" onClick={openModal}>
+                Edit
+              </Button>
+            )}
           </div>
           <p className="text-xs leading-5 text-muted-foreground">{def.description}</p>
           <div className="grid gap-1.5 border-t border-border pt-3">
@@ -306,10 +311,12 @@ function linkUrl(link: PublicLinkOut): string {
 
 function LinkCard({
   link,
+  canEdit,
   onToggle,
   onDelete,
 }: {
   link: PublicLinkOut
+  canEdit: boolean
   onToggle: (linkId: number, isActive: boolean) => void
   onDelete: (linkId: number) => void
 }) {
@@ -369,74 +376,78 @@ function LinkCard({
                   onClick={copyLink}
                 />
               </Tooltip>
-              <span ref={moreRef} className="inline-flex">
-                <Tooltip content="More options" size="sm">
-                  <Button
-                    type="button"
-                    variant="icon"
-                    size="sm"
-                    icon="ellipsis"
-                    aria-label="More options"
-                    aria-haspopup="menu"
-                    aria-expanded={moreOpen}
-                    onClick={() => setMoreOpen((o) => !o)}
-                  />
-                </Tooltip>
-              </span>
-              <DropdownMenu
-                open={moreOpen}
-                onClose={() => setMoreOpen(false)}
-                trigger={moreRef}
-                align="right"
-                width="15rem"
-                fullscreenAt="never"
-                sections={[{
-                  label: 'Link actions',
-                  actions: [
-                    {
-                      key: 'toggle',
-                      content: (
-                        <Button
-                          type="button"
-                          role="menuitem"
-                          variant="secondary"
-                          size="sm"
-                          className="w-full justify-start gap-2"
-                        >
-                          {link.is_active ? (
-                            <>
+              {canEdit && (
+                <>
+                  <span ref={moreRef} className="inline-flex">
+                    <Tooltip content="More options" size="sm">
+                      <Button
+                        type="button"
+                        variant="icon"
+                        size="sm"
+                        icon="ellipsis"
+                        aria-label="More options"
+                        aria-haspopup="menu"
+                        aria-expanded={moreOpen}
+                        onClick={() => setMoreOpen((o) => !o)}
+                      />
+                    </Tooltip>
+                  </span>
+                  <DropdownMenu
+                    open={moreOpen}
+                    onClose={() => setMoreOpen(false)}
+                    trigger={moreRef}
+                    align="right"
+                    width="15rem"
+                    fullscreenAt="never"
+                    sections={[{
+                      label: 'Link actions',
+                      actions: [
+                        {
+                          key: 'toggle',
+                          content: (
+                            <Button
+                              type="button"
+                              role="menuitem"
+                              variant="secondary"
+                              size="sm"
+                              className="w-full justify-start gap-2"
+                            >
+                              {link.is_active ? (
+                                <>
+                                  <Ban size={14} strokeWidth={2} aria-hidden="true" />
+                                  <span>Disable link</span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 size={14} strokeWidth={2} aria-hidden="true" />
+                                  <span>Enable link</span>
+                                </>
+                              )}
+                            </Button>
+                          ),
+                          onSelect: () => onToggle(link.id, !link.is_active),
+                        },
+                        {
+                          key: 'delete',
+                          content: (
+                            <Button
+                              type="button"
+                              role="menuitem"
+                              variant="destructive"
+                              size="sm"
+                              className="w-full justify-start gap-2"
+                            >
                               <Ban size={14} strokeWidth={2} aria-hidden="true" />
-                              <span>Disable link</span>
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle2 size={14} strokeWidth={2} aria-hidden="true" />
-                              <span>Enable link</span>
-                            </>
-                          )}
-                        </Button>
-                      ),
-                      onSelect: () => onToggle(link.id, !link.is_active),
-                    },
-                    {
-                      key: 'delete',
-                      content: (
-                        <Button
-                          type="button"
-                          role="menuitem"
-                          variant="destructive"
-                          size="sm"
-                          className="w-full justify-start gap-2"
-                        >
-                          <Ban size={14} strokeWidth={2} aria-hidden="true" />
-                          <span>Delete link</span>
-                        </Button>
-                      ),
-                      onSelect: () => onDelete(link.id),
-                    },
-                  ],
-                }]}
-              />
+                              <span>Delete link</span>
+                            </Button>
+                          ),
+                          onSelect: () => onDelete(link.id),
+                        },
+                      ],
+                    }]}
+                  />
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -450,11 +461,13 @@ function LinksSection({
   surveyId,
   publicSlug,
   savedAccessMode,
+  canEdit,
 }: {
   projectId: number
   surveyId: number
   publicSlug: string | null
   savedAccessMode: SurveyAccessMode
+  canEdit: boolean
 }) {
   const { data: links = [], isLoading: linksLoading } = usePublicLinks(projectId, surveyId)
   const createLink = useCreatePublicLink(projectId, surveyId)
@@ -475,7 +488,7 @@ function LinksSection({
   const requiresAssignedEmail = form.type !== 'general_link'
   const requiresAuth = form.type === 'authenticated_assigned_link'
   const canCreate = form.name.trim().length > 0 && (!requiresAssignedEmail || form.assignedEmail.trim().length > 0)
-  const canAddLinks = savedAccessMode !== 'private' && allowedCreateLinkTypes.length > 0
+  const canAddLinks = canEdit && savedAccessMode !== 'private' && allowedCreateLinkTypes.length > 0
 
   function openModal() {
     const type = allowedCreateLinkTypes[0]
@@ -591,10 +604,10 @@ function LinksSection({
       ) : links.length > 0 ? (
         <CardStack gap="sm">
           {links.map((link) => (
-            <LinkCard key={link.id} link={link} onToggle={handleToggle} onDelete={handleDelete} />
+            <LinkCard key={link.id} link={link} canEdit={canEdit} onToggle={handleToggle} onDelete={handleDelete} />
           ))}
         </CardStack>
-      ) : (
+      ) : canEdit ? (
         <button
           type="button"
           onClick={openModal}
@@ -605,6 +618,10 @@ function LinksSection({
             Create invite links to share the survey with respondents.
           </p>
         </button>
+      ) : (
+        <div className="flex w-full flex-col gap-2 rounded-md border border-dashed border-border bg-muted/20 p-3 text-left sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <p className="text-sm font-medium text-muted-foreground">No active links</p>
+        </div>
       )}
 
       <Modal
@@ -755,7 +772,7 @@ function CompactPermissionBadges({ permissions, limit = 3 }: { permissions: Perm
   )
 }
 
-function MembersSection({ projectId, surveyId }: { projectId: number; surveyId: number }) {
+function MembersSection({ projectId, surveyId, canEdit }: { projectId: number; surveyId: number; canEdit: boolean }) {
   const { data: projectMembers = [], isLoading: membersLoading } = useProjectMembers(projectId)
   const { data: projectRoles = [] } = useProjectRoles(projectId > 0 ? projectId : null)
   const { data: surveyAssignments = [] } = useSurveyMembers(projectId, surveyId)
@@ -840,9 +857,10 @@ function MembersSection({ projectId, surveyId }: { projectId: number; surveyId: 
     if (!newRoleEditor) return
     const name = newRoleEditor.name.trim()
     if (!name) return
+    const description = newRoleEditor.description.trim() || null
 
     createSurveyRole.mutate(
-      { name, permissions: surveyPermissionsFromEditor(newRoleEditor) },
+      { name, description, permissions: surveyPermissionsFromEditor(newRoleEditor) },
       {
         onSuccess: (role) => {
           selectCreatedRoleRef.current?.(String(role.id))
@@ -907,14 +925,14 @@ function MembersSection({ projectId, surveyId }: { projectId: number; surveyId: 
         />
       ),
     },
-    {
+    ...(canEdit ? [{
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
       minWidth: 50,
       maxWidth: 50,
       headerClassName: 'flex justify-center pr-2',
       cellClassName: 'flex justify-center px-0',
-      cell: (member) => (
+      cell: (member: MemberRow) => (
         <MemberRoleActions
           memberName={member.user.display_name ?? member.user.email}
           memberEmail={member.user.email}
@@ -922,7 +940,7 @@ function MembersSection({ projectId, surveyId }: { projectId: number; surveyId: 
           roles={surveyRoles.map((r) => ({
             id: String(r.id),
             name: r.name,
-            description: '',
+            description: r.description ?? '',
             permissions: r.permissions as PermissionKey[],
           }))}
           selectedRoleId={member.surveyRoleId ? String(member.surveyRoleId) : undefined}
@@ -935,7 +953,7 @@ function MembersSection({ projectId, surveyId }: { projectId: number; surveyId: 
           )}
         />
       ),
-    },
+    }] as TableColumn<MemberRow>[] : []),
   ]
 
   return (
@@ -971,7 +989,7 @@ function MembersSection({ projectId, surveyId }: { projectId: number; surveyId: 
 
 // ── Survey roles reference card ───────────────────────────────────────────────
 
-function SurveyRolesReferenceCard({ projectId }: { projectId: number }) {
+function SurveyRolesReferenceCard({ projectId, canEdit }: { projectId: number; canEdit: boolean }) {
   const { data: roles = [], isLoading } = useSurveyRoles(projectId)
   const createRole = useCreateSurveyRole(projectId)
   const updateRole = useUpdateSurveyRole(projectId)
@@ -996,17 +1014,18 @@ function SurveyRolesReferenceCard({ projectId }: { projectId: number }) {
     if (!editingRole) return
     const name = editingRole.name.trim()
     if (!name) return
+    const description = editingRole.description.trim() || null
     const permissions = surveyPermissionsFromEditor(editingRole)
 
     if (isNew) {
       createRole.mutate(
-        { name, permissions },
+        { name, description, permissions },
         { onSuccess: (role) => { setExpandedId(role.id); setEditingRole(null); setIsNew(false) } },
       )
     } else {
       const roleId = Number(editingRole.id)
       updateRole.mutate(
-        { roleId, body: { name, permissions } },
+        { roleId, body: { name, description, permissions } },
         { onSuccess: () => { setEditingRole(null) } },
       )
     }
@@ -1030,9 +1049,11 @@ function SurveyRolesReferenceCard({ projectId }: { projectId: number }) {
         <div className="grid gap-3">
           <div className="flex items-center justify-between gap-2">
             <p className="text-lg font-semibold text-foreground">Survey roles</p>
-            <Button variant="secondary" size="xs" icon="plus" className="shrink-0" onClick={openAddRole}>
-              Add role
-            </Button>
+            {canEdit && (
+              <Button variant="secondary" size="xs" icon="plus" className="shrink-0" onClick={openAddRole}>
+                Add role
+              </Button>
+            )}
           </div>
 
           {isLoading ? (
@@ -1070,20 +1091,22 @@ function SurveyRolesReferenceCard({ projectId }: { projectId: number }) {
                               ))
                             }
                           </div>
-                          <Button
-                            variant="secondary"
-                            size="xs"
-                            className="shrink-0"
-                            onClick={() => setEditingRole({
-                              id: String(role.id),
-                              custom: true,
-                              name: role.name,
-                              description: '',
-                              permissions: new Set(role.permissions as PermissionKey[]),
-                            })}
-                          >
-                            Edit
-                          </Button>
+                          {canEdit && (
+                            <Button
+                              variant="secondary"
+                              size="xs"
+                              className="shrink-0"
+                              onClick={() => setEditingRole({
+                                id: String(role.id),
+                                custom: true,
+                                name: role.name,
+                                description: role.description ?? '',
+                                permissions: new Set(role.permissions as PermissionKey[]),
+                              })}
+                            >
+                              Edit
+                            </Button>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1127,6 +1150,7 @@ export function SurveyAccessTab() {
   const projectId = project?.id ?? 0
   const surveyId = survey?.id ?? 0
   const savedAccessMode = (survey?.visibility ?? 'link_only') as SurveyAccessMode
+  const canEdit = useHasProjectPermission(project?.id ?? null, 'survey:edit')
 
   function showAccessToast(message: string, variant: 'success' | 'error') {
     setAccessToast({ message, variant })
@@ -1177,11 +1201,12 @@ export function SurveyAccessTab() {
             surveyId={surveyId}
             publicSlug={survey?.public_slug ?? null}
             savedAccessMode={savedAccessMode}
+            canEdit={canEdit}
           />
 
           <SectionDivider />
 
-          <MembersSection projectId={projectId} surveyId={surveyId} />
+          <MembersSection projectId={projectId} surveyId={surveyId} canEdit={canEdit} />
         </div>
 
         {/* Right column — sticky sidebar */}
@@ -1191,9 +1216,10 @@ export function SurveyAccessTab() {
             publicSlug={survey?.public_slug ?? null}
             surveyTitle={survey?.title ?? ''}
             isSaving={updateSurvey.isPending}
+            canEdit={canEdit}
             onModeChange={handleModeChange}
           />
-          <SurveyRolesReferenceCard projectId={projectId} />
+          <SurveyRolesReferenceCard projectId={projectId} canEdit={canEdit} />
         </aside>
       </div>
     </section>
