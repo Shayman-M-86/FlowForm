@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import cast
 
 import pytest  # type: ignore[import]
-from psycopg.errors import NotNullViolation, UniqueViolation
+from psycopg.errors import CheckViolation, NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
@@ -113,3 +113,73 @@ def test_survey_role_cascades_on_project_delete(
     assert db_session.get(SurveyRole, role_id) is None, (
         "SurveyRole should have been deleted when its project was deleted"
     )
+
+
+def test_survey_role_description_is_persisted(
+    db_session: scoped_session[Session], project: Project
+) -> None:
+    """description is stored and round-trips correctly."""
+    role = make_survey_role(project.id, name="desc-role", description="Handles survey review tasks.")
+    db_session.add(role)
+    db_session.flush()
+
+    saved = db_session.get(SurveyRole, role.id)
+    assert saved is not None
+    assert saved.description == "Handles survey review tasks.", (
+        f"description={saved.description!r}, expected 'Handles survey review tasks.'"
+    )
+
+
+def test_survey_role_description_nullable(
+    db_session: scoped_session[Session], project: Project
+) -> None:
+    """description defaults to NULL when omitted."""
+    role = make_survey_role(project.id, name="no-desc-role")
+    db_session.add(role)
+    db_session.flush()
+
+    saved = db_session.get(SurveyRole, role.id)
+    assert saved is not None
+    assert saved.description is None, (
+        f"Expected description=None, got {saved.description!r}"
+    )
+
+
+def test_survey_role_description_blank_rejected(
+    db_session: scoped_session[Session], project: Project
+) -> None:
+    """Blank/whitespace-only description violates the CHECK constraint."""
+    role = make_survey_role(project.id, name="blank-desc-role", description="   ")
+    db_session.add(role)
+
+    with pytest.raises(IntegrityError) as exc_info:
+        db_session.flush()
+
+    orig = cast(CheckViolation, exc_info.value.orig)
+    constraint = orig.diag.constraint_name
+    assert constraint == "ck_survey_roles_description_len", (
+        f"Expected constraint 'ck_survey_roles_description_len', got '{constraint}'\n"
+        f"DB error: {exc_info.value}"
+    )
+
+    db_session.rollback()
+
+
+def test_survey_role_description_too_long_rejected(
+    db_session: scoped_session[Session], project: Project
+) -> None:
+    """A description exceeding 500 characters violates the CHECK constraint."""
+    role = make_survey_role(project.id, name="long-desc-role", description="x" * 501)
+    db_session.add(role)
+
+    with pytest.raises(IntegrityError) as exc_info:
+        db_session.flush()
+
+    orig = cast(CheckViolation, exc_info.value.orig)
+    constraint = orig.diag.constraint_name
+    assert constraint == "ck_survey_roles_description_len", (
+        f"Expected constraint 'ck_survey_roles_description_len', got '{constraint}'\n"
+        f"DB error: {exc_info.value}"
+    )
+
+    db_session.rollback()

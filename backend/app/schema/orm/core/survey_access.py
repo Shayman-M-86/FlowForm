@@ -52,11 +52,16 @@ class SurveyRole(CoreBase):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
         UniqueConstraint("project_id", "id", name="uq_survey_roles_project_id_id"),
         UniqueConstraint("project_id", "name", name="uq_survey_roles_project_id_name"),
+        CheckConstraint(
+            "description IS NULL OR char_length(btrim(description)) BETWEEN 1 AND 500",
+            name="ck_survey_roles_description_len",
+        ),
     )
 
     permissions: Mapped[list[Permission]] = relationship("Permission", secondary=survey_role_permissions)

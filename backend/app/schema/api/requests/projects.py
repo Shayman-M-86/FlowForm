@@ -17,6 +17,7 @@ class CreateProjectRoleRequest(BaseModel):
     """Request body for creating a project role."""
 
     name: str = Field(max_length=limits.PROJECT_ROLE_NAME_MAX)
+    description: str | None = Field(default=None, max_length=limits.PROJECT_ROLE_DESCRIPTION_MAX)
     permissions: set[ProjectPermission] = Field(default_factory=set, max_length=limits.PROJECT_ROLE_PERMISSIONS_MAX)
 
     @field_validator("name")
@@ -27,11 +28,21 @@ class CreateProjectRoleRequest(BaseModel):
             raise ValueError("Role name must not be blank.")
         return value
 
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, value: str | None) -> str | None:
+        if value is not None:
+            value = value.strip()
+            if not value:
+                raise ValueError("Role description must not be blank.")
+        return value
+
 
 class UpdateProjectRoleRequest(BaseModel):
     """Request body for partially updating a project role."""
 
     name: str | None = Field(default=None, max_length=limits.PROJECT_ROLE_NAME_MAX)
+    description: str | None = Field(default=None, max_length=limits.PROJECT_ROLE_DESCRIPTION_MAX)
     permissions: set[ProjectPermission] | None = Field(default=None, max_length=limits.PROJECT_ROLE_PERMISSIONS_MAX)
 
     @field_validator("name")
@@ -41,6 +52,15 @@ class UpdateProjectRoleRequest(BaseModel):
             value = value.strip()
             if not value:
                 raise ValueError("Role name must not be blank.")
+        return value
+
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, value: str | None) -> str | None:
+        if value is not None:
+            value = value.strip()
+            if not value:
+                raise ValueError("Role description must not be blank.")
         return value
 
 

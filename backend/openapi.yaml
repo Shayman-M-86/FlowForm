@@ -5557,6 +5557,12 @@ components:
           title: Name
           type: string
           maxLength: 120
+        description:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          title: Description
         is_system_role:
           title: Is System Role
           type: boolean
@@ -5588,6 +5594,7 @@ components:
       - id
       - project_id
       - name
+      - description
       - is_system_role
       - permissions
       - created_at
@@ -5600,6 +5607,13 @@ components:
           maxLength: 80
           title: Name
           type: string
+        description:
+          anyOf:
+          - maxLength: 500
+            type: string
+          - type: 'null'
+          default: null
+          title: Description
         permissions:
           items:
             enum:
@@ -5634,6 +5648,13 @@ components:
           - type: 'null'
           default: null
           title: Name
+        description:
+          anyOf:
+          - maxLength: 500
+            type: string
+          - type: 'null'
+          default: null
+          title: Description
         permissions:
           anyOf:
           - items:
@@ -5886,6 +5907,12 @@ components:
           title: Name
           type: string
           maxLength: 120
+        description:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          title: Description
         permissions:
           items:
             enum:
@@ -5910,6 +5937,7 @@ components:
       - id
       - project_id
       - name
+      - description
       - permissions
       - created_at
       title: SurveyRoleOut
@@ -5989,6 +6017,13 @@ components:
           maxLength: 80
           title: Name
           type: string
+        description:
+          anyOf:
+          - maxLength: 500
+            type: string
+          - type: 'null'
+          default: null
+          title: Description
         permissions:
           items:
             enum:
@@ -6019,6 +6054,13 @@ components:
           - type: 'null'
           default: null
           title: Name
+        description:
+          anyOf:
+          - maxLength: 500
+            type: string
+          - type: 'null'
+          default: null
+          title: Description
         permissions:
           anyOf:
           - items:
@@ -7033,6 +7075,16 @@ components:
               value:
                 code: SURVEY_VISIBILITY_MISMATCH
                 message: <example>
+            ck_survey_roles_description_len:
+              summary: 'DB rule: ROLE_DESCRIPTION_INVALID'
+              value:
+                code: ROLE_DESCRIPTION_INVALID
+                message: Survey role description for project id=<project_id> is blank or exceeds 500 characters.
+            ck_project_roles_description_len:
+              summary: 'DB rule: ROLE_DESCRIPTION_INVALID'
+              value:
+                code: ROLE_DESCRIPTION_INVALID
+                message: Project role description for project id=<project_id> is blank or exceeds 500 characters.
             pydantic_field_validation:
               summary: Pydantic field validation failure
               value:

@@ -29,9 +29,10 @@ def create_role(
     *,
     project_id: int,
     name: str,
+    description: str | None,
     permissions: list,
 ) -> ProjectRole:
-    role = ProjectRole(project_id=project_id, name=name)
+    role = ProjectRole(project_id=project_id, name=name, description=description)
     role.permissions = permissions
     db.add(role)
     flush_with_err_handle(db, contexts=[role])
@@ -44,10 +45,13 @@ def update_role(
     *,
     fields_set: set[str],
     name: str | None,
+    description: str | None,
     permissions: list | None,
 ) -> ProjectRole:
     if "name" in fields_set and name is not None:
         role.name = name
+    if "description" in fields_set:
+        role.description = description
     if "permissions" in fields_set and permissions is not None:
         role.permissions = permissions
     flush_with_err_handle(db, contexts=[role])

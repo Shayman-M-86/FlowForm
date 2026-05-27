@@ -34,6 +34,7 @@ class RolesService:
             db,
             project_id=project_id,
             name=data.name,
+            description=data.description,
             permissions=permission_rows,
         )
         commit_with_err_handle(db)
@@ -56,6 +57,7 @@ class RolesService:
             role,
             fields_set=data.model_fields_set,
             name=data.name,
+            description=data.description,
             permissions=permission_rows,
         )
         commit_with_err_handle(db)

@@ -44,6 +44,7 @@ class ProjectRoleOut(BaseModel):
     id: int
     project_id: int
     name: str
+    description: str | None
     is_system_role: bool
     permissions: list[ProjectPermission] = Field(max_length=limits.PROJECT_ROLE_PERMISSIONS_MAX)
     created_at: datetime
@@ -55,6 +56,7 @@ class ProjectRoleOut(BaseModel):
             id=role.id,
             project_id=role.project_id,
             name=role.name,
+            description=role.description,
             is_system_role=role.is_system_role,
             permissions=permissions,
             created_at=role.created_at,

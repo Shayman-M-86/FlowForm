@@ -610,6 +610,15 @@ SURVEY_ROLE_RULES: tuple[DbErrorRule, ...] = (
         ),
         extractor=_survey_role_ctx,
     ),
+    check_rule(
+        "ck_survey_roles_description_len",
+        lambda ctx, _exc: DbIntegrityError(
+            422,
+            "ROLE_DESCRIPTION_INVALID",
+            f"Survey role description for project id={ctx['project_id']} is blank or exceeds 500 characters.",
+        ),
+        extractor=_survey_role_ctx,
+    ),
 )
 
 PROJECT_ROLE_RULES: tuple[DbErrorRule, ...] = (
@@ -619,6 +628,15 @@ PROJECT_ROLE_RULES: tuple[DbErrorRule, ...] = (
             409,
             "PROJECT_ROLE_NAME_CONFLICT",
             f"Project already has a role named {ctx['name']!r}.",
+        ),
+        extractor=_project_role_ctx,
+    ),
+    check_rule(
+        "ck_project_roles_description_len",
+        lambda ctx, _exc: DbIntegrityError(
+            422,
+            "ROLE_DESCRIPTION_INVALID",
+            f"Project role description for project id={ctx['project_id']} is blank or exceeds 500 characters.",
         ),
         extractor=_project_role_ctx,
     ),

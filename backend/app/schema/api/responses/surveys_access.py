@@ -18,6 +18,7 @@ class SurveyRoleOut(BaseModel):
     id: int
     project_id: int
     name: str
+    description: str | None
     permissions: list[SurveyPermission] = Field(max_length=limits.SURVEY_ROLE_PERMISSIONS_MAX)
     created_at: datetime
 
@@ -33,6 +34,7 @@ class SurveyRoleOut(BaseModel):
             id=role.id,
             project_id=role.project_id,
             name=role.name,
+            description=role.description,
             permissions=permissions,
             created_at=role.created_at,
         )

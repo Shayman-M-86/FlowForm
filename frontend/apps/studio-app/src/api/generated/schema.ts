@@ -2216,6 +2216,8 @@ export interface components {
             project_id: number;
             /** Name */
             name: string;
+            /** Description */
+            description: string | null;
             /** Is System Role */
             is_system_role: boolean;
             /** Permissions */
@@ -2233,6 +2235,11 @@ export interface components {
         CreateProjectRoleRequest: {
             /** Name */
             name: string;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
             /** Permissions */
             permissions?: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
         };
@@ -2246,6 +2253,11 @@ export interface components {
              * @default null
              */
             name: string | null;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
             /**
              * Permissions
              * @default null
@@ -2381,6 +2393,8 @@ export interface components {
             project_id: number;
             /** Name */
             name: string;
+            /** Description */
+            description: string | null;
             /** Permissions */
             permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
             /**
@@ -2437,6 +2451,11 @@ export interface components {
         CreateSurveyRoleRequest: {
             /** Name */
             name: string;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
             /** Permissions */
             permissions?: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
         };
@@ -2450,6 +2469,11 @@ export interface components {
              * @default null
              */
             name: string | null;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
             /**
              * Permissions
              * @default null

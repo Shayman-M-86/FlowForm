@@ -78,6 +78,7 @@ class ProjectRole(CoreBase):
         nullable=False,
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_system_role: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
@@ -92,6 +93,10 @@ class ProjectRole(CoreBase):
     __table_args__ = (
         UniqueConstraint("project_id", "id", name="uq_project_roles_project_id_id"),
         UniqueConstraint("project_id", "name", name="uq_project_roles_project_name"),
+        CheckConstraint(
+            "description IS NULL OR char_length(btrim(description)) BETWEEN 1 AND 500",
+            name="ck_project_roles_description_len",
+        ),
     )
 
     permissions: Mapped[list[Permission]] = relationship(

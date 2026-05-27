@@ -139,6 +139,9 @@ _COMPONENT_STRING_FIELD_MAX_LENGTHS = {
         "name": limits.PROJECT_NAME_MAX,
         "slug": limits.SLUG_MAX,
     },
+    "ProjectRoleOut": {
+        "description": limits.PROJECT_ROLE_DESCRIPTION_MAX,
+    },
     "PublicLinkCreatedOut": {
         "name": limits.PUBLIC_LINK_NAME_MAX,
         "token": limits.TOKEN_MAX,
@@ -151,6 +154,9 @@ _COMPONENT_STRING_FIELD_MAX_LENGTHS = {
     "SurveyOut": {
         "public_slug": limits.SLUG_MAX,
         "title": limits.SURVEY_TITLE_MAX,
+    },
+    "SurveyRoleOut": {
+        "description": limits.PROJECT_ROLE_DESCRIPTION_MAX,
     },
 }
 
