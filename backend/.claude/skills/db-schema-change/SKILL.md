@@ -2,6 +2,7 @@
 name: db-schema-change
 description: Layers to consider when changing FlowForm's DB schema (columns, constraints, tables) so nothing silently drifts. Triggers on "add column", "drop constraint", "new CHECK", "rename FK", "schema change", etc.
 user-invocable: false
+paths: ["backend/**/*.py", "backend/**/*.sql"]
 ---
 
 A schema change in FlowForm touches many layers. Before editing, walk this

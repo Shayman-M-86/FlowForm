@@ -1,5 +1,5 @@
 ---
-globs: backend/tests/**/*.py
+paths: backend/tests/**/*.py
 ---
 
 # Backend test rules

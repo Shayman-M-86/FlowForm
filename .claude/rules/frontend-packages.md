@@ -1,5 +1,5 @@
 ---
-globs: frontend/packages/**/*.{ts,tsx}
+paths: frontend/packages/**/*.{ts,tsx}
 ---
 
 # Shared packages rules

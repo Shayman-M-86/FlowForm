@@ -1,5 +1,5 @@
 ---
-globs: frontend/apps/studio-app/src/**/*.{ts,tsx}
+paths: frontend/apps/studio-app/src/**/*.{ts,tsx}
 ---
 
 # Studio app rules

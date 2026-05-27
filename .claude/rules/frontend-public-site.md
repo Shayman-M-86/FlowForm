@@ -1,5 +1,5 @@
 ---
-globs: frontend/apps/public-site/src/**/*.{astro,ts,tsx}
+paths: frontend/apps/public-site/src/**/*.{astro,ts,tsx}
 ---
 
 # Public site rules

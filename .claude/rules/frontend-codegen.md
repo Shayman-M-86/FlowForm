@@ -1,5 +1,5 @@
 ---
-globs: frontend/apps/studio-app/src/routeTree.gen.ts,frontend/apps/studio-app/src/api/generated/schema.ts
+paths: frontend/apps/studio-app/src/routeTree.gen.ts,frontend/apps/studio-app/src/api/generated/schema.ts
 ---
 
 # Generated files — do not edit

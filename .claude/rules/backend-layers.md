@@ -1,5 +1,5 @@
 ---
-globs: backend/app/**/*.py
+paths: backend/app/**/*.py
 ---
 
 # Backend layer rules

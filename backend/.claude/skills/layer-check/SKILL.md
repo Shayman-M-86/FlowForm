@@ -2,6 +2,7 @@
 name: layer-check
 description: Remind Claude of FlowForm's strict backend layer rules before editing Python files
 user-invocable: false
+paths: ["backend/**/*.py"]
 ---
 
 Before editing any backend Python file, verify the edit respects the layer contract:
