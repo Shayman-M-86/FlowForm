@@ -11,7 +11,7 @@ import AnimatedApng from "../components/AnimatedApng.astro";
 >
   <SiteHeader />
 
-  <main class="main-safe-top">
+  <main class="main-safe-top" style="overflow-x: clip;">
     <!-- ─── Hero ──────────────────────────────────────────────── -->
     <section id="hero" class="bg-hero-gradient px-6 pb-20 pt-24 text-center">
       <div class="mx-auto max-w-3xl">
@@ -21,14 +21,14 @@ import AnimatedApng from "../components/AnimatedApng.astro";
         </div>
 
         <h1 class="mb-5 text-4xl font-extrabold leading-tight tracking-tight text-foreground md:text-6xl">
-          FlowForm<br />
-          <span class="text-primary">Forms that adapt to every answer.</span>
+          Surveys that adapt.<br />
+          <span class="text-primary">Teams that stay in control.</span>
         </h1>
 
         <p class="mx-auto mb-9 max-w-xl text-base leading-relaxed text-muted-foreground md:text-xl">
-          Build branching surveys, scored quizzes, and research questionnaires
-          in your browser. Five question types, visual rules, and scoring logic
-          — all from a clean visual interface.
+          Build branching surveys, scored assessments, and research questionnaires
+          with version control, team access, and privacy-aware response storage.
+          Free during beta.
         </p>
 
         <div class="flex flex-wrap items-center justify-center gap-3">
@@ -36,38 +36,14 @@ import AnimatedApng from "../components/AnimatedApng.astro";
             href="#builder"
             class="ui-button-primary px-7 py-3 text-sm shadow-md"
           >
-            Start building now →
+            Try the builder →
           </a>
           <a
             href="#features"
-            class="ui-action inline-flex items-center gap-2 rounded-sm bg-card px-7 py-3.5 text-sm font-semibold text-foreground no-underline shadow-sm "
+            class="ui-action inline-flex items-center gap-2 rounded-sm bg-card px-7 py-3.5 text-sm font-semibold text-foreground no-underline shadow-sm"
           >
             See features
           </a>
-          <!-- <button
-            class="ui-button-primary px-7 py-3 text-sm shadow-md"
-            type="button"
-            aria-pressed="false"
-            onclick="this.setAttribute('aria-pressed', this.getAttribute('aria-pressed') === 'true' ? 'false' : 'true')"
-          >Start</button>
-          <button
-            class="ui-button-primary px-7 py-3 text-sm shadow-md"
-            type="button"
-          >Toggle</button>
-          <button
-            class="ui-button-ghost px-7 py-3 text-sm"
-            type="button"
-            >Button</button>
-            <button
-            class="ui-button-ghost px-7 py-3 text-sm"
-            type="button"
-            aria-pressed="false"
-            onclick="this.setAttribute('aria-pressed', this.getAttribute('aria-pressed') === 'true' ? 'false' : 'true')"
-          >Start</button>
-          <button
-            class="ui-button-secondary px-7 py-3 text-sm"
-            type="button"
-            >Secondary</button> -->
         </div>
 
         <!-- Social proof strip -->
@@ -82,7 +58,7 @@ import AnimatedApng from "../components/AnimatedApng.astro";
               {
                 src: "/icons/icons8-settings-48.webp",
                 alt: "Settings",
-                label: "Visual logic builder",
+                label: "Version-controlled publishing",
               },
               {
                 src: "/icons/icons8-lock-48.webp",
@@ -92,7 +68,7 @@ import AnimatedApng from "../components/AnimatedApng.astro";
               {
                 src: "/icons/icons8-verified-account-48.webp",
                 alt: "Verified",
-                label: "Easy to use",
+                label: "Team access control",
               },
             ].map(({ src, alt, label }) => (
               <span class="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -154,31 +130,31 @@ import AnimatedApng from "../components/AnimatedApng.astro";
               {
                 num: "01",
                 title: "Multiple choice",
-                body: "Single or multi-select, with optional numeric scores.",
+                body: "Single or multi-select with optional numeric scores per option. Supports scored quizzes and ranked preference questions.",
                 img: "/screenshots/qt-choice.png",
               },
               {
                 num: "02",
                 title: "Matching",
-                body: "Pair items between two columns for knowledge checks.",
+                body: "Pair items between two columns. Ideal for knowledge checks, terminology tests, and association questions.",
                 img: "/screenshots/qt-matching.png",
               },
               {
                 num: "03",
                 title: "Rating",
-                body: "Numeric scales, sliders, or stars with configurable range.",
+                body: "Numeric scales, sliders, or star ratings with configurable range and scoring. Great for Likert scales and NPS-style questions.",
                 img: "/screenshots/qt-rating.png",
               },
               {
                 num: "04",
                 title: "Open field",
-                body: "Text, email, number, or date inputs for free-form answers.",
+                body: "Text, email, number, or date inputs for free-form answers. Validates input type on submission.",
                 img: "/screenshots/qt-field.png",
               },
               {
                 num: "05",
                 title: "Rules",
-                body: "A logic node that branches the form based on previous answers.",
+                body: "A conditional logic node that branches the form based on previous answers using AND / OR / NOT groups.",
                 img: "/screenshots/qt-rules.png",
               },
             ].map(({ num, title, body, img }) => (
@@ -233,11 +209,10 @@ import AnimatedApng from "../components/AnimatedApng.astro";
             Your form branches.<br />Without code.
           </h2>
           <p class="mb-7 text-base leading-loose text-muted-foreground">
-            Add a Rules node anywhere in your flow and set conditions like <em
-              >equals</em
-            >, <em>contains</em>, <em>between</em>, or <em>is answered</em>.
-            Combine them with AND / OR / NOT to skip questions, show follow-ups,
-            or change required fields — all from the visual builder.
+            Drop a Rules node anywhere in your flow and set conditions like <em>equals</em>,
+            <em>contains</em>, <em>between</em>, or <em>is answered</em>. Combine them with
+            AND / OR / NOT groups to skip questions, show follow-ups, or change required
+            fields. Respondents only see questions that are relevant to them.
           </p>
         </div>
 
@@ -248,21 +223,19 @@ import AnimatedApng from "../components/AnimatedApng.astro";
                 src: "/icons/icons8-settings-48.webp",
                 alt: "Settings",
                 label: "Grouped AND / OR / NOT conditions",
-                detail: "Build nested logic trees — no code, no regex.",
+                detail: "Build nested logic trees without code. Combine multiple conditions with full boolean control.",
               },
               {
                 src: "/icons/icons8-goal-48.webp",
                 alt: "Target",
-                label: "Show, hide, require, or disable",
-                detail:
-                  "Rules can drive four distinct effects on any question.",
+                label: "Show, hide, require, or skip",
+                detail: "Rules drive four distinct effects on any downstream question — not just show/hide.",
               },
               {
                 src: "/icons/icons8-search-in-list-48.webp",
                 alt: "List",
-                label: "Deterministic conflict resolution",
-                detail:
-                  "Sort-keyed rule ordering means results are always predictable.",
+                label: "Deterministic, sort-keyed ordering",
+                detail: "Rules resolve in a defined order. No ambiguity, no surprises — results are always predictable.",
               },
             ].map(({ src, alt, label, detail }, index) => (
               <div
@@ -299,15 +272,15 @@ import AnimatedApng from "../components/AnimatedApng.astro";
       </div>
     </section>
 
-    <!-- ─── Scoring & export ───────────────────────────────────── -->
+    <!-- ─── Platform features ──────────────────────────────────── -->
     <section id="scoring" class="border-t border-border bg-background px-6 py-24">
       <div class="mx-auto max-w-5xl">
         <div class="mb-14 text-center">
           <p class="mb-2.5 text-xs font-bold uppercase tracking-widest text-accent">
-            For serious survey work
+            Built for teams
           </p>
           <h2 class="border-none p-0 text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
-            Built for quizzes,<br />assessments, and research.
+            More than a form builder.
           </h2>
         </div>
 
@@ -317,14 +290,38 @@ import AnimatedApng from "../components/AnimatedApng.astro";
               {
                 icon: (
                   <AnimatedApng
+                    src="/icons/icons8-settings-48.webp"
+                    alt="Versions"
+                    width={36}
+                    height={36}
+                  />
+                ),
+                title: "Version-controlled publishing",
+                body: "Edit drafts freely, then publish a stable, immutable version when you're ready. Each response is tied to the exact version that collected it — edits never rewrite history.",
+              },
+              {
+                icon: (
+                  <AnimatedApng
+                    src="/icons/icons8-verified-account-48.webp"
+                    alt="Team access"
+                    width={36}
+                    height={36}
+                  />
+                ),
+                title: "Team access control",
+                body: "Manage project and survey access with role-based permissions. Different team members get different levels of control — from viewer through to admin.",
+              },
+              {
+                icon: (
+                  <AnimatedApng
                     src="/icons/icons8-question-48.webp"
                     alt="Scoring"
                     width={36}
                     height={36}
                   />
                 ),
-                title: "Scoring",
-                body: "Score responses with multiple strategies — option-to-points, matching keys, rating values, or numeric-range buckets. Organize results into named buckets like total or risk.",
+                title: "Scoring and assessment",
+                body: "Score responses with multiple strategies — option-to-points, matching keys, rating values, or numeric-range buckets. Organize results into named score groups.",
               },
               {
                 icon: (
@@ -336,7 +333,7 @@ import AnimatedApng from "../components/AnimatedApng.astro";
                   />
                 ),
                 title: "Open export",
-                body: "Every form serializes to a clean SurveyNode[] JSON schema. Send it to your backend, your API, or your data pipeline — no lock-in, ever.",
+                body: "Every survey serializes to a clean JSON schema. Send it to your backend, your API, or your data pipeline. No lock-in, no proprietary format.",
               },
             ].map(({ icon, title, body }) => (
               <div class="relative overflow-hidden rounded-xl bg-card p-8 shadow-sm">
@@ -365,14 +362,15 @@ import AnimatedApng from "../components/AnimatedApng.astro";
             Security first
           </p>
           <h2 class="mb-5 border-none p-0 text-3xl font-extrabold leading-tight tracking-tight text-foreground md:text-4xl">
-            Your data is yours.<br />Full stop.
+            Privacy is architectural,<br />not aspirational.
           </h2>
           <p class="mb-7 text-base leading-loose text-muted-foreground">
-            FlowForm stores form structure and responses in two separate
-            databases, with no cross-database foreign keys. Real user IDs never
-            touch response data — only stable pseudonymous UUIDs. Every
-            submission uses a two-phase write with rollback protection. Privacy
-            is architectural, not aspirational.
+            FlowForm uses two separate PostgreSQL databases — one for survey
+            structure and user data, one for raw response payloads. They share
+            no cross-database foreign keys. Real user IDs never touch response
+            data — only stable pseudonymous UUIDs. Every submission uses a
+            two-phase write with automatic rollback. Data isolation is enforced
+            at the architecture level, not the policy level.
           </p>
 
           <div class="flex flex-col gap-3.5">
@@ -381,22 +379,22 @@ import AnimatedApng from "../components/AnimatedApng.astro";
                 {
                   label: "Pseudonymous responses",
                   detail:
-                    "Real user IDs never touch the response database — only stable anonymous UUIDs.",
+                    "Real user IDs never enter the response database — respondents are identified only by a stable anonymous UUID.",
                 },
                 {
                   label: "Dual-database isolation",
                   detail:
-                    "Survey structure and raw responses live in separate databases with no cross-DB foreign keys.",
+                    "Survey structure and raw response payloads live in separate databases with no cross-DB foreign keys.",
                 },
                 {
-                  label: "Atomic saga writes",
+                  label: "Atomic two-phase writes",
                   detail:
-                    "Submissions use a two-phase commit with automatic rollback. Partial writes are impossible.",
+                    "Submissions write to both databases in a coordinated saga. Partial writes cannot occur — either both succeed or both roll back.",
                 },
                 {
-                  label: "GDPR-ready architecture",
+                  label: "GDPR-ready by design",
                   detail:
-                    "Right-to-erasure is straightforward: pseudonymous mappings can be deleted independently.",
+                    "Right-to-erasure is clean: pseudonymous mappings are stored independently and can be removed without touching response payloads.",
                 },
               ].map(({ label, detail }) => (
                 <div class="flex items-start gap-3.5">
@@ -486,7 +484,7 @@ import AnimatedApng from "../components/AnimatedApng.astro";
           How it works
         </p>
         <h2 class="mb-14 border-none p-0 text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
-          From zero to live form in three steps
+          From idea to live survey in minutes
         </h2>
 
         <div class="grid grid-cols-1 gap-8 text-left md:grid-cols-3">
@@ -494,18 +492,18 @@ import AnimatedApng from "../components/AnimatedApng.astro";
             [
               {
                 step: "01",
-                title: "Drop in question nodes",
-                body: "Choose from multiple choice, matching, rating, and open-field nodes. Arrange them into the flow your form needs.",
+                title: "Build your draft",
+                body: "Add question nodes, set up conditional Rules, and arrange the flow. Everything auto-saves to your browser as you work.",
               },
               {
                 step: "02",
-                title: "Add a Rules node",
-                body: "Set conditions like equals or between, combine them with AND / OR / NOT, and branch the flow automatically.",
+                title: "Publish a stable version",
+                body: "When your survey is ready, publish it as an immutable version. Edits never touch published data — future drafts are a clean slate.",
               },
               {
                 step: "03",
-                title: "Preview, share, export",
-                body: "Test the respondent experience end-to-end, share a link, or export the JSON schema for your own backend.",
+                title: "Share, collect, review",
+                body: "Distribute a public link. Respondents complete the form without an account. Review submissions in the Studio dashboard.",
               },
             ].map(({ step, title, body }) => (
               <div class="relative">
@@ -529,11 +527,11 @@ import AnimatedApng from "../components/AnimatedApng.astro";
     <section id="pricing" class="bg-cta-gradient border-t border-border px-6 py-20 text-center">
       <div class="mx-auto max-w-2xl">
         <h2 class="mb-4 border-none p-0 text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
-          Ready to build smarter forms?
+          Ready to build smarter surveys?
         </h2>
         <p class="mb-9 text-lg leading-relaxed text-muted-foreground">
-          FlowForm is free during beta. No credit card. No time limit. Just open
-          the builder above and start creating.
+          FlowForm is free during beta. No credit card, no time limit.
+          Try the live builder above — your work auto-saves to the browser.
         </p>
         <a
           href="#builder"
@@ -542,7 +540,7 @@ import AnimatedApng from "../components/AnimatedApng.astro";
           Open the builder →
         </a>
         <p class="mt-5 text-sm text-muted-foreground">
-          Auto-saves to your browser · Export anytime
+          Auto-saves to your browser · Export as JSON anytime · No account needed
         </p>
       </div>
     </section>

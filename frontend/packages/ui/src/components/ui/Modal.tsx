@@ -9,13 +9,15 @@ interface ModalProps {
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  className?: string;
+  bodyClassName?: string;
   width?: number;
   height?: number;
   /** Blocks all passive dismissal — no backdrop click, no Escape, no X button. */
   required?: boolean;
 }
 
-export function Modal({ open, onClose, title, children, footer, width = 480, height, required = false }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, className, bodyClassName, width = 480, height, required = false }: ModalProps) {
   const titleId = useId();
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export function Modal({ open, onClose, title, children, footer, width = 480, hei
       }}
     >
       <div
-        className="ui-modal-panel"
+        className={`ui-modal-panel${className ? ` ${className}` : ""}`}
         style={{ maxWidth: width, ...(height !== undefined && { height }) }}
         role="dialog"
         aria-modal="true"
@@ -59,7 +61,7 @@ export function Modal({ open, onClose, title, children, footer, width = 480, hei
             />
           )}
         </div>
-        <div className="ui-modal-body">{children}</div>
+        <div className={`ui-modal-body${bodyClassName ? ` ${bodyClassName}` : ""}`}>{children}</div>
         {footer ? <div className="ui-modal-footer">{footer}</div> : null}
       </div>
     </div>,

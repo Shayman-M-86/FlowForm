@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, } from "react";
 import { useNavigate } from "react-router-dom";
+import { Play, Sparkles, Trash2 } from "lucide-react";
 import type { FieldQuestionHandle } from "../components/node/FieldQuestion";
 import type { MatchingQuestionHandle } from "../components/node/MatchingQuestion";
 import type { MultiChoiceQuestionHandle } from "../components/node/MultiChoiceQuestion";
@@ -14,6 +15,7 @@ import { RulesQuestion } from "../components/node/RulesQuestion";
 import { savePreviewSurvey } from "../components/form_filler/previewStorage";
 import type { QuestionContent, RuleContent, SurveyNode } from "../components/node/questionTypes";
 import { serializeSurveyEntries, type SurveyEntry } from "../components/node/surveySerialize";
+import { AiImportModal } from "../components/node/AiImportModal";
 import { incrementQuestionId } from "../components/node/NodePillUtils";
 import { NodePillMobileControlsProvider } from "../components/node/NodePillShell";
 import { PlusGridAnimation } from "../components/node/PlusGridAnimation";
@@ -248,6 +250,8 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
       .flatMap(([, nodeIds]) => nodeIds),
   ), [questions, questionContents, ruleContents]);
   const hasDuplicateIds = duplicateQuestionIds.size > 0;
+
+  const [aiImportOpen, setAiImportOpen] = useState(false);
 
   useLayoutEffect(() => {
     const pendingAnimation = pendingMoveAnimation.current;
@@ -609,12 +613,34 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
     navigate("/node/preview", { state: { survey: serializedSurvey } });
   }
 
+  function handleAiImport(nodes: SurveyNode[]) {
+    const deserialized = deserializeSurveyNodes(nodes);
+    setQuestions(deserialized.questions);
+    setNextId(deserialized.nextId);
+    setQuestionContents(deserialized.questionContents);
+    setRuleContents(deserialized.ruleContents);
+    setEditingQuestionIds([]);
+    setCollapsedIds(new Set());
+    questionRefsMap.current.clear();
+    questionWrapperNodeMap.current.clear();
+    setAiImportOpen(false);
+  }
+
   return (
-    <section className="node-page relative isolate flex min-h-full flex-col mt-0.5">
+    <section className="node-page relative isolate flex min-h-full flex-col mt-0.5 overflow-x-clip">
       <style dangerouslySetInnerHTML={{ __html: NODE_PAGE_STYLES }} />
       <PlusGridAnimation />
       <div className="node-page__toolbar sticky top-0 z-20 box-border flex h-[var(--node-page-toolbar-height)] w-full items-center justify-center border-b border-border bg-[var(--toolbar-bg)] px-6 py-[14px] backdrop-blur-[14px] max-[640px]:px-4">
-        <div className="node-page__toolbar-shell flex w-full max-w-[980px] items-center justify-end gap-3">
+        <div className="node-page__toolbar-shell flex w-full max-w-[980px] items-center justify-between gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => setAiImportOpen(true)}
+          >
+            <Sparkles size={14} aria-hidden="true" />
+            AI import
+          </Button>
           <div className="node-page__toolbar-actions flex shrink-0 items-center gap-2.5">
             <Button
               type="button"
@@ -623,15 +649,17 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
               onClick={clearSchema}
               disabled={questions.length === 0}
             >
+              <Trash2 size={14} aria-hidden="true" />
               Clear
             </Button>
             <Button
               type="button"
-              variant="secondary"
+              variant="primary"
               size="sm"
               onClick={handlePreview}
               disabled={serializedSurvey.length === 0 || hasDuplicateIds}
             >
+              <Play size={14} aria-hidden="true" />
               Preview form
             </Button>
           </div>
@@ -682,6 +710,13 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
           {questions.length === 0 && addQuestionCard}
         </div>
       </div>
+      <AiImportModal
+        open={aiImportOpen}
+        hasExistingQuestions={questions.length > 0}
+        onClose={() => setAiImportOpen(false)}
+        onImport={handleAiImport}
+      />
+
       {showDebug && (
         <aside className="fixed bottom-4 right-4 z-50 flex max-h-[60vh] w-[min(420px,calc(100vw-32px))] flex-col overflow-hidden rounded-xl border border-border bg-[var(--debug-bg)] font-mono text-[0.78rem] text-[var(--debug-text)] shadow max-[640px]:right-4">
           <header className="flex items-center justify-between border-b border-[var(--debug-border)] px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.04em]">

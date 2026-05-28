@@ -78,7 +78,6 @@ html {
   margin: 0;
   width: 100%;
   max-width: 100%;
-  scrollbar-gutter: stable;
   background: var(--background);
 }
 
@@ -186,6 +185,7 @@ body {
   width: 8px;
   height: 8px;
 }
+
 
 ::-webkit-scrollbar-track {
   background: var(--color-background);
