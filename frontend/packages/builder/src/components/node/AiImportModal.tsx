@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, Modal } from "@flowform/ui";
-import { Check, ClipboardPaste, Copy, Sparkles } from "lucide-react";
+import { AlertCircle, Check, ClipboardPaste, Copy, Sparkles } from "lucide-react";
 import type { SurveyNode } from "./questionTypes";
 
 const AI_IMPORT_STORAGE_KEY = "flowform.ai-import.pending";
@@ -71,42 +71,92 @@ function clearPending() {
   try { window.localStorage.removeItem(AI_IMPORT_STORAGE_KEY); } catch { /* ignore */ }
 }
 
-function validateNodes(parsed: unknown): SurveyNode[] {
+interface ValidationError {
+  message: string;
+  nodeIndex: number | null;
+}
+
+function findNodeLine(rawJson: string, nodeIndex: number | null): number | null {
+  if (nodeIndex === null) return null;
+  try {
+    // Find the nth top-level object opening brace by counting commas at depth 0
+    let depth = 0;
+    let found = 0;
+    let inString = false;
+    let escape = false;
+    for (let pos = 0; pos < rawJson.length; pos++) {
+      const ch = rawJson[pos];
+      if (escape) { escape = false; continue; }
+      if (ch === "\\" && inString) { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === "{" || ch === "[") {
+        depth++;
+        if (depth === 2 && ch === "{") {
+          if (found === nodeIndex) {
+            return rawJson.slice(0, pos).split("\n").length;
+          }
+          found++;
+        }
+      } else if (ch === "}" || ch === "]") {
+        depth--;
+      }
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+function validateNodes(_rawJson: string, parsed: unknown): SurveyNode[] {
+  function fail(message: string, nodeIndex: number | null = null): never {
+    const err = new Error(message) as Error & { nodeIndex: number | null };
+    err.nodeIndex = nodeIndex;
+    throw err;
+  }
+
   if (!Array.isArray(parsed) || parsed.length === 0) {
-    throw new Error("Expected a non-empty JSON array.");
+    fail("Expected a non-empty JSON array.");
   }
   const ids = new Set<string>();
   for (let i = 0; i < parsed.length; i++) {
     const node = parsed[i] as Record<string, unknown>;
     if (node.type !== "question" && node.type !== "rule") {
-      throw new Error(`Node ${i + 1}: "type" must be "question" or "rule".`);
+      fail(`"type" must be "question" or "rule".`, i);
     }
     if (typeof node.sort_key !== "number") {
-      throw new Error(`Node ${i + 1}: "sort_key" must be a number.`);
+      fail(`"sort_key" must be a number.`, i);
     }
     const content = node.content as Record<string, unknown> | undefined;
     if (!content || typeof content !== "object") {
-      throw new Error(`Node ${i + 1}: missing "content".`);
+      fail(`Missing "content".`, i);
     }
     if (typeof content.id !== "string" || !content.id.trim()) {
-      throw new Error(`Node ${i + 1}: content "id" must be a non-empty string.`);
+      fail(`content "id" must be a non-empty string.`, i);
     }
     if (ids.has(content.id as string)) {
-      throw new Error(`Duplicate id "${content.id}".`);
+      fail(`Duplicate id "${content.id}".`, i);
     }
     ids.add(content.id as string);
     if (node.type === "question") {
       const validFamilies = ["choice", "matching", "rating", "field"];
       if (!validFamilies.includes(content.family as string)) {
-        throw new Error(`Node ${i + 1}: "family" must be one of: ${validFamilies.join(", ")}.`);
+        fail(`"family" must be one of: ${validFamilies.join(", ")}.`, i);
       }
       if (!content.definition || typeof content.definition !== "object") {
-        throw new Error(`Node ${i + 1}: missing "definition".`);
+        fail(`Missing "definition".`, i);
+      }
+      if (content.family === "rating") {
+        const def = content.definition as Record<string, unknown>;
+        if (def.variant === "slider") {
+          const range = def.range as Record<string, unknown> | undefined;
+          if (!range || typeof range.min !== "number" || typeof range.max !== "number" || typeof range.step !== "number") {
+            fail(`Slider rating must have a "range" object with numeric "min", "max", and "step".`, i);
+          }
+        }
       }
     }
     if (node.type === "rule") {
       if (!content.if || !content.then) {
-        throw new Error(`Rule node ${i + 1}: missing "if" or "then".`);
+        fail(`Missing "if" or "then".`, i);
       }
     }
   }
@@ -123,7 +173,8 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
   const [description, setDescription] = useState(pending ?? "");
   const [pasteValue, setPasteValue] = useState("");
   const [copied, setCopied] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errorPromptCopied, setErrorPromptCopied] = useState(false);
+  const [error, setError] = useState<ValidationError | null>(null);
   const [confirmReplace, setConfirmReplace] = useState(false);
   const [pendingNodes, setPendingNodes] = useState<SurveyNode[] | null>(null);
   const describeRef = useRef<HTMLTextAreaElement>(null);
@@ -152,18 +203,21 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
   function handleImport() {
     setError(null);
     let parsed: unknown;
+    let rawJson: string;
     try {
-      const cleaned = pasteValue.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-      parsed = JSON.parse(cleaned);
+      rawJson = pasteValue.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      parsed = JSON.parse(rawJson);
     } catch {
-      setError("Invalid JSON — paste the raw array your AI returned.");
+      setError({ message: "Invalid JSON — paste the raw array your AI returned.", nodeIndex: null });
       return;
     }
     let nodes: SurveyNode[];
     try {
-      nodes = validateNodes(parsed);
+      nodes = validateNodes(rawJson, parsed);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Invalid survey structure.");
+      const nodeIndex = (e as { nodeIndex?: number | null }).nodeIndex ?? null;
+      const line = findNodeLine(rawJson, nodeIndex);
+      setError({ message: e instanceof Error ? e.message : "Invalid survey structure.", nodeIndex: line });
       return;
     }
     if (hasExistingQuestions) {
@@ -215,19 +269,29 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
           Cancel
         </Button>
         {step === "describe" ? (
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            disabled={!description.trim()}
-            onClick={handleCopy}
-          >
-            {copied ? (
-              <>Copied!</>
-            ) : (
-              <><Copy size={13} aria-hidden="true" /> Copy prompt</>
-            )}
-          </Button>
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setStep("paste")}
+            >
+              <ClipboardPaste size={13} aria-hidden="true" /> Skip to paste
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={!description.trim()}
+              onClick={handleCopy}
+            >
+              {copied ? (
+                <>Copied!</>
+              ) : (
+                <><Copy size={13} aria-hidden="true" /> Copy prompt</>
+              )}
+            </Button>
+          </>
         ) : (
           <Button
             type="button"
@@ -295,11 +359,42 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
               Copied
             </span>
           </div>
-          {error && (
-            <p className="m-0 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
-              {error}
-            </p>
-          )}
+          {error && (() => {
+            const fixPrompt = `The JSON you gave me has a validation error: "${error.message}". Fix the issue and return the complete corrected JSON array — no explanation, no markdown.`;
+            return (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/8 overflow-hidden">
+                <div className="flex items-start gap-2.5 px-3.5 py-3">
+                  <AlertCircle size={14} className="mt-0.5 shrink-0 text-destructive" aria-hidden="true" />
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <p className="m-0 text-xs font-semibold text-destructive">
+                      Validation error{error.nodeIndex !== null ? <span className="ml-1.5 font-normal opacity-60">line {error.nodeIndex}</span> : null}
+                    </p>
+                    <p className="m-0 text-xs text-destructive/80">{error.message}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between border-t border-destructive/20 bg-destructive/5 px-3.5 py-2">
+                  <p className="m-0 text-xs text-muted-foreground">Copy a fix prompt for your AI assistant</p>
+                  <Button
+                    type="button"
+                    bare
+                    variant="secondary"
+                    size="xs"
+                    className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+                    icon={errorPromptCopied ? "check" : "copy"}
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(fixPrompt);
+                        setErrorPromptCopied(true);
+                        window.setTimeout(() => setErrorPromptCopied(false), 2000);
+                      } catch { /* ignore */ }
+                    }}
+                  >
+                    {errorPromptCopied ? "Copied" : "Copy"}
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
           {confirmReplace && (
             <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3.5 py-3">
               <p className="m-0 text-sm text-foreground">Replace existing questions?</p>
