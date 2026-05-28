@@ -332,13 +332,11 @@ class AuthExtension:
             self.mgmt = mgmt_client
             logger.info("Auth0 Management API client initialized and validated.")
         else:
-            msg = (
+            logger.warning(
                 "Auth0 Management API client is not configured. "
-                "Configure flowform.auth0.mgmt with an id and secret "
-                "(FLOWFORM_AUTH0_MGMT_ID and FLOWFORM_AUTH0_MGMT_SECRET)."
+                "Account-management features will be unavailable. "
+                "Set FLOWFORM_AUTH0_MGMT_ID and FLOWFORM_AUTH0_MGMT_SECRET to enable them."
             )
-            logger.error(msg)
-            raise ConfigError(msg)
 
     def _extract_bearer_token(self) -> str:
         """Return the bearer token from the Authorization header."""

@@ -137,7 +137,7 @@ def test_require_auth_still_populates_context_for_valid_token(
     assert response.get_json() == {"claims": claims, "sub": "auth0|required-user"}
 
 
-def test_init_app_rejects_missing_management_config(
+def test_init_app_leaves_mgmt_none_when_not_configured(
     auth_extension: AuthExtension,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -153,8 +153,9 @@ def test_init_app_rejects_missing_management_config(
     )
     monkeypatch.setattr(auth0_module, "ApiClient", lambda _options: object())
 
-    with pytest.raises(ConfigError, match="FLOWFORM_AUTH0_MGMT_ID"):
-        auth_extension.init_app(flask_app)
+    auth_extension.init_app(flask_app)
+
+    assert auth_extension.mgmt is None
 
 
 def test_init_app_validates_management_client(
