@@ -18,8 +18,10 @@ dependencies = [
     "pydantic>=2.12.5",
     "pydantic-settings>=2.13.1",
     "python-dotenv>=1.2.2",
+    "idna>=3.16",
     "requests>=2.33.0",
     "sqlalchemy-utils>=0.42.1",
+    "urllib3>=2.7.0",
 ]
 
 [project.optional-dependencies]
