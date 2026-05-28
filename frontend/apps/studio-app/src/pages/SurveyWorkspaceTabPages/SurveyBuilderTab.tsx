@@ -428,6 +428,7 @@ function ConnectedNodePage({
       <NodePage
         initialNodes={initialNodes}
         onNodesChange={(nodes) => { latestNodesRef.current = nodes }}
+        showDebug
       />
     </MemoryRouter>
   )

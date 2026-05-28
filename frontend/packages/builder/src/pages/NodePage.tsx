@@ -18,7 +18,6 @@ import { incrementQuestionId } from "../components/node/NodePillUtils";
 import { NodePillMobileControlsProvider } from "../components/node/NodePillShell";
 import { PlusGridAnimation } from "../components/node/PlusGridAnimation";
 
-const DEBUG_SHOW_JSON = false;
 const NODE_PAGE_STORAGE_KEY = "flowform.node-page.schema";
 const NODE_PAGE_UI_STORAGE_KEY = "flowform.node-page.ui";
 const NODE_PAGE_STYLES = `
@@ -201,9 +200,10 @@ const SWAP_ANIMATION_MS = 280;
 interface NodePageProps {
   initialNodes?: SurveyNode[];
   onNodesChange?: (nodes: SurveyNode[]) => void;
+  showDebug?: boolean;
 }
 
-export function NodePage({ initialNodes, onNodesChange }: NodePageProps = {}) {
+export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePageProps = {}) {
   const navigate = useNavigate();
   const controlled = initialNodes !== undefined;
 
@@ -682,7 +682,7 @@ export function NodePage({ initialNodes, onNodesChange }: NodePageProps = {}) {
           {questions.length === 0 && addQuestionCard}
         </div>
       </div>
-      {DEBUG_SHOW_JSON && (
+      {showDebug && (
         <aside className="fixed bottom-4 right-4 z-50 flex max-h-[60vh] w-[min(420px,calc(100vw-32px))] flex-col overflow-hidden rounded-xl border border-border bg-[var(--debug-bg)] font-mono text-[0.78rem] text-[var(--debug-text)] shadow max-[640px]:right-4">
           <header className="flex items-center justify-between border-b border-[var(--debug-border)] px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.04em]">
             <span>Debug · survey JSON</span>
