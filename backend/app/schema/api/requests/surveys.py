@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schema.api import limits
 from app.schema.api.enums import SurveyVisibility
-from app.schema.api.requests.helpers import int_id_field, validate_slug
+from app.schema.api.requests.helpers import validate_slug
 
 
 def _validate_title(value: str) -> str:

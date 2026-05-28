@@ -27,7 +27,7 @@ from app.schema.api.requests.submissions.answers import (
     MatchPair,
 )
 from app.schema.api.requests.submissions.create import LinkSubmissionRequest, SlugSubmissionRequest
-from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
+from app.schema.api.requests.surveys import CreateSurveyRequest
 
 
 def _too_long(limit: int) -> str:
@@ -138,11 +138,6 @@ def test_project_role_id_must_be_positive_int(factory) -> None:
     with pytest.raises(ValidationError):
         factory(role_id=0)
 
-
-@pytest.mark.parametrize("factory", [CreateSurveyRequest, UpdateSurveyRequest])
-def test_default_response_store_id_must_be_positive_int(factory) -> None:
-    with pytest.raises(ValidationError):
-        factory(default_response_store_id=0)
 
 
 def test_choice_answer_selected_list_limit_is_enforced() -> None:
