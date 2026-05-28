@@ -6,10 +6,13 @@ import {
   useState,
 } from "react";
 import { cn } from "../../lib/utils";
+import { Tooltip } from "./Tooltip";
 
 export interface TabSelectorItem {
   id: string;
   label: ReactNode;
+  disabled?: boolean;
+  tooltip?: ReactNode;
 }
 
 interface TabSelectorProps {
@@ -127,23 +130,27 @@ export function TabSelector({ items, activeId, onChange, className }: TabSelecto
                   {index > 0 && (
                     <div aria-hidden="true" className="w-px self-stretch my-2 bg-border" />
                   )}
-                  <button
-                    ref={(el) => {
-                      if (el) buttonRefs.current.set(item.id, el);
-                      else buttonRefs.current.delete(item.id);
-                    }}
-                    type="button"
-                    role="tab"
-                    aria-selected={isActive}
-                    onClick={() => { onChange(item.id); scrollToButton(item.id); }}
-                    className={cn(
-                      "ui-button-ghost",
-                      "h-full px-4 py-2 text-sm font-medium whitespace-nowrap border-0",
-                      isActive ? "text-foreground" : "text-muted-foreground",
-                    )}
-                  >
-                    {item.label}
-                  </button>
+                  <Tooltip content={item.disabled ? item.tooltip : undefined}>
+                    <button
+                      ref={(el) => {
+                        if (el) buttonRefs.current.set(item.id, el);
+                        else buttonRefs.current.delete(item.id);
+                      }}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      disabled={item.disabled}
+                      onClick={() => { if (!item.disabled) { onChange(item.id); scrollToButton(item.id); } }}
+                      className={cn(
+                        "ui-button-ghost",
+                        "h-full px-4 py-2 text-sm font-medium whitespace-nowrap border-0",
+                        isActive ? "text-foreground" : "text-muted-foreground",
+                        item.disabled && "opacity-40 cursor-not-allowed",
+                      )}
+                    >
+                      {item.label}
+                    </button>
+                  </Tooltip>
                   <span
                     aria-hidden="true"
                     className="pointer-events-none absolute inset-x-0 bottom-0 h-[10px] overflow-hidden"

@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cn } from "../../lib/utils";
 import { badgeSizeClasses, type ControlSize } from "../../lib/sizes";
 
@@ -8,9 +8,9 @@ interface BadgeProps {
   children: ReactNode;
   variant?: BadgeVariant;
   size?: ControlSize;
+  className?: string;
+  onClick?: ButtonHTMLAttributes<HTMLButtonElement>["onClick"];
 }
-
-const badgeBaseClass = "ui-badge";
 
 const badgeVariantClasses: Record<BadgeVariant, string> = {
   default: "ui-badge-default",
@@ -21,10 +21,16 @@ const badgeVariantClasses: Record<BadgeVariant, string> = {
   warning: "ui-badge-warning",
 };
 
-export function Badge({ children, variant = "default", size = "xs" }: BadgeProps) {
-  return (
-    <span className={cn(badgeBaseClass, badgeSizeClasses[size], badgeVariantClasses[variant])}>
-      {children}
-    </span>
-  );
+export function Badge({ children, variant = "default", size = "xs", className, onClick }: BadgeProps) {
+  const classes = cn("ui-badge", badgeSizeClasses[size], badgeVariantClasses[variant], className);
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cn(classes, "ui-badge-action")}>
+        {children}
+      </button>
+    );
+  }
+
+  return <span className={classes}>{children}</span>;
 }

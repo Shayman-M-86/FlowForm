@@ -48,14 +48,20 @@ _ALIAS_MAP = {"schema_": "schema"}
 _UNION_TAGS: frozenset[str] = frozenset({"choice", "field", "matching", "rating"})
 
 
-def _loc_to_field(loc: tuple) -> str:
+def _loc_to_field(loc: tuple) -> str | None:
     """Convert a Pydantic error loc tuple to a dot-separated JSON field path.
 
     Pydantic discriminated union errors inject the matched discriminator value
     (e.g. ``"choice"``) as an extra segment into the loc. We strip known
     discriminator values so the path reflects the actual request JSON structure.
+
+    Returns ``None`` for root-level errors (empty loc after cleaning) so the
+    caller can omit the ``field`` key entirely instead of emitting an empty
+    string.
     """
     cleaned = [part for part in loc if part not in _UNION_TAGS]
+    if not cleaned:
+        return None
     return ".".join(_ALIAS_MAP.get(str(p), str(p)) for p in cleaned)
 
 
@@ -71,12 +77,20 @@ def _clean_message(msg: str) -> str:
 
 
 def normalize_pydantic_errors(exc: ValidationError) -> list[dict[str, object]]:
-    """Convert Pydantic validation errors into a consistent format for API responses."""
-    return [
-        {
-            "field": _loc_to_field(err.get("loc", ())),
+    """Convert Pydantic validation errors into a consistent format for API responses.
+
+    Each item is ``{"message": str, "type": str, "field"?: str}`` where
+    ``field`` is omitted for root-level errors. ``type`` carries the Pydantic
+    error type (e.g. ``int_parsing``, ``missing``) so clients can branch on it.
+    """
+    normalized: list[dict[str, object]] = []
+    for err in exc.errors(include_url=False):
+        field = _loc_to_field(err.get("loc", ()))
+        item: dict[str, object] = {
             "message": _clean_message(err.get("msg", "")),
-            "type": err.get("type"),
+            "type": err.get("type", ""),
         }
-        for err in exc.errors(include_url=False)
-    ]
+        if field is not None:
+            item["field"] = field
+        normalized.append(item)
+    return normalized

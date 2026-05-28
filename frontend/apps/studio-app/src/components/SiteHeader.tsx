@@ -3,11 +3,13 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useTheme, DropdownMenu, Button, Badge } from '@flowform/ui'
 import { STUDIO_NAV_LINKS, BRAND } from '@flowform/site-shell'
-import { useCurrentUser } from '@/auth/UserContext'
+import { useCurrentUser } from '@/auth/useCurrentUser'
 import { isAuthBypassEnabled } from '@/auth/testing'
-import { useProject } from '@/api/projects'
+import { useProject } from '@/api/project/projects/hooks'
 import { clearActiveProjectSlug, getActiveProjectSlug } from '@/lib/activeProject'
+import { clearQueryCache } from '@/api/queryStorage'
 import '@flowform/site-shell/header.css'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 const SunIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -52,6 +54,7 @@ function UserAvatar() {
 }
 
 export function SiteHeader() {
+  useRenderDebug('SiteHeader')
   const { isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0()
   const { theme, toggleTheme } = useTheme()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
@@ -142,6 +145,7 @@ export function SiteHeader() {
           ),
           onSelect: () => {
             clearActiveProjectSlug()
+            clearQueryCache()
             if (isAuthBypassEnabled) return
             logout({ logoutParams: { returnTo: window.location.origin } })
           },

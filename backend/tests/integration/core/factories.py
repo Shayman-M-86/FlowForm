@@ -39,11 +39,17 @@ def make_project(user_id: int, name: str = "Test Project", slug: str = "test-pro
     return project
 
 
-def make_project_role(project_id: int, name: str = "admin", is_system_role: bool = True) -> ProjectRole:
+def make_project_role(
+    project_id: int,
+    name: str = "admin",
+    is_system_role: bool = True,
+    description: str | None = None,
+) -> ProjectRole:
     role = ProjectRole()
     role.project_id = project_id
     role.name = name
     role.is_system_role = is_system_role
+    role.description = description
     return role
 
 
@@ -75,19 +81,25 @@ def make_survey_version(survey_id: int, user_id: int, version_number: int = 1, s
     return version
 
 
-def make_survey_public_link(survey_id: int) -> SurveyPublicLink:
+def make_survey_public_link(survey_id: int, name: str = "test link") -> SurveyPublicLink:
     _, prefix, token_hash = make_token_pair()
     link = SurveyPublicLink()
     link.survey_id = survey_id
+    link.name = name
     link.token_prefix = prefix
     link.token_hash = token_hash
     return link
 
 
-def make_survey_role(project_id: int, name: str = "reviewer") -> SurveyRole:
+def make_survey_role(
+    project_id: int,
+    name: str = "reviewer",
+    description: str | None = None,
+) -> SurveyRole:
     role = SurveyRole()
     role.project_id = project_id
     role.name = name
+    role.description = description
     return role
 
 

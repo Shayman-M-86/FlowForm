@@ -1,0 +1,6 @@
+[features]
+hooks = true
+
+[mcp_servers.flowform-openapi]
+command = "/usr/bin/bash"
+args = ["/home/shayman86/my-repos/FlowForm/tools/mcp/run.sh"]

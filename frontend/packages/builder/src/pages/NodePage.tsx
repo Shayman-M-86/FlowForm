@@ -1,5 +1,6 @@
-import { Fragment, type ReactNode, useEffect, useLayoutEffect, useRef, useState, } from "react";
+import { Fragment, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, } from "react";
 import { useNavigate } from "react-router-dom";
+import { Play, Sparkles, Trash2 } from "lucide-react";
 import type { FieldQuestionHandle } from "../components/node/FieldQuestion";
 import type { MatchingQuestionHandle } from "../components/node/MatchingQuestion";
 import type { MultiChoiceQuestionHandle } from "../components/node/MultiChoiceQuestion";
@@ -14,11 +15,11 @@ import { RulesQuestion } from "../components/node/RulesQuestion";
 import { savePreviewSurvey } from "../components/form_filler/previewStorage";
 import type { QuestionContent, RuleContent, SurveyNode } from "../components/node/questionTypes";
 import { serializeSurveyEntries, type SurveyEntry } from "../components/node/surveySerialize";
+import { AiImportModal } from "../components/node/AiImportModal";
 import { incrementQuestionId } from "../components/node/NodePillUtils";
 import { NodePillMobileControlsProvider } from "../components/node/NodePillShell";
 import { PlusGridAnimation } from "../components/node/PlusGridAnimation";
 
-const DEBUG_SHOW_JSON = false;
 const NODE_PAGE_STORAGE_KEY = "flowform.node-page.schema";
 const NODE_PAGE_UI_STORAGE_KEY = "flowform.node-page.ui";
 const NODE_PAGE_STYLES = `
@@ -198,18 +199,35 @@ const QUESTION_TYPE_OPTIONS: Array<{ value: QuestionType; label: string }> = [
 
 const SWAP_ANIMATION_MS = 280;
 
-export function NodePage() {
+interface NodePageProps {
+  initialNodes?: SurveyNode[];
+  onNodesChange?: (nodes: SurveyNode[]) => void;
+  showDebug?: boolean;
+}
+
+export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePageProps = {}) {
   const navigate = useNavigate();
-  const persistedState = useRef<PersistedNodePageState | null>(loadPersistedNodePageState());
-  const persistedUiState = useRef<PersistedNodePageUiState | null>(loadPersistedNodePageUiState());
-  const [questions, setQuestions] = useState<Question[]>(() => persistedState.current?.questions ?? []);
-  const [nextId, setNextId] = useState(() => persistedState.current?.nextId ?? 1);
+  const controlled = initialNodes !== undefined;
+
+  const persistedState = useRef<PersistedNodePageState | null>(
+    controlled ? null : loadPersistedNodePageState(),
+  );
+  const persistedUiState = useRef<PersistedNodePageUiState | null>(
+    controlled ? null : loadPersistedNodePageUiState(),
+  );
+
+  const initialState = useRef<PersistedNodePageState | null>(
+    controlled ? deserializeSurveyNodes(initialNodes) : persistedState.current,
+  );
+
+  const [questions, setQuestions] = useState<Question[]>(() => initialState.current?.questions ?? []);
+  const [nextId, setNextId] = useState(() => initialState.current?.nextId ?? 1);
   const [editingQuestionIds, setEditingQuestionIds] = useState<string[]>([]);
   const [questionContents, setQuestionContents] = useState<Record<string, QuestionContent>>(
-    () => persistedState.current?.questionContents ?? {},
+    () => initialState.current?.questionContents ?? {},
   );
   const [ruleContents, setRuleContents] = useState<Record<string, RuleContent>>(
-    () => persistedState.current?.ruleContents ?? {},
+    () => initialState.current?.ruleContents ?? {},
   );
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set(persistedUiState.current?.collapsedIds ?? []));
   const questionRefsMap = useRef<Map<string, FieldQuestionHandle | MatchingQuestionHandle | MultiChoiceQuestionHandle | RatingQuestionHandle | RulesQuestionHandle>>(new Map());
@@ -219,7 +237,7 @@ export function NodePage() {
     movedId: string;
   } | null>(null);
   const newlyAddedQuestionId = useRef<string | null>(null);
-  const duplicateQuestionIds = new Set(
+  const duplicateQuestionIds = useMemo(() => new Set(
     Object.entries(
       questions.reduce<Record<string, string[]>>((acc, question) => {
         const schemaId = getNodeSchemaId(question, questionContents, ruleContents).trim();
@@ -230,8 +248,10 @@ export function NodePage() {
     )
       .filter(([, nodeIds]) => nodeIds.length > 1)
       .flatMap(([, nodeIds]) => nodeIds),
-  );
+  ), [questions, questionContents, ruleContents]);
   const hasDuplicateIds = duplicateQuestionIds.size > 0;
+
+  const [aiImportOpen, setAiImportOpen] = useState(false);
 
   useLayoutEffect(() => {
     const pendingAnimation = pendingMoveAnimation.current;
@@ -320,18 +340,23 @@ export function NodePage() {
     }
   }, [questions]);
 
-  function addQuestion(type: QuestionType) {
-    const newId = `q${nextId}`;
+  const nextIdRef = useRef(nextId);
+  nextIdRef.current = nextId;
+
+  const addQuestion = useCallback((type: QuestionType) => {
+    const newId = `q${nextIdRef.current}`;
     newlyAddedQuestionId.current = newId;
     setQuestions((current) => {
       const initialTag = computeNextTag(current, type);
       return [...current, { id: newId, type, initialTag }];
     });
-    setNextId((current) => current + 1);
+    setNextId((n) => n + 1);
     setEditingQuestionIds((current) =>
       current.includes(newId) ? current : [...current, newId],
     );
-  }
+  // computeNextTag is a pure function defined in this module scope — no closure deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function computeNextTag(currentQuestions: Question[], type: QuestionType): string {
     const isRule = type === "rules";
@@ -384,7 +409,7 @@ export function NodePage() {
   }
 
   function clearSchema() {
-    if (typeof window !== "undefined") {
+    if (!controlled && typeof window !== "undefined") {
       window.localStorage.removeItem(NODE_PAGE_STORAGE_KEY);
       window.localStorage.removeItem(NODE_PAGE_UI_STORAGE_KEY);
     }
@@ -401,6 +426,26 @@ export function NodePage() {
     newlyAddedQuestionId.current = null;
   }
 
+  // Precompute sibling content lists once per questions/questionContents change.
+  // RulesQuestion uses these to show branching targets — recomputing per-render is O(n²).
+  const siblingsMap = useMemo(() => {
+    const nonRuleContents = (slice: Question[]) =>
+      slice
+        .filter((q) => q.type !== "rules")
+        .map((q) => questionContents[q.id])
+        .filter((c): c is QuestionContent => Boolean(c));
+
+    return new Map(
+      questions.map((question, index) => [
+        question.id,
+        {
+          previous: nonRuleContents(questions.slice(0, index)),
+          following: nonRuleContents(questions.slice(index + 1)),
+        },
+      ]),
+    );
+  }, [questions, questionContents]);
+
   function renderQuestion(question: Question) {
     const key = `question-${question.id}`;
     const handleRef = (ref: any) => {
@@ -413,7 +458,6 @@ export function NodePage() {
         if (isEditMode) {
           return current.includes(question.id) ? current : [...current, question.id];
         }
-
         return current.filter((questionId) => questionId !== question.id);
       });
     };
@@ -421,32 +465,19 @@ export function NodePage() {
       setQuestionContents((current) => (
         areContentsEqual(current[question.id], content)
           ? current
-          : {
-            ...current,
-            [question.id]: content,
-          }
+          : { ...current, [question.id]: content }
       ));
     };
     const handleRuleContentChange = (content: RuleContent) => {
       setRuleContents((current) => (
         areContentsEqual(current[question.id], content)
           ? current
-          : {
-            ...current,
-            [question.id]: content,
-          }
+          : { ...current, [question.id]: content }
       ));
     };
     const currentQuestionContent = questionContents[question.id];
     const currentRuleContent = ruleContents[question.id];
-    const ruleIndex = questions.findIndex((q) => q.id === question.id);
-    const collectContents = (slice: typeof questions) =>
-      slice
-        .filter((q) => q.type !== "rules")
-        .map((q) => questionContents[q.id])
-        .filter((content): content is QuestionContent => Boolean(content));
-    const previousSiblings = collectContents(questions.slice(0, ruleIndex));
-    const followingSiblings = collectContents(questions.slice(ruleIndex + 1));
+    const siblings = siblingsMap.get(question.id);
 
     const isCollapsed = collapsedIds.has(question.id);
     const isEditMode = editingQuestionIds.includes(question.id);
@@ -481,11 +512,11 @@ export function NodePage() {
       case "field":
         return <FieldQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentQuestionContent?.family === "field" ? currentQuestionContent : undefined} {...sharedProps} onDelete={() => removeQuestion(question.id)} onDataChange={handleContentChange} />;
       case "rules":
-        return <RulesQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentRuleContent} {...sharedProps} onDelete={() => removeQuestion(question.id)} onDataChange={handleRuleContentChange} previousSiblings={previousSiblings} followingSiblings={followingSiblings} />;
+        return <RulesQuestion key={key} ref={handleRef} initialTag={question.initialTag} initialContent={currentRuleContent} {...sharedProps} onDelete={() => removeQuestion(question.id)} onDataChange={handleRuleContentChange} previousSiblings={siblings?.previous ?? []} followingSiblings={siblings?.following ?? []} />;
     }
   }
 
-  const addQuestionCard = (
+  const addQuestionCard = useMemo(() => (
     <div className="flex flex-col items-stretch gap-[18px] rounded-2xl border border-border bg-[image:var(--surface-lift-gradient-faint),var(--bg-subtle)] px-[26px] py-6 shadow-[inset_0_1px_0_var(--overlay-faint)] my-[10px] mb-[60px]">
       <div className="flex flex-col items-start gap-2">
         <Badge variant="accent" size="sm">Build</Badge>
@@ -510,7 +541,7 @@ export function NodePage() {
         ))}
       </div>
     </div>
-  );
+  ), [addQuestion]);
 
   const isQuestionExpanded = (question: Question) => {
     return !collapsedIds.has(question.id);
@@ -529,7 +560,7 @@ export function NodePage() {
     });
   }
 
-  const serializeSurvey = () => {
+  const serializedSurvey = useMemo(() => {
     const entries: SurveyEntry[] = [];
     for (const question of questions) {
       if (question.type === "rules") {
@@ -541,21 +572,27 @@ export function NodePage() {
       }
     }
     return serializeSurveyEntries(entries);
-  };
+  }, [questions, questionContents, ruleContents]);
 
-  const serializedSurvey = serializeSurvey();
+  const onNodesChangeRef = useRef(onNodesChange);
+  onNodesChangeRef.current = onNodesChange;
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (controlled) {
+      onNodesChangeRef.current?.(serializedSurvey);
+      return;
+    }
 
+    if (typeof window === "undefined") return;
     try {
       window.localStorage.setItem(NODE_PAGE_STORAGE_KEY, JSON.stringify(serializedSurvey));
     } catch {
       // Ignore persistence failures.
     }
-  }, [serializedSurvey]);
+  }, [serializedSurvey, controlled]);
 
   useEffect(() => {
+    if (controlled) return;
     if (typeof window === "undefined") return;
 
     const questionIds = new Set(questions.map((question) => question.id));
@@ -568,7 +605,7 @@ export function NodePage() {
     } catch {
       // Ignore persistence failures.
     }
-  }, [collapsedIds, questions]);
+  }, [collapsedIds, questions, controlled]);
 
   function handlePreview() {
     if (serializedSurvey.length === 0) return;
@@ -576,12 +613,34 @@ export function NodePage() {
     navigate("/node/preview", { state: { survey: serializedSurvey } });
   }
 
+  function handleAiImport(nodes: SurveyNode[]) {
+    const deserialized = deserializeSurveyNodes(nodes);
+    setQuestions(deserialized.questions);
+    setNextId(deserialized.nextId);
+    setQuestionContents(deserialized.questionContents);
+    setRuleContents(deserialized.ruleContents);
+    setEditingQuestionIds([]);
+    setCollapsedIds(new Set());
+    questionRefsMap.current.clear();
+    questionWrapperNodeMap.current.clear();
+    setAiImportOpen(false);
+  }
+
   return (
-    <section className="node-page relative isolate flex min-h-full flex-col">
+    <section className="node-page relative isolate flex min-h-full flex-col mt-0.5 overflow-x-clip">
       <style dangerouslySetInnerHTML={{ __html: NODE_PAGE_STYLES }} />
       <PlusGridAnimation />
-      <div className="node-page__toolbar fixed left-[var(--sidebar-w)] right-0 top-0 z-20 box-border flex h-[var(--node-page-toolbar-height)] items-center justify-center border-b border-border bg-[var(--toolbar-bg)] px-6 py-[14px] backdrop-blur-[14px] max-[640px]:left-0 max-[640px]:px-4">
-        <div className="node-page__toolbar-shell flex w-full max-w-[980px] items-center justify-end gap-3">
+      <div className="node-page__toolbar sticky top-0 z-20 box-border flex h-[var(--node-page-toolbar-height)] w-full items-center justify-center border-b border-border bg-[var(--toolbar-bg)] px-6 py-[14px] backdrop-blur-[14px] max-[640px]:px-4">
+        <div className="node-page__toolbar-shell flex w-full max-w-[980px] items-center justify-between gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => setAiImportOpen(true)}
+          >
+            <Sparkles size={14} aria-hidden="true" />
+            AI import
+          </Button>
           <div className="node-page__toolbar-actions flex shrink-0 items-center gap-2.5">
             <Button
               type="button"
@@ -590,21 +649,23 @@ export function NodePage() {
               onClick={clearSchema}
               disabled={questions.length === 0}
             >
+              <Trash2 size={14} aria-hidden="true" />
               Clear
             </Button>
             <Button
               type="button"
-              variant="secondary"
+              variant="primary"
               size="sm"
               onClick={handlePreview}
               disabled={serializedSurvey.length === 0 || hasDuplicateIds}
             >
+              <Play size={14} aria-hidden="true" />
               Preview form
             </Button>
           </div>
         </div>
       </div>
-      <div className="node-page__content relative z-10 box-border flex w-full max-w-[calc(980px+(var(--node-page-controls-gutter)*2))] shrink-0 flex-col items-center self-center px-[var(--node-page-controls-gutter)] pb-10 pt-[calc(var(--node-page-toolbar-height)+var(--node-page-toolbar-gap))] max-[640px]:gap-[14px] max-[640px]:px-5 max-[640px]:pt-[calc(var(--node-page-toolbar-height)+var(--node-page-toolbar-gap)+10px)]">
+      <div className="node-page__content relative z-10 box-border flex w-full max-w-[calc(980px+(var(--node-page-controls-gutter)*2))] shrink-0 flex-col items-center self-center px-[var(--node-page-controls-gutter)] pb-10 pt-(--node-page-toolbar-gap) max-[640px]:gap-[14px] max-[640px]:px-5 max-[640px]:pt-[calc(var(--node-page-toolbar-gap)+10px)]">
         <div className="node-page__questions-stack flex w-full flex-col gap-5">
           {questions.map((question, index) => {
             const nextQuestion = questions[index + 1];
@@ -649,7 +710,14 @@ export function NodePage() {
           {questions.length === 0 && addQuestionCard}
         </div>
       </div>
-      {DEBUG_SHOW_JSON && (
+      <AiImportModal
+        open={aiImportOpen}
+        hasExistingQuestions={questions.length > 0}
+        onClose={() => setAiImportOpen(false)}
+        onImport={handleAiImport}
+      />
+
+      {showDebug && (
         <aside className="fixed bottom-4 right-4 z-50 flex max-h-[60vh] w-[min(420px,calc(100vw-32px))] flex-col overflow-hidden rounded-xl border border-border bg-[var(--debug-bg)] font-mono text-[0.78rem] text-[var(--debug-text)] shadow max-[640px]:right-4">
           <header className="flex items-center justify-between border-b border-[var(--debug-border)] px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.04em]">
             <span>Debug · survey JSON</span>

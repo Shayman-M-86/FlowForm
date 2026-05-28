@@ -2,11 +2,13 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { Button, Card, Spinner } from '@flowform/ui'
 import { ApiRequestError } from '@/api/client'
-import { useApi } from '@/api/useApi'
+import { bootstrapCurrentUser } from '@/api/auth/requests'
 import { getAuthReturnTo } from '@/auth/redirect'
 import { isAuthBypassEnabled } from '@/auth/testing'
 import { UserProvider } from '@/auth/UserContext'
-import type { CurrentUserOut } from '@/api/types'
+import type { CurrentUserOut } from '@/api/generated/schema'
+import { clearAllCachedPermissions } from '@/api/project/permissions/hooks'
+import { useRenderDebug } from '@/debug/useRenderDebug'
 
 const BOOTSTRAP_SESSION_KEY = 'flowform.bootstrapped'
 const USER_SESSION_KEY = 'flowform.user'
@@ -74,6 +76,7 @@ const TEST_USER: CurrentUserOut = {
 }
 
 export function ProtectedApp({ children }: Props) {
+  useRenderDebug('ProtectedApp', { children })
   if (isAuthBypassEnabled) {
     return (
       <UserProvider user={TEST_USER} avatarUrl={null}>
@@ -86,10 +89,9 @@ export function ProtectedApp({ children }: Props) {
 }
 
 function AuthenticatedProtectedApp({ children }: Props) {
-  const { isLoading, isAuthenticated, getIdTokenClaims, loginWithRedirect, logout, error, user } =
+  useRenderDebug('AuthenticatedProtectedApp', { children })
+  const { isLoading, isAuthenticated, getIdTokenClaims, getAccessTokenSilently, loginWithRedirect, logout, error, user } =
     useAuth0()
-  const { bootstrapCurrentUser } = useApi()
-
   // True immediately on refresh if a bootstrapped session exists.
   // Stays true while Auth0 does its silent check — only resets if Auth0
   // comes back saying the session is gone or a different user is now active.
@@ -113,6 +115,12 @@ function AuthenticatedProtectedApp({ children }: Props) {
     }
   }
 
+  function updateCurrentUser(updatedUser: CurrentUserOut) {
+    const currentAvatarUrl = avatarUrl ?? user?.picture ?? null
+    setCurrentUser(updatedUser)
+    saveUserToSession(updatedUser, currentAvatarUrl)
+  }
+
   useEffect(() => {
     // Still waiting for Auth0 — don't touch bootstrapReady, let the optimistic
     // value hold so the app stays visible during the silent session check.
@@ -121,31 +129,43 @@ function AuthenticatedProtectedApp({ children }: Props) {
     // Auth0 finished and says the user is not authenticated.
     if (!isAuthenticated || !user?.sub) {
       clearBootstrapped()
-      setBootstrapReady(false)
-      setBootstrapError(null)
-      setBootstrapErrorCode(null)
+      queueMicrotask(() => {
+        setBootstrapReady(false)
+        setBootstrapError(null)
+        setBootstrapErrorCode(null)
+      })
       return
     }
 
     // Auth0 confirmed a user. If it matches the session flag, we're done.
     if (getBootstrappedUserId() === user.sub) {
-      setBootstrapReady(true)
+      queueMicrotask(() => {
+        setBootstrapReady(true)
+      })
       return
     }
 
     // Different user or no session flag — run bootstrap.
     clearBootstrapped()
+    clearAllCachedPermissions()
     let cancelled = false
-    setBootstrapReady(false)
-    setBootstrapError(null)
-    setBootstrapErrorCode(null)
+    queueMicrotask(() => {
+      setBootstrapReady(false)
+      setBootstrapError(null)
+      setBootstrapErrorCode(null)
+    })
 
     void (async () => {
       try {
-        const claims = await getIdTokenClaims()
+        const [claims, accessToken] = await Promise.all([
+          getIdTokenClaims(),
+          getAccessTokenSilently({
+            authorizationParams: { audience: import.meta.env.VITE_AUTH0_AUDIENCE as string },
+          }),
+        ])
         const idToken = claims?.__raw
         if (!idToken) throw new Error('Auth0 did not return a raw ID token.')
-        const result = await bootstrapCurrentUser(idToken)
+        const result = await bootstrapCurrentUser(idToken, accessToken)
         if (!cancelled) {
           const picture = user.picture ?? null
           markBootstrapped(user.sub!)
@@ -166,7 +186,15 @@ function AuthenticatedProtectedApp({ children }: Props) {
     })()
 
     return () => { cancelled = true }
-  }, [bootstrapAttempt, bootstrapCurrentUser, getIdTokenClaims, isAuthenticated, isLoading, user?.sub])
+  }, [
+    bootstrapAttempt,
+    getAccessTokenSilently,
+    getIdTokenClaims,
+    isAuthenticated,
+    isLoading,
+    user?.picture,
+    user?.sub,
+  ])
 
   // Render children optimistically while Auth0 is doing its silent check,
   // as long as we have a known-good session from this browser tab.
@@ -175,6 +203,7 @@ function AuthenticatedProtectedApp({ children }: Props) {
       <UserProvider
         user={currentUser}
         avatarUrl={avatarUrl ?? user?.picture ?? null}
+        updateUser={updateCurrentUser}
       >
         {children}
       </UserProvider>

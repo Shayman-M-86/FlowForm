@@ -1,10 +1,11 @@
 import logging
 from pathlib import Path
+from typing import Any, cast
 
-import pytest
+import pytest  # type: ignore[import]
 from pydantic import SecretStr
 
-from app.core.config import DatabaseSettings
+from app.core.config import DatabaseSettings, Settings
 
 logger = logging.getLogger("app.tests")
 
@@ -60,3 +61,35 @@ def test_database_settings_rejects_missing_password_file(tmp_path: Path) -> None
         )
 
 
+def test_settings_loads_auth0_mgmt_from_flat_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    secret_key_file = tmp_path / "secret-key.txt"
+    core_password_file = tmp_path / "core-password.txt"
+    response_password_file = tmp_path / "response-password.txt"
+    secret_key_file.write_text("app-secret\n", encoding="utf-8")
+    core_password_file.write_text("core-secret\n", encoding="utf-8")
+    response_password_file.write_text("response-secret\n", encoding="utf-8")
+
+    env = {
+        "FLOWFORM_ENV": "dev",
+        "FLOWFORM_APP_SECRET_KEY_FILE": str(secret_key_file),
+        "FLOWFORM_AUTH0_DOMAIN": "example.auth0.com",
+        "FLOWFORM_AUTH0_AUDIENCE": "https://api.example.test",
+        "FLOWFORM_AUTH0_MGMT_ID": "management-client-id",
+        "FLOWFORM_AUTH0_MGMT_SECRET": "management-client-secret",
+        "DATABASE_CORE_APP_USER": "flowform_core_app",
+        "DATABASE_CORE_HOST": "postgres-core",
+        "DATABASE_CORE_NAME": "flowform_core",
+        "DATABASE_CORE_APP_PASSWORD_FILE": str(core_password_file),
+        "DATABASE_RESPONSE_APP_USER": "flowform_response_app",
+        "DATABASE_RESPONSE_HOST": "postgres-response",
+        "DATABASE_RESPONSE_NAME": "flowform_response",
+        "DATABASE_RESPONSE_APP_PASSWORD_FILE": str(response_password_file),
+    }
+    for key, value in env.items():
+        monkeypatch.setenv(key, value)
+
+    settings = cast(Any, Settings)()
+
+    assert settings.flowform.auth0.mgmt is not None
+    assert settings.flowform.auth0.mgmt.id == "management-client-id"
+    assert settings.flowform.auth0.mgmt.secret.get_secret_value() == "management-client-secret"

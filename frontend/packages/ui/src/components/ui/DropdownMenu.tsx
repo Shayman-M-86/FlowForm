@@ -15,7 +15,7 @@ import { Button } from "./Button";
 export interface DropdownMenuAction {
   key: string;
   content: ReactNode;
-  variant?: "primary" | "secondary" | "danger" | "ghost";
+  variant?: "primary" | "secondary" | "danger" | "destructive" | "ghost";
   onSelect?: () => void;
   closeOnSelect?: boolean;
 }
@@ -26,19 +26,25 @@ export interface DropdownMenuSection {
 }
 
 type DropdownMenuSize = "auto" | "sm" | "md" | "lg" | "xl";
+type DropdownMenuWidth = number | string;
 type DropdownMenuFullscreenAt = "never" | number;
 type DropdownMenuButtonAlign = "left" | "center" | "right";
+export type DropdownMenuDirection = "down" | "up" | "auto";
+export type DropdownMenuAlign = "left" | "right" | "auto";
 
 interface DropdownMenuProps {
   open: boolean;
   onClose: () => void;
   trigger: React.RefObject<HTMLElement | null>;
   sections: DropdownMenuSection[];
-  align?: "left" | "right";
+  align?: DropdownMenuAlign;
+  direction?: DropdownMenuDirection;
   buttonAlign?: DropdownMenuButtonAlign;
   positioning?: "fixed" | "absolute";
   size?: DropdownMenuSize;
+  width?: DropdownMenuWidth;
   fullscreenAt?: DropdownMenuFullscreenAt;
+  maxHeight?: string;
 }
 
 const dropdownMenuSizeClasses: Record<DropdownMenuSize, string> = {
@@ -49,36 +55,64 @@ const dropdownMenuSizeClasses: Record<DropdownMenuSize, string> = {
   xl: "w-[440px]",
 };
 
+function resolvePosition(
+  rect: DOMRect,
+  alignProp: DropdownMenuAlign,
+  directionProp: DropdownMenuDirection,
+  positioning: "fixed" | "absolute",
+  gap: number,
+): { top?: number; bottom?: number; left: number; minWidth: number; resolvedAlign: "left" | "right" } {
+  const scrollY = positioning === "absolute" ? window.scrollY : 0;
+  const scrollX = positioning === "absolute" ? window.scrollX : 0;
+
+  const resolvedAlign: "left" | "right" =
+    alignProp === "auto"
+      ? rect.left > window.innerWidth / 2 ? "right" : "left"
+      : alignProp;
+
+  const resolvedDirection: "up" | "down" =
+    directionProp === "auto"
+      ? rect.top > window.innerHeight / 2 ? "up" : "down"
+      : directionProp;
+
+  const left = (resolvedAlign === "right" ? rect.right : rect.left) + scrollX;
+
+  if (resolvedDirection === "up") {
+    return { bottom: (window.innerHeight - rect.top + gap) - scrollY, left, minWidth: rect.width, resolvedAlign };
+  } else {
+    return { top: rect.bottom + gap + scrollY, left, minWidth: rect.width, resolvedAlign };
+  }
+}
+
 export function DropdownMenu({
   open,
   onClose,
   trigger,
   sections,
   align = "right",
+  direction = "down",
   buttonAlign = "center",
   positioning = "fixed",
   size = "sm",
+  width,
   fullscreenAt = 640,
+  maxHeight,
 }: DropdownMenuProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const [position, setPosition] = useState<{ top: number; left: number; minWidth: number } | null>(null);
+  const [position, setPosition] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+    minWidth: number;
+    resolvedAlign: "left" | "right";
+  } | null>(null);
 
   useLayoutEffect(() => {
     if (!open || !isBrowser) return;
-
     const el = trigger.current;
     if (!el) return;
-
-    const rect = el.getBoundingClientRect();
-    const gap = 6;
-    const top =
-      rect.bottom + gap + (positioning === "absolute" ? window.scrollY : 0);
-    const left =
-      (align === "right" ? rect.right : rect.left) +
-      (positioning === "absolute" ? window.scrollX : 0);
-
-    setPosition({ top, left, minWidth: rect.width });
-  }, [open, align, positioning, trigger]);
+    setPosition(resolvePosition(el.getBoundingClientRect(), align, direction, positioning, 6));
+  }, [open, align, direction, positioning, trigger]);
 
   useEffect(() => {
     if (!open) return;
@@ -97,30 +131,42 @@ export function DropdownMenu({
       }
     };
 
+    const reposition = () => {
+      const el = trigger.current;
+      if (!el) return;
+      setPosition(resolvePosition(el.getBoundingClientRect(), align, direction, positioning, 6));
+    };
+
     document.addEventListener("keydown", onKey);
     document.addEventListener("mousedown", onMouse);
+    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", reposition, { capture: true, passive: true });
 
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onMouse);
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, { capture: true });
     };
-  }, [open, onClose, trigger]);
+  }, [open, onClose, trigger, align, direction, positioning]);
 
   if (!open || !isBrowser) return null;
 
   const isFullscreenViewport =
     fullscreenAt !== "never" && window.innerWidth <= fullscreenAt;
 
+  const resolvedAlign = position?.resolvedAlign ?? (align === "auto" ? "right" : align);
+
   const panelStyle: React.CSSProperties = position
     ? isFullscreenViewport
-      ? {
-          inset: 0,
-        }
+      ? { inset: 0 }
       : {
           top: position.top,
+          bottom: position.bottom,
           left: position.left,
+          width,
           minWidth: size === "auto" ? position.minWidth : undefined,
-          transform: align === "right" ? "translateX(-100%)" : undefined,
+          transform: resolvedAlign === "right" ? "translateX(-100%)" : undefined,
         }
     : { visibility: "hidden" };
 
@@ -174,7 +220,7 @@ export function DropdownMenu({
       className={cn(
         "ui-dropdown-panel",
         positioning === "absolute" && "ui-dropdown-panel-absolute",
-        dropdownMenuSizeClasses[size],
+        width === undefined && dropdownMenuSizeClasses[size],
         isFullscreenViewport && "ui-dropdown-panel-fullscreen",
       )}
     >
@@ -218,7 +264,10 @@ export function DropdownMenu({
             </div>
           ) : null}
 
-          <div className="ui-dropdown-actions">
+          <div
+            className="ui-dropdown-actions"
+            style={maxHeight ? { maxHeight, overflowY: "auto" } : undefined}
+          >
             {section.actions.map((action) => (
               <div key={action.key}>{renderAction(action)}</div>
             ))}

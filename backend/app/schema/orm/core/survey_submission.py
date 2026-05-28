@@ -60,10 +60,6 @@ class SurveySubmission(CoreBase):
             name="link_requires_link_id",
         ),
         CheckConstraint(
-            "submission_channel <> 'link' OR submitted_by_user_id IS NOT NULL",
-            name="link_requires_user",
-        ),
-        CheckConstraint(
             "submission_channel <> 'system' OR (submitted_by_user_id IS NULL AND survey_link_id IS NULL)",
             name="system_has_no_actor",
         ),
@@ -73,9 +69,6 @@ class SurveySubmission(CoreBase):
         ),
         CheckConstraint("NOT is_anonymous OR submitted_by_user_id IS NULL", name="anonymous_has_no_user"),
         CheckConstraint("NOT is_anonymous OR pseudonymous_subject_id IS NULL", name="anonymous_has_no_subject"),
-        CheckConstraint(
-            "submission_channel <> 'link' OR NOT is_anonymous", name="link_is_not_anonymous"
-        ),
         CheckConstraint(
             "submission_channel <> 'slug' OR is_anonymous OR submitted_by_user_id IS NOT NULL",
             name="identified_slug_requires_user",

@@ -5,13 +5,15 @@ from flask import Blueprint, jsonify
 from sqlalchemy import text
 
 from app.db.context import get_core_db, get_response_db
+from app.openapi import openapi_route
 
 health_bp = Blueprint("health_v1", __name__, url_prefix="/health")
 
 logger = getLogger(__name__)
 
 
-@health_bp.route("/", methods=["GET"])
+@openapi_route(summary="Health check", tags=["Health"], auth_required=False)
+@health_bp.route("", methods=["GET"])
 def health_check():
     """Return a simple health check response with the current UTC timestamp.
 
@@ -24,6 +26,7 @@ def health_check():
     ), 200
 
 
+@openapi_route(summary="Readiness check", tags=["Health"], auth_required=False)
 @health_bp.route("/ready", methods=["GET"])
 def readiness_check():
     """Return a readiness check response indicating if the service is ready.

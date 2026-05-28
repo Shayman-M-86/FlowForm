@@ -85,6 +85,52 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../" && pwd)"
 
 cd "${PROJECT_ROOT}"
 
+ensure_docker_running() {
+  # Cheapest possible check — `docker info` exits non-zero if the daemon
+  # isn't reachable, regardless of why. Avoids `docker ps` which can hang
+  # on a partly-started daemon.
+  if docker info >/dev/null 2>&1; then
+    return 0
+  fi
+
+  # Only attempt auto-start on WSL — on bare Linux the user manages the
+  # daemon themselves (systemd, rootless, etc.).
+  if [ -z "${WSL_DISTRO_NAME:-}" ] && [ -z "${WSL_INTEROP:-}" ]; then
+    echo "Docker daemon is not reachable. Start Docker and re-run." >&2
+    exit 1
+  fi
+
+  local docker_desktop_exe="/mnt/c/Program Files/Docker/Docker/Docker Desktop.exe"
+  if [ ! -x "${docker_desktop_exe}" ]; then
+    echo "Docker Desktop not found at expected path:" >&2
+    echo "  ${docker_desktop_exe}" >&2
+    echo "Start Docker Desktop manually and re-run." >&2
+    exit 1
+  fi
+
+  echo "==> Docker daemon not running — launching Docker Desktop"
+  # cmd.exe needs a Windows-style path; the POSIX form gets mangled.
+  local docker_desktop_win
+  docker_desktop_win="$(wslpath -w "${docker_desktop_exe}")"
+  # `cmd.exe /c start ""` returns immediately; the Windows-side process
+  # keeps running after this shell exits.
+  cmd.exe /c start "" "${docker_desktop_win}" >/dev/null 2>&1 || true
+
+  local wait_seconds=120
+  local elapsed=0
+  while ! docker info >/dev/null 2>&1; do
+    if [ "${elapsed}" -ge "${wait_seconds}" ]; then
+      echo "Timed out after ${wait_seconds}s waiting for Docker Desktop to start." >&2
+      exit 1
+    fi
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+  echo "==> Docker is ready (${elapsed}s)"
+}
+
+ensure_docker_running
+
 COLOR_RESET="\033[0m"
 COLOR_BLUE="\033[34m"
 COLOR_GREEN="\033[32m"

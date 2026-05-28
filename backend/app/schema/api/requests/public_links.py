@@ -1,6 +1,8 @@
 from datetime import UTC, datetime
 
-from pydantic import AwareDatetime, BaseModel, field_validator
+from pydantic import AwareDatetime, BaseModel, Field, field_validator
+
+from app.schema.api import limits
 
 
 def _validate_expires_at(value: AwareDatetime | None) -> AwareDatetime | None:
@@ -26,11 +28,25 @@ def _normalize_assigned_email(value: str | None) -> str | None:
     return normalized
 
 
+def _validate_name(value: str) -> str:
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError("name must not be blank.")
+    return normalized
+
+
 class CreatePublicLinkRequest(BaseModel):
     """Request body for creating a survey link."""
 
-    assigned_email: str | None = None
+    name: str = Field(max_length=limits.PUBLIC_LINK_NAME_MAX)
+    assigned_email: str | None = Field(default=None, max_length=limits.EMAIL_MAX)
+    requires_auth: bool = False
     expires_at: AwareDatetime | None = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        return _validate_name(value)
 
     @field_validator("assigned_email")
     @classmethod
@@ -47,8 +63,17 @@ class UpdatePublicLinkRequest(BaseModel):
     """Request body for partially updating a survey link."""
 
     is_active: bool | None = None
-    assigned_email: str | None = None
+    name: str | None = Field(default=None, max_length=limits.PUBLIC_LINK_NAME_MAX)
+    assigned_email: str | None = Field(default=None, max_length=limits.EMAIL_MAX)
+    requires_auth: bool | None = None
     expires_at: AwareDatetime | None = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _validate_name(value)
 
     @field_validator("assigned_email")
     @classmethod
@@ -64,7 +89,7 @@ class UpdatePublicLinkRequest(BaseModel):
 class ResolveTokenRequest(BaseModel):
     """Request body for resolving a public link token to its associated survey and project."""
 
-    token: str
+    token: str = Field(max_length=limits.TOKEN_MAX)
 
     @field_validator("token")
     @classmethod

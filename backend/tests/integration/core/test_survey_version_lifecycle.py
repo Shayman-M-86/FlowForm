@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-import pytest
+import pytest  # type: ignore[import]
 from sqlalchemy import select
 from sqlalchemy.orm import Session, scoped_session
 

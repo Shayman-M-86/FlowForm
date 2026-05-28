@@ -15,7 +15,7 @@ COPY . .
 
 WORKDIR /app/apps/studio-app
 
-ARG VITE_DISABLE_AUTH
+ARG VITE_AUTH_BYPASS
 ARG VITE_DESIGN_PREVIEW
 
 RUN npm run build

@@ -27,6 +27,7 @@ export default defineConfig({
       { find: '@flowform/site-shell', replacement: resolve(siteShellSrc, 'index.ts') },
       { find: '@flowform/builder', replacement: resolve(builderSrc, 'index.ts') },
       { find: '@flowform/ui', replacement: resolve(uiSrc, 'index.tsx') },
+      { find: '@flowform/styles/fonts.css', replacement: resolve(stylesSrc, 'fonts.css') },
       { find: '@flowform/styles/tokens.css', replacement: resolve(stylesSrc, 'tokens.css') },
       { find: '@flowform/styles/components.css', replacement: resolve(stylesSrc, 'components.css') },
       { find: '@flowform/styles', replacement: resolve(stylesSrc, 'index.css') },

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { cn, useFieldId } from "../../lib/utils";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { createPortal } from "react-dom";
+import { cn, isBrowser, useFieldId } from "../../lib/utils";
 import { controlSizeClasses, type ControlSize } from "../../lib/sizes";
 import {
   controlBaseClass,
@@ -74,6 +75,7 @@ export function Select({
   const currentValue = isControlled ? value ?? "" : internalValue;
 
   const [open, setOpen] = useState(false);
+  const [listboxPos, setListboxPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const [activeIndex, setActiveIndex] = useState(() => {
     const index = options.findIndex((option) => option.value === currentValue);
     return index >= 0 ? index : 0;
@@ -117,15 +119,32 @@ export function Select({
     [closeAndFocus, emitChange, options],
   );
 
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setListboxPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
 
     function onDocumentMouseDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (!rootRef.current?.contains(event.target as Node) && !listRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function reposition() {
+      if (!triggerRef.current) return;
+      const rect = triggerRef.current.getBoundingClientRect();
+      setListboxPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
     }
 
     document.addEventListener("mousedown", onDocumentMouseDown);
-    return () => document.removeEventListener("mousedown", onDocumentMouseDown);
+    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", reposition, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener("mousedown", onDocumentMouseDown);
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, { capture: true });
+    };
   }, [open]);
 
   useEffect(() => {
@@ -233,7 +252,7 @@ export function Select({
         </svg>
       </button>
 
-      {open ? (
+      {open && isBrowser ? createPortal(
         <ul
           ref={listRef}
           id={listboxId}
@@ -242,7 +261,8 @@ export function Select({
           aria-activedescendant={
             options[activeIndex] ? `${listboxId}-opt-${activeIndex}` : undefined
           }
-          className="ui-popover-panel absolute left-0 right-0 top-full z-50 mt-1.5 max-h-64 overflow-y-auto p-1"
+          style={listboxPos ? { top: listboxPos.top, left: listboxPos.left, width: listboxPos.width } : { visibility: "hidden" }}
+          className="ui-popover-panel fixed z-300 max-h-64 overflow-y-auto p-1"
         >
           {options.map((option, index) => {
             const isSelected = option.value === currentValue;
@@ -273,7 +293,8 @@ export function Select({
           {options.length === 0 ? (
             <li className="px-3 py-1.5 text-sm text-muted-foreground">No options</li>
           ) : null}
-        </ul>
+        </ul>,
+        document.body,
       ) : null}
 
       {error ? (

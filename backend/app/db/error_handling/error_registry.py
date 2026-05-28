@@ -6,8 +6,13 @@ from collections.abc import Iterable
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
-from app.core.errors import AppError
-from app.db.error_handling.error_translation import DbErrorRule, get_db_error_key, translate_db_error
+from app.db.error_handling.error_translation import (
+    DbErrorRule,
+    get_constraint_name,
+    get_db_error_key,
+    translate_db_error,
+)
+from app.db.error_handling.errors import DbIntegrityError, UnhandledDbIntegrityError
 from app.db.error_handling.integrity_rules import RULES_BY_CONTEXT, RuleContext, allowed_parameters
 
 logger = logging.getLogger(__name__)
@@ -46,7 +51,7 @@ def _translate_db_error_for_contexts(
     exc: DBAPIError,
     *,
     contexts: Iterable[RuleContext],
-) -> tuple[AppError | None, DbErrorRule | None, RuleContext | None]:
+) -> tuple[DbIntegrityError | None, DbErrorRule | None, RuleContext | None]:
     for context in contexts:
         rules = get_rules_for_context(context)
         mapped, matched_rule = translate_db_error(exc, context=context, rules=rules)
@@ -85,15 +90,20 @@ def commit_with_err_handle(db: Session, *, contexts: Iterable[RuleContext] | Non
             )
             raise mapped from None
 
+        context_summary = summarize_contexts(context_list)
         logger.exception(
-            "Unhandled database error during commit",
+            "Unhandled database integrity error during commit",
             extra={
                 "db_error_key": error_key,
-                **summarize_contexts(context_list),
+                **context_summary,
             },
             exc_info=exc,
         )
-        raise
+        raise UnhandledDbIntegrityError(
+            constraint_name=get_constraint_name(exc),
+            error_key=error_key,
+            context_summary=context_summary,
+        ) from exc
     except Exception:
         db.rollback()
         logger.exception(
@@ -132,12 +142,17 @@ def flush_with_err_handle(db: Session, *, contexts: Iterable[RuleContext] | None
             )
             raise mapped from None
 
+        context_summary = summarize_contexts(context_list)
         logger.exception(
-            "Unhandled database error during flush",
+            "Unhandled database integrity error during flush",
             extra={
                 "db_error_key": error_key,
-                **summarize_contexts(context_list),
+                **context_summary,
             },
             exc_info=exc,
         )
-        raise
+        raise UnhandledDbIntegrityError(
+            constraint_name=get_constraint_name(exc),
+            error_key=error_key,
+            context_summary=context_summary,
+        ) from exc

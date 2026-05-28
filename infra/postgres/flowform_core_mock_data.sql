@@ -101,7 +101,7 @@ JOIN permissions p ON p.name = r.perm_name;
 INSERT INTO project_memberships (id, user_id, project_id, role_id, status, created_at) VALUES
     (1, 2, 1, 1, 'active',  NOW() - INTERVAL '34 days'),
     (2, 3, 1, 2, 'active',  NOW() - INTERVAL '31 days'),
-    (3, 4, 1, 3, 'invited', NOW() - INTERVAL '20 days'),
+    (3, 4, 1, 3, 'active', NOW() - INTERVAL '20 days'),
     (4, 5, 2, 4, 'active',  NOW() - INTERVAL '22 days'),
     (5, 1, 2, 5, 'active',  NOW() - INTERVAL '18 days');
 
@@ -240,6 +240,15 @@ SELECT setval('projects_id_seq', COALESCE((SELECT MAX(id) FROM projects), 1), tr
 SELECT setval('permissions_id_seq', COALESCE((SELECT MAX(id) FROM permissions), 1), true);
 SELECT setval('project_roles_id_seq', COALESCE((SELECT MAX(id) FROM project_roles), 1), true);
 SELECT setval('project_memberships_id_seq', COALESCE((SELECT MAX(id) FROM project_memberships), 1), true);
+
+-- =========================================
+-- PROJECT INVITATIONS
+-- =========================================
+
+INSERT INTO project_invitations (id, project_id, invited_email, role_id, invited_by_user_id, status, created_at) VALUES
+    (1, 1, 'pending.invite@example.com', 3, 2, 'pending', NOW() - INTERVAL '5 days');
+
+SELECT setval('project_invitations_id_seq', COALESCE((SELECT MAX(id) FROM project_invitations), 1), true);
 SELECT setval('response_stores_id_seq', COALESCE((SELECT MAX(id) FROM response_stores), 1), true);
 SELECT setval('surveys_id_seq', COALESCE((SELECT MAX(id) FROM surveys), 1), true);
 SELECT setval('survey_versions_id_seq', COALESCE((SELECT MAX(id) FROM survey_versions), 1), true);

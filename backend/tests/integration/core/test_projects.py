@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast
 
-import pytest
+import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation, ForeignKeyViolation, NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
@@ -179,6 +179,76 @@ def test_project_role_requires_name(db_session: scoped_session[Session], project
     orig = cast(NotNullViolation, exc_info.value.orig)
     column = orig.diag.column_name
     assert column == "name", f"Expected NOT NULL violation on 'name', got '{column}'\nDB error: {exc_info.value}"
+
+    db_session.rollback()
+
+
+def test_project_role_description_is_persisted(
+    db_session: scoped_session[Session], project: Project
+) -> None:
+    """description is stored and round-trips correctly."""
+    role = make_project_role(project.id, name="desc-role", is_system_role=False, description="Manages project settings.")
+    db_session.add(role)
+    db_session.flush()
+
+    saved = db_session.get(ProjectRole, role.id)
+    assert saved is not None
+    assert saved.description == "Manages project settings.", (
+        f"description={saved.description!r}, expected 'Manages project settings.'"
+    )
+
+
+def test_project_role_description_nullable(
+    db_session: scoped_session[Session], project: Project
+) -> None:
+    """description defaults to NULL when omitted."""
+    role = make_project_role(project.id, name="no-desc-role", is_system_role=False)
+    db_session.add(role)
+    db_session.flush()
+
+    saved = db_session.get(ProjectRole, role.id)
+    assert saved is not None
+    assert saved.description is None, (
+        f"Expected description=None, got {saved.description!r}"
+    )
+
+
+def test_project_role_description_blank_rejected(
+    db_session: scoped_session[Session], project: Project
+) -> None:
+    """Blank/whitespace-only description violates the CHECK constraint."""
+    role = make_project_role(project.id, name="blank-desc-role", is_system_role=False, description="   ")
+    db_session.add(role)
+
+    with pytest.raises(IntegrityError) as exc_info:
+        db_session.flush()
+
+    orig = cast(CheckViolation, exc_info.value.orig)
+    constraint = orig.diag.constraint_name
+    assert constraint == "ck_project_roles_description_len", (
+        f"Expected constraint 'ck_project_roles_description_len', got '{constraint}'\n"
+        f"DB error: {exc_info.value}"
+    )
+
+    db_session.rollback()
+
+
+def test_project_role_description_too_long_rejected(
+    db_session: scoped_session[Session], project: Project
+) -> None:
+    """A description exceeding 500 characters violates the CHECK constraint."""
+    role = make_project_role(project.id, name="long-desc-role", is_system_role=False, description="x" * 501)
+    db_session.add(role)
+
+    with pytest.raises(IntegrityError) as exc_info:
+        db_session.flush()
+
+    orig = cast(CheckViolation, exc_info.value.orig)
+    constraint = orig.diag.constraint_name
+    assert constraint == "ck_project_roles_description_len", (
+        f"Expected constraint 'ck_project_roles_description_len', got '{constraint}'\n"
+        f"DB error: {exc_info.value}"
+    )
 
     db_session.rollback()
 

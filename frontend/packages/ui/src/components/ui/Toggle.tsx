@@ -2,7 +2,7 @@ import { cn } from "../../lib/utils";
 import { formFieldClass, formHintClass } from "../../lib/formFieldStyles";
 
 interface ToggleProps {
-  label: string;
+  label?: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;

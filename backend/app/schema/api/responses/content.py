@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schema.api.enums import SurveyNodeType
+
 
 class NodeOut(BaseModel):
     """API response shape for a survey content node (question or rule)."""
@@ -12,7 +14,7 @@ class NodeOut(BaseModel):
     survey_version_id: int
     node_key: str = Field(validation_alias="question_key")
     sort_key: int
-    node_type: str
+    node_type: SurveyNodeType
     content: dict = Field(validation_alias="question_schema")
     created_at: datetime
     updated_at: datetime

@@ -2,10 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import commit_with_err_handle
 from app.domain import public_link_rules, survey_rules
-from app.domain.errors import (
-    NonPrivateSurveyAssignedEmailForbiddenError,
-    PrivateSurveyAssignedEmailRequiredError,
-)
+from app.domain.errors import LinkAuthAssignmentRequiredError, PrivateSurveyAssignedEmailRequiredError
 from app.domain.permissions import PERMISSIONS
 from app.repositories import public_link_repo, surveys_repo
 from app.schema.api.requests.public_links import CreatePublicLinkRequest, ResolveTokenRequest, UpdatePublicLinkRequest
@@ -19,18 +16,22 @@ from app.services.results import CreatePublicLinkResult, ResolveLinkResult
 class SurveyLinkService:
     """Service for handling operations related to survey links."""
 
-    def resolve_link(self, db: Session, payload: ResolveTokenRequest, actor: User) -> ResolveLinkResult:
+    def resolve_link(self, db: Session, payload: ResolveTokenRequest, actor: User | None) -> ResolveLinkResult:
         """Resolve a survey link token to its survey and published version.
 
-        The actor must be authenticated. If the link is assigned to an email,
-        that email must match the authenticated user.
+        If the link requires auth, the actor must be authenticated. If the link
+        is assigned to an email and an actor is present, the actor's email must
+        match the assignment.
         """
         link_orm: SurveyLink = public_link_rules.ensure_is_not_none(
             link=public_link_repo.resolve_token(db, payload.token)
         )
         public_link_rules.ensure_is_active(link=link_orm)
         public_link_rules.ensure_not_expired(link=link_orm)
-        public_link_rules.ensure_actor_matches_assignment(link=link_orm, actor_email=actor.email)
+        actor_email = actor.email if actor is not None else None
+        public_link_rules.ensure_auth_satisfied(link=link_orm, actor_email=actor_email)
+        public_link_rules.ensure_actor_matches_assignment(link=link_orm, actor_email=actor_email)
+        public_link_rules.ensure_not_used(link=link_orm)
 
         project_id = link_orm.survey.project_id
         survey_id = link_orm.survey_id
@@ -71,11 +72,17 @@ class SurveyLinkService:
     ) -> CreatePublicLinkResult:
         """Create a new link for a survey."""
         survey = self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
-        self._ensure_assignment_matches_visibility(survey=survey, assigned_email=data.assigned_email)
+        self._ensure_link_allowed_by_visibility(
+            survey=survey,
+            requires_auth=data.requires_auth,
+            assigned_email=data.assigned_email,
+        )
         link, token = public_link_repo.create_link(
             db,
             survey_id=survey_id,
+            name=data.name,
             assigned_email=data.assigned_email,
+            requires_auth=data.requires_auth,
             expires_at=data.expires_at,
         )
         commit_with_err_handle(db, contexts=[link])
@@ -94,15 +101,22 @@ class SurveyLinkService:
         """Update an existing survey link."""
         survey = self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
         link = self._get_link_invalidate(db, survey_id=survey_id, link_id=link_id)
-        next_assigned_email = link.assigned_email
-        if "assigned_email" in payload.model_fields_set:
-            next_assigned_email = payload.assigned_email
-        self._ensure_assignment_matches_visibility(survey=survey, assigned_email=next_assigned_email)
+        next_assigned_email = (
+            payload.assigned_email if "assigned_email" in payload.model_fields_set else link.assigned_email
+        )
+        next_requires_auth = payload.requires_auth if payload.requires_auth is not None else link.requires_auth
+        self._ensure_link_allowed_by_visibility(
+            survey=survey,
+            requires_auth=next_requires_auth,
+            assigned_email=next_assigned_email,
+        )
 
         updated_link = public_link_repo.update_link(
             db,
             link=link,
             is_active=payload.is_active,
+            name=payload.name,
+            requires_auth=payload.requires_auth,
             assigned_email=(
                 payload.assigned_email
                 if "assigned_email" in payload.model_fields_set
@@ -137,11 +151,25 @@ class SurveyLinkService:
         )
         return link
 
-    def _ensure_assignment_matches_visibility(self, *, survey: Survey, assigned_email: str | None) -> None:
-        if survey.visibility == "private" and assigned_email is None:
+    def _ensure_link_allowed_by_visibility(
+        self,
+        *,
+        survey: Survey,
+        requires_auth: bool,
+        assigned_email: str | None,
+    ) -> None:
+        """Validate that a link's auth/assignment fits the survey's visibility.
+
+        - private:   only authenticated-assigned links are allowed
+                     (requires_auth=true, assigned_email set)
+        - link_only: anonymous, assigned, or authenticated-assigned links
+        - public:    anonymous, assigned, or authenticated-assigned links
+        """
+        if requires_auth and assigned_email is None:
+            raise LinkAuthAssignmentRequiredError()
+
+        if survey.visibility == "private" and (not requires_auth or assigned_email is None):
             raise PrivateSurveyAssignedEmailRequiredError()
-        if survey.visibility != "private" and assigned_email is not None:
-            raise NonPrivateSurveyAssignedEmailForbiddenError()
 
 
 PublicLinkService = SurveyLinkService

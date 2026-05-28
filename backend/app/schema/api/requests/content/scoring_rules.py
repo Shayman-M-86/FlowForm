@@ -1,5 +1,6 @@
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schema.api import limits
 from app.schema.api.requests.content.scoring_rule_schemas import ScoringRuleSchemaIn
 
 
@@ -8,7 +9,7 @@ class CreateScoringRuleRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    scoring_key: str
+    scoring_key: str = Field(max_length=limits.SCHEMA_ID_MAX)
     scoring_schema: ScoringRuleSchemaIn
 
     @field_validator("scoring_key")
@@ -24,7 +25,7 @@ class UpdateScoringRuleRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    scoring_key: str | None = None
+    scoring_key: str | None = Field(default=None, max_length=limits.SCHEMA_ID_MAX)
     scoring_schema: ScoringRuleSchemaIn | None = None
 
     @field_validator("scoring_key")

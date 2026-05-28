@@ -1,4 +1,5 @@
 from app.schema.orm.core.audit_log import AuditLog
+from app.schema.orm.core.invitation import ProjectInvitation
 from app.schema.orm.core.permission import Permission
 from app.schema.orm.core.project import Project, ProjectMembership, ProjectRole, project_role_permissions
 from app.schema.orm.core.response_store import ResponseStore
@@ -17,6 +18,7 @@ from app.schema.orm.core.user import User
 
 __all__ = [
     "AuditLog",
+    "ProjectInvitation",
     "Permission",
     "Project",
     "ProjectMembership",

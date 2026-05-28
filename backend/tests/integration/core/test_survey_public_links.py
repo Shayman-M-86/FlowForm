@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast
 
-import pytest
+import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation, NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
@@ -20,6 +20,7 @@ def test_survey_public_link_can_be_created(
 
     link = SurveyLink()
     link.survey_id = survey.id
+    link.name = "test link"
     link.token_prefix = prefix
     link.token_hash = token_hash
     db_session.add(link)
@@ -28,6 +29,7 @@ def test_survey_public_link_can_be_created(
     saved = db_session.get(SurveyLink, link.id)
     assert saved is not None, "SurveyLink was not persisted"
     assert saved.survey_id == survey.id, f"survey_id={saved.survey_id!r}, expected {survey.id!r}"
+    assert saved.name == "test link", f"name={saved.name!r}, expected 'test link'"
     assert saved.token_prefix == prefix, f"token_prefix={saved.token_prefix!r}, expected {prefix!r}"
     assert saved.token_hash == token_hash, f"token_hash={saved.token_hash!r}, expected {token_hash!r}"
     assert saved.is_active is True, f"is_active={saved.is_active!r}, expected True from server default"
@@ -44,6 +46,7 @@ def test_survey_public_link_unique_token_hash(
 
     link_a = SurveyLink()
     link_a.survey_id = survey.id
+    link_a.name = "link a"
     link_a.token_prefix = prefix_a
     link_a.token_hash = token_hash
     db_session.add(link_a)
@@ -53,6 +56,7 @@ def test_survey_public_link_unique_token_hash(
 
     link_b = SurveyLink()
     link_b.survey_id = survey.id
+    link_b.name = "link b"
     link_b.token_prefix = prefix_b
     link_b.token_hash = token_hash
     db_session.add(link_b)
@@ -78,6 +82,7 @@ def test_survey_public_link_unique_prefix_within_survey(
 
     link_a = SurveyLink()
     link_a.survey_id = survey.id
+    link_a.name = "link a"
     link_a.token_prefix = token_prefix
     link_a.token_hash = hash_a
     db_session.add(link_a)
@@ -87,6 +92,7 @@ def test_survey_public_link_unique_prefix_within_survey(
 
     link_b = SurveyLink()
     link_b.survey_id = survey.id
+    link_b.name = "link b"
     link_b.token_prefix = token_prefix
     link_b.token_hash = hash_b
     db_session.add(link_b)
@@ -112,6 +118,7 @@ def test_survey_public_link_rejects_short_token_prefix(
 
     link = SurveyLink()
     link.survey_id = survey.id
+    link.name = "test link"
     link.token_prefix = "short"  # 5 chars — below the 8-char minimum
     link.token_hash = token_hash
     db_session.add(link)
@@ -137,6 +144,7 @@ def test_survey_public_link_rejects_short_token_hash(
 
     link = SurveyLink()
     link.survey_id = survey.id
+    link.name = "test link"
     link.token_prefix = prefix
     link.token_hash = "tooshort"  # 8 chars — below the 32-char minimum
     db_session.add(link)
@@ -162,6 +170,7 @@ def test_survey_public_link_requires_token_prefix(
 
     link = SurveyLink()
     link.survey_id = survey.id
+    link.name = "test link"
     link.token_prefix = None  # type: ignore[assignment]
     link.token_hash = token_hash
     db_session.add(link)
@@ -187,6 +196,7 @@ def test_survey_public_link_requires_token_hash(
 
     link = SurveyLink()
     link.survey_id = survey.id
+    link.name = "test link"
     link.token_prefix = prefix
     link.token_hash = None  # type: ignore[assignment]
     db_session.add(link)
@@ -212,6 +222,7 @@ def test_survey_public_link_cascades_on_survey_delete(
 
     link = SurveyLink()
     link.survey_id = survey.id
+    link.name = "test link"
     link.token_prefix = prefix
     link.token_hash = token_hash
     db_session.add(link)

@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from unittest.mock import Mock
-
-import pytest
+import pytest  # type: ignore[import]
 from sqlalchemy.orm import Session, scoped_session
 
 from app.schema.api.requests.auth import BootstrapUserRequest
 from app.schema.orm.core.project import Project, ProjectMembership
-from app.schema.orm.core.user import User
 from app.services.auth import AuthService
 from tests.integration.core.factories import make_user
 

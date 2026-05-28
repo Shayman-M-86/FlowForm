@@ -1,6 +1,7 @@
 ---
 import Layout from './Layout.astro';
 import SiteHeader from '../components/SiteHeader.astro';
+import DocsNav from '../components/DocsNav.astro';
 
 export interface Props {
   title: string;
@@ -11,7 +12,17 @@ export interface Props {
 
 const { title, description, headings = [], currentPath } = Astro.props;
 
-const sidebar = [
+interface DocsNavItem {
+  label: string;
+  href: string;
+}
+
+interface DocsNavGroup {
+  label: string;
+  items: DocsNavItem[];
+}
+
+const sidebar: DocsNavGroup[] = [
   {
     label: 'Getting Started',
     items: [
@@ -33,120 +44,78 @@ const sidebar = [
   },
 ];
 
-const tocHeadings = headings.filter(h => h.depth === 2 || h.depth === 3);
+const normalisePath = (path: string) => {
+  if (path.length > 1 && path.endsWith('/')) return path.slice(0, -1);
+  return path;
+};
 
-// Find the label of the current page for the mobile toggle button
-const allItems = sidebar.flatMap(g => g.items);
-const activeItem = allItems.find(item => currentPath === item.href || currentPath === item.href + '/');
+const current = normalisePath(currentPath);
+const tocHeadings = headings.filter(h => h.depth === 2 || h.depth === 3);
+const activeItem = sidebar.flatMap(group => group.items).find(item => current === normalisePath(item.href));
 const activeLabel = activeItem?.label ?? title;
 ---
 
 <Layout title={`${title} | FlowForm Docs`} description={description} canonicalPath={currentPath}>
   <SiteHeader />
 
-  <!-- Mobile docs nav bar -->
-  <div class="docs-mobile-bar" transition:animate="none">
-    <button
-      class="docs-mobile-bar__toggle"
-      aria-expanded="false"
-      aria-controls="docs-mobile-menu"
-      aria-label="Open docs navigation"
-      data-docs-toggle
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M4 6h16M4 12h10M4 18h16" />
-      </svg>
-      <span class="docs-mobile-bar__label" data-docs-label>{activeLabel}</span>
-      <svg class="docs-mobile-bar__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M6 9l6 6 6-6" />
-      </svg>
-    </button>
-  </div>
+  <div class="docs-page">
+    <div class="docs-mobile-bar" transition:animate="none">
+      <button
+        class="docs-mobile-bar__toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="docs-mobile-menu"
+        aria-label="Open docs navigation"
+        data-docs-toggle
+      >
+        <svg class="docs-mobile-bar__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 6h16M4 12h10M4 18h16" />
+        </svg>
 
-  <!-- Mobile docs menu (dropdown) -->
-  <div class="docs-mobile-menu" id="docs-mobile-menu" hidden data-docs-menu>
-    <nav aria-label="Documentation">
-      {sidebar.map(group => (
-        <div class="docs-mobile-menu__group">
-          <p class="docs-mobile-menu__group-label">{group.label}</p>
-          <ul class="docs-mobile-menu__list">
-            {group.items.map(item => {
-              const isActive = currentPath === item.href || currentPath === item.href + '/';
-              return (
-                <li>
-                  <a
-                    href={item.href}
-                    class={`docs-mobile-menu__link${isActive ? ' docs-mobile-menu__link--active' : ''}`}
-                    aria-current={isActive ? 'page' : undefined}
-                    data-docs-menu-link
-                  >
-                    {item.label}
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
-    </nav>
-  </div>
+        <span class="docs-mobile-bar__label">{activeLabel}</span>
 
-  <div class="docs-layout">
-    <!-- Sidebar (desktop) -->
-    <aside class="docs-sidebar" id="docs-sidebar">
-      <nav aria-label="Documentation">
-        {sidebar.map(group => (
-          <div class="docs-sidebar__group">
-            <p class="docs-sidebar__group-label">{group.label}</p>
-            <ul class="docs-sidebar__list">
-              {group.items.map(item => {
-                const isActive = currentPath === item.href || currentPath === item.href + '/';
-                return (
-                  <li>
-                    <a
-                      href={item.href}
-                      class={`docs-sidebar__link${isActive ? ' docs-sidebar__link--active' : ''}`}
-                      aria-current={isActive ? 'page' : undefined}
-                    >
-                      {item.label}
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
-      </nav>
-    </aside>
+        <svg class="docs-mobile-bar__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+    </div>
 
-    <!-- Main content -->
-    <main class="docs-main" id="main-content">
-      <article class="docs-article">
-        <h1 class="docs-article__title">{title}</h1>
-        {description && <p class="docs-article__description">{description}</p>}
-        <div class="docs-content">
-          <slot />
-        </div>
-      </article>
+    <div class="docs-mobile-menu" id="docs-mobile-menu" hidden data-docs-menu>
+      <DocsNav groups={sidebar} currentPath={currentPath} variant="mobile" />
+    </div>
 
-      <nav class="docs-pagination" aria-label="Page navigation">
-        <slot name="pagination" />
-      </nav>
-    </main>
-
-    <!-- TOC (desktop) -->
-    {tocHeadings.length > 0 && (
-      <aside class="docs-toc" aria-label="On this page">
-        <p class="docs-toc__label">On this page</p>
-        <ul class="docs-toc__list">
-          {tocHeadings.map(h => (
-            <li class={`docs-toc__item docs-toc__item--h${h.depth}`}>
-              <a href={`#${h.slug}`} class="docs-toc__link">{h.text}</a>
-            </li>
-          ))}
-        </ul>
+    <div class="docs-layout">
+      <aside class="docs-sidebar" id="docs-sidebar">
+        <DocsNav groups={sidebar} currentPath={currentPath} variant="sidebar" />
       </aside>
-    )}
+
+      <main class="docs-main" id="main-content">
+        <article class="docs-article">
+          <h1 class="docs-article__title">{title}</h1>
+          {description && <p class="docs-article__description">{description}</p>}
+          <div class="docs-content">
+            <slot />
+          </div>
+        </article>
+
+        <nav class="docs-pagination" aria-label="Page navigation">
+          <slot name="pagination" />
+        </nav>
+      </main>
+
+      {tocHeadings.length > 0 && (
+        <aside class="docs-toc" aria-label="On this page">
+          <p class="docs-toc__label">On this page</p>
+          <ul class="docs-toc__list">
+            {tocHeadings.map(heading => (
+              <li class={`docs-toc__item docs-toc__item--h${heading.depth}`}>
+                <a href={`#${heading.slug}`} class="docs-toc__link">{heading.text}</a>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )}
+    </div>
   </div>
 </Layout>
 
@@ -158,6 +127,7 @@ const activeLabel = activeItem?.label ?? title;
 
     const setOpen = (open) => {
       toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-label', open ? 'Close docs navigation' : 'Open docs navigation');
       menu.hidden = !open;
     };
 
@@ -168,6 +138,15 @@ const activeLabel = activeItem?.label ?? title;
     menu.querySelectorAll('[data-docs-menu-link]').forEach(link => {
       link.addEventListener('click', () => setOpen(false));
     });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') setOpen(false);
+    });
+
+    document.addEventListener('click', event => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (!toggle.contains(target) && !menu.contains(target)) setOpen(false);
+    });
   })();
 </script>
-

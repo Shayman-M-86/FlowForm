@@ -1,0 +1,173 @@
+---
+import Layout from './Layout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+
+export interface Props {
+  title: string;
+  description?: string;
+  headings?: { depth: number; slug: string; text: string }[];
+  currentPath: string;
+}
+
+const { title, description, headings = [], currentPath } = Astro.props;
+
+const sidebar = [
+  {
+    label: 'Getting Started',
+    items: [
+      { label: 'Introduction', href: '/docs/introduction' },
+      { label: 'Building Your First Form', href: '/docs/building-your-first-form' },
+    ],
+  },
+  {
+    label: 'Question Types',
+    items: [
+      { label: 'Overview', href: '/docs/question-types/overview' },
+    ],
+  },
+  {
+    label: 'Reference',
+    items: [
+      { label: 'Survey JSON Shapes v1', href: '/docs/survey-json-shapes-v1' },
+    ],
+  },
+];
+
+const tocHeadings = headings.filter(h => h.depth === 2 || h.depth === 3);
+
+// Find the label of the current page for the mobile toggle button
+const allItems = sidebar.flatMap(g => g.items);
+const activeItem = allItems.find(item => currentPath === item.href || currentPath === item.href + '/');
+const activeLabel = activeItem?.label ?? title;
+---
+
+<Layout title={`${title} | FlowForm Docs`} description={description} canonicalPath={currentPath}>
+  <SiteHeader />
+
+  <!-- Mobile docs nav bar -->
+  <div class="docs-mobile-bar" transition:animate="none">
+    <button
+      class="docs-mobile-bar__toggle"
+      aria-expanded="false"
+      aria-controls="docs-mobile-menu"
+      aria-label="Open docs navigation"
+      data-docs-toggle
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 6h16M4 12h10M4 18h16" />
+      </svg>
+      <span class="docs-mobile-bar__label" data-docs-label>{activeLabel}</span>
+      <svg class="docs-mobile-bar__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M6 9l6 6 6-6" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mobile docs menu (dropdown) -->
+  <div class="docs-mobile-menu" id="docs-mobile-menu" hidden data-docs-menu>
+    <nav aria-label="Documentation">
+      {sidebar.map(group => (
+        <div class="docs-mobile-menu__group">
+          <p class="docs-mobile-menu__group-label">{group.label}</p>
+          <ul class="docs-mobile-menu__list">
+            {group.items.map(item => {
+              const isActive = currentPath === item.href || currentPath === item.href + '/';
+              return (
+                <li>
+                  <a
+                    href={item.href}
+                    class={`docs-mobile-menu__link${isActive ? ' docs-mobile-menu__link--active' : ''}`}
+                    aria-current={isActive ? 'page' : undefined}
+                    data-docs-menu-link
+                  >
+                    {item.label}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  </div>
+
+  <div class="docs-layout">
+    <!-- Sidebar (desktop) -->
+    <aside class="docs-sidebar" id="docs-sidebar">
+      <nav aria-label="Documentation">
+        {sidebar.map(group => (
+          <div class="docs-sidebar__group">
+            <p class="docs-sidebar__group-label">{group.label}</p>
+            <ul class="docs-sidebar__list">
+              {group.items.map(item => {
+                const isActive = currentPath === item.href || currentPath === item.href + '/';
+                return (
+                  <li>
+                    <a
+                      href={item.href}
+                      class={`docs-sidebar__link${isActive ? ' docs-sidebar__link--active' : ''}`}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      {item.label}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="docs-main" id="main-content">
+      <article class="docs-article">
+        <h1 class="docs-article__title">{title}</h1>
+        {description && <p class="docs-article__description">{description}</p>}
+        <div class="docs-content">
+          <slot />
+        </div>
+      </article>
+
+      <nav class="docs-pagination" aria-label="Page navigation">
+        <slot name="pagination" />
+      </nav>
+    </main>
+
+    <!-- TOC (desktop) -->
+    {tocHeadings.length > 0 && (
+      <aside class="docs-toc" aria-label="On this page">
+        <p class="docs-toc__label">On this page</p>
+        <ul class="docs-toc__list">
+          {tocHeadings.map(h => (
+            <li class={`docs-toc__item docs-toc__item--h${h.depth}`}>
+              <a href={`#${h.slug}`} class="docs-toc__link">{h.text}</a>
+            </li>
+          ))}
+        </ul>
+      </aside>
+    )}
+  </div>
+</Layout>
+
+<script is:inline>
+  (() => {
+    const toggle = document.querySelector('[data-docs-toggle]');
+    const menu = document.querySelector('[data-docs-menu]');
+    if (!toggle || !menu) return;
+
+    const setOpen = (open) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      menu.hidden = !open;
+    };
+
+    toggle.addEventListener('click', () => {
+      setOpen(toggle.getAttribute('aria-expanded') !== 'true');
+    });
+
+    menu.querySelectorAll('[data-docs-menu-link]').forEach(link => {
+      link.addEventListener('click', () => setOpen(false));
+    });
+  })();
+</script>
+

@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "shadcn": {
+      "command": "npx",
+      "args": ["shadcn@latest", "mcp"]
+    },
+    "chrome-devtools": {
+      "command": "cmd.exe",
+      "args": [
+        "/c",
+        "npx",
+        "chrome-devtools-mcp@latest",
+        "--autoConnect",
+        "-y"
+      ]
+    },
+    "flowform-openapi": {
+      "command": "/usr/bin/bash",
+      "args": ["/home/shayman86/my-repos/FlowForm/tools/mcp/run.sh"]
+    },
+    "flowform-repomap": {
+      "command": "/usr/bin/bash",
+      "args": ["/home/shayman86/my-repos/FlowForm/tools/mcp/repomap_run.sh"]
+    }
+  }
+}

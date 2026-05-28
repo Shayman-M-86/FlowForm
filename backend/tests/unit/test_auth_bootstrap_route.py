@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pytest
+import pytest  # type: ignore[import]
 from flask import Flask
 
 from app.api.utils.errors import register_error_handlers
@@ -45,7 +45,7 @@ def test_bootstrap_user_returns_created_response(
     monkeypatch.setattr(
         auth_api.auth_service,
         "bootstrap_current_user",
-        lambda _db, access_token_sub, payload: BootstrapCurrentUserResult(
+        lambda _db, access_token_sub, payload: BootstrapCurrentUserResult( # type: ignore  # noqa: ARG005
             user=created_user,
             created=True,
         ),
@@ -81,7 +81,7 @@ def test_bootstrap_user_rejects_subject_mismatch(
     monkeypatch.setattr(
         auth_api.auth_service,
         "bootstrap_current_user",
-        lambda _db, access_token_sub, payload: (_ for _ in ()).throw(
+        lambda _db, access_token_sub, payload: (_ for _ in ()).throw( # type: ignore  # noqa: ARG005
             AuthError(
                 message="ID token subject did not match the access token subject.",
                 code="TOKEN_SUBJECT_MISMATCH",

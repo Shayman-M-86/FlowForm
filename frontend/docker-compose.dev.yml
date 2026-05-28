@@ -28,7 +28,7 @@ services:
       context: .
       dockerfile: apps/studio-app/Dockerfile.preview
       args:
-        - VITE_DISABLE_AUTH=true
+        - VITE_AUTH_BYPASS=true
         - VITE_DESIGN_PREVIEW=true
     ports:
       - "4173:4173"

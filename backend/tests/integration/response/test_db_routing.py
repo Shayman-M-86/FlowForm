@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pytest
+import pytest  # type: ignore[import]
 from sqlalchemy import text
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.orm import Session

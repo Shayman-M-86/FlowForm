@@ -1,0 +1,182 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/path/to/FlowForm/tools/mcp/run.sh)",
+      "Read(/home/shayman86/my-repos/FlowForm/**)",
+      "Edit(/home/shayman86/my-repos/FlowForm/**)",
+      "Write(/home/shayman86/my-repos/FlowForm/**)",
+
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(echo:*)",
+      "Bash(pwd)",
+      "Bash(which:*)",
+      "Bash(env:*)",
+      "Bash(printenv:*)",
+      "Bash(wc:*)",
+      "Bash(sort:*)",
+      "Bash(uniq:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(diff:*)",
+      "Bash(stat:*)",
+      "Bash(file:*)",
+      "Bash(xargs:*)",
+
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote:*)",
+      "Bash(git stash list:*)",
+      "Bash(git blame:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git shortlog:*)",
+      "Bash(git tag:*)",
+
+      "Bash(docker ps:*)",
+      "Bash(docker inspect:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker images:*)",
+      "Bash(docker volume ls:*)",
+      "Bash(docker network ls:*)",
+      "Bash(docker compose -f infra/docker/docker-compose.test.yml up:*)",
+      "Bash(docker compose -f infra/docker/docker-compose.test.yml down:*)",
+      "Bash(docker compose -f infra/docker/docker-compose.test.yml stop:*)",
+      "Bash(docker compose -f infra/docker/docker-compose.test.yml build:*)",
+      "Bash(docker exec flowform-backend-test:*)",
+
+      "Bash(bash backend/scripts/run-tests-fast.sh:*)",
+      "Bash(bash backend/scripts/run-tests-rebuild-teardown.sh:*)",
+      "Bash(bash backend/scripts/pip-audit.sh:*)",
+
+      "Bash(uv run:*)",
+      "Bash(uv --version)",
+      "Bash(uv pip compile:*)",
+      "Bash(uvx pip-audit:*)",
+      "Bash(uv run ruff check:*)",
+      "Bash(uv run ruff format --check:*)",
+      "Bash(uv run mypy:*)",
+      "Bash(uv run pyright:*)",
+      "Bash(uv run pytest tests/unit:*)",
+      "Bash(python -m pytest tests/unit:*)",
+      "Bash(python3 -m pytest tests/unit:*)",
+
+      "Bash(npm run dev:studio:*)",
+      "Bash(npm run dev:site:*)",
+      "Bash(npm run build:studio:*)",
+      "Bash(npm run build:site:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run preview:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run routes:*)",
+      "Bash(npx tsc --noEmit:*)",
+      "Bash(npx tsc -b:*)",
+      "Bash(npx tsr generate:*)",
+      "Bash(npx astro check:*)",
+      "Bash(npx astro info:*)",
+      "Bash(npx eslint:*)"
+    ],
+    "deny": [
+      "Bash(rmdir:*)",
+      "Bash(rm -rf:*)",
+      "Bash(shred:*)",
+      "Bash(truncate:*)",
+
+      "Bash(git push:*)",
+      "Bash(git push --force:*)",
+      "Bash(git reset:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Bash(git checkout -- :*)",
+      "Bash(git rebase:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(git commit --amend:*)",
+      "Bash(git branch -D:*)",
+      "Bash(git tag -d:*)",
+
+      "Bash(docker rm:*)",
+      "Bash(docker rmi:*)",
+      "Bash(docker volume rm:*)",
+      "Bash(docker system prune:*)",
+      "Bash(docker kill:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker compose -f infra/docker/docker-compose.dev.yml:*)",
+
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(nc:*)",
+      "Bash(ncat:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(rsync:*)",
+
+      "Bash(sudo:*)",
+      "Bash(su:*)",
+      "Bash(chmod:*)",
+      "Bash(chown:*)",
+
+      "Bash(uv run ruff check --fix:*)",
+      "Bash(uv run ruff format:*)",
+      "Bash(uv add:*)",
+      "Bash(uv remove:*)",
+      "Bash(pip install:*)",
+      "Bash(pip uninstall:*)",
+
+      "Bash(psql:*)",
+      "Bash(pg_dump:*)",
+      "Bash(pg_restore:*)",
+      "Bash(dropdb:*)",
+      "Bash(createdb:*)",
+      "Bash(uv run flask db upgrade:*)",
+      "Bash(uv run flask db downgrade:*)",
+      "Bash(uv run flask db stamp:*)",
+
+      "Bash(npm install:*)",
+      "Bash(npm install --save:*)",
+      "Bash(npm install --save-dev:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm ci:*)",
+      "Bash(npx --yes:*)",
+      "Bash(npx eslint --fix:*)",
+      "Bash(npm publish:*)",
+      "Bash(npm pack:*)",
+      "Bash(npm link:*)",
+      "Bash(rm -rf node_modules:*)",
+      "Bash(rm -rf */node_modules:*)",
+
+      "Bash(cat .env:*)",
+      "Bash(cat **/.env:*)",
+      "Edit(**/.env*)",
+      "Write(**/.env*)",
+
+      "Read(**/node_modules/**)",
+      "Read(**/.venv/**)",
+      "Read(**/dist/**)",
+      "Read(**/build/**)",
+      "Read(**/frontend/apps/studio-app/src/api/generated/**)",
+      "Read(**/frontend/apps/studio-app/src/routeTree.gen.ts)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json; print(json.load(sys.stdin).get('file_path',''))\"); case \"$FILE\" in *.py) if [ -x /tmp/flowform-venv/bin/ruff ]; then VIRTUAL_ENV=/tmp/flowform-venv /tmp/flowform-venv/bin/ruff check --fix \"$FILE\" 2>/dev/null; fi ;; esac"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "claude-code-setup@claude-plugins-official": false
+  },
+  "mode": "acceptEdits"
+}

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@flowform/styles/fonts.css";
 @import "@flowform/styles";
 
 @source "../../../packages/ui/src/**/*.{ts,tsx}";
@@ -15,8 +16,9 @@ html,
 body {
   margin: 0;
   width: 100%;
+  height: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 body {
@@ -26,6 +28,334 @@ body {
 
 #root {
   width: 100%;
+  height: 100%;
   max-width: 100vw;
-  overflow-x: clip;
+}
+
+.app-shell {
+  --sidebar-w: 0px;
+  @apply h-dvh overflow-hidden;
+}
+
+.app-main {
+  @apply h-full min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-background pt-14 md:pt-0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.page-main {
+  @apply min-w-0 min-h-full py-4 md:py-14 px-[max(0.75rem,3vw)] md:px-[clamp(0.75rem,calc(0.75rem+10vw-77px),4rem)] ;
+}
+
+.page-main-builder {
+  @apply w-full max-w-none p-0;
+}
+
+/* ── Studio Sidebar ──────────────────────────────────────────── */
+
+@layer components {
+  @media (min-width: 768px) {
+    .app-shell {
+      --sidebar-w: calc(var(--spacing) * 69);
+      align-items: flex-start;
+    }
+
+    .app-shell:has(.sidebar[data-collapsed="true"]) {
+      --sidebar-w: calc(var(--spacing) * 17);
+    }
+
+    .app-main {
+      @apply border-l border-border rounded-l-3xl shadow-lg;
+      transition: border-radius 200ms ease-out;
+    }
+  }
+
+  /* ── Mobile top bar ─────────────────────────────────────────── */
+
+  .sidebar-topbar {
+    @apply fixed top-0 inset-x-0 z-80 flex h-14 items-center justify-between gap-3 border-b border-border bg-sidebar px-3 md:hidden;
+  }
+
+  /* ── Mobile backdrop ─────────────────────────────────────────── */
+
+  .sidebar-backdrop {
+    @apply fixed inset-0 z-30 bg-black/40 md:hidden;
+  }
+
+  /* ── Sidebar shell ───────────────────────────────────────────── */
+
+  .sidebar {
+    @apply flex shrink-0 flex-col bg-sidebar py-3.5 px-1 text-foreground;
+
+    /* Mobile (default): hidden fixed overlay, slides in when open */
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    width: calc(var(--spacing) * 72);
+    transform: translateX(-100%);
+    overflow-y: auto;
+    min-height: 100vh;
+    transition: transform 200ms var(--ease-out);
+
+    &[data-mobile-open="true"] {
+      transform: translateX(0);
+    }
+
+    /* Desktop: pinned in the flex row via sticky */
+    @media (min-width: 768px) {
+      position: sticky;
+      top: 0;
+      bottom: auto;
+      left: auto;
+      z-index: auto;
+      width: calc(var(--spacing) * 69);
+      height: 100vh;
+      transform: none;
+      align-self: flex-start;
+      padding-top: calc(var(--spacing) * 3.5);
+      transition: width 200ms var(--ease-out), padding 200ms var(--ease-out);
+    }
+
+    &[data-collapsed="true"] {
+      @media (min-width: 768px) {
+        width: calc(var(--spacing) * 17);
+        padding-inline: calc(var(--spacing) * 1);
+      }
+    }
+  }
+
+  /* ── Nav items ───────────────────────────────────────────────── */
+
+  .sidebar-nav-item {
+    @apply ui-button-ghost-bare relative flex h-11 w-full items-center overflow-hidden border-0 text-muted-foreground;
+
+    isolation: isolate;
+    justify-content: flex-start;
+
+    .sidebar[data-collapsed="true"] & {
+      justify-content: center;
+    }
+
+    & .sidebar-nav-item__icon {
+      @apply flex shrink-0 items-center justify-center;
+      width: calc(var(--spacing) * 11);
+      height: calc(var(--spacing) * 11);
+    }
+
+    & .sidebar-nav-item__label {
+      @apply truncate opacity-100;
+      flex: 1;
+      min-width: 0;
+      transition: opacity 150ms var(--ease-out);
+
+      .sidebar[data-collapsed="true"] & {
+        @apply opacity-0;
+      }
+    }
+  }
+
+  .sidebar-nav-item {
+    --sidebar-active-bg: color-mix(in oklab, var(--primary), transparent 88%);
+  
+    &::before {
+      content: "";
+      @apply absolute right-0 top-1/2 h-9 w-1 -translate-y-1/2 rounded-l-sm bg-primary;
+  
+      z-index: 2;
+      pointer-events: none;
+  
+      transform: translateX(110%);
+      transition: transform 150ms var(--ease-out);
+    }
+  
+    &::after {
+      content: "";
+      @apply absolute inset-0 rounded-sm;
+  
+      z-index: 0;
+      pointer-events: none;
+  
+      background-color: var(--sidebar-active-bg);
+  
+      transform: scaleX(0);
+      transform-origin: right;
+  
+      transition: transform 220ms var(--ease-out);
+    }
+  
+    & > * {
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  .sidebar-nav-item[data-active="true"] {
+    &::before {
+      transform: translateX(0%);
+    }
+  
+    &::after {
+      transform: scaleX(1);
+    }
+  }
+
+  /* ── Nav group (collapsible parent + nested children) ───────── */
+
+  .sidebar-nav-group {
+    @apply flex flex-col;
+  }
+
+  .sidebar-nav-group__children {
+    @apply relative grid grid-rows-[0fr] transition-all duration-200 ease-out md:ml-1;
+
+    &::before {
+      content: "";
+      @apply absolute left-0 hidden w-px bg-border md:block;
+      top: 0.5rem;
+      bottom: 0.5rem;
+    }
+  }
+
+  .sidebar-nav-group__children--open {
+    @apply grid-rows-[1fr] pl-2;
+  }
+
+  .sidebar-nav-group__inner {
+    @apply min-h-0 overflow-hidden;
+  }
+
+  .sidebar-nav-item--nested {
+    @apply md:ml-0 md:w-[calc(100%-0.25rem)];
+  }
+
+  .sidebar-nav-section-label {
+    @apply block overflow-hidden whitespace-nowrap text-2xs font-semibold uppercase tracking-wider text-muted-accent-foreground;
+
+    .sidebar[data-collapsed="true"] & {
+      visibility: hidden;
+    }
+  }
+
+  .sidebar-project-badge {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    width: auto;
+    flex: 1;
+    min-width: 0;
+    opacity: 1;
+    margin-top: 9px;
+    transition:
+      width 200ms var(--ease-out),
+      opacity 150ms var(--ease-out);
+
+    @media (min-width: theme(--breakpoint-md)) {
+      margin-top: 0;
+    }
+
+    .sidebar[data-collapsed="true"] & {
+      width: 0;
+      flex: none;
+      opacity: 0;
+    }
+  }
+
+  .sidebar-avatar {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-xs font-semibold;
+  }
+
+  .sidebar-avatar--workspace {
+    @apply bg-primary/10 text-primary-saturated;
+  }
+
+  .sidebar-avatar--user {
+    @apply rounded-full bg-muted text-foreground;
+  }
+
+  /* ── User profile button (bottom of sidebar) ─────────────────── */
+
+  .sidebar-user-button {
+    @apply ui-button-ghost-bare relative flex h-13 w-full items-center overflow-hidden border-0 text-foreground;
+
+    isolation: isolate;
+    justify-content: flex-start;
+    gap: 0.25rem;
+
+    .sidebar[data-collapsed="true"] & {
+      justify-content: flex-start;
+      gap: 0;
+    }
+
+    & .sidebar-user-button__avatar {
+      @apply flex shrink-0 items-center justify-center;
+      width: calc(var(--spacing) * 11);
+      height: calc(var(--spacing) * 11);
+    }
+
+    & .sidebar-user-button__avatar-img,
+    & .sidebar-user-button__avatar-initials {
+      @apply flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-muted text-2xs font-semibold text-foreground;
+      object-fit: cover;
+    }
+
+    & .sidebar-user-button__text {
+      @apply flex min-w-0 flex-1 flex-col items-start opacity-100 ml-1.5;
+      transition: opacity 150ms var(--ease-out);
+
+      .sidebar[data-collapsed="true"] & {
+        @apply pointer-events-none opacity-0;
+        max-width: 0;
+      }
+    }
+
+    & .sidebar-user-button__name {
+      @apply max-w-full truncate text-sm font-semibold leading-tight text-foreground;
+    }
+
+    & .sidebar-user-button__email {
+      @apply max-w-full truncate text-2xs leading-tight text-muted-foreground;
+    }
+
+    & .sidebar-user-button__caret {
+      @apply mr-1 inline-flex shrink-0 items-center justify-center text-muted-foreground opacity-100;
+      transition: opacity 150ms var(--ease-out);
+
+      & > svg {
+        transition: transform 200ms var(--ease-out);
+        transform-origin: center;
+      }
+
+      &[data-open="true"] > svg {
+        transform: rotate(180deg);
+      }
+
+      .sidebar[data-collapsed="true"] & {
+        @apply pointer-events-none opacity-0;
+        width: 0;
+        margin-right: 0;
+      }
+    }
+  }
+
+  .sidebar-user-divider {
+    @apply mx-2 mb-1 h-px bg-border;
+  }
+}
+
+@layer utilities {
+  .sidebar-nav-item {
+    /* active fill is painted by ::after; keep button's own active bg out of the way */
+    --ui-active-bg: transparent;
+    --ui-active-shadow: none;
+  }
+
+  .sidebar-nav-item[data-active="true"] {
+    --ui-hover-bg: transparent;
+    --ui-press-bg: color-mix(in oklab, var(--primary), transparent 94%);
+    --ui-color: var(--primary-saturated);
+
+    color: var(--primary-saturated);
+    transition: color 100ms var(--ease-out);
+  }
 }

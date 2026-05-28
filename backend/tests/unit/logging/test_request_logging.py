@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from typing import Any
 
-import pytest
+import pytest  # type: ignore[import]
 from flask import Flask, Response, g, make_response
 
 from app.logging import request_logging

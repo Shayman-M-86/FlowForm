@@ -1,0 +1,59 @@
+{
+  "output_dir": ".claude/rules/repomap",
+  "import_source": ".claude/repomap.md",
+  "paths": [
+    "backend/app/",
+    "backend/app/domain/",
+    "backend/app/repositories/",
+    "backend/app/services/",
+    "backend/app/schema/",
+    "backend/app/api/v1/",
+    "backend/tests/",
+    "frontend/apps/studio-app/src/api/",
+    "frontend/apps/studio-app/src/routes/",
+    "frontend/apps/studio-app/src/components/",
+    "frontend/apps/public-site/src/pages/",
+    "frontend/packages/",
+    "tools/mcp/"
+  ],
+  "agents": [
+    {
+      "name": "backend-core",
+      "paths": [
+        "backend/app/",
+        "backend/app/domain/",
+        "backend/app/schema/"
+      ]
+    },
+    {
+      "name": "backend-data",
+      "paths": [
+        "backend/app/repositories/",
+        "backend/app/services/",
+        "backend/app/api/v1/"
+      ]
+    },
+    {
+      "name": "backend-tests",
+      "paths": [
+        "backend/tests/",
+        "tools/mcp/"
+      ]
+    },
+    {
+      "name": "studio-frontend",
+      "paths": [
+        "frontend/apps/studio-app/src/api/",
+        "frontend/apps/studio-app/src/routes/",
+        "frontend/apps/studio-app/src/components/"
+      ]
+    },
+    {
+      "name": "public-and-shared",
+      "paths": [
+        "frontend/apps/public-site/src/pages/",
+        "frontend/packages/"
+      ]
+    }
+  ]
+}

@@ -52,11 +52,16 @@ class SurveyRole(CoreBase):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
         UniqueConstraint("project_id", "id", name="uq_survey_roles_project_id_id"),
         UniqueConstraint("project_id", "name", name="uq_survey_roles_project_id_name"),
+        CheckConstraint(
+            "description IS NULL OR char_length(btrim(description)) BETWEEN 1 AND 500",
+            name="ck_survey_roles_description_len",
+        ),
     )
 
     permissions: Mapped[list[Permission]] = relationship("Permission", secondary=survey_role_permissions)
@@ -124,11 +129,14 @@ class SurveyLink(CoreBase):
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     survey_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
     token_prefix: Mapped[str] = mapped_column(Text, nullable=False)
     token_hash: Mapped[str] = mapped_column(Text, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=text("true"), nullable=False)
+    requires_auth: Mapped[bool] = mapped_column(Boolean, server_default=text("false"), nullable=False)
     assigned_email: Mapped[str | None] = mapped_column(Text, nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
@@ -137,7 +145,21 @@ class SurveyLink(CoreBase):
         UniqueConstraint("survey_id", "token_prefix", name="uq_survey_links_survey_id_token_prefix"),
         CheckConstraint("char_length(token_prefix) BETWEEN 8 AND 32", name="ck_survey_links_token_prefix_len"),
         CheckConstraint("char_length(token_hash) >= 32", name="ck_survey_links_token_hash_len"),
+        CheckConstraint(
+            "char_length(btrim(name)) BETWEEN 1 AND 120",
+            name="ck_survey_links_name_len",
+        ),
+        # requires_auth links must be addressed to a specific email
+        CheckConstraint(
+            "NOT requires_auth OR assigned_email IS NOT NULL",
+            name="ck_survey_links_requires_auth_needs_assignment",
+        ),
     )
+
+    @property
+    def is_single_use(self) -> bool:
+        """Single-use is derived from having an assigned email."""
+        return self.assigned_email is not None
 
     survey: Mapped[Survey] = relationship("Survey")
 

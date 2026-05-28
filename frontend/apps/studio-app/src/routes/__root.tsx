@@ -1,16 +1,38 @@
+import { Suspense, lazy } from 'react'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/router-devtools'
-import { SiteHeader } from '@/components/SiteHeader'
 import { ProtectedApp } from '@/components/auth/ProtectedApp'
+import { StudioSidebar } from '@/components/StudioSidebar'
+import { useRenderDebug } from '@/debug/useRenderDebug'
+
+const TanStackRouterDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import('@tanstack/router-devtools').then((m) => ({
+        default: m.TanStackRouterDevtools,
+      })),
+    )
+  : null
+
+function AppLayout() {
+  useRenderDebug('AppLayout')
+  return (
+    <div className="app-shell flex min-h-screen bg-sidebar">
+      <StudioSidebar />
+      <main className="app-main">
+        <Outlet />
+      </main>
+    </div>
+  )
+}
 
 export const Route = createRootRoute({
   component: () => (
     <ProtectedApp>
-      <SiteHeader />
-      <div style={{ paddingTop: '56px' }}>
-        <Outlet />
-      </div>
-      <TanStackRouterDevtools />
+      <AppLayout />
+      {TanStackRouterDevtools && (
+        <Suspense>
+          <TanStackRouterDevtools />
+        </Suspense>
+      )}
     </ProtectedApp>
   ),
 })

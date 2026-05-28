@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useRenderDebug } from "@/debug/useRenderDebug";
 import {
   Button,
+  ButtonGroup,
   Card,
   CardRow,
   CardStack,
@@ -16,7 +18,18 @@ import {
   ThemeToggle,
   Badge,
   TabSelector,
+  Table,
+  type TableColumn,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  PermissionTag,
 } from "@flowform/ui";
+import {
+  mockProjectMembers,
+  type MockProjectMember,
+} from "@/api/mockData";
 
 const buttonVariants = ["primary", "secondary", "danger", "ghost"] as const;
 const buttonSizes = ["md", "sm", "xs"] as const;
@@ -67,7 +80,7 @@ function TestCard({
   return (
     <Card size="md">
       <CardStack gap="sm">
-        {title ? <h3 className="m-0 text-[0.9rem] font-semibold tracking-[0.04em] uppercase text-(--color-accent-foreground)">{title}</h3> : null}
+        {title ? <h3 className="m-0 text-[0.9rem] font-semibold tracking-[0.04em] uppercase ">{title}</h3> : null}
         {children}
       </CardStack>
     </Card>
@@ -82,7 +95,338 @@ function WideStack({ children }: { children: React.ReactNode }) {
   return <CardRow gap="sm">{children}</CardRow>;
 }
 
+// ── Survey member role variants ──────────────────────────────────────────────
+// Three different ways to present project-role + survey-role-override
+// for the survey members table. All three render the same five mock members
+// so they can be compared directly. See SurveyMembersTab.tsx for the current
+// production version.
+
+type SurveyRole = "Manager" | "Publisher" | "Editor" | "Viewer";
+
+const SURVEY_ROLE_OVERRIDES: Record<number, SurveyRole> = {
+  2: "Manager",
+  4: "Editor",
+};
+
+const PROJECT_ROLE_TO_SURVEY_ROLE: Record<MockProjectMember["role"], SurveyRole> = {
+  Owner: "Manager",
+  Editor: "Editor",
+  Viewer: "Viewer",
+};
+
+const SURVEY_ROLE_PERMISSIONS: Record<SurveyRole, string[]> = {
+  Manager: ["Manage survey", "Publish", "Edit", "View responses"],
+  Publisher: ["Publish", "Edit", "View responses"],
+  Editor: ["Edit", "Preview"],
+  Viewer: ["View"],
+};
+
+const PERMISSION_TOOLTIPS: Record<string, string> = {
+  "Manage survey": "Can manage survey settings, member access, and admin actions.",
+  Publish: "Can publish drafts and update what respondents can access.",
+  Edit: "Can change survey questions and structure.",
+  "View responses": "Can view collected responses and summaries.",
+  Preview: "Can preview draft content before it is published.",
+  View: "Can view the survey setup and details.",
+};
+
+const PROJECT_ROLE_BADGE: Record<MockProjectMember["role"], "default" | "default" | "default"> = {
+  Owner: "default",
+  Editor: "default",
+  Viewer: "default",
+};
+
+const SURVEY_ROLE_BADGE: Record<SurveyRole, "accent" | "warning" | "default" | "muted"> = {
+  Manager: "accent",
+  Publisher: "warning",
+  Editor: "default",
+  Viewer: "muted",
+};
+
+function permissionsGained(projectRole: MockProjectMember["role"], override: SurveyRole): string[] {
+  const baseline = new Set(SURVEY_ROLE_PERMISSIONS[PROJECT_ROLE_TO_SURVEY_ROLE[projectRole]]);
+  return SURVEY_ROLE_PERMISSIONS[override].filter((p) => !baseline.has(p));
+}
+
+interface MemberRow extends MockProjectMember {
+  override?: SurveyRole;
+  effective: SurveyRole;
+}
+
+function buildMemberRows(): MemberRow[] {
+  return mockProjectMembers.map((m) => {
+    const override = SURVEY_ROLE_OVERRIDES[m.id];
+    return {
+      ...m,
+      override,
+      effective: override ?? PROJECT_ROLE_TO_SURVEY_ROLE[m.role],
+    };
+  });
+}
+
+function VariantEffectivePermissions() {
+  const rows = buildMemberRows();
+  const columns: TableColumn<MemberRow>[] = [
+    {
+      key: "member",
+      header: "Member",
+      minWidth: 180,
+      cell: (m) => (
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-foreground">{m.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{m.email}</p>
+        </div>
+      ),
+    },
+    {
+      key: "permissions",
+      header: "Can do on this survey",
+      minWidth: 280,
+      cell: (m) => (
+        <div className="flex flex-wrap gap-1.5">
+          {SURVEY_ROLE_PERMISSIONS[m.effective].map((p) => (
+            <PermissionTag key={p} label={p} tooltip={PERMISSION_TOOLTIPS[p] ?? p} />
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: "source",
+      header: "Source",
+      minWidth: 220,
+      cell: (m) => (
+        <div className="flex flex-col gap-0.5 text-xs">
+          <span className="text-muted-foreground">
+            via <span className="text-foreground">{m.role}</span> (project)
+            {m.override && (
+              <>
+                {" + "}
+                <span className="text-foreground">{m.override}</span> (survey)
+              </>
+            )}
+          </span>
+          {m.override && (
+            <span className="text-[0.68rem] text-accent-foreground">
+              +{permissionsGained(m.role, m.override).length} permission(s) from override
+            </span>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  return <Table columns={columns} rows={rows} getRowKey={(m) => m.id} />;
+}
+
+const ADDITIVE_GRANT_LABEL: Record<SurveyRole, string> = {
+  Manager: "+ Manage",
+  Publisher: "+ Publish",
+  Editor: "+ Edit",
+  Viewer: "",
+};
+
+function VariantAdditiveNaming() {
+  const rows = buildMemberRows();
+  const columns: TableColumn<MemberRow>[] = [
+    {
+      key: "member",
+      header: "Member",
+      minWidth: 180,
+      cell: (m) => (
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-foreground">{m.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{m.email}</p>
+        </div>
+      ),
+    },
+    {
+      key: "project-role",
+      header: "Project role",
+      minWidth: 110,
+      cell: (m) => (
+        <Badge variant={PROJECT_ROLE_BADGE[m.role]} size="xs">
+          {m.role}
+        </Badge>
+      ),
+    },
+    {
+      key: "survey-grant",
+      header: "Survey grant",
+      minWidth: 140,
+      cell: (m) => {
+        const gained = m.override ? permissionsGained(m.role, m.override) : [];
+        if (!m.override || gained.length === 0) {
+          return <span className="text-xs text-muted-foreground">—</span>;
+        }
+        return (
+          <Badge variant="warning" size="xs">
+            {ADDITIVE_GRANT_LABEL[m.override] || `+ ${m.override}`}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: "effective",
+      header: "Effective permissions",
+      minWidth: 260,
+      cell: (m) => {
+        const gained = m.override ? permissionsGained(m.role, m.override) : [];
+        return (
+          <div className="flex flex-wrap gap-1.5">
+            {SURVEY_ROLE_PERMISSIONS[m.effective].map((p) => {
+              const isGained = gained.includes(p);
+              return (
+                <Badge key={p} variant={isGained ? "warning" : "default"} size="xs">
+                  {p}
+                </Badge>
+              );
+            })}
+          </div>
+        );
+      },
+    },
+  ];
+
+  return <Table className="w-[clamp(16rem,50vw,48rem)]" columns={columns} rows={rows} getRowKey={(m) => m.id} />;
+}
+
+function VariantCollapsedDefault() {
+  const rows = buildMemberRows();
+  const columns: TableColumn<MemberRow>[] = [
+    {
+      key: "member",
+      header: "Member",
+      minWidth: 180,
+      cell: (m) => (
+        <div className={`min-w-0 ${m.override ? "border-l-2 border-accent pl-2" : ""}`}>
+          <p className="truncate text-sm font-semibold text-foreground">{m.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{m.email}</p>
+        </div>
+      ),
+    },
+    {
+      key: "role",
+      header: "Role",
+      minWidth: 240,
+      cell: (m) => (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant={PROJECT_ROLE_BADGE[m.role]} size="xs">
+            {m.role}
+          </Badge>
+          {m.override && (
+            <>
+              <span aria-hidden className="text-xs text-muted-foreground">+</span>
+              <Badge variant={SURVEY_ROLE_BADGE[m.override]} size="xs">
+                {m.override}
+              </Badge>
+              <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[0.62rem] font-semibold uppercase tracking-wider text-accent-foreground">
+                Override
+              </span>
+            </>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "effective",
+      header: "Effective access",
+      minWidth: 260,
+      cell: (m) => {
+        if (!m.override) {
+          const count = SURVEY_ROLE_PERMISSIONS[m.effective].length;
+          return (
+            <span className="text-xs text-muted-foreground">
+              Inherits {count} permission{count === 1 ? "" : "s"} from project role
+            </span>
+          );
+        }
+        const gained = permissionsGained(m.role, m.override);
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-[0.68rem] font-semibold uppercase tracking-wider text-accent-foreground">
+              Gains on this survey
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {gained.length === 0 ? (
+                <span className="text-xs text-muted-foreground">No additional permissions</span>
+              ) : (
+                gained.map((p) => (
+                  <PermissionTag key={p} label={p} tooltip={PERMISSION_TOOLTIPS[p] ?? p} />
+                ))
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+  ];
+
+  return <Table columns={columns} rows={rows} getRowKey={(m) => m.id} />;
+}
+
 export function UITestPage() {
+  useRenderDebug("UITestPage");
+  // ── Table test data ──────────────────────────────────────────────────────────
+
+  interface SampleRow {
+    id: number
+    name: string
+    status: "Published" | "Draft" | "Archived"
+    responses: number
+    version: string
+    updatedAt: string
+  }
+
+  const TABLE_ROWS: SampleRow[] = [
+    { id: 1, name: "Customer onboarding feedback", status: "Published", responses: 128, version: "v2", updatedAt: "Apr 30, 2026" },
+    { id: 2, name: "Product discovery intake",     status: "Draft",     responses: 0,   version: "v1", updatedAt: "Apr 28, 2026" },
+    { id: 3, name: "Quarterly account health",     status: "Published", responses: 54,  version: "v1", updatedAt: "Apr 25, 2026" },
+    { id: 4, name: "Sleep study eligibility",      status: "Archived",  responses: 311, version: "v4", updatedAt: "Mar 10, 2026" },
+  ]
+
+  const STATUS_VARIANT: Record<SampleRow["status"], "success" | "muted" | "warning"> = {
+    Published: "success",
+    Draft: "muted",
+    Archived: "warning",
+  }
+
+  const ALL_COLUMNS: TableColumn<SampleRow>[] = [
+    {
+      key: "name",
+      header: "Survey",
+      minWidth: 200,
+      cell: (row) => <span className="font-medium text-foreground">{row.name}</span>,
+    },
+    {
+      key: "status",
+      header: "Status",
+      minWidth: 90,
+      cell: (row) => <Badge variant={STATUS_VARIANT[row.status]} size="xs">{row.status}</Badge>,
+    },
+    {
+      key: "version",
+      header: "Version",
+      minWidth: 70,
+      cell: (row) => <span className="text-muted-foreground">{row.version}</span>,
+    },
+    {
+      key: "responses",
+      header: "Responses",
+      minWidth: 90,
+      cell: (row) => <span className="tabular-nums">{row.responses}</span>,
+    },
+    {
+      key: "updatedAt",
+      header: "Last updated",
+      minWidth: 130,
+      cell: (row) => <span className="text-muted-foreground">{row.updatedAt}</span>,
+    },
+  ]
+
+  const HIDDEN_VERSION_COLUMNS: TableColumn<SampleRow>[] = ALL_COLUMNS.map((col) =>
+    col.key === "version" ? { ...col, visible: false } : col,
+  )
+
   const [tabActive, setTabActive] = useState("overview");
   const [tabOverflowActive, setTabOverflowActive] = useState("surveys");
 
@@ -179,6 +523,146 @@ export function UITestPage() {
           <h1 className="m-0">UI Component Test Suite</h1>
           <ThemeToggle />
         </div>
+        <Section title="Inputs">
+          <TestGrid>
+            <TestCard title="Text Input">
+              <div className="flex-1" />
+
+              {/* User menu */}
+              <div className="mx-2">
+                <Button
+                  variant="ghost"
+                  aria-expanded={false}
+                  onClick={() => {}}
+                  className="sidebar-nav-item flex w-full items-center gap-3 p-2 text-left"
+                >
+                  {/* Avatar */}
+                  <span className="sidebar-nav-item__icon shrink-0">
+                    <span className="flex h-8 w-8 items-center justify-center">
+                      <span className="sidebar-avatar sidebar-avatar--user">
+                        SM
+                      </span>
+                    </span>
+                  </span>
+
+                  {/* Name + email */}
+                  <span className="sidebar-nav-item__label flex min-w-0 flex-1 flex-col items-start">
+                    <span className="truncate text-sm font-semibold text-foreground">
+                      Shayman McGee
+                    </span>
+
+                    <span className="truncate text-xs text-muted-foreground">
+                      shayman@example.com
+                    </span>
+                  </span>
+
+                  {/* Chevron */}
+                  <span className="shrink-0 text-muted-foreground transition-transform duration-200">
+                    
+                  </span>
+                </Button>
+              </div>
+            </TestCard>
+          </TestGrid>
+        </Section>
+
+
+        <Section title="Survey member role variants">
+          <CardStack gap="lg">
+            <TestCard title="Variant A — Effective permissions first">
+              <p className="mb-3 text-xs leading-5 text-muted-foreground">
+                Lead with what the person can actually do. Roles are pushed to a "Source" column as the
+                <em> how</em>, not the headline. Best when reviewers ask "what can this person do?"
+              </p>
+              <VariantEffectivePermissions />
+            </TestCard>
+
+            <TestCard title="Variant B — Additive naming (+ Grant)">
+              <p className="mb-3 text-xs leading-5 text-muted-foreground">
+                Survey grants are named after what they <em>add</em> ("+ Publish", "+ Manage"), not as a parallel
+                hierarchy. Gained permissions are highlighted in the effective list. Makes the additive nature literal.
+              </p>
+              <VariantAdditiveNaming />
+            </TestCard>
+
+            <TestCard title="Variant C — Collapsed default case">
+              <p className="mb-3 text-xs leading-5 text-muted-foreground">
+                Members without an override show only their project role and a quiet summary line. Overridden rows
+                get a left-border accent, an "Override" pill, and an explicit "Gains on this survey" block.
+                Optimizes for the common case where most rows have no overrides.
+              </p>
+              <VariantCollapsedDefault />
+            </TestCard>
+          </CardStack>
+        </Section>
+
+        <Section title="Table">
+          <CardStack gap="lg">
+            <TestCard title="All columns visible">
+              <Table
+                columns={ALL_COLUMNS}
+                rows={TABLE_ROWS}
+                getRowKey={(row) => row.id}
+              />
+            </TestCard>
+
+            <TestCard title="Version column hidden">
+              <Table
+                columns={HIDDEN_VERSION_COLUMNS}
+                rows={TABLE_ROWS}
+                getRowKey={(row) => row.id}
+              />
+            </TestCard>
+
+            <TestCard title="Narrow container — scale-to-fit (max-w-xs)">
+              <div className="max-w-xs">
+                <Table
+                  columns={ALL_COLUMNS}
+                  rows={TABLE_ROWS}
+                  getRowKey={(row) => row.id}
+                />
+              </div>
+            </TestCard>
+
+            <TestCard title="Striped rows">
+              <Table
+                columns={ALL_COLUMNS}
+                rows={TABLE_ROWS}
+                getRowKey={(row) => row.id}
+                striped
+              />
+            </TestCard>
+
+            <TestCard title="Striped + clickable">
+              <Table
+                columns={ALL_COLUMNS}
+                rows={TABLE_ROWS}
+                getRowKey={(row) => row.id}
+                striped
+                onRowClick={(row) => alert(`Clicked: ${row.name}`)}
+              />
+            </TestCard>
+
+            <TestCard title="Clickable rows">
+              <Table
+                hideHeader={true}
+                className=""
+                columns={ALL_COLUMNS}
+                rows={TABLE_ROWS}
+                getRowKey={(row) => row.id}
+                onRowClick={(row) => alert(`Clicked: ${row.name}`)}
+              />
+            </TestCard>
+
+            <TestCard title="Empty state">
+              <Table
+                columns={ALL_COLUMNS}
+                rows={[]}
+                emptyState={<p className="text-sm text-muted-foreground">No surveys found.</p>}
+              />
+            </TestCard>
+          </CardStack>
+        </Section>
 
         <Section title="Tab Selector">
           <TestGrid>
@@ -212,6 +696,154 @@ export function UITestPage() {
                   {TAB_CONTENT[tabOverflowActive].body}
                 </p>
               </div>
+            </TestCard>
+          </TestGrid>
+        </Section>
+
+        <Section title="Tabs (shadcn)">
+          <TestGrid>
+            <TestCard title="Default variant">
+              <Tabs defaultValue="account">
+                <TabsList>
+                  <TabsTrigger value="account">Account</TabsTrigger>
+                  <TabsTrigger value="password">Password</TabsTrigger>
+                  <TabsTrigger value="notifications">Notifications</TabsTrigger>
+                </TabsList>
+                <TabsContent value="account">
+                  <p className="text-sm text-muted-foreground">Manage your account settings and preferences.</p>
+                </TabsContent>
+                <TabsContent value="password">
+                  <p className="text-sm text-muted-foreground">Change your password and security options.</p>
+                </TabsContent>
+                <TabsContent value="notifications">
+                  <p className="text-sm text-muted-foreground">Configure how and when you receive notifications.</p>
+                </TabsContent>
+              </Tabs>
+            </TestCard>
+
+            <TestCard title="Line variant">
+              <Tabs defaultValue="overview">
+                <TabsList variant="line">
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="surveys">Surveys</TabsTrigger>
+                  <TabsTrigger value="members">Members</TabsTrigger>
+                </TabsList>
+                <TabsContent value="overview">
+                  <p className="text-sm text-muted-foreground">Project overview and key metrics.</p>
+                </TabsContent>
+                <TabsContent value="surveys">
+                  <p className="text-sm text-muted-foreground">All surveys in this project.</p>
+                </TabsContent>
+                <TabsContent value="members">
+                  <p className="text-sm text-muted-foreground">Team members with access to this project.</p>
+                </TabsContent>
+              </Tabs>
+            </TestCard>
+
+            <TestCard title="Vertical orientation">
+              <Tabs defaultValue="general" orientation="vertical">
+                <TabsList>
+                  <TabsTrigger value="general">General</TabsTrigger>
+                  <TabsTrigger value="integrations">Integrations</TabsTrigger>
+                  <TabsTrigger value="danger">Danger zone</TabsTrigger>
+                </TabsList>
+                <TabsContent value="general">
+                  <p className="text-sm text-muted-foreground">General project settings.</p>
+                </TabsContent>
+                <TabsContent value="integrations">
+                  <p className="text-sm text-muted-foreground">Connect third-party integrations.</p>
+                </TabsContent>
+                <TabsContent value="danger">
+                  <p className="text-sm text-muted-foreground">Irreversible and destructive actions.</p>
+                </TabsContent>
+              </Tabs>
+            </TestCard>
+
+            <TestCard title="Disabled tab">
+              <Tabs defaultValue="active">
+                <TabsList>
+                  <TabsTrigger value="active">Active</TabsTrigger>
+                  <TabsTrigger value="disabled" disabled>Disabled</TabsTrigger>
+                  <TabsTrigger value="other">Other</TabsTrigger>
+                </TabsList>
+                <TabsContent value="active">
+                  <p className="text-sm text-muted-foreground">This tab is active and selectable.</p>
+                </TabsContent>
+                <TabsContent value="other">
+                  <p className="text-sm text-muted-foreground">Another selectable tab.</p>
+                </TabsContent>
+              </Tabs>
+            </TestCard>
+          </TestGrid>
+        </Section>
+
+        <Section title="Button Group">
+          <TestGrid>
+            <TestCard title="3 actions — fits">
+              <ButtonGroup
+                size="sm"
+                items={[
+                  { key: "edit",   label: "Edit",   onClick: () => {} },
+                  { key: "share",  label: "Share",  onClick: () => {} },
+                  { key: "delete", label: "Delete", variant: "danger", onClick: () => {} },
+                ]}
+              />
+            </TestCard>
+
+            <TestCard title="Overflow — narrow container">
+              <div className="w-40">
+                <ButtonGroup
+                  size="sm"
+                  items={[
+                    { key: "edit",     label: "Edit",     onClick: () => {} },
+                    { key: "preview",  label: "Preview",  onClick: () => {} },
+                    { key: "share",    label: "Share",    onClick: () => {} },
+                    { key: "archive",  label: "Archive",  onClick: () => {} },
+                    { key: "delete",   label: "Delete",   variant: "danger", onClick: () => {} },
+                  ]}
+                />
+              </div>
+            </TestCard>
+
+            <TestCard title="MD size">
+              <ButtonGroup
+                size="md"
+                items={[
+                  { key: "save",    label: "Save",    variant: "primary", onClick: () => {} },
+                  { key: "discard", label: "Discard", onClick: () => {} },
+                ]}
+              />
+            </TestCard>
+
+            <TestCard title="XS size">
+              <ButtonGroup
+                size="xs"
+                items={[
+                  { key: "approve", label: "Approve", variant: "primary", onClick: () => {} },
+                  { key: "reject",  label: "Reject",  variant: "danger",  onClick: () => {} },
+                  { key: "defer",   label: "Defer",   onClick: () => {} },
+                ]}
+              />
+            </TestCard>
+
+            <TestCard title="With disabled item">
+              <ButtonGroup
+                size="sm"
+                items={[
+                  { key: "publish",  label: "Publish",  variant: "primary", onClick: () => {} },
+                  { key: "schedule", label: "Schedule", disabled: true,     onClick: () => {} },
+                  { key: "delete",   label: "Delete",   variant: "danger",  onClick: () => {} },
+                ]}
+              />
+            </TestCard>
+
+            <TestCard title="Single action">
+              <ButtonGroup
+                size="sm"
+                items={[
+                  { key: "export", label: "Export CSV", onClick: () => {} },
+                ]}
+              />
             </TestCard>
           </TestGrid>
         </Section>
@@ -280,6 +912,26 @@ export function UITestPage() {
                       variant={variant}
                       size={size}
                       borderStyle="dotted"
+                    >
+                      {buttonSizeLabels[size]}
+                    </Button>
+                  ))}
+                </InlineStack>
+              </TestCard>
+            ))}
+
+            {buttonVariants.map((variant) => (
+              <TestCard
+                key={`${variant}-icon`}
+                title={`${buttonVariantLabels[variant]} / Icon (plus)`}
+              >
+                <InlineStack>
+                  {buttonSizes.map((size) => (
+                    <Button
+                      key={`${variant}-${size}-icon`}
+                      variant={variant}
+                      size={size}
+                      icon="plus"
                     >
                       {buttonSizeLabels[size]}
                     </Button>

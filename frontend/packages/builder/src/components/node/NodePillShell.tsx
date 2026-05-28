@@ -470,16 +470,11 @@ export function NodePillFieldHead({ label, children }: FieldHeadProps) {
   );
 }
 
-type DragLocks = {
-  reverseLock?: { siblingId: string; direction: "down" | "up" } | null;
-  insertLock?: { siblingId: string; direction: "down" | "up" } | null;
-};
-
 type DragThresholdsProps = {
   itemId: string;
   isDragging: boolean;
   thresholdRatio: number | null;
-  activeDrag: DragLocks | null;
+  activeDrag: unknown;
 };
 
 export function NodePillDragThresholds({
@@ -504,6 +499,7 @@ type CollapsedProps = {
 };
 
 export function NodePillCollapsed({ family, tagValue, title, onExpand, onExpandInEditMode }: CollapsedProps) {
+  void title;
   const { leading } = useContext(MobileControlsContext);
   return (
     <div className={nodePillCollapsedShellClass}>

@@ -2,45 +2,56 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-sidebar: var(--sidebar);
   --color-foreground: var(--foreground);
   --color-foreground-full: var(--foreground-full);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+
   --color-primary: var(--primary);
-  --color-primary-press: var(--primary-press);
-  --color-primary-hover: var(--primary-hover);
-  --color-primary-active: var(--primary-active);
   --color-primary-saturated: var(--primary-saturated);
   --color-primary-foreground: var(--primary-foreground);
+
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color--soft-foreground: var(--soft-foreground);
+  --color-muted-accent-foreground: var(--muted-accent-foreground);
+
   --color-accent: var(--accent);
   --color-accent-muted: var(--accent-muted);
-  --color-muted-accent-foreground: var(--muted-accent-foreground);
   --color-accent-foreground: var(--accent-foreground);
+
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-  --color-destructive-hover: var(--destructive-hover);
-  --color-destructive-press: var(--destructive-press);
-  --color-destructive-mobile-press: var(--destructive-mobile-press);
-  --color-destructive-active: var(--destructive-active);
+
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-transparent-hover: var(--transparent-hover);
-  --color-transparent-active: var(--transparent-active);
-  --color-transparent-press: var(--transparent-press);
-  --color-transparent-mobile-press: var(--transparent-mobile-press);
+
   --color-success: var(--success);
   --color-warning: var(--warning);
+
+  /* Shared interaction colours used by the new ui-action system. */
+  --color-ui-state-mix: var(--ui-state-mix);
+  --color-ui-subtle-state: rgb(var(--ui-subtle-state-rgb) / 1);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
+
+  --text-2xs: var(--text-2xs);
+  --text-xs: var(--text-xs);
+  --text-sm: var(--text-sm);
+  --text-base: var(--text-base);
+  --text-lg: var(--text-lg);
+  --text-xl: var(--text-xl);
+  --text-2xl: var(--text-2xl);
+  --text-3xl: var(--text-3xl);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -67,7 +78,6 @@ html {
   margin: 0;
   width: 100%;
   max-width: 100%;
-  scrollbar-gutter: stable;
   background: var(--background);
 }
 
@@ -175,6 +185,7 @@ body {
   width: 8px;
   height: 8px;
 }
+
 
 ::-webkit-scrollbar-track {
   background: var(--color-background);

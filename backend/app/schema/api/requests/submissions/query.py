@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from typing import Literal
-
 from pydantic import BaseModel, Field
 
-SubmissionStatus = Literal["pending", "stored", "failed"]
-SubmissionChannel = Literal["link", "slug", "system"]
+from app.schema.api import limits
+from app.schema.api.enums import SubmissionChannel, SubmissionStatus
 
 
 class ListSubmissionsRequest(BaseModel):
@@ -13,8 +11,12 @@ class ListSubmissionsRequest(BaseModel):
     survey_id: int | None = None
     status: SubmissionStatus | None = None
     submission_channel: SubmissionChannel | None = None
-    page: int = Field(default=1, ge=1)
-    page_size: int = Field(default=20, ge=1, le=100)
+    page: int = Field(default=limits.LIST_PAGE_DEFAULT, ge=limits.LIST_PAGE_MIN)
+    page_size: int = Field(
+        default=limits.LIST_PAGE_SIZE_DEFAULT,
+        ge=limits.LIST_PAGE_SIZE_MIN,
+        le=limits.LIST_PAGE_SIZE_MAX,
+    )
 
 
 class GetSubmissionRequest(BaseModel):

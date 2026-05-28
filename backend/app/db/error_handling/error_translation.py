@@ -7,9 +7,9 @@ from typing import Any
 from psycopg.errors import CheckViolation, ForeignKeyViolation, UniqueViolation
 from sqlalchemy.exc import DBAPIError
 
-from app.domain.errors import AppError
+from app.db.error_handling.errors import DbIntegrityError
 
-ErrorFactory = Callable[[Any, DBAPIError], AppError]
+ErrorFactory = Callable[[Any, DBAPIError], DbIntegrityError]
 ContextExtractor = Callable[[Any], Any]
 
 
@@ -28,13 +28,16 @@ class DbErrorRule:
 
         return self.key == get_db_error_key(exc)
 
-    def build_error(self, context: Any, exc: DBAPIError) -> AppError:
+    def build_error(self, context: Any, exc: DBAPIError) -> DbIntegrityError:
         payload = self.extractor(context) if self.extractor is not None else context
-        return self.error_factory(payload, exc)
+        error = self.error_factory(payload, exc)
+        if error.constraint_name is None:
+            error.constraint_name = get_constraint_name(exc)
+        return error
 
 
-def error_factory(error: AppError) -> ErrorFactory:
-    """Wrap a fixed AppError as a factory."""
+def error_factory(error: DbIntegrityError) -> ErrorFactory:
+    """Wrap a fixed DbIntegrityError as a factory."""
     return lambda _context, _exc: error
 
 
@@ -118,7 +121,7 @@ def translate_db_error(
     *,
     context: Any,
     rules: tuple[DbErrorRule, ...],
-) -> tuple[AppError | None, DbErrorRule | None]:
+) -> tuple[DbIntegrityError | None, DbErrorRule | None]:
     for rule in rules:
         if rule.matches(exc):
             return rule.build_error(context, exc), rule

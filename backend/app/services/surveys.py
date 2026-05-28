@@ -51,18 +51,18 @@ class SurveyService:
 
     @require_project_permission(PERMISSIONS.survey.create)
     def create_survey(self, db: Session, *, project_id: int, data: CreateSurveyRequest, actor: User) -> Survey:
-
-        if data.default_response_store_id is None:
-            data = data.model_copy(
-                update={
-                    "default_response_store_id": self._ensure_project_default_response_store_id(
-                        db,
-                        project_id=project_id,
-                        created_by_user_id=actor.id,
-                    )
-                }
-            )
-        survey = surveys_repo.create_survey(db, project_id, data)
+        default_response_store_id = self._ensure_project_default_response_store_id(
+            db,
+            project_id=project_id,
+            created_by_user_id=actor.id,
+        )
+        survey = surveys_repo.create_survey(
+            db,
+            project_id,
+            data,
+            default_response_store_id=default_response_store_id,
+            created_by_user_id=actor.id,
+        )
         commit_with_err_handle(db, contexts=[survey])
         return survey
 
@@ -91,6 +91,18 @@ class SurveyService:
         actor: User,  # noqa: ARG002
     ) -> Survey:
         survey = self._get_survey(db, project_id, survey_id)
+
+        changed = data.model_fields_set
+        merged_visibility = (
+            data.visibility
+            if "visibility" in changed and data.visibility is not None
+            else survey.visibility
+        )
+        merged_public_slug = data.public_slug if "public_slug" in changed else survey.public_slug
+        survey_rules.ensure_visibility_slug_coherent(
+            visibility=merged_visibility,
+            public_slug=merged_public_slug,
+        )
 
         updated = surveys_repo.update_survey(db, survey, data)
         commit_with_err_handle(db, contexts=[updated])

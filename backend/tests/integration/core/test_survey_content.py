@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast
 
-import pytest
+import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation, NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
@@ -240,9 +240,7 @@ def test_survey_rule_requires_question_key(db_session: scoped_session[Session], 
     db_session.rollback()
 
 
-def test_survey_rule_accepts_object_schema(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
-) -> None:
+def test_survey_rule_accepts_object_schema(db_session: scoped_session[Session], survey_version: SurveyVersion) -> None:
     """Rule nodes with a valid object schema are persisted correctly."""
     schema = {"id": "r1", "if": {"match": "ALL", "conditions": []}, "then": {"set": []}}
     rule = make_survey_rule(survey_version.id, rule_schema=schema)

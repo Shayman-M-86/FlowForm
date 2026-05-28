@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from unittest.mock import Mock, patch
 
-import pytest
+import pytest  # type: ignore[import]
 
 from app.core.errors import AuthError
 from app.schema.api.requests.auth import BootstrapUserRequest
@@ -109,7 +109,6 @@ def test_bootstrap_new_user_default_project_slug_is_slug_safe(
 ) -> None:
     """The default project slug is derived from public_id and remains slug-safe."""
     user = _make_user(public_id="XyZ_987-")
-    project = _make_project(user.id, user.public_id)
 
     user_service = Mock()
     user_service.bootstrap_user.return_value = (user, True)
@@ -119,7 +118,10 @@ def test_bootstrap_new_user_default_project_slug_is_slug_safe(
     db = Mock()
     db.scalar.return_value = None
 
-    with patch("app.services.auth.projects_repo.create_project", return_value=project), \
+    def create_project_side_effect(_db: object, request: object, *, created_by_user_id: int) -> Project:
+        return _make_project(created_by_user_id, request.slug)  # type: ignore[attr-defined]
+
+    with patch("app.services.auth.projects_repo.create_project", side_effect=create_project_side_effect), \
          patch("app.services.auth.commit_or_rollback"):
         service = AuthService(user_service=user_service)
         result = service.bootstrap_current_user(

@@ -3,6 +3,17 @@ from typing import Any
 from app.core.errors import AppError, AuthError
 
 
+class ForbiddenError(AppError):
+    """Error raised when a user attempts to access a resource they do not have permission for."""
+
+    def __init__(self, message: str = "You do not have permission to access this resource.") -> None:
+        super().__init__(
+            status_code=403,
+            code="FORBIDDEN",
+            message=message,
+        )
+
+
 class InvalidIdTokenSubjectError(AuthError):
     """Error raised when an ID token does not contain a valid subject."""
 
@@ -98,6 +109,39 @@ class LinkAssignmentMismatchError(AppError):
         )
 
 
+class LinkAuthAssignmentRequiredError(AppError):
+    """Error raised when an authenticated link is not assigned to an email."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=422,
+            code="LINK_ASSIGNED_EMAIL_REQUIRED",
+            message="Links that require authentication must be assigned to an email.",
+        )
+
+
+class LinkAuthRequiredError(AppError):
+    """Error raised when a link requires authentication but the caller is anonymous."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=401,
+            code="LINK_AUTH_REQUIRED",
+            message="This link requires authentication.",
+        )
+
+
+class LinkAlreadyUsedError(AppError):
+    """Error raised when a single-use link has already been consumed."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="LINK_ALREADY_USED",
+            message="This link has already been used.",
+        )
+
+
 class PrivateSurveyAssignedEmailRequiredError(AppError):
     """Error raised when a private survey link is not assigned to a specific email."""
 
@@ -106,17 +150,6 @@ class PrivateSurveyAssignedEmailRequiredError(AppError):
             status_code=422,
             code="ASSIGNED_EMAIL_REQUIRED",
             message="Private surveys require links assigned to a specific email.",
-        )
-
-
-class NonPrivateSurveyAssignedEmailForbiddenError(AppError):
-    """Error raised when a non-private survey link is assigned to a specific email."""
-
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=422,
-            code="ASSIGNED_EMAIL_NOT_ALLOWED",
-            message="Only private surveys can use links assigned to a specific email.",
         )
 
 
@@ -172,6 +205,22 @@ class SurveyNotFoundBySlugError(AppError):
             status_code=404,
             code="NOT_FOUND",
             message="Survey not found",
+        )
+
+
+class SurveyVisibilityMismatchError(AppError):
+    """Error raised when a survey's visibility and public_slug fields are inconsistent.
+
+    A survey is publicly browsable iff ``visibility == "public"`` AND
+    ``public_slug`` is set. Any other combination is invalid and rejected
+    before the row is committed.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(
+            status_code=422,
+            code="SURVEY_VISIBILITY_MISMATCH",
+            message=message,
         )
 
 
@@ -375,4 +424,145 @@ class UserNotFoundError(AppError):
             status_code=404,
             code="USER_NOT_FOUND",
             message=f"User {user_id} not found.",
+        )
+
+
+class InvitationNotFoundError(AppError):
+    """Error raised when an invitation cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Invitation not found.")
+
+
+class InvitationAlreadyExistsError(AppError):
+    """Error raised when a pending invitation already exists for an email in a project."""
+
+    def __init__(self, email: str) -> None:
+        super().__init__(
+            status_code=409,
+            code="INVITATION_EXISTS",
+            message=f"A pending invitation already exists for {email}.",
+        )
+
+
+class InvitationNotPendingError(AppError):
+    """Error raised when an action requires a pending invitation but it is no longer pending."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="INVITATION_NOT_PENDING",
+            message="This invitation is no longer pending.",
+        )
+
+
+class AlreadyAMemberError(AppError):
+    """Error raised when a user is already an active member of the project."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="ALREADY_A_MEMBER",
+            message="This user is already a member of the project.",
+        )
+
+
+class ProjectRoleNotFoundError(AppError):
+    """Error raised when a project role cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Project role not found.")
+
+
+class ProjectRoleSystemProtectedError(AppError):
+    """Error raised when trying to mutate or delete a system role."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="ROLE_SYSTEM_PROTECTED",
+            message="System roles cannot be modified or deleted.",
+        )
+
+
+class MemberNotFoundError(AppError):
+    """Error raised when a project membership cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Member not found.")
+
+
+class MemberSelfActionError(AppError):
+    """Error raised when an actor tries to modify their own membership."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="MEMBER_SELF_ACTION",
+            message="You cannot modify your own membership.",
+        )
+
+
+class MemberOwnerProtectedError(AppError):
+    """Error raised when trying to reassign, remove, or suspend an owner/system role."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="MEMBER_OWNER_PROTECTED",
+            message="Owner roles cannot be assigned, reassigned, removed, or suspended.",
+        )
+
+
+class SurveyRoleNotFoundError(AppError):
+    """Error raised when a survey role cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Survey role not found.")
+
+
+class SurveyRoleNameConflictError(AppError):
+    """Error raised when a survey role name is already taken within the project."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=409, code="CONFLICT", message="A survey role with that name already exists.")
+
+
+class SurveyMemberRoleNotFoundError(AppError):
+    """Error raised when a survey membership role assignment cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Survey member role assignment not found.")
+
+
+class SurveyMemberRoleAlreadyAssignedError(AppError):
+    """Error raised when a member already has a survey role assigned for a given survey."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="SURVEY_MEMBER_ROLE_CONFLICT",
+            message="This member already has a survey role assigned for this survey.",
+        )
+
+
+class ManagementApiUnavailableError(AppError):
+    """Error raised when the Auth0 Management API is not configured."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=503,
+            code="MGMT_API_UNAVAILABLE",
+            message="Account management is not available at this time.",
+        )
+
+
+class ManagementApiCallError(AppError):
+    """Error raised when a call to the Auth0 Management API fails."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=502,
+            code="MGMT_API_ERROR",
+            message="Account management could not be completed at this time.",
         )
