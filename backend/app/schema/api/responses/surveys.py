@@ -6,7 +6,7 @@ from app.schema.api import limits
 from app.schema.api.enums import SurveyVersionStatus, SurveyVisibility
 
 
-class SurveyOut(BaseModel):
+class SurveyResponses(BaseModel):
     """API response shape for a survey."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -23,7 +23,7 @@ class SurveyOut(BaseModel):
     updated_at: datetime
 
 
-class SurveyVersionOut(BaseModel):
+class SurveyVersionResponses(BaseModel):
     """API response shape for a survey version."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -39,17 +39,17 @@ class SurveyVersionOut(BaseModel):
     updated_at: datetime
 
 
-class PublicSurveyOut(BaseModel):
+class PublicSurveyResponses(BaseModel):
     """API response shape for a publicly accessible survey with its published version."""
 
-    survey: SurveyOut
-    published_version: SurveyVersionOut | None = None
+    survey: SurveyResponses
+    published_version: SurveyVersionResponses | None = None
 
 
-class PaginatedPublicSurveysOut(BaseModel):
+class PaginatedPublicSurveysResponses(BaseModel):
     """API response shape for a paginated list of public surveys."""
 
-    items: list[SurveyOut] = Field(max_length=limits.LIST_PAGE_SIZE_MAX)
+    items: list[SurveyResponses] = Field(max_length=limits.LIST_PAGE_SIZE_MAX)
     total: int
     page: int
     page_size: int

@@ -5,8 +5,8 @@ from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.openapi import openapi_route
 from app.schema.api.requests.auth import BootstrapUserRequest
-from app.schema.api.responses.auth import BootstrapUserOut, CurrentUserOut
-from app.schema.api.responses.projects import ProjectOut
+from app.schema.api.responses.auth import BootstrapUserResponses, CurrentUserResponses
+from app.schema.api.responses.projects import ProjectResponses
 from app.services.auth import AuthService
 
 auth_bp = Blueprint("auth_v1", __name__)
@@ -17,7 +17,7 @@ auth_service = AuthService()
 @openapi_route(
     summary="Bootstrap current user",
     request_model=BootstrapUserRequest,
-    response_model=BootstrapUserOut,
+    response_model=BootstrapUserResponses,
     status_code=201,
     tags=["Auth"],
 )
@@ -34,9 +34,9 @@ def bootstrap_user():
         payload=payload,
     )
 
-    response = BootstrapUserOut(
+    response = BootstrapUserResponses(
         created=result.created,
-        user=CurrentUserOut.model_validate(result.user),
-        default_project=ProjectOut.model_validate(result.default_project) if result.default_project else None,
+        user=CurrentUserResponses.model_validate(result.user),
+        default_project=ProjectResponses.model_validate(result.default_project) if result.default_project else None,
     )
     return response.model_dump(mode="json"), 201 if result.created else 200

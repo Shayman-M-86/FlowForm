@@ -31,8 +31,8 @@ FieldQuestionType = Literal["short_text", "long_text", "email", "number", "date"
 RatingEmojiList = Literal["sad_to_happy", "angry_to_happy", "disgust_to_happy"]
 RatingSliderStyle = Literal["slider"]
 RatingEmojiStyle = Literal["emoji"]
-RatingStarStyle = Literal["star"]
-RatingStyle = Literal["slider", "emoji", "star"]
+RatingStarStyle = Literal["stars"]
+RatingStyle = Literal["slider", "emoji", "stars"]
 
 NumberFieldType = Literal["number"]
 DateFieldType = Literal["date"]

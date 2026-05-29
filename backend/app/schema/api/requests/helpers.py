@@ -1,7 +1,8 @@
 import re
+from datetime import UTC, datetime
 from typing import Any
 
-from pydantic import Field
+from pydantic import AwareDatetime, Field
 
 from app.schema.api import limits
 
@@ -37,3 +38,19 @@ def validate_slug(value: str, *, field_label: str = "Slug") -> str:
             f"and must not start or end with a hyphen."
         )
     return value
+
+
+def normalise_email(value: object) -> object:
+    if not isinstance(value, str):
+        return value
+
+    return value.strip().lower()
+
+
+def validate_future_datetime_utc(value: AwareDatetime) -> AwareDatetime:
+    value_utc = value.astimezone(UTC)
+
+    if value_utc <= datetime.now(UTC):
+        raise ValueError("expires_at must be a future datetime.")
+
+    return value_utc

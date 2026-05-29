@@ -27,7 +27,7 @@ class RouteMetadata:
     path: str | None
     summary: str
     tags: tuple[str, ...]
-    request_model: type[BaseModel] | None
+    request_model: Any | None
     query_model: type[BaseModel] | None
     response_model: ResponseModel | None
     status_code: int
@@ -45,7 +45,7 @@ def openapi_route(
     method: str | None = None,
     path: str | None = None,
     tags: Sequence[str] = (),
-    request_model: type[BaseModel] | None = None,
+    request_model: Any | None = None,
     query_model: type[BaseModel] | None = None,
     response_model: ResponseModel | None = None,
     status_code: int = 200,

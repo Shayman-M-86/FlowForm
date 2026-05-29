@@ -75,6 +75,7 @@
       "Bash(npm run lint:*)",
       "Bash(npm run routes:*)",
       "Bash(npx tsc --noEmit:*)",
+      "Bash(node scripts/generate-types.mjs:*)",
       "Bash(npx tsc -b:*)",
       "Bash(npx tsr generate:*)",
       "Bash(npx astro check:*)",
@@ -158,7 +159,6 @@
       "Read(**/.venv/**)",
       "Read(**/dist/**)",
       "Read(**/build/**)",
-      "Read(**/frontend/apps/studio-app/src/api/generated/**)",
       "Read(**/frontend/apps/studio-app/src/routeTree.gen.ts)"
     ]
   },

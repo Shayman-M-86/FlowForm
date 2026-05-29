@@ -11,7 +11,7 @@ from app.schema.api.requests.content import (
     UpdateNodeRequest,
     UpdateScoringRuleRequest,
 )
-from app.schema.api.responses.content import NodeOut, ScoringRuleOut
+from app.schema.api.responses.content import NodeResponses, ScoringRuleResponses
 from app.schema.orm.core.user import User
 
 _NBASE = "/<bint:project_id>/surveys/<bint:survey_id>/versions/<bint:version_number>/nodes"
@@ -21,7 +21,7 @@ _SBASE = "/<bint:project_id>/surveys/<bint:survey_id>/versions/<bint:version_num
 # ── Nodes ─────────────────────────────────────────────────────────────────────
 
 
-@openapi_route(summary="List survey content nodes", response_model=list[NodeOut], tags=["Survey Content"])
+@openapi_route(summary="List survey content nodes", response_model=list[NodeResponses], tags=["Survey Content"])
 @projects_bp.route(_NBASE, methods=["GET"])
 @auth.require_auth()
 def list_nodes(project_id: int, survey_id: int, version_number: int):
@@ -30,13 +30,13 @@ def list_nodes(project_id: int, survey_id: int, version_number: int):
     nodes = content_svc.list_nodes(
         db=db, project_id=project_id, survey_id=survey_id, version_number=version_number, actor=user
     )
-    return [NodeOut.model_validate(n).model_dump(mode="json") for n in nodes], 200
+    return [NodeResponses.model_validate(n).model_dump(mode="json") for n in nodes], 200
 
 
 @openapi_route(
     summary="Create survey content node",
     request_model=CreateNodeRequest,
-    response_model=NodeOut,
+    response_model=NodeResponses,
     status_code=201,
     tags=["Survey Content"],
 )
@@ -49,10 +49,10 @@ def create_node(project_id: int, survey_id: int, version_number: int):
     node = content_svc.create_node(
         db=db, project_id=project_id, survey_id=survey_id, version_number=version_number, data=payload, actor=user
     )
-    return NodeOut.model_validate(node).model_dump(mode="json"), 201
+    return NodeResponses.model_validate(node).model_dump(mode="json"), 201
 
 
-@openapi_route(summary="Get survey content node", response_model=NodeOut, tags=["Survey Content"])
+@openapi_route(summary="Get survey content node", response_model=NodeResponses, tags=["Survey Content"])
 @projects_bp.route(f"{_NBASE}/<bint:node_id>", methods=["GET"])
 @auth.require_auth()
 def get_node(project_id: int, survey_id: int, version_number: int, node_id: int):
@@ -66,13 +66,13 @@ def get_node(project_id: int, survey_id: int, version_number: int, node_id: int)
         node_id=node_id,
         actor=user,
     )
-    return NodeOut.model_validate(node).model_dump(mode="json"), 200
+    return NodeResponses.model_validate(node).model_dump(mode="json"), 200
 
 
 @openapi_route(
     summary="Update survey content node",
     request_model=UpdateNodeRequest,
-    response_model=NodeOut,
+    response_model=NodeResponses,
     tags=["Survey Content"],
 )
 @projects_bp.route(f"{_NBASE}/<bint:node_id>", methods=["PATCH"])
@@ -90,7 +90,7 @@ def update_node(project_id: int, survey_id: int, version_number: int, node_id: i
         data=payload,
         actor=user,
     )
-    return NodeOut.model_validate(node).model_dump(mode="json"), 200
+    return NodeResponses.model_validate(node).model_dump(mode="json"), 200
 
 
 @openapi_route(summary="Delete survey content node", tags=["Survey Content"], status_code=204)
@@ -113,7 +113,7 @@ def delete_node(project_id: int, survey_id: int, version_number: int, node_id: i
 # ── Scoring rules ─────────────────────────────────────────────────────────────
 
 
-@openapi_route(summary="List scoring rules", response_model=list[ScoringRuleOut], tags=["Scoring Rules"])
+@openapi_route(summary="List scoring rules", response_model=list[ScoringRuleResponses], tags=["Scoring Rules"])
 @projects_bp.route(_SBASE, methods=["GET"])
 @auth.require_auth()
 def list_scoring_rules(project_id: int, survey_id: int, version_number: int):
@@ -122,13 +122,13 @@ def list_scoring_rules(project_id: int, survey_id: int, version_number: int):
     rules = content_svc.list_scoring_rules(
         db=db, project_id=project_id, survey_id=survey_id, version_number=version_number, actor=user
     )
-    return [ScoringRuleOut.model_validate(r).model_dump(mode="json") for r in rules], 200
+    return [ScoringRuleResponses.model_validate(r).model_dump(mode="json") for r in rules], 200
 
 
 @openapi_route(
     summary="Create scoring rule",
     request_model=CreateScoringRuleRequest,
-    response_model=ScoringRuleOut,
+    response_model=ScoringRuleResponses,
     status_code=201,
     tags=["Scoring Rules"],
 )
@@ -141,13 +141,13 @@ def create_scoring_rule(project_id: int, survey_id: int, version_number: int):
     rule = content_svc.create_scoring_rule(
         db=db, project_id=project_id, survey_id=survey_id, version_number=version_number, data=payload, actor=user
     )
-    return ScoringRuleOut.model_validate(rule).model_dump(mode="json"), 201
+    return ScoringRuleResponses.model_validate(rule).model_dump(mode="json"), 201
 
 
 @openapi_route(
     summary="Update scoring rule",
     request_model=UpdateScoringRuleRequest,
-    response_model=ScoringRuleOut,
+    response_model=ScoringRuleResponses,
     tags=["Scoring Rules"],
 )
 @projects_bp.route(f"{_SBASE}/<bint:scoring_rule_id>", methods=["PATCH"])
@@ -165,7 +165,7 @@ def update_scoring_rule(project_id: int, survey_id: int, version_number: int, sc
         data=payload,
         actor=user,
     )
-    return ScoringRuleOut.model_validate(rule).model_dump(mode="json"), 200
+    return ScoringRuleResponses.model_validate(rule).model_dump(mode="json"), 200
 
 
 @openapi_route(summary="Delete scoring rule", tags=["Scoring Rules"], status_code=204)

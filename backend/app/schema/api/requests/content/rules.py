@@ -1,7 +1,8 @@
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schema.api import limits
 from app.schema.api.requests.content.rule_schemas import RuleSchemaIn
+from app.schema.api.requests.field_types import SchemaIdStr
 
 
 class CreateRuleRequest(BaseModel):
@@ -9,16 +10,9 @@ class CreateRuleRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    rule_key: str = Field(max_length=limits.SCHEMA_ID_MAX)
+    rule_key: SchemaIdStr
     sort_key: int = Field(gt=limits.CONTENT_SORT_KEY_MIN_EXCLUSIVE)
     rule_schema: RuleSchemaIn
-
-    @field_validator("rule_key")
-    @classmethod
-    def validate_rule_key(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("rule_key must not be blank")
-        return value
 
     @model_validator(mode="after")
     def validate_id_matches_rule_key(self) -> CreateRuleRequest:
@@ -34,13 +28,6 @@ class UpdateRuleRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    rule_key: str | None = Field(default=None, max_length=limits.SCHEMA_ID_MAX)
+    rule_key: SchemaIdStr | None = None
     sort_key: int | None = Field(default=None, gt=limits.CONTENT_SORT_KEY_MIN_EXCLUSIVE)
     rule_schema: RuleSchemaIn | None = None
-
-    @field_validator("rule_key")
-    @classmethod
-    def validate_rule_key(cls, value: str | None) -> str | None:
-        if value is not None and not value.strip():
-            raise ValueError("rule_key must not be blank")
-        return value

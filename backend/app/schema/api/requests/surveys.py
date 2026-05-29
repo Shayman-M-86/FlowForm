@@ -1,34 +1,16 @@
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from app.schema.api import limits
 from app.schema.api.enums import SurveyVisibility
-from app.schema.api.requests.helpers import validate_slug
-
-
-def _validate_title(value: str) -> str:
-    value = value.strip()
-    if not value:
-        raise ValueError("Title must not be blank.")
-    return value
+from app.schema.api.requests.field_types import Slug, SurveyTitle
 
 
 class CreateSurveyRequest(BaseModel):
     """Request body for creating a new survey."""
 
-    title: str = Field(max_length=limits.SURVEY_TITLE_MAX)
+    title: SurveyTitle
     visibility: SurveyVisibility = "private"
-    public_slug: str | None = Field(default=None, max_length=limits.SLUG_MAX)
-    # default_response_store_id: int | None = int_id_field()
-
-    @field_validator("title")
-    @classmethod
-    def validate_title(cls, value: str) -> str:
-        return _validate_title(value)
-
-    @field_validator("public_slug")
-    @classmethod
-    def validate_public_slug(cls, value: str | None) -> str | None:
-        return validate_slug(value, field_label="Public slug") if value is not None else None
+    public_slug: Slug | None = None
 
     @model_validator(mode="after")
     def check_visibility_constraints(self) -> CreateSurveyRequest:
@@ -42,20 +24,9 @@ class CreateSurveyRequest(BaseModel):
 class UpdateSurveyRequest(BaseModel):
     """Request body for partially updating a survey."""
 
-    title: str | None = Field(default=None, max_length=limits.SURVEY_TITLE_MAX)
+    title: SurveyTitle | None = None
     visibility: SurveyVisibility | None = None
-    public_slug: str | None = Field(default=None, max_length=limits.SLUG_MAX)
-    # default_response_store_id: int | None = int_id_field()
-
-    @field_validator("title")
-    @classmethod
-    def validate_title(cls, value: str | None) -> str | None:
-        return _validate_title(value) if value is not None else None
-
-    @field_validator("public_slug")
-    @classmethod
-    def validate_public_slug(cls, value: str | None) -> str | None:
-        return validate_slug(value, field_label="Public slug") if value is not None else None
+    public_slug: Slug | None = None
 
 
 class CreateVersionRequest(BaseModel):

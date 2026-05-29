@@ -6,14 +6,14 @@ from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.openapi import openapi_route
 from app.schema.api.requests.surveys_access import AssignSurveyMemberRoleRequest, UpdateSurveyMemberRoleRequest
-from app.schema.api.responses.surveys_access import SurveyMemberRoleOut
+from app.schema.api.responses.surveys_access import SurveyMemberRoleResponses
 from app.schema.orm.core.user import User
 from app.services.survey_members import survey_members_service
 
 
 @openapi_route(
     summary="List survey member role assignments",
-    response_model=list[SurveyMemberRoleOut],
+    response_model=list[SurveyMemberRoleResponses],
     tags=["Survey Members"],
 )
 @projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/members", methods=["GET"])
@@ -24,13 +24,13 @@ def list_survey_members(project_id: int, survey_id: int):
     assignments = survey_members_service.list_survey_members(
         db=db, project_id=project_id, survey_id=survey_id, actor=actor
     )
-    return [SurveyMemberRoleOut.from_assignment(a).model_dump(mode="json") for a in assignments], 200
+    return [SurveyMemberRoleResponses.from_assignment(a).model_dump(mode="json") for a in assignments], 200
 
 
 @openapi_route(
     summary="Assign survey role to member",
     request_model=AssignSurveyMemberRoleRequest,
-    response_model=SurveyMemberRoleOut,
+    response_model=SurveyMemberRoleResponses,
     status_code=201,
     tags=["Survey Members"],
 )
@@ -43,13 +43,13 @@ def assign_survey_member_role(project_id: int, survey_id: int):
     assignment = survey_members_service.assign_member_role(
         db=db, project_id=project_id, survey_id=survey_id, data=payload, actor=actor
     )
-    return SurveyMemberRoleOut.from_assignment(assignment).model_dump(mode="json"), 201
+    return SurveyMemberRoleResponses.from_assignment(assignment).model_dump(mode="json"), 201
 
 
 @openapi_route(
     summary="Update survey member role assignment",
     request_model=UpdateSurveyMemberRoleRequest,
-    response_model=SurveyMemberRoleOut,
+    response_model=SurveyMemberRoleResponses,
     tags=["Survey Members"],
 )
 @projects_bp.route(
@@ -69,7 +69,7 @@ def update_survey_member_role(project_id: int, survey_id: int, membership_id: in
         data=payload,
         actor=actor,
     )
-    return SurveyMemberRoleOut.from_assignment(assignment).model_dump(mode="json"), 200
+    return SurveyMemberRoleResponses.from_assignment(assignment).model_dump(mode="json"), 200
 
 
 @openapi_route(summary="Remove survey member role assignment", tags=["Survey Members"])

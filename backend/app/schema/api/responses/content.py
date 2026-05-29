@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.schema.api.enums import SurveyNodeType
 
 
-class NodeOut(BaseModel):
+class NodeResponses(BaseModel):
     """API response shape for a survey content node (question or rule)."""
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
@@ -20,7 +20,7 @@ class NodeOut(BaseModel):
     updated_at: datetime
 
 
-class ScoringRuleOut(BaseModel):
+class ScoringRuleResponses(BaseModel):
     """API response shape for a scoring rule."""
 
     model_config = ConfigDict(from_attributes=True)

@@ -9,10 +9,13 @@ from app.domain.errors import (
 from app.domain.permissions import PERMISSIONS
 from app.repositories import content_repo
 from app.schema.api.requests.content import (
-    CreateNodeRequest,
     CreateScoringRuleRequest,
-    UpdateNodeRequest,
     UpdateScoringRuleRequest,
+)
+from app.schema.api.requests.content.node import (
+    CreateQuestionNodeRequest,
+    CreateRuleNodeRequest,
+    UpdateNodeRequest,
 )
 from app.schema.orm.core.survey import SurveyVersion
 from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
@@ -50,7 +53,7 @@ class ContentService:
         project_id: int,
         survey_id: int,
         version_number: int,
-        data: CreateNodeRequest,
+        data: CreateQuestionNodeRequest | CreateRuleNodeRequest,
         actor: User,  # noqa: ARG002
     ) -> SurveyQuestion:
         version = self._get_version(db, project_id, survey_id, version_number)

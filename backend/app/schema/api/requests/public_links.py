@@ -1,99 +1,30 @@
-from datetime import UTC, datetime
+from pydantic import BaseModel
 
-from pydantic import AwareDatetime, BaseModel, Field, field_validator
-
-from app.schema.api import limits
-
-
-def _validate_expires_at(value: AwareDatetime | None) -> AwareDatetime | None:
-    if value is None:
-        return None
-
-    value_utc = value.astimezone(UTC)
-
-    if value_utc <= datetime.now(UTC):
-        raise ValueError("expires_at must be a future datetime.")
-
-    return value_utc
-
-
-def _normalize_assigned_email(value: str | None) -> str | None:
-    if value is None:
-        return None
-
-    normalized = value.strip().lower()
-    if not normalized:
-        raise ValueError("assigned_email must not be blank.")
-
-    return normalized
-
-
-def _validate_name(value: str) -> str:
-    normalized = value.strip()
-    if not normalized:
-        raise ValueError("name must not be blank.")
-    return normalized
+from app.schema.api.requests.field_types import (
+    FutureExpiresAt,
+    NormalisedEmail,
+    PublicLinkName,
+    PublicLinkToken,
+)
 
 
 class CreatePublicLinkRequest(BaseModel):
-    """Request body for creating a survey link."""
-
-    name: str = Field(max_length=limits.PUBLIC_LINK_NAME_MAX)
-    assigned_email: str | None = Field(default=None, max_length=limits.EMAIL_MAX)
+    """Request body for creating a new public link."""
+    name: PublicLinkName
+    assigned_email: NormalisedEmail | None = None
     requires_auth: bool = False
-    expires_at: AwareDatetime | None = None
-
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, value: str) -> str:
-        return _validate_name(value)
-
-    @field_validator("assigned_email")
-    @classmethod
-    def validate_assigned_email(cls, value: str | None) -> str | None:
-        return _normalize_assigned_email(value)
-
-    @field_validator("expires_at")
-    @classmethod
-    def validate_expires_at(cls, value: AwareDatetime | None) -> AwareDatetime | None:
-        return _validate_expires_at(value)
+    expires_at: FutureExpiresAt | None = None
 
 
 class UpdatePublicLinkRequest(BaseModel):
-    """Request body for partially updating a survey link."""
-
+    """Request body for updating a public link."""
     is_active: bool | None = None
-    name: str | None = Field(default=None, max_length=limits.PUBLIC_LINK_NAME_MAX)
-    assigned_email: str | None = Field(default=None, max_length=limits.EMAIL_MAX)
+    name: PublicLinkName | None = None
+    assigned_email: NormalisedEmail | None = None
     requires_auth: bool | None = None
-    expires_at: AwareDatetime | None = None
-
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        return _validate_name(value)
-
-    @field_validator("assigned_email")
-    @classmethod
-    def validate_assigned_email(cls, value: str | None) -> str | None:
-        return _normalize_assigned_email(value)
-
-    @field_validator("expires_at")
-    @classmethod
-    def validate_expires_at(cls, value: AwareDatetime | None) -> AwareDatetime | None:
-        return _validate_expires_at(value)
+    expires_at: FutureExpiresAt | None = None
 
 
 class ResolveTokenRequest(BaseModel):
-    """Request body for resolving a public link token to its associated survey and project."""
-
-    token: str = Field(max_length=limits.TOKEN_MAX)
-
-    @field_validator("token")
-    @classmethod
-    def validate_token(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("token must not be blank.")
-        return value
+    """Request body for resolving a public link token."""
+    token: PublicLinkToken

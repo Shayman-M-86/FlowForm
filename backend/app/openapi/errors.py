@@ -108,16 +108,12 @@ def default_error_response_components(*, include_auth: bool = True) -> dict[str,
 
 
 def default_error_response_refs(*, include_auth: bool = True) -> dict[str, dict[str, str]]:
-    """Return default operation responses as refs to reusable components.
+    """Return default operation responses as bare $ref objects.
 
-    OpenAPI 3.1 requires every response entry to have a description unless the
-    validator treats the entry strictly as a Reference Object. Keep the local
-    description small and repeat the full content/examples only in components.
+    The description lives on the reusable component in components/responses —
+    repeating it per-operation adds hundreds of lines with no benefit.
     """
     return {
-        str(status): {
-            "$ref": f"#/components/responses/{_STATUS_RESPONSE_COMPONENTS[status]}",
-            "description": _STATUS_DESCRIPTIONS.get(status, ""),
-        }
+        str(status): {"$ref": f"#/components/responses/{_STATUS_RESPONSE_COMPONENTS[status]}"}
         for status in _default_error_statuses(include_auth=include_auth)
     }

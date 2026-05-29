@@ -49,31 +49,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BootstrapUserOut'
+                $ref: '#/components/schemas/BootstrapUserResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/health:
     get:
       operationId: healthCheck
@@ -87,28 +79,20 @@ paths:
           description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/health/ready:
     get:
       operationId: readinessCheck
@@ -122,28 +106,20 @@ paths:
           description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/me/profile:
     get:
       operationId: getMyProfile
@@ -157,31 +133,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CurrentUserProfileOut'
+                $ref: '#/components/schemas/CurrentUserProfileResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     patch:
       operationId: updateMyProfile
       summary: Update my profile
@@ -200,31 +168,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CurrentUserOut'
+                $ref: '#/components/schemas/CurrentUserResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/me/change-email:
     post:
       operationId: changeEmail
@@ -243,28 +203,20 @@ paths:
           description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/me/change-username:
     post:
       operationId: changeUsername
@@ -283,28 +235,20 @@ paths:
           description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/me/change-password:
     post:
       operationId: changePassword
@@ -318,31 +262,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PasswordChangeTicketOut'
+                $ref: '#/components/schemas/PasswordChangeTicketResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/me/clear-mfa:
     post:
       operationId: clearMfa
@@ -355,28 +291,20 @@ paths:
           description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/me/resend-verification:
     post:
       operationId: resendVerification
@@ -389,28 +317,20 @@ paths:
           description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/me:
     delete:
       operationId: deleteMyAccount
@@ -423,28 +343,20 @@ paths:
           description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/me/invitations:
     get:
       operationId: getMyInvitations
@@ -460,31 +372,23 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ProjectInvitationOut'
+                  $ref: '#/components/schemas/ProjectInvitationResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/me/invitations/{invitation_id}/accept:
     post:
       operationId: acceptInvitation
@@ -506,31 +410,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectMemberOut'
+                $ref: '#/components/schemas/ProjectMemberResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/me/invitations/{invitation_id}/decline:
     post:
       operationId: declineInvitation
@@ -551,28 +447,20 @@ paths:
           description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes:
     get:
       operationId: listNodes
@@ -610,31 +498,23 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/NodeOut'
+                  $ref: '#/components/schemas/NodeResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     post:
       operationId: createNode
       summary: Create survey content node
@@ -675,31 +555,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NodeOut'
+                $ref: '#/components/schemas/NodeResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}:
     get:
       operationId: getNode
@@ -742,31 +614,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NodeOut'
+                $ref: '#/components/schemas/NodeResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     patch:
       operationId: updateNode
       summary: Update survey content node
@@ -814,31 +678,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NodeOut'
+                $ref: '#/components/schemas/NodeResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     delete:
       operationId: deleteNode
       summary: Delete survey content node
@@ -879,28 +735,20 @@ paths:
           description: No content.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules:
     get:
       operationId: listScoringRules
@@ -938,31 +786,23 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ScoringRuleOut'
+                  $ref: '#/components/schemas/ScoringRuleResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     post:
       operationId: createScoringRule
       summary: Create scoring rule
@@ -1003,31 +843,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ScoringRuleOut'
+                $ref: '#/components/schemas/ScoringRuleResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules/{scoring_rule_id}:
     patch:
       operationId: updateScoringRule
@@ -1076,31 +908,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ScoringRuleOut'
+                $ref: '#/components/schemas/ScoringRuleResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     delete:
       operationId: deleteScoringRule
       summary: Delete scoring rule
@@ -1141,28 +965,20 @@ paths:
           description: No content.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects:
     get:
       operationId: listProjects
@@ -1178,31 +994,23 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ProjectOut'
+                  $ref: '#/components/schemas/ProjectResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     post:
       operationId: createProject
       summary: Create project
@@ -1221,31 +1029,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectOut'
+                $ref: '#/components/schemas/ProjectResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}:
     get:
       operationId: getProject
@@ -1267,31 +1067,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectOut'
+                $ref: '#/components/schemas/ProjectResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     patch:
       operationId: updateProject
       summary: Update project
@@ -1318,31 +1110,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectOut'
+                $ref: '#/components/schemas/ProjectResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     delete:
       operationId: deleteProject
       summary: Delete project
@@ -1362,28 +1146,20 @@ paths:
           description: No content.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/my-permissions:
     get:
       operationId: getMyProjectPermissions
@@ -1405,31 +1181,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MyProjectPermissionsOut'
+                $ref: '#/components/schemas/MyProjectPermissionsResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/members:
     get:
       operationId: listMembers
@@ -1453,31 +1221,23 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ProjectMemberOut'
+                  $ref: '#/components/schemas/ProjectMemberResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/invitations:
     get:
       operationId: listInvitations
@@ -1501,31 +1261,23 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ProjectInvitationOut'
+                  $ref: '#/components/schemas/ProjectInvitationResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     post:
       operationId: sendInvitation
       summary: Invite member
@@ -1552,31 +1304,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectInvitationOut'
+                $ref: '#/components/schemas/ProjectInvitationResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/invitations/{invitation_id}:
     delete:
       operationId: revokeInvitation
@@ -1604,28 +1348,20 @@ paths:
           description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/members/{membership_id}:
     patch:
       operationId: updateMember
@@ -1660,31 +1396,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectMemberOut'
+                $ref: '#/components/schemas/ProjectMemberResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     delete:
       operationId: removeMember
       summary: Remove member
@@ -1711,28 +1439,20 @@ paths:
           description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}/links:
     get:
       operationId: listPublicLinks
@@ -1761,31 +1481,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListPublicLinksOut'
+                $ref: '#/components/schemas/ListPublicLinksResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     post:
       operationId: createPublicLink
       summary: Create survey link
@@ -1819,31 +1531,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreatePublicLinkOut'
+                $ref: '#/components/schemas/CreatePublicLinkResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}/links/{link_id}:
     patch:
       operationId: updatePublicLink
@@ -1885,31 +1589,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublicLinkOut'
+                $ref: '#/components/schemas/PublicLinkResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     delete:
       operationId: deletePublicLink
       summary: Delete survey link
@@ -1943,28 +1639,20 @@ paths:
           description: No content.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/roles:
     get:
       operationId: listRoles
@@ -1988,31 +1676,23 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ProjectRoleOut'
+                  $ref: '#/components/schemas/ProjectRoleResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     post:
       operationId: createRole
       summary: Create project role
@@ -2039,31 +1719,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectRoleOut'
+                $ref: '#/components/schemas/ProjectRoleResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/roles/{role_id}:
     patch:
       operationId: updateRole
@@ -2098,31 +1770,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectRoleOut'
+                $ref: '#/components/schemas/ProjectRoleResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     delete:
       operationId: deleteRole
       summary: Delete project role
@@ -2149,28 +1813,20 @@ paths:
           description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/submissions:
     get:
       operationId: listSubmissions
@@ -2244,31 +1900,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedSubmissionsOut'
+                $ref: '#/components/schemas/PaginatedSubmissionsResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/submissions/{submission_id}:
     get:
       operationId: getSubmission
@@ -2311,31 +1959,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LinkedSubmissionOut'
+                $ref: '#/components/schemas/LinkedSubmissionResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}/members:
     get:
       operationId: listSurveyMembers
@@ -2366,31 +2006,23 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SurveyMemberRoleOut'
+                  $ref: '#/components/schemas/SurveyMemberRoleResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     post:
       operationId: assignSurveyMemberRole
       summary: Assign survey role to member
@@ -2424,31 +2056,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyMemberRoleOut'
+                $ref: '#/components/schemas/SurveyMemberRoleResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}/members/{membership_id}:
     patch:
       operationId: updateSurveyMemberRole
@@ -2490,31 +2114,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyMemberRoleOut'
+                $ref: '#/components/schemas/SurveyMemberRoleResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     delete:
       operationId: removeSurveyMemberRole
       summary: Remove survey member role assignment
@@ -2548,28 +2164,20 @@ paths:
           description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/survey-roles:
     get:
       operationId: listSurveyRoles
@@ -2593,31 +2201,23 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SurveyRoleOut'
+                  $ref: '#/components/schemas/SurveyRoleResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     post:
       operationId: createSurveyRole
       summary: Create survey role
@@ -2644,31 +2244,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyRoleOut'
+                $ref: '#/components/schemas/SurveyRoleResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/survey-roles/{role_id}:
     patch:
       operationId: updateSurveyRole
@@ -2703,31 +2295,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyRoleOut'
+                $ref: '#/components/schemas/SurveyRoleResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     delete:
       operationId: deleteSurveyRole
       summary: Delete survey role
@@ -2754,28 +2338,20 @@ paths:
           description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys:
     get:
       operationId: listSurveys
@@ -2799,31 +2375,23 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SurveyOut'
+                  $ref: '#/components/schemas/SurveyResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     post:
       operationId: createSurvey
       summary: Create survey
@@ -2850,31 +2418,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyOut'
+                $ref: '#/components/schemas/SurveyResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}:
     get:
       operationId: getSurvey
@@ -2903,31 +2463,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyOut'
+                $ref: '#/components/schemas/SurveyResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     patch:
       operationId: updateSurvey
       summary: Update survey
@@ -2961,31 +2513,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyOut'
+                $ref: '#/components/schemas/SurveyResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     delete:
       operationId: deleteSurvey
       summary: Delete survey
@@ -3012,28 +2556,20 @@ paths:
           description: No content.
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}/versions:
     get:
       operationId: listVersions
@@ -3064,31 +2600,23 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SurveyVersionOut'
+                  $ref: '#/components/schemas/SurveyVersionResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
     post:
       operationId: createVersion
       summary: Create survey version
@@ -3116,31 +2644,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyVersionOut'
+                $ref: '#/components/schemas/SurveyVersionResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/copy-to-draft:
     post:
       operationId: copyVersionToDraft
@@ -3176,31 +2696,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyVersionOut'
+                $ref: '#/components/schemas/SurveyVersionResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}:
     get:
       operationId: getVersion
@@ -3236,31 +2748,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyVersionOut'
+                $ref: '#/components/schemas/SurveyVersionResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/publish:
     post:
       operationId: publishVersion
@@ -3296,31 +2800,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyVersionOut'
+                $ref: '#/components/schemas/SurveyVersionResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/archive:
     post:
       operationId: archiveVersion
@@ -3356,31 +2852,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyVersionOut'
+                $ref: '#/components/schemas/SurveyVersionResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/public/surveys:
     get:
       operationId: listPublicSurveys
@@ -3413,31 +2901,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedPublicSurveysOut'
+                $ref: '#/components/schemas/PaginatedPublicSurveysResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/public/surveys/{public_slug}:
     get:
       operationId: getPublicSurvey
@@ -3459,31 +2939,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublicSurveyOut'
+                $ref: '#/components/schemas/PublicSurveyResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/public/links/resolve:
     get:
       operationId: resolveLink
@@ -3501,6 +2973,7 @@ paths:
         required: true
         schema:
           maxLength: 256
+          minLength: 1
           title: Token
           type: string
       responses:
@@ -3509,31 +2982,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResolveLinkOut'
+                $ref: '#/components/schemas/ResolveLinkResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/public/submissions/slug:
     post:
       operationId: createSlugSubmission
@@ -3556,31 +3021,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LinkedSubmissionOut'
+                $ref: '#/components/schemas/LinkedSubmissionResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
   /api/v1/public/submissions/link:
     post:
       operationId: createLinkSubmission
@@ -3603,31 +3060,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LinkedSubmissionOut'
+                $ref: '#/components/schemas/LinkedSubmissionResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
-          description: Bad request.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-          description: Authentication required or token invalid.
         '403':
           $ref: '#/components/responses/ForbiddenError'
-          description: Authenticated but not authorized for this resource.
         '404':
           $ref: '#/components/responses/NotFoundError'
-          description: Resource not found.
         '409':
           $ref: '#/components/responses/ConflictError'
-          description: Conflict with the current resource state.
         '422':
           $ref: '#/components/responses/ValidationError'
-          description: Request was syntactically valid but semantically invalid.
         '429':
           $ref: '#/components/responses/RateLimitError'
-          description: Rate limit exceeded.
         '500':
           $ref: '#/components/responses/InternalServerError'
-          description: Internal server error.
 components:
   schemas:
     ErrorResponse:
@@ -3653,13 +3102,14 @@ components:
       properties:
         id_token:
           maxLength: 8192
+          minLength: 1
           title: Id Token
           type: string
       required:
       - id_token
       title: BootstrapUserRequest
       type: object
-    CurrentUserOut:
+    CurrentUserResponses:
       description: API response shape for a bootstrapped user.
       properties:
         id:
@@ -3684,9 +3134,9 @@ components:
       - auth0_user_id
       - email
       - display_name
-      title: CurrentUserOut
+      title: CurrentUserResponses
       type: object
-    ProjectOut:
+    ProjectResponses:
       description: API response shape for a project.
       properties:
         id:
@@ -3716,27 +3166,27 @@ components:
       - slug
       - created_by_user_id
       - created_at
-      title: ProjectOut
+      title: ProjectResponses
       type: object
-    BootstrapUserOut:
+    BootstrapUserResponses:
       description: API response shape for a bootstrap-user request.
       properties:
         created:
           title: Created
           type: boolean
         user:
-          $ref: '#/components/schemas/CurrentUserOut'
+          $ref: '#/components/schemas/CurrentUserResponses'
         default_project:
           anyOf:
-          - $ref: '#/components/schemas/ProjectOut'
+          - $ref: '#/components/schemas/ProjectResponses'
           - type: 'null'
           default: null
       required:
       - created
       - user
-      title: BootstrapUserOut
+      title: BootstrapUserResponses
       type: object
-    CurrentUserProfileOut:
+    CurrentUserProfileResponses:
       description: API response shape for the current user's profile.
       properties:
         id:
@@ -3765,7 +3215,7 @@ components:
       - email
       - display_name
       - email_verified
-      title: CurrentUserProfileOut
+      title: CurrentUserProfileResponses
       type: object
     UpdateProfileRequest:
       description: Update display name, nickname, and/or profile picture.
@@ -3773,6 +3223,7 @@ components:
         display_name:
           anyOf:
           - maxLength: 100
+            minLength: 1
             type: string
           - type: 'null'
           default: null
@@ -3780,6 +3231,7 @@ components:
         nickname:
           anyOf:
           - maxLength: 100
+            minLength: 1
             type: string
           - type: 'null'
           default: null
@@ -3787,6 +3239,7 @@ components:
         picture:
           anyOf:
           - maxLength: 2048
+            minLength: 1
             type: string
           - type: 'null'
           default: null
@@ -3798,6 +3251,7 @@ components:
       properties:
         email:
           maxLength: 254
+          minLength: 1
           title: Email
           type: string
       required:
@@ -3810,13 +3264,14 @@ components:
         username:
           maxLength: 128
           minLength: 1
+          pattern: ^[a-zA-Z0-9_.\-]+$
           title: Username
           type: string
       required:
       - username
       title: ChangeUsernameRequest
       type: object
-    PasswordChangeTicketOut:
+    PasswordChangeTicketResponses:
       description: Hosted Auth0 password-change ticket URL.
       properties:
         ticket_url:
@@ -3825,9 +3280,9 @@ components:
           type: string
       required:
       - ticket_url
-      title: PasswordChangeTicketOut
+      title: PasswordChangeTicketResponses
       type: object
-    ProjectInvitationOut:
+    ProjectInvitationResponses:
       description: API response shape for a project invitation.
       properties:
         id:
@@ -3907,9 +3362,9 @@ components:
       - expires_at
       - accepted_at
       - created_at
-      title: ProjectInvitationOut
+      title: ProjectInvitationResponses
       type: object
-    MemberUserOut:
+    MemberUserResponses:
       description: Embedded user details on a project member response.
       properties:
         id:
@@ -3929,9 +3384,9 @@ components:
       - id
       - email
       - display_name
-      title: MemberUserOut
+      title: MemberUserResponses
       type: object
-    ProjectMemberOut:
+    ProjectMemberResponses:
       description: API response shape for a project membership.
       properties:
         id:
@@ -3961,7 +3416,7 @@ components:
           type: string
           maxLength: 35
         user:
-          $ref: '#/components/schemas/MemberUserOut'
+          $ref: '#/components/schemas/MemberUserResponses'
       required:
       - id
       - user_id
@@ -3970,9 +3425,9 @@ components:
       - status
       - created_at
       - user
-      title: ProjectMemberOut
+      title: ProjectMemberResponses
       type: object
-    NodeOut:
+    NodeResponses:
       description: API response shape for a survey content node (question or rule).
       properties:
         id:
@@ -4018,7 +3473,7 @@ components:
       - question_schema
       - created_at
       - updated_at
-      title: NodeOut
+      title: NodeResponses
       type: object
     ChoiceConditionIn:
       additionalProperties: false
@@ -4026,6 +3481,7 @@ components:
       properties:
         target_id:
           maxLength: 128
+          minLength: 1
           title: Target Id
           type: string
         family:
@@ -4041,16 +3497,42 @@ components:
       - requirements
       title: ChoiceConditionIn
       type: object
+    ChoiceDefinitionIn:
+      additionalProperties: false
+      description: definition block for a choice question.
+      properties:
+        min:
+          minimum: 0
+          title: Min
+          type: integer
+        max:
+          minimum: 1
+          title: Max
+          type: integer
+        options:
+          items:
+            $ref: '#/components/schemas/ChoiceOptionIn'
+          maxItems: 10
+          title: Options
+          type: array
+      required:
+      - min
+      - max
+      - options
+      title: ChoiceDefinitionIn
+      type: object
     ChoiceOptionIn:
       additionalProperties: false
-      description: Represents a single selectable option for a choice question.
+      description: A single selectable option for a choice question.
       properties:
         id:
           maxLength: 128
+          minLength: 1
           title: Id
           type: string
         label:
           maxLength: 1000
+          minLength: 1
           title: Label
           type: string
       required:
@@ -4058,50 +3540,13 @@ components:
       - label
       title: ChoiceOptionIn
       type: object
-    ChoiceQuestionConfig:
-      additionalProperties: false
-      description: Defines selection constraints and options for a choice question.
-      properties:
-        options:
-          items:
-            $ref: '#/components/schemas/ChoiceOptionIn'
-          maxItems: 10
-          title: Options
-          type: array
-        min_selected:
-          minimum: 0
-          title: Min Selected
-          type: integer
-        max_selected:
-          minimum: 1
-          title: Max Selected
-          type: integer
-      required:
-      - options
-      - min_selected
-      - max_selected
-      title: ChoiceQuestionConfig
-      type: object
-    ChoiceQuestionNestedIn:
-      additionalProperties: false
-      description: Input for a choice question with nested schema/ui.
-      properties:
-        schema:
-          $ref: '#/components/schemas/ChoiceQuestionConfig'
-        ui:
-          additionalProperties: true
-          title: Ui
-          type: object
-      required:
-      - schema
-      title: ChoiceQuestionNestedIn
-      type: object
     ChoiceQuestionSchemaIn:
       additionalProperties: false
-      description: Accepts an incoming choice-question schema payload (nested structure).
+      description: Incoming choice-question content schema.
       properties:
         id:
           maxLength: 128
+          minLength: 1
           title: Id
           type: string
         family:
@@ -4111,22 +3556,24 @@ components:
           maxLength: 6
         label:
           maxLength: 5000
+          minLength: 1
           title: Label
           type: string
         title:
           anyOf:
           - maxLength: 500
+            minLength: 1
             type: string
           - type: 'null'
           default: null
           title: Title
-        choice:
-          $ref: '#/components/schemas/ChoiceQuestionNestedIn'
+        definition:
+          $ref: '#/components/schemas/ChoiceDefinitionIn'
       required:
       - id
       - family
       - label
-      - choice
+      - definition
       title: ChoiceQuestionSchemaIn
       type: object
     ChoiceRequirementsIn:
@@ -4137,6 +3584,7 @@ components:
           anyOf:
           - items:
               maxLength: 128
+              minLength: 1
               type: string
             maxItems: 50
             type: array
@@ -4147,6 +3595,7 @@ components:
           anyOf:
           - items:
               maxLength: 128
+              minLength: 1
               type: string
             maxItems: 50
             type: array
@@ -4157,6 +3606,7 @@ components:
           anyOf:
           - items:
               maxLength: 128
+              minLength: 1
               type: string
             maxItems: 50
             type: array
@@ -4164,6 +3614,60 @@ components:
           default: null
           title: Any Of
       title: ChoiceRequirementsIn
+      type: object
+    CreateQuestionNodeRequest:
+      additionalProperties: false
+      description: Validates requests that create a new question node.
+      properties:
+        type:
+          const: question
+          title: Type
+          type: string
+          maxLength: 8
+        sort_key:
+          exclusiveMinimum: 0
+          title: Sort Key
+          type: integer
+        content:
+          discriminator:
+            mapping:
+              choice: '#/components/schemas/ChoiceQuestionSchemaIn'
+              field: '#/components/schemas/FieldQuestionSchemaIn'
+              matching: '#/components/schemas/MatchingQuestionSchemaIn'
+              rating: '#/components/schemas/RatingQuestionSchemaIn'
+            propertyName: family
+          oneOf:
+          - $ref: '#/components/schemas/ChoiceQuestionSchemaIn'
+          - $ref: '#/components/schemas/FieldQuestionSchemaIn'
+          - $ref: '#/components/schemas/MatchingQuestionSchemaIn'
+          - $ref: '#/components/schemas/RatingQuestionSchemaIn'
+          title: Content
+      required:
+      - type
+      - sort_key
+      - content
+      title: CreateQuestionNodeRequest
+      type: object
+    CreateRuleNodeRequest:
+      additionalProperties: false
+      description: Validates requests that create a new rule node.
+      properties:
+        type:
+          const: rule
+          title: Type
+          type: string
+          maxLength: 4
+        sort_key:
+          exclusiveMinimum: 0
+          title: Sort Key
+          type: integer
+        content:
+          $ref: '#/components/schemas/RuleSchemaIn'
+      required:
+      - type
+      - sort_key
+      - content
+      title: CreateRuleNodeRequest
       type: object
     DateFieldRequirementsIn:
       additionalProperties: false
@@ -4198,6 +3702,7 @@ components:
         skip_to:
           anyOf:
           - maxLength: 128
+            minLength: 1
             type: string
           - type: 'null'
           default: null
@@ -4222,6 +3727,7 @@ components:
       properties:
         target_id:
           maxLength: 128
+          minLength: 1
           title: Target Id
           type: string
         family:
@@ -4240,9 +3746,9 @@ components:
       - requirements
       title: FieldConditionIn
       type: object
-    FieldQuestionConfig:
+    FieldDefinitionIn:
       additionalProperties: false
-      description: Defines the input type for a field-based question.
+      description: definition block for a field question.
       properties:
         field_type:
           enum:
@@ -4255,28 +3761,19 @@ components:
           title: Field Type
           type: string
           maxLength: 10
+        ui:
+          $ref: '#/components/schemas/FieldUIIn'
       required:
       - field_type
-      title: FieldQuestionConfig
-      type: object
-    FieldQuestionNestedIn:
-      additionalProperties: false
-      description: Input for a field question with nested schema/ui.
-      properties:
-        schema:
-          $ref: '#/components/schemas/FieldQuestionConfig'
-        ui:
-          $ref: '#/components/schemas/FieldQuestionUIIn'
-      required:
-      - schema
-      title: FieldQuestionNestedIn
+      title: FieldDefinitionIn
       type: object
     FieldQuestionSchemaIn:
       additionalProperties: false
-      description: Accepts an incoming field-question schema payload (nested structure).
+      description: Incoming field-question content schema.
       properties:
         id:
           maxLength: 128
+          minLength: 1
           title: Id
           type: string
         family:
@@ -4286,34 +3783,36 @@ components:
           maxLength: 5
         label:
           maxLength: 5000
+          minLength: 1
           title: Label
           type: string
         title:
           anyOf:
           - maxLength: 500
+            minLength: 1
             type: string
           - type: 'null'
           default: null
           title: Title
-        field:
-          $ref: '#/components/schemas/FieldQuestionNestedIn'
+        definition:
+          $ref: '#/components/schemas/FieldDefinitionIn'
       required:
       - id
       - family
       - label
-      - field
+      - definition
       title: FieldQuestionSchemaIn
       type: object
-    FieldQuestionUIIn:
+    FieldUIIn:
       additionalProperties: false
-      description: Validates field question UI configuration.
+      description: UI block for a field question.
       properties:
         placeholder:
           default: ''
           maxLength: 50
           title: Placeholder
           type: string
-      title: FieldQuestionUIIn
+      title: FieldUIIn
       type: object
     MatchingConditionIn:
       additionalProperties: false
@@ -4321,6 +3820,7 @@ components:
       properties:
         target_id:
           maxLength: 128
+          minLength: 1
           title: Target Id
           type: string
         family:
@@ -4336,26 +3836,9 @@ components:
       - requirements
       title: MatchingConditionIn
       type: object
-    MatchingItemIn:
+    MatchingDefinitionIn:
       additionalProperties: false
-      description: Represents one item on either side of a matching question.
-      properties:
-        id:
-          maxLength: 128
-          title: Id
-          type: string
-        label:
-          maxLength: 250
-          title: Label
-          type: string
-      required:
-      - id
-      - label
-      title: MatchingItemIn
-      type: object
-    MatchingQuestionConfig:
-      additionalProperties: false
-      description: Defines the prompt and match item sets for a matching question.
+      description: definition block for a matching question.
       properties:
         prompts:
           items:
@@ -4372,28 +3855,34 @@ components:
       required:
       - prompts
       - matches
-      title: MatchingQuestionConfig
+      title: MatchingDefinitionIn
       type: object
-    MatchingQuestionNestedIn:
+    MatchingItemIn:
       additionalProperties: false
-      description: Input for a matching question with nested schema/ui.
-      properties:
-        schema:
-          $ref: '#/components/schemas/MatchingQuestionConfig'
-        ui:
-          additionalProperties: true
-          title: Ui
-          type: object
-      required:
-      - schema
-      title: MatchingQuestionNestedIn
-      type: object
-    MatchingQuestionSchemaIn:
-      additionalProperties: false
-      description: Accepts an incoming matching-question schema payload (nested structure).
+      description: One item on either side of a matching question.
       properties:
         id:
           maxLength: 128
+          minLength: 1
+          title: Id
+          type: string
+        label:
+          maxLength: 250
+          minLength: 1
+          title: Label
+          type: string
+      required:
+      - id
+      - label
+      title: MatchingItemIn
+      type: object
+    MatchingQuestionSchemaIn:
+      additionalProperties: false
+      description: Incoming matching-question content schema.
+      properties:
+        id:
+          maxLength: 128
+          minLength: 1
           title: Id
           type: string
         family:
@@ -4403,22 +3892,24 @@ components:
           maxLength: 8
         label:
           maxLength: 5000
+          minLength: 1
           title: Label
           type: string
         title:
           anyOf:
           - maxLength: 500
+            minLength: 1
             type: string
           - type: 'null'
           default: null
           title: Title
-        matching:
-          $ref: '#/components/schemas/MatchingQuestionNestedIn'
+        definition:
+          $ref: '#/components/schemas/MatchingDefinitionIn'
       required:
       - id
       - family
       - label
-      - matching
+      - definition
       title: MatchingQuestionSchemaIn
       type: object
     MatchingRequirementsIn:
@@ -4429,9 +3920,11 @@ components:
           items:
             additionalProperties:
               maxLength: 128
+              minLength: 1
               type: string
             propertyNames:
               maxLength: 128
+              minLength: 1
             type: object
           maxItems: 50
           title: Required
@@ -4471,35 +3964,13 @@ components:
       - value
       title: NumberFieldRequirementsIn
       type: object
-    RangeIn:
-      additionalProperties: false
-      description: Defines min and max bounds for a rating question.
-      properties:
-        min:
-          anyOf:
-          - type: integer
-          - type: number
-          ge: -1000
-          le: 1000
-          title: Min
-        max:
-          anyOf:
-          - type: integer
-          - type: number
-          ge: -1000
-          le: 1000
-          title: Max
-      required:
-      - min
-      - max
-      title: RangeIn
-      type: object
     RatingConditionIn:
       additionalProperties: false
       description: Represents a condition block targeting a rating question.
       properties:
         target_id:
           maxLength: 128
+          minLength: 1
           title: Target Id
           type: string
         family:
@@ -4515,29 +3986,15 @@ components:
       - requirements
       title: RatingConditionIn
       type: object
-    RatingEmojiNestedIn:
+    RatingEmojiDefinitionIn:
       additionalProperties: false
-      description: Input for an emoji-style rating question.
+      description: definition block for an emoji-style rating question.
       properties:
-        style:
+        variant:
           const: emoji
-          title: Style
+          title: Variant
           type: string
           maxLength: 5
-        schema:
-          $ref: '#/components/schemas/RatingEmojiSchemaIn'
-        ui:
-          $ref: '#/components/schemas/RatingUIIn'
-      required:
-      - style
-      - schema
-      - ui
-      title: RatingEmojiNestedIn
-      type: object
-    RatingEmojiSchemaIn:
-      additionalProperties: false
-      description: Schema for emoji-style rating questions.
-      properties:
         emoji_list:
           enum:
           - sad_to_happy
@@ -4550,16 +4007,21 @@ components:
           default: false
           title: Words
           type: boolean
+        ui:
+          $ref: '#/components/schemas/RatingUIIn'
       required:
+      - variant
       - emoji_list
-      title: RatingEmojiSchemaIn
+      - ui
+      title: RatingEmojiDefinitionIn
       type: object
     RatingQuestionSchemaIn:
       additionalProperties: false
-      description: Accepts an incoming rating-question schema payload (nested structure).
+      description: Incoming rating-question content schema.
       properties:
         id:
           maxLength: 128
+          minLength: 1
           title: Id
           type: string
         family:
@@ -4569,33 +4031,65 @@ components:
           maxLength: 6
         label:
           maxLength: 5000
+          minLength: 1
           title: Label
           type: string
         title:
           anyOf:
           - maxLength: 500
+            minLength: 1
             type: string
           - type: 'null'
           default: null
           title: Title
-        rating:
+        definition:
           discriminator:
             mapping:
-              emoji: '#/components/schemas/RatingEmojiNestedIn'
-              slider: '#/components/schemas/RatingSliderNestedIn'
-              star: '#/components/schemas/RatingStarNestedIn'
-            propertyName: style
+              emoji: '#/components/schemas/RatingEmojiDefinitionIn'
+              slider: '#/components/schemas/RatingSliderDefinitionIn'
+              stars: '#/components/schemas/RatingStarDefinitionIn'
+            propertyName: variant
           oneOf:
-          - $ref: '#/components/schemas/RatingSliderNestedIn'
-          - $ref: '#/components/schemas/RatingEmojiNestedIn'
-          - $ref: '#/components/schemas/RatingStarNestedIn'
-          title: Rating
+          - $ref: '#/components/schemas/RatingSliderDefinitionIn'
+          - $ref: '#/components/schemas/RatingStarDefinitionIn'
+          - $ref: '#/components/schemas/RatingEmojiDefinitionIn'
+          title: Definition
       required:
       - id
       - family
       - label
-      - rating
+      - definition
       title: RatingQuestionSchemaIn
+      type: object
+    RatingRangeIn:
+      additionalProperties: false
+      description: Range block for a slider rating — min, max, and step in one object.
+      properties:
+        min:
+          anyOf:
+          - type: integer
+          - type: number
+          ge: -1000
+          le: 1000
+          title: Min
+        max:
+          anyOf:
+          - type: integer
+          - type: number
+          ge: -1000
+          le: 1000
+          title: Max
+        step:
+          anyOf:
+          - type: integer
+          - type: number
+          gt: 0
+          title: Step
+      required:
+      - min
+      - max
+      - step
+      title: RatingRangeIn
       type: object
     RatingRequirementsIn:
       additionalProperties: false
@@ -4617,84 +4111,59 @@ components:
           title: Max
       title: RatingRequirementsIn
       type: object
-    RatingSliderNestedIn:
+    RatingSliderDefinitionIn:
       additionalProperties: false
-      description: Input for a slider-style rating question.
+      description: definition block for a slider-style rating question.
       properties:
-        style:
+        variant:
           const: slider
-          title: Style
+          title: Variant
           type: string
           maxLength: 6
-        schema:
-          $ref: '#/components/schemas/RatingSliderSchemaIn'
-        ui:
-          $ref: '#/components/schemas/RatingUIIn'
-      required:
-      - style
-      - schema
-      - ui
-      title: RatingSliderNestedIn
-      type: object
-    RatingSliderSchemaIn:
-      additionalProperties: false
-      description: Schema for slider-style rating questions.
-      properties:
         range:
-          $ref: '#/components/schemas/RangeIn'
-        step:
-          anyOf:
-          - type: integer
-          - type: number
-          gt: 0
-          title: Step
-      required:
-      - range
-      - step
-      title: RatingSliderSchemaIn
-      type: object
-    RatingStarNestedIn:
-      additionalProperties: false
-      description: Input for a star-style rating question.
-      properties:
-        style:
-          const: star
-          title: Style
-          type: string
-          maxLength: 4
-        schema:
-          $ref: '#/components/schemas/RatingStarSchemaIn'
+          $ref: '#/components/schemas/RatingRangeIn'
         ui:
           $ref: '#/components/schemas/RatingUIIn'
       required:
-      - style
-      - schema
+      - variant
+      - range
       - ui
-      title: RatingStarNestedIn
+      title: RatingSliderDefinitionIn
       type: object
-    RatingStarSchemaIn:
+    RatingStarDefinitionIn:
       additionalProperties: false
-      description: Schema for star-style rating questions.
+      description: definition block for a star-style rating question.
       properties:
+        variant:
+          const: stars
+          title: Variant
+          type: string
+          maxLength: 5
         stars:
           maximum: 12
           minimum: 1
           title: Stars
           type: integer
+        ui:
+          $ref: '#/components/schemas/RatingUIIn'
       required:
+      - variant
       - stars
-      title: RatingStarSchemaIn
+      - ui
+      title: RatingStarDefinitionIn
       type: object
     RatingUIIn:
       additionalProperties: false
-      description: Base UI for all rating questions — includes left/right labels.
+      description: Left/right labels for all rating variants.
       properties:
         left_label:
           maxLength: 50
+          minLength: 1
           title: Left Label
           type: string
         right_label:
           maxLength: 50
+          minLength: 1
           title: Right Label
           type: string
       required:
@@ -4752,6 +4221,7 @@ components:
       properties:
         id:
           maxLength: 128
+          minLength: 1
           title: Id
           type: string
         if:
@@ -4789,6 +4259,7 @@ components:
       properties:
         target_id:
           maxLength: 128
+          minLength: 1
           title: Target Id
           type: string
         visible:
@@ -4808,42 +4279,15 @@ components:
       title: ThenSetItemIn
       type: object
     CreateNodeRequest:
-      additionalProperties: false
-      description: Validates requests that create a new survey content node (question or rule).
-      properties:
-        type:
-          enum:
-          - question
-          - rule
-          title: Type
-          type: string
-          maxLength: 8
-        sort_key:
-          exclusiveMinimum: 0
-          title: Sort Key
-          type: integer
-        content:
-          anyOf:
-          - discriminator:
-              mapping:
-                choice: '#/components/schemas/ChoiceQuestionSchemaIn'
-                field: '#/components/schemas/FieldQuestionSchemaIn'
-                matching: '#/components/schemas/MatchingQuestionSchemaIn'
-                rating: '#/components/schemas/RatingQuestionSchemaIn'
-              propertyName: family
-            oneOf:
-            - $ref: '#/components/schemas/ChoiceQuestionSchemaIn'
-            - $ref: '#/components/schemas/FieldQuestionSchemaIn'
-            - $ref: '#/components/schemas/MatchingQuestionSchemaIn'
-            - $ref: '#/components/schemas/RatingQuestionSchemaIn'
-          - $ref: '#/components/schemas/RuleSchemaIn'
-          title: Content
-      required:
-      - type
-      - sort_key
-      - content
+      discriminator:
+        mapping:
+          question: '#/components/schemas/CreateQuestionNodeRequest'
+          rule: '#/components/schemas/CreateRuleNodeRequest'
+        propertyName: type
+      oneOf:
+      - $ref: '#/components/schemas/CreateQuestionNodeRequest'
+      - $ref: '#/components/schemas/CreateRuleNodeRequest'
       title: CreateNodeRequest
-      type: object
     UpdateNodeRequest:
       additionalProperties: false
       description: Validates partial updates to an existing survey content node.
@@ -4875,7 +4319,7 @@ components:
           title: Content
       title: UpdateNodeRequest
       type: object
-    ScoringRuleOut:
+    ScoringRuleResponses:
       description: API response shape for a scoring rule.
       properties:
         id:
@@ -4909,7 +4353,7 @@ components:
       - scoring_schema
       - created_at
       - updated_at
-      title: ScoringRuleOut
+      title: ScoringRuleResponses
       type: object
     ChoiceOptionMapConfig:
       additionalProperties: false
@@ -5275,10 +4719,13 @@ components:
       properties:
         name:
           maxLength: 100
+          minLength: 1
           title: Name
           type: string
         slug:
           maxLength: 80
+          minLength: 1
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
           title: Slug
           type: string
       required:
@@ -5286,7 +4733,7 @@ components:
       - slug
       title: CreateProjectRequest
       type: object
-    MyProjectPermissionsOut:
+    MyProjectPermissionsResponses:
       description: API response shape for the current user's effective permissions in a project.
       properties:
         permissions:
@@ -5309,7 +4756,7 @@ components:
           type: array
       required:
       - permissions
-      title: MyProjectPermissionsOut
+      title: MyProjectPermissionsResponses
       type: object
     UpdateProjectRequest:
       description: Request body for partially updating a project.
@@ -5317,6 +4764,7 @@ components:
         name:
           anyOf:
           - maxLength: 100
+            minLength: 1
             type: string
           - type: 'null'
           default: null
@@ -5324,6 +4772,8 @@ components:
         slug:
           anyOf:
           - maxLength: 80
+            minLength: 1
+            pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
             type: string
           - type: 'null'
           default: null
@@ -5349,6 +4799,7 @@ components:
         invite_message:
           anyOf:
           - maxLength: 500
+            minLength: 1
             type: string
           - type: 'null'
           default: null
@@ -5358,7 +4809,7 @@ components:
       title: SendInvitationRequest
       type: object
     UpdateMemberRequest:
-      description: 'Request body for updating a project membership (role and/or status).
+      description: 'Request body for updating a project membership role and/or status.
 
 
         Omit a field to leave it unchanged. Pass role_id: null to clear the role.'
@@ -5383,7 +4834,7 @@ components:
           title: Status
       title: UpdateMemberRequest
       type: object
-    PublicLinkOut:
+    PublicLinkResponses:
       description: API response shape for a survey link.
       properties:
         id:
@@ -5442,30 +4893,32 @@ components:
       - expires_at
       - used_at
       - created_at
-      title: PublicLinkOut
+      title: PublicLinkResponses
       type: object
-    ListPublicLinksOut:
+    ListPublicLinksResponses:
       description: API response shape for listing all public links for a survey.
       properties:
         links:
           items:
-            $ref: '#/components/schemas/PublicLinkOut'
+            $ref: '#/components/schemas/PublicLinkResponses'
           title: Links
           type: array
       required:
       - links
-      title: ListPublicLinksOut
+      title: ListPublicLinksResponses
       type: object
     CreatePublicLinkRequest:
-      description: Request body for creating a survey link.
+      description: Request body for creating a new public link.
       properties:
         name:
           maxLength: 120
+          minLength: 1
           title: Name
           type: string
         assigned_email:
           anyOf:
-          - maxLength: 254
+          - format: email
+            maxLength: 254
             type: string
           - type: 'null'
           default: null
@@ -5486,11 +4939,11 @@ components:
       - name
       title: CreatePublicLinkRequest
       type: object
-    CreatePublicLinkOut:
+    CreatePublicLinkResponses:
       description: API response shape for creating a public link.
       properties:
         link:
-          $ref: '#/components/schemas/PublicLinkOut'
+          $ref: '#/components/schemas/PublicLinkResponses'
         token:
           title: Token
           type: string
@@ -5503,10 +4956,10 @@ components:
       - link
       - token
       - url
-      title: CreatePublicLinkOut
+      title: CreatePublicLinkResponses
       type: object
     UpdatePublicLinkRequest:
-      description: Request body for partially updating a survey link.
+      description: Request body for updating a public link.
       properties:
         is_active:
           anyOf:
@@ -5517,13 +4970,15 @@ components:
         name:
           anyOf:
           - maxLength: 120
+            minLength: 1
             type: string
           - type: 'null'
           default: null
           title: Name
         assigned_email:
           anyOf:
-          - maxLength: 254
+          - format: email
+            maxLength: 254
             type: string
           - type: 'null'
           default: null
@@ -5544,7 +4999,7 @@ components:
           title: Expires At
       title: UpdatePublicLinkRequest
       type: object
-    ProjectRoleOut:
+    ProjectRoleResponses:
       description: API response shape for a project role.
       properties:
         id:
@@ -5598,18 +5053,20 @@ components:
       - is_system_role
       - permissions
       - created_at
-      title: ProjectRoleOut
+      title: ProjectRoleResponses
       type: object
     CreateProjectRoleRequest:
-      description: Request body for creating a project role.
+      description: Request body for creating a new project role.
       properties:
         name:
           maxLength: 80
+          minLength: 1
           title: Name
           type: string
         description:
           anyOf:
           - maxLength: 500
+            minLength: 1
             type: string
           - type: 'null'
           default: null
@@ -5639,11 +5096,12 @@ components:
       title: CreateProjectRoleRequest
       type: object
     UpdateProjectRoleRequest:
-      description: Request body for partially updating a project role.
+      description: Request body for updating a project role.
       properties:
         name:
           anyOf:
           - maxLength: 80
+            minLength: 1
             type: string
           - type: 'null'
           default: null
@@ -5651,6 +5109,7 @@ components:
         description:
           anyOf:
           - maxLength: 500
+            minLength: 1
             type: string
           - type: 'null'
           default: null
@@ -5680,7 +5139,7 @@ components:
           title: Permissions
       title: UpdateProjectRoleRequest
       type: object
-    CoreSubmissionOut:
+    CoreSubmissionResponses:
       description: API response shape for a core submission record.
       properties:
         id:
@@ -5718,7 +5177,7 @@ components:
           title: Survey Link Id
         submitter:
           anyOf:
-          - $ref: '#/components/schemas/SubmitterOut'
+          - $ref: '#/components/schemas/SubmitterResponses'
           - type: 'null'
           default: null
         is_anonymous:
@@ -5765,9 +5224,9 @@ components:
       - started_at
       - submitted_at
       - created_at
-      title: CoreSubmissionOut
+      title: CoreSubmissionResponses
       type: object
-    SubmitterOut:
+    SubmitterResponses:
       description: Lightweight submission submitter identity.
       properties:
         id:
@@ -5787,14 +5246,14 @@ components:
       - id
       - email
       - display_name
-      title: SubmitterOut
+      title: SubmitterResponses
       type: object
-    PaginatedSubmissionsOut:
+    PaginatedSubmissionsResponses:
       description: API response shape for a paginated list of submissions.
       properties:
         items:
           items:
-            $ref: '#/components/schemas/CoreSubmissionOut'
+            $ref: '#/components/schemas/CoreSubmissionResponses'
           maxItems: 100
           title: Items
           type: array
@@ -5812,9 +5271,9 @@ components:
       - total
       - page
       - page_size
-      title: PaginatedSubmissionsOut
+      title: PaginatedSubmissionsResponses
       type: object
-    AnswerOut:
+    AnswerResponses:
       description: API response shape for a single submission answer.
       properties:
         id:
@@ -5848,25 +5307,25 @@ components:
       - answer_family
       - answer_value
       - created_at
-      title: AnswerOut
+      title: AnswerResponses
       type: object
-    LinkedSubmissionOut:
+    LinkedSubmissionResponses:
       description: API response shape combining a core submission record with its answers.
       properties:
         core:
-          $ref: '#/components/schemas/CoreSubmissionOut'
+          $ref: '#/components/schemas/CoreSubmissionResponses'
         answers:
           items:
-            $ref: '#/components/schemas/AnswerOut'
+            $ref: '#/components/schemas/AnswerResponses'
           maxItems: 50
           title: Answers
           type: array
       required:
       - core
       - answers
-      title: LinkedSubmissionOut
+      title: LinkedSubmissionResponses
       type: object
-    SurveyMemberOut:
+    SurveyMemberResponses:
       description: Embedded user details on a survey member row.
       properties:
         id:
@@ -5892,9 +5351,9 @@ components:
       - project_id
       - role_id
       - status
-      title: SurveyMemberOut
+      title: SurveyMemberResponses
       type: object
-    SurveyRoleOut:
+    SurveyRoleResponses:
       description: API response shape for a survey role.
       properties:
         id:
@@ -5940,9 +5399,9 @@ components:
       - description
       - permissions
       - created_at
-      title: SurveyRoleOut
+      title: SurveyRoleResponses
       type: object
-    SurveyMemberRoleOut:
+    SurveyMemberRoleResponses:
       description: API response shape for a survey membership role assignment.
       properties:
         project_id:
@@ -5964,12 +5423,12 @@ components:
           maxLength: 35
         member:
           anyOf:
-          - $ref: '#/components/schemas/SurveyMemberOut'
+          - $ref: '#/components/schemas/SurveyMemberResponses'
           - type: 'null'
           default: null
         role:
           anyOf:
-          - $ref: '#/components/schemas/SurveyRoleOut'
+          - $ref: '#/components/schemas/SurveyRoleResponses'
           - type: 'null'
           default: null
       required:
@@ -5978,7 +5437,7 @@ components:
       - membership_id
       - role_id
       - created_at
-      title: SurveyMemberRoleOut
+      title: SurveyMemberRoleResponses
       type: object
     AssignSurveyMemberRoleRequest:
       description: Request body for assigning a survey role to a project member for a survey.
@@ -6015,11 +5474,13 @@ components:
       properties:
         name:
           maxLength: 80
+          minLength: 1
           title: Name
           type: string
         description:
           anyOf:
           - maxLength: 500
+            minLength: 1
             type: string
           - type: 'null'
           default: null
@@ -6050,6 +5511,7 @@ components:
         name:
           anyOf:
           - maxLength: 80
+            minLength: 1
             type: string
           - type: 'null'
           default: null
@@ -6057,6 +5519,7 @@ components:
         description:
           anyOf:
           - maxLength: 500
+            minLength: 1
             type: string
           - type: 'null'
           default: null
@@ -6082,7 +5545,7 @@ components:
           title: Permissions
       title: UpdateSurveyRoleRequest
       type: object
-    SurveyOut:
+    SurveyResponses:
       description: API response shape for a survey.
       properties:
         id:
@@ -6145,13 +5608,14 @@ components:
       - created_by_user_id
       - created_at
       - updated_at
-      title: SurveyOut
+      title: SurveyResponses
       type: object
     CreateSurveyRequest:
       description: Request body for creating a new survey.
       properties:
         title:
           maxLength: 200
+          minLength: 1
           title: Title
           type: string
         visibility:
@@ -6166,6 +5630,8 @@ components:
         public_slug:
           anyOf:
           - maxLength: 80
+            minLength: 1
+            pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
             type: string
           - type: 'null'
           default: null
@@ -6180,6 +5646,7 @@ components:
         title:
           anyOf:
           - maxLength: 200
+            minLength: 1
             type: string
           - type: 'null'
           default: null
@@ -6198,13 +5665,15 @@ components:
         public_slug:
           anyOf:
           - maxLength: 80
+            minLength: 1
+            pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
             type: string
           - type: 'null'
           default: null
           title: Public Slug
       title: UpdateSurveyRequest
       type: object
-    SurveyVersionOut:
+    SurveyVersionResponses:
       description: API response shape for a survey version.
       properties:
         id:
@@ -6262,14 +5731,14 @@ components:
       - created_by_user_id
       - created_at
       - updated_at
-      title: SurveyVersionOut
+      title: SurveyVersionResponses
       type: object
-    PaginatedPublicSurveysOut:
+    PaginatedPublicSurveysResponses:
       description: API response shape for a paginated list of public surveys.
       properties:
         items:
           items:
-            $ref: '#/components/schemas/SurveyOut'
+            $ref: '#/components/schemas/SurveyResponses'
           maxItems: 100
           title: Items
           type: array
@@ -6287,40 +5756,40 @@ components:
       - total
       - page
       - page_size
-      title: PaginatedPublicSurveysOut
+      title: PaginatedPublicSurveysResponses
       type: object
-    PublicSurveyOut:
+    PublicSurveyResponses:
       description: API response shape for a publicly accessible survey with its published version.
       properties:
         survey:
-          $ref: '#/components/schemas/SurveyOut'
+          $ref: '#/components/schemas/SurveyResponses'
         published_version:
           anyOf:
-          - $ref: '#/components/schemas/SurveyVersionOut'
+          - $ref: '#/components/schemas/SurveyVersionResponses'
           - type: 'null'
           default: null
       required:
       - survey
-      title: PublicSurveyOut
+      title: PublicSurveyResponses
       type: object
-    ResolveLinkOut:
+    ResolveLinkResponses:
       description: API response shape for resolving a public link token.
       properties:
         link:
-          $ref: '#/components/schemas/PublicLinkOut'
+          $ref: '#/components/schemas/PublicLinkResponses'
         survey:
           anyOf:
-          - $ref: '#/components/schemas/SurveyOut'
+          - $ref: '#/components/schemas/SurveyResponses'
           - type: 'null'
           default: null
         published_version:
           anyOf:
-          - $ref: '#/components/schemas/SurveyVersionOut'
+          - $ref: '#/components/schemas/SurveyVersionResponses'
           - type: 'null'
           default: null
       required:
       - link
-      title: ResolveLinkOut
+      title: ResolveLinkResponses
       type: object
     ChoiceAnswerIn:
       additionalProperties: false
@@ -7097,16 +6566,7 @@ components:
                     field: sort_key
                   - message: Unable to extract tag using discriminator 'family'
                     type: union_tag_not_found
-                    field: content.tagged-union[ChoiceQuestionSchemaIn,FieldQuestionSchemaIn,MatchingQuestionSchemaIn,RatingQuestionSchemaIn]
-                  - message: Field required
-                    type: missing
-                    field: content.RuleSchemaIn.id
-                  - message: Field required
-                    type: missing
-                    field: content.RuleSchemaIn.if
-                  - message: Field required
-                    type: missing
-                    field: content.RuleSchemaIn.then
+                    field: content
     RateLimitError:
       description: Rate limit exceeded.
       content:

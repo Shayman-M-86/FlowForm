@@ -22,7 +22,7 @@ from typing import Any, get_args, get_origin
 
 from apispec import APISpec
 from flask import Blueprint, Flask, jsonify
-from pydantic import BaseModel
+from pydantic import BaseModel, TypeAdapter
 from werkzeug.routing import Rule
 
 from app.openapi.errors import (
@@ -131,31 +131,31 @@ _STRING_FIELD_MAX_LENGTHS = {
 }
 
 _COMPONENT_STRING_FIELD_MAX_LENGTHS = {
-    "CurrentUserOut": {
+    "CurrentUserResponses": {
         "auth0_user_id": limits.AUTH0_USER_ID_MAX,
         "email": limits.EMAIL_MAX,
     },
-    "ProjectOut": {
+    "ProjectResponses": {
         "name": limits.PROJECT_NAME_MAX,
         "slug": limits.SLUG_MAX,
     },
-    "ProjectRoleOut": {
+    "ProjectRoleResponses": {
         "description": limits.PROJECT_ROLE_DESCRIPTION_MAX,
     },
-    "PublicLinkCreatedOut": {
+    "PublicLinkCreatedResponses": {
         "name": limits.PUBLIC_LINK_NAME_MAX,
         "token": limits.TOKEN_MAX,
         "token_prefix": limits.TOKEN_PREFIX_MAX,
     },
-    "PublicLinkOut": {
+    "PublicLinkResponses": {
         "name": limits.PUBLIC_LINK_NAME_MAX,
         "token_prefix": limits.TOKEN_PREFIX_MAX,
     },
-    "SurveyOut": {
+    "SurveyResponses": {
         "public_slug": limits.SLUG_MAX,
         "title": limits.SURVEY_TITLE_MAX,
     },
-    "SurveyRoleOut": {
+    "SurveyRoleResponses": {
         "description": limits.PROJECT_ROLE_DESCRIPTION_MAX,
     },
 }
@@ -368,18 +368,26 @@ def _apply_string_max_lengths(
             _apply_string_max_lengths(value, component_name=component_name, property_name=property_name)
 
 
-def _register_model(spec: APISpec, model: type[BaseModel]) -> str:
-    """Register a Pydantic model and any nested ``$defs`` with the spec.
+def _register_model(spec: APISpec, model: Any) -> str:
+    """Register a Pydantic model (or ``TypeAdapter`` type) with the spec.
 
-    Returns the component name (the model's ``__name__``) so callers can build
-    a ``$ref``. Safe to call repeatedly for the same model.
+    Accepts either a ``BaseModel`` subclass or an ``Annotated`` type alias.
+    For ``Annotated`` unions the schema title is used as the component name.
+
+    Returns the component name so callers can build a ``$ref``. Safe to call
+    repeatedly for the same model.
     """
-    name = model.__name__
+    if isinstance(model, type) and issubclass(model, BaseModel):
+        name = model.__name__
+        schema = model.model_json_schema(ref_template="#/components/schemas/{model}")
+    else:
+        schema = TypeAdapter(model).json_schema(ref_template="#/components/schemas/{model}")
+        name = schema.get("title", repr(model))
+
     existing = spec.to_dict().get("components", {}).get("schemas", {})
     if name in existing:
         return name
 
-    schema = model.model_json_schema(ref_template="#/components/schemas/{model}")
     defs = schema.pop("$defs", {})
 
     for def_name, def_schema in defs.items():

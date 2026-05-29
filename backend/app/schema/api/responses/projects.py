@@ -8,23 +8,23 @@ from app.schema.api import limits
 from app.schema.api.enums import ProjectInvitationStatus, ProjectMemberStatus
 from app.schema.orm.core.project import ProjectRole
 
-ProjectMemberStatusOut = Annotated[
+ProjectMemberStatusResponses = Annotated[
     ProjectMemberStatus,
     Field(max_length=limits.PROJECT_MEMBER_STATUS_MAX),
 ]
-ProjectInvitationStatusOut = Annotated[
+ProjectInvitationStatusResponses = Annotated[
     ProjectInvitationStatus,
     Field(max_length=limits.PROJECT_INVITATION_STATUS_MAX),
 ]
 
 
-class MyProjectPermissionsOut(BaseModel):
+class MyProjectPermissionsResponses(BaseModel):
     """API response shape for the current user's effective permissions in a project."""
 
     permissions: list[ProjectPermission]
 
 
-class ProjectOut(BaseModel):
+class ProjectResponses(BaseModel):
     """API response shape for a project."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -36,7 +36,7 @@ class ProjectOut(BaseModel):
     created_at: datetime
 
 
-class ProjectRoleOut(BaseModel):
+class ProjectRoleResponses(BaseModel):
     """API response shape for a project role."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -50,7 +50,7 @@ class ProjectRoleOut(BaseModel):
     created_at: datetime
 
     @classmethod
-    def from_orm_with_permissions(cls, role: ProjectRole) -> ProjectRoleOut:
+    def from_orm_with_permissions(cls, role: ProjectRole) -> ProjectRoleResponses:
         permissions = [cast(ProjectPermission, p.name) for p in getattr(role, "permissions", [])]
         return cls.model_construct(
             id=role.id,
@@ -63,7 +63,7 @@ class ProjectRoleOut(BaseModel):
         )
 
 
-class MemberUserOut(BaseModel):
+class MemberUserResponses(BaseModel):
     """Embedded user details on a project member response."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -73,7 +73,7 @@ class MemberUserOut(BaseModel):
     display_name: str | None
 
 
-class ProjectMemberOut(BaseModel):
+class ProjectMemberResponses(BaseModel):
     """API response shape for a project membership."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -82,12 +82,12 @@ class ProjectMemberOut(BaseModel):
     user_id: int
     project_id: int
     role_id: int | None
-    status: ProjectMemberStatusOut
+    status: ProjectMemberStatusResponses
     created_at: datetime
-    user: MemberUserOut
+    user: MemberUserResponses
 
 
-class ProjectInvitationOut(BaseModel):
+class ProjectInvitationResponses(BaseModel):
     """API response shape for a project invitation."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -100,13 +100,13 @@ class ProjectInvitationOut(BaseModel):
     invited_by_user_id: int | None
     invited_by_display: str | None = None
     role_id: int | None
-    status: ProjectInvitationStatusOut
+    status: ProjectInvitationStatusResponses
     expires_at: datetime | None
     accepted_at: datetime | None
     created_at: datetime
 
     @classmethod
-    def from_orm_with_project(cls, invitation: object) -> ProjectInvitationOut:
+    def from_orm_with_project(cls, invitation: object) -> ProjectInvitationResponses:
         """Build response including project name and inviter display from loaded relationships."""
         data = cls.model_validate(invitation)
         project = getattr(invitation, "project", None)

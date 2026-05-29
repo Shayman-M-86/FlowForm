@@ -7,10 +7,10 @@ from app.db.context import get_core_db, get_response_db
 from app.openapi import openapi_route
 from app.schema.api.requests.submissions.query import GetSubmissionRequest, ListSubmissionsRequest
 from app.schema.api.responses.submissions import (
-    AnswerOut,
-    CoreSubmissionOut,
-    LinkedSubmissionOut,
-    PaginatedSubmissionsOut,
+    AnswerResponses,
+    CoreSubmissionResponses,
+    LinkedSubmissionResponses,
+    PaginatedSubmissionsResponses,
 )
 from app.schema.orm.core.user import User
 
@@ -18,7 +18,7 @@ from app.schema.orm.core.user import User
 @openapi_route(
     summary="List submissions",
     query_model=ListSubmissionsRequest,
-    response_model=PaginatedSubmissionsOut,
+    response_model=PaginatedSubmissionsResponses,
     tags=["Submissions"],
 )
 @projects_bp.route("/<bint:project_id>/submissions", methods=["GET"])
@@ -35,8 +35,8 @@ def list_submissions(project_id: int):
         payload=payload,
     )
 
-    response = PaginatedSubmissionsOut(
-        items=[CoreSubmissionOut.model_validate(s) for s in items],
+    response = PaginatedSubmissionsResponses(
+        items=[CoreSubmissionResponses.model_validate(s) for s in items],
         page=payload.page,
         page_size=payload.page_size,
         total=total,
@@ -48,7 +48,7 @@ def list_submissions(project_id: int):
 @openapi_route(
     summary="Get submission",
     query_model=GetSubmissionRequest,
-    response_model=LinkedSubmissionOut,
+    response_model=LinkedSubmissionResponses,
     tags=["Submissions"],
 )
 @projects_bp.route("/<bint:project_id>/submissions/<bint:submission_id>", methods=["GET"])
@@ -68,9 +68,9 @@ def get_submission(project_id: int, submission_id: int):
         params=payload,
     )
 
-    response = LinkedSubmissionOut(
-        core=CoreSubmissionOut.model_validate(linked.core_submission),
-        answers=[AnswerOut.model_validate(a) for a in linked.answers],
+    response = LinkedSubmissionResponses(
+        core=CoreSubmissionResponses.model_validate(linked.core_submission),
+        answers=[AnswerResponses.model_validate(a) for a in linked.answers],
     )
 
     return response.model_dump(mode="json"), 200

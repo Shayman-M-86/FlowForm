@@ -10,7 +10,7 @@ from app.schema.api.enums import (
 )
 
 
-class AnswerOut(BaseModel):
+class AnswerResponses(BaseModel):
     """API response shape for a single submission answer."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -22,7 +22,7 @@ class AnswerOut(BaseModel):
     created_at: datetime
 
 
-class SubmitterOut(BaseModel):
+class SubmitterResponses(BaseModel):
     """Lightweight submission submitter identity."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -32,7 +32,7 @@ class SubmitterOut(BaseModel):
     display_name: str | None
 
 
-class CoreSubmissionOut(BaseModel):
+class CoreSubmissionResponses(BaseModel):
     """API response shape for a core submission record."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -45,7 +45,7 @@ class CoreSubmissionOut(BaseModel):
     submission_channel: SubmissionChannel
     submitted_by_user_id: int | None
     survey_link_id: int | None
-    submitter: SubmitterOut | None = None
+    submitter: SubmitterResponses | None = None
     is_anonymous: bool
     status: SubmissionStatus
     started_at: datetime | None
@@ -53,19 +53,19 @@ class CoreSubmissionOut(BaseModel):
     created_at: datetime
 
 
-class LinkedSubmissionOut(BaseModel):
+class LinkedSubmissionResponses(BaseModel):
     """API response shape combining a core submission record with its answers."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    core: CoreSubmissionOut
-    answers: list[AnswerOut] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
+    core: CoreSubmissionResponses
+    answers: list[AnswerResponses] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
 
 
-class PaginatedSubmissionsOut(BaseModel):
+class PaginatedSubmissionsResponses(BaseModel):
     """API response shape for a paginated list of submissions."""
 
-    items: list[CoreSubmissionOut] = Field(max_length=limits.LIST_PAGE_SIZE_MAX)
+    items: list[CoreSubmissionResponses] = Field(max_length=limits.LIST_PAGE_SIZE_MAX)
     total: int
     page: int
     page_size: int

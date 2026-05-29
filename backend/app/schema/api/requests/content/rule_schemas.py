@@ -16,8 +16,8 @@ from app.schema.api.enums import (
     NumericFieldOperator,
     RatingFamily,
 )
+from app.schema.api.requests.field_types import SchemaIdStr
 
-SchemaIdStr = Annotated[str, Field(max_length=limits.SCHEMA_ID_MAX)]
 DateValueStr = Annotated[str, Field(max_length=limits.DATE_VALUE_MAX)]
 
 # ── Condition requirements per question family ─────────────────────────────────
@@ -116,13 +116,6 @@ class ChoiceConditionIn(BaseModel):
     family: ChoiceFamily
     requirements: ChoiceRequirementsIn
 
-    @field_validator("target_id")
-    @classmethod
-    def validate_target_id(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("target_id must not be blank")
-        return value
-
 
 class MatchingConditionIn(BaseModel):
     """Represents a condition block targeting a matching question."""
@@ -132,13 +125,6 @@ class MatchingConditionIn(BaseModel):
     target_id: SchemaIdStr
     family: MatchingFamily
     requirements: MatchingRequirementsIn
-
-    @field_validator("target_id")
-    @classmethod
-    def validate_target_id(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("target_id must not be blank")
-        return value
 
 
 class RatingConditionIn(BaseModel):
@@ -150,13 +136,6 @@ class RatingConditionIn(BaseModel):
     family: RatingFamily
     requirements: RatingRequirementsIn
 
-    @field_validator("target_id")
-    @classmethod
-    def validate_target_id(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("target_id must not be blank")
-        return value
-
 
 class FieldConditionIn(BaseModel):
     """Represents a condition block targeting a field question."""
@@ -166,13 +145,6 @@ class FieldConditionIn(BaseModel):
     target_id: SchemaIdStr
     family: FieldFamily
     requirements: FieldRequirementsIn
-
-    @field_validator("target_id")
-    @classmethod
-    def validate_target_id(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("target_id must not be blank")
-        return value
 
 
 RuleConditionIn = Annotated[
@@ -210,13 +182,6 @@ class ThenSetItemIn(BaseModel):
     target_id: SchemaIdStr
     visible: bool | None = None
     required: bool | None = None
-
-    @field_validator("target_id")
-    @classmethod
-    def validate_target_id(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("target_id must not be blank")
-        return value
 
     @model_validator(mode="after")
     def validate_has_at_least_one_effect(self) -> ThenSetItemIn:
@@ -277,10 +242,3 @@ class RuleSchemaIn(BaseModel):
     if_: RuleIfIn = Field(validation_alias="if", serialization_alias="if")
     then: RuleThenIn
     else_: RuleElseIn | None = Field(default=None, validation_alias="else", serialization_alias="else")
-
-    @field_validator("id")
-    @classmethod
-    def validate_id(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("id must not be blank")
-        return value

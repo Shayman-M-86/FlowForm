@@ -1,7 +1,7 @@
-from typing import Any
+from typing import Any, overload
 
 from flask import Request
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 from werkzeug.exceptions import BadRequest, UnsupportedMediaType
 
 
@@ -23,15 +23,24 @@ def _get_json_object(request_obj: Request) -> dict[str, Any]:
     return body
 
 
-def parse[TModel: BaseModel](model_cls: type[TModel], request_obj: Request) -> TModel:
-    """Parse the JSON request body into a Pydantic model.
+@overload
+def parse[T: BaseModel](schema: type[T], request_obj: Request) -> T: ...
+@overload
+def parse(schema: Any, request_obj: Request) -> Any: ...
+def parse(schema: Any, request_obj: Request) -> Any:
+    """Parse the JSON request body into a Pydantic model or discriminated union.
+
+    Accepts either a ``BaseModel`` subclass or an ``Annotated`` type alias
+    (e.g. a discriminated union built with ``TypeAdapter``).
 
     Raises:
         HTTPException: If the request body is invalid for the endpoint.
-        ValidationError: If the JSON body does not satisfy the Pydantic model schema.
+        ValidationError: If the JSON body does not satisfy the schema.
     """
     body = _get_json_object(request_obj)
-    return model_cls.model_validate(body)
+    if isinstance(schema, type) and issubclass(schema, BaseModel):
+        return schema.model_validate(body)
+    return TypeAdapter(schema).validate_python(body)
 
 
 def parse_query[TModel: BaseModel](model_cls: type[TModel], request_obj: Request) -> TModel:
@@ -45,7 +54,7 @@ _ALIAS_MAP = {"schema_": "schema"}
 
 # Discriminator values injected by Pydantic into error locs for discriminated unions.
 # These are never present in the request JSON and should be stripped from field paths.
-_UNION_TAGS: frozenset[str] = frozenset({"choice", "field", "matching", "rating"})
+_UNION_TAGS: frozenset[str] = frozenset({"choice", "field", "matching", "rating", "question", "rule"})
 
 
 def _loc_to_field(loc: tuple) -> str | None:

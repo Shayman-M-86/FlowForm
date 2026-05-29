@@ -12,9 +12,14 @@ from app.schema.api.requests.submissions.create import (
     SlugSubmissionRequest,
 )
 from app.schema.api.requests.surveys import ListPublicSurveysRequest
-from app.schema.api.responses.public_links import PublicLinkOut, ResolveLinkOut
-from app.schema.api.responses.submissions import AnswerOut, CoreSubmissionOut, LinkedSubmissionOut
-from app.schema.api.responses.surveys import PaginatedPublicSurveysOut, PublicSurveyOut, SurveyOut, SurveyVersionOut
+from app.schema.api.responses.public_links import PublicLinkResponses, ResolveLinkResponses
+from app.schema.api.responses.submissions import AnswerResponses, CoreSubmissionResponses, LinkedSubmissionResponses
+from app.schema.api.responses.surveys import (
+    PaginatedPublicSurveysResponses,
+    PublicSurveyResponses,
+    SurveyResponses,
+    SurveyVersionResponses,
+)
 from app.services.public_links import SurveyLinkService
 from app.services.public_surveys import PublicSurveyService
 from app.services.submissions import SubmissionIntakeService
@@ -33,7 +38,7 @@ public_survey_service = PublicSurveyService()
 @openapi_route(
     summary="List public surveys",
     query_model=ListPublicSurveysRequest,
-    response_model=PaginatedPublicSurveysOut,
+    response_model=PaginatedPublicSurveysResponses,
     tags=["Public"],
     auth_required=False,
 )
@@ -43,8 +48,8 @@ def list_public_surveys():
     core_db = get_core_db()
 
     result = public_survey_service.list_public_surveys(core_db, page=params.page, page_size=params.page_size)
-    response = PaginatedPublicSurveysOut(
-        items=[SurveyOut.model_validate(s) for s in result.surveys],
+    response = PaginatedPublicSurveysResponses(
+        items=[SurveyResponses.model_validate(s) for s in result.surveys],
         total=result.total,
         page=result.page,
         page_size=result.page_size,
@@ -54,7 +59,7 @@ def list_public_surveys():
 
 @openapi_route(
     summary="Get public survey",
-    response_model=PublicSurveyOut,
+    response_model=PublicSurveyResponses,
     tags=["Public"],
     auth_required=False,
 )
@@ -63,10 +68,10 @@ def get_public_survey(public_slug: str):
     core_db = get_core_db()
 
     result = public_survey_service.get_public_survey(core_db, public_slug=public_slug)
-    response = PublicSurveyOut(
-        survey=SurveyOut.model_validate(result.survey),
+    response = PublicSurveyResponses(
+        survey=SurveyResponses.model_validate(result.survey),
         published_version=(
-            SurveyVersionOut.model_validate(result.published_version) if result.published_version else None
+            SurveyVersionResponses.model_validate(result.published_version) if result.published_version else None
         ),
     )
     return response.model_dump(mode="json"), 200
@@ -75,7 +80,7 @@ def get_public_survey(public_slug: str):
 @openapi_route(
     summary="Resolve survey link",
     query_model=ResolveTokenRequest,
-    response_model=ResolveLinkOut,
+    response_model=ResolveLinkResponses,
     tags=["Public Links"],
     auth="optional",
     description=(
@@ -91,16 +96,12 @@ def resolve_link():
     core_db = get_core_db()
 
     current_sub = auth.get_optional_current_user_sub()
-    user = (
-        users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub)
-        if current_sub is not None
-        else None
-    )
+    user = users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub) if current_sub is not None else None
     result = survey_link_service.resolve_link(core_db, payload=payload, actor=user)
-    response = ResolveLinkOut(
-        link=PublicLinkOut.model_validate(result.link),
-        survey=SurveyOut.model_validate(result.survey),
-        published_version=SurveyVersionOut.model_validate(result.published_version),
+    response = ResolveLinkResponses(
+        link=PublicLinkResponses.model_validate(result.link),
+        survey=SurveyResponses.model_validate(result.survey),
+        published_version=SurveyVersionResponses.model_validate(result.published_version),
     )
 
     return response.model_dump(mode="json"), 200
@@ -109,7 +110,7 @@ def resolve_link():
 @openapi_route(
     summary="Create slug submission",
     request_model=SlugSubmissionRequest,
-    response_model=LinkedSubmissionOut,
+    response_model=LinkedSubmissionResponses,
     status_code=201,
     tags=["Public Submissions"],
     auth="optional",
@@ -131,9 +132,9 @@ def create_slug_submission():
         payload=payload,
         submitted_by_user_id=submitted_by_user_id,
     )
-    response = LinkedSubmissionOut(
-        core=CoreSubmissionOut.model_validate(linked.core_submission),
-        answers=[AnswerOut.model_validate(a) for a in linked.answers],
+    response = LinkedSubmissionResponses(
+        core=CoreSubmissionResponses.model_validate(linked.core_submission),
+        answers=[AnswerResponses.model_validate(a) for a in linked.answers],
     )
     return response.model_dump(mode="json"), 201
 
@@ -141,7 +142,7 @@ def create_slug_submission():
 @openapi_route(
     summary="Create link submission",
     request_model=LinkSubmissionRequest,
-    response_model=LinkedSubmissionOut,
+    response_model=LinkedSubmissionResponses,
     status_code=201,
     tags=["Public Submissions"],
     auth="optional",
@@ -153,19 +154,15 @@ def create_link_submission():
     core_db = get_core_db()
     response_db = get_response_db()
     current_sub = auth.get_optional_current_user_sub()
-    user = (
-        users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub)
-        if current_sub is not None
-        else None
-    )
+    user = users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub) if current_sub is not None else None
     linked = submission_intake_service.create_link_submission(
         core_db,
         response_db,
         payload=payload,
         actor=user,
     )
-    response = LinkedSubmissionOut(
-        core=CoreSubmissionOut.model_validate(linked.core_submission),
-        answers=[AnswerOut.model_validate(a) for a in linked.answers],
+    response = LinkedSubmissionResponses(
+        core=CoreSubmissionResponses.model_validate(linked.core_submission),
+        answers=[AnswerResponses.model_validate(a) for a in linked.answers],
     )
     return response.model_dump(mode="json"), 201

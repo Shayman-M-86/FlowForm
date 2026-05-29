@@ -87,38 +87,14 @@ def test_default_error_responses_are_component_refs() -> None:
     document = build_spec(app)
 
     responses = document["paths"]["/widgets"]["get"]["responses"]
-    assert responses["400"] == {
-        "$ref": "#/components/responses/BadRequestError",
-        "description": "Bad request.",
-    }
-    assert responses["401"] == {
-        "$ref": "#/components/responses/UnauthorizedError",
-        "description": "Authentication required or token invalid.",
-    }
-    assert responses["403"] == {
-        "$ref": "#/components/responses/ForbiddenError",
-        "description": "Authenticated but not authorized for this resource.",
-    }
-    assert responses["404"] == {
-        "$ref": "#/components/responses/NotFoundError",
-        "description": "Resource not found.",
-    }
-    assert responses["409"] == {
-        "$ref": "#/components/responses/ConflictError",
-        "description": "Conflict with the current resource state.",
-    }
-    assert responses["422"] == {
-        "$ref": "#/components/responses/ValidationError",
-        "description": "Request was syntactically valid but semantically invalid.",
-    }
-    assert responses["429"] == {
-        "$ref": "#/components/responses/RateLimitError",
-        "description": "Rate limit exceeded.",
-    }
-    assert responses["500"] == {
-        "$ref": "#/components/responses/InternalServerError",
-        "description": "Internal server error.",
-    }
+    assert responses["400"] == {"$ref": "#/components/responses/BadRequestError"}
+    assert responses["401"] == {"$ref": "#/components/responses/UnauthorizedError"}
+    assert responses["403"] == {"$ref": "#/components/responses/ForbiddenError"}
+    assert responses["404"] == {"$ref": "#/components/responses/NotFoundError"}
+    assert responses["409"] == {"$ref": "#/components/responses/ConflictError"}
+    assert responses["422"] == {"$ref": "#/components/responses/ValidationError"}
+    assert responses["429"] == {"$ref": "#/components/responses/RateLimitError"}
+    assert responses["500"] == {"$ref": "#/components/responses/InternalServerError"}
 
 
 def test_default_error_response_examples_are_registered_once() -> None:

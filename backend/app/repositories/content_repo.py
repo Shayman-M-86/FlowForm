@@ -3,10 +3,13 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.api.requests.content import (
-    CreateNodeRequest,
     CreateScoringRuleRequest,
-    UpdateNodeRequest,
     UpdateScoringRuleRequest,
+)
+from app.schema.api.requests.content.node import (
+    CreateQuestionNodeRequest,
+    CreateRuleNodeRequest,
+    UpdateNodeRequest,
 )
 from app.schema.orm.core.survey import SurveyVersion
 from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
@@ -55,7 +58,7 @@ def get_node(db: Session, version_id: int, node_id: int) -> SurveyQuestion | Non
     )
 
 
-def create_node(db: Session, version: SurveyVersion, data: CreateNodeRequest) -> SurveyQuestion:
+def create_node(db: Session, version: SurveyVersion, data: CreateQuestionNodeRequest | CreateRuleNodeRequest) -> SurveyQuestion:
     node = SurveyQuestion(
         survey_version_id=version.id,
         question_key=data.content.id,
