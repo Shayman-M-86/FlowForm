@@ -1,0 +1,143 @@
+// This file is auto-generated — do not edit manually
+
+export type FlowFormPermission =
+  | "project:delete"
+  | "project:edit"
+  | "project:manage_members"
+  | "project:manage_roles"
+  | "submission:view"
+  | "survey:archive"
+  | "survey:create"
+  | "survey:delete"
+  | "survey:edit"
+  | "survey:publish"
+  | "survey:view";
+
+export const operationPermissions: Record<string, FlowFormPermission | null> = {
+  acceptInvitation: null,
+  archiveVersion: "survey:archive",
+  assignSurveyMemberRole: "project:manage_members",
+  bootstrapUser: null,
+  changeEmail: null,
+  changePassword: null,
+  changeUsername: null,
+  clearMfa: null,
+  copyVersionToDraft: "survey:create",
+  createLinkSubmission: null,
+  createNode: "survey:edit",
+  createProject: null,
+  createPublicLink: "survey:edit",
+  createRole: "project:manage_roles",
+  createScoringRule: "survey:edit",
+  createSlugSubmission: null,
+  createSurvey: "survey:create",
+  createSurveyRole: "project:manage_roles",
+  createVersion: "survey:create",
+  declineInvitation: null,
+  deleteMyAccount: null,
+  deleteNode: "survey:edit",
+  deleteProject: "project:delete",
+  deletePublicLink: "survey:edit",
+  deleteRole: "project:manage_roles",
+  deleteScoringRule: "survey:edit",
+  deleteSurvey: "survey:delete",
+  deleteSurveyRole: "project:manage_roles",
+  getMyInvitations: null,
+  getMyProfile: null,
+  getMyProjectPermissions: null,
+  getMySurveyPermissions: null,
+  getNode: "survey:view",
+  getProject: null,
+  getPublicSurvey: null,
+  getSubmission: "submission:view",
+  getSurvey: "survey:view",
+  getVersion: "survey:view",
+  healthCheck: null,
+  listInvitations: "project:manage_members",
+  listMembers: "project:manage_members",
+  listNodes: "survey:view",
+  listProjects: null,
+  listPublicLinks: "survey:view",
+  listPublicSurveys: null,
+  listRoles: "project:manage_roles",
+  listScoringRules: "survey:view",
+  listSubmissions: "submission:view",
+  listSurveyMembers: "project:manage_members",
+  listSurveyRoles: "project:manage_roles",
+  listSurveys: "survey:view",
+  listVersions: "survey:view",
+  publishVersion: "survey:publish",
+  readinessCheck: null,
+  removeMember: "project:manage_members",
+  removeSurveyMemberRole: "project:manage_members",
+  resendVerification: null,
+  resolveLink: null,
+  revokeInvitation: "project:manage_members",
+  sendInvitation: "project:manage_members",
+  updateMember: "project:manage_members",
+  updateMyProfile: null,
+  updateNode: "survey:edit",
+  updateProject: "project:edit",
+  updatePublicLink: "survey:edit",
+  updateRole: "project:manage_roles",
+  updateScoringRule: "survey:edit",
+  updateSurvey: "survey:edit",
+  updateSurveyMemberRole: "project:manage_members",
+  updateSurveyRole: "project:manage_roles",
+};
+
+export type RoutePermissionEntry = {
+  method: string;
+  pattern: RegExp;
+  permission: FlowFormPermission;
+  paramNames: string[];
+};
+
+export const routePermissions: RoutePermissionEntry[] = [
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/nodes$/, permission: "survey:view", paramNames: ["project_id","survey_id","version_number"] },
+  { method: "POST", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/nodes$/, permission: "survey:edit", paramNames: ["project_id","survey_id","version_number"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/nodes\/(?<node_id>[^\/]+)$/, permission: "survey:view", paramNames: ["project_id","survey_id","version_number","node_id"] },
+  { method: "PATCH", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/nodes\/(?<node_id>[^\/]+)$/, permission: "survey:edit", paramNames: ["project_id","survey_id","version_number","node_id"] },
+  { method: "DELETE", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/nodes\/(?<node_id>[^\/]+)$/, permission: "survey:edit", paramNames: ["project_id","survey_id","version_number","node_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/scoring-rules$/, permission: "survey:view", paramNames: ["project_id","survey_id","version_number"] },
+  { method: "POST", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/scoring-rules$/, permission: "survey:edit", paramNames: ["project_id","survey_id","version_number"] },
+  { method: "PATCH", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/scoring-rules\/(?<scoring_rule_id>[^\/]+)$/, permission: "survey:edit", paramNames: ["project_id","survey_id","version_number","scoring_rule_id"] },
+  { method: "DELETE", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/scoring-rules\/(?<scoring_rule_id>[^\/]+)$/, permission: "survey:edit", paramNames: ["project_id","survey_id","version_number","scoring_rule_id"] },
+  { method: "PATCH", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)$/, permission: "project:edit", paramNames: ["project_id"] },
+  { method: "DELETE", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)$/, permission: "project:delete", paramNames: ["project_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/members$/, permission: "project:manage_members", paramNames: ["project_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/invitations$/, permission: "project:manage_members", paramNames: ["project_id"] },
+  { method: "POST", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/invitations$/, permission: "project:manage_members", paramNames: ["project_id"] },
+  { method: "DELETE", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/invitations\/(?<invitation_id>[^\/]+)$/, permission: "project:manage_members", paramNames: ["project_id","invitation_id"] },
+  { method: "PATCH", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/members\/(?<membership_id>[^\/]+)$/, permission: "project:manage_members", paramNames: ["project_id","membership_id"] },
+  { method: "DELETE", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/members\/(?<membership_id>[^\/]+)$/, permission: "project:manage_members", paramNames: ["project_id","membership_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/links$/, permission: "survey:view", paramNames: ["project_id","survey_id"] },
+  { method: "POST", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/links$/, permission: "survey:edit", paramNames: ["project_id","survey_id"] },
+  { method: "PATCH", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/links\/(?<link_id>[^\/]+)$/, permission: "survey:edit", paramNames: ["project_id","survey_id","link_id"] },
+  { method: "DELETE", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/links\/(?<link_id>[^\/]+)$/, permission: "survey:edit", paramNames: ["project_id","survey_id","link_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/roles$/, permission: "project:manage_roles", paramNames: ["project_id"] },
+  { method: "POST", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/roles$/, permission: "project:manage_roles", paramNames: ["project_id"] },
+  { method: "PATCH", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/roles\/(?<role_id>[^\/]+)$/, permission: "project:manage_roles", paramNames: ["project_id","role_id"] },
+  { method: "DELETE", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/roles\/(?<role_id>[^\/]+)$/, permission: "project:manage_roles", paramNames: ["project_id","role_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/submissions$/, permission: "submission:view", paramNames: ["project_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/submissions\/(?<submission_id>[^\/]+)$/, permission: "submission:view", paramNames: ["project_id","submission_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/members$/, permission: "project:manage_members", paramNames: ["project_id","survey_id"] },
+  { method: "POST", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/members$/, permission: "project:manage_members", paramNames: ["project_id","survey_id"] },
+  { method: "PATCH", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/members\/(?<membership_id>[^\/]+)$/, permission: "project:manage_members", paramNames: ["project_id","survey_id","membership_id"] },
+  { method: "DELETE", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/members\/(?<membership_id>[^\/]+)$/, permission: "project:manage_members", paramNames: ["project_id","survey_id","membership_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/survey-roles$/, permission: "project:manage_roles", paramNames: ["project_id"] },
+  { method: "POST", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/survey-roles$/, permission: "project:manage_roles", paramNames: ["project_id"] },
+  { method: "PATCH", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/survey-roles\/(?<role_id>[^\/]+)$/, permission: "project:manage_roles", paramNames: ["project_id","role_id"] },
+  { method: "DELETE", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/survey-roles\/(?<role_id>[^\/]+)$/, permission: "project:manage_roles", paramNames: ["project_id","role_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys$/, permission: "survey:view", paramNames: ["project_id"] },
+  { method: "POST", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys$/, permission: "survey:create", paramNames: ["project_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)$/, permission: "survey:view", paramNames: ["project_id","survey_id"] },
+  { method: "PATCH", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)$/, permission: "survey:edit", paramNames: ["project_id","survey_id"] },
+  { method: "DELETE", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)$/, permission: "survey:delete", paramNames: ["project_id","survey_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions$/, permission: "survey:view", paramNames: ["project_id","survey_id"] },
+  { method: "POST", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions$/, permission: "survey:create", paramNames: ["project_id","survey_id"] },
+  { method: "POST", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/copy-to-draft$/, permission: "survey:create", paramNames: ["project_id","survey_id","version_number"] },
+  { method: "GET", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)$/, permission: "survey:view", paramNames: ["project_id","survey_id","version_number"] },
+  { method: "POST", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/publish$/, permission: "survey:publish", paramNames: ["project_id","survey_id","version_number"] },
+  { method: "POST", pattern: /^\/api\/v1\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/archive$/, permission: "survey:archive", paramNames: ["project_id","survey_id","version_number"] },
+];

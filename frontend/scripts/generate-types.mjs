@@ -54,94 +54,65 @@ const domainEntries = Object.entries(allSchemas).filter(
 );
 const sorted = topoSort(domainEntries, allSchemas);
 
-// Build a lookup of which source file each schema lives in, so cross-category
-// $refs in the endpoint types.gen.ts can import from the right place.
+// All named types come from schema.ts (openapi-typescript output).
+// object-schema/*.gen.ts only emits Constraints and Zod schemas now.
 const schemaSourceFile = {};
 for (const [name] of domainEntries) {
-  schemaSourceFile[name] = `../../object-schema/${schemaCategory(name)}s.gen`;
+  schemaSourceFile[name] = `../../schema`;
 }
 
-// ─── object-schema: emit three category pairs ────────────────────────────────
+// ─── object-schema: Constraints + Zod for requests and subtypes only ─────────
+// Interfaces live in schema.ts (openapi-typescript). Responses need neither.
 
-const CATEGORIES = ["request", "response", "subtype"];
+const CATEGORIES = ["request", "subtype"];
 
 for (const category of CATEGORIES) {
   const subset = sorted.filter(([name]) => schemaCategory(name) === category);
 
-  // Determine which other categories this category depends on for cross-refs
-  const crossImports = new Map(); // sourceFile -> Set of names
-  for (const [, schema] of subset) {
-    for (const ref of refsInSchema(schema)) {
-      if (SKIP.has(ref)) continue;
-      const refCategory = schemaCategory(ref);
-      if (refCategory !== category) {
-        const src = `./${refCategory}s.gen`;
-        if (!crossImports.has(src)) crossImports.set(src, new Set());
-        crossImports.get(src).add(ref);
-      }
-    }
-  }
-
-  // ── <category>s.gen.ts ────────────────────────────────────────────────────
-  const typeLines = ["// This file is auto-generated — do not edit manually", ""];
-
-  for (const [src, names] of crossImports) {
-    typeLines.push(`import type { ${[...names].sort().join(", ")} } from "${src}";`);
-  }
-  if (crossImports.size > 0) typeLines.push("");
+  // ── <category>s.gen.ts — Constraints only ────────────────────────────────
+  const constraintLines = ["// This file is auto-generated — do not edit manually", ""];
 
   for (const [name, schema] of subset) {
-    if (!schema.properties && (schema.oneOf || schema.anyOf)) {
-      const variants = (schema.oneOf ?? schema.anyOf)
-        .map((v) => v.$ref ? v.$ref.split("/").pop() : resolveType(v, allSchemas))
-        .join(" | ");
-      typeLines.push(`export type ${name} = ${variants};`);
-      typeLines.push("");
-      continue;
-    }
-
-    const props = schema.properties ?? {};
-    const required = new Set(schema.required ?? []);
-    // Fields with a default are always present — treat as required to match openapi-typescript
-    for (const [field, def] of Object.entries(props)) {
-      if (def.default !== undefined) required.add(field);
-    }
-
-    typeLines.push(`export interface ${name} {`);
-    for (const [field, def] of Object.entries(props)) {
-      typeLines.push(`  ${field}${required.has(field) ? "" : "?"}: ${resolveType(def, allSchemas)};`);
-    }
-    typeLines.push(`}`);
-    typeLines.push("");
-
+    if (!schema.properties) continue;
+    const props = schema.properties;
     const constraints = buildConstraints(props);
     if (Object.keys(constraints).length > 0) {
-      typeLines.push(`export const ${name}Constraints = {`);
+      constraintLines.push(`export const ${name}Constraints = {`);
       for (const [field, c] of Object.entries(constraints)) {
         const entries = Object.entries(c)
           .map(([k, v]) => `${k}: ${k === "pattern" ? `/${v}/` : JSON.stringify(v)}`)
           .join(", ");
-        typeLines.push(`  ${field}: { ${entries} },`);
+        constraintLines.push(`  ${field}: { ${entries} },`);
       }
-      typeLines.push(`} as const;`);
-      typeLines.push("");
+      constraintLines.push(`} as const;`);
+      constraintLines.push("");
     }
   }
 
   const typesFile = `${objectSchemaDir}/${category}s.gen.ts`;
-  writeFileSync(typesFile, typeLines.join("\n"));
+  writeFileSync(typesFile, constraintLines.join("\n"));
   console.log(`Generated ${typesFile}`);
 
   // ── <category>s.zod.gen.ts ────────────────────────────────────────────────
   const zodLines = ["// This file is auto-generated — do not edit manually", "", 'import { z } from "zod";', ""];
 
-  for (const [src, names] of crossImports) {
-    const zodNames = [...names].sort().map((n) => `z${n}`);
-    // src is e.g. "../../object-schema/requests.gen" — swap to "requests.zod.gen"
-    const zodSrc = src.replace(/\.gen$/, ".zod.gen");
-    zodLines.push(`import { ${zodNames.join(", ")} } from "${zodSrc}";`);
+  // Cross-category Zod imports — sibling *.zod.gen.ts files
+  const zodCrossImports = new Map(); // zodSrc -> Set of zNames
+  for (const [, schema] of subset) {
+    for (const ref of refsInSchema(schema)) {
+      if (SKIP.has(ref)) continue;
+      const refCategory = schemaCategory(ref);
+      if (refCategory !== category) {
+        const zodSrc = `./${refCategory}s.zod.gen`;
+        if (!zodCrossImports.has(zodSrc)) zodCrossImports.set(zodSrc, new Set());
+        zodCrossImports.get(zodSrc).add(`z${ref}`);
+      }
+    }
   }
-  if (crossImports.size > 0) zodLines.push("");
+  for (const [zodSrc, zNames] of zodCrossImports) {
+    zodLines.push(`import { ${[...zNames].sort().join(", ")} } from "${zodSrc}";`);
+  }
+  if (zodCrossImports.size > 0) zodLines.push("");
 
   for (const [name, schema] of subset) {
     if (!schema.properties && (schema.oneOf || schema.anyOf)) {
@@ -177,6 +148,72 @@ for (const category of CATEGORIES) {
   writeFileSync(zodFile, zodLines.join("\n"));
   console.log(`Generated ${zodFile}`);
 }
+
+// ─── rbac.gen.ts — permission union + operationId map ────────────────────────
+
+const allPermissions = new Set();
+const operationPermissionEntries = [];
+
+for (const [path, methods] of Object.entries(spec.paths ?? {})) {
+  for (const [, op] of Object.entries(methods)) {
+    const permission = op["x-flowform-rbac"]?.permission ?? null;
+    if (permission) allPermissions.add(permission);
+    if (op.operationId) {
+      operationPermissionEntries.push([op.operationId, permission]);
+    }
+  }
+}
+
+const rbacLines = ["// This file is auto-generated — do not edit manually", ""];
+
+if (allPermissions.size > 0) {
+  const permLiterals = [...allPermissions].sort().map((p) => `  | "${p}"`).join("\n");
+  rbacLines.push(`export type FlowFormPermission =\n${permLiterals};`);
+  rbacLines.push("");
+}
+
+rbacLines.push(`export const operationPermissions: Record<string, FlowFormPermission | null> = {`);
+for (const [opId, perm] of operationPermissionEntries.sort(([a], [b]) => a.localeCompare(b))) {
+  rbacLines.push(`  ${opId}: ${perm ? `"${perm}"` : "null"},`);
+}
+rbacLines.push(`};`);
+rbacLines.push("");
+
+// routePermissions: array of [method, regexSource, permission, paramNames]
+// Used by the middleware to match a live URL back to a required permission.
+// {param} segments become named capture groups so project_id / survey_id can be extracted.
+const routePermissionEntries = [];
+for (const [path, methods] of Object.entries(spec.paths ?? {})) {
+  for (const [method, op] of Object.entries(methods)) {
+    const permission = op["x-flowform-rbac"]?.permission ?? null;
+    if (!permission) continue;
+    // Convert /api/v1/projects/{project_id}/surveys/{survey_id} ->
+    //   regex: /api/v1/projects/(?<project_id>\d+)/surveys/(?<survey_id>\d+)
+    const paramNames = [];
+    const regexStr = path
+      .replace(/\{(\w+)\}/g, (_, name) => { paramNames.push(name); return `(?<${name}>[^/]+)`; })
+      .replace(/\//g, "\\/");
+    routePermissionEntries.push({ method: method.toUpperCase(), regexStr, permission, paramNames });
+  }
+}
+
+rbacLines.push(`export type RoutePermissionEntry = {`);
+rbacLines.push(`  method: string;`);
+rbacLines.push(`  pattern: RegExp;`);
+rbacLines.push(`  permission: FlowFormPermission;`);
+rbacLines.push(`  paramNames: string[];`);
+rbacLines.push(`};`);
+rbacLines.push("");
+rbacLines.push(`export const routePermissions: RoutePermissionEntry[] = [`);
+for (const { method, regexStr, permission, paramNames } of routePermissionEntries) {
+  rbacLines.push(`  { method: "${method}", pattern: /^${regexStr}$/, permission: "${permission}", paramNames: ${JSON.stringify(paramNames)} },`);
+}
+rbacLines.push(`];`);
+rbacLines.push("");
+
+const rbacFile = `${generatedRoot}/rbac.gen.ts`;
+writeFileSync(rbacFile, rbacLines.join("\n"));
+console.log(`Generated ${rbacFile}`);
 
 // ─── Endpoint layer — one folder per tag ─────────────────────────────────────
 

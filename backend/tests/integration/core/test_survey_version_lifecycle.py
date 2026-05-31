@@ -53,9 +53,8 @@ def test_archive_active_published_version_unpublishes_and_archives(
     db_session.flush()
 
     service = SurveyService()
-    archived = SurveyService.archive_version.__wrapped__(  # type: ignore
-        service,
-        db=db_session,
+    archived = service.archive_version(
+        db=db_session, # type: ignore[arg-type]
         project_id=project.id,
         survey_id=survey.id,
         version_number=1,
@@ -104,9 +103,8 @@ def test_publish_new_version_archives_previous_live_version_in_safe_order(
     db_session.flush()
 
     service = SurveyService()
-    published = SurveyService.publish_version.__wrapped__(  # type: ignore
-        service,
-        db=db_session,
+    published = service.publish_version(
+        db=db_session,  # type: ignore[arg-type]
         project_id=project.id,
         survey_id=survey.id,
         version_number=2,
@@ -151,9 +149,8 @@ def test_copy_version_to_draft_clones_content_and_creates_new_version_number(
     db_session.flush()
 
     service = SurveyService()
-    draft = SurveyService.copy_version_to_draft.__wrapped__(  # type: ignore
-        service,
-        db=db_session,
+    draft = service.copy_version_to_draft(
+        db=db_session,  # type: ignore[arg-type]
         project_id=project.id,
         survey_id=survey.id,
         version_number=2,
@@ -229,9 +226,8 @@ def test_unpublished_survey_rejects_submission_after_unpublish(
     core_db.flush()
 
     service = SurveyService()
-    SurveyService.archive_version.__wrapped__( # type: ignore
-        service,
-        db=core_db,
+    service.archive_version(
+        db=core_db,  # type: ignore[arg-type]
         project_id=project.id,
         survey_id=survey.id,
         version_number=1,

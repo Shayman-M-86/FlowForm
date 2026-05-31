@@ -8,7 +8,8 @@
         "dev:studio": "npm --workspace apps/studio-app run dev",
         "dev:site": "npm --workspace apps/public-site run dev",
         "build:studio": "npm --workspace apps/studio-app run build",
-        "build:site": "npm --workspace apps/public-site run build"
+        "build:site": "npm --workspace apps/public-site run build",
+        "generate:types": "node scripts/generate-types.mjs"
     },
     "devDependencies": {
         "@types/react": "^19.0.0",

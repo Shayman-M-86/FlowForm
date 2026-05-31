@@ -12,13 +12,11 @@ from app.domain.errors import (
     MemberSelfActionError,
     ProjectRoleNotFoundError,
 )
-from app.domain.permissions import PERMISSIONS
 from app.repositories import invitations_repo, members_repo, roles_repo, users_repo
 from app.schema.api.requests.projects import SendInvitationRequest, UpdateMemberRequest
 from app.schema.orm.core.invitation import ProjectInvitation
 from app.schema.orm.core.project import ProjectMembership, ProjectRole
 from app.schema.orm.core.user import User
-from app.services.access.access_service import require_project_permission
 
 
 class MembersService:
@@ -34,7 +32,6 @@ class MembersService:
             raise MemberOwnerProtectedError()
         return role
 
-    @require_project_permission(PERMISSIONS.project.manage_members)
     def list_project_members(
         self,
         db: Session,
@@ -44,7 +41,6 @@ class MembersService:
     ) -> list[ProjectMembership]:
         return members_repo.list_by_project(db, project_id)
 
-    @require_project_permission(PERMISSIONS.project.manage_members)
     def list_project_invitations(
         self,
         db: Session,
@@ -54,7 +50,6 @@ class MembersService:
     ) -> list[ProjectInvitation]:
         return invitations_repo.list_pending_by_project(db, project_id)
 
-    @require_project_permission(PERMISSIONS.project.manage_members)
     def send_invitation(
         self,
         db: Session,
@@ -86,7 +81,6 @@ class MembersService:
         commit_with_err_handle(db)
         return invitation
 
-    @require_project_permission(PERMISSIONS.project.manage_members)
     def revoke_invitation(
         self,
         db: Session,
@@ -149,7 +143,6 @@ class MembersService:
             raise MemberNotFoundError()
         return membership
 
-    @require_project_permission(PERMISSIONS.project.manage_members)
     def remove_member(self, db: Session, *, project_id: int, membership_id: int, actor: User) -> None:
         membership = self._get_member(db, membership_id=membership_id, project_id=project_id)
         if membership.user_id == actor.id:
@@ -159,7 +152,6 @@ class MembersService:
         members_repo.delete_membership(db, membership)
         commit_with_err_handle(db)
 
-    @require_project_permission(PERMISSIONS.project.manage_members)
     def update_member(
         self, db: Session, *, project_id: int, membership_id: int, data: UpdateMemberRequest, actor: User
     ) -> ProjectMembership:

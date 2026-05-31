@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import commit_with_err_handle
 from app.domain import public_link_rules, submission_rules, survey_rules
-from app.domain.permissions import PERMISSIONS
 from app.gateway.submission_gateway import SubmissionGateway
 from app.repositories import public_link_repo, response_stores_repo, submissions_repo, surveys_repo
 from app.schema.api.requests.submissions.create import LinkSubmissionRequest, SlugSubmissionRequest
@@ -14,7 +13,6 @@ from app.schema.api.requests.submissions.query import GetSubmissionRequest, List
 from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.survey_submission import SurveySubmission
 from app.schema.orm.core.user import User
-from app.services.access.access_service import require_project_permission
 from app.services.results import LinkedSubmissionResult
 
 _gateway = SubmissionGateway()
@@ -215,7 +213,6 @@ class SubmissionIntakeService:
 class SubmissionQueryService:
     """Project-facing submission review service."""
 
-    @require_project_permission(PERMISSIONS.submission.view)
     def list_submissions(
         self,
         db: Session,
@@ -234,7 +231,6 @@ class SubmissionQueryService:
             page_size=payload.page_size,
         )
 
-    @require_project_permission(PERMISSIONS.submission.view)
     def get_submission(
         self,
         core_db: Session,

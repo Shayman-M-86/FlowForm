@@ -3,13 +3,11 @@ from sqlalchemy.orm import Session
 from app.db.error_handling import commit_with_err_handle
 from app.domain import public_link_rules, survey_rules
 from app.domain.errors import LinkAuthAssignmentRequiredError, PrivateSurveyAssignedEmailRequiredError
-from app.domain.permissions import PERMISSIONS
 from app.repositories import public_link_repo, surveys_repo
 from app.schema.api.requests.public_links import CreatePublicLinkRequest, ResolveTokenRequest, UpdatePublicLinkRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
-from app.services.access.access_service import require_survey_permission
 from app.services.results import CreatePublicLinkResult, ResolveLinkResult
 
 
@@ -54,13 +52,11 @@ class SurveyLinkService:
             published_version=published_version_orm,
         )
 
-    @require_survey_permission(PERMISSIONS.survey.view)
     def list_links(self, db: Session, project_id: int, survey_id: int, actor: User) -> list[SurveyLink]:  # noqa: ARG002
         """List all links for a given survey."""
         self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
         return list(public_link_repo.list_links(db, survey_id=survey_id))
 
-    @require_survey_permission(PERMISSIONS.survey.edit)
     def create_link(
         self,
         db: Session,
@@ -88,7 +84,6 @@ class SurveyLinkService:
         commit_with_err_handle(db, contexts=[link])
         return CreatePublicLinkResult(link=link, token=token)
 
-    @require_survey_permission(PERMISSIONS.survey.edit)
     def update_link(
         self,
         db: Session,
@@ -128,7 +123,6 @@ class SurveyLinkService:
 
         return updated_link
 
-    @require_survey_permission(PERMISSIONS.survey.edit)
     def delete_link(self, db: Session, survey_id: int, project_id: int, link_id: int, actor: User) -> None:  # noqa: ARG002
         """Delete a survey link."""
         self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)

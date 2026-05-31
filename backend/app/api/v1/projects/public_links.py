@@ -1,9 +1,10 @@
-from flask import request
+from flask import g, request
 
 from app.api.utils.validation import parse
-from app.api.v1.projects import projects_bp, survey_link_service, users_service
+from app.api.v1.projects import projects_bp, survey_link_service
 from app.core.extensions import auth
 from app.db.context import get_core_db
+from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
 from app.schema.api.requests.public_links import CreatePublicLinkRequest, UpdatePublicLinkRequest
 from app.schema.api.responses.public_links import (
@@ -11,7 +12,7 @@ from app.schema.api.responses.public_links import (
     ListPublicLinksResponses,
     PublicLinkResponses,
 )
-from app.schema.orm.core.user import User
+from app.services.access.access_service import require_survey_permission
 
 _LBASE = "/<bint:project_id>/surveys/<bint:survey_id>/links"
 
@@ -19,10 +20,9 @@ _LBASE = "/<bint:project_id>/surveys/<bint:survey_id>/links"
 @openapi_route(summary="List survey links", response_model=ListPublicLinksResponses, tags=["Survey Links"])
 @projects_bp.route(_LBASE, methods=["GET"])
 @auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.view)
 def list_public_links(project_id: int, survey_id: int):
-    db = get_core_db()
-    user = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
-    links = survey_link_service.list_links(db=db, project_id=project_id, survey_id=survey_id, actor=user)
+    links = survey_link_service.list_links(db=get_core_db(), project_id=project_id, survey_id=survey_id, actor=g.actor)
     return ListPublicLinksResponses(links=[PublicLinkResponses.model_validate(link) for link in links]).model_dump(
         mode="json"
     ), 200
@@ -37,17 +37,15 @@ def list_public_links(project_id: int, survey_id: int):
 )
 @projects_bp.route(_LBASE, methods=["POST"])
 @auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.edit)
 def create_public_link(project_id: int, survey_id: int):
     payload = parse(CreatePublicLinkRequest, request)
-    db = get_core_db()
-    user = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
-
     result = survey_link_service.create_link(
-        db=db,
+        db=get_core_db(),
         survey_id=survey_id,
         project_id=project_id,
         data=payload,
-        actor=user,
+        actor=g.actor,
     )
     public_url = f"http://localhost:5173/quiz/resolve?token={result.token}"  # todo: construct URL based on config
     response = CreatePublicLinkResponses(
@@ -66,17 +64,16 @@ def create_public_link(project_id: int, survey_id: int):
 )
 @projects_bp.route(f"{_LBASE}/<bint:link_id>", methods=["PATCH"])
 @auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.edit)
 def update_public_link(project_id: int, survey_id: int, link_id: int):
     payload = parse(UpdatePublicLinkRequest, request)
-    db = get_core_db()
-    user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     updated_link = survey_link_service.update_link(
-        db=db,
+        db=get_core_db(),
         survey_id=survey_id,
         project_id=project_id,
         link_id=link_id,
         payload=payload,
-        actor=user,
+        actor=g.actor,
     )
     return PublicLinkResponses.model_validate(updated_link).model_dump(mode="json"), 200
 
@@ -84,8 +81,9 @@ def update_public_link(project_id: int, survey_id: int, link_id: int):
 @openapi_route(summary="Delete survey link", tags=["Survey Links"], status_code=204)
 @projects_bp.route(f"{_LBASE}/<bint:link_id>", methods=["DELETE"])
 @auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.edit)
 def delete_public_link(project_id: int, survey_id: int, link_id: int):
-    db = get_core_db()
-    user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
-    survey_link_service.delete_link(db=db, survey_id=survey_id, project_id=project_id, link_id=link_id, actor=user)
+    survey_link_service.delete_link(
+        db=get_core_db(), survey_id=survey_id, project_id=project_id, link_id=link_id, actor=g.actor
+    )
     return "", 204

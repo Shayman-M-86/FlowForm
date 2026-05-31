@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "openapi:export": "cd ../../../backend && uv run python -m app.openapi.export",
     "openapi:types": "openapi-typescript ../../../backend/openapi.yaml -o src/api/generated/schema.ts --root-types --root-types-no-schema-prefix",
-    "openapi:generate": "npm run openapi:export && npm run openapi:types",
+    "openapi:generate": "npm run openapi:export && npm run openapi:types && npm --prefix ../.. run generate:types",
     "openapi:check": "npm run openapi:export -- --check && openapi-typescript ../../../backend/openapi.yaml -o src/api/generated/schema.ts --root-types --root-types-no-schema-prefix --check",
     "preview": "vite preview",
     "routes": "tsr generate"

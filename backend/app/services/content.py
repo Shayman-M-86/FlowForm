@@ -6,7 +6,6 @@ from app.domain.errors import (
     NodeNotFoundError,
     ScoringRuleNotFoundError,
 )
-from app.domain.permissions import PERMISSIONS
 from app.repositories import content_repo
 from app.schema.api.requests.content import (
     CreateScoringRuleRequest,
@@ -20,7 +19,6 @@ from app.schema.api.requests.content.node import (
 from app.schema.orm.core.survey import SurveyVersion
 from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from app.schema.orm.core.user import User
-from app.services.access.access_service import require_survey_permission
 from app.services.surveys import SurveyService
 
 _survey_service = SurveyService()
@@ -34,7 +32,6 @@ class ContentService:
 
     # ── Nodes (questions + rules) ──────────────────────────────────────────────
 
-    @require_survey_permission(PERMISSIONS.survey.view)
     def list_nodes(
         self,
         db: Session,
@@ -46,7 +43,6 @@ class ContentService:
         version = self._get_version(db, project_id, survey_id, version_number)
         return content_repo.list_nodes(db, version.id)
 
-    @require_survey_permission(PERMISSIONS.survey.edit)
     def create_node(
         self,
         db: Session,
@@ -62,7 +58,6 @@ class ContentService:
         commit_with_err_handle(db, contexts=[node, version])
         return node
 
-    @require_survey_permission(PERMISSIONS.survey.view)
     def get_node(
         self,
         db: Session,
@@ -78,7 +73,6 @@ class ContentService:
             raise NodeNotFoundError()
         return node
 
-    @require_survey_permission(PERMISSIONS.survey.edit)
     def update_node(
         self,
         db: Session,
@@ -98,7 +92,6 @@ class ContentService:
         commit_with_err_handle(db, contexts=[updated, version])
         return updated
 
-    @require_survey_permission(PERMISSIONS.survey.edit)
     def delete_node(
         self,
         db: Session,
@@ -118,7 +111,6 @@ class ContentService:
 
     # ── Scoring rules ──────────────────────────────────────────────────────────
 
-    @require_survey_permission(PERMISSIONS.survey.view)
     def list_scoring_rules(
         self,
         db: Session,
@@ -130,7 +122,6 @@ class ContentService:
         version = self._get_version(db, project_id, survey_id, version_number)
         return content_repo.list_scoring_rules(db, version.id)
 
-    @require_survey_permission(PERMISSIONS.survey.edit)
     def create_scoring_rule(
         self,
         db: Session,
@@ -146,7 +137,6 @@ class ContentService:
         commit_with_err_handle(db, contexts=[rule, version])
         return rule
 
-    @require_survey_permission(PERMISSIONS.survey.view)
     def get_scoring_rule(
         self,
         db: Session,
@@ -162,7 +152,6 @@ class ContentService:
             raise ScoringRuleNotFoundError()
         return rule
 
-    @require_survey_permission(PERMISSIONS.survey.edit)
     def update_scoring_rule(
         self,
         db: Session,
@@ -182,7 +171,6 @@ class ContentService:
         commit_with_err_handle(db, contexts=[updated, version])
         return updated
 
-    @require_survey_permission(PERMISSIONS.survey.edit)
     def delete_scoring_rule(
         self,
         db: Session,

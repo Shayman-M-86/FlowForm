@@ -34,6 +34,18 @@ class RouteMetadata:
     description: str | None
     auth: AuthMode
     handler_qualname: str
+    rbac: Any | None = None
+
+
+def _find_rbac_requirement(view: Callable[..., Any]) -> Any | None:
+    """Walk the ``__wrapped__`` chain to find ``__flowform_rbac__`` metadata."""
+    current: Any = view
+    while current is not None:
+        requirement = getattr(current, "__flowform_rbac__", None)
+        if requirement is not None:
+            return requirement
+        current = getattr(current, "__wrapped__", None)
+    return None
 
 
 _REGISTRY: list[RouteMetadata] = []
@@ -77,6 +89,7 @@ def openapi_route(
                 description=description,
                 auth=auth_mode,
                 handler_qualname=f"{func.__module__}.{func.__qualname__}",
+                rbac=_find_rbac_requirement(func),
             )
         )
         return func

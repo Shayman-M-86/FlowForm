@@ -2,12 +2,10 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import SurveyRoleNotFoundError
-from app.domain.permissions import PERMISSIONS
 from app.repositories import permissions_repo, survey_roles_repo
 from app.schema.api.requests.surveys_access import CreateSurveyRoleRequest, UpdateSurveyRoleRequest
 from app.schema.orm.core.survey_access import SurveyRole
 from app.schema.orm.core.user import User
-from app.services.access.access_service import require_project_permission
 
 
 class SurveyRolesService:
@@ -24,7 +22,6 @@ class SurveyRolesService:
     ) -> list[SurveyRole]:
         return survey_roles_repo.list_by_project(db, project_id)
 
-    @require_project_permission(PERMISSIONS.project.manage_roles)
     def create_role(
         self, db: Session, *, project_id: int, data: CreateSurveyRoleRequest, actor: User  # noqa: ARG002
     ) -> SurveyRole:
@@ -39,7 +36,6 @@ class SurveyRolesService:
         commit_with_err_handle(db)
         return role
 
-    @require_project_permission(PERMISSIONS.project.manage_roles)
     def update_role(
         self,
         db: Session,
@@ -66,7 +62,6 @@ class SurveyRolesService:
         commit_with_err_handle(db)
         return role
 
-    @require_project_permission(PERMISSIONS.project.manage_roles)
     def delete_role(
         self, db: Session, *, project_id: int, role_id: int, actor: User  # noqa: ARG002
     ) -> None:

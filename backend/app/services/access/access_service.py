@@ -3,16 +3,16 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import wraps
-from typing import ParamSpec, TypeVar, cast
+from typing import Any, TypeVar
 
+from flask import g
 from sqlalchemy.orm import Session
 
 from app.domain import access_rules
 from app.repositories import access_repo, surveys_repo
 from app.schema.orm.core import ProjectMembership, SurveyMembershipRole, User
 
-P = ParamSpec("P")
-R = TypeVar("R")
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 @dataclass(slots=True)
@@ -182,107 +182,104 @@ class AccessService:
 access_service = AccessService()
 
 
-def require_project_permission(permission: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    """Require a project-scoped permission before running a service method.
+@dataclass(frozen=True, slots=True)
+class RbacRequirement:
+    """RBAC metadata attached to a protected view function."""
 
-    Use this on service methods that act at the project level, such as listing
-    project resources, creating resources inside a project, or updating project
-    settings.
+    permission: str
 
-    The decorated method must be called with these keyword arguments:
-        - db: SQLAlchemy session
-        - project_id: ID of the target project
-        - actor: authenticated User performing the action
+    def to_openapi(self) -> dict[str, object]:
+        return {"permission": self.permission}
 
-    Behavior:
-        - If ``actor.platform_admin`` is True, the wrapped method runs
-          immediately and no permission check is performed.
-        - Otherwise, project access is resolved from the actor's membership and
-          project role permissions.
-        - The wrapped method runs only if the required permission is present.
 
-    This decorator only checks authorization. It does not load project objects,
-    validate request payloads, or check whether specific resources exist.
+def _get_or_load_actor() -> User:
+    """Return the current actor, loading it from Auth0 sub if not cached."""
+    actor = getattr(g, "actor", None)
+    if actor is not None:
+        return actor
 
+    from app.core.extensions import auth
+    from app.db.context import get_core_db
+    from app.services.users import UserService
+
+    users_service = UserService()
+    actor = users_service.get_user_by_sub(db=get_core_db(), auth0_user_id=auth.get_current_user_sub())
+    g.actor = actor
+    return actor
+
+
+def require_project_permission(permission: str) -> Callable[[F], F]:
+    """Require a project-scoped permission on a Flask view function.
+
+    Reads ``project_id`` from the route kwargs, resolves the actor and project
+    access, enforces the permission, then caches both on ``flask.g``.
+
+    Platform admins bypass the project membership check.
     """
+    requirement = RbacRequirement(permission=permission)
 
-    def decorator(func: Callable[P, R]) -> Callable[P, R]:
-        @wraps(func)
-        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            
-            actor = cast("User", kwargs.get("actor"))
-            db = cast(Session, kwargs.get("db"))
-            project_id = cast(int, kwargs.get("project_id"))
-            
+    def decorator(view: F) -> F:
+        @wraps(view)
+        def wrapped(*args: Any, **kwargs: Any) -> Any:
+            from app.db.context import get_core_db
+
+            actor = _get_or_load_actor()
+
             if actor.platform_admin:
-                return func(*args, **kwargs)
-            
-            if db is None and len(args) >= 2:
-                db: Session = args[1]
-                
+                g.project_access = None
+                return view(*args, **kwargs)
+
+            project_id: int = kwargs["project_id"]
             access = access_service.get_project_access(
-                db=db,
+                db=get_core_db(),
                 project_id=project_id,
                 user_id=actor.id,
             )
             access_rules.ensure_project_permission(access, permission)
+            g.project_access = access
+            return view(*args, **kwargs)
 
-            return func(*args, **kwargs)
-
-        return wrapper
+        wrapped.__flowform_rbac__ = requirement  # type: ignore[attr-defined]
+        return wrapped  # type: ignore[return-value]
 
     return decorator
 
 
-def require_survey_permission(permission: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    """Require a survey-scoped permission before running a service method.
+def require_survey_permission(permission: str) -> Callable[[F], F]:
+    """Require a survey-scoped permission on a Flask view function.
 
-    Use this on service methods that act on one specific survey, such as
-    viewing, editing, deleting, publishing, or archiving a survey.
+    Reads ``project_id`` and ``survey_id`` from the route kwargs, resolves the
+    actor and survey access, enforces the permission, then caches both on
+    ``flask.g``.
 
-    The decorated method must be called with these keyword arguments:
-        - db: SQLAlchemy session
-        - project_id: ID of the project that owns the survey
-        - survey_id: ID of the target survey
-        - actor: authenticated User performing the action
-
-    Behavior:
-        - If ``actor.platform_admin`` is True, the wrapped method runs
-          immediately and no permission check is performed.
-        - Otherwise, survey access is resolved from the actor's project
-          membership plus any survey-specific role assigned to that membership.
-        - The wrapped method runs only if the required permission is present in
-          the effective survey permission set.
-
-    This decorator only checks authorization. It does not load and return the
-    survey object for you. If the method needs the ORM survey instance, it
-    should still fetch it itself.
-
+    Platform admins bypass the membership check.
     """
+    requirement = RbacRequirement(permission=permission)
 
-    def decorator(func: Callable[P, R]) -> Callable[P, R]:
-        @wraps(func)
-        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            
-            actor = cast("User", kwargs["actor"])
-            db = cast(Session, kwargs["db"])
-            project_id = cast(int, kwargs["project_id"])
-            survey_id = cast(int, kwargs["survey_id"])
-            
+    def decorator(view: F) -> F:
+        @wraps(view)
+        def wrapped(*args: Any, **kwargs: Any) -> Any:
+            from app.db.context import get_core_db
+
+            actor = _get_or_load_actor()
+
             if actor.platform_admin:
-                return func(*args, **kwargs)
+                g.survey_access = None
+                return view(*args, **kwargs)
 
-            
+            project_id: int = kwargs["project_id"]
+            survey_id: int = kwargs["survey_id"]
             access = access_service.get_survey_access(
-                db=db,
+                db=get_core_db(),
                 project_id=project_id,
                 survey_id=survey_id,
                 user_id=actor.id,
             )
             access_rules.ensure_survey_permission(access, permission)
+            g.survey_access = access
+            return view(*args, **kwargs)
 
-            return func(*args, **kwargs)
-
-        return wrapper
+        wrapped.__flowform_rbac__ = requirement  # type: ignore[attr-defined]
+        return wrapped  # type: ignore[return-value]
 
     return decorator

@@ -1,13 +1,14 @@
-from flask import request
+from flask import g, request
 
 from app.api.utils.validation import parse
-from app.api.v1.projects import projects_bp, users_service
+from app.api.v1.projects import projects_bp
 from app.core.extensions import auth
 from app.db.context import get_core_db
+from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
 from app.schema.api.requests.surveys_access import AssignSurveyMemberRoleRequest, UpdateSurveyMemberRoleRequest
 from app.schema.api.responses.surveys_access import SurveyMemberRoleResponses
-from app.schema.orm.core.user import User
+from app.services.access.access_service import require_project_permission
 from app.services.survey_members import survey_members_service
 
 
@@ -18,11 +19,10 @@ from app.services.survey_members import survey_members_service
 )
 @projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/members", methods=["GET"])
 @auth.require_auth()
+@require_project_permission(PERMISSIONS.project.manage_members)
 def list_survey_members(project_id: int, survey_id: int):
-    db = get_core_db()
-    actor: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     assignments = survey_members_service.list_survey_members(
-        db=db, project_id=project_id, survey_id=survey_id, actor=actor
+        db=get_core_db(), project_id=project_id, survey_id=survey_id, actor=g.actor
     )
     return [SurveyMemberRoleResponses.from_assignment(a).model_dump(mode="json") for a in assignments], 200
 
@@ -36,12 +36,11 @@ def list_survey_members(project_id: int, survey_id: int):
 )
 @projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/members", methods=["POST"])
 @auth.require_auth()
+@require_project_permission(PERMISSIONS.project.manage_members)
 def assign_survey_member_role(project_id: int, survey_id: int):
     payload = parse(AssignSurveyMemberRoleRequest, request)
-    db = get_core_db()
-    actor: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     assignment = survey_members_service.assign_member_role(
-        db=db, project_id=project_id, survey_id=survey_id, data=payload, actor=actor
+        db=get_core_db(), project_id=project_id, survey_id=survey_id, data=payload, actor=g.actor
     )
     return SurveyMemberRoleResponses.from_assignment(assignment).model_dump(mode="json"), 201
 
@@ -57,17 +56,16 @@ def assign_survey_member_role(project_id: int, survey_id: int):
     methods=["PATCH"],
 )
 @auth.require_auth()
+@require_project_permission(PERMISSIONS.project.manage_members)
 def update_survey_member_role(project_id: int, survey_id: int, membership_id: int):
     payload = parse(UpdateSurveyMemberRoleRequest, request)
-    db = get_core_db()
-    actor: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     assignment = survey_members_service.update_member_role(
-        db=db,
+        db=get_core_db(),
         project_id=project_id,
         survey_id=survey_id,
         membership_id=membership_id,
         data=payload,
-        actor=actor,
+        actor=g.actor,
     )
     return SurveyMemberRoleResponses.from_assignment(assignment).model_dump(mode="json"), 200
 
@@ -78,10 +76,9 @@ def update_survey_member_role(project_id: int, survey_id: int, membership_id: in
     methods=["DELETE"],
 )
 @auth.require_auth()
+@require_project_permission(PERMISSIONS.project.manage_members)
 def remove_survey_member_role(project_id: int, survey_id: int, membership_id: int):
-    db = get_core_db()
-    actor: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     survey_members_service.remove_member_role(
-        db=db, project_id=project_id, survey_id=survey_id, membership_id=membership_id, actor=actor
+        db=get_core_db(), project_id=project_id, survey_id=survey_id, membership_id=membership_id, actor=g.actor
     )
     return {}, 204

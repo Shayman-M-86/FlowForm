@@ -468,6 +468,8 @@ paths:
       description: List survey content nodes
       tags:
       - Survey Content
+      x-flowform-rbac:
+        permission: survey:view
       parameters:
       - name: project_id
         in: path
@@ -521,6 +523,8 @@ paths:
       description: Create survey content node
       tags:
       - Survey Content
+      x-flowform-rbac:
+        permission: survey:edit
       parameters:
       - name: project_id
         in: path
@@ -579,6 +583,8 @@ paths:
       description: Get survey content node
       tags:
       - Survey Content
+      x-flowform-rbac:
+        permission: survey:view
       parameters:
       - name: project_id
         in: path
@@ -637,6 +643,8 @@ paths:
       description: Update survey content node
       tags:
       - Survey Content
+      x-flowform-rbac:
+        permission: survey:edit
       parameters:
       - name: project_id
         in: path
@@ -701,6 +709,8 @@ paths:
       description: Delete survey content node
       tags:
       - Survey Content
+      x-flowform-rbac:
+        permission: survey:edit
       parameters:
       - name: project_id
         in: path
@@ -756,6 +766,8 @@ paths:
       description: List scoring rules
       tags:
       - Scoring Rules
+      x-flowform-rbac:
+        permission: survey:view
       parameters:
       - name: project_id
         in: path
@@ -809,6 +821,8 @@ paths:
       description: Create scoring rule
       tags:
       - Scoring Rules
+      x-flowform-rbac:
+        permission: survey:edit
       parameters:
       - name: project_id
         in: path
@@ -867,6 +881,8 @@ paths:
       description: Update scoring rule
       tags:
       - Scoring Rules
+      x-flowform-rbac:
+        permission: survey:edit
       parameters:
       - name: project_id
         in: path
@@ -931,6 +947,8 @@ paths:
       description: Delete scoring rule
       tags:
       - Scoring Rules
+      x-flowform-rbac:
+        permission: survey:edit
       parameters:
       - name: project_id
         in: path
@@ -1090,6 +1108,8 @@ paths:
       description: Update project
       tags:
       - Projects
+      x-flowform-rbac:
+        permission: project:edit
       parameters:
       - name: project_id
         in: path
@@ -1133,6 +1153,8 @@ paths:
       description: Delete project
       tags:
       - Projects
+      x-flowform-rbac:
+        permission: project:delete
       parameters:
       - name: project_id
         in: path
@@ -1205,6 +1227,8 @@ paths:
       description: List project members
       tags:
       - Members
+      x-flowform-rbac:
+        permission: project:manage_members
       parameters:
       - name: project_id
         in: path
@@ -1245,6 +1269,8 @@ paths:
       description: List project invitations
       tags:
       - Members
+      x-flowform-rbac:
+        permission: project:manage_members
       parameters:
       - name: project_id
         in: path
@@ -1284,6 +1310,8 @@ paths:
       description: Invite member
       tags:
       - Members
+      x-flowform-rbac:
+        permission: project:manage_members
       parameters:
       - name: project_id
         in: path
@@ -1328,6 +1356,8 @@ paths:
       description: Revoke invitation
       tags:
       - Members
+      x-flowform-rbac:
+        permission: project:manage_members
       parameters:
       - name: project_id
         in: path
@@ -1369,6 +1399,8 @@ paths:
       description: Update member
       tags:
       - Members
+      x-flowform-rbac:
+        permission: project:manage_members
       parameters:
       - name: project_id
         in: path
@@ -1419,6 +1451,8 @@ paths:
       description: Remove member
       tags:
       - Members
+      x-flowform-rbac:
+        permission: project:manage_members
       parameters:
       - name: project_id
         in: path
@@ -1460,6 +1494,8 @@ paths:
       description: List survey links
       tags:
       - Survey Links
+      x-flowform-rbac:
+        permission: survey:view
       parameters:
       - name: project_id
         in: path
@@ -1504,6 +1540,8 @@ paths:
       description: Create survey link
       tags:
       - Survey Links
+      x-flowform-rbac:
+        permission: survey:edit
       parameters:
       - name: project_id
         in: path
@@ -1555,6 +1593,8 @@ paths:
       description: Update survey link
       tags:
       - Survey Links
+      x-flowform-rbac:
+        permission: survey:edit
       parameters:
       - name: project_id
         in: path
@@ -1612,6 +1652,8 @@ paths:
       description: Delete survey link
       tags:
       - Survey Links
+      x-flowform-rbac:
+        permission: survey:edit
       parameters:
       - name: project_id
         in: path
@@ -1660,6 +1702,8 @@ paths:
       description: List project roles
       tags:
       - Roles
+      x-flowform-rbac:
+        permission: project:manage_roles
       parameters:
       - name: project_id
         in: path
@@ -1699,6 +1743,8 @@ paths:
       description: Create project role
       tags:
       - Roles
+      x-flowform-rbac:
+        permission: project:manage_roles
       parameters:
       - name: project_id
         in: path
@@ -1743,6 +1789,8 @@ paths:
       description: Update project role
       tags:
       - Roles
+      x-flowform-rbac:
+        permission: project:manage_roles
       parameters:
       - name: project_id
         in: path
@@ -1793,6 +1841,8 @@ paths:
       description: Delete project role
       tags:
       - Roles
+      x-flowform-rbac:
+        permission: project:manage_roles
       parameters:
       - name: project_id
         in: path
@@ -1834,6 +1884,8 @@ paths:
       description: List submissions
       tags:
       - Submissions
+      x-flowform-rbac:
+        permission: submission:view
       parameters:
       - name: project_id
         in: path
@@ -1924,6 +1976,8 @@ paths:
       description: Get submission
       tags:
       - Submissions
+      x-flowform-rbac:
+        permission: submission:view
       parameters:
       - name: project_id
         in: path
@@ -1983,6 +2037,8 @@ paths:
       description: List survey member role assignments
       tags:
       - Survey Members
+      x-flowform-rbac:
+        permission: project:manage_members
       parameters:
       - name: project_id
         in: path
@@ -2029,6 +2085,8 @@ paths:
       description: Assign survey role to member
       tags:
       - Survey Members
+      x-flowform-rbac:
+        permission: project:manage_members
       parameters:
       - name: project_id
         in: path
@@ -2080,6 +2138,8 @@ paths:
       description: Update survey member role assignment
       tags:
       - Survey Members
+      x-flowform-rbac:
+        permission: project:manage_members
       parameters:
       - name: project_id
         in: path
@@ -2137,6 +2197,8 @@ paths:
       description: Remove survey member role assignment
       tags:
       - Survey Members
+      x-flowform-rbac:
+        permission: project:manage_members
       parameters:
       - name: project_id
         in: path
@@ -2185,6 +2247,8 @@ paths:
       description: List survey roles
       tags:
       - Survey Roles
+      x-flowform-rbac:
+        permission: project:manage_roles
       parameters:
       - name: project_id
         in: path
@@ -2224,6 +2288,8 @@ paths:
       description: Create survey role
       tags:
       - Survey Roles
+      x-flowform-rbac:
+        permission: project:manage_roles
       parameters:
       - name: project_id
         in: path
@@ -2268,6 +2334,8 @@ paths:
       description: Update survey role
       tags:
       - Survey Roles
+      x-flowform-rbac:
+        permission: project:manage_roles
       parameters:
       - name: project_id
         in: path
@@ -2318,6 +2386,8 @@ paths:
       description: Delete survey role
       tags:
       - Survey Roles
+      x-flowform-rbac:
+        permission: project:manage_roles
       parameters:
       - name: project_id
         in: path
@@ -2359,6 +2429,8 @@ paths:
       description: List surveys
       tags:
       - Surveys
+      x-flowform-rbac:
+        permission: survey:view
       parameters:
       - name: project_id
         in: path
@@ -2398,6 +2470,8 @@ paths:
       description: Create survey
       tags:
       - Surveys
+      x-flowform-rbac:
+        permission: survey:create
       parameters:
       - name: project_id
         in: path
@@ -2442,6 +2516,8 @@ paths:
       description: Get survey
       tags:
       - Surveys
+      x-flowform-rbac:
+        permission: survey:view
       parameters:
       - name: project_id
         in: path
@@ -2486,6 +2562,8 @@ paths:
       description: Update survey
       tags:
       - Surveys
+      x-flowform-rbac:
+        permission: survey:edit
       parameters:
       - name: project_id
         in: path
@@ -2536,6 +2614,8 @@ paths:
       description: Delete survey
       tags:
       - Surveys
+      x-flowform-rbac:
+        permission: survey:delete
       parameters:
       - name: project_id
         in: path
@@ -2570,6 +2650,51 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/v1/projects/{project_id}/surveys/{survey_id}/my-permissions:
+    get:
+      operationId: getMySurveyPermissions
+      summary: Get my survey permissions
+      description: Get my survey permissions
+      tags:
+      - Surveys
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MySurveyPermissionsResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/v1/projects/{project_id}/surveys/{survey_id}/versions:
     get:
       operationId: listVersions
@@ -2577,6 +2702,8 @@ paths:
       description: List survey versions
       tags:
       - Survey Versions
+      x-flowform-rbac:
+        permission: survey:view
       parameters:
       - name: project_id
         in: path
@@ -2623,6 +2750,8 @@ paths:
       description: Create survey version
       tags:
       - Survey Versions
+      x-flowform-rbac:
+        permission: survey:create
       parameters:
       - name: project_id
         in: path
@@ -2668,6 +2797,8 @@ paths:
       description: Copy survey version to draft
       tags:
       - Survey Versions
+      x-flowform-rbac:
+        permission: survey:create
       parameters:
       - name: project_id
         in: path
@@ -2720,6 +2851,8 @@ paths:
       description: Get survey version
       tags:
       - Survey Versions
+      x-flowform-rbac:
+        permission: survey:view
       parameters:
       - name: project_id
         in: path
@@ -2772,6 +2905,8 @@ paths:
       description: Publish survey version
       tags:
       - Survey Versions
+      x-flowform-rbac:
+        permission: survey:publish
       parameters:
       - name: project_id
         in: path
@@ -2824,6 +2959,8 @@ paths:
       description: Archive survey version
       tags:
       - Survey Versions
+      x-flowform-rbac:
+        permission: survey:archive
       parameters:
       - name: project_id
         in: path
@@ -5672,6 +5809,27 @@ components:
           default: null
           title: Public Slug
       title: UpdateSurveyRequest
+      type: object
+    MySurveyPermissionsResponses:
+      description: API response shape for the current user's effective permissions on a survey.
+      properties:
+        permissions:
+          items:
+            enum:
+            - survey:view
+            - survey:create
+            - survey:edit
+            - survey:delete
+            - survey:publish
+            - survey:archive
+            - submission:view
+            type: string
+            maxLength: 15
+          title: Permissions
+          type: array
+      required:
+      - permissions
+      title: MySurveyPermissionsResponses
       type: object
     SurveyVersionResponses:
       description: API response shape for a survey version.

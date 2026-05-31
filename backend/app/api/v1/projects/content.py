@@ -1,9 +1,10 @@
-from flask import request
+from flask import g, request
 
 from app.api.utils.validation import parse
-from app.api.v1.projects import content_svc, projects_bp, users_service
+from app.api.v1.projects import content_svc, projects_bp
 from app.core.extensions import auth
 from app.db.context import get_core_db
+from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
 from app.schema.api.requests.content import (
     CreateNodeRequest,
@@ -12,7 +13,7 @@ from app.schema.api.requests.content import (
     UpdateScoringRuleRequest,
 )
 from app.schema.api.responses.content import NodeResponses, ScoringRuleResponses
-from app.schema.orm.core.user import User
+from app.services.access.access_service import require_survey_permission
 
 _NBASE = "/<bint:project_id>/surveys/<bint:survey_id>/versions/<bint:version_number>/nodes"
 _SBASE = "/<bint:project_id>/surveys/<bint:survey_id>/versions/<bint:version_number>/scoring-rules"
@@ -24,11 +25,10 @@ _SBASE = "/<bint:project_id>/surveys/<bint:survey_id>/versions/<bint:version_num
 @openapi_route(summary="List survey content nodes", response_model=list[NodeResponses], tags=["Survey Content"])
 @projects_bp.route(_NBASE, methods=["GET"])
 @auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.view)
 def list_nodes(project_id: int, survey_id: int, version_number: int):
-    db = get_core_db()
-    user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     nodes = content_svc.list_nodes(
-        db=db, project_id=project_id, survey_id=survey_id, version_number=version_number, actor=user
+        db=get_core_db(), project_id=project_id, survey_id=survey_id, version_number=version_number, actor=g.actor
     )
     return [NodeResponses.model_validate(n).model_dump(mode="json") for n in nodes], 200
 
@@ -42,12 +42,16 @@ def list_nodes(project_id: int, survey_id: int, version_number: int):
 )
 @projects_bp.route(_NBASE, methods=["POST"])
 @auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.edit)
 def create_node(project_id: int, survey_id: int, version_number: int):
     payload = parse(CreateNodeRequest, request)
-    db = get_core_db()
-    user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     node = content_svc.create_node(
-        db=db, project_id=project_id, survey_id=survey_id, version_number=version_number, data=payload, actor=user
+        db=get_core_db(),
+        project_id=project_id,
+        survey_id=survey_id,
+        version_number=version_number,
+        data=payload,
+        actor=g.actor,
     )
     return NodeResponses.model_validate(node).model_dump(mode="json"), 201
 
@@ -55,16 +59,15 @@ def create_node(project_id: int, survey_id: int, version_number: int):
 @openapi_route(summary="Get survey content node", response_model=NodeResponses, tags=["Survey Content"])
 @projects_bp.route(f"{_NBASE}/<bint:node_id>", methods=["GET"])
 @auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.view)
 def get_node(project_id: int, survey_id: int, version_number: int, node_id: int):
-    db = get_core_db()
-    user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     node = content_svc.get_node(
-        db=db,
+        db=get_core_db(),
         project_id=project_id,
         survey_id=survey_id,
         version_number=version_number,
         node_id=node_id,
-        actor=user,
+        actor=g.actor,
     )
     return NodeResponses.model_validate(node).model_dump(mode="json"), 200
 
@@ -77,18 +80,17 @@ def get_node(project_id: int, survey_id: int, version_number: int, node_id: int)
 )
 @projects_bp.route(f"{_NBASE}/<bint:node_id>", methods=["PATCH"])
 @auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.edit)
 def update_node(project_id: int, survey_id: int, version_number: int, node_id: int):
     payload = parse(UpdateNodeRequest, request)
-    db = get_core_db()
-    user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     node = content_svc.update_node(
-        db=db,
+        db=get_core_db(),
         project_id=project_id,
         survey_id=survey_id,
         version_number=version_number,
         node_id=node_id,
         data=payload,
-        actor=user,
+        actor=g.actor,
     )
     return NodeResponses.model_validate(node).model_dump(mode="json"), 200
 
@@ -96,16 +98,15 @@ def update_node(project_id: int, survey_id: int, version_number: int, node_id: i
 @openapi_route(summary="Delete survey content node", tags=["Survey Content"], status_code=204)
 @projects_bp.route(f"{_NBASE}/<bint:node_id>", methods=["DELETE"])
 @auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.edit)
 def delete_node(project_id: int, survey_id: int, version_number: int, node_id: int):
-    db = get_core_db()
-    user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     content_svc.delete_node(
-        db=db,
+        db=get_core_db(),
         project_id=project_id,
         survey_id=survey_id,
         version_number=version_number,
         node_id=node_id,
-        actor=user,
+        actor=g.actor,
     )
     return "", 204
 
@@ -116,11 +117,10 @@ def delete_node(project_id: int, survey_id: int, version_number: int, node_id: i
 @openapi_route(summary="List scoring rules", response_model=list[ScoringRuleResponses], tags=["Scoring Rules"])
 @projects_bp.route(_SBASE, methods=["GET"])
 @auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.view)
 def list_scoring_rules(project_id: int, survey_id: int, version_number: int):
-    db = get_core_db()
-    user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     rules = content_svc.list_scoring_rules(
-        db=db, project_id=project_id, survey_id=survey_id, version_number=version_number, actor=user
+        db=get_core_db(), project_id=project_id, survey_id=survey_id, version_number=version_number, actor=g.actor
     )
     return [ScoringRuleResponses.model_validate(r).model_dump(mode="json") for r in rules], 200
 
@@ -134,12 +134,16 @@ def list_scoring_rules(project_id: int, survey_id: int, version_number: int):
 )
 @projects_bp.route(_SBASE, methods=["POST"])
 @auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.edit)
 def create_scoring_rule(project_id: int, survey_id: int, version_number: int):
     payload = parse(CreateScoringRuleRequest, request)
-    db = get_core_db()
-    user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     rule = content_svc.create_scoring_rule(
-        db=db, project_id=project_id, survey_id=survey_id, version_number=version_number, data=payload, actor=user
+        db=get_core_db(),
+        project_id=project_id,
+        survey_id=survey_id,
+        version_number=version_number,
+        data=payload,
+        actor=g.actor,
     )
     return ScoringRuleResponses.model_validate(rule).model_dump(mode="json"), 201
 
@@ -152,18 +156,17 @@ def create_scoring_rule(project_id: int, survey_id: int, version_number: int):
 )
 @projects_bp.route(f"{_SBASE}/<bint:scoring_rule_id>", methods=["PATCH"])
 @auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.edit)
 def update_scoring_rule(project_id: int, survey_id: int, version_number: int, scoring_rule_id: int):
     payload = parse(UpdateScoringRuleRequest, request)
-    db = get_core_db()
-    user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     rule = content_svc.update_scoring_rule(
-        db=db,
+        db=get_core_db(),
         project_id=project_id,
         survey_id=survey_id,
         version_number=version_number,
         scoring_rule_id=scoring_rule_id,
         data=payload,
-        actor=user,
+        actor=g.actor,
     )
     return ScoringRuleResponses.model_validate(rule).model_dump(mode="json"), 200
 
@@ -171,15 +174,14 @@ def update_scoring_rule(project_id: int, survey_id: int, version_number: int, sc
 @openapi_route(summary="Delete scoring rule", tags=["Scoring Rules"], status_code=204)
 @projects_bp.route(f"{_SBASE}/<bint:scoring_rule_id>", methods=["DELETE"])
 @auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.edit)
 def delete_scoring_rule(project_id: int, survey_id: int, version_number: int, scoring_rule_id: int):
-    db = get_core_db()
-    user: User = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     content_svc.delete_scoring_rule(
-        db=db,
+        db=get_core_db(),
         project_id=project_id,
         survey_id=survey_id,
         version_number=version_number,
         scoring_rule_id=scoring_rule_id,
-        actor=user,
+        actor=g.actor,
     )
     return "", 204

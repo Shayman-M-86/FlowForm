@@ -50,9 +50,8 @@ def test_create_survey_backfills_missing_project_response_store(
     db_session.flush()
 
     service = SurveyService()
-    survey = SurveyService.create_survey.__wrapped__(  # type: ignore
-        service,
-        db=db_session,
+    survey = service.create_survey(
+        db=db_session,  # type: ignore[arg-type]
         project_id=project.id,
         data=CreateSurveyRequest(title="Survey Without Store"),
         actor=user,
@@ -88,9 +87,8 @@ def test_publish_version_backfills_missing_survey_response_store(
     db_session.flush()
 
     service = SurveyService()
-    published = SurveyService.publish_version.__wrapped__(  # type: ignore
-        service,
-        db=db_session,
+    published = service.publish_version(
+        db=db_session, # type: ignore[arg-type]
         project_id=project.id,
         survey_id=survey.id,
         version_number=1,

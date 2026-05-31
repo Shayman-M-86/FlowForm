@@ -2,12 +2,10 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import commit_with_err_handle
 from app.domain import survey_rules, version_rules
-from app.domain.permissions import PERMISSIONS
 from app.repositories import content_repo, response_stores_repo, surveys_repo
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.user import User
-from app.services.access.access_service import require_project_permission, require_survey_permission
 
 
 class SurveyService:
@@ -45,11 +43,9 @@ class SurveyService:
         )
 
     # ── Surveys ───────────────────────────────────────────────────────────────
-    @require_project_permission(PERMISSIONS.survey.view)
     def list_surveys(self, db: Session, *, project_id: int, actor: User) -> list[Survey]:  # noqa: ARG002
         return surveys_repo.list_surveys(db, project_id)
 
-    @require_project_permission(PERMISSIONS.survey.create)
     def create_survey(self, db: Session, *, project_id: int, data: CreateSurveyRequest, actor: User) -> Survey:
         default_response_store_id = self._ensure_project_default_response_store_id(
             db,
@@ -66,7 +62,6 @@ class SurveyService:
         commit_with_err_handle(db, contexts=[survey])
         return survey
 
-    @require_survey_permission(PERMISSIONS.survey.view)
     def get_survey(self, db: Session, *, project_id: int, survey_id: int, actor: User) -> Survey:  # noqa: ARG002
         return survey_rules.ensure_not_none(
             survey=surveys_repo.get_survey(db, project_id, survey_id),
@@ -81,7 +76,6 @@ class SurveyService:
             project_id=project_id,
         )
 
-    @require_survey_permission(PERMISSIONS.survey.edit)
     def update_survey(
         self,
         db: Session,
@@ -108,7 +102,6 @@ class SurveyService:
         commit_with_err_handle(db, contexts=[updated])
         return updated
 
-    @require_survey_permission(PERMISSIONS.survey.delete)
     def delete_survey(self, db: Session, project_id: int, survey_id: int, actor: User) -> None:  # noqa: ARG002
         survey = self._get_survey(db, project_id, survey_id)
         survey_rules.ensure_can_delete_survey(survey)
@@ -125,12 +118,10 @@ class SurveyService:
         )
         return version
 
-    @require_survey_permission(PERMISSIONS.survey.view)
     def list_versions(self, db: Session, project_id: int, survey_id: int, actor: User) -> list[SurveyVersion]:  # noqa: ARG002
         self._get_survey(db, project_id, survey_id)
         return surveys_repo.list_versions(db, survey_id)
 
-    @require_survey_permission(PERMISSIONS.survey.view)
     def get_version(
         self,
         db: Session,
@@ -142,14 +133,12 @@ class SurveyService:
         self._get_survey(db, project_id, survey_id)
         return self._get_version(db, project_id, survey_id, version_number)
 
-    @require_survey_permission(PERMISSIONS.survey.create)
     def create_version(self, db: Session, project_id: int, survey_id: int, actor: User) -> SurveyVersion:  # noqa: ARG002
         self._get_survey(db, project_id, survey_id)
         version = surveys_repo.create_version(db, survey_id)
         commit_with_err_handle(db, contexts=[version])
         return version
 
-    @require_survey_permission(PERMISSIONS.survey.create)
     def copy_version_to_draft(
         self,
         db: Session,
@@ -169,7 +158,6 @@ class SurveyService:
         commit_with_err_handle(db, contexts=[draft])
         return draft
 
-    @require_survey_permission(PERMISSIONS.survey.publish)
     def publish_version(
         self,
         db: Session,
@@ -208,7 +196,6 @@ class SurveyService:
         commit_with_err_handle(db, contexts=[result, survey, version])
         return result
 
-    @require_survey_permission(PERMISSIONS.survey.archive)
     def archive_version(
         self,
         db: Session,

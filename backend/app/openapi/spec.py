@@ -452,6 +452,8 @@ def _build_operation(
         "description": description,
         "tags": list(route.tags) if route.tags else [],
     }
+    if route.rbac is not None:
+        operation["x-flowform-rbac"] = route.rbac.to_openapi()
     if route.auth == "none":
         operation["security"] = []
     elif route.auth == "optional":
@@ -582,6 +584,7 @@ def build_spec(app: Flask) -> dict[str, Any]:
                 description=route.description,
                 auth=route.auth,
                 handler_qualname=route.handler_qualname,
+                rbac=route.rbac,
             )
             openapi_path, path_params = _normalize_openapi_path(path)
             operation = _build_operation(

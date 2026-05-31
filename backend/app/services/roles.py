@@ -2,12 +2,10 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import ProjectRoleNotFoundError, ProjectRoleSystemProtectedError
-from app.domain.permissions import PERMISSIONS
 from app.repositories import permissions_repo, roles_repo
 from app.schema.api.requests.projects import CreateProjectRoleRequest, UpdateProjectRoleRequest
 from app.schema.orm.core.project import ProjectRole
 from app.schema.orm.core.user import User
-from app.services.access.access_service import require_project_permission
 
 
 class RolesService:
@@ -25,7 +23,6 @@ class RolesService:
     ) -> list[ProjectRole]:
         return roles_repo.list_by_project(db, project_id)
 
-    @require_project_permission(PERMISSIONS.project.manage_roles)
     def create_role(
         self, db: Session, *, project_id: int, data: CreateProjectRoleRequest, actor: User  # noqa: ARG002
     ) -> ProjectRole:
@@ -40,7 +37,6 @@ class RolesService:
         commit_with_err_handle(db)
         return role
 
-    @require_project_permission(PERMISSIONS.project.manage_roles)
     def update_role(
         self, db: Session, *, project_id: int, role_id: int, data: UpdateProjectRoleRequest, actor: User  # noqa: ARG002
     ) -> ProjectRole:
@@ -63,7 +59,6 @@ class RolesService:
         commit_with_err_handle(db)
         return role
 
-    @require_project_permission(PERMISSIONS.project.manage_roles)
     def delete_role(
         self, db: Session, *, project_id: int, role_id: int, actor: User  # noqa: ARG002
     ) -> None:

@@ -812,6 +812,26 @@ export interface paths {
         patch: operations["updateSurvey"];
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/surveys/{survey_id}/my-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my survey permissions
+         * @description Get my survey permissions
+         */
+        get: operations["getMySurveyPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/surveys/{survey_id}/versions": {
         parameters: {
             query?: never;
@@ -1039,10 +1059,10 @@ export interface components {
             id_token: string;
         };
         /**
-         * CurrentUserOut
+         * CurrentUserResponses
          * @description API response shape for a bootstrapped user.
          */
-        CurrentUserOut: {
+        CurrentUserResponses: {
             /** Id */
             id: number;
             /** Auth0 User Id */
@@ -1053,10 +1073,10 @@ export interface components {
             display_name: string | null;
         };
         /**
-         * ProjectOut
+         * ProjectResponses
          * @description API response shape for a project.
          */
-        ProjectOut: {
+        ProjectResponses: {
             /** Id */
             id: number;
             /** Name */
@@ -1072,21 +1092,21 @@ export interface components {
             created_at: string;
         };
         /**
-         * BootstrapUserOut
+         * BootstrapUserResponses
          * @description API response shape for a bootstrap-user request.
          */
-        BootstrapUserOut: {
+        BootstrapUserResponses: {
             /** Created */
             created: boolean;
-            user: components["schemas"]["CurrentUserOut"];
+            user: components["schemas"]["CurrentUserResponses"];
             /** @default null */
-            default_project: components["schemas"]["ProjectOut"] | null;
+            default_project: components["schemas"]["ProjectResponses"] | null;
         };
         /**
-         * CurrentUserProfileOut
+         * CurrentUserProfileResponses
          * @description API response shape for the current user's profile.
          */
-        CurrentUserProfileOut: {
+        CurrentUserProfileResponses: {
             /** Id */
             id: number;
             /** Auth0 User Id */
@@ -1136,18 +1156,18 @@ export interface components {
             username: string;
         };
         /**
-         * PasswordChangeTicketOut
+         * PasswordChangeTicketResponses
          * @description Hosted Auth0 password-change ticket URL.
          */
-        PasswordChangeTicketOut: {
+        PasswordChangeTicketResponses: {
             /** Ticket Url */
             ticket_url: string;
         };
         /**
-         * ProjectInvitationOut
+         * ProjectInvitationResponses
          * @description API response shape for a project invitation.
          */
-        ProjectInvitationOut: {
+        ProjectInvitationResponses: {
             /** Id */
             id: number;
             /** Project Id */
@@ -1189,10 +1209,10 @@ export interface components {
             created_at: string;
         };
         /**
-         * MemberUserOut
+         * MemberUserResponses
          * @description Embedded user details on a project member response.
          */
-        MemberUserOut: {
+        MemberUserResponses: {
             /** Id */
             id: number;
             /** Email */
@@ -1201,10 +1221,10 @@ export interface components {
             display_name: string | null;
         };
         /**
-         * ProjectMemberOut
+         * ProjectMemberResponses
          * @description API response shape for a project membership.
          */
-        ProjectMemberOut: {
+        ProjectMemberResponses: {
             /** Id */
             id: number;
             /** User Id */
@@ -1223,13 +1243,13 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
-            user: components["schemas"]["MemberUserOut"];
+            user: components["schemas"]["MemberUserResponses"];
         };
         /**
-         * NodeOut
+         * NodeResponses
          * @description API response shape for a survey content node (question or rule).
          */
-        NodeOut: {
+        NodeResponses: {
             /** Id */
             id: number;
             /** Survey Version Id */
@@ -1273,8 +1293,20 @@ export interface components {
             requirements: components["schemas"]["ChoiceRequirementsIn"];
         };
         /**
+         * ChoiceDefinitionIn
+         * @description definition block for a choice question.
+         */
+        ChoiceDefinitionIn: {
+            /** Min */
+            min: number;
+            /** Max */
+            max: number;
+            /** Options */
+            options: components["schemas"]["ChoiceOptionIn"][];
+        };
+        /**
          * ChoiceOptionIn
-         * @description Represents a single selectable option for a choice question.
+         * @description A single selectable option for a choice question.
          */
         ChoiceOptionIn: {
             /** Id */
@@ -1283,31 +1315,8 @@ export interface components {
             label: string;
         };
         /**
-         * ChoiceQuestionConfig
-         * @description Defines selection constraints and options for a choice question.
-         */
-        ChoiceQuestionConfig: {
-            /** Options */
-            options: components["schemas"]["ChoiceOptionIn"][];
-            /** Min Selected */
-            min_selected: number;
-            /** Max Selected */
-            max_selected: number;
-        };
-        /**
-         * ChoiceQuestionNestedIn
-         * @description Input for a choice question with nested schema/ui.
-         */
-        ChoiceQuestionNestedIn: {
-            schema: components["schemas"]["ChoiceQuestionConfig"];
-            /** Ui */
-            ui?: {
-                [key: string]: unknown;
-            };
-        };
-        /**
          * ChoiceQuestionSchemaIn
-         * @description Accepts an incoming choice-question schema payload (nested structure).
+         * @description Incoming choice-question content schema.
          */
         ChoiceQuestionSchemaIn: {
             /** Id */
@@ -1324,7 +1333,7 @@ export interface components {
              * @default null
              */
             title: string | null;
-            choice: components["schemas"]["ChoiceQuestionNestedIn"];
+            definition: components["schemas"]["ChoiceDefinitionIn"];
         };
         /**
          * ChoiceRequirementsIn
@@ -1346,6 +1355,35 @@ export interface components {
              * @default null
              */
             any_of: string[] | null;
+        };
+        /**
+         * CreateQuestionNodeRequest
+         * @description Validates requests that create a new question node.
+         */
+        CreateQuestionNodeRequest: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "question";
+            /** Sort Key */
+            sort_key: number;
+            /** Content */
+            content: components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"];
+        };
+        /**
+         * CreateRuleNodeRequest
+         * @description Validates requests that create a new rule node.
+         */
+        CreateRuleNodeRequest: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "rule";
+            /** Sort Key */
+            sort_key: number;
+            content: components["schemas"]["RuleSchemaIn"];
         };
         /**
          * DateFieldRequirementsIn
@@ -1402,27 +1440,20 @@ export interface components {
             requirements: components["schemas"]["NumberFieldRequirementsIn"] | components["schemas"]["DateFieldRequirementsIn"];
         };
         /**
-         * FieldQuestionConfig
-         * @description Defines the input type for a field-based question.
+         * FieldDefinitionIn
+         * @description definition block for a field question.
          */
-        FieldQuestionConfig: {
+        FieldDefinitionIn: {
             /**
              * Field Type
              * @enum {string}
              */
             field_type: "short_text" | "long_text" | "email" | "number" | "date" | "phone";
-        };
-        /**
-         * FieldQuestionNestedIn
-         * @description Input for a field question with nested schema/ui.
-         */
-        FieldQuestionNestedIn: {
-            schema: components["schemas"]["FieldQuestionConfig"];
-            ui?: components["schemas"]["FieldQuestionUIIn"];
+            ui?: components["schemas"]["FieldUIIn"];
         };
         /**
          * FieldQuestionSchemaIn
-         * @description Accepts an incoming field-question schema payload (nested structure).
+         * @description Incoming field-question content schema.
          */
         FieldQuestionSchemaIn: {
             /** Id */
@@ -1439,13 +1470,13 @@ export interface components {
              * @default null
              */
             title: string | null;
-            field: components["schemas"]["FieldQuestionNestedIn"];
+            definition: components["schemas"]["FieldDefinitionIn"];
         };
         /**
-         * FieldQuestionUIIn
-         * @description Validates field question UI configuration.
+         * FieldUIIn
+         * @description UI block for a field question.
          */
-        FieldQuestionUIIn: {
+        FieldUIIn: {
             /**
              * Placeholder
              * @default
@@ -1467,8 +1498,18 @@ export interface components {
             requirements: components["schemas"]["MatchingRequirementsIn"];
         };
         /**
+         * MatchingDefinitionIn
+         * @description definition block for a matching question.
+         */
+        MatchingDefinitionIn: {
+            /** Prompts */
+            prompts: components["schemas"]["MatchingItemIn"][];
+            /** Matches */
+            matches: components["schemas"]["MatchingItemIn"][];
+        };
+        /**
          * MatchingItemIn
-         * @description Represents one item on either side of a matching question.
+         * @description One item on either side of a matching question.
          */
         MatchingItemIn: {
             /** Id */
@@ -1477,29 +1518,8 @@ export interface components {
             label: string;
         };
         /**
-         * MatchingQuestionConfig
-         * @description Defines the prompt and match item sets for a matching question.
-         */
-        MatchingQuestionConfig: {
-            /** Prompts */
-            prompts: components["schemas"]["MatchingItemIn"][];
-            /** Matches */
-            matches: components["schemas"]["MatchingItemIn"][];
-        };
-        /**
-         * MatchingQuestionNestedIn
-         * @description Input for a matching question with nested schema/ui.
-         */
-        MatchingQuestionNestedIn: {
-            schema: components["schemas"]["MatchingQuestionConfig"];
-            /** Ui */
-            ui?: {
-                [key: string]: unknown;
-            };
-        };
-        /**
          * MatchingQuestionSchemaIn
-         * @description Accepts an incoming matching-question schema payload (nested structure).
+         * @description Incoming matching-question content schema.
          */
         MatchingQuestionSchemaIn: {
             /** Id */
@@ -1516,7 +1536,7 @@ export interface components {
              * @default null
              */
             title: string | null;
-            matching: components["schemas"]["MatchingQuestionNestedIn"];
+            definition: components["schemas"]["MatchingDefinitionIn"];
         };
         /**
          * MatchingRequirementsIn
@@ -1547,16 +1567,6 @@ export interface components {
             value: number;
         };
         /**
-         * RangeIn
-         * @description Defines min and max bounds for a rating question.
-         */
-        RangeIn: {
-            /** Min */
-            min: number;
-            /** Max */
-            max: number;
-        };
-        /**
          * RatingConditionIn
          * @description Represents a condition block targeting a rating question.
          */
@@ -1571,23 +1581,15 @@ export interface components {
             requirements: components["schemas"]["RatingRequirementsIn"];
         };
         /**
-         * RatingEmojiNestedIn
-         * @description Input for an emoji-style rating question.
+         * RatingEmojiDefinitionIn
+         * @description definition block for an emoji-style rating question.
          */
-        RatingEmojiNestedIn: {
+        RatingEmojiDefinitionIn: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            style: "emoji";
-            schema: components["schemas"]["RatingEmojiSchemaIn"];
-            ui: components["schemas"]["RatingUIIn"];
-        };
-        /**
-         * RatingEmojiSchemaIn
-         * @description Schema for emoji-style rating questions.
-         */
-        RatingEmojiSchemaIn: {
+            variant: "emoji";
             /**
              * Emoji List
              * @enum {string}
@@ -1598,10 +1600,11 @@ export interface components {
              * @default false
              */
             words: boolean;
+            ui: components["schemas"]["RatingUIIn"];
         };
         /**
          * RatingQuestionSchemaIn
-         * @description Accepts an incoming rating-question schema payload (nested structure).
+         * @description Incoming rating-question content schema.
          */
         RatingQuestionSchemaIn: {
             /** Id */
@@ -1618,8 +1621,20 @@ export interface components {
              * @default null
              */
             title: string | null;
-            /** Rating */
-            rating: components["schemas"]["RatingSliderNestedIn"] | components["schemas"]["RatingEmojiNestedIn"] | components["schemas"]["RatingStarNestedIn"];
+            /** Definition */
+            definition: components["schemas"]["RatingSliderDefinitionIn"] | components["schemas"]["RatingStarDefinitionIn"] | components["schemas"]["RatingEmojiDefinitionIn"];
+        };
+        /**
+         * RatingRangeIn
+         * @description Range block for a slider rating — min, max, and step in one object.
+         */
+        RatingRangeIn: {
+            /** Min */
+            min: number;
+            /** Max */
+            max: number;
+            /** Step */
+            step: number;
         };
         /**
          * RatingRequirementsIn
@@ -1638,51 +1653,35 @@ export interface components {
             max: number | null;
         };
         /**
-         * RatingSliderNestedIn
-         * @description Input for a slider-style rating question.
+         * RatingSliderDefinitionIn
+         * @description definition block for a slider-style rating question.
          */
-        RatingSliderNestedIn: {
+        RatingSliderDefinitionIn: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            style: "slider";
-            schema: components["schemas"]["RatingSliderSchemaIn"];
+            variant: "slider";
+            range: components["schemas"]["RatingRangeIn"];
             ui: components["schemas"]["RatingUIIn"];
         };
         /**
-         * RatingSliderSchemaIn
-         * @description Schema for slider-style rating questions.
+         * RatingStarDefinitionIn
+         * @description definition block for a star-style rating question.
          */
-        RatingSliderSchemaIn: {
-            range: components["schemas"]["RangeIn"];
-            /** Step */
-            step: number;
-        };
-        /**
-         * RatingStarNestedIn
-         * @description Input for a star-style rating question.
-         */
-        RatingStarNestedIn: {
+        RatingStarDefinitionIn: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            style: "star";
-            schema: components["schemas"]["RatingStarSchemaIn"];
-            ui: components["schemas"]["RatingUIIn"];
-        };
-        /**
-         * RatingStarSchemaIn
-         * @description Schema for star-style rating questions.
-         */
-        RatingStarSchemaIn: {
+            variant: "stars";
             /** Stars */
             stars: number;
+            ui: components["schemas"]["RatingUIIn"];
         };
         /**
          * RatingUIIn
-         * @description Base UI for all rating questions — includes left/right labels.
+         * @description Left/right labels for all rating variants.
          */
         RatingUIIn: {
             /** Left Label */
@@ -1748,21 +1747,8 @@ export interface components {
              */
             required: boolean | null;
         };
-        /**
-         * CreateNodeRequest
-         * @description Validates requests that create a new survey content node (question or rule).
-         */
-        CreateNodeRequest: {
-            /**
-             * Type
-             * @enum {string}
-             */
-            type: "question" | "rule";
-            /** Sort Key */
-            sort_key: number;
-            /** Content */
-            content: (components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"]) | components["schemas"]["RuleSchemaIn"];
-        };
+        /** CreateNodeRequest */
+        CreateNodeRequest: components["schemas"]["CreateQuestionNodeRequest"] | components["schemas"]["CreateRuleNodeRequest"];
         /**
          * UpdateNodeRequest
          * @description Validates partial updates to an existing survey content node.
@@ -1780,10 +1766,10 @@ export interface components {
             content: (components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"]) | components["schemas"]["RuleSchemaIn"] | null;
         };
         /**
-         * ScoringRuleOut
+         * ScoringRuleResponses
          * @description API response shape for a scoring rule.
          */
-        ScoringRuleOut: {
+        ScoringRuleResponses: {
             /** Id */
             id: number;
             /** Survey Version Id */
@@ -2041,10 +2027,10 @@ export interface components {
             slug: string;
         };
         /**
-         * MyProjectPermissionsOut
+         * MyProjectPermissionsResponses
          * @description API response shape for the current user's effective permissions in a project.
          */
-        MyProjectPermissionsOut: {
+        MyProjectPermissionsResponses: {
             /** Permissions */
             permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
         };
@@ -2087,7 +2073,7 @@ export interface components {
         };
         /**
          * UpdateMemberRequest
-         * @description Request body for updating a project membership (role and/or status).
+         * @description Request body for updating a project membership role and/or status.
          *
          *     Omit a field to leave it unchanged. Pass role_id: null to clear the role.
          */
@@ -2104,10 +2090,10 @@ export interface components {
             status: ("active" | "suspended") | null;
         };
         /**
-         * PublicLinkOut
+         * PublicLinkResponses
          * @description API response shape for a survey link.
          */
-        PublicLinkOut: {
+        PublicLinkResponses: {
             /** Id */
             id: number;
             /** Survey Id */
@@ -2133,16 +2119,16 @@ export interface components {
             created_at: string;
         };
         /**
-         * ListPublicLinksOut
+         * ListPublicLinksResponses
          * @description API response shape for listing all public links for a survey.
          */
-        ListPublicLinksOut: {
+        ListPublicLinksResponses: {
             /** Links */
-            links: components["schemas"]["PublicLinkOut"][];
+            links: components["schemas"]["PublicLinkResponses"][];
         };
         /**
          * CreatePublicLinkRequest
-         * @description Request body for creating a survey link.
+         * @description Request body for creating a new public link.
          */
         CreatePublicLinkRequest: {
             /** Name */
@@ -2164,11 +2150,11 @@ export interface components {
             expires_at: string | null;
         };
         /**
-         * CreatePublicLinkOut
+         * CreatePublicLinkResponses
          * @description API response shape for creating a public link.
          */
-        CreatePublicLinkOut: {
-            link: components["schemas"]["PublicLinkOut"];
+        CreatePublicLinkResponses: {
+            link: components["schemas"]["PublicLinkResponses"];
             /** Token */
             token: string;
             /** Url */
@@ -2176,7 +2162,7 @@ export interface components {
         };
         /**
          * UpdatePublicLinkRequest
-         * @description Request body for partially updating a survey link.
+         * @description Request body for updating a public link.
          */
         UpdatePublicLinkRequest: {
             /**
@@ -2206,10 +2192,10 @@ export interface components {
             expires_at: string | null;
         };
         /**
-         * ProjectRoleOut
+         * ProjectRoleResponses
          * @description API response shape for a project role.
          */
-        ProjectRoleOut: {
+        ProjectRoleResponses: {
             /** Id */
             id: number;
             /** Project Id */
@@ -2230,7 +2216,7 @@ export interface components {
         };
         /**
          * CreateProjectRoleRequest
-         * @description Request body for creating a project role.
+         * @description Request body for creating a new project role.
          */
         CreateProjectRoleRequest: {
             /** Name */
@@ -2245,7 +2231,7 @@ export interface components {
         };
         /**
          * UpdateProjectRoleRequest
-         * @description Request body for partially updating a project role.
+         * @description Request body for updating a project role.
          */
         UpdateProjectRoleRequest: {
             /**
@@ -2265,10 +2251,10 @@ export interface components {
             permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
         };
         /**
-         * CoreSubmissionOut
+         * CoreSubmissionResponses
          * @description API response shape for a core submission record.
          */
-        CoreSubmissionOut: {
+        CoreSubmissionResponses: {
             /** Id */
             id: number;
             /** Project Id */
@@ -2289,7 +2275,7 @@ export interface components {
             /** Survey Link Id */
             survey_link_id: number | null;
             /** @default null */
-            submitter: components["schemas"]["SubmitterOut"] | null;
+            submitter: components["schemas"]["SubmitterResponses"] | null;
             /** Is Anonymous */
             is_anonymous: boolean;
             /**
@@ -2308,10 +2294,10 @@ export interface components {
             created_at: string;
         };
         /**
-         * SubmitterOut
+         * SubmitterResponses
          * @description Lightweight submission submitter identity.
          */
-        SubmitterOut: {
+        SubmitterResponses: {
             /** Id */
             id: number;
             /** Email */
@@ -2320,12 +2306,12 @@ export interface components {
             display_name: string | null;
         };
         /**
-         * PaginatedSubmissionsOut
+         * PaginatedSubmissionsResponses
          * @description API response shape for a paginated list of submissions.
          */
-        PaginatedSubmissionsOut: {
+        PaginatedSubmissionsResponses: {
             /** Items */
-            items: components["schemas"]["CoreSubmissionOut"][];
+            items: components["schemas"]["CoreSubmissionResponses"][];
             /** Total */
             total: number;
             /** Page */
@@ -2334,10 +2320,10 @@ export interface components {
             page_size: number;
         };
         /**
-         * AnswerOut
+         * AnswerResponses
          * @description API response shape for a single submission answer.
          */
-        AnswerOut: {
+        AnswerResponses: {
             /** Id */
             id: number;
             /** Question Key */
@@ -2358,19 +2344,19 @@ export interface components {
             created_at: string;
         };
         /**
-         * LinkedSubmissionOut
+         * LinkedSubmissionResponses
          * @description API response shape combining a core submission record with its answers.
          */
-        LinkedSubmissionOut: {
-            core: components["schemas"]["CoreSubmissionOut"];
+        LinkedSubmissionResponses: {
+            core: components["schemas"]["CoreSubmissionResponses"];
             /** Answers */
-            answers: components["schemas"]["AnswerOut"][];
+            answers: components["schemas"]["AnswerResponses"][];
         };
         /**
-         * SurveyMemberOut
+         * SurveyMemberResponses
          * @description Embedded user details on a survey member row.
          */
-        SurveyMemberOut: {
+        SurveyMemberResponses: {
             /** Id */
             id: number;
             /** User Id */
@@ -2383,10 +2369,10 @@ export interface components {
             status: string;
         };
         /**
-         * SurveyRoleOut
+         * SurveyRoleResponses
          * @description API response shape for a survey role.
          */
-        SurveyRoleOut: {
+        SurveyRoleResponses: {
             /** Id */
             id: number;
             /** Project Id */
@@ -2404,10 +2390,10 @@ export interface components {
             created_at: string;
         };
         /**
-         * SurveyMemberRoleOut
+         * SurveyMemberRoleResponses
          * @description API response shape for a survey membership role assignment.
          */
-        SurveyMemberRoleOut: {
+        SurveyMemberRoleResponses: {
             /** Project Id */
             project_id: number;
             /** Survey Id */
@@ -2422,9 +2408,9 @@ export interface components {
              */
             created_at: string;
             /** @default null */
-            member: components["schemas"]["SurveyMemberOut"] | null;
+            member: components["schemas"]["SurveyMemberResponses"] | null;
             /** @default null */
-            role: components["schemas"]["SurveyRoleOut"] | null;
+            role: components["schemas"]["SurveyRoleResponses"] | null;
         };
         /**
          * AssignSurveyMemberRoleRequest
@@ -2481,10 +2467,10 @@ export interface components {
             permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
         };
         /**
-         * SurveyOut
+         * SurveyResponses
          * @description API response shape for a survey.
          */
-        SurveyOut: {
+        SurveyResponses: {
             /** Id */
             id: number;
             /** Project Id */
@@ -2556,10 +2542,18 @@ export interface components {
             public_slug: string | null;
         };
         /**
-         * SurveyVersionOut
+         * MySurveyPermissionsResponses
+         * @description API response shape for the current user's effective permissions on a survey.
+         */
+        MySurveyPermissionsResponses: {
+            /** Permissions */
+            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+        };
+        /**
+         * SurveyVersionResponses
          * @description API response shape for a survey version.
          */
-        SurveyVersionOut: {
+        SurveyVersionResponses: {
             /** Id */
             id: number;
             /** Survey Id */
@@ -2591,12 +2585,12 @@ export interface components {
             updated_at: string;
         };
         /**
-         * PaginatedPublicSurveysOut
+         * PaginatedPublicSurveysResponses
          * @description API response shape for a paginated list of public surveys.
          */
-        PaginatedPublicSurveysOut: {
+        PaginatedPublicSurveysResponses: {
             /** Items */
-            items: components["schemas"]["SurveyOut"][];
+            items: components["schemas"]["SurveyResponses"][];
             /** Total */
             total: number;
             /** Page */
@@ -2605,24 +2599,24 @@ export interface components {
             page_size: number;
         };
         /**
-         * PublicSurveyOut
+         * PublicSurveyResponses
          * @description API response shape for a publicly accessible survey with its published version.
          */
-        PublicSurveyOut: {
-            survey: components["schemas"]["SurveyOut"];
+        PublicSurveyResponses: {
+            survey: components["schemas"]["SurveyResponses"];
             /** @default null */
-            published_version: components["schemas"]["SurveyVersionOut"] | null;
+            published_version: components["schemas"]["SurveyVersionResponses"] | null;
         };
         /**
-         * ResolveLinkOut
+         * ResolveLinkResponses
          * @description API response shape for resolving a public link token.
          */
-        ResolveLinkOut: {
-            link: components["schemas"]["PublicLinkOut"];
+        ResolveLinkResponses: {
+            link: components["schemas"]["PublicLinkResponses"];
             /** @default null */
-            survey: components["schemas"]["SurveyOut"] | null;
+            survey: components["schemas"]["SurveyResponses"] | null;
             /** @default null */
-            published_version: components["schemas"]["SurveyVersionOut"] | null;
+            published_version: components["schemas"]["SurveyVersionResponses"] | null;
         };
         /**
          * ChoiceAnswerIn
@@ -2856,48 +2850,44 @@ export interface components {
 }
 export type ErrorResponse = components['schemas']['ErrorResponse'];
 export type BootstrapUserRequest = components['schemas']['BootstrapUserRequest'];
-export type CurrentUserOut = components['schemas']['CurrentUserOut'];
-export type ProjectOut = components['schemas']['ProjectOut'];
-export type BootstrapUserOut = components['schemas']['BootstrapUserOut'];
-export type CurrentUserProfileOut = components['schemas']['CurrentUserProfileOut'];
+export type CurrentUserResponses = components['schemas']['CurrentUserResponses'];
+export type ProjectResponses = components['schemas']['ProjectResponses'];
+export type BootstrapUserResponses = components['schemas']['BootstrapUserResponses'];
+export type CurrentUserProfileResponses = components['schemas']['CurrentUserProfileResponses'];
 export type UpdateProfileRequest = components['schemas']['UpdateProfileRequest'];
 export type ChangeEmailRequest = components['schemas']['ChangeEmailRequest'];
 export type ChangeUsernameRequest = components['schemas']['ChangeUsernameRequest'];
-export type PasswordChangeTicketOut = components['schemas']['PasswordChangeTicketOut'];
-export type ProjectInvitationOut = components['schemas']['ProjectInvitationOut'];
-export type MemberUserOut = components['schemas']['MemberUserOut'];
-export type ProjectMemberOut = components['schemas']['ProjectMemberOut'];
-export type NodeOut = components['schemas']['NodeOut'];
+export type PasswordChangeTicketResponses = components['schemas']['PasswordChangeTicketResponses'];
+export type ProjectInvitationResponses = components['schemas']['ProjectInvitationResponses'];
+export type MemberUserResponses = components['schemas']['MemberUserResponses'];
+export type ProjectMemberResponses = components['schemas']['ProjectMemberResponses'];
+export type NodeResponses = components['schemas']['NodeResponses'];
 export type ChoiceConditionIn = components['schemas']['ChoiceConditionIn'];
+export type ChoiceDefinitionIn = components['schemas']['ChoiceDefinitionIn'];
 export type ChoiceOptionIn = components['schemas']['ChoiceOptionIn'];
-export type ChoiceQuestionConfig = components['schemas']['ChoiceQuestionConfig'];
-export type ChoiceQuestionNestedIn = components['schemas']['ChoiceQuestionNestedIn'];
 export type ChoiceQuestionSchemaIn = components['schemas']['ChoiceQuestionSchemaIn'];
 export type ChoiceRequirementsIn = components['schemas']['ChoiceRequirementsIn'];
+export type CreateQuestionNodeRequest = components['schemas']['CreateQuestionNodeRequest'];
+export type CreateRuleNodeRequest = components['schemas']['CreateRuleNodeRequest'];
 export type DateFieldRequirementsIn = components['schemas']['DateFieldRequirementsIn'];
 export type ElseDoIn = components['schemas']['ElseDoIn'];
 export type FieldConditionIn = components['schemas']['FieldConditionIn'];
-export type FieldQuestionConfig = components['schemas']['FieldQuestionConfig'];
-export type FieldQuestionNestedIn = components['schemas']['FieldQuestionNestedIn'];
+export type FieldDefinitionIn = components['schemas']['FieldDefinitionIn'];
 export type FieldQuestionSchemaIn = components['schemas']['FieldQuestionSchemaIn'];
-export type FieldQuestionUiIn = components['schemas']['FieldQuestionUIIn'];
+export type FieldUiIn = components['schemas']['FieldUIIn'];
 export type MatchingConditionIn = components['schemas']['MatchingConditionIn'];
+export type MatchingDefinitionIn = components['schemas']['MatchingDefinitionIn'];
 export type MatchingItemIn = components['schemas']['MatchingItemIn'];
-export type MatchingQuestionConfig = components['schemas']['MatchingQuestionConfig'];
-export type MatchingQuestionNestedIn = components['schemas']['MatchingQuestionNestedIn'];
 export type MatchingQuestionSchemaIn = components['schemas']['MatchingQuestionSchemaIn'];
 export type MatchingRequirementsIn = components['schemas']['MatchingRequirementsIn'];
 export type NumberFieldRequirementsIn = components['schemas']['NumberFieldRequirementsIn'];
-export type RangeIn = components['schemas']['RangeIn'];
 export type RatingConditionIn = components['schemas']['RatingConditionIn'];
-export type RatingEmojiNestedIn = components['schemas']['RatingEmojiNestedIn'];
-export type RatingEmojiSchemaIn = components['schemas']['RatingEmojiSchemaIn'];
+export type RatingEmojiDefinitionIn = components['schemas']['RatingEmojiDefinitionIn'];
 export type RatingQuestionSchemaIn = components['schemas']['RatingQuestionSchemaIn'];
+export type RatingRangeIn = components['schemas']['RatingRangeIn'];
 export type RatingRequirementsIn = components['schemas']['RatingRequirementsIn'];
-export type RatingSliderNestedIn = components['schemas']['RatingSliderNestedIn'];
-export type RatingSliderSchemaIn = components['schemas']['RatingSliderSchemaIn'];
-export type RatingStarNestedIn = components['schemas']['RatingStarNestedIn'];
-export type RatingStarSchemaIn = components['schemas']['RatingStarSchemaIn'];
+export type RatingSliderDefinitionIn = components['schemas']['RatingSliderDefinitionIn'];
+export type RatingStarDefinitionIn = components['schemas']['RatingStarDefinitionIn'];
 export type RatingUiIn = components['schemas']['RatingUIIn'];
 export type RuleElseIn = components['schemas']['RuleElseIn'];
 export type RuleIfIn = components['schemas']['RuleIfIn'];
@@ -2906,7 +2896,7 @@ export type RuleThenIn = components['schemas']['RuleThenIn'];
 export type ThenSetItemIn = components['schemas']['ThenSetItemIn'];
 export type CreateNodeRequest = components['schemas']['CreateNodeRequest'];
 export type UpdateNodeRequest = components['schemas']['UpdateNodeRequest'];
-export type ScoringRuleOut = components['schemas']['ScoringRuleOut'];
+export type ScoringRuleResponses = components['schemas']['ScoringRuleResponses'];
 export type ChoiceOptionMapConfig = components['schemas']['ChoiceOptionMapConfig'];
 export type ChoiceOptionMapScoringSchemaIn = components['schemas']['ChoiceOptionMapScoringSchemaIn'];
 export type FieldNumericRangesConfig = components['schemas']['FieldNumericRangesConfig'];
@@ -2920,37 +2910,38 @@ export type RatingDirectScoringSchemaIn = components['schemas']['RatingDirectSco
 export type CreateScoringRuleRequest = components['schemas']['CreateScoringRuleRequest'];
 export type UpdateScoringRuleRequest = components['schemas']['UpdateScoringRuleRequest'];
 export type CreateProjectRequest = components['schemas']['CreateProjectRequest'];
-export type MyProjectPermissionsOut = components['schemas']['MyProjectPermissionsOut'];
+export type MyProjectPermissionsResponses = components['schemas']['MyProjectPermissionsResponses'];
 export type UpdateProjectRequest = components['schemas']['UpdateProjectRequest'];
 export type SendInvitationRequest = components['schemas']['SendInvitationRequest'];
 export type UpdateMemberRequest = components['schemas']['UpdateMemberRequest'];
-export type PublicLinkOut = components['schemas']['PublicLinkOut'];
-export type ListPublicLinksOut = components['schemas']['ListPublicLinksOut'];
+export type PublicLinkResponses = components['schemas']['PublicLinkResponses'];
+export type ListPublicLinksResponses = components['schemas']['ListPublicLinksResponses'];
 export type CreatePublicLinkRequest = components['schemas']['CreatePublicLinkRequest'];
-export type CreatePublicLinkOut = components['schemas']['CreatePublicLinkOut'];
+export type CreatePublicLinkResponses = components['schemas']['CreatePublicLinkResponses'];
 export type UpdatePublicLinkRequest = components['schemas']['UpdatePublicLinkRequest'];
-export type ProjectRoleOut = components['schemas']['ProjectRoleOut'];
+export type ProjectRoleResponses = components['schemas']['ProjectRoleResponses'];
 export type CreateProjectRoleRequest = components['schemas']['CreateProjectRoleRequest'];
 export type UpdateProjectRoleRequest = components['schemas']['UpdateProjectRoleRequest'];
-export type CoreSubmissionOut = components['schemas']['CoreSubmissionOut'];
-export type SubmitterOut = components['schemas']['SubmitterOut'];
-export type PaginatedSubmissionsOut = components['schemas']['PaginatedSubmissionsOut'];
-export type AnswerOut = components['schemas']['AnswerOut'];
-export type LinkedSubmissionOut = components['schemas']['LinkedSubmissionOut'];
-export type SurveyMemberOut = components['schemas']['SurveyMemberOut'];
-export type SurveyRoleOut = components['schemas']['SurveyRoleOut'];
-export type SurveyMemberRoleOut = components['schemas']['SurveyMemberRoleOut'];
+export type CoreSubmissionResponses = components['schemas']['CoreSubmissionResponses'];
+export type SubmitterResponses = components['schemas']['SubmitterResponses'];
+export type PaginatedSubmissionsResponses = components['schemas']['PaginatedSubmissionsResponses'];
+export type AnswerResponses = components['schemas']['AnswerResponses'];
+export type LinkedSubmissionResponses = components['schemas']['LinkedSubmissionResponses'];
+export type SurveyMemberResponses = components['schemas']['SurveyMemberResponses'];
+export type SurveyRoleResponses = components['schemas']['SurveyRoleResponses'];
+export type SurveyMemberRoleResponses = components['schemas']['SurveyMemberRoleResponses'];
 export type AssignSurveyMemberRoleRequest = components['schemas']['AssignSurveyMemberRoleRequest'];
 export type UpdateSurveyMemberRoleRequest = components['schemas']['UpdateSurveyMemberRoleRequest'];
 export type CreateSurveyRoleRequest = components['schemas']['CreateSurveyRoleRequest'];
 export type UpdateSurveyRoleRequest = components['schemas']['UpdateSurveyRoleRequest'];
-export type SurveyOut = components['schemas']['SurveyOut'];
+export type SurveyResponses = components['schemas']['SurveyResponses'];
 export type CreateSurveyRequest = components['schemas']['CreateSurveyRequest'];
 export type UpdateSurveyRequest = components['schemas']['UpdateSurveyRequest'];
-export type SurveyVersionOut = components['schemas']['SurveyVersionOut'];
-export type PaginatedPublicSurveysOut = components['schemas']['PaginatedPublicSurveysOut'];
-export type PublicSurveyOut = components['schemas']['PublicSurveyOut'];
-export type ResolveLinkOut = components['schemas']['ResolveLinkOut'];
+export type MySurveyPermissionsResponses = components['schemas']['MySurveyPermissionsResponses'];
+export type SurveyVersionResponses = components['schemas']['SurveyVersionResponses'];
+export type PaginatedPublicSurveysResponses = components['schemas']['PaginatedPublicSurveysResponses'];
+export type PublicSurveyResponses = components['schemas']['PublicSurveyResponses'];
+export type ResolveLinkResponses = components['schemas']['ResolveLinkResponses'];
 export type ChoiceAnswerIn = components['schemas']['ChoiceAnswerIn'];
 export type ChoiceAnswerValue = components['schemas']['ChoiceAnswerValue'];
 export type FieldAnswerIn = components['schemas']['FieldAnswerIn'];
@@ -2991,24 +2982,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BootstrapUserOut"];
+                    "application/json": components["schemas"]["BootstrapUserResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3028,21 +3011,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3062,21 +3037,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3095,24 +3062,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CurrentUserProfileOut"];
+                    "application/json": components["schemas"]["CurrentUserProfileResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3135,24 +3094,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CurrentUserOut"];
+                    "application/json": components["schemas"]["CurrentUserResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3176,21 +3127,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3214,21 +3157,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3247,24 +3182,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PasswordChangeTicketOut"];
+                    "application/json": components["schemas"]["PasswordChangeTicketResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3284,21 +3211,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3318,21 +3237,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3352,21 +3263,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3385,24 +3288,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectInvitationOut"][];
+                    "application/json": components["schemas"]["ProjectInvitationResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3423,24 +3318,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectMemberOut"];
+                    "application/json": components["schemas"]["ProjectMemberResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3462,21 +3349,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3499,24 +3378,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NodeOut"][];
+                    "application/json": components["schemas"]["NodeResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3543,24 +3414,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NodeOut"];
+                    "application/json": components["schemas"]["NodeResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3584,24 +3447,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NodeOut"];
+                    "application/json": components["schemas"]["NodeResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3626,21 +3481,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3668,24 +3515,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NodeOut"];
+                    "application/json": components["schemas"]["NodeResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3708,24 +3547,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ScoringRuleOut"][];
+                    "application/json": components["schemas"]["ScoringRuleResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3752,24 +3583,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ScoringRuleOut"];
+                    "application/json": components["schemas"]["ScoringRuleResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3794,21 +3617,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3836,24 +3651,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ScoringRuleOut"];
+                    "application/json": components["schemas"]["ScoringRuleResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3872,24 +3679,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectOut"][];
+                    "application/json": components["schemas"]["ProjectResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3912,24 +3711,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectOut"];
+                    "application/json": components["schemas"]["ProjectResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3950,24 +3741,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectOut"];
+                    "application/json": components["schemas"]["ProjectResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3989,21 +3772,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4028,24 +3803,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectOut"];
+                    "application/json": components["schemas"]["ProjectResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4066,24 +3833,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MyProjectPermissionsOut"];
+                    "application/json": components["schemas"]["MyProjectPermissionsResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4104,24 +3863,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectMemberOut"][];
+                    "application/json": components["schemas"]["ProjectMemberResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4142,24 +3893,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectInvitationOut"][];
+                    "application/json": components["schemas"]["ProjectInvitationResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4184,24 +3927,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectInvitationOut"];
+                    "application/json": components["schemas"]["ProjectInvitationResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4224,21 +3959,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4261,21 +3988,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4301,24 +4020,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectMemberOut"];
+                    "application/json": components["schemas"]["ProjectMemberResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4340,24 +4051,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ListPublicLinksOut"];
+                    "application/json": components["schemas"]["ListPublicLinksResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4383,24 +4086,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CreatePublicLinkOut"];
+                    "application/json": components["schemas"]["CreatePublicLinkResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4424,21 +4119,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4465,24 +4152,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PublicLinkOut"];
+                    "application/json": components["schemas"]["PublicLinkResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4503,24 +4182,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectRoleOut"][];
+                    "application/json": components["schemas"]["ProjectRoleResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4545,24 +4216,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectRoleOut"];
+                    "application/json": components["schemas"]["ProjectRoleResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4585,21 +4248,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4625,24 +4280,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectRoleOut"];
+                    "application/json": components["schemas"]["ProjectRoleResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4669,24 +4316,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedSubmissionsOut"];
+                    "application/json": components["schemas"]["PaginatedSubmissionsResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4711,24 +4350,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LinkedSubmissionOut"];
+                    "application/json": components["schemas"]["LinkedSubmissionResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4750,24 +4381,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyMemberRoleOut"][];
+                    "application/json": components["schemas"]["SurveyMemberRoleResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4793,24 +4416,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyMemberRoleOut"];
+                    "application/json": components["schemas"]["SurveyMemberRoleResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4834,21 +4449,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4875,24 +4482,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyMemberRoleOut"];
+                    "application/json": components["schemas"]["SurveyMemberRoleResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4913,24 +4512,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyRoleOut"][];
+                    "application/json": components["schemas"]["SurveyRoleResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4955,24 +4546,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyRoleOut"];
+                    "application/json": components["schemas"]["SurveyRoleResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -4995,21 +4578,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5035,24 +4610,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyRoleOut"];
+                    "application/json": components["schemas"]["SurveyRoleResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5073,24 +4640,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyOut"][];
+                    "application/json": components["schemas"]["SurveyResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5115,24 +4674,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyOut"];
+                    "application/json": components["schemas"]["SurveyResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5154,24 +4705,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyOut"];
+                    "application/json": components["schemas"]["SurveyResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5194,21 +4737,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5234,24 +4769,47 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyOut"];
+                    "application/json": components["schemas"]["SurveyResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getMySurveyPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MySurveyPermissionsResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5273,24 +4831,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionOut"][];
+                    "application/json": components["schemas"]["SurveyVersionResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5312,24 +4862,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionOut"];
+                    "application/json": components["schemas"]["SurveyVersionResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5352,24 +4894,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionOut"];
+                    "application/json": components["schemas"]["SurveyVersionResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5392,24 +4926,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionOut"];
+                    "application/json": components["schemas"]["SurveyVersionResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5432,24 +4958,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionOut"];
+                    "application/json": components["schemas"]["SurveyVersionResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5472,24 +4990,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionOut"];
+                    "application/json": components["schemas"]["SurveyVersionResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5511,24 +5021,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedPublicSurveysOut"];
+                    "application/json": components["schemas"]["PaginatedPublicSurveysResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5549,24 +5051,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PublicSurveyOut"];
+                    "application/json": components["schemas"]["PublicSurveyResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5587,24 +5081,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ResolveLinkOut"];
+                    "application/json": components["schemas"]["ResolveLinkResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5627,24 +5113,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LinkedSubmissionOut"];
+                    "application/json": components["schemas"]["LinkedSubmissionResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5667,24 +5145,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LinkedSubmissionOut"];
+                    "application/json": components["schemas"]["LinkedSubmissionResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };

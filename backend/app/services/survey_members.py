@@ -8,12 +8,10 @@ from app.domain.errors import (
     SurveyNotFoundError,
     SurveyRoleNotFoundError,
 )
-from app.domain.permissions import PERMISSIONS
 from app.repositories import members_repo, survey_members_repo, survey_roles_repo, surveys_repo
 from app.schema.api.requests.surveys_access import AssignSurveyMemberRoleRequest, UpdateSurveyMemberRoleRequest
 from app.schema.orm.core.survey_access import SurveyMembershipRole
 from app.schema.orm.core.user import User
-from app.services.access.access_service import require_project_permission
 
 
 class SurveyMembersService:
@@ -45,7 +43,6 @@ class SurveyMembersService:
             raise SurveyMemberRoleNotFoundError()
         return assignment
 
-    @require_project_permission(PERMISSIONS.project.manage_members)
     def list_survey_members(
         self,
         db: Session,
@@ -57,7 +54,6 @@ class SurveyMembersService:
         self._require_survey(db, project_id=project_id, survey_id=survey_id)
         return survey_members_repo.list_by_survey(db, project_id=project_id, survey_id=survey_id)
 
-    @require_project_permission(PERMISSIONS.project.manage_members)
     def assign_member_role(
         self,
         db: Session,
@@ -87,7 +83,6 @@ class SurveyMembersService:
         commit_with_err_handle(db)
         return assignment
 
-    @require_project_permission(PERMISSIONS.project.manage_members)
     def update_member_role(
         self,
         db: Session,
@@ -107,7 +102,6 @@ class SurveyMembersService:
         commit_with_err_handle(db)
         return updated
 
-    @require_project_permission(PERMISSIONS.project.manage_members)
     def remove_member_role(
         self,
         db: Session,

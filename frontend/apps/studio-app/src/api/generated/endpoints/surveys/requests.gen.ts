@@ -1,7 +1,7 @@
 // This file is auto-generated — do not edit manually
 
 import type { OpenApiFetchClient } from "../../../openapi";
-import type { CreateSurveyRequest, SurveyResponses, UpdateSurveyRequest } from "./types.gen";
+import type { CreateSurveyRequest, MySurveyPermissionsResponses, SurveyResponses, UpdateSurveyRequest } from "./types.gen";
 
 export async function listSurveys(apiClient: OpenApiFetchClient, project_id: number): Promise<SurveyResponses[]> {
   const { data, error } = await apiClient.GET(`/api/v1/projects/{project_id}/surveys`, { params: { path: { project_id } } });
@@ -30,4 +30,10 @@ export async function updateSurvey(apiClient: OpenApiFetchClient, project_id: nu
 export async function deleteSurvey(apiClient: OpenApiFetchClient, project_id: number, survey_id: number): Promise<void> {
   const { error } = await apiClient.DELETE(`/api/v1/projects/{project_id}/surveys/{survey_id}`, { params: { path: { project_id, survey_id } } });
   if (error) throw error;
+}
+
+export async function getMySurveyPermissions(apiClient: OpenApiFetchClient, project_id: number, survey_id: number): Promise<MySurveyPermissionsResponses> {
+  const { data, error } = await apiClient.GET(`/api/v1/projects/{project_id}/surveys/{survey_id}/my-permissions`, { params: { path: { project_id, survey_id } } });
+  if (error) throw error;
+  return data;
 }

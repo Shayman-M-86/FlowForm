@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOpenApiClient } from "../../../openapi";
 import type { CreateSurveyRequest, UpdateSurveyRequest } from "./types.gen";
-import { listSurveys, createSurvey, getSurvey, updateSurvey, deleteSurvey } from "./requests.gen";
+import { listSurveys, createSurvey, getSurvey, updateSurvey, deleteSurvey, getMySurveyPermissions } from "./requests.gen";
 
 export const surveysKeys = {
   all: () => ["surveys"] as const,
@@ -59,5 +59,14 @@ export function useDeleteSurvey(project_id: number, survey_id: number) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: surveysKeys.list(project_id) });
     },
+  });
+}
+
+export function useGetMySurveyPermissions(project_id: number, survey_id: number) {
+  const apiClient = useOpenApiClient();
+  return useQuery({
+    queryKey: surveysKeys.detail(project_id, survey_id),
+    queryFn: () => getMySurveyPermissions(apiClient, project_id, survey_id),
+    enabled: project_id > 0 && survey_id > 0,
   });
 }

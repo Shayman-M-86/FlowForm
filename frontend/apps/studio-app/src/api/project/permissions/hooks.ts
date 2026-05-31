@@ -1,72 +1,40 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useOpenApiClient } from '../../openapi'
-import { getMyProjectPermissions } from './requests'
-import type { ProjectPermission } from './types'
+import { getMyProjectPermissions } from '../../generated/endpoints/projects/requests.gen'
+import { getMySurveyPermissions } from '../../generated/endpoints/surveys/requests.gen'
+import { loadCachedQuery, loadCachedQueryUpdatedAt, saveCachedQuery, clearQueryCache } from '../../queryStorage'
+import type { ProjectPermission, SurveyPermission } from './types'
 
-const TEN_MINUTES = 10 * 60 * 1000
-
-export function clearAllCachedPermissions() {
-  try {
-    const toRemove = Object.keys(localStorage).filter((k) => k.startsWith('ff.permissions.'))
-    toRemove.forEach((k) => localStorage.removeItem(k))
-  } catch {
-    // ignore
-  }
-}
+const FIVE_MINUTES = 5 * 60 * 1000
 
 export const permissionKeys = {
   all: () => ['permissions'] as const,
   project: (projectId: number) => [...permissionKeys.all(), 'project', projectId] as const,
+  survey: (projectId: number, surveyId: number) => [...permissionKeys.all(), 'survey', projectId, surveyId] as const,
 }
 
-function loadCachedPermissions(projectId: number): ProjectPermission[] | undefined {
-  try {
-    const raw = localStorage.getItem(`ff.permissions.project.${projectId}`)
-    if (!raw) return undefined
-    const { permissions, cachedAt } = JSON.parse(raw) as { permissions: ProjectPermission[]; cachedAt: number }
-    if (Date.now() - cachedAt > TEN_MINUTES) return undefined
-    return permissions
-  } catch {
-    return undefined
-  }
+export function clearAllCachedPermissions() {
+  clearQueryCache()
 }
 
-function saveCachedPermissions(projectId: number, permissions: ProjectPermission[]) {
-  try {
-    localStorage.setItem(
-      `ff.permissions.project.${projectId}`,
-      JSON.stringify({ permissions, cachedAt: Date.now() }),
-    )
-  } catch {
-    // storage quota exceeded — ignore
-  }
-}
+// ─── Project permissions ──────────────────────────────────────────────────────
 
 export function useMyProjectPermissions(projectId: number | null) {
   const apiClient = useOpenApiClient()
+  const key = permissionKeys.project(projectId ?? 0)
 
   return useQuery({
-    queryKey: permissionKeys.project(projectId ?? 0),
+    queryKey: key,
     queryFn: async () => {
-      if (projectId === null) throw new Error('Project id required')
-      const permissions = await getMyProjectPermissions(apiClient, projectId)
-      saveCachedPermissions(projectId, permissions)
-      return permissions
+      if (projectId === null) throw new Error('projectId required')
+      const { permissions } = await getMyProjectPermissions(apiClient, projectId)
+      saveCachedQuery(key, permissions)
+      return permissions as ProjectPermission[]
     },
     enabled: projectId !== null,
-    staleTime: TEN_MINUTES,
-    initialData: projectId !== null ? loadCachedPermissions(projectId) : undefined,
-    initialDataUpdatedAt: () => {
-      if (projectId === null) return undefined
-      try {
-        const raw = localStorage.getItem(`ff.permissions.project.${projectId}`)
-        if (!raw) return undefined
-        const { cachedAt } = JSON.parse(raw) as { cachedAt: number }
-        return cachedAt
-      } catch {
-        return undefined
-      }
-    },
+    staleTime: FIVE_MINUTES,
+    initialData: projectId !== null ? loadCachedQuery<ProjectPermission[]>(key, FIVE_MINUTES) : undefined,
+    initialDataUpdatedAt: () => projectId !== null ? loadCachedQueryUpdatedAt(key) : undefined,
   })
 }
 
@@ -75,10 +43,44 @@ export function useHasProjectPermission(projectId: number | null, permission: Pr
   return data?.includes(permission) ?? false
 }
 
+// ─── Survey permissions ───────────────────────────────────────────────────────
+
+export function useMySurveyPermissions(projectId: number | null, surveyId: number | null) {
+  const apiClient = useOpenApiClient()
+  const key = permissionKeys.survey(projectId ?? 0, surveyId ?? 0)
+
+  return useQuery({
+    queryKey: key,
+    queryFn: async () => {
+      if (projectId === null || surveyId === null) throw new Error('projectId and surveyId required')
+      const { permissions } = await getMySurveyPermissions(apiClient, projectId, surveyId)
+      saveCachedQuery(key, permissions)
+      return permissions as SurveyPermission[]
+    },
+    enabled: projectId !== null && surveyId !== null,
+    staleTime: FIVE_MINUTES,
+    initialData: projectId !== null && surveyId !== null ? loadCachedQuery<SurveyPermission[]>(key, FIVE_MINUTES) : undefined,
+    initialDataUpdatedAt: () => projectId !== null && surveyId !== null ? loadCachedQueryUpdatedAt(key) : undefined,
+  })
+}
+
+export function useHasSurveyPermission(projectId: number | null, surveyId: number | null, permission: SurveyPermission): boolean {
+  const { data } = useMySurveyPermissions(projectId, surveyId)
+  return data?.includes(permission) ?? false
+}
+
+// ─── Invalidation ─────────────────────────────────────────────────────────────
+
 export function useInvalidateProjectPermissions() {
   const queryClient = useQueryClient()
   return (projectId: number) => {
-    localStorage.removeItem(`ff.permissions.project.${projectId}`)
     void queryClient.invalidateQueries({ queryKey: permissionKeys.project(projectId) })
+  }
+}
+
+export function useInvalidateSurveyPermissions() {
+  const queryClient = useQueryClient()
+  return (projectId: number, surveyId: number) => {
+    void queryClient.invalidateQueries({ queryKey: permissionKeys.survey(projectId, surveyId) })
   }
 }
