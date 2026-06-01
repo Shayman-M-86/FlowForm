@@ -3,6 +3,19 @@ import type { QueryClient } from '@tanstack/react-query'
 import { routePermissions } from '../generated/rbac.gen'
 import { permissionKeys } from '../hooks/permissions/queryKeys'
 
+import { createStorageCooldown } from '@/lib/storageCooldown'
+
+const permissionCooldown = createStorageCooldown({
+  storageKey: 'flowform.perm-cooldowns',
+  cooldownMs: 60_000,
+})
+
+function invalidateWithCooldown(queryClient: QueryClient, queryKey: readonly unknown[]) {
+  permissionCooldown.attempt(JSON.stringify(queryKey), () => {
+    void queryClient.invalidateQueries({ queryKey })
+  })
+}
+
 export class PermissionDeniedError extends Error {
   public readonly permission: string
   public readonly url: string
@@ -17,6 +30,33 @@ export class PermissionDeniedError extends Error {
 
 export function createPermissionMiddleware(queryClient: QueryClient): Middleware {
   return {
+    onResponse({ response, request }) {
+      if (response.status === 403) {
+        const url = new URL(request.url)
+        const pathname = url.pathname
+
+        for (const entry of routePermissions) {
+          if (entry.method !== request.method) continue
+          const match = pathname.match(entry.pattern)
+          if (!match?.groups) continue
+
+          const projectIdStr = match.groups['project_id']
+          const projectId = projectIdStr ? parseInt(projectIdStr, 10) : null
+          if (projectId === null || isNaN(projectId)) continue
+
+          const surveyIdStr = match.groups['survey_id']
+          const surveyId = surveyIdStr ? parseInt(surveyIdStr, 10) : null
+
+          if (surveyId !== null) {
+            invalidateWithCooldown(queryClient, permissionKeys.survey(projectId, surveyId))
+          }
+          invalidateWithCooldown(queryClient, permissionKeys.project(projectId))
+          break
+        }
+      }
+      return response
+    },
+
     onRequest({ request }) {
       const url = new URL(request.url)
       const pathname = url.pathname
@@ -47,9 +87,9 @@ export function createPermissionMiddleware(queryClient: QueryClient): Middleware
           const surveyPerms = queryClient.getQueryData<string[]>(
             permissionKeys.survey(projectId, surveyId),
           )
-          // If survey cache is populated, use it; otherwise fall through to project cache
           if (surveyPerms !== undefined) {
             if (!surveyPerms.includes(entry.permission)) {
+              invalidateWithCooldown(queryClient, permissionKeys.survey(projectId, surveyId))
               throw new PermissionDeniedError(entry.permission, pathname)
             }
             return undefined
@@ -58,6 +98,7 @@ export function createPermissionMiddleware(queryClient: QueryClient): Middleware
 
         // Fall back to project-level permissions (covers all survey perms too)
         if (!projectPerms.includes(entry.permission)) {
+          invalidateWithCooldown(queryClient, permissionKeys.project(projectId))
           throw new PermissionDeniedError(entry.permission, pathname)
         }
 
