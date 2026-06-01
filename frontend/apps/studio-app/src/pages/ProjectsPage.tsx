@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Badge, Button, Card, CardStack, Modal, Toast } from '@flowform/ui'
-import { useCreateProject, useProjects } from '@/api/project/projects/hooks'
+import { useCreateProject, useProjects } from '@/api/hooks/projects'
 import { CreateProjectForm } from '@/components/CreateProjectForm'
-import { useCurrentUser } from '@/auth/useCurrentUser'
+import { useCurrentUser } from '@/auth/UserContext'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
 function ProjectCardSkeleton() {

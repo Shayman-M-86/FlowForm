@@ -25,11 +25,11 @@ import {
   LockKeyhole,
   MailCheck,
 } from 'lucide-react'
-import { useProject } from '@/api/project/projects/hooks'
-import { useProjectMembers } from '@/api/project/members/hooks'
-import { useProjectRoles } from '@/api/project/roles/hooks'
-import { useSurvey, useUpdateSurvey } from '@/api/project/surveys/hooks'
-import { useHasProjectPermission } from '@/api/project/permissions/hooks'
+import { useProject } from '@/api/hooks/projects'
+import { useProjectMembers } from '@/api/hooks/members'
+import { useProjectRoles } from '@/api/hooks/roles'
+import { useSurvey, useUpdateSurvey } from '@/api/hooks/surveys'
+import { useHasProjectPermission } from '@/api/hooks/permissions'
 import {
   useCreatePublicLink,
   useDeletePublicLink,
@@ -49,7 +49,7 @@ import {
   useUpdateSurveyRole,
 } from '@/api/survey/roles/hooks'
 import type { PublicLinkOut } from '@/api/survey/links/types'
-import type { ProjectMemberOut } from '@/api/project/members/types'
+import type { ProjectMemberOut } from '@/api/hooks/members'
 import type { CreateSurveyRoleRequest } from '@/api/survey/roles/types'
 import {
   LinkStateBadge,

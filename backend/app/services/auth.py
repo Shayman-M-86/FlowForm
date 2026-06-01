@@ -41,7 +41,7 @@ class AuthService:
     ) -> BootstrapCurrentUserResult:
         """Verify the ID token and create or update the local user."""
         user = users_repo.get_user_by_auth0_user_id(db, access_token_sub)
-        if user is not None:
+        if user:
             return BootstrapCurrentUserResult(user=user, created=False)
 
         id_token_claims = auth.verify_id_token(payload.id_token)

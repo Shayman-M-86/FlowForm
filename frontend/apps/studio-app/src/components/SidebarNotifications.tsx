@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button, Modal } from '@flowform/ui'
-import { useMyInvitations, useAcceptInvitation, useDeclineInvitation } from '@/api/project/members/hooks'
-import type { ProjectInvitationOut } from '@/api/project/members/types'
+import { useMyInvitations, useAcceptInvitation, useDeclineInvitation } from '@/api/hooks/members'
+import type { ProjectInvitationOut } from '@/api/hooks/members'
 
 // ── Icon ──────────────────────────────────────────────────────────────────────
 

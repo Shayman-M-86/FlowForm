@@ -1,12 +1,7 @@
 import type { Middleware } from 'openapi-fetch'
 import type { QueryClient } from '@tanstack/react-query'
-import { routePermissions } from './generated/rbac.gen'
-
-export const permissionKeys = {
-  project: (projectId: number) => ['permissions', 'project', projectId] as const,
-  survey: (projectId: number, surveyId: number) =>
-    ['permissions', 'project', projectId, 'survey', surveyId] as const,
-}
+import { routePermissions } from '../generated/rbac.gen'
+import { permissionKeys } from '../hooks/permissions/queryKeys'
 
 export class PermissionDeniedError extends Error {
   public readonly permission: string

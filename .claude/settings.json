@@ -82,10 +82,10 @@
       "Bash(npx astro info:*)",
       "Bash(npx eslint:*)",
       "Read(**/node_modules/**/*.d.ts)",
-      "Read(**/node_modules/**/package.json)"
+      "Read(**/node_modules/**/package.json)",
+      "Bash(rmdir:*)"
     ],
     "deny": [
-      "Bash(rmdir:*)",
       "Bash(rm -rf:*)",
       "Bash(shred:*)",
       "Bash(truncate:*)",
@@ -108,7 +108,6 @@
       "Bash(docker system prune:*)",
       "Bash(docker kill:*)",
       "Bash(docker stop:*)",
-      "Bash(docker compose -f infra/docker/docker-compose.dev.yml:*)",
 
       "Bash(curl:*)",
       "Bash(wget:*)",
@@ -123,12 +122,6 @@
       "Bash(chmod:*)",
       "Bash(chown:*)",
 
-      "Bash(uv run ruff check --fix:*)",
-      "Bash(uv run ruff format:*)",
-      "Bash(uv add:*)",
-      "Bash(uv remove:*)",
-      "Bash(pip install:*)",
-      "Bash(pip uninstall:*)",
 
       "Bash(psql:*)",
       "Bash(pg_dump:*)",
@@ -150,17 +143,7 @@
       "Bash(npm pack:*)",
       "Bash(npm link:*)",
       "Bash(rm -rf node_modules:*)",
-      "Bash(rm -rf */node_modules:*)",
-
-      "Bash(cat .env:*)",
-      "Bash(cat **/.env:*)",
-      "Edit(**/.env*)",
-      "Write(**/.env*)",
-
-      "Read(**/.venv/**)",
-      "Read(**/dist/**)",
-      "Read(**/build/**)",
-      "Read(**/frontend/apps/studio-app/src/routeTree.gen.ts)"
+      "Bash(rm -rf */node_modules:*)"
     ]
   },
   "hooks": {

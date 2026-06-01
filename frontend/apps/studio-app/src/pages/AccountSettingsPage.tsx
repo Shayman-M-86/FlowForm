@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { Badge, Button, Card, Input, Modal, Toast } from '@flowform/ui'
-import { useCurrentUser } from '@/auth/useCurrentUser'
+import { useCurrentUser } from '@/auth/UserContext'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 import {
   useChangePassword,

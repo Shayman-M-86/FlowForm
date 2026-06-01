@@ -1,6 +1,6 @@
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import type { ReactNode } from 'react'
-import { queryClient, localPersister, shouldPersistQuery, STALE } from './queryClient'
+import { queryClient, localPersister, shouldPersistQuery, STALE } from '../../lib/query/queryClient'
 
 export function QueryPersistProvider({ children }: { children: ReactNode }) {
   return (

@@ -1,5 +1,6 @@
-import { apiClient } from '../client'
-import type { BootstrapUserResponses } from '../generated/schema'
+// frontend/apps/studio-app/src/auth/bootstrap/api.ts
+import { apiClient } from '@/api/client'
+import type { BootstrapUserResponses } from '@/api/generated/schema'
 
 export async function bootstrapCurrentUser(
   idToken: string,

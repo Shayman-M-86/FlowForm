@@ -10,9 +10,9 @@ import {
   useDeleteProjectRole,
   useProjectRoles,
   useUpdateProjectRole,
-} from '@/api/project/roles/hooks'
-import { useProject } from '@/api/project/projects/hooks'
-import { useHasProjectPermission } from '@/api/project/permissions/hooks'
+} from '@/api/hooks/roles'
+import { useProject } from '@/api/hooks/projects'
+import { useHasProjectPermission } from '@/api/hooks/permissions'
 
 export {
   PERMISSION_LABEL,

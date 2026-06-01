@@ -6,11 +6,10 @@ import { BRAND } from "@flowform/site-shell";
 import "@flowform/site-shell/header.css";
 import { useProject } from "@/api/project/projects/hooks";
 import { useSurvey } from "@/api/project/surveys/hooks";
-import { useHasProjectPermission } from "@/api/project/permissions/hooks";
-import { PERMISSION_REQUIRED_TOOLTIP } from "@/api/project/permissions/types";
+import { useHasProjectPermission } from '@/api/hooks/permissions';
+import { PERMISSION_REQUIRED_TOOLTIP } from '@/api/hooks/permissions';
 import { SidebarNotifications } from "@/components/SidebarNotifications";
-import { useCurrentUser } from "@/auth/useCurrentUser";
-import { isAuthBypassEnabled } from "@/auth/testing";
+import { useCurrentUser } from "@/auth/UserContext";
 import { clearActiveProjectSlug } from "@/lib/activeProject";
 import { clearQueryCache } from "@/api/queryStorage";
 import { useRenderDebug } from "@/debug/useRenderDebug";
@@ -275,7 +274,6 @@ function SidebarUserMenu() {
           onSelect: () => {
             clearActiveProjectSlug();
             clearQueryCache();
-            if (isAuthBypassEnabled) return;
             logout({ logoutParams: { returnTo: window.location.origin } });
           },
         },

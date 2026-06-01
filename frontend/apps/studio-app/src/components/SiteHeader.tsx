@@ -3,9 +3,8 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useTheme, DropdownMenu, Button, Badge } from '@flowform/ui'
 import { STUDIO_NAV_LINKS, BRAND } from '@flowform/site-shell'
-import { useCurrentUser } from '@/auth/useCurrentUser'
-import { isAuthBypassEnabled } from '@/auth/testing'
-import { useProject } from '@/api/project/projects/hooks'
+import { useCurrentUser } from '@/auth/UserContext'
+import { useProject } from '@/api/hooks/projects'
 import { clearActiveProjectSlug, getActiveProjectSlug } from '@/lib/activeProject'
 import { clearQueryCache } from '@/api/queryStorage'
 import '@flowform/site-shell/header.css'
@@ -66,7 +65,7 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   const showAsAuthenticated =
-    isAuthBypassEnabled || isAuthenticated || (isLoading && hasBootstrappedSession())
+    isAuthenticated || (isLoading && hasBootstrappedSession())
 
   const menuSections = [
     ...(ctx
@@ -146,7 +145,6 @@ export function SiteHeader() {
           onSelect: () => {
             clearActiveProjectSlug()
             clearQueryCache()
-            if (isAuthBypassEnabled) return
             logout({ logoutParams: { returnTo: window.location.origin } })
           },
         },

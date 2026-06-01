@@ -1,156 +1,182 @@
 # FlowForm Studio — Claude Code Guide
 
-Studio is the management dashboard for FlowForm. Authenticated users create
-and manage projects, configure surveys, manage team members, and track
-responses. It is a React 19 + Vite SPA — not a public-facing site, not a
-form-filler.
+FlowForm Studio is the authenticated management dashboard for FlowForm. Users create projects, configure surveys, manage members and roles, publish versions, create links, and review responses.
+
+It is a React 19 + Vite SPA. It is not the public survey-filler application.
+
+---
+
+## Read the relevant reference before editing
+
+| Area                                                      | Reference                |
+| --------------------------------------------------------- | ------------------------ |
+| UI components, Tailwind, tokens, and themes               | `docs/studio/styling.md` |
+| Authentication, bootstrap, session storage, and logout    | `docs/studio/auth.md`    |
+| API client, named hooks, permissions, errors, and caching | `docs/studio/api.md`     |
+
+---
+
+## Hard rules
+
+1. Use an existing component from `@flowform/ui` before building a new UI primitive.
+2. Use Tailwind for layout, spacing, sizing, and responsive behaviour.
+3. Use FlowForm design tokens for colours, surfaces, and shadows. Never hardcode colour values.
+4. Never edit generated files by hand.
+5. Never call `fetch` directly. Use `$api`, except for the raw bootstrap request.
+6. Keep route files small. Route files should mount page components from `src/pages/`.
+7. Put reusable API hooks under `src/api/hooks/`, grouped by domain.
+8. Do not create separate request or response type files. Infer API types from the generated OpenAPI schema.
 
 ---
 
 ## Tech stack
 
-| Concern | Library |
-| --- | --- |
-| Routing | TanStack Router v1 (file-based, `src/routes/`) |
-| Server state | TanStack Query v5 (`src/api/`) |
-| Authentication | Auth0 (`@auth0/auth0-react`) |
-| Forms | react-hook-form + zod |
-| Styles | Tailwind v4 + `@flowform/styles` tokens |
-| UI components | `@flowform/ui` |
-| Build | Vite 8, port 5174 |
+| Concern        | Library                                 |
+| -------------- | --------------------------------------- |
+| Routing        | TanStack Router v1                      |
+| Server state   | TanStack Query v5                       |
+| API client     | `openapi-fetch` + `openapi-react-query` |
+| Authentication | Auth0                                   |
+| Forms          | `react-hook-form` + Zod                 |
+| Styles         | Tailwind v4 + `@flowform/styles`        |
+| Components     | `@flowform/ui`                          |
+| Build          | Vite 8, port 5174                       |
 
 ---
 
-## Styling rules
+## Folder ownership
 
-**Priority order — follow this strictly:**
+| Folder            | Responsibility                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| `src/app/`        | Application shell and top-level providers                                                   |
+| `src/api/`        | Shared HTTP infrastructure, generated schemas, middleware, and domain hooks                 |
+| `src/auth/`       | Auth0 integration, bootstrap workflow, current-user context, redirects, and session storage |
+| `src/components/` | Shared application-level components                                                         |
+| `src/pages/`      | Page components mounted by routes                                                           |
+| `src/routes/`     | TanStack Router file-based route definitions                                                |
+| `src/lib/`        | Framework-independent helpers and shared configuration                                      |
 
-1. **`@flowform/ui` component first.** If a component exists in the library,
-   use it. Do not recreate `Button`, `Card`, `Modal`, `Input`, `Badge`,
-   `Spinner`, `Tooltip`, `DropdownMenu`, `Select`, `Toggle`, `TabSelector`,
-   etc. from scratch.
+---
 
-2. **Tailwind for layout and scale.** Use Tailwind utilities for positioning,
-   spacing, sizing, flex/grid, and responsive behaviour. This is Tailwind's
-   primary job in this app.
+## Key file structure
 
-3. **Design tokens for colour, surface, and shadow.** When you need colour
-   or surface values that aren't covered by a `@flowform/ui` component, use
-   CSS custom properties from `@flowform/styles/tokens.css` directly:
-
-   ```css
-   /* Colour */
-   var(--primary)               var(--primary-hover)
-   var(--accent)                var(--accent-muted)
-   var(--destructive)           var(--destructive-foreground)
-   var(--foreground)            var(--muted-foreground)
-   var(--background)            var(--card)
-   var(--border)                var(--input)
-   var(--success)               var(--warning)
-
-   /* Surface interactions */
-   var(--bg-hover-highlight)    var(--transparent-hover)
-   var(--transparent-press)     var(--transparent-active)
-
-   /* Shadows */
-   var(--app-shadow-xs)   var(--app-shadow-sm)  var(--app-shadow)
-   var(--app-shadow-md)   var(--app-shadow-lg)  var(--app-shadow-xl)
-   ```
-
-   Tokens work in both light (`:root`) and dark (`.dark`) themes
-   automatically — never hardcode colour values.
-
-4. **No custom CSS for things Tailwind or tokens cover.** Only reach for a
-   `<style>` block or a `.css` file when you genuinely cannot express
-   something with the above tools (e.g. complex animations, pseudo-elements).
+```text
+src/
+├── app/
+│   ├── ProtectedApp.tsx
+│   └── providers/
+│       └── QueryPersistProvider.tsx
+│
+├── api/
+│   ├── client.ts
+│   ├── tokenProvider.ts
+│   ├── middleware/
+│   │   ├── authMiddleware.ts
+│   │   └── permissionMiddleware.ts
+│   ├── hooks/
+│   └── generated/
+│       ├── schema.ts
+│       └── rbac.gen.ts
+│
+├── auth/
+│   ├── bootstrap/
+│   │   ├── api.ts
+│   │   ├── session.ts
+│   │   └── useBootstrap.ts
+│   ├── UserContext.tsx
+│   └── redirect.ts
+│
+├── components/
+├── lib/
+├── pages/
+└── routes/
+```
 
 ---
 
 ## Routing
 
-Routes are file-based under `src/routes/`. TanStack Router generates
-`routeTree.gen.ts` automatically — **never edit that file by hand**. Run
-`npm run routes` to regenerate after adding or renaming a route file.
+Routes are file-based under `src/routes/`.
 
-The root route (`__root.tsx`) wraps everything in `ProtectedApp` → `SiteHeader`
-→ `<Outlet />`. Dynamic segments use `$param` syntax; access them via
-`Route.useParams()`.
+TanStack Router generates `routeTree.gen.ts`. Never edit that file manually. Run `npm run routes` after adding, removing, or renaming route files.
 
-**Adding a new page:**
+Dynamic segments use `$param` syntax. Read them with `Route.useParams()`.
 
-1. Create `src/routes/your-path/index.tsx` (or `your-path.tsx` for a leaf).
-2. `export const Route = createFileRoute('/your-path')({ component: YourPage })`
-3. Create `src/pages/YourPage.tsx`.
-4. Link with `<Link to="/your-path" />` from `@tanstack/react-router`.
+A route file should remain small:
 
----
+```ts
+import { createFileRoute } from '@tanstack/react-router'
+import { ProjectsPage } from '@/pages/ProjectsPage'
 
-## Authentication flow
-
-1. `ProtectedApp` initialises Auth0 with `openid profile email` scope.
-2. On first load for a new user, calls `POST /api/v1/auth/bootstrap-user` with the
-   Auth0 ID token to create the backend user record.
-3. `ProtectedApp` calls `initApiAuth()` to register the token getter on the
-   module-level API client — all subsequent requests use it automatically.
-4. User info is in `UserContext` — access it via `useUser()`.
-5. Dev bypass: set `VITE_AUTH_BYPASS` — see `src/auth/testing.ts`.
+export const Route = createFileRoute('/projects/')({
+  component: ProjectsPage,
+})
+```
 
 ---
 
-## API layer
+## API usage
 
-**Never call `fetch` directly.** Use `$api` from `src/api/client.ts`.
-
-`$api` is an `openapi-react-query` client wrapping `openapi-fetch`. It is
-typed against `src/api/generated/schema.ts` (generated by `openapi-typescript`).
-Auth and permission middleware are applied at the module level — no setup needed
-in hooks or components.
+Use `$api` for normal queries and mutations:
 
 ```ts
 import { $api } from '@/api/client'
 
-// Query
-const { data, isPending } = $api.useQuery('get', '/api/v1/me/profile')
+const profile = $api.useQuery('get', '/api/v1/me/profile')
 
-// Mutation
-const mutation = $api.useMutation('patch', '/api/v1/me/profile')
-mutation.mutate({ body: { display_name: 'Alice' } })
+const updateProfile = $api.useMutation('patch', '/api/v1/me/profile')
+updateProfile.mutate({
+  body: { display_name: 'Alice' },
+})
 ```
 
-For repeated calls, wrap in a thin named hook in `src/api/<domain>/hooks.ts`:
+Create a named hook under `src/api/hooks/` when a call:
+
+* is reused in more than one place
+* requires cache invalidation
+* uses custom stale time
+* uses persistence
+* requires `enabled` logic
+
+Use the cache tiers from `src/lib/query/queryClient.ts`:
 
 ```ts
-export function useMyProfile() {
-  return $api.useQuery('get', '/api/v1/me/profile')
-}
-
-export function useUpdateProfile() {
-  const queryClient = useQueryClient()
-  return $api.useMutation('patch', '/api/v1/me/profile', {
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'] }),
-  })
-}
+STALE.STATIC
+STALE.SLOW
+STALE.ACTIVE
 ```
 
-No `requests.ts` or `types.ts` files needed — types are inferred from the
-generated schema. Only write a hook file when the named export improves
-readability or carries invalidation/caching logic.
+Only persist `STATIC` and `SLOW` data. Never persist rapidly changing builder data.
+
+---
+
+## Generated files
+
+Never manually edit:
+
+```text
+src/api/generated/schema.ts
+src/api/generated/rbac.gen.ts
+src/routeTree.gen.ts
+```
+
+Regenerate them from their source definitions.
 
 ---
 
 ## Environment variables
 
-| Variable | Purpose | Default |
-| --- | --- | --- |
-| `VITE_API_BASE_URL` | Backend base URL | `http://localhost:5000` |
-| `VITE_AUTH0_DOMAIN` | Auth0 tenant domain | required |
-| `VITE_AUTH0_CLIENT_ID` | Auth0 client ID | required |
-| `VITE_AUTH_BYPASS` | Skip Auth0 in dev | unset |
+| Variable               | Purpose             | Default                 |
+| ---------------------- | ------------------- | ----------------------- |
+| `VITE_API_BASE_URL`    | Backend base URL    | `http://localhost:5000` |
+| `VITE_AUTH0_DOMAIN`    | Auth0 tenant domain | required                |
+| `VITE_AUTH0_CLIENT_ID` | Auth0 client ID     | required                |
+| `VITE_AUTH0_AUDIENCE`  | Auth0 API audience  | required                |
 
 ---
 
-## Current state / known stubs
+## Known incomplete areas
 
-- `ProjectSurveysPage` — mostly unimplemented; stub UI only.
-- `ProjectDashboardPage` — members and permissions sections use mock data.
-- Survey editing is in the `public-site` builder, not yet integrated into Studio.
+* `ProjectSurveysPage` is mostly a stub.
+* `ProjectDashboardPage` still uses mock data for members and permissions.
+* The survey builder has not yet been integrated into Studio.

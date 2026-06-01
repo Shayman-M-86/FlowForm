@@ -1,10 +1,9 @@
 import { createFileRoute, Outlet, useRouterState, useNavigate } from '@tanstack/react-router'
 import { Button, TabSelector } from '@flowform/ui'
 import { Breadcrumb } from '@/components/Breadcrumb'
-import { useProject } from '@/api/project/projects/hooks'
-import { useSurvey } from '@/api/project/surveys/hooks'
-import { useHasProjectPermission } from '@/api/project/permissions/hooks'
-import { PERMISSION_REQUIRED_TOOLTIP } from '@/api/project/permissions/types'
+import { useProject } from '@/api/hooks/projects'
+import { useSurvey } from '@/api/hooks/surveys'
+import { useHasSurveyPermission, useSurveyPermissions } from '@/api/hooks/permissions'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
 const TAB_IDS = ['overview', 'builder', 'access', 'responses', 'settings'] as const
@@ -18,11 +17,14 @@ function SurveyLayout() {
   const navigate = useNavigate()
 
   const projectId = project?.id ?? null
-  const canEditSurvey    = useHasProjectPermission(projectId, 'survey:edit')
-  const canViewResponses = useHasProjectPermission(projectId, 'submission:view')
-  const canArchiveSurvey = useHasProjectPermission(projectId, 'survey:archive')
-  const canDeleteSurvey  = useHasProjectPermission(projectId, 'survey:delete')
-  const canPublishSurvey = useHasProjectPermission(projectId, 'survey:publish')
+  const surveyId = survey?.id ?? null
+  useSurveyPermissions(projectId, surveyId)
+
+  const canEditSurvey    = useHasSurveyPermission(projectId, surveyId, 'survey:edit')
+  const canViewResponses = useHasSurveyPermission(projectId, surveyId, 'submission:view')
+  const canArchiveSurvey = useHasSurveyPermission(projectId, surveyId, 'survey:archive')
+  const canDeleteSurvey  = useHasSurveyPermission(projectId, surveyId, 'survey:delete')
+  const canPublishSurvey = useHasSurveyPermission(projectId, surveyId, 'survey:publish')
 
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const activeTab: TabId = (TAB_IDS.find((id) => pathname.endsWith(`/${id}`)) ?? 'overview') as TabId
@@ -33,10 +35,10 @@ function SurveyLayout() {
 
   const tabs = [
     { id: 'overview',  label: 'Overview' },
-    { id: 'builder',   label: 'Builder',   disabled: !canEditSurvey,                                                       tooltip: PERMISSION_REQUIRED_TOOLTIP.surveyBuilder },
+    { id: 'builder',   label: 'Builder',   disabled: !canEditSurvey,                                                                tooltip: 'You need survey:edit permission to use the builder.' },
     { id: 'access',    label: 'Access' },
-    { id: 'responses', label: 'Responses', disabled: !canViewResponses,                                                    tooltip: PERMISSION_REQUIRED_TOOLTIP.surveyResponses },
-    { id: 'settings',  label: 'Settings',  disabled: !canEditSurvey && !canArchiveSurvey && !canDeleteSurvey && !canPublishSurvey, tooltip: PERMISSION_REQUIRED_TOOLTIP.surveySettings },
+    { id: 'responses', label: 'Responses', disabled: !canViewResponses,                                                             tooltip: 'You need submission:view permission to view responses.' },
+    { id: 'settings',  label: 'Settings',  disabled: !canEditSurvey && !canArchiveSurvey && !canDeleteSurvey && !canPublishSurvey,  tooltip: 'You need survey:edit, archive, delete, or publish permission to access settings.' },
   ]
 
   return (

@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
-import { ProtectedApp } from '@/components/auth/ProtectedApp'
+import { ProtectedApp } from '@/app/ProtectedApp'
 import { StudioSidebar } from '@/components/StudioSidebar'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 

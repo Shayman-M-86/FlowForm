@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { MembersTab } from '@/pages/ProjectDashboardTabPages/MembersTab'
-import { useProject } from '@/api/project/projects/hooks'
+import { useProject } from '@/api/hooks/projects'
 import { ProjectPermissionGate } from '@/components/ProjectPermissionGate'
 
 function MembersTabRoute() {

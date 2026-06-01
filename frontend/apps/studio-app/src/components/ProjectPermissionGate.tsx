@@ -1,6 +1,6 @@
-import { useProject } from '@/api/project/projects/hooks'
-import { useMyProjectPermissions } from '@/api/project/permissions/hooks'
-import type { ProjectPermission } from '@/api/project/permissions/types'
+import { useProject } from '@/api/hooks/projects'
+import { useMyProjectPermissions } from '@/api/hooks/permissions'
+import type { ProjectPermission } from '@/api/hooks/permissions'
 import { useParams } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 

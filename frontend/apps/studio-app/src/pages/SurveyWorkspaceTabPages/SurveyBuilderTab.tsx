@@ -6,9 +6,9 @@ import type { SurveyNode } from '@flowform/builder'
 import { Badge, Button, Card, DropdownMenu, Spinner, Toast } from '@flowform/ui'
 import type { ToastVariant } from '@flowform/ui'
 import { Archive, ChevronDown, Copy, Eye, Rocket, RotateCcw } from 'lucide-react'
-import { useProject } from '@/api/project/projects/hooks'
-import { useSurvey } from '@/api/project/surveys/hooks'
-import { useHasProjectPermission } from '@/api/project/permissions/hooks'
+import { useProject } from '@/api/hooks/projects'
+import { useSurvey } from '@/api/hooks/surveys'
+import { useHasProjectPermission } from '@/api/hooks/permissions'
 import {
   useArchiveSurveyVersion,
   useCopyVersionToDraft,

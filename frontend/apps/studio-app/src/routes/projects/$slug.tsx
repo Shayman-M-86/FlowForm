@@ -1,9 +1,8 @@
 import { createFileRoute, Outlet, Link, useRouterState, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { setActiveProjectSlug } from '@/lib/activeProject'
-import { useProject } from '@/api/project/projects/hooks'
-import { useHasProjectPermission } from '@/api/project/permissions/hooks'
-import { PERMISSION_REQUIRED_TOOLTIP } from '@/api/project/permissions/types'
+import { setActiveProjectSlug } from '@/lib/storage/activeProject'
+import { useProject } from '@/api/hooks/projects'
+import { useHasProjectPermission } from '@/api/hooks/permissions'
 import { Spinner, Card, TabSelector } from '@flowform/ui'
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { useRenderDebug } from '@/debug/useRenderDebug'
@@ -51,10 +50,10 @@ function ProjectLayout() {
   const activeTab = ['surveys', 'members', 'roles', 'settings'].find((t) => pathname.includes(`/${t}`)) ?? 'surveys'
 
   const tabs = [
-    { id: 'surveys',  label: 'Surveys',  disabled: !canViewSurveys,                      tooltip: PERMISSION_REQUIRED_TOOLTIP.surveys },
-    { id: 'members',  label: 'Members',  disabled: !canManageMembers,                     tooltip: PERMISSION_REQUIRED_TOOLTIP.members },
-    { id: 'roles',    label: 'Roles',    disabled: !canManageRoles,                       tooltip: PERMISSION_REQUIRED_TOOLTIP.roles },
-    { id: 'settings', label: 'Settings', disabled: !canEditSettings && !canDeleteProject, tooltip: PERMISSION_REQUIRED_TOOLTIP.settings },
+    { id: 'surveys',  label: 'Surveys',  disabled: !canViewSurveys,                      tooltip: 'You need survey:view permission to access surveys.' },
+    { id: 'members',  label: 'Members',  disabled: !canManageMembers,                     tooltip: 'You need project:manage_members permission to manage members.' },
+    { id: 'roles',    label: 'Roles',    disabled: !canManageRoles,                       tooltip: 'You need project:manage_roles permission to manage roles.' },
+    { id: 'settings', label: 'Settings', disabled: !canEditSettings && !canDeleteProject, tooltip: 'You need project:edit or project:delete permission to access settings.' },
   ]
 
   return (
