@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import { Button, Input, LargeInput, NumberStepperGroup } from "@flowform/ui";
 import { useOptionDrag } from "./useOptionDrag";
-import { QUESTION_MAX, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
+import { QUESTION_MAX, TITLE_MAX, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
 import {
   NodePillTopbar,
   NodePillIdField,
@@ -62,7 +62,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
   const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
-  const [isRequired, setIsRequired] = useState(initialContent?.required ?? false);
+  const [isRequired, setIsRequired] = useState(false);
   const [minChoices, setMinChoices] = useState(initialContent?.definition.min ?? 1);
   const [maxChoices, setMaxChoices] = useState(initialContent?.definition.max ?? 1);
   const [openOptionIds, setOpenOptionIds] = useState<Set<string>>(new Set());
@@ -91,7 +91,6 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
     id: tagValue,
     title: titleValue,
     label: questionValue,
-    ...(isRequired ? { required: true } : {}),
     family: "choice",
     definition: {
       min: minChoices,
@@ -174,6 +173,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
           max={QUESTION_MAX}
           titleValue={titleValue}
           onTitleChange={setTitleValue}
+          titleMax={TITLE_MAX}
           showTitleEdit={true}
         />
 

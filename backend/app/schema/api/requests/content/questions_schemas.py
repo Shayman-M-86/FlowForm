@@ -239,7 +239,7 @@ class ChoiceQuestionSchemaIn(BaseModel):
 class FieldQuestionSchemaIn(BaseModel):
     """Incoming field-question content schema."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
 
     id: SchemaIdStr
     family: FieldFamily
@@ -251,7 +251,7 @@ class FieldQuestionSchemaIn(BaseModel):
 class MatchingQuestionSchemaIn(BaseModel):
     """Incoming matching-question content schema."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
 
     id: SchemaIdStr
     family: MatchingFamily

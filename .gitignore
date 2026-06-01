@@ -18,6 +18,8 @@ lib/
 
 !frontend/packages/ui/src/lib/
 !frontend/packages/ui/src/lib/**
+!frontend/apps/studio-app/src/lib/**
+!frontend/apps/studio-app/src/lib/
 
 lib64/
 parts/

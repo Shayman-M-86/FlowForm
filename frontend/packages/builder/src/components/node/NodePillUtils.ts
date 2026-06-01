@@ -1,5 +1,8 @@
-export const QUESTION_MAX = 5000;
-export const TAG_MAX = 40;
+import { ChoiceQuestionSchemaInConstraints } from "@flowform/schema";
+
+export const QUESTION_MAX = ChoiceQuestionSchemaInConstraints.label.maxLength;
+export const TITLE_MAX = ChoiceQuestionSchemaInConstraints.title.maxLength;
+export const TAG_MAX = ChoiceQuestionSchemaInConstraints.id.maxLength;
 export const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export const QUESTION_TEXTAREA_MAX_HEIGHT = 600;

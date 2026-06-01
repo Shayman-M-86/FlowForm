@@ -12,6 +12,7 @@ const stylesSrc = path.resolve(__dirname, '../../packages/styles/src');
 const uiSrc = path.resolve(__dirname, '../../packages/ui/src');
 const builderSrc = path.resolve(__dirname, '../../packages/builder/src');
 const siteShellSrc = path.resolve(__dirname, '../../packages/site-shell/src');
+const schemaSrc = path.resolve(__dirname, '../../packages/schema/src');
 
 export default defineConfig({
   site: 'https://flow-form.com.au',
@@ -31,12 +32,13 @@ export default defineConfig({
       manifest: true,
     },
     ssr: {
-      noExternal: ['@flowform/ui', '@flowform/builder', '@flowform/site-shell', '@flowform/styles'],
+      noExternal: ['@flowform/ui', '@flowform/builder', '@flowform/site-shell', '@flowform/styles', '@flowform/schema'],
     },
     resolve: {
       tsconfigPaths: false,
       extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
       alias: [
+        { find: '@flowform/schema', replacement: path.resolve(schemaSrc, 'index.ts') },
         { find: '@flowform/site-shell/header.css', replacement: path.resolve(siteShellSrc, 'SiteHeader.css') },
         { find: '@flowform/site-shell', replacement: path.resolve(siteShellSrc, 'index.ts') },
         { find: '@flowform/builder/node-page.css', replacement: path.resolve(builderSrc, 'pages/NodePage.css') },

@@ -8,6 +8,8 @@
     "skipLibCheck": true,
     "paths": {
       "@/*": ["./src/*"],
+      "@flowform/schema": ["../../packages/schema/src/index.ts"],
+      "@flowform/schema/*": ["../../packages/schema/src/*"],
       "@flowform/site-shell": ["../../packages/site-shell/src/index.ts"],
       "@flowform/site-shell/*": ["../../packages/site-shell/src/*"],
       "@flowform/ui": ["../../packages/ui/src/index.tsx"],

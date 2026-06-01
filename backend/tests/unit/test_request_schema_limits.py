@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from app.schema.api import limits
 from app.schema.api.requests.auth import BootstrapUserRequest
 from app.schema.api.requests.content.questions_schemas import ChoiceOptionIn
-from app.schema.api.requests.content.rule_schemas import ThenSetItemIn
+from app.schema.api.requests.content.rule_schemas import RuleSetItemIn
 from app.schema.api.requests.content.scoring_rule_schemas import MatchingPairIn
 from app.schema.api.requests.projects import (
     CreateProjectRequest,
@@ -93,7 +93,7 @@ def _too_long(limit: int) -> str:
             limits.SCHEMA_ID_MAX,
         ),
         (
-            lambda value: ThenSetItemIn(target_id=value, visible=True),
+            lambda value: RuleSetItemIn(target_id=value, visible=True),
             limits.SCHEMA_ID_MAX,
         ),
         (

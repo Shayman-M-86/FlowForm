@@ -33,7 +33,7 @@ SizedRuleContent = Annotated[RuleSchemaIn, AfterValidator(_check_content_size)]
 class CreateQuestionNodeRequest(BaseModel):
     """Validates requests that create a new question node."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
 
     type: Literal["question"]
     sort_key: NodeSortKey
@@ -43,7 +43,7 @@ class CreateQuestionNodeRequest(BaseModel):
 class CreateRuleNodeRequest(BaseModel):
     """Validates requests that create a new rule node."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
 
     type: Literal["rule"]
     sort_key: NodeSortKey

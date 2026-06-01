@@ -1340,21 +1340,12 @@ export interface components {
          * @description Validation requirements for a choice-question condition.
          */
         ChoiceRequirementsIn: {
-            /**
-             * Required
-             * @default null
-             */
-            required: string[] | null;
-            /**
-             * Forbidden
-             * @default null
-             */
-            forbidden: string[] | null;
-            /**
-             * Any Of
-             * @default null
-             */
-            any_of: string[] | null;
+            /** Required */
+            required?: string[];
+            /** Forbidden */
+            forbidden?: string[];
+            /** Any Of */
+            any_of?: string[];
         };
         /**
          * CreateQuestionNodeRequest
@@ -1391,8 +1382,8 @@ export interface components {
          */
         DateFieldRequirementsIn: {
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             type: "date";
             /**
@@ -1404,25 +1395,26 @@ export interface components {
             value: string;
         };
         /**
-         * ElseDoIn
-         * @description Represents the single navigation action performed by an else block.
+         * EndAndDiscardActionIn
+         * @description Navigation action that ends the survey and discards the response.
          */
-        ElseDoIn: {
-            /**
-             * Skip To
-             * @default null
-             */
-            skip_to: string | null;
-            /**
-             * End And Submit
-             * @default null
-             */
-            end_and_submit: boolean | null;
+        EndAndDiscardActionIn: {
             /**
              * End And Discard
-             * @default null
+             * @default true
              */
-            end_and_discard: boolean | null;
+            end_and_discard: boolean;
+        };
+        /**
+         * EndAndSubmitActionIn
+         * @description Navigation action that ends the survey and submits the response.
+         */
+        EndAndSubmitActionIn: {
+            /**
+             * End And Submit
+             * @default true
+             */
+            end_and_submit: boolean;
         };
         /**
          * FieldConditionIn
@@ -1518,6 +1510,16 @@ export interface components {
             label: string;
         };
         /**
+         * MatchingPairIn
+         * @description A single prompt-to-match pairing in a matching condition.
+         */
+        MatchingPairIn: {
+            /** Prompt Id */
+            prompt_id: string;
+            /** Match Id */
+            match_id: string;
+        };
+        /**
          * MatchingQuestionSchemaIn
          * @description Incoming matching-question content schema.
          */
@@ -1544,9 +1546,7 @@ export interface components {
          */
         MatchingRequirementsIn: {
             /** Required */
-            required: {
-                [key: string]: string;
-            }[];
+            required: components["schemas"]["MatchingPairIn"][];
         };
         /**
          * NumberFieldRequirementsIn
@@ -1554,8 +1554,8 @@ export interface components {
          */
         NumberFieldRequirementsIn: {
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             type: "number";
             /**
@@ -1690,11 +1690,20 @@ export interface components {
             right_label: string;
         };
         /**
-         * RuleElseIn
-         * @description Represents the fallback action when a rule predicate does not match.
+         * RuleBranchIn
+         * @description Represents the effects applied by a then or else branch.
          */
-        RuleElseIn: {
-            do: components["schemas"]["ElseDoIn"];
+        RuleBranchIn: {
+            /**
+             * Set
+             * @default null
+             */
+            set: components["schemas"]["RuleSetItemIn"][] | null;
+            /**
+             * Do
+             * @default null
+             */
+            do: components["schemas"]["SkipToActionIn"] | components["schemas"]["EndAndSubmitActionIn"] | components["schemas"]["EndAndDiscardActionIn"] | null;
         };
         /**
          * RuleIfIn
@@ -1717,23 +1726,15 @@ export interface components {
             /** Id */
             id: string;
             if: components["schemas"]["RuleIfIn"];
-            then: components["schemas"]["RuleThenIn"];
+            then: components["schemas"]["RuleBranchIn"];
             /** @default null */
-            else: components["schemas"]["RuleElseIn"] | null;
+            else: components["schemas"]["RuleBranchIn"] | null;
         };
         /**
-         * RuleThenIn
-         * @description Represents the effects applied when a rule predicate matches.
+         * RuleSetItemIn
+         * @description Represents one visibility or required-state change applied by a branch.
          */
-        RuleThenIn: {
-            /** Set */
-            set: components["schemas"]["ThenSetItemIn"][];
-        };
-        /**
-         * ThenSetItemIn
-         * @description Represents one visibility or required-state effect in a then block.
-         */
-        ThenSetItemIn: {
+        RuleSetItemIn: {
             /** Target Id */
             target_id: string;
             /**
@@ -1746,6 +1747,14 @@ export interface components {
              * @default null
              */
             required: boolean | null;
+        };
+        /**
+         * SkipToActionIn
+         * @description Navigation action that jumps to a specific question.
+         */
+        SkipToActionIn: {
+            /** Skip To */
+            skip_to: string;
         };
         /** CreateNodeRequest */
         CreateNodeRequest: components["schemas"]["CreateQuestionNodeRequest"] | components["schemas"]["CreateRuleNodeRequest"];
@@ -1924,18 +1933,6 @@ export interface components {
              */
             strategy: "matching_answer_key";
             config: components["schemas"]["MatchingAnswerKeyConfig"];
-        };
-        /**
-         * MatchingPairIn
-         * @description Request model for a matching pair in matching answer key scoring.
-         *
-         *     Validates that both left and right IDs are non-blank strings.
-         */
-        MatchingPairIn: {
-            /** Left Id */
-            left_id: string;
-            /** Right Id */
-            right_id: string;
         };
         /**
          * NumericRangeScoreIn
@@ -2870,7 +2867,8 @@ export type ChoiceRequirementsIn = components['schemas']['ChoiceRequirementsIn']
 export type CreateQuestionNodeRequest = components['schemas']['CreateQuestionNodeRequest'];
 export type CreateRuleNodeRequest = components['schemas']['CreateRuleNodeRequest'];
 export type DateFieldRequirementsIn = components['schemas']['DateFieldRequirementsIn'];
-export type ElseDoIn = components['schemas']['ElseDoIn'];
+export type EndAndDiscardActionIn = components['schemas']['EndAndDiscardActionIn'];
+export type EndAndSubmitActionIn = components['schemas']['EndAndSubmitActionIn'];
 export type FieldConditionIn = components['schemas']['FieldConditionIn'];
 export type FieldDefinitionIn = components['schemas']['FieldDefinitionIn'];
 export type FieldQuestionSchemaIn = components['schemas']['FieldQuestionSchemaIn'];
@@ -2878,6 +2876,7 @@ export type FieldUiIn = components['schemas']['FieldUIIn'];
 export type MatchingConditionIn = components['schemas']['MatchingConditionIn'];
 export type MatchingDefinitionIn = components['schemas']['MatchingDefinitionIn'];
 export type MatchingItemIn = components['schemas']['MatchingItemIn'];
+export type MatchingPairIn = components['schemas']['MatchingPairIn'];
 export type MatchingQuestionSchemaIn = components['schemas']['MatchingQuestionSchemaIn'];
 export type MatchingRequirementsIn = components['schemas']['MatchingRequirementsIn'];
 export type NumberFieldRequirementsIn = components['schemas']['NumberFieldRequirementsIn'];
@@ -2889,11 +2888,11 @@ export type RatingRequirementsIn = components['schemas']['RatingRequirementsIn']
 export type RatingSliderDefinitionIn = components['schemas']['RatingSliderDefinitionIn'];
 export type RatingStarDefinitionIn = components['schemas']['RatingStarDefinitionIn'];
 export type RatingUiIn = components['schemas']['RatingUIIn'];
-export type RuleElseIn = components['schemas']['RuleElseIn'];
+export type RuleBranchIn = components['schemas']['RuleBranchIn'];
 export type RuleIfIn = components['schemas']['RuleIfIn'];
 export type RuleSchemaIn = components['schemas']['RuleSchemaIn'];
-export type RuleThenIn = components['schemas']['RuleThenIn'];
-export type ThenSetItemIn = components['schemas']['ThenSetItemIn'];
+export type RuleSetItemIn = components['schemas']['RuleSetItemIn'];
+export type SkipToActionIn = components['schemas']['SkipToActionIn'];
 export type CreateNodeRequest = components['schemas']['CreateNodeRequest'];
 export type UpdateNodeRequest = components['schemas']['UpdateNodeRequest'];
 export type ScoringRuleResponses = components['schemas']['ScoringRuleResponses'];
@@ -2903,7 +2902,6 @@ export type FieldNumericRangesConfig = components['schemas']['FieldNumericRanges
 export type FieldNumericRangesScoringSchemaIn = components['schemas']['FieldNumericRangesScoringSchemaIn'];
 export type MatchingAnswerKeyConfig = components['schemas']['MatchingAnswerKeyConfig'];
 export type MatchingAnswerKeyScoringSchemaIn = components['schemas']['MatchingAnswerKeyScoringSchemaIn'];
-export type MatchingPairIn = components['schemas']['MatchingPairIn'];
 export type NumericRangeScoreIn = components['schemas']['NumericRangeScoreIn'];
 export type RatingDirectConfig = components['schemas']['RatingDirectConfig'];
 export type RatingDirectScoringSchemaIn = components['schemas']['RatingDirectScoringSchemaIn'];

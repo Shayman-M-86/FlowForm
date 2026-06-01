@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Annotated
+import re
+from typing import Annotated, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -20,62 +21,78 @@ from app.schema.api.requests.field_types import SchemaIdStr
 
 DateValueStr = Annotated[str, Field(max_length=limits.DATE_VALUE_MAX)]
 
+_STRICT = ConfigDict(extra="forbid", populate_by_name=True)
+
+
 # ── Condition requirements per question family ─────────────────────────────────
 
 
 class ChoiceRequirementsIn(BaseModel):
     """Validation requirements for a choice-question condition."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = _STRICT
 
-    required: list[SchemaIdStr] | None = Field(default=None, max_length=limits.RULE_ITEMS_MAX)
-    forbidden: list[SchemaIdStr] | None = Field(default=None, max_length=limits.RULE_ITEMS_MAX)
-    any_of: list[SchemaIdStr] | None = Field(default=None, max_length=limits.RULE_ITEMS_MAX)
+    required: list[SchemaIdStr] = Field(default_factory=list, max_length=limits.RULE_ITEMS_MAX)
+    forbidden: list[SchemaIdStr] = Field(default_factory=list, max_length=limits.RULE_ITEMS_MAX)
+    any_of: list[SchemaIdStr] = Field(default_factory=list, max_length=limits.RULE_ITEMS_MAX)
 
     @model_validator(mode="after")
-    def validate_has_at_least_one(self) -> ChoiceRequirementsIn:
-        if self.required is None and self.forbidden is None and self.any_of is None:
-            raise ValueError("choice requirements must specify at least one of: required, forbidden, any_of")
+    def validate_requirements(self) -> Self:
+        if not self.required and not self.forbidden and not self.any_of:
+            raise ValueError("choice requirements must contain at least one of: required, forbidden, any_of")
+
+        conflicting = (
+            set(self.required) & set(self.forbidden)
+            | set(self.any_of) & set(self.forbidden)
+        )
+        if conflicting:
+            raise ValueError(
+                f"choice options cannot be both allowed and forbidden: {sorted(conflicting)}"
+            )
+
         return self
+
+
+class MatchingPairIn(BaseModel):
+    """A single prompt-to-match pairing in a matching condition."""
+
+    model_config = _STRICT
+
+    prompt_id: SchemaIdStr
+    match_id: SchemaIdStr
 
 
 class MatchingRequirementsIn(BaseModel):
     """Validation requirements for a matching-question condition."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = _STRICT
 
-    required: list[dict[SchemaIdStr, SchemaIdStr]] = Field(max_length=limits.RULE_ITEMS_MAX)
-
-    @field_validator("required")
-    @classmethod
-    def validate_required(cls, value: list[dict[SchemaIdStr, SchemaIdStr]]) -> list[dict[SchemaIdStr, SchemaIdStr]]:
-        if not value:
-            raise ValueError("matching requirements must have at least one required pair")
-        for pair in value:
-            if len(pair) != 1:
-                raise ValueError("each matching requirement must be a single-key dict mapping prompt_id to match_id")
-        return value
+    required: list[MatchingPairIn] = Field(min_length=1, max_length=limits.RULE_ITEMS_MAX)
 
 
 class RatingRequirementsIn(BaseModel):
     """Validation requirements for a rating-question condition."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = _STRICT
 
     min: int | float | None = None
     max: int | float | None = None
 
     @model_validator(mode="after")
-    def validate_has_at_least_one(self) -> RatingRequirementsIn:
+    def validate_range(self) -> Self:
         if self.min is None and self.max is None:
             raise ValueError("rating requirements must specify at least one of: min, max")
+
+        if self.min is not None and self.max is not None and self.min > self.max:
+            raise ValueError("rating min cannot be greater than max")
+
         return self
 
 
 class NumberFieldRequirementsIn(BaseModel):
     """Validation requirements for a numeric field-question condition."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = _STRICT
 
     type: NumberFieldType
     operator: NumericFieldOperator
@@ -85,7 +102,7 @@ class NumberFieldRequirementsIn(BaseModel):
 class DateFieldRequirementsIn(BaseModel):
     """Validation requirements for a date field-question condition."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = _STRICT
 
     type: DateFieldType
     operator: DateFieldOperator
@@ -94,14 +111,15 @@ class DateFieldRequirementsIn(BaseModel):
     @field_validator("value")
     @classmethod
     def validate_date_value(cls, value: str) -> str:
-        import re
-
         if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
             raise ValueError("date value must be in YYYY-MM-DD format")
         return value
 
 
-FieldRequirementsIn = NumberFieldRequirementsIn | DateFieldRequirementsIn
+FieldRequirementsIn = Annotated[
+    NumberFieldRequirementsIn | DateFieldRequirementsIn,
+    Field(discriminator="type"),
+]
 
 
 # ── Per-family condition blocks ────────────────────────────────────────────────
@@ -110,7 +128,7 @@ FieldRequirementsIn = NumberFieldRequirementsIn | DateFieldRequirementsIn
 class ChoiceConditionIn(BaseModel):
     """Represents a condition block targeting a choice question."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = _STRICT
 
     target_id: SchemaIdStr
     family: ChoiceFamily
@@ -120,7 +138,7 @@ class ChoiceConditionIn(BaseModel):
 class MatchingConditionIn(BaseModel):
     """Represents a condition block targeting a matching question."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = _STRICT
 
     target_id: SchemaIdStr
     family: MatchingFamily
@@ -130,7 +148,7 @@ class MatchingConditionIn(BaseModel):
 class RatingConditionIn(BaseModel):
     """Represents a condition block targeting a rating question."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = _STRICT
 
     target_id: SchemaIdStr
     family: RatingFamily
@@ -140,7 +158,7 @@ class RatingConditionIn(BaseModel):
 class FieldConditionIn(BaseModel):
     """Represents a condition block targeting a field question."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = _STRICT
 
     target_id: SchemaIdStr
     family: FieldFamily
@@ -155,79 +173,84 @@ RuleConditionIn = Annotated[
 
 # ── If block ──────────────────────────────────────────────────────────────────
 
+
 class RuleIfIn(BaseModel):
     """Represents the rule predicate and how its conditions are matched."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = _STRICT
 
     match: IfMatch
-    conditions: list[RuleConditionIn] = Field(max_length=limits.RULE_ITEMS_MAX)
-
-    @field_validator("conditions")
-    @classmethod
-    def validate_conditions(cls, value: list[RuleConditionIn]) -> list[RuleConditionIn]:
-        if not value:
-            raise ValueError("conditions must contain at least one entry")
-        return value
+    conditions: list[RuleConditionIn] = Field(min_length=1, max_length=limits.RULE_ITEMS_MAX)
 
 
-# ── Then / Else blocks ────────────────────────────────────────────────────────
+# ── State changes applied by a branch ─────────────────────────────────────────
 
 
-class ThenSetItemIn(BaseModel):
-    """Represents one visibility or required-state effect in a then block."""
+class RuleSetItemIn(BaseModel):
+    """Represents one visibility or required-state change applied by a branch."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = _STRICT
 
     target_id: SchemaIdStr
     visible: bool | None = None
     required: bool | None = None
 
     @model_validator(mode="after")
-    def validate_has_at_least_one_effect(self) -> ThenSetItemIn:
+    def validate_change(self) -> Self:
         if self.visible is None and self.required is None:
-            raise ValueError("each then.set item must define at least one of: visible, required")
+            raise ValueError("set item must update at least one of: visible, required")
         return self
 
 
-class ElseDoIn(BaseModel):
-    """Represents the single navigation action performed by an else block."""
+# ── Navigation actions ────────────────────────────────────────────────────────
 
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    skip_to: SchemaIdStr | None = None
-    end_and_submit: bool | None = None
-    end_and_discard: bool | None = None
+class SkipToActionIn(BaseModel):
+    """Navigation action that jumps to a specific question."""
+
+    model_config = _STRICT
+
+    skip_to: SchemaIdStr
+
+
+class EndAndSubmitActionIn(BaseModel):
+    """Navigation action that ends the survey and submits the response."""
+
+    model_config = _STRICT
+
+    end_and_submit: bool = True
+
+
+class EndAndDiscardActionIn(BaseModel):
+    """Navigation action that ends the survey and discards the response."""
+
+    model_config = _STRICT
+
+    end_and_discard: bool = True
+
+
+RuleDoIn = Annotated[
+    SkipToActionIn | EndAndSubmitActionIn | EndAndDiscardActionIn,
+    Field(discriminator=None),
+]
+
+
+# ── Shared then / else branch ─────────────────────────────────────────────────
+
+
+class RuleBranchIn(BaseModel):
+    """Represents the effects applied by a then or else branch."""
+
+    model_config = _STRICT
+
+    set: list[RuleSetItemIn] | None = Field(default=None, min_length=1, max_length=limits.RULE_ITEMS_MAX)
+    do: RuleDoIn | None = None
 
     @model_validator(mode="after")
-    def validate_exactly_one_action(self) -> ElseDoIn:
-        actions = [k for k in ("skip_to", "end_and_submit", "end_and_discard") if getattr(self, k) is not None]
-        if len(actions) != 1:
-            raise ValueError("else.do must specify exactly one action: skip_to, end_and_submit, or end_and_discard")
+    def validate_branch(self) -> Self:
+        if self.set is None and self.do is None:
+            raise ValueError("rule branch must contain at least one of: set, do")
         return self
-
-
-class RuleThenIn(BaseModel):
-    """Represents the effects applied when a rule predicate matches."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    set: list[ThenSetItemIn] = Field(max_length=limits.RULE_ITEMS_MAX)
-
-    @field_validator("set")
-    @classmethod
-    def validate_set(cls, value: list[ThenSetItemIn]) -> list[ThenSetItemIn]:
-        if not value:
-            raise ValueError("then.set must contain at least one item")
-        return value
-
-
-class RuleElseIn(BaseModel):
-    """Represents the fallback action when a rule predicate does not match."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    do: ElseDoIn
 
 
 # ── Top-level rule content schema ─────────────────────────────────────────────
@@ -236,9 +259,9 @@ class RuleElseIn(BaseModel):
 class RuleSchemaIn(BaseModel):
     """Represents the full rule content stored in question_schema for a rule node."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = _STRICT
 
     id: SchemaIdStr
     if_: RuleIfIn = Field(validation_alias="if", serialization_alias="if")
-    then: RuleThenIn
-    else_: RuleElseIn | None = Field(default=None, validation_alias="else", serialization_alias="else")
+    then: RuleBranchIn
+    else_: RuleBranchIn | None = Field(default=None, validation_alias="else", serialization_alias="else")

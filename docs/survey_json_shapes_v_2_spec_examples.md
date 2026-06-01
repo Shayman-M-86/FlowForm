@@ -208,7 +208,7 @@
       
     },
     "then": {
-      "set": [//set/do
+      "set": [//set/do Can't have multiple do's. 
       {
         "target_id": "q6",
         "visible": true,
@@ -230,7 +230,7 @@
       ]
     },
     "else": {
-      "do": {
+      "do": { //set/do Can't have multiple do's. 
         "skip_to": "q10" // "skip_to" / "end_and_submit" / "end_and_discard"
       }
     }

@@ -1,5 +1,5 @@
 import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
-import { QUESTION_MAX, blurOnEnter } from "./NodePillUtils";
+import { QUESTION_MAX, TITLE_MAX, blurOnEnter } from "./NodePillUtils";
 import {
   NodePillTopbar,
   NodePillIdField,
@@ -62,10 +62,10 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
   const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
-  const [isRequired, setIsRequired] = useState(initialContent?.required ?? false);
+  const [isRequired, setIsRequired] = useState(false);
   const [fieldType, setFieldType] = useState<FieldType>(initialFieldType);
   const [placeholderValue, setPlaceholderValue] = useState(
-    initialContent?.definition.ui.placeholder ?? FIELD_TYPE_PRESETS[initialFieldType].placeholder,
+    initialContent?.definition.ui?.placeholder ?? FIELD_TYPE_PRESETS[initialFieldType].placeholder,
   );
   const [fieldValue, setFieldValue] = useState("");
 
@@ -73,7 +73,6 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
     id: tagValue,
     title: titleValue,
     label: questionValue,
-    ...(isRequired ? { required: true } : {}),
     family: "field",
     definition: {
       field_type: fieldType,
@@ -137,6 +136,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
           max={QUESTION_MAX}
           titleValue={titleValue}
           onTitleChange={setTitleValue}
+          titleMax={TITLE_MAX}
           showTitleEdit={true}
         />
 

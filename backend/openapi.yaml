@@ -3692,7 +3692,7 @@ components:
           type: string
           maxLength: 6
         label:
-          maxLength: 5000
+          maxLength: 1000
           minLength: 1
           title: Label
           type: string
@@ -3718,38 +3718,29 @@ components:
       description: Validation requirements for a choice-question condition.
       properties:
         required:
-          anyOf:
-          - items:
-              maxLength: 128
-              minLength: 1
-              type: string
-            maxItems: 50
-            type: array
-          - type: 'null'
-          default: null
+          items:
+            maxLength: 128
+            minLength: 1
+            type: string
+          maxItems: 50
           title: Required
+          type: array
         forbidden:
-          anyOf:
-          - items:
-              maxLength: 128
-              minLength: 1
-              type: string
-            maxItems: 50
-            type: array
-          - type: 'null'
-          default: null
+          items:
+            maxLength: 128
+            minLength: 1
+            type: string
+          maxItems: 50
           title: Forbidden
+          type: array
         any_of:
-          anyOf:
-          - items:
-              maxLength: 128
-              minLength: 1
-              type: string
-            maxItems: 50
-            type: array
-          - type: 'null'
-          default: null
+          items:
+            maxLength: 128
+            minLength: 1
+            type: string
+          maxItems: 50
           title: Any Of
+          type: array
       title: ChoiceRequirementsIn
       type: object
     CreateQuestionNodeRequest:
@@ -3785,6 +3776,7 @@ components:
       - content
       title: CreateQuestionNodeRequest
       type: object
+      x-flowform-export: builder
     CreateRuleNodeRequest:
       additionalProperties: false
       description: Validates requests that create a new rule node.
@@ -3806,6 +3798,7 @@ components:
       - content
       title: CreateRuleNodeRequest
       type: object
+      x-flowform-export: builder
     DateFieldRequirementsIn:
       additionalProperties: false
       description: Validation requirements for a date field-question condition.
@@ -3832,31 +3825,25 @@ components:
       - value
       title: DateFieldRequirementsIn
       type: object
-    ElseDoIn:
+    EndAndDiscardActionIn:
       additionalProperties: false
-      description: Represents the single navigation action performed by an else block.
+      description: Navigation action that ends the survey and discards the response.
       properties:
-        skip_to:
-          anyOf:
-          - maxLength: 128
-            minLength: 1
-            type: string
-          - type: 'null'
-          default: null
-          title: Skip To
-        end_and_submit:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          default: null
-          title: End And Submit
         end_and_discard:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          default: null
+          default: true
           title: End And Discard
-      title: ElseDoIn
+          type: boolean
+      title: EndAndDiscardActionIn
+      type: object
+    EndAndSubmitActionIn:
+      additionalProperties: false
+      description: Navigation action that ends the survey and submits the response.
+      properties:
+        end_and_submit:
+          default: true
+          title: End And Submit
+          type: boolean
+      title: EndAndSubmitActionIn
       type: object
     FieldConditionIn:
       additionalProperties: false
@@ -3873,7 +3860,12 @@ components:
           type: string
           maxLength: 5
         requirements:
-          anyOf:
+          discriminator:
+            mapping:
+              date: '#/components/schemas/DateFieldRequirementsIn'
+              number: '#/components/schemas/NumberFieldRequirementsIn'
+            propertyName: type
+          oneOf:
           - $ref: '#/components/schemas/NumberFieldRequirementsIn'
           - $ref: '#/components/schemas/DateFieldRequirementsIn'
           title: Requirements
@@ -3919,7 +3911,7 @@ components:
           type: string
           maxLength: 5
         label:
-          maxLength: 5000
+          maxLength: 1000
           minLength: 1
           title: Label
           type: string
@@ -3940,6 +3932,7 @@ components:
       - definition
       title: FieldQuestionSchemaIn
       type: object
+      x-flowform-export: builder
     FieldUIIn:
       additionalProperties: false
       description: UI block for a field question.
@@ -4013,6 +4006,25 @@ components:
       - label
       title: MatchingItemIn
       type: object
+    MatchingPairIn:
+      additionalProperties: false
+      description: A single prompt-to-match pairing in a matching condition.
+      properties:
+        prompt_id:
+          maxLength: 128
+          minLength: 1
+          title: Prompt Id
+          type: string
+        match_id:
+          maxLength: 128
+          minLength: 1
+          title: Match Id
+          type: string
+      required:
+      - prompt_id
+      - match_id
+      title: MatchingPairIn
+      type: object
     MatchingQuestionSchemaIn:
       additionalProperties: false
       description: Incoming matching-question content schema.
@@ -4028,7 +4040,7 @@ components:
           type: string
           maxLength: 8
         label:
-          maxLength: 5000
+          maxLength: 1000
           minLength: 1
           title: Label
           type: string
@@ -4049,21 +4061,16 @@ components:
       - definition
       title: MatchingQuestionSchemaIn
       type: object
+      x-flowform-export: builder
     MatchingRequirementsIn:
       additionalProperties: false
       description: Validation requirements for a matching-question condition.
       properties:
         required:
           items:
-            additionalProperties:
-              maxLength: 128
-              minLength: 1
-              type: string
-            propertyNames:
-              maxLength: 128
-              minLength: 1
-            type: object
+            $ref: '#/components/schemas/MatchingPairIn'
           maxItems: 50
+          minItems: 1
           title: Required
           type: array
       required:
@@ -4167,7 +4174,7 @@ components:
           type: string
           maxLength: 6
         label:
-          maxLength: 5000
+          maxLength: 1000
           minLength: 1
           title: Label
           type: string
@@ -4308,15 +4315,29 @@ components:
       - right_label
       title: RatingUIIn
       type: object
-    RuleElseIn:
+    RuleBranchIn:
       additionalProperties: false
-      description: Represents the fallback action when a rule predicate does not match.
+      description: Represents the effects applied by a then or else branch.
       properties:
+        set:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/RuleSetItemIn'
+            maxItems: 50
+            minItems: 1
+            type: array
+          - type: 'null'
+          default: null
+          title: Set
         do:
-          $ref: '#/components/schemas/ElseDoIn'
-      required:
-      - do
-      title: RuleElseIn
+          anyOf:
+          - $ref: '#/components/schemas/SkipToActionIn'
+          - $ref: '#/components/schemas/EndAndSubmitActionIn'
+          - $ref: '#/components/schemas/EndAndDiscardActionIn'
+          - type: 'null'
+          default: null
+          title: Do
+      title: RuleBranchIn
       type: object
     RuleIfIn:
       additionalProperties: false
@@ -4345,6 +4366,7 @@ components:
             - $ref: '#/components/schemas/RatingConditionIn'
             - $ref: '#/components/schemas/FieldConditionIn'
           maxItems: 50
+          minItems: 1
           title: Conditions
           type: array
       required:
@@ -4364,10 +4386,10 @@ components:
         if:
           $ref: '#/components/schemas/RuleIfIn'
         then:
-          $ref: '#/components/schemas/RuleThenIn'
+          $ref: '#/components/schemas/RuleBranchIn'
         else:
           anyOf:
-          - $ref: '#/components/schemas/RuleElseIn'
+          - $ref: '#/components/schemas/RuleBranchIn'
           - type: 'null'
           default: null
       required:
@@ -4376,23 +4398,9 @@ components:
       - then
       title: RuleSchemaIn
       type: object
-    RuleThenIn:
+    RuleSetItemIn:
       additionalProperties: false
-      description: Represents the effects applied when a rule predicate matches.
-      properties:
-        set:
-          items:
-            $ref: '#/components/schemas/ThenSetItemIn'
-          maxItems: 50
-          title: Set
-          type: array
-      required:
-      - set
-      title: RuleThenIn
-      type: object
-    ThenSetItemIn:
-      additionalProperties: false
-      description: Represents one visibility or required-state effect in a then block.
+      description: Represents one visibility or required-state change applied by a branch.
       properties:
         target_id:
           maxLength: 128
@@ -4413,7 +4421,20 @@ components:
           title: Required
       required:
       - target_id
-      title: ThenSetItemIn
+      title: RuleSetItemIn
+      type: object
+    SkipToActionIn:
+      additionalProperties: false
+      description: Navigation action that jumps to a specific question.
+      properties:
+        skip_to:
+          maxLength: 128
+          minLength: 1
+          title: Skip To
+          type: string
+      required:
+      - skip_to
+      title: SkipToActionIn
       type: object
     CreateNodeRequest:
       discriminator:
@@ -4692,26 +4713,6 @@ components:
       - strategy
       - config
       title: MatchingAnswerKeyScoringSchemaIn
-      type: object
-    MatchingPairIn:
-      additionalProperties: false
-      description: 'Request model for a matching pair in matching answer key scoring.
-
-
-        Validates that both left and right IDs are non-blank strings.'
-      properties:
-        left_id:
-          maxLength: 128
-          title: Left Id
-          type: string
-        right_id:
-          maxLength: 128
-          title: Right Id
-          type: string
-      required:
-      - left_id
-      - right_id
-      title: MatchingPairIn
       type: object
     NumericRangeScoreIn:
       additionalProperties: false
@@ -6012,7 +6013,7 @@ components:
       properties:
         value:
           anyOf:
-          - maxLength: 5000
+          - maxLength: 1000
             type: string
           - type: integer
           - type: number

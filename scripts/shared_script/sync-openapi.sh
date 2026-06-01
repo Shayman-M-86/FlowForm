@@ -9,11 +9,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-echo "==> Exporting OpenAPI spec from backend..."
-bash "${REPO_ROOT}/backend/scripts/export-openapi.sh"
-
-echo "==> Generating TypeScript types for studio-app..."
+echo "==> Generating OpenAPI spec and all TypeScript types..."
 cd "${REPO_ROOT}/frontend/apps/studio-app"
-npm run openapi:types
+npm run openapi:generate
 
 echo "==> Done."

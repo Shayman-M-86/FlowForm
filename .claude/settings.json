@@ -80,7 +80,9 @@
       "Bash(npx tsr generate:*)",
       "Bash(npx astro check:*)",
       "Bash(npx astro info:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Read(**/node_modules/**/*.d.ts)",
+      "Read(**/node_modules/**/package.json)"
     ],
     "deny": [
       "Bash(rmdir:*)",
@@ -155,7 +157,6 @@
       "Edit(**/.env*)",
       "Write(**/.env*)",
 
-      "Read(**/node_modules/**)",
       "Read(**/.venv/**)",
       "Read(**/dist/**)",
       "Read(**/build/**)",

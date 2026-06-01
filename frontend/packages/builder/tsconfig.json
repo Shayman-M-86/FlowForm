@@ -2,6 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "paths": {
+      "@flowform/schema": ["../schema/src/index.ts"],
+      "@flowform/schema/*": ["../schema/src/*"],
       "@flowform/builder": ["./src/index.ts"],
       "@flowform/builder/*": ["./src/*"],
       "@flowform/ui": ["../ui/src/index.tsx"],

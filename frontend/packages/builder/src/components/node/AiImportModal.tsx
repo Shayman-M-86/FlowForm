@@ -17,21 +17,21 @@ QUESTION NODE
 QuestionContent shapes:
 
 Choice (single or multi-select):
-{ "id": "question_id_1", "title": "Section heading", "label": "Question text", "required": true, "family": "choice", "definition": { "min": 1, "max": 1, "options": [{ "id": "opt_1", "label": "Option text" }] } }
+{ "id": "question_id_1", "title": "Section heading", "label": "Question text", "family": "choice", "definition": { "min": 1, "max": 1, "options": [{ "id": "opt_1", "label": "Option text" }] } }
 
 Field (text / number / date):
-{ "id": "question_id_1", "title": "Section heading", "label": "Question text", "required": true, "family": "field", "definition": { "field_type": "short_text", "ui": { "placeholder": "Optional" } } }
+{ "id": "question_id_1", "title": "Section heading", "label": "Question text", "family": "field", "definition": { "field_type": "short_text", "ui": { "placeholder": "Optional" } } }
 field_type options: short_text | long_text | email | phone | number | date
 
 Rating:
-{ "id": "question_id_1", "title": "Section heading", "label": "Question text", "required": false, "family": "rating", "definition": { "variant": "star", "stars": 5, "ui": { "left_label": "Poor", "right_label": "Excellent" } } }
-variant options: star | slider | emoji
+{ "id": "question_id_1", "title": "Section heading", "label": "Question text", "family": "rating", "definition": { "variant": "stars", "stars": 5, "ui": { "left_label": "Poor", "right_label": "Excellent" } } }
+variant options: stars | slider | emoji
 
 Matching:
-{ "id": "question_id_1", "title": "Section heading", "label": "Question text", "required": false, "family": "matching", "definition": { "prompts": [{ "id": "p1", "label": "Prompt" }], "matches": [{ "id": "m1", "label": "Match" }] } }
+{ "id": "question_id_1", "title": "Section heading", "label": "Question text", "family": "matching", "definition": { "prompts": [{ "id": "p1", "label": "Prompt" }], "matches": [{ "id": "m1", "label": "Match" }] } }
 
 RULE NODE
-{ "type": "rule", "sort_key": <number>, "content": { "id": "r1", "if": { "match": "ALL", "conditions": [{ "source_id": "question_id_1", "family": "choice", "requirements": { "required": ["opt_1"] } }] }, "then": { "do": { "skip_to": "question_id_3" } } } }
+{ "type": "rule", "sort_key": <number>, "content": { "id": "r1", "if": { "match": "ALL", "conditions": [{ "target_id": "question_id_1", "family": "choice", "requirements": { "required": ["opt_1"] } }] }, "then": { "do": { "skip_to": "question_id_3" } } } }
 
 RULES
 - All id values must be unique across the entire array

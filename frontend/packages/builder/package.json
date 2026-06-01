@@ -8,6 +8,7 @@
     "./node-page.css": "./src/pages/NodePage.css"
   },
   "dependencies": {
+    "@flowform/schema": "0.0.0",
     "@flowform/ui": "0.0.0",
     "react-router-dom": "^7.14.2"
   },

@@ -19,16 +19,15 @@ import type {
   RatingContent,
   FieldContent,
   RuleContent,
+  RuleBranch,
   RuleMatch,
   RuleCondition,
   ChoiceRequirements,
   MatchingRequirements,
   RatingRequirements,
-  FieldRequirements,
   FieldNumberOperator,
   FieldDateOperator,
   RuleSetEntry,
-  RuleDoAction,
 } from "./questionTypes";
 
 export interface RulesQuestionHandle {
@@ -142,7 +141,7 @@ function newSetEntryKey() {
 }
 
 function questionOption(content: QuestionContent) {
-  const label = content.title.trim() || content.label.trim() || content.id;
+  const label = content.title?.trim() || content.label.trim() || content.id;
   return { value: content.id, label: `${label} (${content.id})` };
 }
 
@@ -196,45 +195,38 @@ function draftToCondition(draft: ConditionDraft, target: QuestionContent | undef
     if (required.length) reqs.required = required;
     if (forbidden.length) reqs.forbidden = forbidden;
     if (anyOf.length) reqs.any_of = anyOf;
-    return { source_id: draft.target_id, family: "choice", requirements: reqs };
+    return { target_id: draft.target_id, family: "choice", requirements: reqs };
   }
 
   if (draft.family === "matching") {
-    const required: Array<Record<string, string>> = [];
+    const required: MatchingRequirements["required"] = [];
     Object.entries(draft.pairs).forEach(([promptId, matchId]) => {
-      if (matchId) required.push({ [promptId]: matchId });
+      if (matchId) required.push({ prompt_id: promptId, match_id: matchId });
     });
-    const reqs: MatchingRequirements = required.length ? { required } : {};
-    return { source_id: draft.target_id, family: "matching", requirements: reqs };
+    const reqs: MatchingRequirements = required.length ? { required } : { required: [] };
+    return { target_id: draft.target_id, family: "matching", requirements: reqs };
   }
 
   if (draft.family === "rating") {
     const reqs: RatingRequirements = {};
     if (draft.min !== null) reqs.min = draft.min;
     if (draft.max !== null) reqs.max = draft.max;
-    return { source_id: draft.target_id, family: "rating", requirements: reqs };
+    return { target_id: draft.target_id, family: "rating", requirements: reqs };
   }
 
   const fieldTarget = target && target.family === "field" ? target : null;
-  const fieldType = fieldTarget?.definition.field_type ?? "short_text";
-  let requirements: FieldRequirements;
+  const fieldType = fieldTarget?.definition.field_type ?? "number";
   if (fieldType === "date") {
-    requirements = { type: "date", operator: draft.dateOperator, value: draft.dateValue };
-  } else {
-    const isNumber = fieldType === "number";
-    const value: number | string = isNumber
-      ? draft.numberValue === "" ? "" : Number(draft.numberValue)
-      : draft.numberValue;
-    requirements = { type: fieldType, operator: draft.numberOperator, value };
+    return { target_id: draft.target_id, family: "field", requirements: { type: "date", operator: draft.dateOperator, value: draft.dateValue } };
   }
-  return { source_id: draft.target_id, family: "field", requirements };
+  return { target_id: draft.target_id, family: "field", requirements: { type: "number", operator: draft.numberOperator, value: draft.numberValue === "" ? 0 : Number(draft.numberValue) } };
 }
 
 function findSibling(siblings: QuestionContent[], id: string) {
   return siblings.find((s) => s.id === id);
 }
 
-function doToState(action: RuleDoAction | undefined): { kind: DoKind; skipTo: string } {
+function doToState(action: RuleBranch["do"] | undefined): { kind: DoKind; skipTo: string } {
   if (!action) return { kind: "skip_to", skipTo: "" };
   if ("skip_to" in action) return { kind: "skip_to", skipTo: action.skip_to };
   if ("end_and_submit" in action) return { kind: "end_and_submit", skipTo: "" };
@@ -245,7 +237,7 @@ function conditionToDraft(
   condition: RuleCondition,
   siblings: QuestionContent[],
 ): ConditionDraft {
-  const target = findSibling(siblings, condition.source_id);
+  const target = findSibling(siblings, condition.target_id);
 
   if (condition.family === "choice") {
     const marks: Record<string, ChoiceMark> = {};
@@ -264,7 +256,7 @@ function conditionToDraft(
     (condition.requirements.forbidden ?? []).forEach((optionId) => { marks[optionId] = "forbidden"; });
     (condition.requirements.any_of ?? []).forEach((optionId) => { marks[optionId] = "any_of"; });
 
-    return { key: newConditionKey(), target_id: condition.source_id, family: "choice", marks };
+    return { key: newConditionKey(), target_id: condition.target_id, family: "choice", marks };
   }
 
   if (condition.family === "matching") {
@@ -275,17 +267,15 @@ function conditionToDraft(
       });
     }
     (condition.requirements.required ?? []).forEach((pair) => {
-      Object.entries(pair).forEach(([promptId, matchId]) => {
-        pairs[promptId] = matchId;
-      });
+      pairs[pair.prompt_id] = pair.match_id;
     });
-    return { key: newConditionKey(), target_id: condition.source_id, family: "matching", pairs };
+    return { key: newConditionKey(), target_id: condition.target_id, family: "matching", pairs };
   }
 
   if (condition.family === "rating") {
     return {
       key: newConditionKey(),
-      target_id: condition.source_id,
+      target_id: condition.target_id,
       family: "rating",
       min: condition.requirements.min ?? null,
       max: condition.requirements.max ?? null,
@@ -294,7 +284,7 @@ function conditionToDraft(
 
   return {
     key: newConditionKey(),
-    target_id: condition.source_id,
+    target_id: condition.target_id,
     family: "field",
     numberOperator: condition.requirements.type === "date" ? "EQ" : condition.requirements.operator,
     numberValue: condition.requirements.type === "date" ? "" : String(condition.requirements.value ?? ""),
@@ -348,7 +338,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
   ];
   const siblingSignature = JSON.stringify(siblings);
 
-  function buildThen(): RuleContent["then"] {
+  function buildThen(): RuleBranch {
     if (thenMode === "set") {
       const set = setEntries
         .filter((entry) => entry.target_id)
@@ -364,7 +354,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     return { do: buildDo(thenDoKind, thenSkipTo) };
   }
 
-  function buildDo(kind: DoKind, skipTo: string): RuleDoAction {
+  function buildDo(kind: DoKind, skipTo: string): NonNullable<RuleBranch["do"]> {
     if (kind === "skip_to") return { skip_to: skipTo };
     if (kind === "end_and_submit") return { end_and_submit: true };
     return { end_and_discard: true };
@@ -627,7 +617,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     const bounds =
       def.variant === "slider"
         ? { low: def.range.min, high: def.range.max }
-        : def.variant === "star"
+        : def.variant === "stars"
           ? { low: 0, high: def.stars }
           : { low: 1, high: 5 };
     return (

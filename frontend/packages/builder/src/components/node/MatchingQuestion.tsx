@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import { Button, Input, LargeInput } from "@flowform/ui";
 import { useOptionDrag } from "./useOptionDrag";
-import { QUESTION_MAX, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
+import { QUESTION_MAX, TITLE_MAX, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
 import {
   NodePillTopbar,
   NodePillIdField,
@@ -98,7 +98,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
   const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
-  const [isRequired, setIsRequired] = useState(initialContent?.required ?? false);
+  const [isRequired, setIsRequired] = useState(false);
   const [openItemIds, setOpenItemIds] = useState<Set<string>>(new Set());
   const [leftItems, setLeftItems] = useState(initialLeftItems);
   const [rightItems, setRightItems] = useState(initialRightItems);
@@ -118,7 +118,6 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
     id: tagValue,
     title: titleValue,
     label: questionValue,
-    ...(isRequired ? { required: true } : {}),
     family: "matching",
     definition: {
       prompts: leftItems.map((item) => ({ id: item.tag, label: item.value })),
@@ -369,6 +368,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
           max={QUESTION_MAX}
           titleValue={titleValue}
           onTitleChange={setTitleValue}
+          titleMax={TITLE_MAX}
           showTitleEdit={true}
         />
 
