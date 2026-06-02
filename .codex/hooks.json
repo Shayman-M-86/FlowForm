@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json; print(json.load(sys.stdin).get('file_path',''))\"); case \"$FILE\" in *.py) if [ -x /tmp/flowform-venv/bin/ruff ]; then VIRTUAL_ENV=/tmp/flowform-venv /tmp/flowform-venv/bin/ruff check --fix \"$FILE\" 2>/dev/null; fi ;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}
