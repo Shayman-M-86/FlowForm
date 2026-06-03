@@ -30,7 +30,7 @@ def list_nodes(project_id: int, survey_id: int, version_number: int):
     nodes = content_svc.list_nodes(
         db=get_core_db(), project_id=project_id, survey_id=survey_id, version_number=version_number, actor=g.actor
     )
-    return [NodeResponses.model_validate(n).model_dump(mode="json") for n in nodes], 200
+    return [NodeResponses.model_validate(n).model_dump(mode="json", by_alias=True) for n in nodes], 200
 
 
 @openapi_route(
@@ -53,7 +53,7 @@ def create_node(project_id: int, survey_id: int, version_number: int):
         data=payload,
         actor=g.actor,
     )
-    return NodeResponses.model_validate(node).model_dump(mode="json"), 201
+    return NodeResponses.model_validate(node).model_dump(mode="json", by_alias=True), 201
 
 
 @openapi_route(summary="Get survey content node", response_model=NodeResponses, tags=["Survey Content"])
@@ -69,7 +69,7 @@ def get_node(project_id: int, survey_id: int, version_number: int, node_id: int)
         node_id=node_id,
         actor=g.actor,
     )
-    return NodeResponses.model_validate(node).model_dump(mode="json"), 200
+    return NodeResponses.model_validate(node).model_dump(mode="json", by_alias=True), 200
 
 
 @openapi_route(
@@ -92,7 +92,7 @@ def update_node(project_id: int, survey_id: int, version_number: int, node_id: i
         data=payload,
         actor=g.actor,
     )
-    return NodeResponses.model_validate(node).model_dump(mode="json"), 200
+    return NodeResponses.model_validate(node).model_dump(mode="json", by_alias=True), 200
 
 
 @openapi_route(summary="Delete survey content node", tags=["Survey Content"], status_code=204)

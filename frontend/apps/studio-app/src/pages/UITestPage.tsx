@@ -26,10 +26,20 @@ import {
   TabsContent,
   PermissionTag,
 } from "@flowform/ui";
-import {
-  mockProjectMembers,
-  type MockProjectMember,
-} from "@/api/mockData";
+type MockProjectMember = {
+  id: number;
+  name: string;
+  email: string;
+  role: "Owner" | "Editor" | "Viewer";
+};
+
+const mockProjectMembers: MockProjectMember[] = [
+  { id: 1, name: "Alice Nguyen",    email: "alice@example.com",   role: "Owner"  },
+  { id: 2, name: "Ben Carter",      email: "ben@example.com",     role: "Viewer" },
+  { id: 3, name: "Clara Schmidt",   email: "clara@example.com",   role: "Editor" },
+  { id: 4, name: "David Okafor",    email: "david@example.com",   role: "Viewer" },
+  { id: 5, name: "Eva Lindström",   email: "eva@example.com",     role: "Editor" },
+];
 
 const buttonVariants = ["primary", "secondary", "danger", "ghost"] as const;
 const buttonSizes = ["md", "sm", "xs"] as const;

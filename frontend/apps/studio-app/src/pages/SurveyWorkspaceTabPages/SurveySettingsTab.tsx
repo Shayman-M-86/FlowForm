@@ -1,74 +1,53 @@
 import { useState } from 'react'
-import { useParams } from '@tanstack/react-router'
-import { Card, Button, Input, Toast, Toggle } from '@flowform/ui'
-import { getMockPublicLinksForSurvey, getMockSurvey } from '@/api/mockData'
+import { useParams, useNavigate } from '@tanstack/react-router'
+import { Card, Button, Input } from '@flowform/ui'
 import { useHasProjectPermission } from '@/api/hooks/permissions'
 import { useProject } from '@/api/hooks/projects'
+import { useSurvey, useUpdateSurvey, useDeleteSurvey } from '@/api/hooks/surveys'
 import { useRenderDebug } from '@/debug/useRenderDebug'
-import { SurveyAccessSettingsPanel } from '@/components/SurveyAccess'
-import {
-  SURVEY_ACCESS_CONCEPTS,
-  SURVEY_ACCESS_ENTRIES,
-  SURVEY_ACCESS_MODES,
-  type SurveyAccessEntry,
-  type SurveyAccessMode,
-} from '@/lib/surveyAccessDesign'
-
-function uniqueEntries(entries: SurveyAccessEntry[]): SurveyAccessEntry[] {
-  return [...new Set(entries)]
-}
 
 export function SurveySettingsTab() {
   useRenderDebug('SurveySettingsTab')
   const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/settings' })
+  const navigate = useNavigate()
   const { data: project } = useProject(slug)
+  const { data: survey } = useSurvey(slug, surveySlug)
   const projectId = project?.id ?? null
-  const canEdit    = useHasProjectPermission(projectId, 'survey:edit')
-  const canArchive = useHasProjectPermission(projectId, 'survey:archive')
-  const canDelete  = useHasProjectPermission(projectId, 'survey:delete')
-  const [savedAccessMode, setSavedAccessMode] = useState<SurveyAccessMode>('link_only')
-  const [accessMode, setAccessMode] = useState<SurveyAccessMode>(savedAccessMode)
-  const [allowAnonymous, setAllowAnonymous] = useState(true)
-  const [closeAfterDate, setCloseAfterDate] = useState(false)
-  const [accessWarning, setAccessWarning] = useState<string | null>(null)
-  const survey = getMockSurvey(slug, surveySlug)
-  const publicLinks = getMockPublicLinksForSurvey(surveySlug)
-  const surveyTitle = survey?.title ?? surveySlug.replace(/-/g, ' ')
-  const ResponseIdentityIcon = SURVEY_ACCESS_CONCEPTS.responseIdentity.icon
-  const accessChanged = accessMode !== savedAccessMode
+  const canEdit   = useHasProjectPermission(projectId, 'survey:edit')
+  const canDelete = useHasProjectPermission(projectId, 'survey:delete')
 
-  function saveAccessChanges() {
-    const currentEntries = new Set(SURVEY_ACCESS_MODES[savedAccessMode].allowedEntries)
-    const nextEntries = new Set(SURVEY_ACCESS_MODES[accessMode].allowedEntries)
-    const entriesInUse = uniqueEntries([
-      ...publicLinks
-        .filter((link) => link.isActive)
-        .map((link) => (link.assignedEmail ? 'authenticated_assigned_link' : 'general_link') as SurveyAccessEntry),
-      ...(savedAccessMode === 'public' ? ['public_slug' as SurveyAccessEntry] : []),
-    ])
-    const invalidatedEntries = entriesInUse.filter((entry) => currentEntries.has(entry) && !nextEntries.has(entry))
+  const [title, setTitle] = useState<string | null>(null)
+  const displayTitle = title ?? survey?.title ?? ''
 
-    setSavedAccessMode(accessMode)
+  const updateSurvey = useUpdateSurvey(projectId, surveySlug)
+  const deleteSurvey = useDeleteSurvey(projectId)
 
-    if (invalidatedEntries.length > 0) {
-      const labels = invalidatedEntries.map((entry) => SURVEY_ACCESS_ENTRIES[entry].label).join(', ')
-      setAccessWarning(`Access saved, but this change makes these existing access methods invalid: ${labels}.`)
-      return
-    }
+  function handleSave() {
+    if (!survey) return
+    updateSurvey.mutate({ title: displayTitle, visibility: null, public_slug: null })
+  }
 
-    setAccessWarning(null)
+  function handleDelete() {
+    if (!survey) return
+    deleteSurvey.mutate(survey.id, {
+      onSuccess: () => {
+        void navigate({ to: '/projects/$slug', params: { slug } })
+      },
+    })
   }
 
   return (
     <section className="grid max-w-2xl gap-6 mx-auto">
-      {/* General */}
       {canEdit && (
         <Card>
           <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">General</p>
           <div className="grid gap-4">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-foreground">Survey name</label>
-              <Input defaultValue={surveyTitle} />
+              <Input
+                value={displayTitle}
+                onChange={(e) => setTitle(e.target.value)}
+              />
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-foreground">Description</label>
@@ -80,34 +59,36 @@ export function SurveySettingsTab() {
             </div>
           </div>
           <div className="mt-4">
-            <Button variant="primary" size="sm">Save changes</Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={updateSurvey.isPending}
+              onClick={handleSave}
+            >
+              {updateSurvey.isPending ? 'Saving…' : 'Save changes'}
+            </Button>
           </div>
         </Card>
       )}
 
-      {/* Danger zone */}
-      {(canArchive || canDelete) && (
+      {canDelete && (
         <Card>
           <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-destructive">Danger zone</p>
           <div className="grid gap-3">
-            {canArchive && (
-              <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Archive survey</p>
-                  <p className="text-xs text-muted-foreground">Hide from the surveys list. Responses are preserved.</p>
-                </div>
-                <Button variant="secondary" size="sm">Archive</Button>
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-destructive/30 p-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">Delete survey</p>
+                <p className="text-xs text-muted-foreground">Permanently delete this survey and all its versions.</p>
               </div>
-            )}
-            {canDelete && (
-              <div className="flex items-center justify-between gap-4 rounded-lg border border-destructive/30 p-3">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Delete survey</p>
-                  <p className="text-xs text-muted-foreground">Permanently delete this survey and all its versions.</p>
-                </div>
-                <Button variant="destructive" size="sm">Delete</Button>
-              </div>
-            )}
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={deleteSurvey.isPending}
+                onClick={handleDelete}
+              >
+                {deleteSurvey.isPending ? 'Deleting…' : 'Delete'}
+              </Button>
+            </div>
           </div>
         </Card>
       )}

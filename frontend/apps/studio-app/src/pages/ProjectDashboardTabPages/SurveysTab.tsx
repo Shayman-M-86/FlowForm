@@ -79,7 +79,7 @@ export function SurveysTab({ projectSlug }: SurveysTabProps) {
 
       {surveys.isLoading && (
         <div className="flex justify-center py-12">
-          <Spinner size="md" />
+          <Spinner size={24} />
         </div>
       )}
 

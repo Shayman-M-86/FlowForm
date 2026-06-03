@@ -15,14 +15,14 @@ import {
   useCreateSurveyVersion,
   usePublishSurveyVersion,
   useSurveyVersions,
-} from '@/api/survey/versions/hooks'
-import type { SurveyVersionOut } from '@/api/survey/versions/types'
+} from '@/api/hooks/versions'
+import type { SurveyVersionOut } from '@/api/hooks/versions'
 import {
   useCreateNode,
   useDeleteNode,
   useSurveyNodes,
   useUpdateNode,
-} from '@/api/survey/nodes/hooks'
+} from '@/api/hooks/nodes'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
 function formatVersionDate(iso: string) {

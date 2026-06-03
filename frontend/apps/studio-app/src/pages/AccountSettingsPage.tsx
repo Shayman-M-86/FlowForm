@@ -9,7 +9,7 @@ import {
   useMyProfile,
   useResendVerification,
   useUpdateProfile,
-} from '@/api/me/hooks'
+} from '@/api/hooks/me'
 
 function SettingsSection({
   title,

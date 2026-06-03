@@ -1,48 +1,31 @@
 import { useParams } from '@tanstack/react-router'
 import { Card } from '@flowform/ui'
-import { getMockSurvey } from '@/api/mockData'
 import { useRenderDebug } from '@/debug/useRenderDebug'
+
+// TODO: implement with real submissions API
+// - fetch paginated submissions from GET /api/v1/projects/{project_id}/surveys/{survey_id}/submissions
+// - derive total/completed/partial counts from response data
+// - add response table with export
 
 export function SurveyResponsesTab() {
   useRenderDebug('SurveyResponsesTab')
-  const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/responses' })
-  const survey = getMockSurvey(slug, surveySlug)
-  const responseCount = survey?.responses ?? 0
+  useParams({ from: '/projects/$slug/surveys/$surveySlug/responses' })
 
   return (
     <section className="grid gap-6">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">Responses</h2>
-          <p className="text-sm text-muted-foreground">{responseCount} total submissions</p>
+          <p className="text-sm text-muted-foreground">Not yet implemented</p>
         </div>
       </div>
 
-      {responseCount === 0 ? (
-        <Card tone="muted">
-          <p className="text-sm text-muted-foreground">No responses yet.</p>
-        </Card>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total</p>
-            <p className="text-3xl font-semibold text-foreground">{responseCount}</p>
-          </Card>
-          <Card>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Completed</p>
-            <p className="text-3xl font-semibold text-foreground">{Math.round(responseCount * 0.9)}</p>
-          </Card>
-          <Card>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Partial</p>
-            <p className="text-3xl font-semibold text-foreground">{Math.round(responseCount * 0.1)}</p>
-          </Card>
-        </div>
-      )}
-
       <Card tone="muted">
-        <p className="text-xs text-muted-foreground">
-          Full response table and export will be available here. Responses are stored securely in a separate
-          database and linked via a respondent ID.
+        <p className="text-sm font-medium text-muted-foreground">Coming soon</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Response counts, a full submission table, and export will appear here once the submissions
+          API is wired up. Responses are stored securely in a separate database and linked via a
+          pseudonymous respondent ID.
         </p>
       </Card>
     </section>

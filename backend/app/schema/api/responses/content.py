@@ -12,10 +12,10 @@ class NodeResponses(BaseModel):
 
     id: int
     survey_version_id: int
-    node_key: str = Field(validation_alias="question_key")
+    node_key: str = Field(alias="question_key")
     sort_key: int
     node_type: SurveyNodeType
-    content: dict = Field(validation_alias="question_schema")
+    content: dict = Field(alias="question_schema")
     created_at: datetime
     updated_at: datetime
 

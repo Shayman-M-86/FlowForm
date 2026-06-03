@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import wraps
@@ -11,6 +12,8 @@ from sqlalchemy.orm import Session
 from app.domain import access_rules
 from app.repositories import access_repo, surveys_repo
 from app.schema.orm.core import ProjectMembership, SurveyMembershipRole, User
+
+logger = logging.getLogger(__name__)
 
 F = TypeVar("F", bound=Callable[..., Any])
 

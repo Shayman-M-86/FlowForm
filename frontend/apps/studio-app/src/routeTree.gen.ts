@@ -28,8 +28,6 @@ import { Route as ProjectsSlugSurveysSurveySlugSettingsRouteImport } from './rou
 import { Route as ProjectsSlugSurveysSurveySlugRolesRouteImport } from './routes/projects/$slug/surveys/$surveySlug/roles'
 import { Route as ProjectsSlugSurveysSurveySlugResponsesRouteImport } from './routes/projects/$slug/surveys/$surveySlug/responses'
 import { Route as ProjectsSlugSurveysSurveySlugOverviewRouteImport } from './routes/projects/$slug/surveys/$surveySlug/overview'
-import { Route as ProjectsSlugSurveysSurveySlugMembersRouteImport } from './routes/projects/$slug/surveys/$surveySlug/members'
-import { Route as ProjectsSlugSurveysSurveySlugLinksRouteImport } from './routes/projects/$slug/surveys/$surveySlug/links'
 import { Route as ProjectsSlugSurveysSurveySlugBuilderRouteImport } from './routes/projects/$slug/surveys/$surveySlug/builder'
 import { Route as ProjectsSlugSurveysSurveySlugAccessRouteImport } from './routes/projects/$slug/surveys/$surveySlug/access'
 
@@ -136,18 +134,6 @@ const ProjectsSlugSurveysSurveySlugOverviewRoute =
     path: '/overview',
     getParentRoute: () => ProjectsSlugSurveysSurveySlugRoute,
   } as any)
-const ProjectsSlugSurveysSurveySlugMembersRoute =
-  ProjectsSlugSurveysSurveySlugMembersRouteImport.update({
-    id: '/members',
-    path: '/members',
-    getParentRoute: () => ProjectsSlugSurveysSurveySlugRoute,
-  } as any)
-const ProjectsSlugSurveysSurveySlugLinksRoute =
-  ProjectsSlugSurveysSurveySlugLinksRouteImport.update({
-    id: '/links',
-    path: '/links',
-    getParentRoute: () => ProjectsSlugSurveysSurveySlugRoute,
-  } as any)
 const ProjectsSlugSurveysSurveySlugBuilderRoute =
   ProjectsSlugSurveysSurveySlugBuilderRouteImport.update({
     id: '/builder',
@@ -177,8 +163,6 @@ export interface FileRoutesByFullPath {
   '/projects/$slug/surveys/': typeof ProjectsSlugSurveysIndexRoute
   '/projects/$slug/surveys/$surveySlug/access': typeof ProjectsSlugSurveysSurveySlugAccessRoute
   '/projects/$slug/surveys/$surveySlug/builder': typeof ProjectsSlugSurveysSurveySlugBuilderRoute
-  '/projects/$slug/surveys/$surveySlug/links': typeof ProjectsSlugSurveysSurveySlugLinksRoute
-  '/projects/$slug/surveys/$surveySlug/members': typeof ProjectsSlugSurveysSurveySlugMembersRoute
   '/projects/$slug/surveys/$surveySlug/overview': typeof ProjectsSlugSurveysSurveySlugOverviewRoute
   '/projects/$slug/surveys/$surveySlug/responses': typeof ProjectsSlugSurveysSurveySlugResponsesRoute
   '/projects/$slug/surveys/$surveySlug/roles': typeof ProjectsSlugSurveysSurveySlugRolesRoute
@@ -199,8 +183,6 @@ export interface FileRoutesByTo {
   '/projects/$slug/surveys': typeof ProjectsSlugSurveysIndexRoute
   '/projects/$slug/surveys/$surveySlug/access': typeof ProjectsSlugSurveysSurveySlugAccessRoute
   '/projects/$slug/surveys/$surveySlug/builder': typeof ProjectsSlugSurveysSurveySlugBuilderRoute
-  '/projects/$slug/surveys/$surveySlug/links': typeof ProjectsSlugSurveysSurveySlugLinksRoute
-  '/projects/$slug/surveys/$surveySlug/members': typeof ProjectsSlugSurveysSurveySlugMembersRoute
   '/projects/$slug/surveys/$surveySlug/overview': typeof ProjectsSlugSurveysSurveySlugOverviewRoute
   '/projects/$slug/surveys/$surveySlug/responses': typeof ProjectsSlugSurveysSurveySlugResponsesRoute
   '/projects/$slug/surveys/$surveySlug/roles': typeof ProjectsSlugSurveysSurveySlugRolesRoute
@@ -225,8 +207,6 @@ export interface FileRoutesById {
   '/projects/$slug/surveys/': typeof ProjectsSlugSurveysIndexRoute
   '/projects/$slug/surveys/$surveySlug/access': typeof ProjectsSlugSurveysSurveySlugAccessRoute
   '/projects/$slug/surveys/$surveySlug/builder': typeof ProjectsSlugSurveysSurveySlugBuilderRoute
-  '/projects/$slug/surveys/$surveySlug/links': typeof ProjectsSlugSurveysSurveySlugLinksRoute
-  '/projects/$slug/surveys/$surveySlug/members': typeof ProjectsSlugSurveysSurveySlugMembersRoute
   '/projects/$slug/surveys/$surveySlug/overview': typeof ProjectsSlugSurveysSurveySlugOverviewRoute
   '/projects/$slug/surveys/$surveySlug/responses': typeof ProjectsSlugSurveysSurveySlugResponsesRoute
   '/projects/$slug/surveys/$surveySlug/roles': typeof ProjectsSlugSurveysSurveySlugRolesRoute
@@ -252,8 +232,6 @@ export interface FileRouteTypes {
     | '/projects/$slug/surveys/'
     | '/projects/$slug/surveys/$surveySlug/access'
     | '/projects/$slug/surveys/$surveySlug/builder'
-    | '/projects/$slug/surveys/$surveySlug/links'
-    | '/projects/$slug/surveys/$surveySlug/members'
     | '/projects/$slug/surveys/$surveySlug/overview'
     | '/projects/$slug/surveys/$surveySlug/responses'
     | '/projects/$slug/surveys/$surveySlug/roles'
@@ -274,8 +252,6 @@ export interface FileRouteTypes {
     | '/projects/$slug/surveys'
     | '/projects/$slug/surveys/$surveySlug/access'
     | '/projects/$slug/surveys/$surveySlug/builder'
-    | '/projects/$slug/surveys/$surveySlug/links'
-    | '/projects/$slug/surveys/$surveySlug/members'
     | '/projects/$slug/surveys/$surveySlug/overview'
     | '/projects/$slug/surveys/$surveySlug/responses'
     | '/projects/$slug/surveys/$surveySlug/roles'
@@ -299,8 +275,6 @@ export interface FileRouteTypes {
     | '/projects/$slug/surveys/'
     | '/projects/$slug/surveys/$surveySlug/access'
     | '/projects/$slug/surveys/$surveySlug/builder'
-    | '/projects/$slug/surveys/$surveySlug/links'
-    | '/projects/$slug/surveys/$surveySlug/members'
     | '/projects/$slug/surveys/$surveySlug/overview'
     | '/projects/$slug/surveys/$surveySlug/responses'
     | '/projects/$slug/surveys/$surveySlug/roles'
@@ -453,20 +427,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugOverviewRouteImport
       parentRoute: typeof ProjectsSlugSurveysSurveySlugRoute
     }
-    '/projects/$slug/surveys/$surveySlug/members': {
-      id: '/projects/$slug/surveys/$surveySlug/members'
-      path: '/members'
-      fullPath: '/projects/$slug/surveys/$surveySlug/members'
-      preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugMembersRouteImport
-      parentRoute: typeof ProjectsSlugSurveysSurveySlugRoute
-    }
-    '/projects/$slug/surveys/$surveySlug/links': {
-      id: '/projects/$slug/surveys/$surveySlug/links'
-      path: '/links'
-      fullPath: '/projects/$slug/surveys/$surveySlug/links'
-      preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugLinksRouteImport
-      parentRoute: typeof ProjectsSlugSurveysSurveySlugRoute
-    }
     '/projects/$slug/surveys/$surveySlug/builder': {
       id: '/projects/$slug/surveys/$surveySlug/builder'
       path: '/builder'
@@ -487,8 +447,6 @@ declare module '@tanstack/react-router' {
 interface ProjectsSlugSurveysSurveySlugRouteChildren {
   ProjectsSlugSurveysSurveySlugAccessRoute: typeof ProjectsSlugSurveysSurveySlugAccessRoute
   ProjectsSlugSurveysSurveySlugBuilderRoute: typeof ProjectsSlugSurveysSurveySlugBuilderRoute
-  ProjectsSlugSurveysSurveySlugLinksRoute: typeof ProjectsSlugSurveysSurveySlugLinksRoute
-  ProjectsSlugSurveysSurveySlugMembersRoute: typeof ProjectsSlugSurveysSurveySlugMembersRoute
   ProjectsSlugSurveysSurveySlugOverviewRoute: typeof ProjectsSlugSurveysSurveySlugOverviewRoute
   ProjectsSlugSurveysSurveySlugResponsesRoute: typeof ProjectsSlugSurveysSurveySlugResponsesRoute
   ProjectsSlugSurveysSurveySlugRolesRoute: typeof ProjectsSlugSurveysSurveySlugRolesRoute
@@ -503,10 +461,6 @@ const ProjectsSlugSurveysSurveySlugRouteChildren: ProjectsSlugSurveysSurveySlugR
       ProjectsSlugSurveysSurveySlugAccessRoute,
     ProjectsSlugSurveysSurveySlugBuilderRoute:
       ProjectsSlugSurveysSurveySlugBuilderRoute,
-    ProjectsSlugSurveysSurveySlugLinksRoute:
-      ProjectsSlugSurveysSurveySlugLinksRoute,
-    ProjectsSlugSurveysSurveySlugMembersRoute:
-      ProjectsSlugSurveysSurveySlugMembersRoute,
     ProjectsSlugSurveysSurveySlugOverviewRoute:
       ProjectsSlugSurveysSurveySlugOverviewRoute,
     ProjectsSlugSurveysSurveySlugResponsesRoute:

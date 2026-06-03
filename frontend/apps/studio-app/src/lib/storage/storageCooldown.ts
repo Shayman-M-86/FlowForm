@@ -30,5 +30,14 @@ export function createStorageCooldown({ storageKey, cooldownMs }: StorageCooldow
     fn()
   }
 
-  return { isOnCooldown, attempt }
+  // Stamps the cooldown and returns true if the key was not on cooldown.
+  // Use this to gate a query's `enabled` flag: stamp() returns true once,
+  // then false for subsequent calls within the cooldown window.
+  function stamp(key: string): boolean {
+    if (isOnCooldown(key)) return false
+    set(key, Date.now())
+    return true
+  }
+
+  return { isOnCooldown, attempt, stamp }
 }

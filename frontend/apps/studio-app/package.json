@@ -12,7 +12,10 @@
     "openapi:generate": "npm run openapi:export && npm run openapi:types && npm --prefix ../.. run generate:types",
     "openapi:check": "npm run openapi:export -- --check && openapi-typescript ../../../backend/openapi.yaml -o src/api/generated/schema.ts --root-types --root-types-no-schema-prefix --check",
     "preview": "vite preview",
-    "routes": "tsr generate"
+    "routes": "tsr generate",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.16.1",
@@ -47,12 +50,15 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "@vitest/ui": "^4.1.8",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "jsdom": "^29.1.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.0",
-    "vite": "^8.0.4"
+    "vite": "^8.0.4",
+    "vitest": "^4.1.8"
   }
 }

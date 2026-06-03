@@ -35,22 +35,22 @@ import {
   useDeletePublicLink,
   usePublicLinks,
   useUpdatePublicLink,
-} from '@/api/survey/links/hooks'
+} from '@/api/hooks/links'
 import {
   useAssignSurveyMemberRole,
   useRemoveSurveyMemberRole,
   useSurveyMembers,
   useUpdateSurveyMemberRole,
-} from '@/api/survey/members/hooks'
+} from '@/api/hooks/survey-members'
 import {
   useCreateSurveyRole,
   useDeleteSurveyRole,
   useSurveyRoles,
   useUpdateSurveyRole,
-} from '@/api/survey/roles/hooks'
-import type { PublicLinkOut } from '@/api/survey/links/types'
+} from '@/api/hooks/survey-roles'
+import type { CreateSurveyRoleRequest } from '@/api/hooks/survey-roles'
+import type { PublicLinkOut } from '@/api/hooks/links'
 import type { ProjectMemberOut } from '@/api/hooks/members'
-import type { CreateSurveyRoleRequest } from '@/api/survey/roles/types'
 import {
   LinkStateBadge,
   SurveyAccessModeSelector,
@@ -514,7 +514,7 @@ function LinksSection({
   }
 
   function handleToggle(linkId: number, isActive: boolean) {
-    updateLink.mutate({ linkId, body: { is_active: isActive } })
+    updateLink.mutate({ linkId, body: { is_active: isActive, name: null, assigned_email: null, requires_auth: null, expires_at: null } })
   }
 
   function handleDelete(linkId: number) {
@@ -1142,9 +1142,8 @@ export function SurveyAccessTab() {
   const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/access' })
 
   const { data: project } = useProject(slug)
-  const surveyProjectRef = project?.id ?? null
-  const { data: survey } = useSurvey(surveyProjectRef, surveySlug)
-  const updateSurvey = useUpdateSurvey(project?.id ?? slug, surveySlug)
+  const { data: survey } = useSurvey(slug, surveySlug)
+  const updateSurvey = useUpdateSurvey(project?.id ?? null, surveySlug)
   const [accessToast, setAccessToast] = useState<{ message: string; variant: 'success' | 'error' } | null>(null)
 
   const projectId = project?.id ?? 0

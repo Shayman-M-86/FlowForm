@@ -7,6 +7,16 @@ import type { FlowFormPermission } from '@/api/generated/rbac.gen'
 export type { FlowFormPermission as ProjectPermission }
 export { permissionKeys }
 
+export const PERMISSION_REQUIRED_TOOLTIP = {
+  surveys: 'You need survey:view permission to access surveys.',
+  members: 'You need project:manage_members permission to manage members.',
+  roles: 'You need project:manage_roles permission to manage roles.',
+  settings: 'You need project:edit or project:delete permission to access settings.',
+  surveyBuilder: 'You need survey:edit permission to use the builder.',
+  surveyResponses: 'You need submission:view permission to view responses.',
+  surveySettings: 'You need survey:edit, archive, delete, or publish permission to access settings.',
+} as const
+
 export function useProjectPermissions(projectId: number | null) {
   return useQuery({
     queryKey: permissionKeys.project(projectId ?? 0),
@@ -20,6 +30,7 @@ export function useProjectPermissions(projectId: number | null) {
       return data.permissions as string[]
     },
     staleTime: STALE.STATIC,
+    meta: { persist: 'local' },
   })
 }
 
@@ -41,6 +52,7 @@ export function useSurveyPermissions(projectId: number | null, surveyId: number 
       return data.permissions as string[]
     },
     staleTime: STALE.STATIC,
+    meta: { persist: 'local' },
   })
 }
 

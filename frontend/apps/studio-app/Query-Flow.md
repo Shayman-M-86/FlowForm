@@ -1,321 +1,196 @@
-Here’s a cleaner formatted version:
+# Query Storage & Data Flow
 
+## Layer diagram
 
-
-
-# FlowForm Studio App Flow
-
-This explains the full flow from the browser to the backend, file by file.
-
----
-
-## 1. App Boot
-
-**File:** `frontend/apps/studio-app/src/main.tsx`
-
-Everything starts here.
-
-The app is wrapped with three providers:
-
-- `Auth0Provider` — gives every component access to Auth0 state and methods.
-- `QueryClientProvider` — gives every component access to React Query's cache.
-- `ThemeProvider` — handles dark/light mode.
-
-The router renders inside all of these providers, so every route has access to authentication, query state, and theme state.
-
----
-
-## 2. Route Rendering
-
-**File:** `frontend/apps/studio-app/src/routes/__root.tsx`
-
-This is the TanStack Router root route.
-
-Every page renders through this file.
-
-`ProtectedApp` wraps `<Outlet />`, which means no route renders until authentication has been resolved.
-
----
-
-## 3. Auth Gate
-
-**File:** `frontend/apps/studio-app/src/components/auth/ProtectedApp.tsx`
-
-This component controls whether the app should render, show the sign-in screen, or bootstrap the user.
-
-### Flow
-
-```txt
-Page loads
-  ↓
-Check sessionStorage for "flowform.bootstrapped"
-  ↓
-Already bootstrapped?
-  ├─ Yes → render children immediately
-  └─ No  → wait for Auth0 silent check
-              ↓
-          Auth0 resolves
-              ↓
-          Authenticated?
-            ├─ No → show sign-in screen
-            └─ Yes
-                 ↓
-              Same user?
-                ├─ Yes → setBootstrapReady(true), render children
-                └─ No  → run bootstrap
-                            ↓
-                         POST /api/v1/auth/bootstrap-user
-                         with ID token
-                            ↓
-                         Save result to sessionStorage:
-                         - flowform.user
-                         - flowform.avatar
-                            ↓
-                         Render children
+```text
+┌─────────────────────────────────────────────────────────┐
+│  Component                                              │
+│  const { data } = useMyInvitations()                    │
+└────────────────────────┬────────────────────────────────┘
+                         │ calls
+┌────────────────────────▼────────────────────────────────┐
+│  Named hook  src/api/hooks/*.ts                         │
+│                                                         │
+│  Most hooks call useQuery directly with staleTime/meta. │
+│  Hooks needing cooldown/polling use a policy object:   │
+│                                                         │
+│  const POLICY = {                                       │
+│    staleTime:   'SLOW',    ← STALE tier or raw ms       │
+│    persist:     true,      ← write to localStorage      │
+│    pollMs:      300_000,   ← background refetch         │
+│    cooldownMs:  15_000,    ← min ms between fetches     │
+│    windowFocus: true,      ← refetch on tab focus       │
+│  }                                                      │
+│                                                         │
+│  useCooldownEnabled(key, POLICY.cooldownMs)             │
+│    └─ reads/writes flowform.query-cooldowns             │
+│       stamps once on mount; blocks within cooldownMs    │
+│                                                         │
+│  useQuery({ queryKey, queryFn, enabled,                 │
+│             ...buildQueryOptions(POLICY) })             │
+└──────────┬──────────────────────────┬───────────────────┘
+           │                          │
+           │ no data / stale          │ on success + persist: true
+           ▼                          ▼
+┌──────────────────────┐   ┌──────────────────────────────┐
+│  TanStack Query      │   │  PersistQueryClientProvider  │
+│  (in-memory cache)   │   │  src/app/providers/          │
+│                      │   │  QueryPersistProvider.tsx     │
+│  Single queryClient  │   │                              │
+│  shared app-wide.    │   │  Serialises queries where    │
+│  Deduplicates        │   │  meta.persist === 'local'    │
+│  in-flight requests  │   │  into one localStorage key:  │
+│  by query key.       │   │  flowform.query-cache        │
+│  Returns cached data │   │                              │
+│  if within staleTime.│   │  On app start: restores      │
+│  Refetches stale     │   │  matching successful entries │
+│  data in background. │   │  into the in-memory cache    │
+└──────────┬───────────┘   │  while provider starts.      │
+           │               │  maxAge: STALE.STATIC (20m)  │
+           │ fetch needed  └──────────────────────────────┘
+           ▼
+┌──────────────────────────────────────────────────────────┐
+│  API client  src/api/client.ts                           │
+│                                                          │
+│  openapi-fetch typed against generated schema.ts        │
+│                                                          │
+│  Middleware chain (in order):                            │
+│                                                          │
+│  1. authMiddleware                                       │
+│     onRequest: fetches JWT from Auth0 (cached/refresh)  │
+│     attaches Authorization: Bearer <token>              │
+│                                                          │
+│  2. permissionMiddleware                                 │
+│     onRequest: reads permission cache; if the user is   │
+│     provably denied, throws PermissionDeniedError        │
+│     locally — request never leaves the browser.         │
+│     onResponse 403: invalidates permission cache        │
+│     (gated by 60s cooldown via flowform.perm-cooldowns) │
+└──────────────────────────┬───────────────────────────────┘
+                           │ HTTP
+┌──────────────────────────▼───────────────────────────────┐
+│  Flask backend                                           │
+│                                                          │
+│  before_request:                                         │
+│    Rate limiter — default 30 req / 5s per IP             │
+│    skips OPTIONS + configured ignored paths              │
+│    (429 → frontend does not retry)                       │
+│                                                          │
+│  @auth.require_auth():                                   │
+│    Validates JWT against Auth0 JWKS                      │
+│    401 if invalid/expired                                │
+│                                                          │
+│  Route handler (thin):                                   │
+│    parse() → Pydantic request validation                 │
+│    delegates to service layer                            │
+│    model_dump(mode="json") → JSON response              │
+│    some content routes also pass by_alias=True           │
+│                                                          │
+│  Service layer:                                          │
+│    Only layer that touches both databases                │
+│    Cross-db orchestration lives here                     │
+└──────────────────────────────────────────────────────────┘
 ```
 
-When `ProtectedApp` renders its children, it wraps them in `UserProvider`.
+## Storage locations
 
----
+| Key | Storage | Contents |
+| --- | ------- | -------- |
+| `flowform.query-cache` | localStorage | Serialised query snapshot (`persist: true` queries only) |
+| `flowform.query-cooldowns` | localStorage | Per-key fetch timestamps (mount rate limiting) |
+| `flowform.perm-cooldowns` | localStorage | Per-permission-key timestamps (invalidation rate limiting) |
 
-## 4. User Context
+## Query client defaults
 
-**File:** `frontend/apps/studio-app/src/auth/UserContext.tsx`
+`src/lib/query/queryClient.ts` creates the single app-wide `QueryClient`.
 
-This holds the current user profile in React context.
+| Setting | Value | Effect |
+| --- | --- | --- |
+| default `staleTime` | `STALE.SLOW` = 5 min | Hooks inherit a 5 minute freshness window unless they override it. |
+| `STALE.STATIC` | 20 min | Used for user profile and permission lookups. |
+| `STALE.SLOW` | 5 min | Used for most project/survey/member/role list data. |
+| `STALE.ACTIVE` | 30 sec | Used for data expected to change frequently. |
+| retry | once for most errors | `RATE_LIMIT_EXCEEDED` is never retried. Other errors retry while `failureCount < 1`. |
 
-Any component can call:
+## Policy → behaviour
 
-```ts
-useCurrentUser()
-```
+| `staleTime` | `persist` | `pollMs` | `cooldownMs` | Behaviour |
+| ----------- | --------- | -------- | ------------ | --------- |
+| `STATIC` | `true` | — | — | Restored on refresh, fresh for 20 min |
+| `SLOW` | `true` | — | — | Restored on refresh, fresh for 5 min |
+| `SLOW` | — | — | `15_000` | Possible policy shape, but no current hook uses cooldown without persistence |
+| `SLOW` | `true` | `300_000` | `15_000` | `useMyInvitations`: restored on refresh, mount fetch blocked within 15s, polls every 5 min after data exists, refetches on focus |
+| `ACTIVE` | — | — | — | Fresh for 30s, never persisted |
 
-It returns:
+`buildQueryOptions()` maps a `QueryPolicy` to TanStack Query options. In the
+current codebase, only `useMyInvitations()` uses this helper. Other hooks set
+`staleTime`, `enabled`, and `meta` directly.
 
-```ts
-{
-  user: CurrentUserOut;
-  displayName: string;
-  avatarUrl: string | null;
-}
-```
+## Queries with persist: true
 
-### Data sources
+| Hook | Query key | Tier |
+| ---- | --------- | ---- |
+| `useMyProfile` | `['me', 'profile']` | STATIC |
+| `useProjects` | `['projects']` | SLOW |
+| `useProjectPermissions` | `['permissions', 'project', id]` | STATIC |
+| `useSurveyPermissions` | `['permissions', 'project', id, 'survey', id]` | STATIC |
+| `useMyInvitations` | `['me', 'invitations']` | SLOW |
 
-* `user` comes from the backend bootstrap response.
-* On refresh, `user` can be restored from `sessionStorage`.
-* `avatarUrl` comes from the Auth0 profile picture claim.
-* The avatar is also persisted to `sessionStorage`.
+Persistence only writes successful queries: `shouldPersistQuery()` requires
+`query.meta.persist === 'local'` and `query.state.status === 'success'`.
 
----
+## Non-persisted query families
 
-## 5. Making API Calls
+These hooks stay in memory only. They can still be fresh or stale according to
+their tier, and mutations invalidate the relevant query keys on success.
 
-**File:** `frontend/apps/studio-app/src/api/useApi.ts`
+| Hook | Query key | Tier |
+| ---- | --------- | ---- |
+| `useSurveys` | `['surveys', 'project', projectId]` | SLOW |
+| `useSurvey` | `['surveys', 'project', projectId, 'id', surveyId]` | SLOW |
+| `useProjectMembers` | `['members', 'project', projectId]` | SLOW |
+| `useProjectRoles` | `['roles', 'project', projectId]` | SLOW |
+| `useSurveyRoles` | `['survey-roles', 'project', projectId]` | SLOW |
+| `useSurveyMembers` | `['survey-members', 'project', projectId, 'survey', surveyId]` | SLOW |
+| `useProjectInvitations` | `['invitations', 'project', projectId]` | ACTIVE |
+| `usePublicLinks` | `['links', 'project', projectId, 'survey', surveyId]` | ACTIVE |
+| `useSurveyVersions` | `['versions', 'project', projectId, 'survey', surveyId]` | ACTIVE |
+| `useSurveyNodes` | `['nodes', 'project', projectId, 'survey', surveyId, 'version', versionNumber]` | ACTIVE |
 
-This file returns an `executor`.
+## Permission middleware flow
 
-The executor exposes:
+`apiClient` installs middleware in this order:
 
-```ts
-get()
-post()
-patch()
-del()
-getWithQuery()
-```
+1. `authMiddleware`
+   - Reads the token getter registered by `initApiAuth()`.
+   - If a getter exists, awaits a token and attaches `Authorization: Bearer <token>`.
+   - If no getter exists, leaves the request unchanged.
 
-Every method automatically:
+2. `permissionMiddleware`
+   - Matches protected routes against generated `routePermissions`.
+   - Reads permission query data from the `QueryClient` only. It never fetches
+     permissions from inside middleware.
+   - If the cache is cold, lets the request through and relies on the backend.
+   - If cached permissions prove denial, throws `PermissionDeniedError` before
+     the request leaves the browser and invalidates the relevant permission key.
+   - On backend `403`, invalidates project permission cache and, when the route
+     has a `survey_id`, survey permission cache too.
+   - Permission invalidation is gated by `flowform.perm-cooldowns` with a 60s
+     cooldown per serialized permission query key.
 
-1. Calls `getAccessTokenSilently()` to get a fresh Auth0 access token.
-2. Adds the token to the request as an `Authorization` header.
-3. Calls the raw fetch function.
+## Current storage backend
 
-The token used here is an **access token**, not the ID token.
+`PersistQueryClientProvider` serialises all `meta.persist === 'local'` queries
+into one localStorage entry: `flowform.query-cache`. That means the current app
+has one persistence backend and one max age (`STALE.STATIC`, 20 min) for every
+persisted query.
 
-It is scoped to:
+The installed TanStack packages are v5.100.14. In this version,
+`experimental_createQueryPersister` from `@tanstack/query-persist-client-core`
+does expose fine-grained per-query persistence via a `persister` option on
+`useQuery`/query options, and `@tanstack/query-core` includes that option.
+FlowForm is not using that experimental API right now.
 
-```txt
-VITE_AUTH0_AUDIENCE
-```
-
-Auth0 handles refreshing the token silently.
-
----
-
-## 6. Raw HTTP Client
-
-**File:** `frontend/apps/studio-app/src/api/client.ts`
-
-This file contains plain `fetch` wrappers.
-
-It does not handle authentication.
-
-Its responsibilities are:
-
-* Build the request.
-* Send it to `VITE_API_BASE_URL`.
-* Parse the JSON response.
-* Throw `ApiRequestError` when the request fails.
-* Return `undefined` for `204 No Content` responses.
-
----
-
-## 7. Query Hooks
-
-**File:** `frontend/apps/studio-app/src/api/projects.ts`
-
-This is where React Query logic lives.
-
-Each hook follows this pattern:
-
-1. Call `useApi()` to get the executor.
-2. Pass the executor to a plain fetcher function.
-3. Wrap the fetcher in `useQuery` or `useMutation`.
-
-React Query owns the cache.
-
-For example:
-
-```ts
-projectKeys.list()
-```
-
-Produces the query key:
-
-```ts
-['projects', 'list']
-```
-
-That query key is the cache address.
-
-If two components call `useProjects()`, they share the same cached request.
-
----
-
-## 8. Types
-
-**File:** `frontend/apps/studio-app/src/api/types.ts`
-
-This file contains shared request and response types.
-
-Examples:
-
-```ts
-ProjectOut
-SurveyOut
-CurrentUserOut
-ApiExecutor
-ApiError
-```
-
-This file should stay as a base layer.
-
-It should not import from the rest of the app.
-
----
-
-# Full Call Chain: Loading Projects
-
-```txt
-ProjectsPage calls useProjects()
-  ↓
-api/projects.ts
-  ↓
-useApi()
-  ↓
-Gets executor
-  ↓
-useQuery({
-  queryKey: ['projects', 'list'],
-  queryFn: () => fetchProjects(executor)
-})
-  ↓
-React Query checks cache
-  ↓
-Cache hit and fresh?
-  ├─ Yes → return cached data, no network request
-  └─ No  → call fetchProjects(executor)
-              ↓
-          api/projects.ts
-              ↓
-          executor.get('/api/v1/projects')
-              ↓
-          api/useApi.ts
-              ↓
-          getAccessTokenSilently()
-              ↓
-          Auth0 returns Bearer token
-              ↓
-          client.get('/api/v1/projects', {
-            Authorization: 'Bearer ...'
-          })
-              ↓
-          api/client.ts
-              ↓
-          fetch('http://localhost:5000/api/v1/projects', ...)
-              ↓
-          Parse JSON
-              ↓
-          Return ProjectOut[]
-              ↓
-          Component receives:
-          - data
-          - isPending
-          - isError
-              ↓
-          Render project list
-```
-
----
-
-# Full Call Chain: Creating a Project
-
-```txt
-CreateProjectForm calls useCreateProject()
-  ↓
-api/projects.ts
-  ↓
-Returns { mutate, isPending }
-  ↓
-User submits form
-  ↓
-mutate({
-  name: 'My Project',
-  slug: 'my-project'
-})
-  ↓
-executor.post('/api/v1/projects', body)
-  ↓
-getAccessTokenSilently()
-  ↓
-Auth0 returns Bearer token
-  ↓
-client.post('/api/v1/projects', body, headers)
-  ↓
-fetch POST request
-  ↓
-Backend returns new ProjectOut
-  ↓
-onSuccess fires
-  ↓
-queryClient.invalidateQueries(['projects', 'list'])
-  ↓
-React Query marks the project list as stale
-  ↓
-React Query refetches in the background
-  ↓
-ProjectsPage re-renders with the new data
-```
-
----
-
-# Where to Add Things
-
-| Task                                           | Location                                                                        |
-| ---------------------------------------------- | ------------------------------------------------------------------------------- |
-| Add a new API response type                    | `api/types.ts`                                                                  |
-| Add a new resource like surveys or submissions | Create a new file like `api/surveys.ts` following the `api/projects.ts` pattern |
-| Add a new page                                 | Add it to `pages/` and register it in `routes/`                                 |
-| Access the current user                        | Use `useCurrentUser()` from `auth/UserContext.tsx`                              |
-| Access raw Auth0 state                         | Use `useAuth0()` from `@auth0/auth0-react`                                      |
+`persist: 'session'` is intentionally absent from `QueryPolicy`.
+Do not add it as a mapped alias for localStorage — that would silently produce
+cross-session and cross-tab behaviour the name explicitly promises to prevent.

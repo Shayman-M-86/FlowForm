@@ -4,14 +4,14 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Badge, Button, DropdownMenu, Tooltip, useTheme } from "@flowform/ui";
 import { BRAND } from "@flowform/site-shell";
 import "@flowform/site-shell/header.css";
-import { useProject } from "@/api/project/projects/hooks";
-import { useSurvey } from "@/api/project/surveys/hooks";
+import { useProject } from "@/api/hooks/projects";
+import { useSurvey } from "@/api/hooks/surveys";
 import { useHasProjectPermission } from '@/api/hooks/permissions';
 import { PERMISSION_REQUIRED_TOOLTIP } from '@/api/hooks/permissions';
 import { SidebarNotifications } from "@/components/SidebarNotifications";
 import { useCurrentUser } from "@/auth/UserContext";
-import { clearActiveProjectSlug } from "@/lib/activeProject";
-import { clearQueryCache } from "@/api/queryStorage";
+import { clearActiveProjectSlug } from '@/lib/storage';
+import { clearQueryCache } from "@/lib/query/queryClient";
 import { useRenderDebug } from "@/debug/useRenderDebug";
 
 // ── Icons ──────────────────────────────────────────────────────────────────

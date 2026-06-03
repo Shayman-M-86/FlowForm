@@ -3,7 +3,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import { routePermissions } from '../generated/rbac.gen'
 import { permissionKeys } from '../hooks/permissions/queryKeys'
 
-import { createStorageCooldown } from '@/lib/storageCooldown'
+import { createStorageCooldown } from '@/lib/storage'
 
 const permissionCooldown = createStorageCooldown({
   storageKey: 'flowform.perm-cooldowns',

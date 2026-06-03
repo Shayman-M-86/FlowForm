@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { getActiveProjectSlug } from '@/lib/storage/activeProject'
+import { getActiveProjectSlug } from '@/lib/storage'
 
 export const Route = createFileRoute('/')({
   beforeLoad: () => {

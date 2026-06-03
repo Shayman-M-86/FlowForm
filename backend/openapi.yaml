@@ -5817,6 +5817,10 @@ components:
         permissions:
           items:
             enum:
+            - project:edit
+            - project:delete
+            - project:manage_members
+            - project:manage_roles
             - survey:view
             - survey:create
             - survey:edit
@@ -5825,7 +5829,7 @@ components:
             - survey:archive
             - submission:view
             type: string
-            maxLength: 15
+            maxLength: 22
           title: Permissions
           type: array
       required:

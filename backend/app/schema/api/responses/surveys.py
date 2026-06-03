@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.domain.permissions import SurveyPermission
+from app.domain.permissions import ProjectPermission
 from app.schema.api import limits
 from app.schema.api.enums import SurveyVersionStatus, SurveyVisibility
 
@@ -10,7 +10,7 @@ from app.schema.api.enums import SurveyVersionStatus, SurveyVisibility
 class MySurveyPermissionsResponses(BaseModel):
     """API response shape for the current user's effective permissions on a survey."""
 
-    permissions: list[SurveyPermission]
+    permissions: list[ProjectPermission]
 
 
 class SurveyResponses(BaseModel):

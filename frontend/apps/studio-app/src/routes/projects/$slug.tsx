@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, Link, useRouterState, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { setActiveProjectSlug } from '@/lib/storage/activeProject'
+import { setActiveProjectSlug } from '@/lib/storage'
 import { useProject } from '@/api/hooks/projects'
 import { useHasProjectPermission } from '@/api/hooks/permissions'
 import { Spinner, Card, TabSelector } from '@flowform/ui'
@@ -45,6 +45,10 @@ function ProjectLayout() {
         </Card>
       </main>
     )
+  }
+
+  if (!project) {
+    return <ProjectNotFound />
   }
 
   const activeTab = ['surveys', 'members', 'roles', 'settings'].find((t) => pathname.includes(`/${t}`)) ?? 'surveys'

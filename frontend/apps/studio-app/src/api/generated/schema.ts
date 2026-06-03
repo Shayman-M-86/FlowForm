@@ -2544,7 +2544,7 @@ export interface components {
          */
         MySurveyPermissionsResponses: {
             /** Permissions */
-            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
         };
         /**
          * SurveyVersionResponses

@@ -158,7 +158,7 @@ class RateLimitSettings(BaseModel):
     """Global rate limiting configuration."""
 
     enabled: bool = True
-    max_requests: int = 20
+    max_requests: int = 30
     window_seconds: int = 5
     ignored_paths: list[str] = Field(default_factory=lambda: ["/api/v1/health"])
 

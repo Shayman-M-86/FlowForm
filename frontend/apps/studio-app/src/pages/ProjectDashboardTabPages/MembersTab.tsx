@@ -2,7 +2,6 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { Button, Badge, Card, Input, LargeInput, Modal, Select, Spinner, Table, Toast, type TableColumn } from '@flowform/ui'
 import { useProjectMembers, useProjectInvitations, useSendInvitation, useDeleteProjectMember, useRevokeInvitation, useUpdateProjectMember } from '@/api/hooks/members'
 import type { ProjectInvitationOut, ProjectMemberOut } from '@/api/hooks/members'
-import { getInviteErrorMessage } from '@/api/errors'
 import { RoleEditorModal, type RoleEditorState } from './RoleEditorModal'
 import type { CustomRole } from './RolesTab'
 import { normalizePermissionKeys, type PermissionKey } from './roleDefinitions'
@@ -89,7 +88,7 @@ export function MembersTab({ projectId }: Props) {
     let resolvedId = editingRole.id
     if (editingRole.custom) {
       try {
-        const created = await createProjectRole.mutateAsync({ name: next.name, permissions: next.permissions })
+        const created = await createProjectRole.mutateAsync({ name: next.name, description: null, permissions: next.permissions })
         resolvedId = String(created.id)
       } catch {
         return
@@ -392,7 +391,7 @@ export function MembersTab({ projectId }: Props) {
           />
           {sendInvitation.isError && (
             <p className="text-sm text-destructive">
-              {getInviteErrorMessage(sendInvitation.error)}
+              {(sendInvitation.error as { message?: string } | null)?.message ?? 'Failed to send invitation.'}
             </p>
           )}
         </div>
