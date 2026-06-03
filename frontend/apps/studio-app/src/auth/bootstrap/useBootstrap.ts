@@ -12,6 +12,9 @@ import {
   getUserFromSession,
   getAvatarFromSession,
 } from './session'
+import { queryClient } from '@/lib/query/queryClient'
+import { clearFlowFormQueryCache, restorePersistedQueries } from '@/lib/query/queryPersistence'
+import { ensureCacheOwner, clearCacheOwner } from '@/lib/query/queryCacheOwner'
 
 export interface BootstrapState {
   bootstrapReady: boolean
@@ -59,6 +62,8 @@ export function useBootstrap(): BootstrapState {
 
   async function clearAndLogout() {
     try {
+      await clearFlowFormQueryCache(queryClient)
+      clearCacheOwner()
       window.localStorage.clear()
       window.sessionStorage.clear()
       if ('caches' in window) {
@@ -90,7 +95,12 @@ export function useBootstrap(): BootstrapState {
     }
 
     if (getBootstrappedUserId() === user.sub) {
-      queueMicrotask(() => setBootstrapReady(true))
+      // Already bootstrapped for this user — restore persisted queries and go.
+      void (async () => {
+        await ensureCacheOwner(queryClient, user.sub!)
+        await restorePersistedQueries()
+        queueMicrotask(() => setBootstrapReady(true))
+      })()
       return
     }
 
@@ -104,6 +114,8 @@ export function useBootstrap(): BootstrapState {
 
     void (async () => {
       try {
+        await ensureCacheOwner(queryClient, user.sub!)
+
         const [claims, accessToken] = await Promise.all([
           getIdTokenClaims(),
           getAccessTokenSilently({
@@ -117,6 +129,7 @@ export function useBootstrap(): BootstrapState {
           const picture = user.picture ?? null
           markBootstrapped(user.sub!)
           saveUserToSession(result.user, picture)
+          await restorePersistedQueries()
           setCurrentUser(result.user)
           setAvatarUrl(picture)
           setBootstrapReady(true)

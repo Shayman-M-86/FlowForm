@@ -114,6 +114,55 @@ for (const category of ["subtype", "request", "response"]) {
 writeFileSync(`${schemaPackageDir}/builder.gen.ts`, interfaceLines.join("\n"));
 console.log(`Generated ${schemaPackageDir}/builder.gen.ts`);
 
+// ─── packages/schema/src/generated/builder-zod.gen.ts ────────────────────────
+// Zod schemas for all builder-scoped schemas (same set as builder.gen.ts).
+
+const zodLines = [
+  "// This file is auto-generated — do not edit manually",
+  `import { z } from "zod";`,
+  "",
+];
+
+for (const category of ["subtype", "request", "response"]) {
+  const subset = builderSorted.filter(([name]) => schemaCategory(name) === category);
+  if (subset.length === 0) continue;
+
+  zodLines.push(`// ${"─".repeat(74)}`);
+  zodLines.push(`// ${category.charAt(0).toUpperCase() + category.slice(1)}s`);
+  zodLines.push(`// ${"─".repeat(74)}`);
+  zodLines.push("");
+
+  for (const [name, schema] of subset) {
+    if (!schema.properties && (schema.oneOf || schema.anyOf)) {
+      const variants = (schema.oneOf ?? schema.anyOf).filter((v) => v.type !== "null");
+      const zodVariants = variants.map((v) =>
+        v.$ref ? `${v.$ref.split("/").pop()}Schema` : resolveZodType(v, allSchemas),
+      );
+      if (zodVariants.length === 1) {
+        zodLines.push(`export const ${name}Schema = ${zodVariants[0]};`);
+      } else {
+        zodLines.push(`export const ${name}Schema = z.union([${zodVariants.join(", ")}]);`);
+      }
+      zodLines.push("");
+      continue;
+    }
+
+    const props = schema.properties ?? {};
+    const required = new Set(schema.required ?? []);
+
+    zodLines.push(`export const ${name}Schema = z.object({`);
+    for (const [field, def] of Object.entries(props)) {
+      const isRequired = required.has(field);
+      zodLines.push(`  ${field}: ${resolveZodField(def, allSchemas, isRequired)},`);
+    }
+    zodLines.push(`});`);
+    zodLines.push("");
+  }
+}
+
+writeFileSync(`${schemaPackageDir}/builder-zod.gen.ts`, zodLines.join("\n"));
+console.log(`Generated ${schemaPackageDir}/builder-zod.gen.ts`);
+
 // ─── packages/schema/src/generated/constraints.gen.ts ────────────────────────
 // ─── packages/schema/src/generated/builder-constraints.gen.ts ────────────────
 // Runtime constraint objects (*Constraints). Full set and builder-scoped set.
@@ -277,6 +326,115 @@ function resolveType(def, allSchemas) {
   if (def.type === "object") return "Record<string, unknown>";
   if (def.type === "null") return "null";
   return "unknown";
+}
+
+/** Resolve a Zod type expression for an inline schema node (not a field — no optionality). */
+function resolveZodType(def, allSchemas) {
+  if (!def) return "z.unknown()";
+  if (def.$ref) return `${def.$ref.split("/").pop()}Schema`;
+  if (def.const !== undefined) return `z.literal(${JSON.stringify(def.const)})`;
+  if (def.enum) return `z.enum([${def.enum.map((v) => JSON.stringify(v)).join(", ")}])`;
+
+  if (def.anyOf) {
+    const nonNull = def.anyOf.filter((v) => v.type !== "null");
+    const parts = nonNull.map((v) => resolveZodType(v, allSchemas));
+    const base = parts.length === 1 ? parts[0] : `z.union([${parts.join(", ")}])`;
+    return base;
+  }
+
+  if (def.oneOf) {
+    const discriminator = def.discriminator?.propertyName;
+    if (discriminator) {
+      const variants = def.oneOf.map((v) =>
+        v.$ref ? `${v.$ref.split("/").pop()}Schema` : resolveZodType(v, allSchemas),
+      );
+      return `z.discriminatedUnion(${JSON.stringify(discriminator)}, [${variants.join(", ")}])`;
+    }
+    const variants = def.oneOf.map((v) => resolveZodType(v, allSchemas));
+    return `z.union([${variants.join(", ")}])`;
+  }
+
+  if (def.allOf) {
+    const parts = def.allOf.map((v) => resolveZodType(v, allSchemas));
+    return parts.reduce((acc, t) => `${acc}.and(${t})`);
+  }
+
+  if (def.type === "string") {
+    let chain = "z.string()";
+    if (def.minLength !== undefined) chain += `.min(${def.minLength})`;
+    if (def.maxLength !== undefined) chain += `.max(${def.maxLength})`;
+    if (def.pattern !== undefined) chain += `.regex(/${def.pattern}/)`;
+    return chain;
+  }
+
+  if (def.type === "integer" || def.type === "number") {
+    let chain = def.type === "integer" ? "z.number().int()" : "z.number()";
+    if (def.minimum !== undefined) chain += `.min(${def.minimum})`;
+    if (def.maximum !== undefined) chain += `.max(${def.maximum})`;
+    if (def.exclusiveMinimum !== undefined) chain += `.gt(${def.exclusiveMinimum})`;
+    if (def.exclusiveMaximum !== undefined) chain += `.lt(${def.exclusiveMaximum})`;
+    // ge/le/gt/lt are OpenAPI extensions used by Pydantic
+    if (def.ge !== undefined) chain += `.min(${def.ge})`;
+    if (def.le !== undefined) chain += `.max(${def.le})`;
+    if (def.gt !== undefined) chain += `.gt(${def.gt})`;
+    if (def.lt !== undefined) chain += `.lt(${def.lt})`;
+    return chain;
+  }
+
+  if (def.type === "boolean") return "z.boolean()";
+  if (def.type === "null") return "z.null()";
+
+  if (def.type === "array") {
+    const item = def.items ? resolveZodType(def.items, allSchemas) : "z.unknown()";
+    let chain = `z.array(${item})`;
+    if (def.minItems !== undefined) chain += `.min(${def.minItems})`;
+    if (def.maxItems !== undefined) chain += `.max(${def.maxItems})`;
+    return chain;
+  }
+
+  if (def.type === "object") return "z.record(z.string(), z.unknown())";
+
+  return "z.unknown()";
+}
+
+/**
+ * Resolve a Zod field expression, handling optionality, nullability, and defaults.
+ * A field is optional when not in `required[]`; nullable when anyOf includes null.
+ */
+function resolveZodField(def, allSchemas, isRequired) {
+  if (!def) return isRequired ? "z.unknown()" : "z.unknown().optional()";
+
+  // anyOf — split nullable vs optional from the actual type
+  if (def.anyOf) {
+    const nonNull = def.anyOf.filter((v) => v.type !== "null");
+    const isNullable = nonNull.length < def.anyOf.length;
+    const parts = nonNull.map((v) => resolveZodType(v, allSchemas));
+    let base = parts.length === 1 ? parts[0] : `z.union([${parts.join(", ")}])`;
+    if (isNullable) base += ".nullable()";
+    if (!isRequired) base += ".optional()";
+    return base;
+  }
+
+  // oneOf with or without discriminator
+  if (def.oneOf) {
+    const discriminator = def.discriminator?.propertyName;
+    if (discriminator) {
+      const variants = def.oneOf.map((v) =>
+        v.$ref ? `${v.$ref.split("/").pop()}Schema` : resolveZodType(v, allSchemas),
+      );
+      let base = `z.discriminatedUnion(${JSON.stringify(discriminator)}, [${variants.join(", ")}])`;
+      if (!isRequired) base += ".optional()";
+      return base;
+    }
+    const variants = def.oneOf.map((v) => resolveZodType(v, allSchemas));
+    let base = `z.union([${variants.join(", ")}])`;
+    if (!isRequired) base += ".optional()";
+    return base;
+  }
+
+  let base = resolveZodType(def, allSchemas);
+  if (!isRequired) base += ".optional()";
+  return base;
 }
 
 function buildConstraints(props) {

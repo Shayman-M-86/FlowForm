@@ -1,34 +1,29 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
-import { STALE } from '@/lib/query/queryClient'
+import { usePolicyQuery } from '@/lib/query/usePolicyQuery'
+import { QUERY_POLICIES } from '@/lib/query/queryPolicy'
 import type { components } from '@/api/generated/schema'
 
 export type Project = components['schemas']['ProjectResponses']
 
 const projectKeys = {
   all: () => ['projects'] as const,
-  bySlug: (slug: string) => ['projects', 'slug', slug] as const,
-  byId: (id: number) => ['projects', 'id', id] as const,
 }
 
 export function useProjects() {
-  return useQuery({
+  return usePolicyQuery({
     queryKey: projectKeys.all(),
     queryFn: async () => {
       const { data, error } = await apiClient.GET('/api/v1/projects')
       if (error) throw error
       return data
     },
-    staleTime: STALE.SLOW,
-    meta: { persist: 'local' },
+    policy: QUERY_POLICIES.projects,
   })
 }
 
-/**
- * Look up a project by slug. The backend exposes GET by project_id only,
- * so we derive the result from the project list query. slug=null disables
- * the query without error.
- */
+// Look up a project by slug. Derived from the project list query.
+// slug=null disables the query without error.
 export function useProject(slug: string | null) {
   const list = useProjects()
   const project = slug != null ? list.data?.find((p) => p.slug === slug) : undefined

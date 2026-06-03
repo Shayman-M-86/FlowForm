@@ -11,7 +11,8 @@ import { PERMISSION_REQUIRED_TOOLTIP } from '@/api/hooks/permissions';
 import { SidebarNotifications } from "@/components/SidebarNotifications";
 import { useCurrentUser } from "@/auth/UserContext";
 import { clearActiveProjectSlug } from '@/lib/storage';
-import { clearQueryCache } from "@/lib/query/queryClient";
+import { clearFlowFormQueryCache } from "@/lib/query/queryPersistence";
+import { queryClient } from "@/lib/query/queryClient";
 import { useRenderDebug } from "@/debug/useRenderDebug";
 
 // ── Icons ──────────────────────────────────────────────────────────────────
@@ -273,7 +274,7 @@ function SidebarUserMenu() {
           ),
           onSelect: () => {
             clearActiveProjectSlug();
-            clearQueryCache();
+            void clearFlowFormQueryCache(queryClient);
             logout({ logoutParams: { returnTo: window.location.origin } });
           },
         },

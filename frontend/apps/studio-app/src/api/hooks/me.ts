@@ -1,6 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
-import { STALE } from '@/lib/query/queryClient'
+import { usePolicyQuery } from '@/lib/query/usePolicyQuery'
+import { QUERY_POLICIES } from '@/lib/query/queryPolicy'
+import { clearFlowFormQueryCache } from '@/lib/query/queryPersistence'
 import type { components } from '@/api/generated/schema'
 
 const meKeys = {
@@ -8,15 +10,14 @@ const meKeys = {
 }
 
 export function useMyProfile() {
-  return useQuery({
+  return usePolicyQuery({
     queryKey: meKeys.profile(),
     queryFn: async () => {
       const { data, error } = await apiClient.GET('/api/v1/me/profile')
       if (error) throw error
       return data
     },
-    staleTime: STALE.STATIC,
-    meta: { persist: 'local' },
+    policy: QUERY_POLICIES.profile,
   })
 }
 
@@ -61,8 +62,7 @@ export function useDeleteAccount() {
       if (error) throw error
     },
     onSuccess: () => {
-      queryClient.clear()
-      window.localStorage.removeItem('flowform.query-cache')
+      void clearFlowFormQueryCache(queryClient)
     },
   })
 }

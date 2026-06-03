@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
-import { STALE, buildQueryOptions } from '@/lib/query/queryClient'
-import { useCooldownEnabled } from '@/lib/query/useCooldownQuery'
+import { usePolicyQuery } from '@/lib/query/usePolicyQuery'
+import { QUERY_POLICIES } from '@/lib/query/queryPolicy'
 import type { components } from '@/api/generated/schema'
 
 export type ProjectMemberOut = components['schemas']['ProjectMemberResponses']
@@ -16,7 +16,7 @@ const memberKeys = {
 // ─── Project members ──────────────────────────────────────────────────────────
 
 export function useProjectMembers(projectId: number | null) {
-  return useQuery({
+  return usePolicyQuery({
     queryKey: memberKeys.list(projectId ?? 0),
     enabled: projectId != null && projectId > 0,
     queryFn: async () => {
@@ -26,7 +26,7 @@ export function useProjectMembers(projectId: number | null) {
       if (error) throw error
       return data
     },
-    staleTime: STALE.SLOW,
+    policy: QUERY_POLICIES.projectMembers,
   })
 }
 
@@ -66,7 +66,7 @@ export function useDeleteProjectMember(projectId: number) {
 // ─── Project invitations ──────────────────────────────────────────────────────
 
 export function useProjectInvitations(projectId: number | null) {
-  return useQuery({
+  return usePolicyQuery({
     queryKey: memberKeys.invitations(projectId ?? 0),
     enabled: projectId != null && projectId > 0,
     queryFn: async () => {
@@ -76,7 +76,7 @@ export function useProjectInvitations(projectId: number | null) {
       if (error) throw error
       return data
     },
-    staleTime: STALE.ACTIVE,
+    policy: QUERY_POLICIES.projectInvitations,
   })
 }
 
@@ -115,25 +115,15 @@ export function useRevokeInvitation(projectId: number) {
 
 // ─── My invitations (sidebar notifications) ───────────────────────────────────
 
-const MY_INVITATIONS_POLICY = {
-  staleTime:   'SLOW',
-  persist:     true,
-  pollMs:      5 * 60 * 1000,
-  cooldownMs:  15_000,
-  windowFocus: true,
-} as const
-
 export function useMyInvitations() {
-  const enabled = useCooldownEnabled('me.invitations', MY_INVITATIONS_POLICY.cooldownMs)
-  return useQuery({
+  return usePolicyQuery({
     queryKey: memberKeys.myInvitations(),
     queryFn: async () => {
       const { data, error } = await apiClient.GET('/api/v1/me/invitations')
       if (error) throw error
       return data
     },
-    enabled,
-    ...buildQueryOptions(MY_INVITATIONS_POLICY),
+    policy: QUERY_POLICIES.myInvitations,
   })
 }
 

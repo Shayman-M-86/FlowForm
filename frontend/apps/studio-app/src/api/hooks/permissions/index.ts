@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
+import { usePolicyQuery } from '@/lib/query/usePolicyQuery'
+import { QUERY_POLICIES } from '@/lib/query/queryPolicy'
 import { apiClient } from '@/api/client'
 import { permissionKeys } from './queryKeys'
-import { STALE } from '@/lib/query/queryClient'
 import type { FlowFormPermission } from '@/api/generated/rbac.gen'
 
 export type { FlowFormPermission as ProjectPermission }
@@ -18,7 +18,7 @@ export const PERMISSION_REQUIRED_TOOLTIP = {
 } as const
 
 export function useProjectPermissions(projectId: number | null) {
-  return useQuery({
+  return usePolicyQuery({
     queryKey: permissionKeys.project(projectId ?? 0),
     enabled: projectId != null && projectId > 0,
     queryFn: async () => {
@@ -29,8 +29,7 @@ export function useProjectPermissions(projectId: number | null) {
       if (error) throw error
       return data.permissions as string[]
     },
-    staleTime: STALE.STATIC,
-    meta: { persist: 'local' },
+    policy: QUERY_POLICIES.projectPermissions,
   })
 }
 
@@ -40,7 +39,7 @@ export function useHasProjectPermission(projectId: number | null, permission: Fl
 }
 
 export function useSurveyPermissions(projectId: number | null, surveyId: number | null) {
-  return useQuery({
+  return usePolicyQuery({
     queryKey: permissionKeys.survey(projectId ?? 0, surveyId ?? 0),
     enabled: projectId != null && projectId > 0 && surveyId != null && surveyId > 0,
     queryFn: async () => {
@@ -51,8 +50,7 @@ export function useSurveyPermissions(projectId: number | null, surveyId: number 
       if (error) throw error
       return data.permissions as string[]
     },
-    staleTime: STALE.STATIC,
-    meta: { persist: 'local' },
+    policy: QUERY_POLICIES.surveyPermissions,
   })
 }
 

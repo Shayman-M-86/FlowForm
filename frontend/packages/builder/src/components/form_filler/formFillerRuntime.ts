@@ -96,7 +96,7 @@ export function deriveSurveyProgress(
     }
 
     const ruleMatched = evaluateRuleMatch(node.content.if.match, node.content.if.conditions, answers);
-    const nextSet = ruleMatched ? node.content.then.set : undefined;
+    const nextSet = ruleMatched ? (node.content.then.set ?? undefined) : undefined;
     const nextAction = ruleMatched ? node.content.then.do : node.content.else?.do;
 
     applyQuestionStateUpdates(questionStateMap, nextSet);
@@ -194,7 +194,7 @@ function evaluateRuleMatch(
   conditions: RuleCondition[],
   answers: AnswerMap,
 ): boolean {
-  const results = conditions.map((condition) => evaluateRuleCondition(condition, answers[condition.source_id]));
+  const results = conditions.map((condition) => evaluateRuleCondition(condition, answers[condition.target_id]));
 
   switch (match) {
     case "ANY":
@@ -268,8 +268,8 @@ function evaluateRatingCondition(
   if (typeof answer !== "number" || Number.isNaN(answer)) return false;
 
   const { min, max } = condition.requirements;
-  if (min !== undefined && answer < min) return false;
-  if (max !== undefined && answer > max) return false;
+  if (min != null && answer < min) return false;
+  if (max != null && answer > max) return false;
   return true;
 }
 
@@ -414,7 +414,7 @@ function validateRatingAnswer(
         return "Choose one emoji before continuing.";
       }
       return null;
-    case "star":
+    case "stars":
       if (answer < 1 || answer > question.definition.stars) {
         return "Choose a valid star rating before continuing.";
       }

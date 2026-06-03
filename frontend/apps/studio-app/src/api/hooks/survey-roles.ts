@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
-import { STALE } from '@/lib/query/queryClient'
+import { usePolicyQuery } from '@/lib/query/usePolicyQuery'
+import { QUERY_POLICIES } from '@/lib/query/queryPolicy'
 import type { components } from '@/api/generated/schema'
 
 export type SurveyRoleOut = components['schemas']['SurveyRoleResponses']
@@ -12,7 +13,7 @@ const surveyRoleKeys = {
 }
 
 export function useSurveyRoles(projectId: number | null) {
-  return useQuery({
+  return usePolicyQuery({
     queryKey: surveyRoleKeys.list(projectId ?? 0),
     enabled: projectId != null && projectId > 0,
     queryFn: async () => {
@@ -22,7 +23,7 @@ export function useSurveyRoles(projectId: number | null) {
       if (error) throw error
       return data
     },
-    staleTime: STALE.SLOW,
+    policy: QUERY_POLICIES.surveyRoles,
   })
 }
 
@@ -49,13 +50,7 @@ export function useCreateSurveyRole(projectId: number | null) {
 export function useUpdateSurveyRole(projectId: number | null) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({
-      roleId,
-      body,
-    }: {
-      roleId: number
-      body: components['schemas']['UpdateSurveyRoleRequest']
-    }) => {
+    mutationFn: async ({ roleId, body }: { roleId: number; body: components['schemas']['UpdateSurveyRoleRequest'] }) => {
       if (projectId == null) throw new Error('projectId is required')
       const { data, error } = await apiClient.PATCH(
         '/api/v1/projects/{project_id}/survey-roles/{role_id}',

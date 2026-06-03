@@ -2,7 +2,7 @@ import './index.css'
 import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Auth0Provider } from '@auth0/auth0-react'
-import { QueryPersistProvider } from './app/providers/QueryPersistProvider'
+import { QueryProvider } from './app/providers/QueryProvider'
 import { RouterProvider } from '@tanstack/react-router'
 import { ThemeProvider } from '@flowform/ui'
 import { router } from './lib/router'
@@ -32,7 +32,7 @@ createRoot(document.getElementById('root')!).render(
       cacheLocation="localstorage"
       useRefreshTokens={true}
     >
-      <QueryPersistProvider>
+      <QueryProvider>
         <ThemeProvider>
           <RouterProvider router={router} />
         </ThemeProvider>
@@ -41,7 +41,7 @@ createRoot(document.getElementById('root')!).render(
             <ReactQueryDevtools />
           </Suspense>
         )}
-      </QueryPersistProvider>
+      </QueryProvider>
     </Auth0Provider>
   </StrictMode>,
 )

@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
-import { STALE } from '@/lib/query/queryClient'
+import { usePolicyQuery } from '@/lib/query/usePolicyQuery'
+import { QUERY_POLICIES } from '@/lib/query/queryPolicy'
 import type { components } from '@/api/generated/schema'
 
 export type SurveyVersionOut = components['schemas']['SurveyVersionResponses']
@@ -11,7 +12,7 @@ const versionKeys = {
 }
 
 export function useSurveyVersions(projectId: number, surveyId: number) {
-  return useQuery({
+  return usePolicyQuery({
     queryKey: versionKeys.list(projectId, surveyId),
     enabled: projectId > 0 && surveyId > 0,
     queryFn: async () => {
@@ -22,14 +23,14 @@ export function useSurveyVersions(projectId: number, surveyId: number) {
       if (error) throw error
       return data
     },
-    staleTime: STALE.ACTIVE,
+    policy: QUERY_POLICIES.surveyVersions,
   })
 }
 
 export function useCreateSurveyVersion(projectId: number, surveyId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (_?: undefined) => {
+    mutationFn: async () => {
       const { data, error } = await apiClient.POST(
         '/api/v1/projects/{project_id}/surveys/{survey_id}/versions',
         { params: { path: { project_id: projectId, survey_id: surveyId } } },

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button, Modal } from "@flowform/ui";
 import { AlertCircle, Check, ClipboardPaste, Copy, Sparkles } from "lucide-react";
 import type { SurveyNode } from "./questionTypes";
+import { findNodeLine, parseSurveyNodeJson, SurveyNodeImportError } from "./surveyNodeImport";
 
 const AI_IMPORT_STORAGE_KEY = "flowform.ai-import.pending";
 
@@ -76,93 +77,6 @@ interface ValidationError {
   nodeIndex: number | null;
 }
 
-function findNodeLine(rawJson: string, nodeIndex: number | null): number | null {
-  if (nodeIndex === null) return null;
-  try {
-    // Find the nth top-level object opening brace by counting commas at depth 0
-    let depth = 0;
-    let found = 0;
-    let inString = false;
-    let escape = false;
-    for (let pos = 0; pos < rawJson.length; pos++) {
-      const ch = rawJson[pos];
-      if (escape) { escape = false; continue; }
-      if (ch === "\\" && inString) { escape = true; continue; }
-      if (ch === '"') { inString = !inString; continue; }
-      if (inString) continue;
-      if (ch === "{" || ch === "[") {
-        depth++;
-        if (depth === 2 && ch === "{") {
-          if (found === nodeIndex) {
-            return rawJson.slice(0, pos).split("\n").length;
-          }
-          found++;
-        }
-      } else if (ch === "}" || ch === "]") {
-        depth--;
-      }
-    }
-  } catch { /* ignore */ }
-  return null;
-}
-
-function validateNodes(_rawJson: string, parsed: unknown): SurveyNode[] {
-  function fail(message: string, nodeIndex: number | null = null): never {
-    const err = new Error(message) as Error & { nodeIndex: number | null };
-    err.nodeIndex = nodeIndex;
-    throw err;
-  }
-
-  if (!Array.isArray(parsed) || parsed.length === 0) {
-    fail("Expected a non-empty JSON array.");
-  }
-  const ids = new Set<string>();
-  for (let i = 0; i < parsed.length; i++) {
-    const node = parsed[i] as Record<string, unknown>;
-    if (node.type !== "question" && node.type !== "rule") {
-      fail(`"type" must be "question" or "rule".`, i);
-    }
-    if (typeof node.sort_key !== "number") {
-      fail(`"sort_key" must be a number.`, i);
-    }
-    const content = node.content as Record<string, unknown> | undefined;
-    if (!content || typeof content !== "object") {
-      fail(`Missing "content".`, i);
-    }
-    if (typeof content.id !== "string" || !content.id.trim()) {
-      fail(`content "id" must be a non-empty string.`, i);
-    }
-    if (ids.has(content.id as string)) {
-      fail(`Duplicate id "${content.id}".`, i);
-    }
-    ids.add(content.id as string);
-    if (node.type === "question") {
-      const validFamilies = ["choice", "matching", "rating", "field"];
-      if (!validFamilies.includes(content.family as string)) {
-        fail(`"family" must be one of: ${validFamilies.join(", ")}.`, i);
-      }
-      if (!content.definition || typeof content.definition !== "object") {
-        fail(`Missing "definition".`, i);
-      }
-      if (content.family === "rating") {
-        const def = content.definition as Record<string, unknown>;
-        if (def.variant === "slider") {
-          const range = def.range as Record<string, unknown> | undefined;
-          if (!range || typeof range.min !== "number" || typeof range.max !== "number" || typeof range.step !== "number") {
-            fail(`Slider rating must have a "range" object with numeric "min", "max", and "step".`, i);
-          }
-        }
-      }
-    }
-    if (node.type === "rule") {
-      if (!content.if || !content.then) {
-        fail(`Missing "if" or "then".`, i);
-      }
-    }
-  }
-  return parsed as SurveyNode[];
-}
-
 export function hasAiImportPending(): boolean {
   return loadPending() !== null;
 }
@@ -202,22 +116,17 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
 
   function handleImport() {
     setError(null);
-    let parsed: unknown;
-    let rawJson: string;
-    try {
-      rawJson = pasteValue.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-      parsed = JSON.parse(rawJson);
-    } catch {
-      setError({ message: "Invalid JSON — paste the raw array your AI returned.", nodeIndex: null });
-      return;
-    }
+    const rawJson = pasteValue.trim();
     let nodes: SurveyNode[];
     try {
-      nodes = validateNodes(rawJson, parsed);
+      nodes = parseSurveyNodeJson(rawJson);
     } catch (e) {
-      const nodeIndex = (e as { nodeIndex?: number | null }).nodeIndex ?? null;
-      const line = findNodeLine(rawJson, nodeIndex);
-      setError({ message: e instanceof Error ? e.message : "Invalid survey structure.", nodeIndex: line });
+      const importError = e instanceof SurveyNodeImportError ? e : null;
+      const line = findNodeLine(rawJson, importError?.nodeIndex ?? null);
+      setError({
+        message: importError?.message ?? "Invalid survey structure.",
+        nodeIndex: line,
+      });
       return;
     }
     if (hasExistingQuestions) {

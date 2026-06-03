@@ -1,6 +1,11 @@
+import { lazy, Suspense } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { ThemeProvider } from '@flowform/ui';
-import { FormFillerPage, NodePage } from '@flowform/builder';
+import { ThemeProvider, Spinner } from '@flowform/ui';
+import { NodePage } from '@flowform/builder';
+
+const FormFillerPage = lazy(() =>
+  import('@flowform/builder').then((m) => ({ default: m.FormFillerPage }))
+);
 
 const builderOverrideCSS = `
   .builder-shell .node-page__toolbar {
@@ -22,7 +27,7 @@ export function NodePageIsland() {
         <MemoryRouter initialEntries={['/node']}>
           <Routes>
             <Route path="/node" element={<NodePage />} />
-            <Route path="/node/preview" element={<FormFillerPage />} />
+            <Route path="/node/preview" element={<Suspense fallback={<div className="flex justify-center py-16"><Spinner size={20} /></div>}><FormFillerPage /></Suspense>} />
           </Routes>
         </MemoryRouter>
       </div>

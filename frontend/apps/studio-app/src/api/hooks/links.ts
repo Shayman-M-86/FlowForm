@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
-import { STALE } from '@/lib/query/queryClient'
+import { usePolicyQuery } from '@/lib/query/usePolicyQuery'
+import { QUERY_POLICIES } from '@/lib/query/queryPolicy'
 import type { components } from '@/api/generated/schema'
 
 export type PublicLinkOut = components['schemas']['PublicLinkResponses']
@@ -11,7 +12,7 @@ const linkKeys = {
 }
 
 export function usePublicLinks(projectId: number | null, surveyId: number | null) {
-  return useQuery({
+  return usePolicyQuery({
     queryKey: linkKeys.list(projectId ?? 0, surveyId ?? 0),
     enabled: projectId != null && projectId > 0 && surveyId != null && surveyId > 0,
     queryFn: async () => {
@@ -22,7 +23,7 @@ export function usePublicLinks(projectId: number | null, surveyId: number | null
       if (error) throw error
       return data.links
     },
-    staleTime: STALE.ACTIVE,
+    policy: QUERY_POLICIES.publicLinks,
   })
 }
 

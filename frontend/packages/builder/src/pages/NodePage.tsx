@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, } from "react";
+import { Fragment, lazy, type ReactNode, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, } from "react";
 import { useNavigate } from "react-router-dom";
 import { Play, Sparkles, Trash2 } from "lucide-react";
 import type { FieldQuestionHandle } from "../components/node/FieldQuestion";
@@ -15,10 +15,13 @@ import { RulesQuestion } from "../components/node/RulesQuestion";
 import { savePreviewSurvey } from "../components/form_filler/previewStorage";
 import type { QuestionContent, RuleContent, SurveyNode } from "../components/node/questionTypes";
 import { serializeSurveyEntries, type SurveyEntry } from "../components/node/surveySerialize";
-import { AiImportModal } from "../components/node/AiImportModal";
+const AiImportModal = lazy(() =>
+  import("../components/node/AiImportModal").then((m) => ({ default: m.AiImportModal }))
+);
 import { incrementQuestionId } from "../components/node/NodePillUtils";
 import { NodePillMobileControlsProvider } from "../components/node/NodePillShell";
 import { PlusGridAnimation } from "../components/node/PlusGridAnimation";
+import { safeImportSurveyNodes } from "../components/node/surveyNodeImport";
 
 const NODE_PAGE_STORAGE_KEY = "flowform.node-page.schema";
 const NODE_PAGE_UI_STORAGE_KEY = "flowform.node-page.ui";
@@ -84,7 +87,7 @@ function loadPersistedNodePageState(): PersistedNodePageState | null {
     const parsed: unknown = JSON.parse(stored);
 
     if (Array.isArray(parsed)) {
-      return deserializeSurveyNodes(parsed);
+      return deserializeImportedNodes(parsed);
     }
 
     if (parsed && typeof parsed === "object") {
@@ -107,6 +110,11 @@ function loadPersistedNodePageState(): PersistedNodePageState | null {
   } catch {
     return null;
   }
+}
+
+function deserializeImportedNodes(input: unknown): PersistedNodePageState | null {
+  const result = safeImportSurveyNodes(input);
+  return result.ok ? deserializeSurveyNodes(result.nodes) : null;
 }
 
 function deserializeSurveyNodes(nodes: SurveyNode[]): PersistedNodePageState {
@@ -200,7 +208,7 @@ const QUESTION_TYPE_OPTIONS: Array<{ value: QuestionType; label: string }> = [
 const SWAP_ANIMATION_MS = 280;
 
 interface NodePageProps {
-  initialNodes?: SurveyNode[];
+  initialNodes?: unknown[];
   onNodesChange?: (nodes: SurveyNode[]) => void;
   showDebug?: boolean;
 }
@@ -217,8 +225,12 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
   );
 
   const initialState = useRef<PersistedNodePageState | null>(
-    controlled ? deserializeSurveyNodes(initialNodes) : persistedState.current,
+    controlled ? deserializeImportedNodes(initialNodes) : persistedState.current,
   );
+  const lastAppliedExternalNodesJson = useRef<string | null>(
+    controlled ? JSON.stringify(initialNodes ?? []) : null,
+  );
+  const lastEmittedNodesJson = useRef<string | null>(null);
 
   const [questions, setQuestions] = useState<Question[]>(() => initialState.current?.questions ?? []);
   const [nextId, setNextId] = useState(() => initialState.current?.nextId ?? 1);
@@ -426,6 +438,19 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
     newlyAddedQuestionId.current = null;
   }
 
+  const applyImportedState = useCallback((state: PersistedNodePageState) => {
+    setQuestions(state.questions);
+    setNextId(state.nextId);
+    setQuestionContents(state.questionContents);
+    setRuleContents(state.ruleContents);
+    setEditingQuestionIds([]);
+    setCollapsedIds(new Set());
+    questionRefsMap.current.clear();
+    questionWrapperNodeMap.current.clear();
+    pendingMoveAnimation.current = null;
+    newlyAddedQuestionId.current = null;
+  }, []);
+
   // Precompute sibling content lists once per questions/questionContents change.
   // RulesQuestion uses these to show branching targets — recomputing per-render is O(n²).
   const siblingsMap = useMemo(() => {
@@ -579,6 +604,7 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
 
   useEffect(() => {
     if (controlled) {
+      lastEmittedNodesJson.current = JSON.stringify(serializedSurvey);
       onNodesChangeRef.current?.(serializedSurvey);
       return;
     }
@@ -590,6 +616,24 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
       // Ignore persistence failures.
     }
   }, [serializedSurvey, controlled]);
+
+  useEffect(() => {
+    if (!controlled) return;
+
+    const incomingJson = JSON.stringify(initialNodes ?? []);
+    if (
+      incomingJson === lastAppliedExternalNodesJson.current ||
+      incomingJson === lastEmittedNodesJson.current
+    ) {
+      return;
+    }
+
+    const nextState = deserializeImportedNodes(initialNodes);
+    if (!nextState) return;
+
+    lastAppliedExternalNodesJson.current = incomingJson;
+    applyImportedState(nextState);
+  }, [applyImportedState, controlled, initialNodes]);
 
   useEffect(() => {
     if (controlled) return;
@@ -615,14 +659,7 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
 
   function handleAiImport(nodes: SurveyNode[]) {
     const deserialized = deserializeSurveyNodes(nodes);
-    setQuestions(deserialized.questions);
-    setNextId(deserialized.nextId);
-    setQuestionContents(deserialized.questionContents);
-    setRuleContents(deserialized.ruleContents);
-    setEditingQuestionIds([]);
-    setCollapsedIds(new Set());
-    questionRefsMap.current.clear();
-    questionWrapperNodeMap.current.clear();
+    applyImportedState(deserialized);
     setAiImportOpen(false);
   }
 
@@ -710,12 +747,14 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
           {questions.length === 0 && addQuestionCard}
         </div>
       </div>
-      <AiImportModal
-        open={aiImportOpen}
-        hasExistingQuestions={questions.length > 0}
-        onClose={() => setAiImportOpen(false)}
-        onImport={handleAiImport}
-      />
+      <Suspense fallback={null}>
+        <AiImportModal
+          open={aiImportOpen}
+          hasExistingQuestions={questions.length > 0}
+          onClose={() => setAiImportOpen(false)}
+          onImport={handleAiImport}
+        />
+      </Suspense>
 
       {showDebug && (
         <aside className="fixed bottom-4 right-4 z-50 flex max-h-[60vh] w-[min(420px,calc(100vw-32px))] flex-col overflow-hidden rounded-xl border border-border bg-[var(--debug-bg)] font-mono text-[0.78rem] text-[var(--debug-text)] shadow max-[640px]:right-4">

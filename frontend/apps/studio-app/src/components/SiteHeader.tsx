@@ -6,7 +6,8 @@ import { STUDIO_NAV_LINKS, BRAND } from '@flowform/site-shell'
 import { useCurrentUser } from '@/auth/UserContext'
 import { useProject } from '@/api/hooks/projects'
 import { clearActiveProjectSlug, getActiveProjectSlug } from '@/lib/storage'
-import { clearQueryCache } from '@/lib/query/queryClient'
+import { clearFlowFormQueryCache } from '@/lib/query/queryPersistence'
+import { queryClient } from '@/lib/query/queryClient'
 import '@flowform/site-shell/header.css'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
@@ -144,7 +145,7 @@ export function SiteHeader() {
           ),
           onSelect: () => {
             clearActiveProjectSlug()
-            clearQueryCache()
+            void clearFlowFormQueryCache(queryClient)
             logout({ logoutParams: { returnTo: window.location.origin } })
           },
         },

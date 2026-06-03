@@ -176,7 +176,7 @@ export function FormFiller({
             <>
               <header className="flex items-start justify-between max-sm:flex-col">
                 <div>
-                  {currentQuestion.title.trim() !== "" && (
+                  {currentQuestion.title?.trim() && (
                     <h1 className="m-0 text-[clamp(1.35rem,3vw,1.9rem)] leading-[1.15] text-foreground">
                       {currentQuestion.title}
                     </h1>

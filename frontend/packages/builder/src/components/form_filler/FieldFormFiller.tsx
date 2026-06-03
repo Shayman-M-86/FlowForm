@@ -13,7 +13,7 @@ export function FieldFormFiller({
   value,
   onChange,
 }: FieldFormFillerProps) {
-  const placeholder = question.definition.ui.placeholder ?? "Enter your response";
+  const placeholder = question.definition.ui?.placeholder ?? "Enter your response";
   const fieldMeta = getFieldMeta(question.definition.field_type);
   const fieldMaxLength = question.definition.field_type === "short_text"
     ? 100

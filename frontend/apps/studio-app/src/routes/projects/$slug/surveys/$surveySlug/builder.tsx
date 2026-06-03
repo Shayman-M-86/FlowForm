@@ -1,6 +1,21 @@
+import { lazy, Suspense } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { SurveyBuilderTab } from '@/pages/SurveyWorkspaceTabPages/SurveyBuilderTab'
+import { Spinner } from '@flowform/ui'
+
+const SurveyBuilderTab = lazy(() =>
+  import('@/pages/SurveyWorkspaceTabPages/SurveyBuilderTab').then((m) => ({
+    default: m.SurveyBuilderTab,
+  }))
+)
+
+function SurveyBuilderTabRoute() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-16"><Spinner size={20} /></div>}>
+      <SurveyBuilderTab />
+    </Suspense>
+  )
+}
 
 export const Route = createFileRoute('/projects/$slug/surveys/$surveySlug/builder')({
-  component: SurveyBuilderTab,
+  component: SurveyBuilderTabRoute,
 })

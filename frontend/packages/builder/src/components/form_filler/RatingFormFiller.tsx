@@ -95,7 +95,7 @@ export function RatingFormFiller({
             <div
               className={`rating-question__emoji-list ${emojiDefinition.words ? "" : "rating-question__emoji-list--icons-only"}`}
               role="radiogroup"
-              aria-label={question.title}
+              aria-label={question.title ?? undefined}
             >
               {EMOJI_SETS[emojiDefinition.emoji_list].map((emoji, index) => {
                 const score = index + 1;
@@ -122,7 +122,7 @@ export function RatingFormFiller({
         </div>
       );
     }
-    case "star": {
+    case "stars": {
       const starDefinition = question.definition;
       function selectStarValue(nextValue: number) {
         onChange(value === nextValue ? null : nextValue);
@@ -134,7 +134,7 @@ export function RatingFormFiller({
             <div
               className="rating-question__stars"
               role="radiogroup"
-              aria-label={question.title}
+              aria-label={question.title ?? undefined}
               style={{ "--rating-star-count": starDefinition.stars } as React.CSSProperties}
             >
               {Array.from({ length: starDefinition.stars }, (_, index) => {
