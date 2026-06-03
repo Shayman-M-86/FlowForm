@@ -68,10 +68,12 @@ export function parseSurveyNodeJson(rawJson: string): SurveyNode[] {
   let parsed: unknown;
   try {
     parsed = JSON.parse(normalizedJson);
-  } catch {
+  } catch (e) {
+    const location = e instanceof SyntaxError ? locateJsonError(e) : null;
+    const suffix = location ? ` (line ${location.line}, col ${location.col})` : "";
     throwImport([{
       path: "$",
-      message: "Invalid JSON. Paste a raw JSON array of survey nodes.",
+      message: `Invalid JSON${suffix}. Paste a raw JSON array of survey nodes.`,
       nodeIndex: null,
     }]);
   }
@@ -596,6 +598,21 @@ function annotateZodMessage(issue: ZodIssue): string {
     return `${issue.message} (received ${JSON.stringify(issue.received)})`;
   }
   return issue.message;
+}
+
+function locateJsonError(e: SyntaxError): { line: number; col: number } | null {
+  // V8 (Chrome/Node): "... at position N (line L column C)"
+  const lineCol = /\(line (\d+) column (\d+)\)/.exec(e.message);
+  if (lineCol) return { line: parseInt(lineCol[1], 10), col: parseInt(lineCol[2], 10) };
+  // Older V8 / other engines: "... at position N" (char offset into the source)
+  const pos = /\bposition (\d+)/.exec(e.message);
+  if (pos) {
+    const offset = parseInt(pos[1], 10);
+    // offset is into the source, not the message — but we don't have the source here;
+    // just surface the char offset directly so the user has something.
+    return { line: 1, col: offset + 1 };
+  }
+  return null;
 }
 
 function stripJsonFence(rawJson: string): string {

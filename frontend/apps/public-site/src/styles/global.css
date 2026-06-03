@@ -5,10 +5,6 @@
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 @source "../../../../packages/builder/src/**/*.{ts,tsx}";
 
-::selection {
-  background: yellow;
-  color: black;
-}
 
 /* ── Builder island wrapper ──────────────────────────────────────────────── */
 .builder-shell {

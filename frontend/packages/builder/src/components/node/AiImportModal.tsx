@@ -102,7 +102,11 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
     return () => window.clearTimeout(t);
   }, [open, step]);
 
-  useEffect(() => { setError(null); }, [pasteValue]);
+  const prevPasteRef = useRef("");
+  useEffect(() => {
+    if (pasteValue !== "" && prevPasteRef.current !== pasteValue) setError(null);
+    prevPasteRef.current = pasteValue;
+  }, [pasteValue]);
 
   async function handleCopy() {
     const text = `${SCHEMA_PROMPT}${description.trim()}`;
@@ -127,6 +131,7 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
         message: importError?.message ?? "Invalid survey structure.",
         nodeIndex: line,
       });
+      setPasteValue("");
       return;
     }
     if (hasExistingQuestions) {
@@ -258,16 +263,18 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
             onChange={(e) => setPasteValue(e.target.value)}
             spellCheck={false}
           />
-          <div className="flex justify-end">
-            <span
-              className="pointer-events-none flex items-center gap-1.5 rounded-md bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-600 shadow-sm ring-1 ring-green-500/30 transition-all duration-200 dark:text-green-400"
-              style={{ opacity: copied ? 1 : 0, transform: copied ? "translateY(0)" : "translateY(4px)" }}
-              aria-live="polite"
-            >
-              <Check size={11} aria-hidden="true" />
-              Copied
-            </span>
-          </div>
+          {!error && (
+            <div className="flex justify-end">
+              <span
+                className="pointer-events-none flex items-center gap-1.5 rounded-md bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-600 shadow-sm ring-1 ring-green-500/30 transition-all duration-200 dark:text-green-400"
+                style={{ opacity: copied ? 1 : 0, transform: copied ? "translateY(0)" : "translateY(4px)" }}
+                aria-live="polite"
+              >
+                <Check size={11} aria-hidden="true" />
+                Copied
+              </span>
+            </div>
+          )}
           {error && (() => {
             const fixPrompt = `The JSON you gave me has a validation error: "${error.message}". Fix the issue and return the complete corrected JSON array — no explanation, no markdown.`;
             return (
