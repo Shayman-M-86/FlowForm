@@ -56,9 +56,7 @@ function SurveyLayout() {
             <div className="min-w-0">
               <h2 className="leading-tight">{surveyTitle}</h2>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <Button variant="secondary" size="sm" className='[--ui-color:var(--accent)]'>Preview</Button>
-            </div>
+
           </div>
           <TabSelector
             items={tabs}

@@ -31,6 +31,7 @@ interface FieldQuestionProps {
   initialTag?: string;
   initialContent?: FieldContent;
   idError?: string;
+  validationError?: string;
   isCollapsed?: boolean;
   isEditMode?: boolean;
   onExpand?: () => void;
@@ -57,7 +58,7 @@ const FIELD_TYPE_PRESETS: Record<FieldType, { placeholder: string; helper: strin
   date: { placeholder: "", helper: "Calendar date input." },
 };
 
-export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>(function FieldQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
+export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>(function FieldQuestion({ onDelete, title, initialTag, initialContent, idError, validationError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
   const initialFieldType = initialContent?.definition.field_type ?? "short_text";
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
@@ -138,6 +139,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
           onTitleChange={setTitleValue}
           titleMax={TITLE_MAX}
           showTitleEdit={true}
+          validationError={validationError}
         />
 
         <div className={nodePillFieldClass}>

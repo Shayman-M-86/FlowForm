@@ -40,6 +40,7 @@ interface RulesQuestionProps {
   initialTag?: string;
   initialContent?: RuleContent;
   idError?: string;
+  validationError?: string;
   isCollapsed?: boolean;
   isEditMode?: boolean;
   onExpand?: () => void;
@@ -306,7 +307,7 @@ const toggleRowClass =
   "inline-flex items-center gap-1.5 whitespace-nowrap text-[0.85rem] text-muted-foreground";
 
 export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>(function RulesQuestion(
-  { onDelete, title: _title, initialTag, initialContent, idError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange, previousSiblings = [], followingSiblings = [] },
+  { onDelete, title: _title, initialTag, initialContent, idError, validationError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange, previousSiblings = [], followingSiblings = [] },
   ref,
 ) {
   const siblings = [...previousSiblings, ...followingSiblings];
@@ -766,6 +767,9 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
       />
 
       <div className={nodePillBodyClass}>
+        {validationError && (
+          <span className="text-[0.78rem] text-destructive">{validationError}</span>
+        )}
         <div className={`${nodePillFieldClass} ${sectionClass}`}>
           <NodePillFieldHead label="If">
             {isEditMode && (

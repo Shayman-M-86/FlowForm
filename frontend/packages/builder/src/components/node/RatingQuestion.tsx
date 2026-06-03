@@ -30,6 +30,7 @@ interface RatingQuestionProps {
   initialTag?: string;
   initialContent?: RatingContent;
   idError?: string;
+  validationError?: string;
   isCollapsed?: boolean;
   isEditMode?: boolean;
   onExpand?: () => void;
@@ -101,7 +102,7 @@ function getNearestValidStep(nextStep: number, validSteps: number[]) {
   }, validSteps[0]);
 }
 
-export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionProps>(function RatingQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
+export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionProps>(function RatingQuestion({ onDelete, title, initialTag, initialContent, idError, validationError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
   const initialRatingType: RatingType =
     initialContent?.definition.variant === "slider"
       ? "numeric-slider"
@@ -307,6 +308,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
           onTitleChange={setTitleValue}
           titleMax={TITLE_MAX}
           showTitleEdit={true}
+          validationError={validationError}
         />
 
         <div className={nodePillFieldClass}>

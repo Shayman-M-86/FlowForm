@@ -30,7 +30,7 @@ export const ChoiceQuestionSchemaInConstraints = {
   id: { minLength: 1, maxLength: 128 },
   family: { maxLength: 6 },
   label: { minLength: 1, maxLength: 1000 },
-  title: { minLength: 1, maxLength: 500 },
+  title: { minLength: 0, maxLength: 500 },
 } as const;
 
 export const FieldUIInConstraints = {
@@ -45,7 +45,7 @@ export const FieldQuestionSchemaInConstraints = {
   id: { minLength: 1, maxLength: 128 },
   family: { maxLength: 5 },
   label: { minLength: 1, maxLength: 1000 },
-  title: { minLength: 1, maxLength: 500 },
+  title: { minLength: 0, maxLength: 500 },
 } as const;
 
 export const MatchingItemInConstraints = {
@@ -62,7 +62,7 @@ export const MatchingQuestionSchemaInConstraints = {
   id: { minLength: 1, maxLength: 128 },
   family: { maxLength: 8 },
   label: { minLength: 1, maxLength: 1000 },
-  title: { minLength: 1, maxLength: 500 },
+  title: { minLength: 0, maxLength: 500 },
 } as const;
 
 export const RatingUIInConstraints = {
@@ -88,7 +88,7 @@ export const RatingQuestionSchemaInConstraints = {
   id: { minLength: 1, maxLength: 128 },
   family: { maxLength: 6 },
   label: { minLength: 1, maxLength: 1000 },
-  title: { minLength: 1, maxLength: 500 },
+  title: { minLength: 0, maxLength: 500 },
 } as const;
 
 export const CreateQuestionNodeRequestConstraints = {

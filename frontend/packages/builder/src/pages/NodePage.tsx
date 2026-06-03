@@ -1,4 +1,4 @@
-import { Fragment, lazy, type ReactNode, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, } from "react";
+import { Fragment, lazy, type ReactNode, type RefObject, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, } from "react";
 import { useNavigate } from "react-router-dom";
 import { Play, Sparkles, Trash2 } from "lucide-react";
 import type { FieldQuestionHandle } from "../components/node/FieldQuestion";
@@ -18,7 +18,7 @@ import { serializeSurveyEntries, type SurveyEntry } from "../components/node/sur
 const AiImportModal = lazy(() =>
   import("../components/node/AiImportModal").then((m) => ({ default: m.AiImportModal }))
 );
-import { incrementQuestionId } from "../components/node/NodePillUtils";
+import { QUESTION_MAX, TITLE_MAX, TAG_MAX, incrementQuestionId } from "../components/node/NodePillUtils";
 import { NodePillMobileControlsProvider } from "../components/node/NodePillShell";
 import { PlusGridAnimation } from "../components/node/PlusGridAnimation";
 import { safeImportSurveyNodes } from "../components/node/surveyNodeImport";
@@ -197,6 +197,44 @@ function getNodeSchemaId(
   return questionContents[question.id]?.id ?? question.initialTag;
 }
 
+function computeNextTag(currentQuestions: Question[], type: QuestionType): string {
+  const isRule = type === "rules";
+  const relevant = currentQuestions.filter((question) => (question.type === "rules") === isRule);
+  if (relevant.length === 0) return isRule ? "r1" : "question_id_1";
+  return incrementQuestionId(relevant[relevant.length - 1].initialTag);
+}
+
+function buildRuleSiblingsMap(
+  questions: Question[],
+  questionContents: Record<string, QuestionContent>,
+): Map<string, { previous: QuestionContent[]; following: QuestionContent[] }> {
+  const orderedQuestionContents = questions
+    .filter((question) => question.type !== "rules")
+    .map((question) => questionContents[question.id])
+    .filter((content): content is QuestionContent => Boolean(content));
+  const ruleSiblingsMap = new Map<string, { previous: QuestionContent[]; following: QuestionContent[] }>();
+  const previous: QuestionContent[] = [];
+  let nextContentIndex = 0;
+
+  for (const question of questions) {
+    if (question.type !== "rules") {
+      const content = questionContents[question.id];
+      if (content) {
+        previous.push(content);
+        nextContentIndex += 1;
+      }
+      continue;
+    }
+
+    ruleSiblingsMap.set(question.id, {
+      previous: [...previous],
+      following: orderedQuestionContents.slice(nextContentIndex),
+    });
+  }
+
+  return ruleSiblingsMap;
+}
+
 const QUESTION_TYPE_OPTIONS: Array<{ value: QuestionType; label: string }> = [
   { value: "multi-choice", label: "Multiple choice" },
   { value: "matching", label: "Matching" },
@@ -211,9 +249,10 @@ interface NodePageProps {
   initialNodes?: unknown[];
   onNodesChange?: (nodes: SurveyNode[]) => void;
   showDebug?: boolean;
+  validateRef?: RefObject<(() => boolean) | null>;
 }
 
-export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePageProps = {}) {
+export function NodePage({ initialNodes, onNodesChange, showDebug, validateRef }: NodePageProps = {}) {
   const navigate = useNavigate();
   const controlled = initialNodes !== undefined;
 
@@ -264,6 +303,7 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
   const hasDuplicateIds = duplicateQuestionIds.size > 0;
 
   const [aiImportOpen, setAiImportOpen] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   useLayoutEffect(() => {
     const pendingAnimation = pendingMoveAnimation.current;
@@ -366,17 +406,7 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
     setEditingQuestionIds((current) =>
       current.includes(newId) ? current : [...current, newId],
     );
-  // computeNextTag is a pure function defined in this module scope — no closure deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function computeNextTag(currentQuestions: Question[], type: QuestionType): string {
-    const isRule = type === "rules";
-    const relevant = currentQuestions.filter((q) => (q.type === "rules") === isRule);
-    if (relevant.length === 0) return isRule ? "r1" : "question_id_1";
-    const lastTag = relevant[relevant.length - 1].initialTag;
-    return incrementQuestionId(lastTag);
-  }
 
   function removeQuestion(id: string) {
     setQuestions((current) => current.filter((q) => q.id !== id));
@@ -451,24 +481,10 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
     newlyAddedQuestionId.current = null;
   }, []);
 
-  // Precompute sibling content lists once per questions/questionContents change.
-  // RulesQuestion uses these to show branching targets — recomputing per-render is O(n²).
+  // RulesQuestion uses sibling content to show branching targets. Build entries
+  // only for rules so ordinary question rows do not pay for unused slices.
   const siblingsMap = useMemo(() => {
-    const nonRuleContents = (slice: Question[]) =>
-      slice
-        .filter((q) => q.type !== "rules")
-        .map((q) => questionContents[q.id])
-        .filter((c): c is QuestionContent => Boolean(c));
-
-    return new Map(
-      questions.map((question, index) => [
-        question.id,
-        {
-          previous: nonRuleContents(questions.slice(0, index)),
-          following: nonRuleContents(questions.slice(index + 1)),
-        },
-      ]),
-    );
+    return buildRuleSiblingsMap(questions, questionContents);
   }, [questions, questionContents]);
 
   function renderQuestion(question: Question) {
@@ -492,6 +508,13 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
           ? current
           : { ...current, [question.id]: content }
       ));
+      if (validationErrors[question.id]) {
+        setValidationErrors((current) => {
+          const next = { ...current };
+          delete next[question.id];
+          return next;
+        });
+      }
     };
     const handleRuleContentChange = (content: RuleContent) => {
       setRuleContents((current) => (
@@ -499,6 +522,13 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
           ? current
           : { ...current, [question.id]: content }
       ));
+      if (validationErrors[question.id]) {
+        setValidationErrors((current) => {
+          const next = { ...current };
+          delete next[question.id];
+          return next;
+        });
+      }
     };
     const currentQuestionContent = questionContents[question.id];
     const currentRuleContent = ruleContents[question.id];
@@ -525,7 +555,8 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
       );
     };
 
-    const sharedProps = { isCollapsed, isEditMode, idError, onExpand, onExpandInEditMode, onEditModeChange: handleEditModeChange };
+    const validationError = validationErrors[question.id];
+    const sharedProps = { isCollapsed, isEditMode, idError, validationError, onExpand, onExpandInEditMode, onEditModeChange: handleEditModeChange };
 
     switch (question.type) {
       case "multi-choice":
@@ -651,8 +682,85 @@ export function NodePage({ initialNodes, onNodesChange, showDebug }: NodePagePro
     }
   }, [collapsedIds, questions, controlled]);
 
+  function validateSchema(): Record<string, string> {
+    const errors: Record<string, string> = {};
+
+    for (const question of questions) {
+      if (question.type === "rules") {
+        const content = ruleContents[question.id];
+        const id = content?.id ?? question.initialTag;
+        if (!id.trim()) {
+          errors[question.id] = "Rule ID is required.";
+        } else if (id.length > TAG_MAX) {
+          errors[question.id] = `Rule ID must be ${TAG_MAX} characters or fewer.`;
+        }
+        continue;
+      }
+
+      const content = questionContents[question.id];
+      if (!content) continue;
+
+      if (!content.id.trim()) {
+        errors[question.id] = "Question ID is required.";
+      } else if (content.id.length > TAG_MAX) {
+        errors[question.id] = `Question ID must be ${TAG_MAX} characters or fewer.`;
+      } else if (!content.label.trim()) {
+        errors[question.id] = "Question text is required.";
+      } else if (content.label.length > QUESTION_MAX) {
+        errors[question.id] = `Question text must be ${QUESTION_MAX} characters or fewer.`;
+      } else if (content.title && content.title.length > TITLE_MAX) {
+        errors[question.id] = `Title must be ${TITLE_MAX} characters or fewer.`;
+      } else if (content.family === "choice") {
+        const emptyOption = content.definition.options.find((o) => !o.label.trim());
+        if (emptyOption) {
+          errors[question.id] = "All answer choices must have text.";
+        }
+      } else if (content.family === "matching") {
+        const emptyPrompt = content.definition.prompts.find((p) => !p.label.trim());
+        const emptyMatch = content.definition.matches.find((m) => !m.label.trim());
+        if (emptyPrompt || emptyMatch) {
+          errors[question.id] = "All matching items must have text.";
+        }
+      }
+    }
+
+    return errors;
+  }
+
+  useEffect(() => {
+    if (!validateRef) return;
+    validateRef.current = () => {
+      const errors = validateSchema();
+      if (Object.keys(errors).length === 0) return true;
+      setValidationErrors(errors);
+      setCollapsedIds((current) => {
+        const next = new Set(current);
+        for (const id of Object.keys(errors)) next.delete(id);
+        return next;
+      });
+      return false;
+    };
+  // validateRef identity is stable; validateSchema closes over questions/contents which change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [validateRef, questions, questionContents, ruleContents]);
+
   function handlePreview() {
     if (serializedSurvey.length === 0) return;
+
+    const errors = validateSchema();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setCollapsedIds((current) => {
+        const next = new Set(current);
+        for (const id of Object.keys(errors)) {
+          next.delete(id);
+        }
+        return next;
+      });
+      return;
+    }
+
+    setValidationErrors({});
     savePreviewSurvey(serializedSurvey);
     navigate("/node/preview", { state: { survey: serializedSurvey } });
   }

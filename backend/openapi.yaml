@@ -3699,7 +3699,7 @@ components:
         title:
           anyOf:
           - maxLength: 500
-            minLength: 1
+            minLength: 0
             type: string
           - type: 'null'
           default: null
@@ -3918,7 +3918,7 @@ components:
         title:
           anyOf:
           - maxLength: 500
-            minLength: 1
+            minLength: 0
             type: string
           - type: 'null'
           default: null
@@ -4047,7 +4047,7 @@ components:
         title:
           anyOf:
           - maxLength: 500
-            minLength: 1
+            minLength: 0
             type: string
           - type: 'null'
           default: null
@@ -4181,7 +4181,7 @@ components:
         title:
           anyOf:
           - maxLength: 500
-            minLength: 1
+            minLength: 0
             type: string
           - type: 'null'
           default: null

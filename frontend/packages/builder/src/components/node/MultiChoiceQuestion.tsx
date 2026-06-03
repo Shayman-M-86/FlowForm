@@ -42,6 +42,7 @@ interface MultiChoiceQuestionProps {
   initialTag?: string;
   initialContent?: ChoiceContent;
   idError?: string;
+  validationError?: string;
   isCollapsed?: boolean;
   isEditMode?: boolean;
   onExpand?: () => void;
@@ -58,7 +59,7 @@ const ANSWER_POOL = 4000;
 const ANSWER_PER_FIELD_MAX = 1000;
 const MAX_ANSWERS = 10;
 
-export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
+export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title, initialTag, initialContent, idError, validationError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
   const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
@@ -175,6 +176,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
           onTitleChange={setTitleValue}
           titleMax={TITLE_MAX}
           showTitleEdit={true}
+          validationError={validationError && !options.some((o) => !o.value.trim()) ? validationError : undefined}
         />
 
         <div className={nodePillFieldClass}>
@@ -263,7 +265,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                       <span aria-hidden="true">⋮</span>
                     </Button>
                   )}
-                  <div className={`${nodePillOptionFieldClass} ${isEditMode ? `${nodePillOptionFieldEditClass} flex-row items-stretch` : ""}`}>
+                  <div className={`${nodePillOptionFieldClass} ${isEditMode ? `${nodePillOptionFieldEditClass} flex-row items-stretch` : ""}${validationError && !option.value.trim() ? " ring-2 ring-destructive" : ""}`}>
                     <div className="flex min-w-0 flex-1 flex-col">
                       <div className={nodePillOptionMainClass}>
                         <div className="min-w-0 flex-1">

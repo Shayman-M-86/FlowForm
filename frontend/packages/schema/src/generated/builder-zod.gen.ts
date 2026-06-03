@@ -32,7 +32,7 @@ export const ChoiceQuestionSchemaInSchema = z.object({
   id: z.string().min(1).max(128),
   family: z.literal("choice"),
   label: z.string().min(1).max(1000),
-  title: z.string().min(1).max(500).nullable().optional(),
+  title: z.string().min(0).max(500).nullable().optional(),
   definition: ChoiceDefinitionInSchema,
 });
 
@@ -49,7 +49,7 @@ export const FieldQuestionSchemaInSchema = z.object({
   id: z.string().min(1).max(128),
   family: z.literal("field"),
   label: z.string().min(1).max(1000),
-  title: z.string().min(1).max(500).nullable().optional(),
+  title: z.string().min(0).max(500).nullable().optional(),
   definition: FieldDefinitionInSchema,
 });
 
@@ -67,7 +67,7 @@ export const MatchingQuestionSchemaInSchema = z.object({
   id: z.string().min(1).max(128),
   family: z.literal("matching"),
   label: z.string().min(1).max(1000),
-  title: z.string().min(1).max(500).nullable().optional(),
+  title: z.string().min(0).max(500).nullable().optional(),
   definition: MatchingDefinitionInSchema,
 });
 
@@ -105,7 +105,7 @@ export const RatingQuestionSchemaInSchema = z.object({
   id: z.string().min(1).max(128),
   family: z.literal("rating"),
   label: z.string().min(1).max(1000),
-  title: z.string().min(1).max(500).nullable().optional(),
+  title: z.string().min(0).max(500).nullable().optional(),
   definition: z.discriminatedUnion("variant", [RatingSliderDefinitionInSchema, RatingStarDefinitionInSchema, RatingEmojiDefinitionInSchema]),
 });
 

@@ -1,9 +1,9 @@
-import { useCallback, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { useParams } from '@tanstack/react-router'
 import { MemoryRouter } from 'react-router-dom'
 import { NodePage } from '@flowform/builder'
 import type { SurveyNode } from '@flowform/builder'
-import { Badge, Button, Card, DropdownMenu, Spinner, Toast } from '@flowform/ui'
+import { Badge, Button, Card, DropdownMenu, Modal, Spinner, Toast } from '@flowform/ui'
 import type { ToastVariant } from '@flowform/ui'
 import { Archive, ChevronDown, Copy, Eye, Rocket, RotateCcw } from 'lucide-react'
 import { useProject } from '@/api/hooks/projects'
@@ -334,21 +334,55 @@ function PublishedNoDraftPanel({
 
 // ── Connected builder (owns node API hooks for a specific draft version) ──────
 
+const DRAFT_STORAGE_KEY = (versionId: number) => `flowform.studio.draft-nodes.${versionId}`
+
+function loadLocalDraft(versionId: number): SurveyNode[] | null {
+  try {
+    const stored = window.localStorage.getItem(DRAFT_STORAGE_KEY(versionId))
+    if (!stored) return null
+    return JSON.parse(stored) as SurveyNode[]
+  } catch {
+    return null
+  }
+}
+
+function saveLocalDraft(versionId: number, nodes: SurveyNode[]) {
+  try {
+    window.localStorage.setItem(DRAFT_STORAGE_KEY(versionId), JSON.stringify(nodes))
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function clearLocalDraft(versionId: number) {
+  try {
+    window.localStorage.removeItem(DRAFT_STORAGE_KEY(versionId))
+  } catch {
+    // ignore
+  }
+}
+
 function ConnectedNodePage({
   projectId,
   surveyId,
+  versionId,
   versionNumber,
   onSaveStart,
   onSaveSuccess,
   onSaveError,
+  onValidationFail,
+  onDirtyChange,
   saveRef,
 }: {
   projectId: number
   surveyId: number
+  versionId: number
   versionNumber: number
   onSaveStart: () => void
   onSaveSuccess: () => void
   onSaveError: () => void
+  onValidationFail: () => void
+  onDirtyChange: (dirty: boolean) => void
   saveRef: RefObject<() => Promise<void>>
 }) {
   const { data: backendNodes, isLoading } = useSurveyNodes(projectId, surveyId, versionNumber)
@@ -356,10 +390,13 @@ function ConnectedNodePage({
   const updateNode = useUpdateNode(projectId, surveyId, versionNumber)
   const deleteNode = useDeleteNode(projectId, surveyId, versionNumber)
 
-  // Latest nodes from the builder — updated on every change via onNodesChange
   const latestNodesRef = useRef<SurveyNode[]>([])
   const backendNodesRef = useRef(backendNodes)
   backendNodesRef.current = backendNodes
+  const validateRef = useRef<(() => boolean) | null>(null)
+  const onDirtyChangeRef = useRef(onDirtyChange)
+  onDirtyChangeRef.current = onDirtyChange
+  const initialEmitDoneRef = useRef(false)
 
   const syncToBackend = useCallback(async (nodes: SurveyNode[]) => {
     const current = backendNodesRef.current ?? []
@@ -397,17 +434,42 @@ function ConnectedNodePage({
   }, [createNode, updateNode, deleteNode])
 
   const handleSave = useCallback(async () => {
+    if (validateRef.current && !validateRef.current()) {
+      onValidationFail()
+      return
+    }
     onSaveStart()
     try {
       await syncToBackend(latestNodesRef.current)
+      clearLocalDraft(versionId)
+      onDirtyChangeRef.current(false)
       onSaveSuccess()
     } catch {
       onSaveError()
     }
-  }, [syncToBackend, onSaveStart, onSaveSuccess, onSaveError])
+  }, [syncToBackend, onSaveStart, onSaveSuccess, onSaveError, onValidationFail, versionId])
 
-  // Write save function into parent ref so toolbar button can call it
   saveRef.current = handleSave
+
+  const backendNodesJson = JSON.stringify(backendNodes ?? [])
+
+  // Seed latestNodesRef once backend data arrives, preferring any local draft
+  useEffect(() => {
+    if (!backendNodes) return
+    const local = loadLocalDraft(versionId)
+    if (local) {
+      latestNodesRef.current = local
+      onDirtyChangeRef.current(true)
+    } else {
+      latestNodesRef.current = backendNodes.map((n) => ({
+        type: n.node_type as 'question' | 'rule',
+        sort_key: n.sort_key,
+        content: n.question_schema as never,
+      }))
+      onDirtyChangeRef.current(false)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versionId, backendNodesJson])
 
   const initialNodes: SurveyNode[] | undefined = backendNodes?.map((n) => ({
     type: n.node_type as 'question' | 'rule',
@@ -423,11 +485,27 @@ function ConnectedNodePage({
     )
   }
 
+  const localDraft = loadLocalDraft(versionId)
+  const seedNodes = localDraft ?? initialNodes
+
   return (
     <MemoryRouter initialEntries={['/node']}>
       <NodePage
-        initialNodes={initialNodes}
-        onNodesChange={(nodes) => { latestNodesRef.current = nodes }}
+        initialNodes={seedNodes}
+        onNodesChange={(nodes) => {
+          latestNodesRef.current = nodes
+          if (!initialEmitDoneRef.current) {
+            initialEmitDoneRef.current = true
+            return
+          }
+          saveLocalDraft(versionId, nodes)
+          const backendSchemas = [...(backendNodesRef.current ?? [])]
+            .sort((a, b) => a.sort_key - b.sort_key)
+            .map((n) => n.question_schema)
+          const currentSchemas = nodes.map((n) => n.content)
+          onDirtyChangeRef.current(JSON.stringify(backendSchemas) !== JSON.stringify(currentSchemas))
+        }}
+        validateRef={validateRef}
         showDebug
       />
     </MemoryRouter>
@@ -469,18 +547,49 @@ export function SurveyBuilderTab() {
 
   const readyToMutate = projectId != null && surveyId > 0
 
-  // ConnectedNodePage writes its save function here; toolbar button calls it
   const nodeSaveRef = useRef<() => Promise<void>>(async () => {})
 
   const draftVersion     = versions.find((v) => v.status === 'draft')
   const publishedVersion = versions.find((v) => v.status === 'published')
 
-  // Default selected version: prefer draft, then published, then first archived
   const defaultSelected = draftVersion ?? publishedVersion ?? versions[0]
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const selectedVersion = selectedId != null
     ? (versions.find((v) => v.id === selectedId) ?? defaultSelected)
     : defaultSelected
+
+  const [isDirty, setIsDirty] = useState(false)
+  // When the user tries to switch versions while dirty, we hold the target here
+  // and show the unsaved-changes modal instead of switching immediately.
+  const [pendingSwitchId, setPendingSwitchId] = useState<number | null>(null)
+
+  function requestSelectVersion(id: number) {
+    if (isDirty && selectedVersion?.status === 'draft' && id !== selectedVersion?.id) {
+      setPendingSwitchId(id)
+    } else {
+      setSelectedId(id)
+    }
+  }
+
+  function confirmSwitch() {
+    if (pendingSwitchId == null) return
+    if (selectedVersion) clearLocalDraft(selectedVersion.id)
+    setIsDirty(false)
+    setSelectedId(pendingSwitchId)
+    setPendingSwitchId(null)
+  }
+
+  async function saveAndSwitch() {
+    if (pendingSwitchId == null) return
+    await nodeSaveRef.current()
+    // handleSave clears the draft and sets isDirty false on success; just switch.
+    setSelectedId(pendingSwitchId)
+    setPendingSwitchId(null)
+  }
+
+  function cancelSwitch() {
+    setPendingSwitchId(null)
+  }
 
   function handleCreateDraft() {
     if (!readyToMutate) return
@@ -544,10 +653,37 @@ export function SurveyBuilderTab() {
           </Toast>
         </div>
       )}
+
+      <Modal
+        open={pendingSwitchId != null}
+        onClose={cancelSwitch}
+        title="Unsaved changes"
+        width={420}
+        footer={(
+          <div className="flex w-full items-center justify-between gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={cancelSwitch}>
+              Keep editing
+            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="secondary" size="sm" onClick={confirmSwitch}>
+                Discard changes
+              </Button>
+              <Button type="button" variant="primary" size="sm" disabled={isSaving} onClick={() => void saveAndSwitch()}>
+                {isSaving ? 'Saving…' : 'Save and switch'}
+              </Button>
+            </div>
+          </div>
+        )}
+      >
+        <p className="text-sm text-muted-foreground">
+          You have unsaved changes to this draft. What would you like to do before switching versions?
+        </p>
+      </Modal>
+
       <VersionToolbar
         versions={versions}
         selectedVersion={selectedVersion}
-        onSelectVersion={(v) => setSelectedId(v.id)}
+        onSelectVersion={(v) => requestSelectVersion(v.id)}
         onCreateDraft={handleCreateDraft}
         isCreating={createVersion.isPending}
         onCopyToDraft={handleCopyToDraft}
@@ -564,12 +700,16 @@ export function SurveyBuilderTab() {
 
       {showBuilder && selectedVersion ? (
         <ConnectedNodePage
+          key={selectedVersion.id}
           projectId={projectId!}
           surveyId={surveyId}
+          versionId={selectedVersion.id}
           versionNumber={selectedVersion.version_number}
           onSaveStart={() => setIsSaving(true)}
           onSaveSuccess={() => { setIsSaving(false); showToast('success', 'Draft saved.') }}
           onSaveError={() => { setIsSaving(false); showToast('error', 'Failed to save.') }}
+          onValidationFail={() => showToast('error', 'Fix the highlighted fields before saving.')}
+          onDirtyChange={setIsDirty}
           saveRef={nodeSaveRef}
         />
       ) : showPublishedNoDraft ? (

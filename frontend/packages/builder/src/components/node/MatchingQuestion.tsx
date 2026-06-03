@@ -42,6 +42,7 @@ interface MatchingQuestionProps {
   initialTag?: string;
   initialContent?: MatchingContent;
   idError?: string;
+  validationError?: string;
   isCollapsed?: boolean;
   isEditMode?: boolean;
   onExpand?: () => void;
@@ -78,7 +79,7 @@ const INITIAL_RIGHT_ITEMS: MatchItem[] = [
   { id: "right-1", placeholder: "Match A", value: "", tag: "A" },
 ];
 
-export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuestionProps>(function MatchingQuestion({ onDelete, title, initialTag, initialContent, idError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
+export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuestionProps>(function MatchingQuestion({ onDelete, title, initialTag, initialContent, idError, validationError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
   const initialLeftItems = initialContent?.definition.prompts.length
     ? initialContent.definition.prompts.map((item, index) => ({
       id: `left-${index + 1}`,
@@ -180,6 +181,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
     nextIndexRef: React.MutableRefObject<number>,
     idPrefix: "left" | "right",
   ) {
+    const highlightEmpty = Boolean(validationError);
     return (
       <section className="flex min-w-0 flex-col gap-2.5">
         <div className="flex items-center justify-between gap-2.5">
@@ -229,7 +231,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                   </Button>
                 )}
 
-                <div className={`${nodePillOptionFieldClass} ${isEditMode ? `${nodePillOptionFieldEditClass} flex-row items-stretch` : ""}`}>
+                <div className={`${nodePillOptionFieldClass} ${isEditMode ? `${nodePillOptionFieldEditClass} flex-row items-stretch` : ""}${highlightEmpty && !item.value.trim() ? " ring-2 ring-destructive" : ""}`}>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className={nodePillOptionMainClass}>
                       <div className="min-w-0 flex-1">
@@ -370,6 +372,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
           onTitleChange={setTitleValue}
           titleMax={TITLE_MAX}
           showTitleEdit={true}
+          validationError={validationError && !leftItems.some((i) => !i.value.trim()) && !rightItems.some((i) => !i.value.trim()) ? validationError : undefined}
         />
 
         <div className={nodePillFieldClass}>
