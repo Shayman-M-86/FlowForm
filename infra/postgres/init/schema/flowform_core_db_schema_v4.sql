@@ -360,7 +360,7 @@ CREATE UNIQUE INDEX uq_survey_versions_one_published
 -- =========================================
 
 CREATE TABLE survey_questions (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL NOT NULL,
 
     survey_version_id BIGINT NOT NULL
         REFERENCES survey_versions(id)
@@ -399,7 +399,9 @@ CREATE TABLE survey_questions (
         CHECK (
             node_type <> 'question'
             OR question_schema->>'family' IN ('choice', 'field', 'matching', 'rating')
-        )
+        ),
+
+    PRIMARY KEY (id, survey_version_id)
 );
 
 CREATE UNIQUE INDEX uq_survey_questions_survey_version_id_question_key

@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
+import { useRef, useState } from "react";
 import { Button, Input, LargeInput } from "@flowform/ui";
-import { useOptionDrag } from "./useOptionDrag";
-import { QUESTION_MAX, TITLE_MAX, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
+import { useOptionDrag } from "../useOptionDrag";
+import { QUESTION_MAX, TITLE_MAX, blurOnEnter, nextAvailableTag } from "../NodePillUtils";
 import {
   NodePillTopbar,
   NodePillIdField,
@@ -10,7 +10,7 @@ import {
   NodePillFieldHead,
   NodePillDragThresholds,
   NodePillCollapsed,
-} from "./NodePillShell";
+} from "../NodePillShell";
 import {
   nodePillBodyClass,
   nodePillFieldClass,
@@ -29,18 +29,18 @@ import {
   nodePillOptionsListClass,
   nodePillShellClass,
   nodePillShellEditClass,
-} from "./nodePillStyles";
-import type { MatchingContent } from "./questionTypes";
+} from "../nodePillStyles";
+import type { MatchingContent } from "../questionTypes";
+import type { CreateQuestionNodeRequest } from "@flowform/schema";
 
-export interface MatchingQuestionHandle {
-  getData(): MatchingContent;
-}
+export type MatchingQuestionNode = Omit<CreateQuestionNodeRequest, "content"> & {
+  content: MatchingContent;
+};
 
 interface MatchingQuestionProps {
+  node: MatchingQuestionNode;
+  onChange: (next: MatchingQuestionNode) => void;
   onDelete?: () => void;
-  title?: string;
-  initialTag?: string;
-  initialContent?: MatchingContent;
   idError?: string;
   validationError?: string;
   isCollapsed?: boolean;
@@ -48,19 +48,13 @@ interface MatchingQuestionProps {
   onExpand?: () => void;
   onExpandInEditMode?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
-  onDataChange?: (content: MatchingContent) => void;
 }
 
 const ANSWER_POOL = 2000;
 const ANSWER_PER_FIELD_MAX = 200;
 const MAX_ITEMS_PER_COLUMN = 10;
 
-type MatchItem = {
-  id: string;
-  placeholder: string;
-  value: string;
-  tag: string;
-};
+type MatchItem = { id: string; placeholder: string; value: string; tag: string };
 
 type MatchItemDrag = {
   activeDrag: ReturnType<typeof useOptionDrag>["activeDrag"];
@@ -71,41 +65,48 @@ type MatchItemDrag = {
   getThresholdRatioForIndex: ReturnType<typeof useOptionDrag>["getThresholdRatioForIndex"];
 };
 
-const INITIAL_LEFT_ITEMS: MatchItem[] = [
-  { id: "left-1", placeholder: "Prompt A", value: "", tag: "A" },
-];
+function contentToItems(
+  items: MatchingContent["definition"]["prompts"] | MatchingContent["definition"]["matches"],
+  idPrefix: string,
+  fallbackLabel: string,
+): MatchItem[] {
+  if (!items.length) {
+    return [{ id: `${idPrefix}-1`, placeholder: `${fallbackLabel} A`, value: "", tag: "A" }];
+  }
+  return items.map((item, index) => ({
+    id: `${idPrefix}-${index + 1}`,
+    placeholder: `${fallbackLabel} ${item.id || String.fromCharCode(65 + index)}`,
+    value: item.label,
+    tag: item.id,
+  }));
+}
 
-const INITIAL_RIGHT_ITEMS: MatchItem[] = [
-  { id: "right-1", placeholder: "Match A", value: "", tag: "A" },
-];
+export function MatchingQuestion({
+  node,
+  onChange,
+  onDelete,
+  idError,
+  validationError,
+  isCollapsed,
+  isEditMode = false,
+  onExpand,
+  onExpandInEditMode,
+  onEditModeChange,
+}: MatchingQuestionProps) {
+  const { content } = node;
+  const titleValue = content.title ?? "";
+  const questionValue = content.label;
 
-export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuestionProps>(function MatchingQuestion({ onDelete, title, initialTag, initialContent, idError, validationError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
-  const initialLeftItems = initialContent?.definition.prompts.length
-    ? initialContent.definition.prompts.map((item, index) => ({
-      id: `left-${index + 1}`,
-      placeholder: `Prompt ${item.id || String.fromCharCode(65 + index)}`,
-      value: item.label,
-      tag: item.id,
-    }))
-    : INITIAL_LEFT_ITEMS;
-  const initialRightItems = initialContent?.definition.matches.length
-    ? initialContent.definition.matches.map((item, index) => ({
-      id: `right-${index + 1}`,
-      placeholder: `Match ${item.id || String.fromCharCode(65 + index)}`,
-      value: item.label,
-      tag: item.id,
-    }))
-    : INITIAL_RIGHT_ITEMS;
-  const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
-  const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
-  const [tagValue, setTagValue] = useState(initialContent?.key ?? initialTag ?? "question_id_1");
-  const [isRequired, setIsRequired] = useState(false);
+  const [leftItems, setLeftItems] = useState<MatchItem[]>(() =>
+    contentToItems(content.definition.prompts, "left", "Prompt"),
+  );
+  const [rightItems, setRightItems] = useState<MatchItem[]>(() =>
+    contentToItems(content.definition.matches, "right", "Match"),
+  );
   const [openItemIds, setOpenItemIds] = useState<Set<string>>(new Set());
-  const [leftItems, setLeftItems] = useState(initialLeftItems);
-  const [rightItems, setRightItems] = useState(initialRightItems);
 
-  const nextLeftIndexRef = useRef(initialLeftItems.length + 1);
-  const nextRightIndexRef = useRef(initialRightItems.length + 1);
+  const nextLeftIndexRef = useRef(leftItems.length + 1);
+  const nextRightIndexRef = useRef(rightItems.length + 1);
 
   const leftDrag = useOptionDrag(leftItems, setLeftItems);
   const rightDrag = useOptionDrag(rightItems, setRightItems);
@@ -115,26 +116,47 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
     0,
   );
 
-  const matchingData: MatchingContent = {
-    key: tagValue,
-    title: titleValue,
-    label: questionValue,
-    family: "matching",
-    definition: {
-      prompts: leftItems.map((item) => ({ id: item.tag, label: item.value })),
-      matches: rightItems.map((item) => ({ id: item.tag, label: item.value })),
-    },
-  };
+  function updateContent(update: (current: MatchingContent) => MatchingContent) {
+    onChange({ ...node, content: update(content) });
+  }
 
-  useImperativeHandle(ref, () => ({
-    getData() {
-      return matchingData;
-    },
-  }));
+  function updateNodeKey(nextNodeKey: string) {
+    onChange({ ...node, node_key: nextNodeKey });
+  }
 
-  useEffect(() => {
-    onDataChange?.(matchingData);
-  }, [titleValue, tagValue, questionValue, isRequired, leftItems, rightItems]);
+  function updateTitle(nextTitle: string) {
+    updateContent((current) => ({ ...current, title: nextTitle || undefined }));
+  }
+
+  function updateQuestion(nextQuestion: string) {
+    updateContent((current) => ({ ...current, label: nextQuestion }));
+  }
+
+  function syncItems(nextLeft: MatchItem[], nextRight: MatchItem[]) {
+    updateContent((current) => ({
+      ...current,
+      definition: {
+        prompts: nextLeft.map((item) => ({ id: item.tag, label: item.value })),
+        matches: nextRight.map((item) => ({ id: item.tag, label: item.value })),
+      },
+    }));
+  }
+
+  function setLeftAndSync(updater: (current: MatchItem[]) => MatchItem[]) {
+    setLeftItems((current) => {
+      const next = updater(current);
+      syncItems(next, rightItems);
+      return next;
+    });
+  }
+
+  function setRightAndSync(updater: (current: MatchItem[]) => MatchItem[]) {
+    setRightItems((current) => {
+      const next = updater(current);
+      syncItems(leftItems, next);
+      return next;
+    });
+  }
 
   function availableCharactersFor(itemId: string) {
     const usedByOthers = [...leftItems, ...rightItems]
@@ -157,7 +179,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
 
   function deleteItem(
     itemId: string,
-    setItems: React.Dispatch<React.SetStateAction<MatchItem[]>>,
+    setItems: (updater: (current: MatchItem[]) => MatchItem[]) => void,
   ) {
     setItems((current) => current.filter((entry) => entry.id !== itemId));
     setOpenItemIds((current) => {
@@ -176,7 +198,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
     columnTitle: string,
     singularTitle: string,
     items: MatchItem[],
-    setItems: React.Dispatch<React.SetStateAction<MatchItem[]>>,
+    setItems: (updater: (current: MatchItem[]) => MatchItem[]) => void,
     drag: MatchItemDrag,
     nextIndexRef: React.MutableRefObject<number>,
     idPrefix: "left" | "right",
@@ -199,7 +221,6 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
             const isDragging = drag.activeDrag?.id === item.id;
             const thresholdRatio = drag.getThresholdRatioForIndex(index);
             const dragTransform = drag.getDragTransform(index);
-
             const fieldMax = availableCharactersFor(item.id);
 
             return (
@@ -231,7 +252,9 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                   </Button>
                 )}
 
-                <div className={`${nodePillOptionFieldClass} ${isEditMode ? `${nodePillOptionFieldEditClass} flex-row items-stretch` : ""}${highlightEmpty && !item.value.trim() ? " ring-2 ring-destructive" : ""}`}>
+                <div
+                  className={`${nodePillOptionFieldClass} ${isEditMode ? `${nodePillOptionFieldEditClass} flex-row items-stretch` : ""}${highlightEmpty && !item.value.trim() ? " ring-2 ring-destructive" : ""}`}
+                >
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className={nodePillOptionMainClass}>
                       <div className="min-w-0 flex-1">
@@ -249,7 +272,9 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                           onChange={(event) =>
                             setItems((current) =>
                               current.map((entry) =>
-                                entry.id === item.id ? { ...entry, value: event.target.value } : entry,
+                                entry.id === item.id
+                                  ? { ...entry, value: event.target.value }
+                                  : entry,
                               ),
                             )
                           }
@@ -275,7 +300,9 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
                             onChange={(event) =>
                               setItems((current) =>
                                 current.map((entry) =>
-                                  entry.id === item.id ? { ...entry, tag: event.target.value } : entry,
+                                  entry.id === item.id
+                                    ? { ...entry, tag: event.target.value }
+                                    : entry,
                                 ),
                               )
                             }
@@ -340,39 +367,61 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
   }
 
   if (isCollapsed) {
-    return <NodePillCollapsed family="Matching" tagValue={tagValue} title={titleValue} onExpand={() => onExpand?.()} onExpandInEditMode={() => onExpandInEditMode?.()} />;
+    return (
+      <NodePillCollapsed
+        family="Matching"
+        tagValue={node.node_key}
+        title={titleValue}
+        onExpand={() => onExpand?.()}
+        onExpandInEditMode={() => onExpandInEditMode?.()}
+      />
+    );
   }
 
   return (
-    <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`} aria-label="Matching question">
+    <section
+      className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`}
+      aria-label="Matching question"
+    >
       <NodePillTopbar
         family="Matching"
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
         settings={{
-          tagValue,
-          onTagChange: setTagValue,
+          tagValue: node.node_key,
+          onTagChange: updateNodeKey,
           titleValue,
-          onTitleChange: setTitleValue,
-          required: isRequired,
-          onRequiredChange: setIsRequired,
+          onTitleChange: updateTitle,
           idError,
         }}
       />
 
       <div className={nodePillBodyClass}>
         <NodePillQuestionField
-          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
+          idField={
+            <NodePillIdField
+              tagValue={node.node_key}
+              onTagChange={updateNodeKey}
+              idError={idError}
+              isEditMode={isEditMode}
+            />
+          }
           value={questionValue}
-          onChange={setQuestionValue}
+          onChange={updateQuestion}
           isEditMode={isEditMode}
           max={QUESTION_MAX}
           titleValue={titleValue}
-          onTitleChange={setTitleValue}
+          onTitleChange={updateTitle}
           titleMax={TITLE_MAX}
-          showTitleEdit={true}
-          validationError={validationError && !leftItems.some((i) => !i.value.trim()) && !rightItems.some((i) => !i.value.trim()) ? validationError : undefined}
+          showTitleEdit
+          validationError={
+            validationError &&
+            !leftItems.some((i) => !i.value.trim()) &&
+            !rightItems.some((i) => !i.value.trim())
+              ? validationError
+              : undefined
+          }
         />
 
         <div className={nodePillFieldClass}>
@@ -388,11 +437,11 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
           )}
 
           <div className="grid gap-5 lg:grid-cols-2">
-            {renderColumn("Prompts", "Prompt", leftItems, setLeftItems, leftDrag, nextLeftIndexRef, "left")}
-            {renderColumn("Matches", "Match", rightItems, setRightItems, rightDrag, nextRightIndexRef, "right")}
+            {renderColumn("Prompts", "Prompt", leftItems, setLeftAndSync, leftDrag, nextLeftIndexRef, "left")}
+            {renderColumn("Matches", "Match", rightItems, setRightAndSync, rightDrag, nextRightIndexRef, "right")}
           </div>
         </div>
       </div>
     </section>
   );
-});
+}

@@ -1,5 +1,5 @@
 import type { EmojiListType, RatingContent } from "../node/questionTypes";
-import "../node/RatingQuestion.css";
+import "../node/QuestionNode/RatingQuestion.css";
 
 interface RatingFormFillerProps {
   question: RatingContent;

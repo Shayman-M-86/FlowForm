@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, Modal } from "@flowform/ui";
 import { AlertCircle, Check, ClipboardPaste, Copy, Sparkles } from "lucide-react";
-import type { SurveyNode } from "./questionTypes";
+import type { SurveyNode } from "../node/questionTypes";
 import { findNodeLine, parseSurveyNodeJson, SurveyNodeImportError } from "./surveyNodeImport";
 
 const AI_IMPORT_STORAGE_KEY = "flowform.ai-import.pending";

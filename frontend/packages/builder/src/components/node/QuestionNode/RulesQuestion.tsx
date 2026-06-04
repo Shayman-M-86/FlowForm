@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from "react";
+import { useMemo, useState } from "react";
 import {
   NodePillTopbar,
   NodePillIdField,
   NodePillFieldHead,
   NodePillCollapsed,
-} from "./NodePillShell";
+} from "../NodePillShell";
 import {
   nodePillBodyClass,
   nodePillFieldClass,
   nodePillShellClass,
   nodePillShellEditClass,
-} from "./nodePillStyles";
+} from "../nodePillStyles";
 import { Button, Card, CardStack, Input, NumberStepper, Select } from "@flowform/ui";
 import type {
   QuestionContent,
@@ -28,17 +28,15 @@ import type {
   FieldNumberOperator,
   FieldDateOperator,
   RuleSetEntry,
-} from "./questionTypes";
+} from "../questionTypes";
+import type { CreateRuleNodeRequest } from "@flowform/schema";
 
-export interface RulesQuestionHandle {
-  getData(): RuleContent;
-}
+export type RulesQuestionNode = CreateRuleNodeRequest;
 
 interface RulesQuestionProps {
+  node: RulesQuestionNode;
+  onChange: (next: RulesQuestionNode) => void;
   onDelete?: () => void;
-  title?: string;
-  initialTag?: string;
-  initialContent?: RuleContent;
   idError?: string;
   validationError?: string;
   isCollapsed?: boolean;
@@ -46,7 +44,6 @@ interface RulesQuestionProps {
   onExpand?: () => void;
   onExpandInEditMode?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
-  onDataChange?: (content: RuleContent) => void;
   previousSiblings?: QuestionContent[];
   followingSiblings?: QuestionContent[];
 }
@@ -182,7 +179,10 @@ function buildConditionFromTarget(
   }
 }
 
-function draftToCondition(draft: ConditionDraft, target: QuestionContent | undefined): RuleCondition | null {
+function draftToCondition(
+  draft: ConditionDraft,
+  target: QuestionContent | undefined,
+): RuleCondition | null {
   if (draft.family === null || !draft.target_id) return null;
 
   if (draft.family === "choice") {
@@ -220,9 +220,21 @@ function draftToCondition(draft: ConditionDraft, target: QuestionContent | undef
   const fieldTarget = target && target.family === "field" ? target : null;
   const fieldType = fieldTarget?.definition.field_type ?? "number";
   if (fieldType === "date") {
-    return { target_id: draft.target_id, family: "field", requirements: { type: "date", operator: draft.dateOperator, value: draft.dateValue } };
+    return {
+      target_id: draft.target_id,
+      family: "field",
+      requirements: { type: "date", operator: draft.dateOperator, value: draft.dateValue },
+    };
   }
-  return { target_id: draft.target_id, family: "field", requirements: { type: "number", operator: draft.numberOperator, value: draft.numberValue === "" ? 0 : Number(draft.numberValue) } };
+  return {
+    target_id: draft.target_id,
+    family: "field",
+    requirements: {
+      type: "number",
+      operator: draft.numberOperator,
+      value: draft.numberValue === "" ? 0 : Number(draft.numberValue),
+    },
+  };
 }
 
 function findSibling(siblings: QuestionContent[], id: string) {
@@ -244,20 +256,27 @@ function conditionToDraft(
 
   if (condition.family === "choice") {
     const marks: Record<string, ChoiceMark> = {};
-    const optionIds = target?.family === "choice"
-      ? target.definition.options.map((option) => option.id)
-      : [
-        ...(condition.requirements.required ?? []),
-        ...(condition.requirements.forbidden ?? []),
-        ...(condition.requirements.any_of ?? []),
-      ];
+    const optionIds =
+      target?.family === "choice"
+        ? target.definition.options.map((option) => option.id)
+        : [
+            ...(condition.requirements.required ?? []),
+            ...(condition.requirements.forbidden ?? []),
+            ...(condition.requirements.any_of ?? []),
+          ];
 
     optionIds.forEach((optionId) => {
       marks[optionId] = "none";
     });
-    (condition.requirements.required ?? []).forEach((optionId) => { marks[optionId] = "required"; });
-    (condition.requirements.forbidden ?? []).forEach((optionId) => { marks[optionId] = "forbidden"; });
-    (condition.requirements.any_of ?? []).forEach((optionId) => { marks[optionId] = "any_of"; });
+    (condition.requirements.required ?? []).forEach((optionId) => {
+      marks[optionId] = "required";
+    });
+    (condition.requirements.forbidden ?? []).forEach((optionId) => {
+      marks[optionId] = "forbidden";
+    });
+    (condition.requirements.any_of ?? []).forEach((optionId) => {
+      marks[optionId] = "any_of";
+    });
 
     return { key: newConditionKey(), target_id: condition.target_id, family: "choice", marks };
   }
@@ -289,10 +308,16 @@ function conditionToDraft(
     key: newConditionKey(),
     target_id: condition.target_id,
     family: "field",
-    numberOperator: condition.requirements.type === "date" ? "EQ" : condition.requirements.operator,
-    numberValue: condition.requirements.type === "date" ? "" : String(condition.requirements.value ?? ""),
-    dateOperator: condition.requirements.type === "date" ? condition.requirements.operator : "before",
-    dateValue: condition.requirements.type === "date" ? condition.requirements.value : "",
+    numberOperator:
+      condition.requirements.type === "date" ? "EQ" : condition.requirements.operator,
+    numberValue:
+      condition.requirements.type === "date"
+        ? ""
+        : String(condition.requirements.value ?? ""),
+    dateOperator:
+      condition.requirements.type === "date" ? condition.requirements.operator : "before",
+    dateValue:
+      condition.requirements.type === "date" ? condition.requirements.value : "",
   };
 }
 
@@ -303,31 +328,42 @@ const choiceTagClass =
   "inline-flex items-center rounded-full border border-border bg-muted px-1.5 py-0.5 text-[0.72rem] font-bold uppercase text-muted-foreground";
 const pickerHeadClass = "flex items-baseline justify-between gap-2";
 const pickerTitleClass = "text-[0.95rem] font-semibold text-foreground";
-const pickerHintClass =
-  "text-[0.78rem] uppercase tracking-[0.04em] text-muted-foreground";
+const pickerHintClass = "text-[0.78rem] uppercase tracking-[0.04em] text-muted-foreground";
 const toggleRowClass =
   "inline-flex items-center gap-1.5 whitespace-nowrap text-[0.85rem] text-muted-foreground";
 
-export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>(function RulesQuestion(
-  { onDelete, title: _title, initialTag, initialContent, idError, validationError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange, previousSiblings = [], followingSiblings = [] },
-  ref,
-) {
+export function RulesQuestion({
+  node,
+  onChange,
+  onDelete,
+  idError,
+  validationError,
+  isCollapsed,
+  isEditMode = false,
+  onExpand,
+  onExpandInEditMode,
+  onEditModeChange,
+  previousSiblings = [],
+  followingSiblings = [],
+}: RulesQuestionProps) {
   const siblings = [...previousSiblings, ...followingSiblings];
-  const initialThenDo = doToState(initialContent?.then.do);
-  const initialElseDo = doToState(initialContent?.else?.do);
-  void _title;
-  const [tagValue, setTagValue] = useState(initialContent?.key ?? initialTag ?? "r1");
-  const [match, setMatch] = useState<RuleMatch>(initialContent?.if.match ?? "ALL");
+  const { content } = node;
+
+  const initialThenDo = doToState(content.then.do);
+  const initialElseDo = doToState(content.else?.do);
+
+  const [match, setMatch] = useState<RuleMatch>(content.if.match);
   const [conditions, setConditions] = useState<ConditionDraft[]>(
-    () => initialContent?.if.conditions.map((condition) => conditionToDraft(condition, siblings)) ?? [],
+    () =>
+      content.if.conditions.map((condition) => conditionToDraft(condition, siblings)),
   );
-  const [thenMode, setThenMode] = useState<ThenMode>(initialContent?.then.do ? "do" : "set");
+  const [thenMode, setThenMode] = useState<ThenMode>(content.then.do ? "do" : "set");
   const [setEntries, setSetEntries] = useState<Array<RuleSetEntry & { key: string }>>(
-    () => initialContent?.then.set?.map((entry) => ({ key: newSetEntryKey(), ...entry })) ?? [],
+    () => content.then.set?.map((entry) => ({ key: newSetEntryKey(), ...entry })) ?? [],
   );
   const [thenDoKind, setThenDoKind] = useState<DoKind>(initialThenDo.kind);
   const [thenSkipTo, setThenSkipTo] = useState(initialThenDo.skipTo);
-  const [includeElse, setIncludeElse] = useState(Boolean(initialContent?.else?.do));
+  const [includeElse, setIncludeElse] = useState(Boolean(content.else?.do));
   const [elseDoKind, setElseDoKind] = useState<DoKind>(initialElseDo.kind);
   const [elseSkipTo, setElseSkipTo] = useState(initialElseDo.skipTo);
 
@@ -363,41 +399,31 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     return { end_and_discard: true };
   }
 
-  const ruleContent: RuleContent = useMemo(() => ({
-    key: tagValue,
-    if: {
-      match,
-      conditions: conditions
-        .map((draft) => draftToCondition(draft, findSibling(siblings, draft.target_id)))
-        .filter((c): c is RuleCondition => c !== null),
-    },
-    then: buildThen(),
-    ...(includeElse
-      ? { else: { do: buildDo(elseDoKind, elseSkipTo) } }
-      : {}),
-  }), [
-    tagValue,
-    match,
-    conditions,
-    thenMode,
-    setEntries,
-    thenDoKind,
-    thenSkipTo,
-    includeElse,
-    elseDoKind,
-    elseSkipTo,
-    siblingSignature,
-  ]);
+  const ruleContent: RuleContent = useMemo(
+    () => ({
+      if: {
+        match,
+        conditions: conditions
+          .map((draft) => draftToCondition(draft, findSibling(siblings, draft.target_id)))
+          .filter((c): c is RuleCondition => c !== null),
+      },
+      then: buildThen(),
+      ...(includeElse ? { else: { do: buildDo(elseDoKind, elseSkipTo) } } : {}),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [match, conditions, thenMode, setEntries, thenDoKind, thenSkipTo, includeElse, elseDoKind, elseSkipTo, siblingSignature],
+  );
 
-  useImperativeHandle(ref, () => ({
-    getData() {
-      return ruleContent;
-    },
-  }));
+  // Propagate content changes up
+  const prevRuleContentRef = useMemo(() => ({ current: content }), []);
+  if (JSON.stringify(prevRuleContentRef.current) !== JSON.stringify(ruleContent)) {
+    prevRuleContentRef.current = ruleContent;
+    onChange({ ...node, content: ruleContent });
+  }
 
-  useEffect(() => {
-    onDataChange?.(ruleContent);
-  }, [onDataChange, ruleContent]);
+  function updateNodeKey(nextNodeKey: string) {
+    onChange({ ...node, node_key: nextNodeKey });
+  }
 
   function toggleEditMode() {
     onEditModeChange?.(!isEditMode);
@@ -418,9 +444,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     setConditions((current) =>
       current.map((draft) => {
         if (draft.key !== key) return draft;
-        if (!nextTargetId) {
-          return { key, target_id: "", family: null };
-        }
+        if (!nextTargetId) return { key, target_id: "", family: null };
         const target = findSibling(siblings, nextTargetId);
         if (!target) return draft;
         return buildConditionFromTarget(target, key);
@@ -731,7 +755,6 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     onKindChange: (kind: DoKind) => void,
     onSkipToChange: (value: string) => void,
   ) {
-    const skipOptions = followingOptions;
     return (
       <div className="flex flex-row flex-wrap items-end gap-3 px-4 py-3">
         <Select
@@ -745,7 +768,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
           <Select
             label="Skip target"
             value={skipTo}
-            options={skipOptions}
+            options={followingOptions}
             disabled={!isEditMode}
             onChange={(event) => onSkipToChange(event.target.value)}
           />
@@ -755,17 +778,35 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
   }
 
   if (isCollapsed) {
-    return <NodePillCollapsed family="Rule" tagValue={tagValue} title={tagValue} onExpand={() => onExpand?.()} onExpandInEditMode={() => onExpandInEditMode?.()} />;
+    return (
+      <NodePillCollapsed
+        family="Rule"
+        tagValue={node.node_key}
+        title={node.node_key}
+        onExpand={() => onExpand?.()}
+        onExpandInEditMode={() => onExpandInEditMode?.()}
+      />
+    );
   }
 
   return (
-    <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`} aria-label="Rules question">
+    <section
+      className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`}
+      aria-label="Rules question"
+    >
       <NodePillTopbar
         family="Rule"
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
-        idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
+        idField={
+          <NodePillIdField
+            tagValue={node.node_key}
+            onTagChange={updateNodeKey}
+            idError={idError}
+            isEditMode={isEditMode}
+          />
+        }
       />
 
       <div className={nodePillBodyClass}>
@@ -844,7 +885,12 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
             <CardStack gap="sm" className="px-4 py-3">
               {setEntries.length === 0 && <p className={emptyTextClass}>No set entries yet.</p>}
               {setEntries.map((entry) => (
-                <Card key={entry.key} tone="muted" size="sm" className="grid grid-cols-1 items-center gap-2.5 sm:grid-cols-[1fr_auto_auto_auto]">
+                <Card
+                  key={entry.key}
+                  tone="muted"
+                  size="sm"
+                  className="grid grid-cols-1 items-center gap-2.5 sm:grid-cols-[1fr_auto_auto_auto]"
+                >
                   <Select
                     label="Target"
                     value={entry.target_id}
@@ -932,4 +978,4 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
       </div>
     </section>
   );
-});
+}

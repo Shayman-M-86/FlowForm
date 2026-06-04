@@ -1708,11 +1708,8 @@ export interface components {
          * @description Validates requests that create a new question node.
          */
         CreateQuestionNodeRequest: {
-            /**
-             * Id
-             * @default null
-             */
-            id: number | null;
+            /** Id */
+            id: number;
             /** Node Key */
             node_key: string;
             /**
@@ -1730,11 +1727,8 @@ export interface components {
          * @description Validates requests that create a new rule node.
          */
         CreateRuleNodeRequest: {
-            /**
-             * Id
-             * @default null
-             */
-            id: number | null;
+            /** Id */
+            id: number;
             /** Node Key */
             node_key: string;
             /**
@@ -1753,11 +1747,8 @@ export interface components {
          * @description Validates partial updates to an existing survey content node.
          */
         UpdateNodeRequest: {
-            /**
-             * Id
-             * @default null
-             */
-            id: number | null;
+            /** Id */
+            id: number;
             /**
              * Node Key
              * @default null

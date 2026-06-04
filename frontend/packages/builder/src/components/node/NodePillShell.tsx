@@ -32,8 +32,8 @@ type NodePillSettings = {
   onTagChange: (next: string) => void;
   titleValue: string;
   onTitleChange: (next: string) => void;
-  required: boolean;
-  onRequiredChange: (next: boolean) => void;
+  required?: boolean;
+  onRequiredChange?: (next: boolean) => void;
   idError?: string;
 };
 
@@ -176,11 +176,13 @@ export function NodePillTopbar({
               value={settings.titleValue}
               onChange={(event) => settings.onTitleChange(event.target.value)}
             />
-            <Toggle
-              label="Required"
-              checked={settings.required}
-              onChange={settings.onRequiredChange}
-            />
+            {settings.required !== undefined && settings.onRequiredChange && (
+              <Toggle
+                label="Required"
+                checked={settings.required}
+                onChange={settings.onRequiredChange}
+              />
+            )}
           </div>
         </Modal>
       )}

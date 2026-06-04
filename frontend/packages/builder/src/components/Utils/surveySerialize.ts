@@ -3,7 +3,7 @@ import type {
   QuestionNode,
   RuleContent,
   SurveyNode,
-} from "./questionTypes";
+} from "../node/questionTypes";
 
 export function serializeQuestions(contents: QuestionContent[]): QuestionNode[] {
   return contents.map((content, index) => ({

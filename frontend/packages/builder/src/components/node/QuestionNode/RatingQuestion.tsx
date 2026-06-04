@@ -1,7 +1,14 @@
-import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useState } from "react";
 import "./RatingQuestion.css";
-import { QUESTION_MAX, TITLE_MAX, blurOnEnter } from "./NodePillUtils";
-import { NodePillTopbar, NodePillIdField, NodePillQuestionField, NodePillCharCount, NodePillFieldHead, NodePillCollapsed } from "./NodePillShell";
+import { QUESTION_MAX, TITLE_MAX, blurOnEnter } from "../NodePillUtils";
+import {
+  NodePillTopbar,
+  NodePillIdField,
+  NodePillQuestionField,
+  NodePillCharCount,
+  NodePillFieldHead,
+  NodePillCollapsed,
+} from "../NodePillShell";
 import {
   nodePillBodyClass,
   nodePillFieldClass,
@@ -9,26 +16,19 @@ import {
   nodePillPreviewClass,
   nodePillShellClass,
   nodePillShellEditClass,
-} from "./nodePillStyles";
+} from "../nodePillStyles";
 import { Input, NumberStepper, NumberStepperGroup, Select, Toggle } from "@flowform/ui";
-import type { RatingContent, EmojiListType } from "./questionTypes";
+import type { RatingContent, EmojiListType } from "../questionTypes";
+import type { CreateQuestionNodeRequest } from "@flowform/schema";
 
-const controlClass = "flex min-w-0 flex-col gap-2";
-const controlLabelClass = "text-[0.78rem] font-semibold uppercase tracking-[0.04em] text-muted-foreground";
-
-const MAX_STARS = 12;
-
-type RatingType = "numeric-slider" | "emoji" | "stars";
-
-export interface RatingQuestionHandle {
-  getData(): RatingContent;
-}
+export type RatingQuestionNode = Omit<CreateQuestionNodeRequest, "content"> & {
+  content: RatingContent;
+};
 
 interface RatingQuestionProps {
+  node: RatingQuestionNode;
+  onChange: (next: RatingQuestionNode) => void;
   onDelete?: () => void;
-  title?: string;
-  initialTag?: string;
-  initialContent?: RatingContent;
   idError?: string;
   validationError?: string;
   isCollapsed?: boolean;
@@ -36,8 +36,15 @@ interface RatingQuestionProps {
   onExpand?: () => void;
   onExpandInEditMode?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
-  onDataChange?: (content: RatingContent) => void;
 }
+
+const controlClass = "flex min-w-0 flex-col gap-2";
+const controlLabelClass =
+  "text-[0.78rem] font-semibold uppercase tracking-[0.04em] text-muted-foreground";
+
+const MAX_STARS = 12;
+
+type RatingType = "numeric-slider" | "emoji" | "stars";
 
 const RATING_TYPE_OPTIONS: Array<{ value: RatingType; label: string }> = [
   { value: "numeric-slider", label: "Numeric slider" },
@@ -47,29 +54,30 @@ const RATING_TYPE_OPTIONS: Array<{ value: RatingType; label: string }> = [
 
 type EmojiScaleType = "sad" | "angry" | "disgust";
 
-const EMOJI_SCALES: Record<EmojiScaleType, Array<{ value: number; emoji: string; label: string }>> = {
-  sad: [
-    { value: 1, emoji: "😢", label: "Very sad" },
-    { value: 2, emoji: "🙁", label: "Sad" },
-    { value: 3, emoji: "😐", label: "Neutral" },
-    { value: 4, emoji: "🙂", label: "Happy" },
-    { value: 5, emoji: "😄", label: "Very happy" },
-  ],
-  angry: [
-    { value: 1, emoji: "🤬", label: "Very angry" },
-    { value: 2, emoji: "😠", label: "Angry" },
-    { value: 3, emoji: "😐", label: "Neutral" },
-    { value: 4, emoji: "🙂", label: "Happy" },
-    { value: 5, emoji: "😄", label: "Very happy" },
-  ],
-  disgust: [
-    { value: 1, emoji: "🤢", label: "Very disgusted" },
-    { value: 2, emoji: "😖", label: "Disgusted" },
-    { value: 3, emoji: "😐", label: "Neutral" },
-    { value: 4, emoji: "🙂", label: "Happy" },
-    { value: 5, emoji: "😄", label: "Very happy" },
-  ],
-};
+const EMOJI_SCALES: Record<EmojiScaleType, Array<{ value: number; emoji: string; label: string }>> =
+  {
+    sad: [
+      { value: 1, emoji: "😢", label: "Very sad" },
+      { value: 2, emoji: "🙁", label: "Sad" },
+      { value: 3, emoji: "😐", label: "Neutral" },
+      { value: 4, emoji: "🙂", label: "Happy" },
+      { value: 5, emoji: "😄", label: "Very happy" },
+    ],
+    angry: [
+      { value: 1, emoji: "🤬", label: "Very angry" },
+      { value: 2, emoji: "😠", label: "Angry" },
+      { value: 3, emoji: "😐", label: "Neutral" },
+      { value: 4, emoji: "🙂", label: "Happy" },
+      { value: 5, emoji: "😄", label: "Very happy" },
+    ],
+    disgust: [
+      { value: 1, emoji: "🤢", label: "Very disgusted" },
+      { value: 2, emoji: "😖", label: "Disgusted" },
+      { value: 3, emoji: "😐", label: "Neutral" },
+      { value: 4, emoji: "🙂", label: "Happy" },
+      { value: 5, emoji: "😄", label: "Very happy" },
+    ],
+  };
 
 function StarIcon() {
   return (
@@ -102,139 +110,88 @@ function getNearestValidStep(nextStep: number, validSteps: number[]) {
   }, validSteps[0]);
 }
 
-export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionProps>(function RatingQuestion({ onDelete, title, initialTag, initialContent, idError, validationError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
-  const initialRatingType: RatingType =
-    initialContent?.definition.variant === "slider"
-      ? "numeric-slider"
-      : initialContent?.definition.variant === "emoji"
-        ? "emoji"
-        : initialContent?.definition.variant === "stars"
-          ? "stars"
-          : "numeric-slider";
-  const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
-  const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
-  const [tagValue, setTagValue] = useState(initialContent?.key ?? initialTag ?? "question_id_1");
-  const [isRequired, setIsRequired] = useState(false);
-  const [ratingType, setRatingType] = useState<RatingType>(initialRatingType);
-  const [rangeStart, setRangeStart] = useState(initialContent?.definition.variant === "slider" ? initialContent.definition.range.min : -5);
-  const [rangeEnd, setRangeEnd] = useState(initialContent?.definition.variant === "slider" ? initialContent.definition.range.max : 5);
-  const [leftLabel, setLeftLabel] = useState(initialContent?.definition.ui.left_label ?? "Strongly disagree");
-  const [rightLabel, setRightLabel] = useState(initialContent?.definition.ui.right_label ?? "Strongly agree");
-  const [stepValue, setStepValue] = useState(initialContent?.definition.variant === "slider" ? initialContent.definition.range.step : 1);
-  const [sliderValue, setSliderValue] = useState(initialContent?.definition.variant === "slider" ? initialContent.definition.range.min : 0);
-  const [starCount, setStarCount] = useState(initialContent?.definition.variant === "stars" ? initialContent.definition.stars : 5);
+function contentToRatingType(content: RatingContent): RatingType {
+  switch (content.definition.variant) {
+    case "slider":
+      return "numeric-slider";
+    case "emoji":
+      return "emoji";
+    case "stars":
+      return "stars";
+  }
+}
+
+function contentToEmojiScaleType(content: RatingContent): EmojiScaleType {
+  if (content.definition.variant !== "emoji") return "sad";
+  switch (content.definition.emoji_list) {
+    case "angry_to_happy":
+      return "angry";
+    case "disgust_to_happy":
+      return "disgust";
+    default:
+      return "sad";
+  }
+}
+
+function getEmojiListType(scaleType: EmojiScaleType): EmojiListType {
+  switch (scaleType) {
+    case "sad":
+      return "sad_to_happy";
+    case "angry":
+      return "angry_to_happy";
+    case "disgust":
+      return "disgust_to_happy";
+  }
+}
+
+function alignToStep(value: number, min: number, max: number, step: number) {
+  const safeStep = Math.max(1, Math.abs(step) || 1);
+  const clamped = Math.min(max, Math.max(min, value));
+  const stepped = min + Math.round((clamped - min) / safeStep) * safeStep;
+  return Math.min(max, Math.max(min, stepped));
+}
+
+export function RatingQuestion({
+  node,
+  onChange,
+  onDelete,
+  idError,
+  validationError,
+  isCollapsed,
+  isEditMode = false,
+  onExpand,
+  onExpandInEditMode,
+  onEditModeChange,
+}: RatingQuestionProps) {
+  const { content } = node;
+  const titleValue = content.title ?? "";
+  const questionValue = content.label;
+
+  const ratingType = contentToRatingType(content);
+  const rangeStart = content.definition.variant === "slider" ? content.definition.range.min : -5;
+  const rangeEnd = content.definition.variant === "slider" ? content.definition.range.max : 5;
+  const stepValue = content.definition.variant === "slider" ? content.definition.range.step : 1;
+  const leftLabel = content.definition.ui.left_label;
+  const rightLabel = content.definition.ui.right_label;
+  const starCount = content.definition.variant === "stars" ? content.definition.stars : 5;
+  const emojiScaleType = contentToEmojiScaleType(content);
+  const showEmojiWords =
+    content.definition.variant === "emoji" ? (content.definition.words ?? true) : true;
+
+  const [sliderValue, setSliderValue] = useState(rangeStart);
   const [starValue, setStarValue] = useState(0);
   const [emojiValue, setEmojiValue] = useState(0);
-  const [emojiScaleType, setEmojiScaleType] = useState<EmojiScaleType>(
-    initialContent?.definition.variant === "emoji"
-      ? initialContent.definition.emoji_list === "angry_to_happy"
-        ? "angry"
-        : initialContent.definition.emoji_list === "disgust_to_happy"
-          ? "disgust"
-          : "sad"
-      : "sad",
-  );
-  const [showEmojiWords, setShowEmojiWords] = useState(initialContent?.definition.variant === "emoji" ? (initialContent.definition.words ?? true) : true);
-
-  function getEmojiListType(): EmojiListType {
-    switch (emojiScaleType) {
-      case "sad":
-        return "sad_to_happy";
-      case "angry":
-        return "angry_to_happy";
-      case "disgust":
-        return "disgust_to_happy";
-    }
-  }
-
-  const ratingQuestionData: RatingContent =
-    ratingType === "numeric-slider"
-      ? {
-        key: tagValue,
-        title: titleValue,
-        label: questionValue,
-        family: "rating",
-        definition: {
-          variant: "slider",
-          range: { min: rangeStart, max: rangeEnd, step: stepValue },
-          ui: { left_label: leftLabel, right_label: rightLabel },
-        },
-      }
-      : ratingType === "emoji"
-        ? {
-          key: tagValue,
-          title: titleValue,
-          label: questionValue,
-          family: "rating",
-          definition: {
-            variant: "emoji",
-            emoji_list: getEmojiListType(),
-            words: showEmojiWords,
-            ui: { left_label: leftLabel, right_label: rightLabel },
-          },
-        }
-        : {
-          key: tagValue,
-          title: titleValue,
-          label: questionValue,
-          family: "rating",
-          definition: {
-            variant: "stars",
-            stars: starCount,
-            ui: { left_label: leftLabel, right_label: rightLabel },
-          },
-        };
-
-  useImperativeHandle(ref, () => ({
-    getData() {
-      return ratingQuestionData;
-    },
-  }));
-
-  useEffect(() => {
-    onDataChange?.(ratingQuestionData);
-  }, [titleValue, tagValue, questionValue, isRequired, ratingType, rangeStart, rangeEnd, stepValue, leftLabel, rightLabel, starCount, emojiScaleType, showEmojiWords]);
-
-  function alignToStep(value: number, min: number, max: number, step: number) {
-    const safeStep = Math.max(1, Math.abs(step) || 1);
-    const clamped = Math.min(max, Math.max(min, value));
-    const stepped = min + Math.round((clamped - min) / safeStep) * safeStep;
-    return Math.min(max, Math.max(min, stepped));
-  }
-
-  function updateRangeStart(nextValue: number) {
-    const nextInteger = Math.min(1000, Math.max(-1000, Math.round(nextValue)));
-    setRangeStart(nextInteger);
-    if (nextInteger > rangeEnd) {
-      setRangeEnd(nextInteger);
-    }
-  }
-
-  function updateRangeEnd(nextValue: number) {
-    const nextInteger = Math.min(1000, Math.max(-1000, Math.round(nextValue)));
-    setRangeEnd(nextInteger);
-    if (nextInteger < rangeStart) {
-      setRangeStart(nextInteger);
-    }
-  }
-
-  function updateStarCount(nextValue: number) {
-    const nextCount = Math.min(MAX_STARS, Math.max(1, Math.round(nextValue) || 1));
-    setStarCount(nextCount);
-    setStarValue((current) => Math.min(nextCount, Math.max(0, current)));
-  }
 
   const validSteps = getValidSteps(rangeStart, rangeEnd);
-  const rangePreview =
-    rangeStart === rangeEnd ? `${rangeStart}` : `${rangeStart} to ${rangeEnd}`;
   const safeStepValue = getNearestValidStep(Math.max(1, Math.abs(stepValue) || 1), validSteps);
   const currentStepIndex = validSteps.indexOf(safeStepValue);
   const normalizedSliderValue = alignToStep(sliderValue, rangeStart, rangeEnd, safeStepValue);
   const stepCount = Math.max(0, Math.floor((rangeEnd - rangeStart) / safeStepValue));
   const tickCount = Math.min(stepCount + 1, 101);
-  const sliderRatio = rangeEnd === rangeStart
-    ? 0
-    : (normalizedSliderValue - rangeStart) / (rangeEnd - rangeStart);
+  const sliderRatio =
+    rangeEnd === rangeStart
+      ? 0
+      : (normalizedSliderValue - rangeStart) / (rangeEnd - rangeStart);
   const tickValues = Array.from({ length: tickCount }, (_, index) => {
     if (tickCount === 1) return rangeStart;
     if (index === tickCount - 1) return rangeEnd;
@@ -246,14 +203,130 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
   }, [rangeStart, rangeEnd, safeStepValue]);
 
   useEffect(() => {
-    if (stepValue !== safeStepValue) {
-      setStepValue(safeStepValue);
-    }
-  }, [safeStepValue, stepValue]);
-
-  useEffect(() => {
     setStarValue((current) => Math.min(starCount, Math.max(0, current)));
   }, [starCount]);
+
+  function updateContent(update: (current: RatingContent) => RatingContent) {
+    onChange({ ...node, content: update(content) });
+  }
+
+  function updateNodeKey(nextNodeKey: string) {
+    onChange({ ...node, node_key: nextNodeKey });
+  }
+
+  function updateTitle(nextTitle: string) {
+    updateContent((current) => ({ ...current, title: nextTitle || undefined }));
+  }
+
+  function updateQuestion(nextQuestion: string) {
+    updateContent((current) => ({ ...current, label: nextQuestion }));
+  }
+
+  function updateRatingType(nextType: RatingType) {
+    updateContent((current) => {
+      const ui = { left_label: current.definition.ui.left_label, right_label: current.definition.ui.right_label };
+      switch (nextType) {
+        case "numeric-slider":
+          return { ...current, definition: { variant: "slider", range: { min: -5, max: 5, step: 1 }, ui } };
+        case "emoji":
+          return { ...current, definition: { variant: "emoji", emoji_list: getEmojiListType(emojiScaleType), words: showEmojiWords, ui } };
+        case "stars":
+          return { ...current, definition: { variant: "stars", stars: 5, ui } };
+      }
+    });
+  }
+
+  function updateRangeStart(nextValue: number) {
+    if (content.definition.variant !== "slider") return;
+    const next = Math.min(1000, Math.max(-1000, Math.round(nextValue)));
+    updateContent((current) => {
+      if (current.definition.variant !== "slider") return current;
+      return {
+        ...current,
+        definition: {
+          ...current.definition,
+          range: {
+            ...current.definition.range,
+            min: next,
+            max: Math.max(current.definition.range.max, next),
+          },
+        },
+      };
+    });
+  }
+
+  function updateRangeEnd(nextValue: number) {
+    if (content.definition.variant !== "slider") return;
+    const next = Math.min(1000, Math.max(-1000, Math.round(nextValue)));
+    updateContent((current) => {
+      if (current.definition.variant !== "slider") return current;
+      return {
+        ...current,
+        definition: {
+          ...current.definition,
+          range: {
+            ...current.definition.range,
+            max: next,
+            min: Math.min(current.definition.range.min, next),
+          },
+        },
+      };
+    });
+  }
+
+  function updateStep(nextStep: number) {
+    if (content.definition.variant !== "slider") return;
+    updateContent((current) => {
+      if (current.definition.variant !== "slider") return current;
+      return {
+        ...current,
+        definition: {
+          ...current.definition,
+          range: { ...current.definition.range, step: nextStep },
+        },
+      };
+    });
+  }
+
+  function updateLeftLabel(value: string) {
+    updateContent((current) => ({
+      ...current,
+      definition: { ...current.definition, ui: { ...current.definition.ui, left_label: value } },
+    }));
+  }
+
+  function updateRightLabel(value: string) {
+    updateContent((current) => ({
+      ...current,
+      definition: { ...current.definition, ui: { ...current.definition.ui, right_label: value } },
+    }));
+  }
+
+  function updateStarCount(nextValue: number) {
+    if (content.definition.variant !== "stars") return;
+    const nextCount = Math.min(MAX_STARS, Math.max(1, Math.round(nextValue) || 1));
+    updateContent((current) => {
+      if (current.definition.variant !== "stars") return current;
+      return { ...current, definition: { ...current.definition, stars: nextCount } };
+    });
+  }
+
+  function updateEmojiScaleType(nextScale: EmojiScaleType) {
+    updateContent((current) => {
+      if (current.definition.variant !== "emoji") return current;
+      return {
+        ...current,
+        definition: { ...current.definition, emoji_list: getEmojiListType(nextScale) },
+      };
+    });
+  }
+
+  function updateShowEmojiWords(next: boolean) {
+    updateContent((current) => {
+      if (current.definition.variant !== "emoji") return current;
+      return { ...current, definition: { ...current.definition, words: next } };
+    });
+  }
 
   function selectStarValue(nextValue: number) {
     setStarValue((current) => (current === nextValue ? 0 : nextValue));
@@ -269,55 +342,71 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
 
   const emojiScale = EMOJI_SCALES[emojiScaleType];
   const selectedEmoji = emojiScale.find((option) => option.value === emojiValue);
-  const scaleSummary = ratingType === "stars"
-    ? `0 to ${starCount}`
-    : ratingType === "emoji"
-      ? `0 to ${emojiScale.length}`
-      : rangePreview;
+  const rangePreview =
+    rangeStart === rangeEnd ? `${rangeStart}` : `${rangeStart} to ${rangeEnd}`;
+  const scaleSummary =
+    ratingType === "stars"
+      ? `0 to ${starCount}`
+      : ratingType === "emoji"
+        ? `0 to ${emojiScale.length}`
+        : rangePreview;
 
   if (isCollapsed) {
-    return <NodePillCollapsed family="Rating" tagValue={tagValue} title={titleValue} onExpand={() => onExpand?.()} onExpandInEditMode={() => onExpandInEditMode?.()} />;
+    return (
+      <NodePillCollapsed
+        family="Rating"
+        tagValue={node.node_key}
+        title={titleValue}
+        onExpand={() => onExpand?.()}
+        onExpandInEditMode={() => onExpandInEditMode?.()}
+      />
+    );
   }
 
   return (
-    <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""} rating-question`} aria-label="Rating question">
+    <section
+      className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""} rating-question`}
+      aria-label="Rating question"
+    >
       <NodePillTopbar
         family="Rating"
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
         settings={{
-          tagValue,
-          onTagChange: setTagValue,
+          tagValue: node.node_key,
+          onTagChange: updateNodeKey,
           titleValue,
-          onTitleChange: setTitleValue,
-          required: isRequired,
-          onRequiredChange: setIsRequired,
+          onTitleChange: updateTitle,
           idError,
         }}
       />
 
       <div className={nodePillBodyClass}>
         <NodePillQuestionField
-          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
+          idField={
+            <NodePillIdField
+              tagValue={node.node_key}
+              onTagChange={updateNodeKey}
+              idError={idError}
+              isEditMode={isEditMode}
+            />
+          }
           value={questionValue}
-          onChange={setQuestionValue}
+          onChange={updateQuestion}
           isEditMode={isEditMode}
           max={QUESTION_MAX}
           titleValue={titleValue}
-          onTitleChange={setTitleValue}
+          onTitleChange={updateTitle}
           titleMax={TITLE_MAX}
-          showTitleEdit={true}
+          showTitleEdit
           validationError={validationError}
         />
 
         <div className={nodePillFieldClass}>
           {isEditMode && (
             <NodePillFieldHead label="Rating">
-              <NodePillCharCount
-                label="Range"
-                value={scaleSummary}
-              />
+              <NodePillCharCount label="Range" value={scaleSummary} />
             </NodePillFieldHead>
           )}
 
@@ -331,7 +420,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                     value={ratingType}
                     disabled={!isEditMode}
                     options={RATING_TYPE_OPTIONS}
-                    onChange={(event) => setRatingType(event.target.value as RatingType)}
+                    onChange={(event) => updateRatingType(event.target.value as RatingType)}
                   />
                   {ratingType === "stars" ? (
                     <div className={controlClass}>
@@ -361,7 +450,9 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                           { value: "angry", label: "Angry to happy" },
                           { value: "disgust", label: "Disgust to happy" },
                         ]}
-                        onChange={(event) => setEmojiScaleType(event.target.value as EmojiScaleType)}
+                        onChange={(event) =>
+                          updateEmojiScaleType(event.target.value as EmojiScaleType)
+                        }
                       />
                       <div className={controlClass}>
                         <span className={controlLabelClass}>Words</span>
@@ -369,7 +460,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                           label="Show words"
                           checked={showEmojiWords}
                           disabled={!isEditMode}
-                          onChange={setShowEmojiWords}
+                          onChange={updateShowEmojiWords}
                         />
                       </div>
                     </>
@@ -404,10 +495,9 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                           onChange={(key, value) => {
                             if (key === "from") {
                               updateRangeStart(value);
-                              return;
+                            } else {
+                              updateRangeEnd(value);
                             }
-
-                            updateRangeEnd(value);
                           }}
                         />
                       </div>
@@ -426,15 +516,15 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                           canDecrement={currentStepIndex > 0}
                           canIncrement={currentStepIndex < validSteps.length - 1}
                           onDecrement={() =>
-                            setStepValue(validSteps[Math.max(0, currentStepIndex - 1)])
+                            updateStep(validSteps[Math.max(0, currentStepIndex - 1)])
                           }
                           onIncrement={() =>
-                            setStepValue(
+                            updateStep(
                               validSteps[Math.min(validSteps.length - 1, currentStepIndex + 1)],
                             )
                           }
                           onChange={(value) =>
-                            setStepValue(
+                            updateStep(
                               getNearestValidStep(Math.max(1, Math.abs(value) || 1), validSteps),
                             )
                           }
@@ -453,7 +543,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                     value={leftLabel}
                     maxLength={50}
                     disabled={!isEditMode}
-                    onChange={(event) => setLeftLabel(event.target.value)}
+                    onChange={(event) => updateLeftLabel(event.target.value)}
                     onKeyDown={blurOnEnter}
                   />
 
@@ -465,7 +555,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                     value={rightLabel}
                     maxLength={50}
                     disabled={!isEditMode}
-                    onChange={(event) => setRightLabel(event.target.value)}
+                    onChange={(event) => updateRightLabel(event.target.value)}
                     onKeyDown={blurOnEnter}
                   />
                 </div>
@@ -474,11 +564,16 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
 
             <div className={`${nodePillPreviewClass} `}>
               <div className="text-base text-foreground">
-                Current value: <strong>{ratingType === "stars"
-                  ? `${starValue} / ${starCount}`
-                  : ratingType === "emoji"
-                    ? (selectedEmoji ? `${selectedEmoji.emoji}${showEmojiWords ? ` ${selectedEmoji.label}` : ""}` : "None")
-                    : normalizedSliderValue}</strong>
+                Current value:{" "}
+                <strong>
+                  {ratingType === "stars"
+                    ? `${starValue} / ${starCount}`
+                    : ratingType === "emoji"
+                      ? selectedEmoji
+                        ? `${selectedEmoji.emoji}${showEmojiWords ? ` ${selectedEmoji.label}` : ""}`
+                        : "None"
+                      : normalizedSliderValue}
+                </strong>
               </div>
               <div className="flex justify-between gap-4 text-sm text-muted-foreground [&>span:last-child]:text-right">
                 <span>{leftLabel || "Left label"}</span>
@@ -500,7 +595,9 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                         key={nextFullValue}
                         className="rating-question__star"
                         role="radio"
-                        aria-checked={nextFullValue === starValue || nextHalfValue === starValue}
+                        aria-checked={
+                          nextFullValue === starValue || nextHalfValue === starValue
+                        }
                         aria-label={`${nextFullValue} star${nextFullValue === 1 ? "" : "s"}`}
                       >
                         <span className="rating-question__star-base" aria-hidden="true">
@@ -563,7 +660,9 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                 </div>
               ) : (
                 <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3.5">
-                  <span className="min-w-7 text-center text-[0.88rem] font-semibold text-foreground">{rangeStart}</span>
+                  <span className="min-w-7 text-center text-[0.88rem] font-semibold text-foreground">
+                    {rangeStart}
+                  </span>
                   <div className="relative h-6.5 rating-question__preview-line">
                     <div className="rating-question__slider-track" aria-hidden="true" />
                     <div className="rating-question__slider-ticks" aria-hidden="true">
@@ -586,18 +685,33 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
                       disabled={!isEditMode}
                       onChange={(event) => {
                         setSliderValue(
-                          alignToStep(Number(event.target.value), rangeStart, rangeEnd, safeStepValue),
+                          alignToStep(
+                            Number(event.target.value),
+                            rangeStart,
+                            rangeEnd,
+                            safeStepValue,
+                          ),
                         );
                       }}
                     />
                   </div>
-                  <span className="min-w-7 text-center text-sm font-semibold text-foreground">{rangeEnd}</span>
+                  <span className="min-w-7 text-center text-sm font-semibold text-foreground">
+                    {rangeEnd}
+                  </span>
                 </div>
               )}
               {isEditMode && (
                 <div className="flex justify-between gap-4 text-sm text-muted-foreground [&>span:last-child]:text-right">
-                  <span>{RATING_TYPE_OPTIONS.find((option) => option.value === ratingType)?.label}</span>
-                  <span>{ratingType === "stars" ? `${starCount} stars` : ratingType === "emoji" ? `${emojiScaleType === "sad" ? "Sad" : emojiScaleType === "angry" ? "Angry" : "Disgust"} to happy` : `Step ${stepValue}`}</span>
+                  <span>
+                    {RATING_TYPE_OPTIONS.find((option) => option.value === ratingType)?.label}
+                  </span>
+                  <span>
+                    {ratingType === "stars"
+                      ? `${starCount} stars`
+                      : ratingType === "emoji"
+                        ? `${emojiScaleType === "sad" ? "Sad" : emojiScaleType === "angry" ? "Angry" : "Disgust"} to happy`
+                        : `Step ${stepValue}`}
+                  </span>
                 </div>
               )}
             </div>
@@ -606,4 +720,4 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
       </div>
     </section>
   );
-});
+}

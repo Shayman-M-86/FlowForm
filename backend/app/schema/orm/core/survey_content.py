@@ -31,7 +31,7 @@ class SurveyQuestion(TimestampMixin, CoreBase):
     survey_version_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("survey_versions.id", ondelete="CASCADE"),
-        nullable=False,
+        primary_key=True
     )
 
     question_key: Mapped[str] = mapped_column(Text, nullable=False)

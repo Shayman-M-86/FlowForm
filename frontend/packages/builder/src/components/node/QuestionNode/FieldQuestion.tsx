@@ -1,5 +1,5 @@
-import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
-import { QUESTION_MAX, TITLE_MAX, blurOnEnter } from "./NodePillUtils";
+import { useState } from "react";
+import { QUESTION_MAX, TITLE_MAX, blurOnEnter } from "../NodePillUtils";
 import {
   NodePillTopbar,
   NodePillIdField,
@@ -7,7 +7,7 @@ import {
   NodePillCharCount,
   NodePillFieldHead,
   NodePillCollapsed,
-} from "./NodePillShell";
+} from "../NodePillShell";
 import {
   nodePillBodyClass,
   nodePillFieldClass,
@@ -17,19 +17,19 @@ import {
   nodePillShellClass,
   nodePillShellEditClass,
   nodePillSubLabelClass,
-} from "./nodePillStyles";
+} from "../nodePillStyles";
 import { Input, LargeInput, Select } from "@flowform/ui";
-import type { FieldContent, FieldType } from "./questionTypes";
+import type { FieldContent, FieldType } from "../questionTypes";
+import type { CreateQuestionNodeRequest } from "@flowform/schema";
 
-export interface FieldQuestionHandle {
-  getData(): FieldContent;
-}
+export type FieldQuestionNode = Omit<CreateQuestionNodeRequest, "content"> & {
+  content: FieldContent;
+};
 
 interface FieldQuestionProps {
+  node: FieldQuestionNode;
+  onChange: (next: FieldQuestionNode) => void;
   onDelete?: () => void;
-  title?: string;
-  initialTag?: string;
-  initialContent?: FieldContent;
   idError?: string;
   validationError?: string;
   isCollapsed?: boolean;
@@ -37,7 +37,6 @@ interface FieldQuestionProps {
   onExpand?: () => void;
   onExpandInEditMode?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
-  onDataChange?: (content: FieldContent) => void;
 }
 
 const FIELD_TYPE_OPTIONS: Array<{ value: FieldType; label: string }> = [
@@ -50,50 +49,70 @@ const FIELD_TYPE_OPTIONS: Array<{ value: FieldType; label: string }> = [
 ];
 
 const FIELD_TYPE_PRESETS: Record<FieldType, { placeholder: string; helper: string }> = {
-  "short_text": { placeholder: "Type a short response", helper: "Single-line text input." },
-  "long_text": { placeholder: "Type a longer response", helper: "Multi-line text area." },
+  short_text: { placeholder: "Type a short response", helper: "Single-line text input." },
+  long_text: { placeholder: "Type a longer response", helper: "Multi-line text area." },
   email: { placeholder: "name@example.com", helper: "Email-formatted input." },
   phone: { placeholder: "(555) 123-4567", helper: "Phone number input." },
   number: { placeholder: "Enter a number", helper: "Numeric-only input." },
   date: { placeholder: "", helper: "Calendar date input." },
 };
 
-export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>(function FieldQuestion({ onDelete, title, initialTag, initialContent, idError, validationError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
-  const initialFieldType = initialContent?.definition.field_type ?? "short_text";
-  const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
-  const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
-  const [tagValue, setTagValue] = useState(initialContent?.key ?? initialTag ?? "question_id_1");
-  const [isRequired, setIsRequired] = useState(false);
-  const [fieldType, setFieldType] = useState<FieldType>(initialFieldType);
-  const [placeholderValue, setPlaceholderValue] = useState(
-    initialContent?.definition.ui?.placeholder ?? FIELD_TYPE_PRESETS[initialFieldType].placeholder,
-  );
+export function FieldQuestion({
+  node,
+  onChange,
+  onDelete,
+  idError,
+  validationError,
+  isCollapsed,
+  isEditMode = false,
+  onExpand,
+  onExpandInEditMode,
+  onEditModeChange,
+}: FieldQuestionProps) {
   const [fieldValue, setFieldValue] = useState("");
 
-  const fieldQuestionData: FieldContent = {
-    key: tagValue,
-    title: titleValue,
-    label: questionValue,
-    family: "field",
-    definition: {
-      field_type: fieldType,
-      ui: fieldType === "date" ? {} : { placeholder: placeholderValue },
-    },
-  };
+  const { content } = node;
+  const titleValue = content.title ?? "";
+  const questionValue = content.label;
+  const fieldType = content.definition.field_type;
+  const placeholderValue =
+    content.definition.ui?.placeholder ?? FIELD_TYPE_PRESETS[fieldType].placeholder;
 
-  useImperativeHandle(ref, () => ({
-    getData() {
-      return fieldQuestionData;
-    },
-  }));
+  function updateContent(update: (current: FieldContent) => FieldContent) {
+    onChange({ ...node, content: update(content) });
+  }
 
-  useEffect(() => {
-    onDataChange?.(fieldQuestionData);
-  }, [titleValue, tagValue, questionValue, isRequired, fieldType, placeholderValue]);
+  function updateNodeKey(nextNodeKey: string) {
+    onChange({ ...node, node_key: nextNodeKey });
+  }
+
+  function updateTitle(nextTitle: string) {
+    updateContent((current) => ({ ...current, title: nextTitle || undefined }));
+  }
+
+  function updateQuestion(nextQuestion: string) {
+    updateContent((current) => ({ ...current, label: nextQuestion }));
+  }
+
+  function updatePlaceholder(nextPlaceholder: string) {
+    updateContent((current) => ({
+      ...current,
+      definition: {
+        ...current.definition,
+        ui: { ...current.definition.ui, placeholder: nextPlaceholder },
+      },
+    }));
+  }
 
   function updateFieldType(nextType: FieldType) {
-    setFieldType(nextType);
-    setPlaceholderValue(FIELD_TYPE_PRESETS[nextType].placeholder);
+    const preset = FIELD_TYPE_PRESETS[nextType];
+    updateContent((current) => ({
+      ...current,
+      definition:
+        nextType === "date"
+          ? { field_type: nextType }
+          : { field_type: nextType, ui: { placeholder: preset.placeholder } },
+    }));
     setFieldValue("");
   }
 
@@ -101,44 +120,63 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
     onEditModeChange?.(!isEditMode);
   }
 
-  const fieldLabel = FIELD_TYPE_OPTIONS.find((option) => option.value === fieldType)?.label ?? "Field";
+  const fieldLabel =
+    FIELD_TYPE_OPTIONS.find((option) => option.value === fieldType)?.label ?? "Field";
   const fieldPreset = FIELD_TYPE_PRESETS[fieldType];
-  const isWideField = fieldType === "long_text";
-  const fieldMaxLength = fieldType === "short_text" ? 100 : fieldType === "long_text" ? 1000 : undefined;
+  const fieldMaxLength =
+    fieldType === "short_text" ? 100 : fieldType === "long_text" ? 1000 : undefined;
+  const previewInputType =
+    fieldType === "short_text" ? "text" : fieldType === "phone" ? "tel" : fieldType;
 
   if (isCollapsed) {
-    return <NodePillCollapsed family="Field" tagValue={tagValue} title={titleValue} onExpand={() => onExpand?.()} onExpandInEditMode={() => onExpandInEditMode?.()} />;
+    return (
+      <NodePillCollapsed
+        family="Field"
+        tagValue={node.node_key}
+        title={titleValue}
+        onExpand={() => onExpand?.()}
+        onExpandInEditMode={() => onExpandInEditMode?.()}
+      />
+    );
   }
 
   return (
-    <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`} aria-label="Field question">
+    <section
+      className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`}
+      aria-label="Field question"
+    >
       <NodePillTopbar
         family="Field"
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
         settings={{
-          tagValue,
-          onTagChange: setTagValue,
+          tagValue: node.node_key,
+          onTagChange: updateNodeKey,
           titleValue,
-          onTitleChange: setTitleValue,
-          required: isRequired,
-          onRequiredChange: setIsRequired,
+          onTitleChange: updateTitle,
           idError,
         }}
       />
 
       <div className={nodePillBodyClass}>
         <NodePillQuestionField
-          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
+          idField={
+            <NodePillIdField
+              tagValue={node.node_key}
+              onTagChange={updateNodeKey}
+              idError={idError}
+              isEditMode={isEditMode}
+            />
+          }
           value={questionValue}
-          onChange={setQuestionValue}
+          onChange={updateQuestion}
           isEditMode={isEditMode}
           max={QUESTION_MAX}
           titleValue={titleValue}
-          onTitleChange={setTitleValue}
+          onTitleChange={updateTitle}
           titleMax={TITLE_MAX}
-          showTitleEdit={true}
+          showTitleEdit
           validationError={validationError}
         />
 
@@ -169,7 +207,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
                     placeholder="Field placeholder"
                     value={placeholderValue}
                     maxLength={50}
-                    onChange={(event) => setPlaceholderValue(event.target.value)}
+                    onChange={(event) => updatePlaceholder(event.target.value)}
                     onKeyDown={blurOnEnter}
                   />
                 )}
@@ -193,8 +231,8 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
                 />
               ) : (
                 <Input
-                  className={`${isWideField ? "w-full" : "w-full max-w-112.5"}`}
-                  type={fieldType === "short_text" ? "text" : fieldType}
+                  className="w-full max-w-112.5"
+                  type={previewInputType}
                   placeholder={placeholderValue}
                   value={fieldValue}
                   maxLength={fieldMaxLength}
@@ -202,7 +240,9 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
                 />
               )}
               {fieldMaxLength !== undefined && fieldValue.length === fieldMaxLength && (
-                <span className={`${nodePillLimitTextClass} px-1.5`}>Maximum characters reached.</span>
+                <span className={`${nodePillLimitTextClass} px-1.5`}>
+                  Maximum characters reached.
+                </span>
               )}
             </div>
           </div>
@@ -210,4 +250,4 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
       </div>
     </section>
   );
-});
+}

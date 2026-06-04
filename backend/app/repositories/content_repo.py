@@ -27,15 +27,6 @@ def list_nodes(db: Session, version_id: int) -> list[SurveyQuestion]:
     )
 
 
-def list_questions(db: Session, version_id: int) -> list[SurveyQuestion]:
-    """Return only question-type nodes. Used by version_rules.ensure_has_questions."""
-    return list(
-        db.scalars(
-            select(SurveyQuestion)
-            .where(SurveyQuestion.survey_version_id == version_id, SurveyQuestion.node_type == "question")
-            .order_by(SurveyQuestion.sort_key)
-        )
-    )
 
 
 def list_rules(db: Session, version_id: int) -> list[SurveyQuestion]:
@@ -62,6 +53,7 @@ def create_node(
     db: Session, version: SurveyVersion, data: CreateQuestionNodeRequest | CreateRuleNodeRequest
 ) -> SurveyQuestion:
     node = SurveyQuestion(
+        id=data.id,
         survey_version_id=version.id,
         question_key=data.node_key,
         sort_key=data.sort_key,
@@ -75,10 +67,10 @@ def create_node(
 
 def update_node(db: Session, node: SurveyQuestion, data: UpdateNodeRequest) -> SurveyQuestion:
     changed = data.model_fields_set
-    if "sort_key" in changed and data.sort_key is not None:
+    if "sort_key" in changed and data.sort_key:
         node.sort_key = data.sort_key
-    if "content" in changed and data.content is not None:
-        if data.node_key is not None:
+    if "content" in changed and data.content:
+        if data.node_key:
             node.question_key = data.node_key
         node.question_schema = data.content.model_dump(by_alias=True, mode="json")
     flush_with_err_handle(db, contexts=[node])
@@ -90,42 +82,8 @@ def delete_node(db: Session, node: SurveyQuestion) -> None:
     flush_with_err_handle(db, contexts=[node])
 
 
-def clone_questions(db: Session, source_version: SurveyVersion, target_version: SurveyVersion) -> list[SurveyQuestion]:
-    """Clone question-type nodes from one version to another. Used by surveys.py."""
-    questions = list_questions(db, source_version.id)
-    clones: list[SurveyQuestion] = []
-    for source in questions:
-        clone = SurveyQuestion(
-            survey_version_id=target_version.id,
-            question_key=source.question_key,
-            sort_key=source.sort_key,
-            node_type="question",
-            question_schema=source.question_schema,
-        )
-        db.add(clone)
-        clones.append(clone)
-    if clones:
-        flush_with_err_handle(db, contexts=clones)
-    return clones
 
 
-def clone_rules(db: Session, source_version: SurveyVersion, target_version: SurveyVersion) -> list[SurveyQuestion]:
-    """Clone rule-type nodes from one version to another. Used by surveys.py."""
-    rules = list_rules(db, source_version.id)
-    clones: list[SurveyQuestion] = []
-    for source in rules:
-        clone = SurveyQuestion(
-            survey_version_id=target_version.id,
-            question_key=source.question_key,
-            sort_key=source.sort_key,
-            node_type="rule",
-            question_schema=source.question_schema,
-        )
-        db.add(clone)
-        clones.append(clone)
-    if clones:
-        flush_with_err_handle(db, contexts=clones)
-    return clones
 
 
 # ── Scoring rules ──────────────────────────────────────────────────────────────

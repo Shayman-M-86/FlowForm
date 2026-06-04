@@ -10,7 +10,7 @@ import {
   type RuleBranchIn,
   type RuleSchemaIn,
 } from "@flowform/schema";
-import type { SurveyNode } from "./questionTypes";
+import type { SurveyNode } from "../node/questionTypes";
 
 export interface SurveyNodeImportIssue {
   path: string;

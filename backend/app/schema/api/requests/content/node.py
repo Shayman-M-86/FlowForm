@@ -36,7 +36,7 @@ class CreateQuestionNodeRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
     
-    id: int | None = Field(default=None, gt=0, lt=limits.CONTENT_ID_MAX)
+    id: int = Field(gt=0, lt=limits.CONTENT_ID_MAX)
     node_key: SchemaIdStr
     node_type: Literal["question"]
     sort_key: NodeSortKey
@@ -48,7 +48,7 @@ class CreateRuleNodeRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
     
-    id: int | None = Field(default=None, gt=0, lt=limits.CONTENT_ID_MAX)
+    id: int = Field(gt=0, lt=limits.CONTENT_ID_MAX)
     node_key: SchemaIdStr
     node_type: Literal["rule"]
     sort_key: NodeSortKey
@@ -66,7 +66,7 @@ class UpdateNodeRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: int | None = Field(default=None, gt=0, lt=limits.CONTENT_ID_MAX)
+    id: int = Field(gt=0, lt=limits.CONTENT_ID_MAX)
     node_key: SchemaIdStr | None = None
     node_type: Literal["question", "rule"] | None = None
     sort_key: int | None = Field(default=None, gt=limits.CONTENT_SORT_KEY_MIN_EXCLUSIVE)

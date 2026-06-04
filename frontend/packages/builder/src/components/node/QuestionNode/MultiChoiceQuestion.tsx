@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Button, Input, LargeInput, NumberStepperGroup } from "@flowform/ui";
-import { useOptionDrag } from "./useOptionDrag";
-import { QUESTION_MAX, TITLE_MAX, blurOnEnter, nextAvailableTag } from "./NodePillUtils";
+import { useOptionDrag } from "../useOptionDrag";
+import { QUESTION_MAX, TITLE_MAX, blurOnEnter, nextAvailableTag } from "../NodePillUtils";
 import {
   NodePillTopbar,
   NodePillIdField,
@@ -10,7 +10,7 @@ import {
   NodePillFieldHead,
   NodePillDragThresholds,
   NodePillCollapsed,
-} from "./NodePillShell";
+} from "../NodePillShell";
 import {
   nodePillBodyClass,
   nodePillFieldClass,
@@ -29,18 +29,18 @@ import {
   nodePillOptionsListClass,
   nodePillShellClass,
   nodePillShellEditClass,
-} from "./nodePillStyles";
-import type { ChoiceContent } from "./questionTypes";
+} from "../nodePillStyles";
+import type { ChoiceContent } from "../questionTypes";
+import type { CreateQuestionNodeRequest } from "@flowform/schema";
 
-export interface MultiChoiceQuestionHandle {
-  getData(): ChoiceContent;
-}
+export type MultiChoiceQuestionNode = Omit<CreateQuestionNodeRequest, "content"> & {
+  content: ChoiceContent;
+};
 
 interface MultiChoiceQuestionProps {
+  node: MultiChoiceQuestionNode;
+  onChange: (next: MultiChoiceQuestionNode) => void;
   onDelete?: () => void;
-  title?: string;
-  initialTag?: string;
-  initialContent?: ChoiceContent;
   idError?: string;
   validationError?: string;
   isCollapsed?: boolean;
@@ -48,35 +48,51 @@ interface MultiChoiceQuestionProps {
   onExpand?: () => void;
   onExpandInEditMode?: () => void;
   onEditModeChange?: (isEditMode: boolean) => void;
-  onDataChange?: (content: ChoiceContent) => void;
 }
-
-const INITIAL_OPTIONS = [
-  { id: "answer-1", placeholder: "Answer choice A", value: "", tag: "A", ghost: false },
-];
 
 const ANSWER_POOL = 4000;
 const ANSWER_PER_FIELD_MAX = 1000;
 const MAX_ANSWERS = 10;
 
-export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title, initialTag, initialContent, idError, validationError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
-  const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
-  const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
-  const [tagValue, setTagValue] = useState(initialContent?.key ?? initialTag ?? "question_id_1");
-  const [isRequired, setIsRequired] = useState(false);
-  const [minChoices, setMinChoices] = useState(initialContent?.definition.min ?? 1);
-  const [maxChoices, setMaxChoices] = useState(initialContent?.definition.max ?? 1);
+type OptionRow = {
+  id: string;
+  placeholder: string;
+  value: string;
+  tag: string;
+};
+
+function contentToOptions(content: ChoiceContent): OptionRow[] {
+  if (!content.definition.options.length) {
+    return [{ id: "answer-1", placeholder: "Answer choice A", value: "", tag: "A" }];
+  }
+  return content.definition.options.map((option, index) => ({
+    id: `answer-${index + 1}`,
+    placeholder: `Answer choice ${option.id || String.fromCharCode(65 + index)}`,
+    value: option.label,
+    tag: option.id,
+  }));
+}
+
+export function MultiChoiceQuestion({
+  node,
+  onChange,
+  onDelete,
+  idError,
+  validationError,
+  isCollapsed,
+  isEditMode = false,
+  onExpand,
+  onExpandInEditMode,
+  onEditModeChange,
+}: MultiChoiceQuestionProps) {
+  const { content } = node;
+  const titleValue = content.title ?? "";
+  const questionValue = content.label;
+  const minChoices = content.definition.min;
+  const maxChoices = content.definition.max;
+
+  const [options, setOptions] = useState<OptionRow[]>(() => contentToOptions(content));
   const [openOptionIds, setOpenOptionIds] = useState<Set<string>>(new Set());
-  const [options, setOptions] = useState(() => {
-    if (!initialContent?.definition.options.length) return INITIAL_OPTIONS;
-    return initialContent.definition.options.map((option, index) => ({
-      id: `answer-${index + 1}`,
-      placeholder: `Answer choice ${option.id || String.fromCharCode(65 + index)}`,
-      value: option.label,
-      tag: option.id,
-      ghost: false,
-    }));
-  });
   const nextOptionIndexRef = useRef(options.length + 1);
 
   const {
@@ -88,27 +104,64 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
     getThresholdRatioForIndex,
   } = useOptionDrag(options, setOptions);
 
-  const multiChoiceData: ChoiceContent = useMemo(() => ({
-    key: tagValue,
-    title: titleValue,
-    label: questionValue,
-    family: "choice",
-    definition: {
-      min: minChoices,
-      max: maxChoices,
-      options: options.map((opt) => ({ id: opt.tag, label: opt.value })),
-    },
-  }), [tagValue, titleValue, questionValue, isRequired, minChoices, maxChoices, options]);
+  function updateContent(update: (current: ChoiceContent) => ChoiceContent) {
+    onChange({ ...node, content: update(content) });
+  }
 
-  useImperativeHandle(ref, () => ({
-    getData() {
-      return multiChoiceData;
-    },
-  }), [multiChoiceData]);
+  function updateNodeKey(nextNodeKey: string) {
+    onChange({ ...node, node_key: nextNodeKey });
+  }
 
-  useEffect(() => {
-    onDataChange?.(multiChoiceData);
-  }, [multiChoiceData, onDataChange]);
+  function updateTitle(nextTitle: string) {
+    updateContent((current) => ({ ...current, title: nextTitle || undefined }));
+  }
+
+  function updateQuestion(nextQuestion: string) {
+    updateContent((current) => ({ ...current, label: nextQuestion }));
+  }
+
+  function updateMinChoices(value: number) {
+    updateContent((current) => ({
+      ...current,
+      definition: {
+        ...current.definition,
+        min: value,
+        max: Math.max(current.definition.max, value),
+      },
+    }));
+  }
+
+  function updateMaxChoices(value: number) {
+    updateContent((current) => ({
+      ...current,
+      definition: {
+        ...current.definition,
+        max: Math.max(current.definition.min, value),
+      },
+    }));
+  }
+
+  const syncOptions = useMemo(
+    () => (nextOptions: OptionRow[]) => {
+      updateContent((current) => ({
+        ...current,
+        definition: {
+          ...current.definition,
+          options: nextOptions.map((opt) => ({ id: opt.tag, label: opt.value })),
+        },
+      }));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [node.node_key],
+  );
+
+  function setOptionsAndSync(updater: (current: OptionRow[]) => OptionRow[]) {
+    setOptions((current) => {
+      const next = updater(current);
+      syncOptions(next);
+      return next;
+    });
+  }
 
   function availableCharactersFor(optionId: string) {
     const usedByOthers = options
@@ -130,7 +183,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
   }
 
   function deleteOption(optionId: string) {
-    setOptions((current) => current.filter((entry) => entry.id !== optionId));
+    setOptionsAndSync((current) => current.filter((entry) => entry.id !== optionId));
     setOpenOptionIds((current) => {
       if (!current.has(optionId)) return current;
       const next = new Set(current);
@@ -144,90 +197,105 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
   }
 
   if (isCollapsed) {
-    return <NodePillCollapsed family="Multiple choice" tagValue={tagValue} title={titleValue} onExpand={() => onExpand?.()} onExpandInEditMode={() => onExpandInEditMode?.()} />;
+    return (
+      <NodePillCollapsed
+        family="Multiple choice"
+        tagValue={node.node_key}
+        title={titleValue}
+        onExpand={() => onExpand?.()}
+        onExpandInEditMode={() => onExpandInEditMode?.()}
+      />
+    );
   }
 
   return (
-    <section className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`} aria-label="node workspace">
+    <section
+      className={`${nodePillShellClass} ${isEditMode ? nodePillShellEditClass : ""}`}
+      aria-label="node workspace"
+    >
       <NodePillTopbar
         family="Multiple choice"
         isEditMode={isEditMode}
         onToggleEditMode={toggleEditMode}
         onDelete={onDelete}
         settings={{
-          tagValue,
-          onTagChange: setTagValue,
+          tagValue: node.node_key,
+          onTagChange: updateNodeKey,
           titleValue,
-          onTitleChange: setTitleValue,
-          required: isRequired,
-          onRequiredChange: setIsRequired,
+          onTitleChange: updateTitle,
           idError,
         }}
       />
 
       <div className={nodePillBodyClass}>
         <NodePillQuestionField
-          idField={<NodePillIdField tagValue={tagValue} onTagChange={setTagValue} idError={idError} isEditMode={isEditMode} />}
+          idField={
+            <NodePillIdField
+              tagValue={node.node_key}
+              onTagChange={updateNodeKey}
+              idError={idError}
+              isEditMode={isEditMode}
+            />
+          }
           value={questionValue}
-          onChange={setQuestionValue}
+          onChange={updateQuestion}
           isEditMode={isEditMode}
           max={QUESTION_MAX}
           titleValue={titleValue}
-          onTitleChange={setTitleValue}
+          onTitleChange={updateTitle}
           titleMax={TITLE_MAX}
-          showTitleEdit={true}
-          validationError={validationError && !options.some((o) => !o.value.trim()) ? validationError : undefined}
+          showTitleEdit
+          validationError={
+            validationError && !options.some((o) => !o.value.trim()) ? validationError : undefined
+          }
         />
 
         <div className={nodePillFieldClass}>
           {isEditMode && (
             <NodePillFieldHead label="Answers">
-            {isEditMode && (
-              <div className="ml-auto inline-flex items-center gap-1.5">
-                <span className="text-[0.7rem] text-muted-foreground opacity-60">Choices</span>
-                <NumberStepperGroup
-                  ariaLabel="Choices range"
-                  size="xs"
-                  variant="ghost"
-                  items={[
-                    {
-                      key: "min",
-                      label: "Min",
-                      value: minChoices,
-                      min: 1,
-                      max: options.length,
-                      disabled: !isEditMode,
-                    },
-                    {
-                      key: "max",
-                      label: "Max",
-                      value: maxChoices,
-                      min: minChoices,
-                      max: options.length,
-                      disabled: !isEditMode,
-                    },
-                  ]}
-                  onChange={(key, value) => {
-                    if (key === "min") {
-                      setMinChoices(value);
-                      if (value > maxChoices) {
-                        setMaxChoices(value);
+              {isEditMode && (
+                <div className="ml-auto inline-flex items-center gap-1.5">
+                  <span className="text-[0.7rem] text-muted-foreground opacity-60">Choices</span>
+                  <NumberStepperGroup
+                    ariaLabel="Choices range"
+                    size="xs"
+                    variant="ghost"
+                    items={[
+                      {
+                        key: "min",
+                        label: "Min",
+                        value: minChoices,
+                        min: 1,
+                        max: options.length,
+                        disabled: !isEditMode,
+                      },
+                      {
+                        key: "max",
+                        label: "Max",
+                        value: maxChoices,
+                        min: minChoices,
+                        max: options.length,
+                        disabled: !isEditMode,
+                      },
+                    ]}
+                    onChange={(key, value) => {
+                      if (key === "min") {
+                        updateMinChoices(value);
+                      } else {
+                        updateMaxChoices(value);
                       }
-                      return;
-                    }
-                    setMaxChoices(Math.max(minChoices, value));
-                  }}
+                    }}
+                  />
+                </div>
+              )}
+              {isEditMode && (
+                <NodePillCharCount
+                  label="Total"
+                  value={options.reduce((sum, o) => sum + o.value.length, 0)}
+                  max={ANSWER_POOL}
+                  tooltip="Total characters used across all answer choices."
                 />
-              </div>
-            )}
-            {isEditMode && (
-              <NodePillCharCount
-                label="Total"
-                value={options.reduce((sum, o) => sum + o.value.length, 0)}
-                max={ANSWER_POOL}
-                tooltip="Total characters used across all answer choices."
-              />
-            )}
+              )}
             </NodePillFieldHead>
           )}
           <div className={nodePillOptionsListClass} ref={optionsListRef}>
@@ -265,26 +333,30 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                       <span aria-hidden="true">⋮</span>
                     </Button>
                   )}
-                  <div className={`${nodePillOptionFieldClass} ${isEditMode ? `${nodePillOptionFieldEditClass} flex-row items-stretch` : ""}${validationError && !option.value.trim() ? " ring-2 ring-destructive" : ""}`}>
+                  <div
+                    className={`${nodePillOptionFieldClass} ${isEditMode ? `${nodePillOptionFieldEditClass} flex-row items-stretch` : ""}${validationError && !option.value.trim() ? " ring-2 ring-destructive" : ""}`}
+                  >
                     <div className="flex min-w-0 flex-1 flex-col">
                       <div className={nodePillOptionMainClass}>
                         <div className="min-w-0 flex-1">
                           <LargeInput
                             className="w-full"
-                          shellClassName="border-0 rounded-none"
-                          variant={isEditMode ? "secondary" : "ghost"}
-                          placeholder={option.placeholder}
-                          rows={1}
-                          maxText={fieldMax}
-                          maxAutoGrowHeight={190}
-                          value={option.value}
-                          autoGrow
-                          readOnly={!isEditMode}
+                            shellClassName="border-0 rounded-none"
+                            variant={isEditMode ? "secondary" : "ghost"}
+                            placeholder={option.placeholder}
+                            rows={1}
+                            maxText={fieldMax}
+                            maxAutoGrowHeight={190}
+                            value={option.value}
+                            autoGrow
+                            readOnly={!isEditMode}
                             onChange={(event) =>
-                              setOptions((current) =>
+                              setOptionsAndSync((current) =>
                                 current.map((entry) =>
-                                  entry.id === option.id ? { ...entry, value: event.target.value } : entry
-                                )
+                                  entry.id === option.id
+                                    ? { ...entry, value: event.target.value }
+                                    : entry,
+                                ),
                               )
                             }
                           />
@@ -307,10 +379,12 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                               placeholder={`answer_${index + 1}`}
                               value={option.tag}
                               onChange={(event) =>
-                                setOptions((current) =>
+                                setOptionsAndSync((current) =>
                                   current.map((entry) =>
-                                    entry.id === option.id ? { ...entry, tag: event.target.value } : entry
-                                  )
+                                    entry.id === option.id
+                                      ? { ...entry, tag: event.target.value }
+                                      : entry,
+                                  ),
                                 )
                               }
                               onKeyDown={blurOnEnter}
@@ -350,9 +424,14 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
                 borderStyle="dotted"
                 onClick={() => {
                   const n = nextOptionIndexRef.current++;
-                  setOptions((current) => [
+                  setOptionsAndSync((current) => [
                     ...current,
-                    { id: `answer-${n}`, placeholder: `Answer choice ${nextAvailableTag(current)}`, value: "", tag: nextAvailableTag(current), ghost: false },
+                    {
+                      id: `answer-${n}`,
+                      placeholder: `Answer choice ${nextAvailableTag(current)}`,
+                      value: "",
+                      tag: nextAvailableTag(current),
+                    },
                   ]);
                 }}
               >
@@ -365,4 +444,4 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
       </div>
     </section>
   );
-});
+}

@@ -4351,13 +4351,10 @@ components:
       description: Validates requests that create a new question node.
       properties:
         id:
-          anyOf:
-          - exclusiveMaximum: 32767
-            exclusiveMinimum: 0
-            type: integer
-          - type: 'null'
-          default: null
+          exclusiveMaximum: 32767
+          exclusiveMinimum: 0
           title: Id
+          type: integer
         node_key:
           maxLength: 128
           minLength: 1
@@ -4387,6 +4384,7 @@ components:
           - $ref: '#/components/schemas/RatingQuestionSchemaIn'
           title: Content
       required:
+      - id
       - node_key
       - node_type
       - sort_key
@@ -4399,13 +4397,10 @@ components:
       description: Validates requests that create a new rule node.
       properties:
         id:
-          anyOf:
-          - exclusiveMaximum: 32767
-            exclusiveMinimum: 0
-            type: integer
-          - type: 'null'
-          default: null
+          exclusiveMaximum: 32767
+          exclusiveMinimum: 0
           title: Id
+          type: integer
         node_key:
           maxLength: 128
           minLength: 1
@@ -4423,6 +4418,7 @@ components:
         content:
           $ref: '#/components/schemas/RuleSchemaIn'
       required:
+      - id
       - node_key
       - node_type
       - sort_key
@@ -4445,13 +4441,10 @@ components:
       description: Validates partial updates to an existing survey content node.
       properties:
         id:
-          anyOf:
-          - exclusiveMaximum: 32767
-            exclusiveMinimum: 0
-            type: integer
-          - type: 'null'
-          default: null
+          exclusiveMaximum: 32767
+          exclusiveMinimum: 0
           title: Id
+          type: integer
         node_key:
           anyOf:
           - maxLength: 128
@@ -4495,6 +4488,8 @@ components:
           - type: 'null'
           default: null
           title: Content
+      required:
+      - id
       title: UpdateNodeRequest
       type: object
     ScoringRuleResponses:
