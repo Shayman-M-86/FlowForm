@@ -64,6 +64,7 @@ interface Question {
   id: string;
   type: QuestionType;
   initialTag: string;
+  sortKey?: number;
 }
 
 interface PersistedNodePageState {
@@ -131,6 +132,7 @@ function deserializeSurveyNodes(nodes: SurveyNode[]): PersistedNodePageState {
         id: internalId,
         type: "rules",
         initialTag: node.content.id,
+        sortKey: node.sort_key,
       });
       ruleContents[internalId] = node.content;
       return;
@@ -140,6 +142,7 @@ function deserializeSurveyNodes(nodes: SurveyNode[]): PersistedNodePageState {
       id: internalId,
       type: questionTypeFromContent(node.content),
       initialTag: node.content.id,
+      sortKey: node.sort_key,
     });
     questionContents[internalId] = node.content;
   });
@@ -618,13 +621,19 @@ export function NodePage({ initialNodes, onNodesChange, showDebug, validateRef }
 
   const serializedSurvey = useMemo(() => {
     const entries: SurveyEntry[] = [];
+    const preserveSortKeys = questions.every((question, index) => (
+      typeof question.sortKey === "number" &&
+      (index === 0 || (questions[index - 1].sortKey ?? 0) < question.sortKey)
+    ));
+
     for (const question of questions) {
+      const sort_key = preserveSortKeys ? question.sortKey : undefined;
       if (question.type === "rules") {
         const rule = ruleContents[question.id];
-        if (rule) entries.push({ kind: "rule", content: rule });
+        if (rule) entries.push({ kind: "rule", content: rule, sort_key });
       } else {
         const content = questionContents[question.id];
-        if (content) entries.push({ kind: "question", content });
+        if (content) entries.push({ kind: "question", content, sort_key });
       }
     }
     return serializeSurveyEntries(entries);

@@ -14,12 +14,12 @@ export function serializeQuestions(contents: QuestionContent[]): QuestionNode[] 
 }
 
 export type SurveyEntry =
-  | { kind: "question"; content: QuestionContent }
-  | { kind: "rule"; content: RuleContent };
+  | { kind: "question"; content: QuestionContent; sort_key?: number }
+  | { kind: "rule"; content: RuleContent; sort_key?: number };
 
 export function serializeSurveyEntries(entries: SurveyEntry[]): SurveyNode[] {
   return entries.map((entry, index) => {
-    const sort_key = (index + 1) * 100000;
+    const sort_key = entry.sort_key ?? (index + 1) * 100000;
     if (entry.kind === "question") {
       return { type: "question", sort_key, content: entry.content };
     }

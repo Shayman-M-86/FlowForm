@@ -23,6 +23,7 @@ import {
   useSurveyNodes,
   useUpdateNode,
 } from '@/api/hooks/nodes'
+import type { NodeOut } from '@/api/hooks/nodes'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
 function formatVersionDate(iso: string) {
@@ -335,6 +336,7 @@ function PublishedNoDraftPanel({
 // ── Connected builder (owns node API hooks for a specific draft version) ──────
 
 const DRAFT_STORAGE_KEY = (versionId: number) => `flowform.studio.draft-nodes.${versionId}`
+const SORT_KEY_STEP = 100000
 
 function loadLocalDraft(versionId: number): SurveyNode[] | null {
   try {
@@ -360,6 +362,312 @@ function clearLocalDraft(versionId: number) {
   } catch {
     // ignore
   }
+}
+
+function backendNodesToSurveyNodes(nodes: NodeOut[]): SurveyNode[] {
+  return [...nodes]
+    .sort((a, b) => a.sort_key - b.sort_key)
+    .map((n) => ({
+      type: n.node_type as 'question' | 'rule',
+      sort_key: n.sort_key,
+      content: n.question_schema as never,
+    }))
+}
+
+function normalizeNodeContentForDirty(content: SurveyNode['content']) {
+  if (!content || typeof content !== 'object') return content
+  const normalized = structuredClone(content) as unknown as Record<string, unknown>
+
+  if (
+    ['choice', 'field', 'matching', 'rating'].includes(String(normalized.family)) &&
+    normalized.title == null
+  ) {
+    normalized.title = ''
+  }
+
+  if (normalized.family === 'field') {
+    const definition = normalized.definition as { field_type?: string; ui?: { placeholder?: string } } | undefined
+    if (definition) {
+      const placeholderByType: Record<string, string> = {
+        short_text: 'Type a short response',
+        long_text: 'Type a longer response',
+        email: 'name@example.com',
+        phone: '(555) 123-4567',
+        number: 'Enter a number',
+      }
+      if (definition.field_type === 'date') {
+        definition.ui = definition.ui ?? {}
+      } else if (definition.field_type && definition.ui?.placeholder == null) {
+        definition.ui = { ...definition.ui, placeholder: placeholderByType[definition.field_type] ?? '' }
+      }
+    }
+  }
+
+  if (normalized.family === 'rating') {
+    const definition = normalized.definition as { variant?: string; words?: boolean } | undefined
+    if (definition?.variant === 'emoji' && definition.words == null) {
+      definition.words = true
+    }
+  }
+
+  if ('else' in normalized && normalized.else == null) {
+    delete normalized.else
+  }
+
+  return normalized
+}
+
+function normalizedDirtyNodes(nodes: SurveyNode[]) {
+  return nodes.map((node) => ({
+    type: node.type,
+    content: normalizeNodeContentForDirty(node.content),
+  }))
+}
+
+function hasUnsavedNodeChanges(nodes: SurveyNode[], backendNodes: SurveyNode[]) {
+  return findFirstDifference(normalizedDirtyNodes(nodes), normalizedDirtyNodes(backendNodes)) !== null
+}
+
+function nodeDebugSummary(nodes: SurveyNode[]) {
+  return nodes.map((node, index) => ({
+    index,
+    type: node.type,
+    sort_key: node.sort_key,
+    id: node.content.id,
+    family: 'family' in node.content ? node.content.family : 'rule',
+  }))
+}
+
+function findFirstDifference(left: unknown, right: unknown, path = '$'): { path: string; current: unknown; backend: unknown } | null {
+  if (Object.is(left, right)) return null
+
+  if (
+    left == null ||
+    right == null ||
+    typeof left !== 'object' ||
+    typeof right !== 'object'
+  ) {
+    return { path, current: left, backend: right }
+  }
+
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right)) {
+      return { path, current: left, backend: right }
+    }
+
+    const length = Math.max(left.length, right.length)
+    for (let index = 0; index < length; index += 1) {
+      const difference = findFirstDifference(left[index], right[index], `${path}[${index}]`)
+      if (difference) return difference
+    }
+    return null
+  }
+
+  const leftRecord = left as Record<string, unknown>
+  const rightRecord = right as Record<string, unknown>
+  const keys = Array.from(new Set([...Object.keys(leftRecord), ...Object.keys(rightRecord)])).sort()
+
+  for (const key of keys) {
+    const difference = findFirstDifference(leftRecord[key], rightRecord[key], `${path}.${key}`)
+    if (difference) return difference
+  }
+
+  return null
+}
+
+function dirtyDebugDetails(nodes: SurveyNode[], backendNodes: SurveyNode[]) {
+  const currentNormalizedNodes = normalizedDirtyNodes(nodes)
+  const backendNormalizedNodes = normalizedDirtyNodes(backendNodes)
+  const currentSnapshot = JSON.stringify(currentNormalizedNodes)
+  const backendSnapshot = JSON.stringify(backendNormalizedNodes)
+  const firstDifference = findFirstDifference(currentNormalizedNodes, backendNormalizedNodes)
+  return {
+    dirty: firstDifference !== null,
+    firstDifference,
+    currentNodes: nodeDebugSummary(nodes),
+    backendNodes: nodeDebugSummary(backendNodes),
+    currentSnapshot,
+    backendSnapshot,
+  }
+}
+
+function debugSurveyBuilder(message: string, details?: Record<string, unknown>) {
+  if (!import.meta.env.DEV) return
+  console.debug(`[SurveyBuilderTab] ${message}`, details ?? {})
+}
+
+type SortKeyPlanEntry = {
+  node: SurveyNode
+  index: number
+  existing?: NodeOut
+}
+
+function findStableSortKeyAnchors(entries: SortKeyPlanEntry[]) {
+  const candidates = entries
+    .filter((entry): entry is SortKeyPlanEntry & { existing: NodeOut } => Boolean(entry.existing))
+
+  if (candidates.length === 0) return new Set<number>()
+
+  const lengths = Array(candidates.length).fill(1) as number[]
+  const previous = Array(candidates.length).fill(-1) as number[]
+  let bestIndex = 0
+
+  for (let index = 0; index < candidates.length; index += 1) {
+    for (let before = 0; before < index; before += 1) {
+      if (
+        candidates[before].existing.sort_key < candidates[index].existing.sort_key &&
+        lengths[before] + 1 > lengths[index]
+      ) {
+        lengths[index] = lengths[before] + 1
+        previous[index] = before
+      }
+    }
+
+    if (lengths[index] > lengths[bestIndex]) {
+      bestIndex = index
+    }
+  }
+
+  const anchors = new Set<number>()
+  for (let cursor = bestIndex; cursor !== -1; cursor = previous[cursor]) {
+    anchors.add(candidates[cursor].index)
+  }
+  return anchors
+}
+
+function findFreeSortKey({
+  preferred,
+  minimum,
+  maximum,
+  occupied,
+  allowedOwner,
+}: {
+  preferred: number
+  minimum: number
+  maximum: number
+  occupied: Map<number, string>
+  allowedOwner?: string
+}) {
+  for (let key = Math.max(preferred, minimum); key <= maximum; key += 1) {
+    const owner = occupied.get(key)
+    if (!owner || owner === allowedOwner) return key
+  }
+  for (let key = Math.min(preferred - 1, maximum); key >= minimum; key -= 1) {
+    const owner = occupied.get(key)
+    if (!owner || owner === allowedOwner) return key
+  }
+  return null
+}
+
+function assignSortKeysBetweenAnchors({
+  entries,
+  lower,
+  upper,
+  occupied,
+  plan,
+}: {
+  entries: SortKeyPlanEntry[]
+  lower: number
+  upper: number | null
+  occupied: Map<number, string>
+  plan: Map<string, number>
+}) {
+  if (entries.length === 0) return true
+
+  let previous = lower
+  if (upper == null) {
+    for (const entry of entries) {
+      const key = findFreeSortKey({
+        preferred: previous + SORT_KEY_STEP,
+        minimum: previous + 1,
+        maximum: Number.MAX_SAFE_INTEGER,
+        occupied,
+        allowedOwner: entry.existing?.question_key,
+      })
+      if (key == null) return false
+      plan.set(entry.node.content.id, key)
+      previous = key
+    }
+    return true
+  }
+
+  if (upper - lower <= entries.length) return false
+
+  for (let index = 0; index < entries.length; index += 1) {
+    const remaining = entries.length - index - 1
+    const maximum = upper - remaining - 1
+    const preferred = previous + Math.floor((upper - previous) / (remaining + 2))
+    const key = findFreeSortKey({
+      preferred,
+      minimum: previous + 1,
+      maximum,
+      occupied,
+      allowedOwner: entries[index].existing?.question_key,
+    })
+    if (key == null) return false
+    plan.set(entries[index].node.content.id, key)
+    previous = key
+  }
+
+  return true
+}
+
+function createHighSortKeyPlan(nodes: SurveyNode[], current: NodeOut[]) {
+  const plan = new Map<string, number>()
+  const maxSortKey = Math.max(
+    0,
+    ...current.map((node) => node.sort_key),
+    ...nodes.map((node) => node.sort_key),
+  )
+
+  nodes.forEach((node, index) => {
+    plan.set(node.content.id, maxSortKey + SORT_KEY_STEP * (index + 1))
+  })
+  return plan
+}
+
+function planSortKeysForSave(nodes: SurveyNode[], current: NodeOut[]) {
+  const entries = nodes.map((node, index) => ({
+    node,
+    index,
+    existing: current.find((backendNode) => backendNode.question_key === node.content.id),
+  }))
+  const incomingKeys = new Set(nodes.map((node) => node.content.id))
+  const occupied = new Map(
+    current
+      .filter((node) => incomingKeys.has(node.question_key))
+      .map((node) => [node.sort_key, node.question_key] as const),
+  )
+  const anchors = findStableSortKeyAnchors(entries)
+  const plan = new Map<string, number>()
+  let lower = 0
+  let pending: SortKeyPlanEntry[] = []
+
+  for (const entry of entries) {
+    if (anchors.has(entry.index) && entry.existing) {
+      if (!assignSortKeysBetweenAnchors({
+        entries: pending,
+        lower,
+        upper: entry.existing.sort_key,
+        occupied,
+        plan,
+      })) {
+        return createHighSortKeyPlan(nodes, current)
+      }
+      plan.set(entry.node.content.id, entry.existing.sort_key)
+      lower = entry.existing.sort_key
+      pending = []
+      continue
+    }
+
+    pending.push(entry)
+  }
+
+  if (!assignSortKeysBetweenAnchors({ entries: pending, lower, upper: null, occupied, plan })) {
+    return createHighSortKeyPlan(nodes, current)
+  }
+
+  return plan
 }
 
 function ConnectedNodePage({
@@ -391,6 +699,7 @@ function ConnectedNodePage({
   const deleteNode = useDeleteNode(projectId, surveyId, versionNumber)
 
   const latestNodesRef = useRef<SurveyNode[]>([])
+  const [savedNodesOverride, setSavedNodesOverride] = useState<SurveyNode[] | null>(null)
   const backendNodesRef = useRef(backendNodes)
   backendNodesRef.current = backendNodes
   const validateRef = useRef<(() => boolean) | null>(null)
@@ -402,35 +711,46 @@ function ConnectedNodePage({
     const current = backendNodesRef.current ?? []
     const byKey = new Map(current.map((n) => [n.question_key, n]))
     const incomingKeys = new Set(nodes.map((n) => n.content.id))
+    const sortKeyPlan = planSortKeysForSave(nodes, current)
+    const plannedNodes = nodes.map((node) => ({
+      ...node,
+      sort_key: sortKeyPlan.get(node.content.id) ?? node.sort_key,
+    }))
+    const existingNodes = nodes
+      .map((node) => ({ node, existing: byKey.get(node.content.id) }))
+      .filter((entry): entry is { node: SurveyNode; existing: NodeOut } => Boolean(entry.existing))
+    const newNodes = nodes.filter((node) => !byKey.has(node.content.id))
 
-    const ops: Promise<unknown>[] = []
-
+    // Delete first so recreated nodes can reuse the old key/sort slot.
     for (const backendNode of current) {
       if (!incomingKeys.has(backendNode.question_key)) {
-        ops.push(deleteNode.mutateAsync(backendNode.id))
+        await deleteNode.mutateAsync(backendNode.id)
       }
     }
 
-    for (const node of nodes) {
-      const existing = byKey.get(node.content.id)
-      if (!existing) {
-        ops.push(createNode.mutateAsync({
-          type: node.type,
-          sort_key: node.sort_key,
-          content: node.content as never,
-        }))
-      } else if (
-        existing.sort_key !== node.sort_key ||
-        JSON.stringify(existing.question_schema) !== JSON.stringify(node.content)
-      ) {
-        ops.push(updateNode.mutateAsync({
+    for (const { node, existing } of existingNodes) {
+      const plannedSortKey = sortKeyPlan.get(node.content.id) ?? node.sort_key
+      const contentChanged = findFirstDifference(
+        normalizeNodeContentForDirty(existing.question_schema as unknown as SurveyNode['content']),
+        normalizeNodeContentForDirty(node.content),
+      ) !== null
+      if (existing.sort_key !== plannedSortKey || contentChanged) {
+        await updateNode.mutateAsync({
           nodeId: existing.id,
-          body: { sort_key: node.sort_key, content: node.content as never },
-        }))
+          body: { sort_key: plannedSortKey, content: node.content as never },
+        })
       }
     }
 
-    await Promise.all(ops)
+    for (const node of newNodes) {
+      await createNode.mutateAsync({
+        type: node.type,
+        sort_key: sortKeyPlan.get(node.content.id) ?? node.sort_key,
+        content: node.content as never,
+      })
+    }
+
+    return plannedNodes
   }, [createNode, updateNode, deleteNode])
 
   const handleSave = useCallback(async () => {
@@ -440,7 +760,9 @@ function ConnectedNodePage({
     }
     onSaveStart()
     try {
-      await syncToBackend(latestNodesRef.current)
+      const savedNodes = await syncToBackend(latestNodesRef.current)
+      latestNodesRef.current = savedNodes
+      setSavedNodesOverride(savedNodes)
       clearLocalDraft(versionId)
       onDirtyChangeRef.current(false)
       onSaveSuccess()
@@ -457,25 +779,32 @@ function ConnectedNodePage({
   useEffect(() => {
     if (!backendNodes) return
     const local = loadLocalDraft(versionId)
-    if (local) {
+    const initial = backendNodesToSurveyNodes(backendNodes)
+    setSavedNodesOverride((current) => (
+      current && !hasUnsavedNodeChanges(current, initial) ? null : current
+    ))
+    const localDetails = local ? dirtyDebugDetails(local, initial) : null
+    debugSurveyBuilder('hydrating builder nodes', {
+      versionId,
+      versionNumber,
+      backendNodeCount: initial.length,
+      hasLocalDraft: Boolean(local),
+      localDraftDirty: localDetails?.dirty ?? false,
+      localDraftDetails: localDetails,
+    })
+
+    if (local && localDetails?.dirty) {
       latestNodesRef.current = local
       onDirtyChangeRef.current(true)
     } else {
-      latestNodesRef.current = backendNodes.map((n) => ({
-        type: n.node_type as 'question' | 'rule',
-        sort_key: n.sort_key,
-        content: n.question_schema as never,
-      }))
+      if (local) clearLocalDraft(versionId)
+      latestNodesRef.current = initial
       onDirtyChangeRef.current(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [versionId, backendNodesJson])
 
-  const initialNodes: SurveyNode[] | undefined = backendNodes?.map((n) => ({
-    type: n.node_type as 'question' | 'rule',
-    sort_key: n.sort_key,
-    content: n.question_schema as never,
-  }))
+  const initialNodes: SurveyNode[] | undefined = savedNodesOverride ?? (backendNodes ? backendNodesToSurveyNodes(backendNodes) : undefined)
 
   if (isLoading || !initialNodes) {
     return (
@@ -486,7 +815,7 @@ function ConnectedNodePage({
   }
 
   const localDraft = loadLocalDraft(versionId)
-  const seedNodes = localDraft ?? initialNodes
+  const seedNodes = localDraft && hasUnsavedNodeChanges(localDraft, initialNodes) ? localDraft : initialNodes
 
   return (
     <MemoryRouter initialEntries={['/node']}>
@@ -498,12 +827,21 @@ function ConnectedNodePage({
             initialEmitDoneRef.current = true
             return
           }
-          saveLocalDraft(versionId, nodes)
-          const backendSchemas = [...(backendNodesRef.current ?? [])]
-            .sort((a, b) => a.sort_key - b.sort_key)
-            .map((n) => n.question_schema)
-          const currentSchemas = nodes.map((n) => n.content)
-          onDirtyChangeRef.current(JSON.stringify(backendSchemas) !== JSON.stringify(currentSchemas))
+          const dirty = hasUnsavedNodeChanges(
+            nodes,
+            backendNodesToSurveyNodes(backendNodesRef.current ?? []),
+          )
+          debugSurveyBuilder('builder emitted node changes', {
+            versionId,
+            versionNumber,
+            ...dirtyDebugDetails(nodes, backendNodesToSurveyNodes(backendNodesRef.current ?? [])),
+          })
+          if (dirty) {
+            saveLocalDraft(versionId, nodes)
+          } else {
+            clearLocalDraft(versionId)
+          }
+          onDirtyChangeRef.current(dirty)
         }}
         validateRef={validateRef}
         showDebug
@@ -563,13 +901,50 @@ export function SurveyBuilderTab() {
   // and show the unsaved-changes modal instead of switching immediately.
   const [pendingSwitchId, setPendingSwitchId] = useState<number | null>(null)
 
+  const handleDirtyChange = useCallback((dirty: boolean) => {
+    debugSurveyBuilder('dirty state update requested', {
+      dirty,
+      selectedVersionId: selectedVersion?.id,
+      selectedVersionNumber: selectedVersion?.version_number,
+      selectedVersionStatus: selectedVersion?.status,
+    })
+    setIsDirty(dirty)
+  }, [selectedVersion?.id, selectedVersion?.version_number, selectedVersion?.status])
+
   function requestSelectVersion(id: number) {
+    const targetVersion = versions.find((v) => v.id === id)
+    const willOpenModal = isDirty && selectedVersion?.status === 'draft' && id !== selectedVersion?.id
+    debugSurveyBuilder('version selection requested', {
+      targetVersionId: id,
+      targetVersionNumber: targetVersion?.version_number,
+      targetVersionStatus: targetVersion?.status,
+      selectedVersionId: selectedVersion?.id,
+      selectedVersionNumber: selectedVersion?.version_number,
+      selectedVersionStatus: selectedVersion?.status,
+      isDirty,
+      willOpenModal,
+    })
+
     if (isDirty && selectedVersion?.status === 'draft' && id !== selectedVersion?.id) {
       setPendingSwitchId(id)
     } else {
       setSelectedId(id)
     }
   }
+
+  useEffect(() => {
+    if (pendingSwitchId == null) return
+    const targetVersion = versions.find((v) => v.id === pendingSwitchId)
+    debugSurveyBuilder('unsaved changes modal opened', {
+      pendingSwitchId,
+      targetVersionNumber: targetVersion?.version_number,
+      targetVersionStatus: targetVersion?.status,
+      selectedVersionId: selectedVersion?.id,
+      selectedVersionNumber: selectedVersion?.version_number,
+      selectedVersionStatus: selectedVersion?.status,
+      isDirty,
+    })
+  }, [pendingSwitchId, selectedVersion?.id, selectedVersion?.status, selectedVersion?.version_number, versions, isDirty])
 
   function confirmSwitch() {
     if (pendingSwitchId == null) return
@@ -709,7 +1084,7 @@ export function SurveyBuilderTab() {
           onSaveSuccess={() => { setIsSaving(false); showToast('success', 'Draft saved.') }}
           onSaveError={() => { setIsSaving(false); showToast('error', 'Failed to save.') }}
           onValidationFail={() => showToast('error', 'Fix the highlighted fields before saving.')}
-          onDirtyChange={setIsDirty}
+          onDirtyChange={handleDirtyChange}
           saveRef={nodeSaveRef}
         />
       ) : showPublishedNoDraft ? (
