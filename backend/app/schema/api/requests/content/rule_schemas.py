@@ -261,7 +261,6 @@ class RuleSchemaIn(BaseModel):
 
     model_config = _STRICT
 
-    id: SchemaIdStr
     if_: RuleIfIn = Field(validation_alias="if", serialization_alias="if")
     then: RuleBranchIn
     else_: RuleBranchIn | None = Field(default=None, validation_alias="else", serialization_alias="else")

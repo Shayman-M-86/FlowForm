@@ -113,7 +113,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
           : "numeric-slider";
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
-  const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
+  const [tagValue, setTagValue] = useState(initialContent?.key ?? initialTag ?? "question_id_1");
   const [isRequired, setIsRequired] = useState(false);
   const [ratingType, setRatingType] = useState<RatingType>(initialRatingType);
   const [rangeStart, setRangeStart] = useState(initialContent?.definition.variant === "slider" ? initialContent.definition.range.min : -5);
@@ -150,7 +150,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
   const ratingQuestionData: RatingContent =
     ratingType === "numeric-slider"
       ? {
-        id: tagValue,
+        key: tagValue,
         title: titleValue,
         label: questionValue,
         family: "rating",
@@ -162,7 +162,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
       }
       : ratingType === "emoji"
         ? {
-          id: tagValue,
+          key: tagValue,
           title: titleValue,
           label: questionValue,
           family: "rating",
@@ -174,7 +174,7 @@ export const RatingQuestion = forwardRef<RatingQuestionHandle, RatingQuestionPro
           },
         }
         : {
-          id: tagValue,
+          key: tagValue,
           title: titleValue,
           label: questionValue,
           family: "rating",

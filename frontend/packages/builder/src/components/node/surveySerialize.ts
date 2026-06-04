@@ -7,7 +7,7 @@ import type {
 
 export function serializeQuestions(contents: QuestionContent[]): QuestionNode[] {
   return contents.map((content, index) => ({
-    type: "question",
+    node_type: "question",
     sort_key: (index + 1) * 100000,
     content,
   }));
@@ -21,8 +21,8 @@ export function serializeSurveyEntries(entries: SurveyEntry[]): SurveyNode[] {
   return entries.map((entry, index) => {
     const sort_key = entry.sort_key ?? (index + 1) * 100000;
     if (entry.kind === "question") {
-      return { type: "question", sort_key, content: entry.content };
+      return { node_type: "question", sort_key, content: entry.content };
     }
-    return { type: "rule", sort_key, content: entry.content };
+    return { node_type: "rule", sort_key, content: entry.content };
   });
 }

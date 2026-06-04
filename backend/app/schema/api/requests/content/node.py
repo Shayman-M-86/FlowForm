@@ -7,6 +7,7 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 from app.schema.api import limits
 from app.schema.api.requests.content.questions_schemas import QuestionSchemaIn
 from app.schema.api.requests.content.rule_schemas import RuleSchemaIn
+from app.schema.api.requests.field_types import SchemaIdStr
 
 _MAX_NODE_CONTENT_BYTES = limits.NODE_CONTENT_BYTES_MAX
 
@@ -34,8 +35,10 @@ class CreateQuestionNodeRequest(BaseModel):
     """Validates requests that create a new question node."""
 
     model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
-
-    type: Literal["question"]
+    
+    id: int | None = Field(default=None, gt=0, lt=limits.CONTENT_ID_MAX)
+    node_key: SchemaIdStr
+    node_type: Literal["question"]
     sort_key: NodeSortKey
     content: SizedQuestionContent
 
@@ -44,15 +47,17 @@ class CreateRuleNodeRequest(BaseModel):
     """Validates requests that create a new rule node."""
 
     model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
-
-    type: Literal["rule"]
+    
+    id: int | None = Field(default=None, gt=0, lt=limits.CONTENT_ID_MAX)
+    node_key: SchemaIdStr
+    node_type: Literal["rule"]
     sort_key: NodeSortKey
     content: SizedRuleContent
 
 
 CreateNodeRequest = Annotated[
     CreateQuestionNodeRequest | CreateRuleNodeRequest,
-    Field(discriminator="type", title="CreateNodeRequest"),
+    Field(discriminator="node_type", title="CreateNodeRequest"),
 ]
 
 
@@ -61,5 +66,8 @@ class UpdateNodeRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    id: int | None = Field(default=None, gt=0, lt=limits.CONTENT_ID_MAX)
+    node_key: SchemaIdStr | None = None
+    node_type: Literal["question", "rule"] | None = None
     sort_key: int | None = Field(default=None, gt=limits.CONTENT_SORT_KEY_MIN_EXCLUSIVE)
     content: Annotated[QuestionSchemaIn | RuleSchemaIn, AfterValidator(_check_content_size)] | None = None

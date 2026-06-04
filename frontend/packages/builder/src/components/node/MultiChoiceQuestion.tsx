@@ -62,7 +62,7 @@ const MAX_ANSWERS = 10;
 export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiChoiceQuestionProps>(function MultiChoiceQuestion({ onDelete, title, initialTag, initialContent, idError, validationError, isCollapsed, isEditMode = false, onExpand, onExpandInEditMode, onEditModeChange, onDataChange }, ref) {
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
-  const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
+  const [tagValue, setTagValue] = useState(initialContent?.key ?? initialTag ?? "question_id_1");
   const [isRequired, setIsRequired] = useState(false);
   const [minChoices, setMinChoices] = useState(initialContent?.definition.min ?? 1);
   const [maxChoices, setMaxChoices] = useState(initialContent?.definition.max ?? 1);
@@ -89,7 +89,7 @@ export const MultiChoiceQuestion = forwardRef<MultiChoiceQuestionHandle, MultiCh
   } = useOptionDrag(options, setOptions);
 
   const multiChoiceData: ChoiceContent = useMemo(() => ({
-    id: tagValue,
+    key: tagValue,
     title: titleValue,
     label: questionValue,
     family: "choice",

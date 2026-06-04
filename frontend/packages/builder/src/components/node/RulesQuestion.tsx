@@ -142,8 +142,8 @@ function newSetEntryKey() {
 }
 
 function questionOption(content: QuestionContent) {
-  const label = content.title?.trim() || content.label.trim() || content.id;
-  return { value: content.id, label: `${label} (${content.id})` };
+  const label = content.title?.trim() || content.label.trim() || content.key;
+  return { value: content.key, label: `${label} (${content.key})` };
 }
 
 function buildConditionFromTarget(
@@ -156,27 +156,29 @@ function buildConditionFromTarget(
       target.definition.options.forEach((opt) => {
         marks[opt.id] = "none";
       });
-      return { key, target_id: target.id, family: "choice", marks };
+      return { key, target_id: target.key, family: "choice", marks };
     }
     case "matching": {
       const pairs: Record<string, string> = {};
       target.definition.prompts.forEach((p) => {
         pairs[p.id] = "";
       });
-      return { key, target_id: target.id, family: "matching", pairs };
+      return { key, target_id: target.key, family: "matching", pairs };
     }
     case "rating":
-      return { key, target_id: target.id, family: "rating", min: null, max: null };
+      return { key, target_id: target.key, family: "rating", min: null, max: null };
     case "field":
       return {
         key,
-        target_id: target.id,
+        target_id: target.key,
         family: "field",
         numberOperator: "EQ",
         numberValue: "",
         dateOperator: "before",
         dateValue: "",
       };
+    default:
+      return { key, target_id: "", family: null };
   }
 }
 
@@ -224,7 +226,7 @@ function draftToCondition(draft: ConditionDraft, target: QuestionContent | undef
 }
 
 function findSibling(siblings: QuestionContent[], id: string) {
-  return siblings.find((s) => s.id === id);
+  return siblings.find((s) => s.key === id);
 }
 
 function doToState(action: RuleBranch["do"] | undefined): { kind: DoKind; skipTo: string } {
@@ -314,7 +316,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
   const initialThenDo = doToState(initialContent?.then.do);
   const initialElseDo = doToState(initialContent?.else?.do);
   void _title;
-  const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "r1");
+  const [tagValue, setTagValue] = useState(initialContent?.key ?? initialTag ?? "r1");
   const [match, setMatch] = useState<RuleMatch>(initialContent?.if.match ?? "ALL");
   const [conditions, setConditions] = useState<ConditionDraft[]>(
     () => initialContent?.if.conditions.map((condition) => conditionToDraft(condition, siblings)) ?? [],
@@ -362,7 +364,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
   }
 
   const ruleContent: RuleContent = useMemo(() => ({
-    id: tagValue,
+    key: tagValue,
     if: {
       match,
       conditions: conditions
@@ -520,7 +522,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     return (
       <Card tone="muted" size="sm" className="flex flex-col gap-2.5">
         <div className={pickerHeadClass}>
-          <span className={pickerTitleClass}>{target.title || target.label || target.id}</span>
+          <span className={pickerTitleClass}>{target.title || target.label || target.key}</span>
           <span className={pickerHintClass}>Mark each choice</span>
         </div>
         <div className="flex flex-col gap-1.5">
@@ -583,7 +585,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     return (
       <Card tone="muted" size="sm" className="flex flex-col gap-2.5">
         <div className={pickerHeadClass}>
-          <span className={pickerTitleClass}>{target.title || target.label || target.id}</span>
+          <span className={pickerTitleClass}>{target.title || target.label || target.key}</span>
           <span className={pickerHintClass}>Required pairings</span>
         </div>
         <div className="flex flex-col gap-2">
@@ -624,7 +626,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     return (
       <Card tone="muted" size="sm" className="flex flex-col gap-2.5">
         <div className={pickerHeadClass}>
-          <span className={pickerTitleClass}>{target.title || target.label || target.id}</span>
+          <span className={pickerTitleClass}>{target.title || target.label || target.key}</span>
           <span className={pickerHintClass}>
             Range {bounds.low} to {bounds.high}
           </span>
@@ -667,7 +669,7 @@ export const RulesQuestion = forwardRef<RulesQuestionHandle, RulesQuestionProps>
     return (
       <Card tone="muted" size="sm" className="flex flex-col gap-2.5">
         <div className={pickerHeadClass}>
-          <span className={pickerTitleClass}>{target.title || target.label || target.id}</span>
+          <span className={pickerTitleClass}>{target.title || target.label || target.key}</span>
           <span className={pickerHintClass}>{target.definition.field_type}</span>
         </div>
         <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[auto_1fr]">

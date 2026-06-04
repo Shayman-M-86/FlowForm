@@ -58,12 +58,14 @@ def get_node(db: Session, version_id: int, node_id: int) -> SurveyQuestion | Non
     )
 
 
-def create_node(db: Session, version: SurveyVersion, data: CreateQuestionNodeRequest | CreateRuleNodeRequest) -> SurveyQuestion:
+def create_node(
+    db: Session, version: SurveyVersion, data: CreateQuestionNodeRequest | CreateRuleNodeRequest
+) -> SurveyQuestion:
     node = SurveyQuestion(
         survey_version_id=version.id,
-        question_key=data.content.id,
+        question_key=data.node_key,
         sort_key=data.sort_key,
-        node_type=data.type,
+        node_type=data.node_type,
         question_schema=data.content.model_dump(by_alias=True, mode="json"),
     )
     db.add(node)
@@ -76,7 +78,8 @@ def update_node(db: Session, node: SurveyQuestion, data: UpdateNodeRequest) -> S
     if "sort_key" in changed and data.sort_key is not None:
         node.sort_key = data.sort_key
     if "content" in changed and data.content is not None:
-        node.question_key = data.content.id
+        if data.node_key is not None:
+            node.question_key = data.node_key
         node.question_schema = data.content.model_dump(by_alias=True, mode="json")
     flush_with_err_handle(db, contexts=[node])
     return node

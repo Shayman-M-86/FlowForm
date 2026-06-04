@@ -27,10 +27,25 @@ export const ChoiceDefinitionInConstraints = {
 } as const;
 
 export const ChoiceQuestionSchemaInConstraints = {
-  id: { minLength: 1, maxLength: 128 },
   family: { maxLength: 6 },
   label: { minLength: 1, maxLength: 1000 },
   title: { minLength: 0, maxLength: 500 },
+} as const;
+
+export const DateFieldRequirementsInConstraints = {
+  type: { maxLength: 4 },
+  operator: { maxLength: 6 },
+  value: { maxLength: 10 },
+} as const;
+
+export const NumberFieldRequirementsInConstraints = {
+  type: { maxLength: 6 },
+  operator: { maxLength: 3 },
+} as const;
+
+export const FieldConditionInConstraints = {
+  target_id: { minLength: 1, maxLength: 128 },
+  family: { maxLength: 5 },
 } as const;
 
 export const FieldUIInConstraints = {
@@ -42,57 +57,9 @@ export const FieldDefinitionInConstraints = {
 } as const;
 
 export const FieldQuestionSchemaInConstraints = {
-  id: { minLength: 1, maxLength: 128 },
   family: { maxLength: 5 },
   label: { minLength: 1, maxLength: 1000 },
   title: { minLength: 0, maxLength: 500 },
-} as const;
-
-export const MatchingItemInConstraints = {
-  id: { minLength: 1, maxLength: 128 },
-  label: { minLength: 1, maxLength: 250 },
-} as const;
-
-export const MatchingDefinitionInConstraints = {
-  prompts: { maxItems: 10 },
-  matches: { maxItems: 10 },
-} as const;
-
-export const MatchingQuestionSchemaInConstraints = {
-  id: { minLength: 1, maxLength: 128 },
-  family: { maxLength: 8 },
-  label: { minLength: 1, maxLength: 1000 },
-  title: { minLength: 0, maxLength: 500 },
-} as const;
-
-export const RatingUIInConstraints = {
-  left_label: { minLength: 1, maxLength: 50 },
-  right_label: { minLength: 1, maxLength: 50 },
-} as const;
-
-export const RatingSliderDefinitionInConstraints = {
-  variant: { maxLength: 6 },
-} as const;
-
-export const RatingStarDefinitionInConstraints = {
-  variant: { maxLength: 5 },
-  stars: { minimum: 1, maximum: 12 },
-} as const;
-
-export const RatingEmojiDefinitionInConstraints = {
-  variant: { maxLength: 5 },
-  emoji_list: { maxLength: 16 },
-} as const;
-
-export const RatingQuestionSchemaInConstraints = {
-  id: { minLength: 1, maxLength: 128 },
-  family: { maxLength: 6 },
-  label: { minLength: 1, maxLength: 1000 },
-  title: { minLength: 0, maxLength: 500 },
-} as const;
-
-export const CreateQuestionNodeRequestConstraints = {
-  type: { maxLength: 8 },
 } as const;
 
 export const MatchingPairInConstraints = {
@@ -109,30 +76,50 @@ export const MatchingConditionInConstraints = {
   family: { maxLength: 8 },
 } as const;
 
+export const MatchingItemInConstraints = {
+  id: { minLength: 1, maxLength: 128 },
+  label: { minLength: 1, maxLength: 250 },
+} as const;
+
+export const MatchingDefinitionInConstraints = {
+  prompts: { maxItems: 10 },
+  matches: { maxItems: 10 },
+} as const;
+
+export const MatchingQuestionSchemaInConstraints = {
+  family: { maxLength: 8 },
+  label: { minLength: 1, maxLength: 1000 },
+  title: { minLength: 0, maxLength: 500 },
+} as const;
+
 export const RatingConditionInConstraints = {
   target_id: { minLength: 1, maxLength: 128 },
   family: { maxLength: 6 },
 } as const;
 
-export const NumberFieldRequirementsInConstraints = {
-  type: { maxLength: 6 },
-  operator: { maxLength: 3 },
+export const RatingUIInConstraints = {
+  left_label: { minLength: 1, maxLength: 50 },
+  right_label: { minLength: 1, maxLength: 50 },
 } as const;
 
-export const DateFieldRequirementsInConstraints = {
-  type: { maxLength: 4 },
-  operator: { maxLength: 6 },
-  value: { maxLength: 10 },
+export const RatingEmojiDefinitionInConstraints = {
+  variant: { maxLength: 5 },
+  emoji_list: { maxLength: 16 },
 } as const;
 
-export const FieldConditionInConstraints = {
-  target_id: { minLength: 1, maxLength: 128 },
-  family: { maxLength: 5 },
+export const RatingSliderDefinitionInConstraints = {
+  variant: { maxLength: 6 },
 } as const;
 
-export const RuleIfInConstraints = {
-  match: { maxLength: 4 },
-  conditions: { minItems: 1, maxItems: 50 },
+export const RatingStarDefinitionInConstraints = {
+  variant: { maxLength: 5 },
+  stars: { minimum: 1, maximum: 12 },
+} as const;
+
+export const RatingQuestionSchemaInConstraints = {
+  family: { maxLength: 6 },
+  label: { minLength: 1, maxLength: 1000 },
+  title: { minLength: 0, maxLength: 500 },
 } as const;
 
 export const RuleSetItemInConstraints = {
@@ -147,10 +134,17 @@ export const RuleBranchInConstraints = {
   set: { minItems: 1, maxItems: 50 },
 } as const;
 
-export const RuleSchemaInConstraints = {
-  id: { minLength: 1, maxLength: 128 },
+export const RuleIfInConstraints = {
+  match: { maxLength: 4 },
+  conditions: { minItems: 1, maxItems: 50 },
+} as const;
+
+export const CreateQuestionNodeRequestConstraints = {
+  node_key: { minLength: 1, maxLength: 128 },
+  node_type: { maxLength: 8 },
 } as const;
 
 export const CreateRuleNodeRequestConstraints = {
-  type: { maxLength: 4 },
+  node_key: { minLength: 1, maxLength: 128 },
+  node_type: { maxLength: 4 },
 } as const;

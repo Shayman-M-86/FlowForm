@@ -1,7 +1,7 @@
 
 ```json
 {
-  "type": "question",
+  "node_type": "question",
   "sort_key": 100000, 
   "content": {
     "id": "q1",
@@ -26,7 +26,7 @@
 
 ```json
 {
-  "type": "question",
+  "node_type": "question",
   "sort_key": 150000, 
   "content": {
     "id": "q15",
@@ -47,7 +47,7 @@
 
 ```json
 {
-  "type": "question",
+  "node_type": "question",
   "sort_key": 125000, 
   "content": {
     "id": "q16",
@@ -69,7 +69,7 @@
 
 ```json
 {
-  "type": "question",
+  "node_type": "question",
   "sort_key": 200000, 
   "content": {
     "id": "q2",
@@ -92,7 +92,7 @@
 ```
 ```json
 {
-  "type": "question",
+  "node_type": "question",
   "sort_key": 300000, 
   "content": {
     "id": "q3",
@@ -110,7 +110,7 @@
 ```
 ```json
 {
-  "type": "question",
+  "node_type": "question",
   "sort_key": 400000, 
   "content": {
     "id": "q4",
@@ -136,7 +136,7 @@
 
 ```json
 {
-  "type": "question",
+  "node_type": "question",
   "sort_key": 500000, 
   "content": {
     "id": "q5",
@@ -154,7 +154,7 @@
 
 ```json
 {
-  "type": "rule",
+  "node_type": "rule",
   "sort_key": 500000,
   "content": {
     "id": "r1",

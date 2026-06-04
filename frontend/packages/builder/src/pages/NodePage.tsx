@@ -22,6 +22,7 @@ import { QUESTION_MAX, TITLE_MAX, TAG_MAX, incrementQuestionId } from "../compon
 import { NodePillMobileControlsProvider } from "../components/node/NodePillShell";
 import { PlusGridAnimation } from "../components/node/PlusGridAnimation";
 import { safeImportSurveyNodes } from "../components/node/surveyNodeImport";
+import { SurveyDebugCards, type SurveyDebugCard } from "../components/node/SurveyDebugCards";
 
 const NODE_PAGE_STORAGE_KEY = "flowform.node-page.schema";
 const NODE_PAGE_UI_STORAGE_KEY = "flowform.node-page.ui";
@@ -127,11 +128,11 @@ function deserializeSurveyNodes(nodes: SurveyNode[]): PersistedNodePageState {
   orderedNodes.forEach((node, index) => {
     const internalId = `q${index + 1}`;
 
-    if (node.type === "rule") {
+    if (node.node_type === "rule") {
       questions.push({
         id: internalId,
         type: "rules",
-        initialTag: node.content.id,
+        initialTag: node.content.key,
         sortKey: node.sort_key,
       });
       ruleContents[internalId] = node.content;
@@ -141,7 +142,7 @@ function deserializeSurveyNodes(nodes: SurveyNode[]): PersistedNodePageState {
     questions.push({
       id: internalId,
       type: questionTypeFromContent(node.content),
-      initialTag: node.content.id,
+      initialTag: node.content.key,
       sortKey: node.sort_key,
     });
     questionContents[internalId] = node.content;
@@ -194,10 +195,10 @@ function getNodeSchemaId(
   ruleContents: Record<string, RuleContent>,
 ): string {
   if (question.type === "rules") {
-    return ruleContents[question.id]?.id ?? question.initialTag;
+    return ruleContents[question.id]?.key ?? question.initialTag;
   }
 
-  return questionContents[question.id]?.id ?? question.initialTag;
+  return questionContents[question.id]?.key ?? question.initialTag;
 }
 
 function computeNextTag(currentQuestions: Question[], type: QuestionType): string {
@@ -205,6 +206,13 @@ function computeNextTag(currentQuestions: Question[], type: QuestionType): strin
   const relevant = currentQuestions.filter((question) => (question.type === "rules") === isRule);
   if (relevant.length === 0) return isRule ? "r1" : "question_id_1";
   return incrementQuestionId(relevant[relevant.length - 1].initialTag);
+}
+
+function computeNextSortKey(currentQuestions: Question[]): number {
+  const maxSortKey = currentQuestions.reduce((max, question, index) => (
+    Math.max(max, question.sortKey ?? (index + 1) * 100000)
+  ), 0);
+  return maxSortKey + 100000;
 }
 
 function buildRuleSiblingsMap(
@@ -252,10 +260,11 @@ interface NodePageProps {
   initialNodes?: unknown[];
   onNodesChange?: (nodes: SurveyNode[]) => void;
   showDebug?: boolean;
+  debugCards?: SurveyDebugCard[];
   validateRef?: RefObject<(() => boolean) | null>;
 }
 
-export function NodePage({ initialNodes, onNodesChange, showDebug, validateRef }: NodePageProps = {}) {
+export function NodePage({ initialNodes, onNodesChange, showDebug, debugCards, validateRef }: NodePageProps = {}) {
   const navigate = useNavigate();
   const controlled = initialNodes !== undefined;
 
@@ -403,7 +412,7 @@ export function NodePage({ initialNodes, onNodesChange, showDebug, validateRef }
     newlyAddedQuestionId.current = newId;
     setQuestions((current) => {
       const initialTag = computeNextTag(current, type);
-      return [...current, { id: newId, type, initialTag }];
+      return [...current, { id: newId, type, initialTag, sortKey: computeNextSortKey(current) }];
     });
     setNextId((n) => n + 1);
     setEditingQuestionIds((current) =>
@@ -621,23 +630,45 @@ export function NodePage({ initialNodes, onNodesChange, showDebug, validateRef }
 
   const serializedSurvey = useMemo(() => {
     const entries: SurveyEntry[] = [];
-    const preserveSortKeys = questions.every((question, index) => (
-      typeof question.sortKey === "number" &&
-      (index === 0 || (questions[index - 1].sortKey ?? 0) < question.sortKey)
-    ));
 
     for (const question of questions) {
-      const sort_key = preserveSortKeys ? question.sortKey : undefined;
       if (question.type === "rules") {
         const rule = ruleContents[question.id];
-        if (rule) entries.push({ kind: "rule", content: rule, sort_key });
+        if (rule) entries.push({ kind: "rule", content: rule, sort_key: question.sortKey });
       } else {
         const content = questionContents[question.id];
-        if (content) entries.push({ kind: "question", content, sort_key });
+        if (content) entries.push({ kind: "question", content, sort_key: question.sortKey });
       }
     }
     return serializeSurveyEntries(entries);
   }, [questions, questionContents, ruleContents]);
+
+  const nodePageDebugData = useMemo(() => (
+    questions.map((question, index) => ({
+      index,
+      id: question.id,
+      type: question.type,
+      initialTag: question.initialTag,
+      sortKey: question.sortKey,
+      content: question.type === "rules"
+        ? ruleContents[question.id] ?? null
+        : questionContents[question.id] ?? null,
+    }))
+  ), [questions, questionContents, ruleContents]);
+
+  const debugCardItems: SurveyDebugCard[] = useMemo(() => ([
+    {
+      title: "NodePage state",
+      subtitle: `${questions.length} node${questions.length === 1 ? "" : "s"}`,
+      data: nodePageDebugData,
+    },
+    {
+      title: "Builder nodes",
+      subtitle: `${serializedSurvey.length} node${serializedSurvey.length === 1 ? "" : "s"}`,
+      data: serializedSurvey,
+    },
+    ...(debugCards ?? []),
+  ]), [debugCards, nodePageDebugData, questions.length, serializedSurvey]);
 
   const onNodesChangeRef = useRef(onNodesChange);
   onNodesChangeRef.current = onNodesChange;
@@ -697,10 +728,10 @@ export function NodePage({ initialNodes, onNodesChange, showDebug, validateRef }
     for (const question of questions) {
       if (question.type === "rules") {
         const content = ruleContents[question.id];
-        const id = content?.id ?? question.initialTag;
-        if (!id.trim()) {
+        const key = content?.key ?? question.initialTag;
+        if (!key.trim()) {
           errors[question.id] = "Rule ID is required.";
-        } else if (id.length > TAG_MAX) {
+        } else if (key.length > TAG_MAX) {
           errors[question.id] = `Rule ID must be ${TAG_MAX} characters or fewer.`;
         }
         continue;
@@ -709,9 +740,9 @@ export function NodePage({ initialNodes, onNodesChange, showDebug, validateRef }
       const content = questionContents[question.id];
       if (!content) continue;
 
-      if (!content.id.trim()) {
+      if (!content.key.trim()) {
         errors[question.id] = "Question ID is required.";
-      } else if (content.id.length > TAG_MAX) {
+      } else if (content.key.length > TAG_MAX) {
         errors[question.id] = `Question ID must be ${TAG_MAX} characters or fewer.`;
       } else if (!content.label.trim()) {
         errors[question.id] = "Question text is required.";
@@ -873,15 +904,7 @@ export function NodePage({ initialNodes, onNodesChange, showDebug, validateRef }
         />
       </Suspense>
 
-      {showDebug && (
-        <aside className="fixed bottom-4 right-4 z-50 flex max-h-[60vh] w-[min(420px,calc(100vw-32px))] flex-col overflow-hidden rounded-xl border border-border bg-[var(--debug-bg)] font-mono text-[0.78rem] text-[var(--debug-text)] shadow max-[640px]:right-4">
-          <header className="flex items-center justify-between border-b border-[var(--debug-border)] px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.04em]">
-            <span>Debug · survey JSON</span>
-            <span className="font-medium text-[var(--debug-text-dim)]">{questions.length} node{questions.length === 1 ? "" : "s"}</span>
-          </header>
-          <pre className="m-0 overflow-auto whitespace-pre p-3 leading-[1.45]">{JSON.stringify(serializedSurvey, null, 2)}</pre>
-        </aside>
-      )}
+      {showDebug && <SurveyDebugCards cards={debugCardItems} />}
     </section>
   );
 }

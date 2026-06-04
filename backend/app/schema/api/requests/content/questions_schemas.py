@@ -229,7 +229,6 @@ class ChoiceQuestionSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: SchemaIdStr
     family: ChoiceFamily
     label: QuestionLabel
     title: QuestionTitle | None = None
@@ -241,7 +240,6 @@ class FieldQuestionSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
 
-    id: SchemaIdStr
     family: FieldFamily
     label: QuestionLabel
     title: QuestionTitle | None = None
@@ -253,7 +251,6 @@ class MatchingQuestionSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
 
-    id: SchemaIdStr
     family: MatchingFamily
     label: QuestionLabel
     title: QuestionTitle | None = None
@@ -265,7 +262,6 @@ class RatingQuestionSchemaIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: SchemaIdStr
     family: RatingFamily
     label: QuestionLabel
     title: QuestionTitle | None = None

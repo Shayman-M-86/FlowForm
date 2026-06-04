@@ -62,7 +62,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
   const initialFieldType = initialContent?.definition.field_type ?? "short_text";
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
-  const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
+  const [tagValue, setTagValue] = useState(initialContent?.key ?? initialTag ?? "question_id_1");
   const [isRequired, setIsRequired] = useState(false);
   const [fieldType, setFieldType] = useState<FieldType>(initialFieldType);
   const [placeholderValue, setPlaceholderValue] = useState(
@@ -71,7 +71,7 @@ export const FieldQuestion = forwardRef<FieldQuestionHandle, FieldQuestionProps>
   const [fieldValue, setFieldValue] = useState("");
 
   const fieldQuestionData: FieldContent = {
-    id: tagValue,
+    key: tagValue,
     title: titleValue,
     label: questionValue,
     family: "field",

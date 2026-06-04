@@ -70,14 +70,14 @@ export function FormFiller({
     ? preparedSurvey.questionById.get(progress.currentQuestionId) ?? null
     : null;
   const currentQuestionState = currentQuestion
-    ? progress.questionStateMap[currentQuestion.id]
+    ? progress.questionStateMap[currentQuestion.key]
     : undefined;
   const projectedProgress = currentQuestion
-    ? deriveSurveyProgress(preparedSurvey, answers, [...progress.effectiveCommittedIds, currentQuestion.id])
+    ? deriveSurveyProgress(preparedSurvey, answers, [...progress.effectiveCommittedIds, currentQuestion.key])
     : null;
   const answerSummary = buildAnswerSummary(preparedSurvey, answers, progress.effectiveCommittedIds);
   const isContinueDisabled = currentQuestion
-    ? Boolean(validateQuestionAnswer(currentQuestion, answers[currentQuestion.id], currentQuestionState?.required ?? true))
+    ? Boolean(validateQuestionAnswer(currentQuestion, answers[currentQuestion.key], currentQuestionState?.required ?? true))
     : false;
   const completionResult = progress.status === "active"
     ? null
@@ -113,7 +113,7 @@ export function FormFiller({
 
     const error = validateQuestionAnswer(
       currentQuestion,
-      answers[currentQuestion.id],
+      answers[currentQuestion.key],
       currentQuestionState?.required ?? true,
     );
 
@@ -123,7 +123,7 @@ export function FormFiller({
     }
 
     setValidationMessage(null);
-    setCommittedQuestionIds([...progress.effectiveCommittedIds, currentQuestion.id]);
+    setCommittedQuestionIds([...progress.effectiveCommittedIds, currentQuestion.key]);
   }
 
   function handleBack() {
@@ -195,7 +195,7 @@ export function FormFiller({
                 </div>
               </div>
 
-              {renderQuestionInput(currentQuestion, answers[currentQuestion.id], handleAnswerChange)}
+              {renderQuestionInput(currentQuestion, answers[currentQuestion.key], handleAnswerChange)}
 
               {validationMessage && (
                 <div
@@ -288,7 +288,7 @@ function renderQuestionInput(
         <MultiChoiceFormFiller
           question={question}
           value={Array.isArray(answer) ? answer.filter((value): value is string => typeof value === "string") : []}
-          onChange={(nextValue) => onChange(question.id, nextValue)}
+          onChange={(nextValue) => onChange(question.key, nextValue)}
         />
       );
     case "matching":
@@ -296,7 +296,7 @@ function renderQuestionInput(
         <MatchingFormFiller
           question={question}
           value={toRecord(answer)}
-          onChange={(nextValue) => onChange(question.id, nextValue)}
+          onChange={(nextValue) => onChange(question.key, nextValue)}
         />
       );
     case "rating":
@@ -304,7 +304,7 @@ function renderQuestionInput(
         <RatingFormFiller
           question={question}
           value={typeof answer === "number" ? answer : null}
-          onChange={(nextValue) => onChange(question.id, nextValue)}
+          onChange={(nextValue) => onChange(question.key, nextValue)}
         />
       );
     case "field":
@@ -312,7 +312,7 @@ function renderQuestionInput(
         <FieldFormFiller
           question={question}
           value={typeof answer === "string" ? answer : ""}
-          onChange={(nextValue) => onChange(question.id, nextValue)}
+          onChange={(nextValue) => onChange(question.key, nextValue)}
         />
       );
     default:

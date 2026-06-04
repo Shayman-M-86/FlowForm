@@ -1,8 +1,9 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from app.schema.api.enums import SurveyNodeType
+from app.schema.api.requests.content.node import QuestionSchemaIn, RuleSchemaIn
 
 
 class NodeResponses(BaseModel):
@@ -11,13 +12,10 @@ class NodeResponses(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     id: int
-    survey_version_id: int
-    node_key: str = Field(alias="question_key")
+    node_key: str
     sort_key: int
     node_type: SurveyNodeType
-    content: dict = Field(alias="question_schema")
-    created_at: datetime
-    updated_at: datetime
+    content: QuestionSchemaIn | RuleSchemaIn
 
 
 class ScoringRuleResponses(BaseModel):

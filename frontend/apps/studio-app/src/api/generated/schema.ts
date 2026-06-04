@@ -1246,39 +1246,6 @@ export interface components {
             user: components["schemas"]["MemberUserResponses"];
         };
         /**
-         * NodeResponses
-         * @description API response shape for a survey content node (question or rule).
-         */
-        NodeResponses: {
-            /** Id */
-            id: number;
-            /** Survey Version Id */
-            survey_version_id: number;
-            /** Question Key */
-            question_key: string;
-            /** Sort Key */
-            sort_key: number;
-            /**
-             * Node Type
-             * @enum {string}
-             */
-            node_type: "question" | "rule";
-            /** Question Schema */
-            question_schema: {
-                [key: string]: unknown;
-            };
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
-        /**
          * ChoiceConditionIn
          * @description Represents a condition block targeting a choice question.
          */
@@ -1319,8 +1286,6 @@ export interface components {
          * @description Incoming choice-question content schema.
          */
         ChoiceQuestionSchemaIn: {
-            /** Id */
-            id: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -1346,35 +1311,6 @@ export interface components {
             forbidden?: string[];
             /** Any Of */
             any_of?: string[];
-        };
-        /**
-         * CreateQuestionNodeRequest
-         * @description Validates requests that create a new question node.
-         */
-        CreateQuestionNodeRequest: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "question";
-            /** Sort Key */
-            sort_key: number;
-            /** Content */
-            content: components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"];
-        };
-        /**
-         * CreateRuleNodeRequest
-         * @description Validates requests that create a new rule node.
-         */
-        CreateRuleNodeRequest: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "rule";
-            /** Sort Key */
-            sort_key: number;
-            content: components["schemas"]["RuleSchemaIn"];
         };
         /**
          * DateFieldRequirementsIn
@@ -1448,8 +1384,6 @@ export interface components {
          * @description Incoming field-question content schema.
          */
         FieldQuestionSchemaIn: {
-            /** Id */
-            id: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -1524,8 +1458,6 @@ export interface components {
          * @description Incoming matching-question content schema.
          */
         MatchingQuestionSchemaIn: {
-            /** Id */
-            id: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -1607,8 +1539,6 @@ export interface components {
          * @description Incoming rating-question content schema.
          */
         RatingQuestionSchemaIn: {
-            /** Id */
-            id: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -1723,8 +1653,6 @@ export interface components {
          * @description Represents the full rule content stored in question_schema for a rule node.
          */
         RuleSchemaIn: {
-            /** Id */
-            id: string;
             if: components["schemas"]["RuleIfIn"];
             then: components["schemas"]["RuleBranchIn"];
             /** @default null */
@@ -1756,6 +1684,68 @@ export interface components {
             /** Skip To */
             skip_to: string;
         };
+        /**
+         * NodeResponses
+         * @description API response shape for a survey content node (question or rule).
+         */
+        NodeResponses: {
+            /** Id */
+            id: number;
+            /** Node Key */
+            node_key: string;
+            /** Sort Key */
+            sort_key: number;
+            /**
+             * Node Type
+             * @enum {string}
+             */
+            node_type: "question" | "rule";
+            /** Content */
+            content: (components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"]) | components["schemas"]["RuleSchemaIn"];
+        };
+        /**
+         * CreateQuestionNodeRequest
+         * @description Validates requests that create a new question node.
+         */
+        CreateQuestionNodeRequest: {
+            /**
+             * Id
+             * @default null
+             */
+            id: number | null;
+            /** Node Key */
+            node_key: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            node_type: "question";
+            /** Sort Key */
+            sort_key: number;
+            /** Content */
+            content: components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"];
+        };
+        /**
+         * CreateRuleNodeRequest
+         * @description Validates requests that create a new rule node.
+         */
+        CreateRuleNodeRequest: {
+            /**
+             * Id
+             * @default null
+             */
+            id: number | null;
+            /** Node Key */
+            node_key: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            node_type: "rule";
+            /** Sort Key */
+            sort_key: number;
+            content: components["schemas"]["RuleSchemaIn"];
+        };
         /** CreateNodeRequest */
         CreateNodeRequest: components["schemas"]["CreateQuestionNodeRequest"] | components["schemas"]["CreateRuleNodeRequest"];
         /**
@@ -1763,6 +1753,21 @@ export interface components {
          * @description Validates partial updates to an existing survey content node.
          */
         UpdateNodeRequest: {
+            /**
+             * Id
+             * @default null
+             */
+            id: number | null;
+            /**
+             * Node Key
+             * @default null
+             */
+            node_key: string | null;
+            /**
+             * Node Type
+             * @default null
+             */
+            node_type: ("question" | "rule") | null;
             /**
              * Sort Key
              * @default null
@@ -2858,14 +2863,11 @@ export type PasswordChangeTicketResponses = components['schemas']['PasswordChang
 export type ProjectInvitationResponses = components['schemas']['ProjectInvitationResponses'];
 export type MemberUserResponses = components['schemas']['MemberUserResponses'];
 export type ProjectMemberResponses = components['schemas']['ProjectMemberResponses'];
-export type NodeResponses = components['schemas']['NodeResponses'];
 export type ChoiceConditionIn = components['schemas']['ChoiceConditionIn'];
 export type ChoiceDefinitionIn = components['schemas']['ChoiceDefinitionIn'];
 export type ChoiceOptionIn = components['schemas']['ChoiceOptionIn'];
 export type ChoiceQuestionSchemaIn = components['schemas']['ChoiceQuestionSchemaIn'];
 export type ChoiceRequirementsIn = components['schemas']['ChoiceRequirementsIn'];
-export type CreateQuestionNodeRequest = components['schemas']['CreateQuestionNodeRequest'];
-export type CreateRuleNodeRequest = components['schemas']['CreateRuleNodeRequest'];
 export type DateFieldRequirementsIn = components['schemas']['DateFieldRequirementsIn'];
 export type EndAndDiscardActionIn = components['schemas']['EndAndDiscardActionIn'];
 export type EndAndSubmitActionIn = components['schemas']['EndAndSubmitActionIn'];
@@ -2893,6 +2895,9 @@ export type RuleIfIn = components['schemas']['RuleIfIn'];
 export type RuleSchemaIn = components['schemas']['RuleSchemaIn'];
 export type RuleSetItemIn = components['schemas']['RuleSetItemIn'];
 export type SkipToActionIn = components['schemas']['SkipToActionIn'];
+export type NodeResponses = components['schemas']['NodeResponses'];
+export type CreateQuestionNodeRequest = components['schemas']['CreateQuestionNodeRequest'];
+export type CreateRuleNodeRequest = components['schemas']['CreateRuleNodeRequest'];
 export type CreateNodeRequest = components['schemas']['CreateNodeRequest'];
 export type UpdateNodeRequest = components['schemas']['UpdateNodeRequest'];
 export type ScoringRuleResponses = components['schemas']['ScoringRuleResponses'];

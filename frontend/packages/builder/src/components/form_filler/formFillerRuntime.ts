@@ -37,13 +37,13 @@ const DEFAULT_REQUIRED = true;
 
 export function prepareSurvey(survey: SurveyNode[]): PreparedSurvey {
   const nodes = [...survey].sort((left, right) => left.sort_key - right.sort_key);
-  const questionNodes = nodes.filter((node): node is QuestionNode => node.type === "question");
-  const questionById = new Map(questionNodes.map((node) => [node.content.id, node.content] as const));
+  const questionNodes = nodes.filter((node): node is QuestionNode => node.node_type === "question");
+  const questionById = new Map(questionNodes.map((node) => [node.content.key, node.content] as const));
   const questionIndexById = new Map<string, number>();
 
   nodes.forEach((node, index) => {
-    if (node.type === "question") {
-      questionIndexById.set(node.content.id, index);
+    if (node.node_type === "question") {
+      questionIndexById.set(node.content.key, index);
     }
   });
 
@@ -73,22 +73,22 @@ export function deriveSurveyProgress(
 
     const node = preparedSurvey.nodes[cursor];
 
-    if (node.type === "question") {
-      const state = questionStateMap[node.content.id];
+    if (node.node_type === "question") {
+      const state = questionStateMap[node.content.key];
       if (!state?.visible) {
         cursor += 1;
         continue;
       }
 
       const expectedCommittedId = committedQuestionIds[effectiveCommittedIds.length];
-      if (expectedCommittedId === node.content.id) {
-        effectiveCommittedIds.push(node.content.id);
+      if (expectedCommittedId === node.content.key) {
+        effectiveCommittedIds.push(node.content.key);
         cursor += 1;
         continue;
       }
 
       return {
-        currentQuestionId: node.content.id,
+        currentQuestionId: node.content.key,
         effectiveCommittedIds,
         questionStateMap,
         status: "active",
@@ -163,7 +163,7 @@ export function validateQuestionAnswer(
 function createQuestionStateMap(questionNodes: QuestionNode[]): QuestionStateMap {
   return Object.fromEntries(
     questionNodes.map((node) => [
-      node.content.id,
+      node.content.key,
       {
         visible: true,
         required: DEFAULT_REQUIRED,

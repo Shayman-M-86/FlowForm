@@ -251,19 +251,19 @@ function validateGraphIdentity(
 
   for (const { node, nodeIndex } of nodes) {
     const path = `$[${nodeIndex}]`;
-    const contentId = node.content.id;
+    const contentId = node.content.key;
 
     const previousIdIndex = ids.get(contentId);
     if (previousIdIndex !== undefined) {
       pushIssue(
         issues,
-        `${path}.content.id`,
-        `Duplicate content id "${contentId}" — already used by node at index ${previousIdIndex}.`,
+        `${path}.content.key`,
+        `Duplicate content key "${contentId}" — already used by node at index ${previousIdIndex}.`,
         nodeIndex,
       );
     } else {
       ids.set(contentId, nodeIndex);
-      if (node.type === "question") {
+      if (node.node_type === "question") {
         questionById.set(contentId, { content: node.content, sortKey: node.sort_key });
       }
     }
@@ -280,7 +280,7 @@ function validateGraphIdentity(
       sortKeys.set(node.sort_key, nodeIndex);
     }
 
-    if (node.type === "question") {
+    if (node.node_type === "question") {
       validateQuestionContent(node.content, path, nodeIndex, issues);
     }
   }
@@ -294,7 +294,7 @@ function validateRuleReferences(
   issues: SurveyNodeImportIssue[],
 ) {
   for (const { node, nodeIndex } of nodes) {
-    if (node.type === "rule") {
+    if (node.node_type === "rule") {
       validateRuleContent(node.content, node.sort_key, nodeIndex, questionById, issues);
     }
   }

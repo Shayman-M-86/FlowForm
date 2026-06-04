@@ -3564,54 +3564,6 @@ components:
       - user
       title: ProjectMemberResponses
       type: object
-    NodeResponses:
-      description: API response shape for a survey content node (question or rule).
-      properties:
-        id:
-          title: Id
-          type: integer
-        survey_version_id:
-          title: Survey Version Id
-          type: integer
-        question_key:
-          title: Question Key
-          type: string
-          maxLength: 128
-        sort_key:
-          title: Sort Key
-          type: integer
-        node_type:
-          enum:
-          - question
-          - rule
-          title: Node Type
-          type: string
-          maxLength: 8
-        question_schema:
-          additionalProperties: true
-          title: Question Schema
-          type: object
-        created_at:
-          format: date-time
-          title: Created At
-          type: string
-          maxLength: 35
-        updated_at:
-          format: date-time
-          title: Updated At
-          type: string
-          maxLength: 35
-      required:
-      - id
-      - survey_version_id
-      - question_key
-      - sort_key
-      - node_type
-      - question_schema
-      - created_at
-      - updated_at
-      title: NodeResponses
-      type: object
     ChoiceConditionIn:
       additionalProperties: false
       description: Represents a condition block targeting a choice question.
@@ -3681,11 +3633,6 @@ components:
       additionalProperties: false
       description: Incoming choice-question content schema.
       properties:
-        id:
-          maxLength: 128
-          minLength: 1
-          title: Id
-          type: string
         family:
           const: choice
           title: Family
@@ -3707,7 +3654,6 @@ components:
         definition:
           $ref: '#/components/schemas/ChoiceDefinitionIn'
       required:
-      - id
       - family
       - label
       - definition
@@ -3743,62 +3689,6 @@ components:
           type: array
       title: ChoiceRequirementsIn
       type: object
-    CreateQuestionNodeRequest:
-      additionalProperties: false
-      description: Validates requests that create a new question node.
-      properties:
-        type:
-          const: question
-          title: Type
-          type: string
-          maxLength: 8
-        sort_key:
-          exclusiveMinimum: 0
-          title: Sort Key
-          type: integer
-        content:
-          discriminator:
-            mapping:
-              choice: '#/components/schemas/ChoiceQuestionSchemaIn'
-              field: '#/components/schemas/FieldQuestionSchemaIn'
-              matching: '#/components/schemas/MatchingQuestionSchemaIn'
-              rating: '#/components/schemas/RatingQuestionSchemaIn'
-            propertyName: family
-          oneOf:
-          - $ref: '#/components/schemas/ChoiceQuestionSchemaIn'
-          - $ref: '#/components/schemas/FieldQuestionSchemaIn'
-          - $ref: '#/components/schemas/MatchingQuestionSchemaIn'
-          - $ref: '#/components/schemas/RatingQuestionSchemaIn'
-          title: Content
-      required:
-      - type
-      - sort_key
-      - content
-      title: CreateQuestionNodeRequest
-      type: object
-      x-flowform-export: builder
-    CreateRuleNodeRequest:
-      additionalProperties: false
-      description: Validates requests that create a new rule node.
-      properties:
-        type:
-          const: rule
-          title: Type
-          type: string
-          maxLength: 4
-        sort_key:
-          exclusiveMinimum: 0
-          title: Sort Key
-          type: integer
-        content:
-          $ref: '#/components/schemas/RuleSchemaIn'
-      required:
-      - type
-      - sort_key
-      - content
-      title: CreateRuleNodeRequest
-      type: object
-      x-flowform-export: builder
     DateFieldRequirementsIn:
       additionalProperties: false
       description: Validation requirements for a date field-question condition.
@@ -3900,11 +3790,6 @@ components:
       additionalProperties: false
       description: Incoming field-question content schema.
       properties:
-        id:
-          maxLength: 128
-          minLength: 1
-          title: Id
-          type: string
         family:
           const: field
           title: Family
@@ -3926,7 +3811,6 @@ components:
         definition:
           $ref: '#/components/schemas/FieldDefinitionIn'
       required:
-      - id
       - family
       - label
       - definition
@@ -4029,11 +3913,6 @@ components:
       additionalProperties: false
       description: Incoming matching-question content schema.
       properties:
-        id:
-          maxLength: 128
-          minLength: 1
-          title: Id
-          type: string
         family:
           const: matching
           title: Family
@@ -4055,7 +3934,6 @@ components:
         definition:
           $ref: '#/components/schemas/MatchingDefinitionIn'
       required:
-      - id
       - family
       - label
       - definition
@@ -4163,11 +4041,6 @@ components:
       additionalProperties: false
       description: Incoming rating-question content schema.
       properties:
-        id:
-          maxLength: 128
-          minLength: 1
-          title: Id
-          type: string
         family:
           const: rating
           title: Family
@@ -4199,7 +4072,6 @@ components:
           - $ref: '#/components/schemas/RatingEmojiDefinitionIn'
           title: Definition
       required:
-      - id
       - family
       - label
       - definition
@@ -4378,11 +4250,6 @@ components:
       additionalProperties: false
       description: Represents the full rule content stored in question_schema for a rule node.
       properties:
-        id:
-          maxLength: 128
-          minLength: 1
-          title: Id
-          type: string
         if:
           $ref: '#/components/schemas/RuleIfIn'
         then:
@@ -4393,7 +4260,6 @@ components:
           - type: 'null'
           default: null
       required:
-      - id
       - if
       - then
       title: RuleSchemaIn
@@ -4436,12 +4302,140 @@ components:
       - skip_to
       title: SkipToActionIn
       type: object
+    NodeResponses:
+      description: API response shape for a survey content node (question or rule).
+      properties:
+        id:
+          title: Id
+          type: integer
+        node_key:
+          title: Node Key
+          type: string
+          maxLength: 128
+        sort_key:
+          title: Sort Key
+          type: integer
+        node_type:
+          enum:
+          - question
+          - rule
+          title: Node Type
+          type: string
+          maxLength: 8
+        content:
+          anyOf:
+          - discriminator:
+              mapping:
+                choice: '#/components/schemas/ChoiceQuestionSchemaIn'
+                field: '#/components/schemas/FieldQuestionSchemaIn'
+                matching: '#/components/schemas/MatchingQuestionSchemaIn'
+                rating: '#/components/schemas/RatingQuestionSchemaIn'
+              propertyName: family
+            oneOf:
+            - $ref: '#/components/schemas/ChoiceQuestionSchemaIn'
+            - $ref: '#/components/schemas/FieldQuestionSchemaIn'
+            - $ref: '#/components/schemas/MatchingQuestionSchemaIn'
+            - $ref: '#/components/schemas/RatingQuestionSchemaIn'
+          - $ref: '#/components/schemas/RuleSchemaIn'
+          title: Content
+      required:
+      - id
+      - node_key
+      - sort_key
+      - node_type
+      - content
+      title: NodeResponses
+      type: object
+    CreateQuestionNodeRequest:
+      additionalProperties: false
+      description: Validates requests that create a new question node.
+      properties:
+        id:
+          anyOf:
+          - exclusiveMaximum: 32767
+            exclusiveMinimum: 0
+            type: integer
+          - type: 'null'
+          default: null
+          title: Id
+        node_key:
+          maxLength: 128
+          minLength: 1
+          title: Node Key
+          type: string
+        node_type:
+          const: question
+          title: Node Type
+          type: string
+          maxLength: 8
+        sort_key:
+          exclusiveMinimum: 0
+          title: Sort Key
+          type: integer
+        content:
+          discriminator:
+            mapping:
+              choice: '#/components/schemas/ChoiceQuestionSchemaIn'
+              field: '#/components/schemas/FieldQuestionSchemaIn'
+              matching: '#/components/schemas/MatchingQuestionSchemaIn'
+              rating: '#/components/schemas/RatingQuestionSchemaIn'
+            propertyName: family
+          oneOf:
+          - $ref: '#/components/schemas/ChoiceQuestionSchemaIn'
+          - $ref: '#/components/schemas/FieldQuestionSchemaIn'
+          - $ref: '#/components/schemas/MatchingQuestionSchemaIn'
+          - $ref: '#/components/schemas/RatingQuestionSchemaIn'
+          title: Content
+      required:
+      - node_key
+      - node_type
+      - sort_key
+      - content
+      title: CreateQuestionNodeRequest
+      type: object
+      x-flowform-export: builder
+    CreateRuleNodeRequest:
+      additionalProperties: false
+      description: Validates requests that create a new rule node.
+      properties:
+        id:
+          anyOf:
+          - exclusiveMaximum: 32767
+            exclusiveMinimum: 0
+            type: integer
+          - type: 'null'
+          default: null
+          title: Id
+        node_key:
+          maxLength: 128
+          minLength: 1
+          title: Node Key
+          type: string
+        node_type:
+          const: rule
+          title: Node Type
+          type: string
+          maxLength: 4
+        sort_key:
+          exclusiveMinimum: 0
+          title: Sort Key
+          type: integer
+        content:
+          $ref: '#/components/schemas/RuleSchemaIn'
+      required:
+      - node_key
+      - node_type
+      - sort_key
+      - content
+      title: CreateRuleNodeRequest
+      type: object
+      x-flowform-export: builder
     CreateNodeRequest:
       discriminator:
         mapping:
           question: '#/components/schemas/CreateQuestionNodeRequest'
           rule: '#/components/schemas/CreateRuleNodeRequest'
-        propertyName: type
+        propertyName: node_type
       oneOf:
       - $ref: '#/components/schemas/CreateQuestionNodeRequest'
       - $ref: '#/components/schemas/CreateRuleNodeRequest'
@@ -4450,6 +4444,32 @@ components:
       additionalProperties: false
       description: Validates partial updates to an existing survey content node.
       properties:
+        id:
+          anyOf:
+          - exclusiveMaximum: 32767
+            exclusiveMinimum: 0
+            type: integer
+          - type: 'null'
+          default: null
+          title: Id
+        node_key:
+          anyOf:
+          - maxLength: 128
+            minLength: 1
+            type: string
+          - type: 'null'
+          default: null
+          title: Node Key
+        node_type:
+          anyOf:
+          - enum:
+            - question
+            - rule
+            type: string
+            maxLength: 8
+          - type: 'null'
+          default: null
+          title: Node Type
         sort_key:
           anyOf:
           - exclusiveMinimum: 0
@@ -6724,12 +6744,8 @@ components:
                 message: Request validation failed.
                 details:
                   errors:
-                  - message: Input should be a valid integer, unable to parse string as an integer
-                    type: int_parsing
-                    field: sort_key
-                  - message: Unable to extract tag using discriminator 'family'
+                  - message: Unable to extract tag using discriminator 'node_type'
                     type: union_tag_not_found
-                    field: content
     RateLimitError:
       description: Rate limit exceeded.
       content:

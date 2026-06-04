@@ -368,7 +368,7 @@ function backendNodesToSurveyNodes(nodes: NodeOut[]): SurveyNode[] {
   return [...nodes]
     .sort((a, b) => a.sort_key - b.sort_key)
     .map((n) => ({
-      type: n.node_type as 'question' | 'rule',
+      node_type: n.node_type as 'question' | 'rule',
       sort_key: n.sort_key,
       content: n.question_schema as never,
     }))
@@ -419,7 +419,7 @@ function normalizeNodeContentForDirty(content: SurveyNode['content']) {
 
 function normalizedDirtyNodes(nodes: SurveyNode[]) {
   return nodes.map((node) => ({
-    type: node.type,
+    node_type: node.node_type,
     content: normalizeNodeContentForDirty(node.content),
   }))
 }
@@ -431,9 +431,9 @@ function hasUnsavedNodeChanges(nodes: SurveyNode[], backendNodes: SurveyNode[]) 
 function nodeDebugSummary(nodes: SurveyNode[]) {
   return nodes.map((node, index) => ({
     index,
-    type: node.type,
+    node_type: node.node_type,
     sort_key: node.sort_key,
-    id: node.content.id,
+    key: node.content.key,
     family: 'family' in node.content ? node.content.family : 'rule',
   }))
 }
@@ -585,7 +585,7 @@ function assignSortKeysBetweenAnchors({
         allowedOwner: entry.existing?.question_key,
       })
       if (key == null) return false
-      plan.set(entry.node.content.id, key)
+      plan.set(entry.node.content.key, key)
       previous = key
     }
     return true
@@ -605,7 +605,7 @@ function assignSortKeysBetweenAnchors({
       allowedOwner: entries[index].existing?.question_key,
     })
     if (key == null) return false
-    plan.set(entries[index].node.content.id, key)
+    plan.set(entries[index].node.content.key, key)
     previous = key
   }
 
@@ -621,7 +621,7 @@ function createHighSortKeyPlan(nodes: SurveyNode[], current: NodeOut[]) {
   )
 
   nodes.forEach((node, index) => {
-    plan.set(node.content.id, maxSortKey + SORT_KEY_STEP * (index + 1))
+    plan.set(node.content.key, maxSortKey + SORT_KEY_STEP * (index + 1))
   })
   return plan
 }
@@ -630,9 +630,9 @@ function planSortKeysForSave(nodes: SurveyNode[], current: NodeOut[]) {
   const entries = nodes.map((node, index) => ({
     node,
     index,
-    existing: current.find((backendNode) => backendNode.question_key === node.content.id),
+    existing: current.find((backendNode) => backendNode.question_key === node.content.key),
   }))
-  const incomingKeys = new Set(nodes.map((node) => node.content.id))
+  const incomingKeys = new Set(nodes.map((node) => node.content.key))
   const occupied = new Map(
     current
       .filter((node) => incomingKeys.has(node.question_key))
@@ -654,7 +654,7 @@ function planSortKeysForSave(nodes: SurveyNode[], current: NodeOut[]) {
       })) {
         return createHighSortKeyPlan(nodes, current)
       }
-      plan.set(entry.node.content.id, entry.existing.sort_key)
+      plan.set(entry.node.content.key, entry.existing.sort_key)
       lower = entry.existing.sort_key
       pending = []
       continue
@@ -710,16 +710,16 @@ function ConnectedNodePage({
   const syncToBackend = useCallback(async (nodes: SurveyNode[]) => {
     const current = backendNodesRef.current ?? []
     const byKey = new Map(current.map((n) => [n.question_key, n]))
-    const incomingKeys = new Set(nodes.map((n) => n.content.id))
+    const incomingKeys = new Set(nodes.map((n) => n.content.key))
     const sortKeyPlan = planSortKeysForSave(nodes, current)
     const plannedNodes = nodes.map((node) => ({
       ...node,
-      sort_key: sortKeyPlan.get(node.content.id) ?? node.sort_key,
+      sort_key: sortKeyPlan.get(node.content.key) ?? node.sort_key,
     }))
     const existingNodes = nodes
-      .map((node) => ({ node, existing: byKey.get(node.content.id) }))
+      .map((node) => ({ node, existing: byKey.get(node.content.key) }))
       .filter((entry): entry is { node: SurveyNode; existing: NodeOut } => Boolean(entry.existing))
-    const newNodes = nodes.filter((node) => !byKey.has(node.content.id))
+    const newNodes = nodes.filter((node) => !byKey.has(node.content.key))
 
     // Delete first so recreated nodes can reuse the old key/sort slot.
     for (const backendNode of current) {
@@ -729,7 +729,7 @@ function ConnectedNodePage({
     }
 
     for (const { node, existing } of existingNodes) {
-      const plannedSortKey = sortKeyPlan.get(node.content.id) ?? node.sort_key
+      const plannedSortKey = sortKeyPlan.get(node.content.key) ?? node.sort_key
       const contentChanged = findFirstDifference(
         normalizeNodeContentForDirty(existing.question_schema as unknown as SurveyNode['content']),
         normalizeNodeContentForDirty(node.content),
@@ -744,8 +744,8 @@ function ConnectedNodePage({
 
     for (const node of newNodes) {
       await createNode.mutateAsync({
-        type: node.type,
-        sort_key: sortKeyPlan.get(node.content.id) ?? node.sort_key,
+        node_type: node.node_type,
+        sort_key: sortKeyPlan.get(node.content.key) ?? node.sort_key,
         content: node.content as never,
       })
     }
@@ -821,6 +821,11 @@ function ConnectedNodePage({
     <MemoryRouter initialEntries={['/node']}>
       <NodePage
         initialNodes={seedNodes}
+        debugCards={[{
+          title: 'Backend nodes',
+          subtitle: `v${versionNumber}`,
+          data: backendNodesToSurveyNodes(backendNodesRef.current ?? []),
+        }]}
         onNodesChange={(nodes) => {
           latestNodesRef.current = nodes
           if (!initialEmitDoneRef.current) {

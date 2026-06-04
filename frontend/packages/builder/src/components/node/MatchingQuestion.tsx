@@ -98,7 +98,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
     : INITIAL_RIGHT_ITEMS;
   const [titleValue, setTitleValue] = useState(initialContent?.title ?? title ?? "");
   const [questionValue, setQuestionValue] = useState(initialContent?.label ?? "");
-  const [tagValue, setTagValue] = useState(initialContent?.id ?? initialTag ?? "question_id_1");
+  const [tagValue, setTagValue] = useState(initialContent?.key ?? initialTag ?? "question_id_1");
   const [isRequired, setIsRequired] = useState(false);
   const [openItemIds, setOpenItemIds] = useState<Set<string>>(new Set());
   const [leftItems, setLeftItems] = useState(initialLeftItems);
@@ -116,7 +116,7 @@ export const MatchingQuestion = forwardRef<MatchingQuestionHandle, MatchingQuest
   );
 
   const matchingData: MatchingContent = {
-    id: tagValue,
+    key: tagValue,
     title: titleValue,
     label: questionValue,
     family: "matching",

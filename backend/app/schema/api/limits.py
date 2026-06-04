@@ -11,6 +11,7 @@ TOKEN_MAX = 256
 TOKEN_PREFIX_MAX = 32
 URL_MAX = 2048
 ID_TOKEN_MAX = 8192
+CONTENT_ID_MAX = 32767
 
 
 # Integer ID limits. Match PostgreSQL INTEGER-backed positive resource IDs.
