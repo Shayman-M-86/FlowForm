@@ -4351,7 +4351,7 @@ components:
       description: Validates requests that create a new question node.
       properties:
         id:
-          exclusiveMaximum: 32767
+          exclusiveMaximum: 2147483647
           exclusiveMinimum: 0
           title: Id
           type: integer
@@ -4397,7 +4397,7 @@ components:
       description: Validates requests that create a new rule node.
       properties:
         id:
-          exclusiveMaximum: 32767
+          exclusiveMaximum: 2147483647
           exclusiveMinimum: 0
           title: Id
           type: integer
@@ -4441,7 +4441,7 @@ components:
       description: Validates partial updates to an existing survey content node.
       properties:
         id:
-          exclusiveMaximum: 32767
+          exclusiveMaximum: 2147483647
           exclusiveMinimum: 0
           title: Id
           type: integer

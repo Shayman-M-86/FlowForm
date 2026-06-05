@@ -6,10 +6,10 @@ import { FieldQuestion, type FieldQuestionNode } from "../../components/node/Que
 import { MultiChoiceQuestion, type MultiChoiceQuestionNode } from "../../components/node/QuestionNode/MultiChoiceQuestion";
 import { MatchingQuestion, type MatchingQuestionNode } from "../../components/node/QuestionNode/MatchingQuestion";
 import { RatingQuestion, type RatingQuestionNode } from "../../components/node/QuestionNode/RatingQuestion";
-import { RulesQuestion, type RulesQuestionNode } from "../../components/node/QuestionNode/RulesQuestion";
+import { RulesQuestion, type RulesQuestionNode } from "../../components/node/QuestionNode/rules/RulesQuestion";
 
 type SurveyNode = CreateQuestionNodeRequest | CreateRuleNodeRequest;
-type QuestionContent = CreateQuestionNodeRequest["content"];
+type QuestionNode = CreateQuestionNodeRequest;
 
 interface NodeRendererProps {
   node: SurveyNode;
@@ -21,8 +21,8 @@ interface NodeRendererProps {
   onExpand: () => void;
   onExpandInEditMode: () => void;
   onEditModeChange: (isEditMode: boolean) => void;
-  previousSiblings?: QuestionContent[];
-  followingSiblings?: QuestionContent[];
+  previousSiblings?: QuestionNode[];
+  followingSiblings?: QuestionNode[];
 }
 
 /**

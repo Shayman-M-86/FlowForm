@@ -22,7 +22,7 @@ export type QuestionStateMap = Record<string, QuestionPresentationState>;
 export interface PreparedSurvey {
   nodes: SurveyNode[];
   questionNodes: QuestionNode[];
-  questionById: Map<string, QuestionContent>;
+  questionById: Map<string, QuestionNode>;
   questionIndexById: Map<string, number>;
 }
 
@@ -30,20 +30,24 @@ export interface DerivedSurveyProgress {
   currentQuestionId: string | null;
   effectiveCommittedIds: string[];
   questionStateMap: QuestionStateMap;
-  status: "active" | "submitted" | "discarded";
+  status: "active" | "submitted" | "discarded" | "invalid";
+  error?: string;
 }
 
 const DEFAULT_REQUIRED = true;
 
+// Runtime relationships are keyed by the editable node_key (the same value rule
+// target_id / skip_to store). The maps below are temporary lookup indexes
+// derived from the unchanged survey array — not a second data model.
 export function prepareSurvey(survey: SurveyNode[]): PreparedSurvey {
   const nodes = [...survey].sort((left, right) => left.sort_key - right.sort_key);
   const questionNodes = nodes.filter((node): node is QuestionNode => node.node_type === "question");
-  const questionById = new Map(questionNodes.map((node) => [node.content.key, node.content] as const));
+  const questionById = new Map(questionNodes.map((node) => [node.node_key, node] as const));
   const questionIndexById = new Map<string, number>();
 
   nodes.forEach((node, index) => {
     if (node.node_type === "question") {
-      questionIndexById.set(node.content.key, index);
+      questionIndexById.set(node.node_key, index);
     }
   });
 
@@ -68,39 +72,49 @@ export function deriveSurveyProgress(
   while (cursor < preparedSurvey.nodes.length) {
     safetyCounter += 1;
     if (safetyCounter > (preparedSurvey.nodes.length * 4) + 8) {
-      break;
+      // A malformed rule flow would otherwise loop until the counter trips and
+      // then report a false "submitted". Surface it as an explicit error.
+      return {
+        currentQuestionId: null,
+        effectiveCommittedIds,
+        questionStateMap,
+        status: "invalid",
+        error: "The survey contains a rule loop.",
+      };
     }
 
     const node = preparedSurvey.nodes[cursor];
 
     if (node.node_type === "question") {
-      const state = questionStateMap[node.content.key];
+      const state = questionStateMap[node.node_key];
       if (!state?.visible) {
         cursor += 1;
         continue;
       }
 
       const expectedCommittedId = committedQuestionIds[effectiveCommittedIds.length];
-      if (expectedCommittedId === node.content.key) {
-        effectiveCommittedIds.push(node.content.key);
+      if (expectedCommittedId === node.node_key) {
+        effectiveCommittedIds.push(node.node_key);
         cursor += 1;
         continue;
       }
 
       return {
-        currentQuestionId: node.content.key,
+        currentQuestionId: node.node_key,
         effectiveCommittedIds,
         questionStateMap,
         status: "active",
       };
     }
 
+    // Select the matching branch once, then apply both its set and do so then
+    // and else behave consistently (else.set is no longer silently ignored).
     const ruleMatched = evaluateRuleMatch(node.content.if.match, node.content.if.conditions, answers);
-    const nextSet = ruleMatched ? (node.content.then.set ?? undefined) : undefined;
-    const nextAction = ruleMatched ? node.content.then.do : node.content.else?.do;
+    const branch = ruleMatched ? node.content.then : node.content.else;
 
-    applyQuestionStateUpdates(questionStateMap, nextSet);
+    applyQuestionStateUpdates(questionStateMap, branch?.set ?? undefined);
 
+    const nextAction = branch?.do;
     if (!nextAction) {
       cursor += 1;
       continue;
@@ -108,7 +122,16 @@ export function deriveSurveyProgress(
 
     if ("skip_to" in nextAction) {
       const targetIndex = preparedSurvey.questionIndexById.get(nextAction.skip_to);
-      cursor = targetIndex === undefined ? cursor + 1 : targetIndex;
+      if (targetIndex === undefined) {
+        return {
+          currentQuestionId: null,
+          effectiveCommittedIds,
+          questionStateMap,
+          status: "invalid",
+          error: "A rule points to a missing question.",
+        };
+      }
+      cursor = targetIndex;
       continue;
     }
 
@@ -163,7 +186,7 @@ export function validateQuestionAnswer(
 function createQuestionStateMap(questionNodes: QuestionNode[]): QuestionStateMap {
   return Object.fromEntries(
     questionNodes.map((node) => [
-      node.content.key,
+      node.node_key,
       {
         visible: true,
         required: DEFAULT_REQUIRED,
@@ -256,9 +279,7 @@ function evaluateMatchingCondition(
   const selections = asRecord(answer);
   const requiredPairs = condition.requirements.required ?? [];
 
-  return requiredPairs.every((pair) =>
-    Object.entries(pair).every(([promptId, matchId]) => selections[promptId] === matchId),
-  );
+  return requiredPairs.every((pair) => selections[pair.prompt_id] === pair.match_id);
 }
 
 function evaluateRatingCondition(

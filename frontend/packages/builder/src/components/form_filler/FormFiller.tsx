@@ -13,11 +13,16 @@ import {
   type PreparedSurvey,
   type QuestionAnswer,
 } from "./formFillerRuntime";
-import type { QuestionContent, SurveyNode } from "../node/questionTypes";
+import type { QuestionNode, SurveyNode } from "../node/questionTypes";
+
+export interface SubmissionAnswer {
+  question_key: string;
+  answer: QuestionAnswer | null;
+}
 
 export interface FormFillerResult {
   status: "submitted" | "discarded";
-  answers: Record<string, QuestionAnswer | null>;
+  answers: SubmissionAnswer[];
   committedQuestionIds: string[];
 }
 
@@ -66,26 +71,28 @@ export function FormFiller({
 
   const preparedSurvey = prepareSurvey(survey);
   const progress = deriveSurveyProgress(preparedSurvey, answers, committedQuestionIds);
-  const currentQuestion = progress.currentQuestionId
+  const currentNode = progress.currentQuestionId
     ? preparedSurvey.questionById.get(progress.currentQuestionId) ?? null
     : null;
-  const currentQuestionState = currentQuestion
-    ? progress.questionStateMap[currentQuestion.key]
+  const currentQuestion = currentNode?.content ?? null;
+  const currentQuestionState = currentNode
+    ? progress.questionStateMap[currentNode.node_key]
     : undefined;
-  const projectedProgress = currentQuestion
-    ? deriveSurveyProgress(preparedSurvey, answers, [...progress.effectiveCommittedIds, currentQuestion.key])
+  const projectedProgress = currentNode
+    ? deriveSurveyProgress(preparedSurvey, answers, [...progress.effectiveCommittedIds, currentNode.node_key])
     : null;
   const answerSummary = buildAnswerSummary(preparedSurvey, answers, progress.effectiveCommittedIds);
-  const isContinueDisabled = currentQuestion
-    ? Boolean(validateQuestionAnswer(currentQuestion, answers[currentQuestion.key], currentQuestionState?.required ?? true))
+  const isContinueDisabled = currentNode && currentQuestion
+    ? Boolean(validateQuestionAnswer(currentQuestion, answers[currentNode.node_key], currentQuestionState?.required ?? true))
     : false;
-  const completionResult = progress.status === "active"
-    ? null
-    : {
-      status: progress.status,
-      answers: answerSummary,
-      committedQuestionIds: progress.effectiveCommittedIds,
-    };
+  const completionResult: FormFillerResult | null =
+    progress.status === "submitted" || progress.status === "discarded"
+      ? {
+        status: progress.status,
+        answers: answerSummary,
+        committedQuestionIds: progress.effectiveCommittedIds,
+      }
+      : null;
 
   useEffect(() => {
     if (!completionResult) {
@@ -109,11 +116,11 @@ export function FormFiller({
   }
 
   function handleContinue() {
-    if (!currentQuestion) return;
+    if (!currentNode || !currentQuestion) return;
 
     const error = validateQuestionAnswer(
       currentQuestion,
-      answers[currentQuestion.key],
+      answers[currentNode.node_key],
       currentQuestionState?.required ?? true,
     );
 
@@ -123,7 +130,7 @@ export function FormFiller({
     }
 
     setValidationMessage(null);
-    setCommittedQuestionIds([...progress.effectiveCommittedIds, currentQuestion.key]);
+    setCommittedQuestionIds([...progress.effectiveCommittedIds, currentNode.node_key]);
   }
 
   function handleBack() {
@@ -172,7 +179,7 @@ export function FormFiller({
         ].join(" ")}
       >
         <div className={panelClass}>
-          {progress.status === "active" && currentQuestion ? (
+          {progress.status === "active" && currentNode && currentQuestion ? (
             <>
               <header className="flex items-start justify-between max-sm:flex-col">
                 <div>
@@ -195,7 +202,7 @@ export function FormFiller({
                 </div>
               </div>
 
-              {renderQuestionInput(currentQuestion, answers[currentQuestion.key], handleAnswerChange)}
+              {renderQuestionInput(currentNode, answers[currentNode.node_key], handleAnswerChange)}
 
               {validationMessage && (
                 <div
@@ -229,6 +236,26 @@ export function FormFiller({
                 )}
               </div>
             </>
+          ) : progress.status === "invalid" ? (
+            <div className="flex flex-col gap-4.5">
+              <Badge variant="warning" size="sm">Survey error</Badge>
+              <h1 className="m-0 text-[clamp(1.7rem,4vw,2.4rem)] text-foreground">
+                This survey can&apos;t be completed
+              </h1>
+              <p className="m-0 leading-relaxed text-muted-foreground">
+                {progress.error ?? "The survey rules are misconfigured."}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button type="button" variant="primary" onClick={handleRestart}>
+                  Start over
+                </Button>
+                {onExit && (
+                  <Button type="button" variant="secondary" onClick={onExit}>
+                    {exitLabel}
+                  </Button>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="flex flex-col gap-4.5">
               <Badge variant="accent" size="sm">
@@ -265,30 +292,33 @@ export function FormFiller({
   );
 }
 
+// Submission entries carry the readable node_key snapshot alongside the answer.
+// node_key also identifies the answer internally, so no extra id is needed.
 function buildAnswerSummary(
   preparedSurvey: PreparedSurvey,
   answers: AnswerMap,
   committedQuestionIds: string[],
-) {
-  return Object.fromEntries(
-    committedQuestionIds
-      .filter((questionId) => preparedSurvey.questionById.has(questionId))
-      .map((questionId) => [questionId, answers[questionId] ?? null]),
-  );
+): SubmissionAnswer[] {
+  return committedQuestionIds.flatMap((questionId) => {
+    const node = preparedSurvey.questionById.get(questionId);
+    if (!node) return [];
+    return [{ question_key: node.node_key, answer: answers[questionId] ?? null }];
+  });
 }
 
 function renderQuestionInput(
-  question: QuestionContent,
+  node: QuestionNode,
   answer: QuestionAnswer | undefined,
   onChange: (questionId: string, nextValue: QuestionAnswer) => void,
 ) {
+  const question = node.content;
   switch (question.family) {
     case "choice":
       return (
         <MultiChoiceFormFiller
           question={question}
           value={Array.isArray(answer) ? answer.filter((value): value is string => typeof value === "string") : []}
-          onChange={(nextValue) => onChange(question.key, nextValue)}
+          onChange={(nextValue) => onChange(node.node_key, nextValue)}
         />
       );
     case "matching":
@@ -296,7 +326,7 @@ function renderQuestionInput(
         <MatchingFormFiller
           question={question}
           value={toRecord(answer)}
-          onChange={(nextValue) => onChange(question.key, nextValue)}
+          onChange={(nextValue) => onChange(node.node_key, nextValue)}
         />
       );
     case "rating":
@@ -304,7 +334,7 @@ function renderQuestionInput(
         <RatingFormFiller
           question={question}
           value={typeof answer === "number" ? answer : null}
-          onChange={(nextValue) => onChange(question.key, nextValue)}
+          onChange={(nextValue) => onChange(node.node_key, nextValue)}
         />
       );
     case "field":
@@ -312,7 +342,7 @@ function renderQuestionInput(
         <FieldFormFiller
           question={question}
           value={typeof answer === "string" ? answer : ""}
-          onChange={(nextValue) => onChange(question.key, nextValue)}
+          onChange={(nextValue) => onChange(node.node_key, nextValue)}
         />
       );
     default:

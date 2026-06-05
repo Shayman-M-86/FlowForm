@@ -173,18 +173,18 @@ function parseNode(
   }
 
   const schema =
-    normalized.type === "question"
+    normalized.node_type === "question"
       ? CreateQuestionNodeRequestSchema
-      : normalized.type === "rule"
+      : normalized.node_type === "rule"
         ? CreateRuleNodeRequestSchema
         : null;
 
   if (!schema) {
-    const got = normalized.type === undefined ? "missing" : `"${String(normalized.type)}"`;
+    const got = normalized.node_type === undefined ? "missing" : `"${String(normalized.node_type)}"`;
     pushIssue(
       issues,
-      `${path}.type`,
-      `Expected "question" or "rule", got ${got}. API-format nodes may use "node_type" instead of "type".`,
+      `${path}.node_type`,
+      `Expected "question" or "rule", got ${got}.`,
       nodeIndex,
     );
     return null;
@@ -214,13 +214,15 @@ function normalizeNode(
   if (!isRecord(value)) return value;
 
   const path = `$[${nodeIndex}]`;
-  const { node_type, question_schema, ...rest } = value;
+  // Accept legacy aliases ("type" -> node_type, "question_schema" -> content)
+  // and forward them to the canonical generated shape.
+  const { type, question_schema, ...rest } = value;
 
-  if (rest.type !== undefined && node_type !== undefined && rest.type !== node_type) {
+  if (type !== undefined && rest.node_type !== undefined && type !== rest.node_type) {
     pushIssue(
       issues,
-      `${path}.type`,
-      `Conflicting values: "type" is "${String(rest.type)}" but "node_type" is "${String(node_type)}". Remove one.`,
+      `${path}.node_type`,
+      `Conflicting values: "type" is "${String(type)}" but "node_type" is "${String(rest.node_type)}". Remove one.`,
       nodeIndex,
     );
   }
@@ -236,7 +238,7 @@ function normalizeNode(
 
   return {
     ...rest,
-    type: rest.type ?? node_type,
+    node_type: rest.node_type ?? type,
     content: rest.content ?? question_schema,
   };
 }
@@ -245,27 +247,42 @@ function validateGraphIdentity(
   nodes: IndexedNode[],
   issues: SurveyNodeImportIssue[],
 ): Map<string, QuestionIndex> {
-  const ids = new Map<string, number>();
+  const nodeKeys = new Map<string, number>();
+  const nodeIds = new Map<number, number>();
   const sortKeys = new Map<number, number>();
   const questionById = new Map<string, QuestionIndex>();
 
   for (const { node, nodeIndex } of nodes) {
     const path = `$[${nodeIndex}]`;
-    const contentId = node.content.key;
+    const nodeKey = node.node_key;
 
-    const previousIdIndex = ids.get(contentId);
-    if (previousIdIndex !== undefined) {
+    const previousKeyIndex = nodeKeys.get(nodeKey);
+    if (previousKeyIndex !== undefined) {
       pushIssue(
         issues,
-        `${path}.content.key`,
-        `Duplicate content key "${contentId}" — already used by node at index ${previousIdIndex}.`,
+        `${path}.node_key`,
+        `Duplicate node_key "${nodeKey}" — already used by node at index ${previousKeyIndex}.`,
         nodeIndex,
       );
     } else {
-      ids.set(contentId, nodeIndex);
+      nodeKeys.set(nodeKey, nodeIndex);
       if (node.node_type === "question") {
-        questionById.set(contentId, { content: node.content, sortKey: node.sort_key });
+        questionById.set(nodeKey, { content: node.content, sortKey: node.sort_key });
       }
+    }
+
+    // `id` is the immutable row identity ((survey_version_id, id) on the
+    // backend); a collision would silently overwrite another node on save.
+    const previousIdIndex = nodeIds.get(node.id);
+    if (previousIdIndex !== undefined) {
+      pushIssue(
+        issues,
+        `${path}.id`,
+        `Duplicate id ${node.id} — already used by node at index ${previousIdIndex}.`,
+        nodeIndex,
+      );
+    } else {
+      nodeIds.set(node.id, nodeIndex);
     }
 
     const previousSortIndex = sortKeys.get(node.sort_key);
@@ -371,8 +388,8 @@ function validateRuleContent(
     const target = questionById.get(condition.target_id);
 
     if (!target) {
-      const validIds = [...questionById.keys()].join(", ");
-      pushIssue(issues, `${path}.target_id`, `Condition target "${condition.target_id}" does not match any question id. Valid ids are: ${validIds}.`, nodeIndex);
+      const validKeys = [...questionById.keys()].join(", ");
+      pushIssue(issues, `${path}.target_id`, `Condition target "${condition.target_id}" does not match any question node_key. Valid node_keys are: ${validKeys}.`, nodeIndex);
       return;
     }
     if (target.sortKey >= ruleSortKey) {
@@ -530,8 +547,8 @@ function validateFutureQuestionReference(
 ) {
   const target = questionById.get(targetId);
   if (!target) {
-    const validIds = [...questionById.keys()].join(", ");
-    pushIssue(issues, path, `Target "${targetId}" does not match any question id. Valid ids are: ${validIds}.`, nodeIndex);
+    const validKeys = [...questionById.keys()].join(", ");
+    pushIssue(issues, path, `Target "${targetId}" does not match any question node_key. Valid node_keys are: ${validKeys}.`, nodeIndex);
     return;
   }
   if (target.sortKey <= ruleSortKey) {

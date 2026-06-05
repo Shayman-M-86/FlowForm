@@ -10,35 +10,39 @@ const SCHEMA_PROMPT = `You are a survey schema generator for FlowForm.
 
 Return ONLY a JSON array of survey nodes — no explanation, no markdown, no code fences.
 
-Each node is either a question node or a rule node.
+Each node is either a question node or a rule node. Every node has:
+  "id": <unique integer>, "node_key": "<unique string>", "node_type": "question" | "rule",
+  "sort_key": <number>, "content": <Content>
 
 QUESTION NODE
-{ "type": "question", "sort_key": <number>, "content": <QuestionContent> }
+{ "id": 100001, "node_key": "question_id_1", "node_type": "question", "sort_key": 100000, "content": <QuestionContent> }
 
-QuestionContent shapes:
+QuestionContent shapes (note: family/label/title/definition live in content; the identifier is node_key, not inside content):
 
 Choice (single or multi-select):
-{ "id": "question_id_1", "title": "Section heading", "label": "Question text", "family": "choice", "definition": { "min": 1, "max": 1, "options": [{ "id": "opt_1", "label": "Option text" }] } }
+{ "family": "choice", "title": "Section heading", "label": "Question text", "definition": { "min": 1, "max": 1, "options": [{ "id": "opt_1", "label": "Option text" }] } }
 
 Field (text / number / date):
-{ "id": "question_id_1", "title": "Section heading", "label": "Question text", "family": "field", "definition": { "field_type": "short_text", "ui": { "placeholder": "Optional" } } }
+{ "family": "field", "title": "Section heading", "label": "Question text", "definition": { "field_type": "short_text", "ui": { "placeholder": "Optional" } } }
 field_type options: short_text | long_text | email | phone | number | date
 
 Rating:
-{ "id": "question_id_1", "title": "Section heading", "label": "Question text", "family": "rating", "definition": { "variant": "stars", "stars": 5, "ui": { "left_label": "Poor", "right_label": "Excellent" } } }
+{ "family": "rating", "title": "Section heading", "label": "Question text", "definition": { "variant": "stars", "stars": 5, "ui": { "left_label": "Poor", "right_label": "Excellent" } } }
 variant options: stars | slider | emoji
 
 Matching:
-{ "id": "question_id_1", "title": "Section heading", "label": "Question text", "family": "matching", "definition": { "prompts": [{ "id": "p1", "label": "Prompt" }], "matches": [{ "id": "m1", "label": "Match" }] } }
+{ "family": "matching", "title": "Section heading", "label": "Question text", "definition": { "prompts": [{ "id": "p1", "label": "Prompt" }], "matches": [{ "id": "m1", "label": "Match" }] } }
 
 RULE NODE
-{ "type": "rule", "sort_key": <number>, "content": { "id": "r1", "if": { "match": "ALL", "conditions": [{ "target_id": "question_id_1", "family": "choice", "requirements": { "required": ["opt_1"] } }] }, "then": { "do": { "skip_to": "question_id_3" } } } }
+{ "id": 100009, "node_key": "r1", "node_type": "rule", "sort_key": 250000, "content": { "if": { "match": "ALL", "conditions": [{ "target_id": "question_id_1", "family": "choice", "requirements": { "required": ["opt_1"] } }] }, "then": { "do": { "skip_to": "question_id_3" } } } }
 
 RULES
-- All id values must be unique across the entire array
-- Question ids: question_id_1, question_id_2, ...  Rule ids: r1, r2, ...
-- sort_key: position × 100000 (first node = 100000)
-- Only include "then.set", "then.do", "else" when needed
+- "id" is a unique integer per node. "node_key" is a unique string per node.
+- target_id and skip_to reference another node's "node_key" (e.g. "question_id_1"), not its id.
+- node_key suggestions: question_id_1, question_id_2, ...  Rules: r1, r2, ...
+- Rule conditions may only reference EARLIER questions; rule actions (skip_to / set) may only reference LATER questions.
+- sort_key: position × 100000 (first node = 100000), strictly increasing.
+- Only include "then.set", "then.do", "else" when needed.
 
 USER REQUEST
 `;
