@@ -26,9 +26,11 @@ function StatusBadge({ status }: { status: SurveyVersionStatus }) {
 function VersionSelector({
   versions,
   selectedVersion,
+  onSelectVersion,
 }: {
   versions: SurveyVersionView[]
   selectedVersion: SurveyVersionView | undefined
+  onSelectVersion: (versionId: number) => void
 }) {
   const triggerRef = useRef<HTMLButtonElement>(null)
   const [open, setOpen] = useState(false)
@@ -55,7 +57,7 @@ function VersionSelector({
           </span>
         </Button>
       ),
-      onSelect: noop,
+      onSelect: () => onSelectVersion(version.id),
     })),
   }]
 
@@ -98,9 +100,41 @@ function VersionSelector({
 export function SurveyBuilderVersionToolbar({
   versions,
   selectedVersion,
+  canEdit,
+  canPublish,
+  canArchive,
+  isDirty,
+  isCreating,
+  isCopying,
+  isSaving,
+  isPublishing,
+  isArchiving,
+  onSelectVersion,
+  onCreateDraft,
+  onCopyToDraft,
+  onSave,
+  onPreview = noop,
+  onPublish,
+  onArchive,
 }: {
   versions: SurveyVersionView[]
   selectedVersion: SurveyVersionView | undefined
+  canEdit: boolean
+  canPublish: boolean
+  canArchive: boolean
+  isDirty: boolean
+  isCreating: boolean
+  isCopying: boolean
+  isSaving: boolean
+  isPublishing: boolean
+  isArchiving: boolean
+  onSelectVersion: (versionId: number) => void
+  onCreateDraft: () => void
+  onCopyToDraft: () => void
+  onSave: () => void
+  onPreview?: () => void
+  onPublish: () => void
+  onArchive: () => void
 }) {
   const moreRef = useRef<HTMLButtonElement>(null)
   const [moreOpen, setMoreOpen] = useState(false)
@@ -109,53 +143,59 @@ export function SurveyBuilderVersionToolbar({
     {
       key: 'duplicate',
       content: (
-        <Button type="button" variant="ghost" size="sm" className="w-full justify-start gap-2">
+        <Button type="button" variant="ghost" size="sm" className="w-full justify-start gap-2" disabled={isCopying}>
           <Copy size={14} strokeWidth={2} aria-hidden="true" />
-          Duplicate
+          {isCopying ? 'Copying...' : 'Duplicate'}
         </Button>
       ),
-      onSelect: noop,
+      onSelect: onCopyToDraft,
     },
-    {
+    ...(canArchive && selectedVersion?.status === 'published' ? [{
       key: 'archive',
       content: (
-        <Button type="button" variant="ghost" size="sm" className="w-full justify-start gap-2">
+        <Button type="button" variant="ghost" size="sm" className="w-full justify-start gap-2" disabled={isArchiving}>
           <Archive size={14} strokeWidth={2} aria-hidden="true" />
-          Archive version
+          {isArchiving ? 'Archiving...' : 'Archive version'}
         </Button>
       ),
-      onSelect: noop,
-    },
+      onSelect: onArchive,
+    }] : []),
   ]
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-6 py-3 md:px-16">
       <div className="flex items-center gap-2">
-        <VersionSelector versions={versions} selectedVersion={selectedVersion} />
-        <Button variant="secondary" size="sm" icon="plus" onClick={noop}>
-          New draft
-        </Button>
-        <Button
-          ref={moreRef}
-          type="button"
-          variant="icon"
-          size="sm"
-          icon="ellipsis"
-          aria-label="More version actions"
-          aria-haspopup="menu"
-          aria-expanded={moreOpen}
-          onClick={() => setMoreOpen((current) => !current)}
-        />
-        <DropdownMenu
-          open={moreOpen}
-          onClose={() => setMoreOpen(false)}
-          trigger={moreRef}
-          align="right"
-          direction="auto"
-          fullscreenAt="never"
-          width="11rem"
-          sections={[{ actions: moreActions }]}
-        />
+        <VersionSelector versions={versions} selectedVersion={selectedVersion} onSelectVersion={onSelectVersion} />
+        {canEdit && (
+          <Button variant="secondary" size="sm" icon="plus" disabled={isCreating} onClick={onCreateDraft}>
+            {isCreating ? 'Creating...' : 'New draft'}
+          </Button>
+        )}
+        {selectedVersion && (
+          <>
+            <Button
+              ref={moreRef}
+              type="button"
+              variant="icon"
+              size="sm"
+              icon="ellipsis"
+              aria-label="More version actions"
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+              onClick={() => setMoreOpen((current) => !current)}
+            />
+            <DropdownMenu
+              open={moreOpen}
+              onClose={() => setMoreOpen(false)}
+              trigger={moreRef}
+              align="right"
+              direction="auto"
+              fullscreenAt="never"
+              width="11rem"
+              sections={[{ actions: moreActions }]}
+            />
+          </>
+        )}
         {selectedVersion?.status === 'published' && (
           <span className="hidden text-xs italic text-muted-foreground sm:inline">
             Read-only
@@ -164,23 +204,37 @@ export function SurveyBuilderVersionToolbar({
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="secondary" size="sm" onClick={noop}>
-          Save
-        </Button>
-        <Button variant="secondary" size="sm" onClick={noop}>
-          <Eye size={14} strokeWidth={2} aria-hidden="true" />
-          Preview
-        </Button>
-        <Button variant="primary" size="sm" onClick={noop}>
-          <Rocket size={14} strokeWidth={2} aria-hidden="true" />
-          Publish
-        </Button>
+        {selectedVersion?.status === 'draft' && canEdit && (
+          <Button variant="secondary" size="sm" disabled={!isDirty || isSaving} onClick={onSave}>
+            {isSaving ? 'Saving...' : 'Save'}
+          </Button>
+        )}
+        {selectedVersion?.status === 'draft' && (
+          <Button variant="secondary" size="sm" onClick={onPreview}>
+            <Eye size={14} strokeWidth={2} aria-hidden="true" />
+            Preview
+          </Button>
+        )}
+        {selectedVersion?.status === 'draft' && canPublish && (
+          <Button variant="primary" size="sm" disabled={isPublishing || isSaving} onClick={onPublish}>
+            <Rocket size={14} strokeWidth={2} aria-hidden="true" />
+            {isPublishing ? 'Publishing...' : 'Publish'}
+          </Button>
+        )}
       </div>
     </div>
   )
 }
 
-export function SurveyBuilderNoVersionsPanel() {
+export function SurveyBuilderNoVersionsPanel({
+  canEdit,
+  isCreating,
+  onCreateDraft,
+}: {
+  canEdit: boolean
+  isCreating: boolean
+  onCreateDraft: () => void
+}) {
   return (
     <div className="px-6 py-8 md:px-16">
       <Card tone="muted" size="sm">
@@ -189,17 +243,29 @@ export function SurveyBuilderNoVersionsPanel() {
             <p className="text-sm font-semibold text-foreground">No versions yet</p>
             <p className="mt-1 text-sm text-muted-foreground">Create a draft to start building your survey.</p>
           </div>
-          <Button variant="primary" size="sm" onClick={noop}>
-            <RotateCcw size={14} strokeWidth={2} aria-hidden="true" />
-            Create draft
-          </Button>
+          {canEdit && (
+            <Button variant="primary" size="sm" disabled={isCreating} onClick={onCreateDraft}>
+              <RotateCcw size={14} strokeWidth={2} aria-hidden="true" />
+              {isCreating ? 'Creating...' : 'Create draft'}
+            </Button>
+          )}
         </div>
       </Card>
     </div>
   )
 }
 
-export function SurveyBuilderPublishedNoDraftPanel({ publishedVersion }: { publishedVersion: SurveyVersionView }) {
+export function SurveyBuilderPublishedNoDraftPanel({
+  publishedVersion,
+  canEdit,
+  isCopying,
+  onCopyToDraft,
+}: {
+  publishedVersion: SurveyVersionView
+  canEdit: boolean
+  isCopying: boolean
+  onCopyToDraft: () => void
+}) {
   return (
     <div className="px-6 py-8 md:px-16">
       <Card tone="muted" size="sm">
@@ -208,10 +274,12 @@ export function SurveyBuilderPublishedNoDraftPanel({ publishedVersion }: { publi
             <p className="text-sm font-semibold text-foreground">v{publishedVersion.version_number} is published and locked</p>
             <p className="mt-1 text-sm text-muted-foreground">Create a new draft to start editing.</p>
           </div>
-          <Button variant="primary" size="sm" onClick={noop}>
-            <Copy size={14} strokeWidth={2} aria-hidden="true" />
-            New draft copy
-          </Button>
+          {canEdit && (
+            <Button variant="primary" size="sm" disabled={isCopying} onClick={onCopyToDraft}>
+              <Copy size={14} strokeWidth={2} aria-hidden="true" />
+              {isCopying ? 'Copying...' : 'New draft copy'}
+            </Button>
+          )}
         </div>
       </Card>
     </div>

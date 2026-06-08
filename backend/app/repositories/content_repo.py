@@ -23,10 +23,8 @@ def list_nodes(db: Session, version_id: int) -> list[SurveyQuestion]:
             select(SurveyQuestion)
             .where(SurveyQuestion.survey_version_id == version_id)
             .order_by(SurveyQuestion.sort_key)
-        )
+        ).all()
     )
-
-
 
 
 def list_rules(db: Session, version_id: int) -> list[SurveyQuestion]:
@@ -76,6 +74,7 @@ def update_node(db: Session, node: SurveyQuestion, data: UpdateNodeRequest) -> S
     flush_with_err_handle(db, contexts=[node])
     return node
 
+
 def clone_nodes(
     db: Session,
     source_version: SurveyVersion,
@@ -101,10 +100,6 @@ def clone_nodes(
 def delete_node(db: Session, node: SurveyQuestion) -> None:
     db.delete(node)
     flush_with_err_handle(db, contexts=[node])
-
-
-
-
 
 
 # ── Scoring rules ──────────────────────────────────────────────────────────────

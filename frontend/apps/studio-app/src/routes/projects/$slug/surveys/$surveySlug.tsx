@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, useRouterState, useNavigate } from '@tanstack/react-router'
-import { Button, TabSelector } from '@flowform/ui'
+import { TabSelector } from '@flowform/ui'
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { useProject } from '@/api/hooks/projects'
 import { useSurvey } from '@/api/hooks/surveys'
