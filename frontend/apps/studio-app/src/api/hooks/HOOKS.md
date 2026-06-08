@@ -1,6 +1,17 @@
 # Hook Guide
 
-This folder contains named API hooks for the Studio app. Domain hooks own query keys, request/response shaping, enabled logic, and mutation invalidation. Cache behaviour comes from `src/lib/query/queryPolicy.ts`.
+This folder contains named API hooks for the Studio app. Domain hooks own query keys, request/response shaping, enabled logic, and mutation invalidation. Cache behaviour comes from `src/lib/query/queryPolicy.ts`, and request-time auth/permission behaviour comes from `src/api/middleware/`.
+
+## How The Pieces Fit
+
+`src/api/client.ts` creates the shared OpenAPI client and installs middleware in this order:
+
+1. `authMiddleware`
+2. `createPermissionMiddleware(queryClient)`
+
+The hooks in this folder call `apiClient.GET/POST/PATCH/DELETE` inside named hooks. Query hooks should use `usePolicyQuery()` so storage, stale time, cooldowns, polling, refetch triggers, and optional persistence come from a named `QUERY_POLICIES` row. Mutation hooks should use `useMutation()` directly and invalidate the query keys affected by the write.
+
+Use `$api` only for direct OpenAPI React Query calls outside these named hooks. New reusable domain access should live here so cache keys and invalidation stay in one place.
 
 ## Before Writing A Hook
 
@@ -38,6 +49,38 @@ Check:
 - Path parameter names and request body schema names.
 
 Do not create separate request/response type files. Infer types from `components['schemas']` in `src/api/generated/schema.ts`.
+
+## Request Middleware
+
+Middleware is installed once in `src/api/client.ts`; hooks do not attach auth headers or perform permission checks manually.
+
+### Auth Middleware
+
+`authMiddleware` reads the current token getter from `tokenProvider`. If a getter exists, it awaits the access token and sets:
+
+```text
+Authorization: Bearer <token>
+```
+
+If no token getter has been initialized yet, the request is passed through unchanged.
+
+### Permission Middleware
+
+`permissionMiddleware` uses generated `routePermissions` from `src/api/generated/rbac.gen.ts` to match protected API routes by method and path.
+
+On request:
+
+- Extracts `project_id` and optional `survey_id` from the matched route.
+- Reads cached permissions from `permissionKeys.project(projectId)` and, when available, `permissionKeys.survey(projectId, surveyId)`.
+- Never fetches permissions from middleware. A cold permission cache lets the request continue and trusts the backend to allow or deny.
+- Checks survey-scoped cache first when a survey cache exists, then falls back to project permissions.
+- Throws `PermissionDeniedError` locally when cached permissions prove the user lacks the required permission.
+
+On backend `403` responses:
+
+- Invalidates the project permission query.
+- Also invalidates the survey permission query when the matched route contains a `survey_id`.
+- Gates those invalidations with `flowform.perm-cooldowns`, currently 60 seconds per serialized permission query key.
 
 ## Query Hook Template
 
@@ -91,7 +134,7 @@ export function useCreateDomain(projectId: number) {
 
 ## Query Policies
 
-Every query hook should pass one named policy row from `QUERY_POLICIES`.
+Every hook that creates a TanStack server-state query should pass one named policy row from `QUERY_POLICIES`. Derived hooks such as `useProject()` can reuse another hook's cached data instead of creating a new query.
 
 | Policy | Current hook family |
 | --- | --- |
@@ -111,7 +154,22 @@ Every query hook should pass one named policy row from `QUERY_POLICIES`.
 | `surveyVersions` | `useSurveyVersions` |
 | `surveyNodes` | `useSurveyNodes` |
 
+Current policy behaviour:
+
+| Policy group | Storage | Stale time | Notes |
+| --- | --- | --- | --- |
+| `profile` | `local` | 20 min | Persists across browser restarts. |
+| `projects` | `local` | 5 min | 15s automatic-fetch cooldown. |
+| `projectPermissions`, `surveyPermissions` | `session` | 20 min | Permission checks read these caches; middleware does not fetch them. |
+| `myInvitations` | `session` | 5 min | 15s cooldown, 5 min polling, refetch on focus. |
+| `surveys`, `survey`, `projectMembers`, `projectRoles`, `surveyMembers`, `surveyRoles` | `session` | 5 min | 15s automatic-fetch cooldown. |
+| `projectInvitations`, `publicLinks`, `surveyVersions`, `surveyNodes` | `memory` | 30s | Fast-changing management or builder data; not persisted. |
+
 When adding a new query family, add a policy row first, then reference it from the hook. Dynamic IDs stay in query keys, not in policy rows.
+
+`usePolicyQuery()` applies the resolved policy, picks the matching persister, records automatic fetch starts in `flowform.query-cooldowns`, and suppresses focus/reconnect/polling refetches while a cooldown is active. If stale cached data is waiting behind a cooldown, it schedules an exact query invalidation when the cooldown expires.
+
+`queryClient.ts` still provides global defaults: 5 minute default `staleTime`, one retry for most query failures, and no retry for `RATE_LIMIT_EXCEEDED`.
 
 ## Choosing A Policy
 
@@ -124,6 +182,8 @@ Use the existing policy whose behaviour matches the query family. If no row fits
 | Fast-changing builder or invitation/link state | `memory` |
 
 Policy rows control storage, `staleTime`, persisted `maxAge`, `gcTime`, cooldown, polling, and automatic refetch triggers.
+
+Default persisted `maxAge` values live in `queryPersistence.ts`: session-backed queries default to 20 minutes, and local-backed queries default to 24 hours unless the policy overrides them.
 
 Mutation invalidation stays in the mutation hook because it describes the consequence of a specific write.
 
