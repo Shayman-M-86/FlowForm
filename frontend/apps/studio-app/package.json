@@ -9,8 +9,8 @@
     "lint": "eslint .",
     "openapi:export": "cd ../../../backend && uv run python -m app.openapi.export",
     "openapi:types": "openapi-typescript ../../../backend/openapi.yaml -o src/api/generated/schema.ts --root-types --root-types-no-schema-prefix",
-    "openapi:generate": "npm run openapi:export && npm run openapi:types && npm --prefix ../.. run generate:types",
-    "openapi:check": "npm run openapi:export -- --check && openapi-typescript ../../../backend/openapi.yaml -o src/api/generated/schema.ts --root-types --root-types-no-schema-prefix --check",
+    "openapi:generate": "pnpm run openapi:export && pnpm run openapi:types && pnpm --dir ../.. run generate:types",
+    "openapi:check": "pnpm run openapi:export -- --check && openapi-typescript ../../../backend/openapi.yaml -o src/api/generated/schema.ts --root-types --root-types-no-schema-prefix --check",
     "preview": "vite preview",
     "routes": "tsr generate",
     "test": "vitest run",
@@ -19,11 +19,11 @@
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.16.1",
-    "@flowform/builder": "0.0.0",
-    "@flowform/schema": "0.0.0",
-    "@flowform/site-shell": "0.0.0",
-    "@flowform/styles": "0.0.0",
-    "@flowform/ui": "0.0.0",
+    "@flowform/builder": "workspace:*",
+    "@flowform/schema": "workspace:*",
+    "@flowform/site-shell": "workspace:*",
+    "@flowform/styles": "workspace:*",
+    "@flowform/ui": "workspace:*",
     "@hookform/resolvers": "^5.2.2",
     "@tanstack/query-persist-client-core": "^5.100.14",
     "@tanstack/react-query": "^5.80.2",
@@ -48,7 +48,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "@vitest/ui": "^4.1.8",
+    "@vitest/ui": "^4.1.7",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
@@ -57,6 +57,6 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.0",
     "vite": "^8.0.4",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.7"
   }
 }

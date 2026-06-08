@@ -200,7 +200,7 @@ FlowForm
 ```text
 FlowForm/
 ├── backend/                Flask API (Python 3.14+, uv)
-└── frontend/               npm workspaces monorepo
+└── frontend/               pnpm workspaces monorepo
     ├── apps/
     │   ├── studio-app/     Management dashboard
     │   └── public-site/    Marketing site + public form filler
@@ -285,7 +285,7 @@ This protects historical response data from becoming inconsistent when the surve
 
 ## Frontend architecture
 
-The frontend is an npm workspaces monorepo split into apps and shared packages.
+The frontend is a pnpm workspaces monorepo split into apps and shared packages.
 
 ### Studio app
 
@@ -340,7 +340,7 @@ This keeps the product consistent across Studio, the public site, and the respon
 | Styling            | Tailwind v4, design tokens, `@flowform/styles`                    |
 | Shared UI          | `@flowform/ui`                                                    |
 | Builder/runtime    | `@flowform/builder`                                               |
-| Package management | uv for backend, npm workspaces for frontend                       |
+| Package management | uv for backend, pnpm workspaces for frontend                      |
 | API contract       | OpenAPI 3.1, `openapi-typescript`                                 |
 
 ---
@@ -416,8 +416,10 @@ bash backend/scripts/run-tests-rebuild-teardown.sh --ai -k "test_name"
 
 ```bash
 cd frontend
-npm run dev:studio    # Studio app — http://localhost:5174
-npm run dev:site      # Public site — http://localhost:4321
+corepack enable
+pnpm install
+pnpm run dev:studio   # Studio app — http://localhost:5174
+pnpm run dev:site     # Public site — http://localhost:4321
 ```
 
 ---

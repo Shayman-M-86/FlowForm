@@ -76,6 +76,27 @@ def update_node(db: Session, node: SurveyQuestion, data: UpdateNodeRequest) -> S
     flush_with_err_handle(db, contexts=[node])
     return node
 
+def clone_nodes(
+    db: Session,
+    source_version: SurveyVersion,
+    target_version: SurveyVersion,
+) -> list[SurveyQuestion]:
+    nodes = list_nodes(db, source_version.id)
+    clones: list[SurveyQuestion] = []
+    for source in nodes:
+        clone = SurveyQuestion(
+            survey_version_id=target_version.id,
+            question_key=source.question_key,
+            sort_key=source.sort_key,
+            node_type=source.node_type,
+            question_schema=source.question_schema,
+        )
+        db.add(clone)
+        clones.append(clone)
+    if clones:
+        flush_with_err_handle(db, contexts=clones)
+    return clones
+
 
 def delete_node(db: Session, node: SurveyQuestion) -> None:
     db.delete(node)

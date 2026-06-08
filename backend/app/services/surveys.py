@@ -151,8 +151,7 @@ class SurveyService:
         source_version = self._get_version(db, project_id, survey_id, version_number)
 
         draft = surveys_repo.create_version(db, survey_id, created_by_user_id=actor.id)
-        content_repo.clone_questions(db, source_version, draft)
-        content_repo.clone_rules(db, source_version, draft)
+        content_repo.clone_nodes(db, source_version, draft)
         content_repo.clone_scoring_rules(db, source_version, draft)
 
         commit_with_err_handle(db, contexts=[draft])
@@ -171,7 +170,7 @@ class SurveyService:
 
         version_rules.ensure_is_draft(version=version)
 
-        questions = content_repo.list_questions(db, version.id)
+        questions = content_repo.list_nodes(db, version.id)
         version_rules.ensure_has_questions(questions=questions)
 
         all_nodes = content_repo.list_nodes(db, version.id)

@@ -5,11 +5,12 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./ai-import": "./src/components/Utils/ai-import/index.ts",
     "./node-page.css": "./src/pages/NodePage.css"
   },
   "dependencies": {
-    "@flowform/schema": "0.0.0",
-    "@flowform/ui": "0.0.0",
+    "@flowform/schema": "workspace:*",
+    "@flowform/ui": "workspace:*",
     "react-router-dom": "^7.14.2"
   },
   "peerDependencies": {

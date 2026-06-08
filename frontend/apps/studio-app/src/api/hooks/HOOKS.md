@@ -183,11 +183,11 @@ onSuccess: () => {
 From `frontend/apps/studio-app/`:
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 For focused lint on hook/query edits:
 
 ```bash
-npm exec eslint -- src/api/hooks src/lib/query
+pnpm exec eslint -- src/api/hooks src/lib/query
 ```

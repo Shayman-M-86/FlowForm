@@ -27,6 +27,7 @@ export default defineConfig({
     PinyVite(),
   ],
   resolve: {
+    dedupe: ['react', 'react-dom'],
     alias: [
       { find: '@flowform/schema', replacement: resolve(schemaSrc, 'index.ts') },
       { find: '@flowform/site-shell/header.css', replacement: resolve(siteShellSrc, 'SiteHeader.css') },

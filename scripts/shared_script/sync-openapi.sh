@@ -11,6 +11,6 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 echo "==> Generating OpenAPI spec and all TypeScript types..."
 cd "${REPO_ROOT}/frontend/apps/studio-app"
-npm run openapi:generate
+pnpm run openapi:generate
 
 echo "==> Done."

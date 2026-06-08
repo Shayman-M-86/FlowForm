@@ -42,6 +42,7 @@ export default defineConfig({
         { find: '@flowform/site-shell/header.css', replacement: path.resolve(siteShellSrc, 'SiteHeader.css') },
         { find: '@flowform/site-shell', replacement: path.resolve(siteShellSrc, 'index.ts') },
         { find: '@flowform/builder/node-page.css', replacement: path.resolve(builderSrc, 'pages/NodePage.css') },
+        { find: '@flowform/builder/ai-import', replacement: path.resolve(builderSrc, 'components/Utils/ai-import/index.ts') },
         { find: '@flowform/builder', replacement: path.resolve(builderSrc, 'index.ts') },
         { find: '@flowform/ui', replacement: path.resolve(uiSrc, 'index.tsx') },
         { find: '@flowform/styles/fonts.css', replacement: path.resolve(stylesSrc, 'fonts.css') },

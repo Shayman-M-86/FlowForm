@@ -151,7 +151,7 @@ This ensures the exact same build is used in both environments.
 The React project will be built using:
 
 ```
-npm run build
+pnpm run build
 ```
 
 This produces the static frontend assets.
@@ -244,4 +244,3 @@ The FlowForm CI/CD pipeline will:
 - deploy the frontend to **S3 + CloudFront**
 
 This pipeline provides reliable automated deployments while keeping the system relatively simple and maintainable.
-

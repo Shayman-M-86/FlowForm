@@ -9,23 +9,23 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "serve": "npx serve dist --config \"$PWD/serve.json\" --debug",
+    "serve": "serve dist --config \"$PWD/serve.json\" --debug",
     "astro": "astro"
   },
   "dependencies": {
     "@astrojs/react": "^5.0.3",
     "@astrojs/sitemap": "^3.7.2",
-"@flowform/builder": "0.0.0",
-    "@flowform/site-shell": "0.0.0",
-    "@flowform/styles": "0.0.0",
-    "@flowform/ui": "0.0.0",
+    "@flowform/builder": "workspace:*",
+    "@flowform/site-shell": "workspace:*",
+    "@flowform/styles": "workspace:*",
+    "@flowform/ui": "workspace:*",
     "@tailwindcss/vite": "^4.2.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "astro": "^6.1.8",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "@lucide/astro": "latest",
+    "@lucide/astro": "^1.17.0",
     "lucide-react": ">=0.400.0",
     "react-router-dom": "^7.14.2",
     "tailwind-merge": "^3.5.0",
@@ -34,6 +34,7 @@
   "devDependencies": {
     "@pinegrow/piny-astro": "^1.0.8",
     "@types/node": "^25.6.0",
-    "micromorph": "^0.4.5"
+    "micromorph": "^0.4.5",
+    "serve": "^14.2.5"
   }
 }

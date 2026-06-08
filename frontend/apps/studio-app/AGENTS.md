@@ -98,7 +98,7 @@ src/
 
 Routes are file-based under `src/routes/`.
 
-TanStack Router generates `routeTree.gen.ts`. Never edit that file manually. Run `npm run routes` after adding, removing, or renaming route files.
+TanStack Router generates `routeTree.gen.ts`. Never edit that file manually. Run `pnpm run routes` after adding, removing, or renaming route files.
 
 Dynamic segments use `$param` syntax. Read them with `Route.useParams()`.
 

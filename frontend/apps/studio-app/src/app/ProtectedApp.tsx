@@ -3,6 +3,7 @@ import { useAuth0 } from '@auth0/auth0-react'
 import { Button, Card, Spinner } from '@flowform/ui'
 import { getAuthReturnTo } from '@/auth/redirect'
 import { useBootstrap } from '@/auth/bootstrap/useBootstrap'
+import { BACKEND_UNAVAILABLE_CODE } from '@/auth/bootstrap/api'
 import { UserProvider } from '@/auth/UserContext'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
@@ -86,12 +87,26 @@ function AuthenticatedProtectedApp({ children }: Props) {
   }
 
   const needsLogin = errorCode === 'AUTH0_CLIENT_ID_NOT_CONFIGURED'
+  const backendUnavailable = errorCode === BACKEND_UNAVAILABLE_CODE
 
   return (
     <AuthGate>
       <h1 className="text-2xl font-semibold mb-3">
-        {needsLogin ? 'Sign in to continue' : bootstrapError ? 'Account setup failed' : 'Setting up your account'}
+        {needsLogin
+          ? 'Sign in to continue'
+          : backendUnavailable
+            ? 'Server Unreachable '
+            : bootstrapError
+              ? 'Account setup failed'
+              : 'Setting up your account'}
       </h1>
+      {backendUnavailable && (
+        <img
+          src="/images/sad_cat.jpg"
+          alt=""
+          className="mx-auto mb-5 size-64 rounded-lg object-cover ring-1 ring-border"
+        />
+      )}
       <p className="text-muted-foreground text-sm leading-relaxed">
         {needsLogin
           ? 'FlowForm could not finish account setup because Auth0 is not fully configured on the backend. Sign in again after the configuration is restored.'
@@ -115,10 +130,10 @@ function AuthenticatedProtectedApp({ children }: Props) {
       )}
       {bootstrapError && !needsLogin && (
         <div className="flex gap-3 mt-6 flex-wrap">
-          <Button variant="secondary" onClick={retry}>
+          <Button variant={backendUnavailable ? 'primary' : 'secondary'} onClick={retry}>
             Retry
           </Button>
-          <Button variant="primary" onClick={() => void clearAndLogout()}>
+          <Button variant={backendUnavailable ? 'secondary' : 'primary'} onClick={() => void clearAndLogout()}>
             Log out and retry
           </Button>
         </div>
@@ -130,7 +145,7 @@ function AuthenticatedProtectedApp({ children }: Props) {
 function AuthGate({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen grid place-items-center p-6 bg-background">
-      <Card size="lg" className="w-full max-w-lg">
+      <Card size="xl" className="w-full max-w-lg">
         {children}
       </Card>
     </div>

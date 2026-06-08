@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
-    "@flowform/styles": "0.0.0",
+    "@flowform/styles": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "lucide-react": "^1.14.0",
     "radix-ui": "^1.4.3",

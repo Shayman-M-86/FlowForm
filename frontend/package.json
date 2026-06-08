@@ -1,14 +1,15 @@
 {
     "private": true,
+    "packageManager": "pnpm@10.24.0",
     "workspaces": [
         "apps/*",
         "packages/*"
     ],
     "scripts": {
-        "dev:studio": "npm --workspace apps/studio-app run dev",
-        "dev:site": "npm --workspace apps/public-site run dev",
-        "build:studio": "npm --workspace apps/studio-app run build",
-        "build:site": "npm --workspace apps/public-site run build",
+        "dev:studio": "pnpm --filter @flowform/studio-app dev",
+        "dev:site": "pnpm --filter public-site dev",
+        "build:studio": "pnpm --filter @flowform/studio-app build",
+        "build:site": "pnpm --filter public-site build",
         "generate:types": "node scripts/generate-types.mjs"
     },
     "devDependencies": {

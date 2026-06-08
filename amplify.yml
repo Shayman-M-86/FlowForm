@@ -8,15 +8,17 @@ applications:
           commands:
             - nvm install 22.12.0
             - nvm use 22.12.0
-            - cd ../.. && npm ci
+            - corepack enable
+            - cd ../.. && pnpm install --frozen-lockfile --store-dir .pnpm-store
         build:
           commands:
-            - npm run build:site
+            - cd ../.. && pnpm run build:site
       artifacts:
         baseDirectory: dist
         files:
           - '**/*'
       cache:
         paths:
+          - ../../.pnpm-store/**/*
           - ../../node_modules/**/*
           - node_modules/**/*

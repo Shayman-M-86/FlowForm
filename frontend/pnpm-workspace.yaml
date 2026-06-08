@@ -1,0 +1,11 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+minimumReleaseAge: 10080
+minimumReleaseAgeStrict: true
+
+onlyBuiltDependencies:
+  - browser-tabs-lock
+  - esbuild
+  - sharp
