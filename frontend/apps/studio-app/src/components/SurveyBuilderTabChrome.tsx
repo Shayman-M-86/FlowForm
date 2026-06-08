@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Badge, Button, Card, DropdownMenu } from '@flowform/ui'
-import { Archive, ChevronDown, Copy, Eye, Rocket, RotateCcw } from 'lucide-react'
+import { Archive, ChevronDown, Copy, Eye, Rocket, RotateCcw, Sparkles } from 'lucide-react'
 
 export type SurveyVersionStatus = 'draft' | 'published' | 'archived'
 
@@ -114,6 +114,7 @@ export function SurveyBuilderVersionToolbar({
   onCopyToDraft,
   onSave,
   onPreview = noop,
+  onAiImport = noop,
   onPublish,
   onArchive,
 }: {
@@ -133,6 +134,7 @@ export function SurveyBuilderVersionToolbar({
   onCopyToDraft: () => void
   onSave: () => void
   onPreview?: () => void
+  onAiImport?: () => void
   onPublish: () => void
   onArchive: () => void
 }) {
@@ -140,6 +142,17 @@ export function SurveyBuilderVersionToolbar({
   const [moreOpen, setMoreOpen] = useState(false)
 
   const moreActions = [
+    ...(canEdit && selectedVersion?.status === 'draft' ? [{
+      key: 'ai-import',
+      closeOnSelect: true,
+      content: (
+        <Button type="button" variant="ghost" size="sm" className="w-full justify-start gap-2">
+          <Sparkles size={14} strokeWidth={2} aria-hidden="true" />
+          AI import
+        </Button>
+      ),
+      onSelect: onAiImport,
+    }] : []),
     {
       key: 'duplicate',
       content: (

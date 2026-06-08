@@ -40,6 +40,7 @@ type Option = { id: string };
 export function useOptionDrag<T extends Option>(
   options: T[],
   setOptions: React.Dispatch<React.SetStateAction<T[]>>,
+  onReorder?: (reordered: T[]) => void,
 ) {
   const optionsListRef = useRef<HTMLDivElement | null>(null);
   const optionRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -47,9 +48,11 @@ export function useOptionDrag<T extends Option>(
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
   // Full internal state — mutated in place during drag, never triggers re-renders.
   const dragStateRef = useRef<DragState | null>(null);
-  // Keep a ref to current options so the stable effect closure can read them.
+  // Keep refs to current options and onReorder so the stable effect closure can read them.
   const optionsRef = useRef(options);
   optionsRef.current = options;
+  const onReorderRef = useRef(onReorder);
+  onReorderRef.current = onReorder;
 
   function getVisualIndex(index: number, drag: DragState) {
     if (drag.targetIndex < drag.startIndex) {
@@ -187,15 +190,19 @@ export function useOptionDrag<T extends Option>(
       const drag = dragStateRef.current;
       if (!drag) return;
 
-      setOptions((current) => {
-        if (drag.startIndex === drag.targetIndex) return current;
+      let reordered: T[] | null = null;
+      if (drag.startIndex !== drag.targetIndex) {
+        const current = optionsRef.current;
         const sourceIndex = current.findIndex((o) => o.id === drag.id);
-        if (sourceIndex < 0) return current;
-        const next = [...current];
-        const [moved] = next.splice(sourceIndex, 1);
-        next.splice(drag.targetIndex, 0, moved);
-        return next;
-      });
+        if (sourceIndex >= 0) {
+          const next = [...current];
+          const [moved] = next.splice(sourceIndex, 1);
+          next.splice(drag.targetIndex, 0, moved);
+          reordered = next;
+          setOptions(next);
+        }
+      }
+      if (reordered) onReorderRef.current?.(reordered);
       dragStateRef.current = null;
       setActiveDrag(null);
     }

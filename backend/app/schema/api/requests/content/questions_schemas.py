@@ -227,7 +227,7 @@ RatingDefinitionIn = Annotated[
 class ChoiceQuestionSchemaIn(BaseModel):
     """Incoming choice-question content schema."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
 
     family: ChoiceFamily
     label: QuestionLabel
@@ -260,7 +260,7 @@ class MatchingQuestionSchemaIn(BaseModel):
 class RatingQuestionSchemaIn(BaseModel):
     """Incoming rating-question content schema."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
 
     family: RatingFamily
     label: QuestionLabel

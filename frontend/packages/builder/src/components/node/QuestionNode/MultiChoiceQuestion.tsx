@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Button, Input, LargeInput, NumberStepperGroup } from "@flowform/ui";
 import { useOptionDrag } from "../useOptionDrag";
 import { QUESTION_MAX, TITLE_MAX, blurOnEnter, nextAvailableTag } from "../NodePillUtils";
@@ -95,6 +95,20 @@ export function MultiChoiceQuestion({
   const [openOptionIds, setOpenOptionIds] = useState<Set<string>>(new Set());
   const nextOptionIndexRef = useRef(options.length + 1);
 
+  const syncOptions = useCallback((nextOptions: OptionRow[]) => {
+    const current = node.content as ChoiceContent;
+    onChange({
+      ...node,
+      content: {
+        ...current,
+        definition: {
+          ...current.definition,
+          options: nextOptions.map((opt) => ({ id: opt.tag, label: opt.value })),
+        },
+      },
+    });
+  }, [node, onChange]);
+
   const {
     activeDrag,
     optionsListRef,
@@ -102,7 +116,7 @@ export function MultiChoiceQuestion({
     startDrag,
     getDragTransform,
     getThresholdRatioForIndex,
-  } = useOptionDrag(options, setOptions);
+  } = useOptionDrag(options, setOptions, syncOptions);
 
   function updateContent(update: (current: ChoiceContent) => ChoiceContent) {
     onChange({ ...node, content: update(content) });
@@ -141,26 +155,10 @@ export function MultiChoiceQuestion({
     }));
   }
 
-  const syncOptions = useMemo(
-    () => (nextOptions: OptionRow[]) => {
-      updateContent((current) => ({
-        ...current,
-        definition: {
-          ...current.definition,
-          options: nextOptions.map((opt) => ({ id: opt.tag, label: opt.value })),
-        },
-      }));
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [node.node_key],
-  );
-
   function setOptionsAndSync(updater: (current: OptionRow[]) => OptionRow[]) {
-    setOptions((current) => {
-      const next = updater(current);
-      syncOptions(next);
-      return next;
-    });
+    const next = updater(options);
+    setOptions(next);
+    syncOptions(next);
   }
 
   function availableCharactersFor(optionId: string) {
@@ -246,7 +244,7 @@ export function MultiChoiceQuestion({
           titleMax={TITLE_MAX}
           showTitleEdit
           validationError={
-            validationError && !options.some((o) => !o.value.trim()) ? validationError : undefined
+            validationError && !questionValue.trim() ? validationError : undefined
           }
         />
 

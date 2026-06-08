@@ -1,4 +1,5 @@
 export { NodePage } from "./pages/builder/NodePage";
+export { findIncompleteNodeIds, isNodeIncomplete } from "./pages/builder/nodeOrdering";
 export { BuilderToolbar } from "./components/builder/BuilderToolbar";
 export { FormFillerPage } from "./pages/FormFillerPage";
 export { draftStorage, type DraftStorage } from "./pages/builder/draftStorage";

@@ -400,7 +400,9 @@ export function RatingQuestion({
           onTitleChange={updateTitle}
           titleMax={TITLE_MAX}
           showTitleEdit
-          validationError={validationError}
+          validationError={
+            validationError && !questionValue.trim() ? validationError : undefined
+          }
         />
 
         <div className={nodePillFieldClass}>

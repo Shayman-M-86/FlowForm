@@ -16,6 +16,7 @@ interface NodeRendererProps {
   onChange: (next: SurveyNode) => void;
   onDelete: () => void;
   idError?: string;
+  validationError?: string;
   isCollapsed: boolean;
   isEditMode: boolean;
   onExpand: () => void;

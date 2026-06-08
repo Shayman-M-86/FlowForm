@@ -92,19 +92,9 @@ export const MatchingQuestionSchemaInConstraints = {
   title: { minLength: 0, maxLength: 500 },
 } as const;
 
-export const RatingConditionInConstraints = {
-  target_id: { minLength: 1, maxLength: 128 },
-  family: { maxLength: 6 },
-} as const;
-
 export const RatingUIInConstraints = {
   left_label: { minLength: 1, maxLength: 50 },
   right_label: { minLength: 1, maxLength: 50 },
-} as const;
-
-export const RatingEmojiDefinitionInConstraints = {
-  variant: { maxLength: 5 },
-  emoji_list: { maxLength: 16 },
 } as const;
 
 export const RatingSliderDefinitionInConstraints = {
@@ -116,10 +106,20 @@ export const RatingStarDefinitionInConstraints = {
   stars: { minimum: 1, maximum: 12 },
 } as const;
 
+export const RatingEmojiDefinitionInConstraints = {
+  variant: { maxLength: 5 },
+  emoji_list: { maxLength: 16 },
+} as const;
+
 export const RatingQuestionSchemaInConstraints = {
   family: { maxLength: 6 },
   label: { minLength: 1, maxLength: 1000 },
   title: { minLength: 0, maxLength: 500 },
+} as const;
+
+export const RatingConditionInConstraints = {
+  target_id: { minLength: 1, maxLength: 128 },
+  family: { maxLength: 6 },
 } as const;
 
 export const RuleSetItemInConstraints = {

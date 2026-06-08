@@ -74,9 +74,19 @@ interface NodePageProps {
   nodes: SurveyNode[];
   disabled?: boolean;
   onNodesChange: (nodes: SurveyNode[]) => void;
+  /**
+   * Ids of nodes with an empty required field. When present, the matching pills
+   * render their validation rings. Populated by the consumer on a blocked save.
+   */
+  invalidNodeIds?: Set<number>;
 }
 
-export function NodePage({ nodes, disabled = false, onNodesChange }: NodePageProps) {
+export function NodePage({
+  nodes,
+  disabled = false,
+  onNodesChange,
+  invalidNodeIds,
+}: NodePageProps) {
   // Presentation-only state, keyed by the stable node id. None of this touches
   // the survey schema — the nodes prop is the single source of truth.
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(() => new Set());
@@ -338,6 +348,11 @@ export function NodePage({ nodes, disabled = false, onNodesChange }: NodePagePro
                     onChange={updateNode}
                     onDelete={() => removeNode(node.id)}
                     idError={duplicateIds.has(node.id) ? "ID must be unique." : undefined}
+                    validationError={
+                      invalidNodeIds?.has(node.id)
+                        ? "Fill in all required fields before saving."
+                        : undefined
+                    }
                     isCollapsed={collapsedIds.has(node.id)}
                     isEditMode={editingIds.has(node.id)}
                     onExpand={() => expand(node.id)}

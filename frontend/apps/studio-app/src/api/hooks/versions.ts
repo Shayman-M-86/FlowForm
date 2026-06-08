@@ -38,8 +38,11 @@ export function useCreateSurveyVersion(projectId: number, surveyId: number) {
       if (error) throw error
       return data
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: versionKeys.list(projectId, surveyId) })
+    onSuccess: (newVersion) => {
+      queryClient.setQueryData<SurveyVersionOut[]>(
+        versionKeys.list(projectId, surveyId),
+        (prev) => [...(prev ?? []), newVersion],
+      )
     },
   })
 }

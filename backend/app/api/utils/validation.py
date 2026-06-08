@@ -4,6 +4,8 @@ from flask import Request
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from werkzeug.exceptions import BadRequest, UnsupportedMediaType
 
+from app.core.errors import RequestValidationError
+
 
 def _get_json_object(request_obj: Request) -> dict[str, Any]:
     """Parse the request body as a JSON object.
@@ -22,25 +24,26 @@ def _get_json_object(request_obj: Request) -> dict[str, Any]:
 
     return body
 
+def _validate_request_data(schema: Any, data: Any) -> Any:
+    """Validate client-provided data and classify failures as request errors."""
+    try:
+        if isinstance(schema, type) and issubclass(schema, BaseModel):
+            return schema.model_validate(data)
+
+        return TypeAdapter(schema).validate_python(data)
+
+    except ValidationError as exc:
+        raise RequestValidationError(exc) from exc
+
 
 @overload
 def parse[T: BaseModel](schema: type[T], request_obj: Request) -> T: ...
 @overload
 def parse(schema: Any, request_obj: Request) -> Any: ...
 def parse(schema: Any, request_obj: Request) -> Any:
-    """Parse the JSON request body into a Pydantic model or discriminated union.
-
-    Accepts either a ``BaseModel`` subclass or an ``Annotated`` type alias
-    (e.g. a discriminated union built with ``TypeAdapter``).
-
-    Raises:
-        HTTPException: If the request body is invalid for the endpoint.
-        ValidationError: If the JSON body does not satisfy the schema.
-    """
+    """Parse and validate a JSON request body."""
     body = _get_json_object(request_obj)
-    if isinstance(schema, type) and issubclass(schema, BaseModel):
-        return schema.model_validate(body)
-    return TypeAdapter(schema).validate_python(body)
+    return _validate_request_data(schema, body)
 
 
 def parse_query[TModel: BaseModel](model_cls: type[TModel], request_obj: Request) -> TModel:

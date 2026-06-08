@@ -1,5 +1,7 @@
 from flask import g, request
 
+
+from app.api.utils.serialization import serialize
 from app.api.utils.validation import parse
 from app.api.v1.projects import content_svc, projects_bp
 from app.core.extensions import auth
@@ -30,7 +32,7 @@ def list_nodes(project_id: int, survey_id: int, version_number: int):
     nodes = content_svc.list_nodes(
         db=get_core_db(), project_id=project_id, survey_id=survey_id, version_number=version_number, actor=g.actor
     )
-    return [NodeResponses.model_validate(n).model_dump(mode="json", by_alias=True) for n in nodes], 200
+    return [serialize(NodeResponses, n) for n in nodes], 200
 
 
 @openapi_route(
@@ -53,7 +55,7 @@ def create_node(project_id: int, survey_id: int, version_number: int):
         data=payload,
         actor=g.actor,
     )
-    return NodeResponses.model_validate(node).model_dump(mode="json", by_alias=True), 201
+    return serialize(NodeResponses, node), 201
 
 
 @openapi_route(summary="Get survey content node", response_model=NodeResponses, tags=["Survey Content"])
@@ -69,7 +71,7 @@ def get_node(project_id: int, survey_id: int, version_number: int, node_id: int)
         node_id=node_id,
         actor=g.actor,
     )
-    return NodeResponses.model_validate(node).model_dump(mode="json", by_alias=True), 200
+    return serialize(NodeResponses, node), 200
 
 
 @openapi_route(
@@ -92,7 +94,7 @@ def update_node(project_id: int, survey_id: int, version_number: int, node_id: i
         data=payload,
         actor=g.actor,
     )
-    return NodeResponses.model_validate(node).model_dump(mode="json", by_alias=True), 200
+    return serialize(NodeResponses, node), 200
 
 
 @openapi_route(summary="Delete survey content node", tags=["Survey Content"], status_code=204)
@@ -122,7 +124,7 @@ def list_scoring_rules(project_id: int, survey_id: int, version_number: int):
     rules = content_svc.list_scoring_rules(
         db=get_core_db(), project_id=project_id, survey_id=survey_id, version_number=version_number, actor=g.actor
     )
-    return [ScoringRuleResponses.model_validate(r).model_dump(mode="json") for r in rules], 200
+    return [serialize(ScoringRuleResponses, r) for r in rules], 200
 
 
 @openapi_route(
@@ -145,7 +147,7 @@ def create_scoring_rule(project_id: int, survey_id: int, version_number: int):
         data=payload,
         actor=g.actor,
     )
-    return ScoringRuleResponses.model_validate(rule).model_dump(mode="json"), 201
+    return serialize(ScoringRuleResponses, rule), 201
 
 
 @openapi_route(
@@ -168,7 +170,7 @@ def update_scoring_rule(project_id: int, survey_id: int, version_number: int, sc
         data=payload,
         actor=g.actor,
     )
-    return ScoringRuleResponses.model_validate(rule).model_dump(mode="json"), 200
+    return serialize(ScoringRuleResponses, rule), 200
 
 
 @openapi_route(summary="Delete scoring rule", tags=["Scoring Rules"], status_code=204)

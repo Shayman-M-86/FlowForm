@@ -177,7 +177,9 @@ export function FieldQuestion({
           onTitleChange={updateTitle}
           titleMax={TITLE_MAX}
           showTitleEdit
-          validationError={validationError}
+          validationError={
+            validationError && !questionValue.trim() ? validationError : undefined
+          }
         />
 
         <div className={nodePillFieldClass}>

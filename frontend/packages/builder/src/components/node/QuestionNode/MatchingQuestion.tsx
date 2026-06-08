@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Button, Input, LargeInput } from "@flowform/ui";
 import { useOptionDrag } from "../useOptionDrag";
 import { QUESTION_MAX, TITLE_MAX, blurOnEnter, nextAvailableTag } from "../NodePillUtils";
@@ -108,9 +108,6 @@ export function MatchingQuestion({
   const nextLeftIndexRef = useRef(leftItems.length + 1);
   const nextRightIndexRef = useRef(rightItems.length + 1);
 
-  const leftDrag = useOptionDrag(leftItems, setLeftItems);
-  const rightDrag = useOptionDrag(rightItems, setRightItems);
-
   const totalCharacters = [...leftItems, ...rightItems].reduce(
     (sum, item) => sum + item.value.length,
     0,
@@ -132,30 +129,47 @@ export function MatchingQuestion({
     updateContent((current) => ({ ...current, label: nextQuestion }));
   }
 
-  function syncItems(nextLeft: MatchItem[], nextRight: MatchItem[]) {
-    updateContent((current) => ({
-      ...current,
-      definition: {
-        prompts: nextLeft.map((item) => ({ id: item.tag, label: item.value })),
-        matches: nextRight.map((item) => ({ id: item.tag, label: item.value })),
+  // Refs so the drag callbacks always read the live list for the *other* side.
+  const leftItemsRef = useRef(leftItems);
+  leftItemsRef.current = leftItems;
+  const rightItemsRef = useRef(rightItems);
+  rightItemsRef.current = rightItems;
+
+  const syncItems = useCallback((nextLeft: MatchItem[], nextRight: MatchItem[]) => {
+    const current = node.content as MatchingContent;
+    onChange({
+      ...node,
+      content: {
+        ...current,
+        definition: {
+          prompts: nextLeft.map((item) => ({ id: item.tag, label: item.value })),
+          matches: nextRight.map((item) => ({ id: item.tag, label: item.value })),
+        },
       },
-    }));
-  }
+    });
+  }, [node, onChange]);
+
+  const syncLeft = useCallback((nextLeft: MatchItem[]) => {
+    syncItems(nextLeft, rightItemsRef.current);
+  }, [syncItems]);
+
+  const syncRight = useCallback((nextRight: MatchItem[]) => {
+    syncItems(leftItemsRef.current, nextRight);
+  }, [syncItems]);
+
+  const leftDrag = useOptionDrag(leftItems, setLeftItems, syncLeft);
+  const rightDrag = useOptionDrag(rightItems, setRightItems, syncRight);
 
   function setLeftAndSync(updater: (current: MatchItem[]) => MatchItem[]) {
-    setLeftItems((current) => {
-      const next = updater(current);
-      syncItems(next, rightItems);
-      return next;
-    });
+    const next = updater(leftItemsRef.current);
+    setLeftItems(next);
+    syncItems(next, rightItemsRef.current);
   }
 
   function setRightAndSync(updater: (current: MatchItem[]) => MatchItem[]) {
-    setRightItems((current) => {
-      const next = updater(current);
-      syncItems(leftItems, next);
-      return next;
-    });
+    const next = updater(rightItemsRef.current);
+    setRightItems(next);
+    syncItems(leftItemsRef.current, next);
   }
 
   function availableCharactersFor(itemId: string) {
@@ -416,11 +430,7 @@ export function MatchingQuestion({
           titleMax={TITLE_MAX}
           showTitleEdit
           validationError={
-            validationError &&
-            !leftItems.some((i) => !i.value.trim()) &&
-            !rightItems.some((i) => !i.value.trim())
-              ? validationError
-              : undefined
+            validationError && !questionValue.trim() ? validationError : undefined
           }
         />
 

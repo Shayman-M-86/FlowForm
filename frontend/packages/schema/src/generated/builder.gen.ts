@@ -108,33 +108,15 @@ export interface MatchingQuestionSchemaIn {
   definition: MatchingDefinitionIn;
 }
 
-export interface RatingRequirementsIn {
-  min?: number | number | null;
-  max?: number | number | null;
-}
-
-export interface RatingConditionIn {
-  target_id: string;
-  family: "rating";
-  requirements: RatingRequirementsIn;
+export interface RatingRangeIn {
+  min: number | number;
+  max: number | number;
+  step: number | number;
 }
 
 export interface RatingUIIn {
   left_label: string;
   right_label: string;
-}
-
-export interface RatingEmojiDefinitionIn {
-  variant: "emoji";
-  emoji_list: "sad_to_happy" | "angry_to_happy" | "disgust_to_happy";
-  words?: boolean;
-  ui: RatingUIIn;
-}
-
-export interface RatingRangeIn {
-  min: number | number;
-  max: number | number;
-  step: number | number;
 }
 
 export interface RatingSliderDefinitionIn {
@@ -149,11 +131,29 @@ export interface RatingStarDefinitionIn {
   ui: RatingUIIn;
 }
 
+export interface RatingEmojiDefinitionIn {
+  variant: "emoji";
+  emoji_list: "sad_to_happy" | "angry_to_happy" | "disgust_to_happy";
+  words?: boolean;
+  ui: RatingUIIn;
+}
+
 export interface RatingQuestionSchemaIn {
   family: "rating";
   label: string;
   title?: string | null;
   definition: RatingSliderDefinitionIn | RatingStarDefinitionIn | RatingEmojiDefinitionIn;
+}
+
+export interface RatingRequirementsIn {
+  min?: number | number | null;
+  max?: number | number | null;
+}
+
+export interface RatingConditionIn {
+  target_id: string;
+  family: "rating";
+  requirements: RatingRequirementsIn;
 }
 
 export interface RuleSetItemIn {

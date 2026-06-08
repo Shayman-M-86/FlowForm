@@ -1499,6 +1499,25 @@ export interface components {
             value: number;
         };
         /**
+         * QuestionNodeResponse
+         * @description API response shape for a question node.
+         */
+        QuestionNodeResponse: {
+            /** Id */
+            id: number;
+            /** Node Key */
+            node_key: string;
+            /** Sort Key */
+            sort_key: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            node_type: "question";
+            /** Content */
+            content: components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"];
+        };
+        /**
          * RatingConditionIn
          * @description Represents a condition block targeting a rating question.
          */
@@ -1649,6 +1668,24 @@ export interface components {
             conditions: (components["schemas"]["ChoiceConditionIn"] | components["schemas"]["MatchingConditionIn"] | components["schemas"]["RatingConditionIn"] | components["schemas"]["FieldConditionIn"])[];
         };
         /**
+         * RuleNodeResponse
+         * @description API response shape for a rule node.
+         */
+        RuleNodeResponse: {
+            /** Id */
+            id: number;
+            /** Node Key */
+            node_key: string;
+            /** Sort Key */
+            sort_key: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            node_type: "rule";
+            content: components["schemas"]["RuleSchemaIn"];
+        };
+        /**
          * RuleSchemaIn
          * @description Represents the full rule content stored in question_schema for a rule node.
          */
@@ -1684,25 +1721,8 @@ export interface components {
             /** Skip To */
             skip_to: string;
         };
-        /**
-         * NodeResponses
-         * @description API response shape for a survey content node (question or rule).
-         */
-        NodeResponses: {
-            /** Id */
-            id: number;
-            /** Node Key */
-            node_key: string;
-            /** Sort Key */
-            sort_key: number;
-            /**
-             * Node Type
-             * @enum {string}
-             */
-            node_type: "question" | "rule";
-            /** Content */
-            content: (components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"]) | components["schemas"]["RuleSchemaIn"];
-        };
+        /** NodeResponses */
+        NodeResponses: components["schemas"]["QuestionNodeResponse"] | components["schemas"]["RuleNodeResponse"];
         /**
          * CreateQuestionNodeRequest
          * @description Validates requests that create a new question node.
@@ -2873,6 +2893,7 @@ export type MatchingPairIn = components['schemas']['MatchingPairIn'];
 export type MatchingQuestionSchemaIn = components['schemas']['MatchingQuestionSchemaIn'];
 export type MatchingRequirementsIn = components['schemas']['MatchingRequirementsIn'];
 export type NumberFieldRequirementsIn = components['schemas']['NumberFieldRequirementsIn'];
+export type QuestionNodeResponse = components['schemas']['QuestionNodeResponse'];
 export type RatingConditionIn = components['schemas']['RatingConditionIn'];
 export type RatingEmojiDefinitionIn = components['schemas']['RatingEmojiDefinitionIn'];
 export type RatingQuestionSchemaIn = components['schemas']['RatingQuestionSchemaIn'];
@@ -2883,6 +2904,7 @@ export type RatingStarDefinitionIn = components['schemas']['RatingStarDefinition
 export type RatingUiIn = components['schemas']['RatingUIIn'];
 export type RuleBranchIn = components['schemas']['RuleBranchIn'];
 export type RuleIfIn = components['schemas']['RuleIfIn'];
+export type RuleNodeResponse = components['schemas']['RuleNodeResponse'];
 export type RuleSchemaIn = components['schemas']['RuleSchemaIn'];
 export type RuleSetItemIn = components['schemas']['RuleSetItemIn'];
 export type SkipToActionIn = components['schemas']['SkipToActionIn'];

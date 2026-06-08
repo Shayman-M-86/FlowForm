@@ -47,6 +47,36 @@ export function moveNode(
 }
 
 /**
+ * A question node is "incomplete" when a required text field is left blank:
+ * the question label, or any answer option / matching item. Rule nodes have no
+ * such free-text requirement and are never flagged here. The criteria mirror the
+ * empty-field rings the question pills already render from `validationError`.
+ */
+export function isNodeIncomplete(node: SurveyNode): boolean {
+  if (node.node_type === "rule") return false;
+
+  const { content } = node;
+  if (content.label.trim() === "") return true;
+
+  if (content.family === "choice") {
+    return content.definition.options.some((option) => option.label.trim() === "");
+  }
+  if (content.family === "matching") {
+    const { prompts, matches } = content.definition;
+    return (
+      prompts.some((item) => item.label.trim() === "") ||
+      matches.some((item) => item.label.trim() === "")
+    );
+  }
+  return false;
+}
+
+/** Ids of every node with an empty required field — see {@link isNodeIncomplete}. */
+export function findIncompleteNodeIds(nodes: SurveyNode[]): Set<number> {
+  return new Set(nodes.filter(isNodeIncomplete).map((node) => node.id));
+}
+
+/**
  * The only validation the builder keeps: flag every node whose node_key collides
  * with another node's key. Returns the set of offending node ids.
  */

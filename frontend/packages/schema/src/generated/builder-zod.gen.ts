@@ -109,33 +109,15 @@ export const MatchingQuestionSchemaInSchema = z.object({
   definition: MatchingDefinitionInSchema,
 });
 
-export const RatingRequirementsInSchema = z.object({
-  min: z.union([z.number().int(), z.number()]).nullable().optional(),
-  max: z.union([z.number().int(), z.number()]).nullable().optional(),
-});
-
-export const RatingConditionInSchema = z.object({
-  target_id: z.string().min(1).max(128),
-  family: z.literal("rating"),
-  requirements: RatingRequirementsInSchema,
+export const RatingRangeInSchema = z.object({
+  min: z.union([z.number().int(), z.number()]),
+  max: z.union([z.number().int(), z.number()]),
+  step: z.union([z.number().int(), z.number()]),
 });
 
 export const RatingUIInSchema = z.object({
   left_label: z.string().min(1).max(50),
   right_label: z.string().min(1).max(50),
-});
-
-export const RatingEmojiDefinitionInSchema = z.object({
-  variant: z.literal("emoji"),
-  emoji_list: z.enum(["sad_to_happy", "angry_to_happy", "disgust_to_happy"]),
-  words: z.boolean().optional(),
-  ui: RatingUIInSchema,
-});
-
-export const RatingRangeInSchema = z.object({
-  min: z.union([z.number().int(), z.number()]),
-  max: z.union([z.number().int(), z.number()]),
-  step: z.union([z.number().int(), z.number()]),
 });
 
 export const RatingSliderDefinitionInSchema = z.object({
@@ -150,11 +132,29 @@ export const RatingStarDefinitionInSchema = z.object({
   ui: RatingUIInSchema,
 });
 
+export const RatingEmojiDefinitionInSchema = z.object({
+  variant: z.literal("emoji"),
+  emoji_list: z.enum(["sad_to_happy", "angry_to_happy", "disgust_to_happy"]),
+  words: z.boolean().optional(),
+  ui: RatingUIInSchema,
+});
+
 export const RatingQuestionSchemaInSchema = z.object({
   family: z.literal("rating"),
   label: z.string().min(1).max(1000),
   title: z.string().min(0).max(500).nullable().optional(),
   definition: z.discriminatedUnion("variant", [RatingSliderDefinitionInSchema, RatingStarDefinitionInSchema, RatingEmojiDefinitionInSchema]),
+});
+
+export const RatingRequirementsInSchema = z.object({
+  min: z.union([z.number().int(), z.number()]).nullable().optional(),
+  max: z.union([z.number().int(), z.number()]).nullable().optional(),
+});
+
+export const RatingConditionInSchema = z.object({
+  target_id: z.string().min(1).max(128),
+  family: z.literal("rating"),
+  requirements: RatingRequirementsInSchema,
 });
 
 export const RuleSetItemInSchema = z.object({

@@ -3659,6 +3659,7 @@ components:
       - definition
       title: ChoiceQuestionSchemaIn
       type: object
+      x-flowform-export: builder
     ChoiceRequirementsIn:
       additionalProperties: false
       description: Validation requirements for a choice-question condition.
@@ -3986,6 +3987,46 @@ components:
       - value
       title: NumberFieldRequirementsIn
       type: object
+    QuestionNodeResponse:
+      description: API response shape for a question node.
+      properties:
+        id:
+          title: Id
+          type: integer
+        node_key:
+          title: Node Key
+          type: string
+          maxLength: 128
+        sort_key:
+          title: Sort Key
+          type: integer
+        node_type:
+          const: question
+          title: Node Type
+          type: string
+          maxLength: 8
+        content:
+          discriminator:
+            mapping:
+              choice: '#/components/schemas/ChoiceQuestionSchemaIn'
+              field: '#/components/schemas/FieldQuestionSchemaIn'
+              matching: '#/components/schemas/MatchingQuestionSchemaIn'
+              rating: '#/components/schemas/RatingQuestionSchemaIn'
+            propertyName: family
+          oneOf:
+          - $ref: '#/components/schemas/ChoiceQuestionSchemaIn'
+          - $ref: '#/components/schemas/FieldQuestionSchemaIn'
+          - $ref: '#/components/schemas/MatchingQuestionSchemaIn'
+          - $ref: '#/components/schemas/RatingQuestionSchemaIn'
+          title: Content
+      required:
+      - id
+      - node_key
+      - sort_key
+      - node_type
+      - content
+      title: QuestionNodeResponse
+      type: object
     RatingConditionIn:
       additionalProperties: false
       description: Represents a condition block targeting a rating question.
@@ -4077,6 +4118,7 @@ components:
       - definition
       title: RatingQuestionSchemaIn
       type: object
+      x-flowform-export: builder
     RatingRangeIn:
       additionalProperties: false
       description: Range block for a slider rating — min, max, and step in one object.
@@ -4246,6 +4288,34 @@ components:
       - conditions
       title: RuleIfIn
       type: object
+    RuleNodeResponse:
+      description: API response shape for a rule node.
+      properties:
+        id:
+          title: Id
+          type: integer
+        node_key:
+          title: Node Key
+          type: string
+          maxLength: 128
+        sort_key:
+          title: Sort Key
+          type: integer
+        node_type:
+          const: rule
+          title: Node Type
+          type: string
+          maxLength: 4
+        content:
+          $ref: '#/components/schemas/RuleSchemaIn'
+      required:
+      - id
+      - node_key
+      - sort_key
+      - node_type
+      - content
+      title: RuleNodeResponse
+      type: object
     RuleSchemaIn:
       additionalProperties: false
       description: Represents the full rule content stored in question_schema for a rule node.
@@ -4303,49 +4373,15 @@ components:
       title: SkipToActionIn
       type: object
     NodeResponses:
-      description: API response shape for a survey content node (question or rule).
-      properties:
-        id:
-          title: Id
-          type: integer
-        node_key:
-          title: Node Key
-          type: string
-          maxLength: 128
-        sort_key:
-          title: Sort Key
-          type: integer
-        node_type:
-          enum:
-          - question
-          - rule
-          title: Node Type
-          type: string
-          maxLength: 8
-        content:
-          anyOf:
-          - discriminator:
-              mapping:
-                choice: '#/components/schemas/ChoiceQuestionSchemaIn'
-                field: '#/components/schemas/FieldQuestionSchemaIn'
-                matching: '#/components/schemas/MatchingQuestionSchemaIn'
-                rating: '#/components/schemas/RatingQuestionSchemaIn'
-              propertyName: family
-            oneOf:
-            - $ref: '#/components/schemas/ChoiceQuestionSchemaIn'
-            - $ref: '#/components/schemas/FieldQuestionSchemaIn'
-            - $ref: '#/components/schemas/MatchingQuestionSchemaIn'
-            - $ref: '#/components/schemas/RatingQuestionSchemaIn'
-          - $ref: '#/components/schemas/RuleSchemaIn'
-          title: Content
-      required:
-      - id
-      - node_key
-      - sort_key
-      - node_type
-      - content
+      discriminator:
+        mapping:
+          question: '#/components/schemas/QuestionNodeResponse'
+          rule: '#/components/schemas/RuleNodeResponse'
+        propertyName: node_type
+      oneOf:
+      - $ref: '#/components/schemas/QuestionNodeResponse'
+      - $ref: '#/components/schemas/RuleNodeResponse'
       title: NodeResponses
-      type: object
     CreateQuestionNodeRequest:
       additionalProperties: false
       description: Validates requests that create a new question node.

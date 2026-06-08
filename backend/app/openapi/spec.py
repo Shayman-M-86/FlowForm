@@ -18,7 +18,7 @@ import tomllib
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
 from pathlib import Path
-from typing import Any, get_args, get_origin
+from typing import Any, Literal, get_args, get_origin
 
 from apispec import APISpec
 from flask import Blueprint, Flask, jsonify
@@ -368,20 +368,29 @@ def _apply_string_max_lengths(
             _apply_string_max_lengths(value, component_name=component_name, property_name=property_name)
 
 
-def _register_model(spec: APISpec, model: Any) -> str:
+def _register_model(
+    spec: APISpec,
+    model: Any,
+    mode: Literal["validation", "serialization"] = "validation",
+) -> str:
     """Register a Pydantic model (or ``TypeAdapter`` type) with the spec.
 
     Accepts either a ``BaseModel`` subclass or an ``Annotated`` type alias.
     For ``Annotated`` unions the schema title is used as the component name.
+
+    ``mode`` selects which alias set the JSON schema reflects: request models
+    are registered in ``"validation"`` mode (input aliases) and response models
+    in ``"serialization"`` mode (output aliases), so the spec matches the
+    field names that actually cross the wire in each direction.
 
     Returns the component name so callers can build a ``$ref``. Safe to call
     repeatedly for the same model.
     """
     if isinstance(model, type) and issubclass(model, BaseModel):
         name = model.__name__
-        schema = model.model_json_schema(ref_template="#/components/schemas/{model}")
+        schema = model.model_json_schema(ref_template="#/components/schemas/{model}", mode=mode)
     else:
-        schema = TypeAdapter(model).json_schema(ref_template="#/components/schemas/{model}")
+        schema = TypeAdapter(model).json_schema(ref_template="#/components/schemas/{model}", mode=mode)
         name = schema.get("title", repr(model))
 
     existing = spec.to_dict().get("components", {}).get("schemas", {})
@@ -402,18 +411,20 @@ def _schema_for_response_model(spec: APISpec, model: Any) -> dict[str, Any]:
     origin = get_origin(model)
     args = get_args(model)
 
-    if origin is list and len(args) == 1 and isinstance(args[0], type) and issubclass(args[0], BaseModel):
-        item_name = _register_model(spec, args[0])
+    if origin is list and len(args) == 1:
+        item_name = _register_model(spec, args[0], mode="serialization")
         return {
             "type": "array",
             "items": {"$ref": f"#/components/schemas/{item_name}"},
         }
 
     if isinstance(model, type) and issubclass(model, BaseModel):
-        response_name = _register_model(spec, model)
+        response_name = _register_model(spec, model, mode="serialization")
         return {"$ref": f"#/components/schemas/{response_name}"}
 
-    raise TypeError(f"Unsupported OpenAPI response model: {model!r}")
+    # Annotated discriminated union (e.g. NodeResponses)
+    response_name = _register_model(spec, model, mode="serialization")
+    return {"$ref": f"#/components/schemas/{response_name}"}
 
 
 def _query_parameters_for_model(model: type[BaseModel]) -> list[dict[str, Any]]:

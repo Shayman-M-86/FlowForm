@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
 import { usePolicyQuery } from '@/lib/query/usePolicyQuery'
 import { QUERY_POLICIES } from '@/lib/query/queryPolicy'
@@ -6,7 +6,7 @@ import type { components } from '@/api/generated/schema'
 
 export type NodeOut = components['schemas']['NodeResponses']
 
-const nodeKeys = {
+export const nodeKeys = {
   list: (projectId: number, surveyId: number, versionNumber: number) =>
     ['nodes', 'project', projectId, 'survey', surveyId, 'version', versionNumber] as const,
 }
@@ -36,7 +36,6 @@ export function useCreateNode(
   surveyId: number | null,
   versionNumber: number | null,
 ) {
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (body: components['schemas']['CreateNodeRequest']) => {
       if (projectId == null || surveyId == null || versionNumber == null) {
@@ -49,11 +48,6 @@ export function useCreateNode(
       if (error) throw error
       return data
     },
-    onSuccess: () => {
-      if (projectId != null && surveyId != null && versionNumber != null) {
-        void queryClient.invalidateQueries({ queryKey: nodeKeys.list(projectId, surveyId, versionNumber) })
-      }
-    },
   })
 }
 
@@ -62,7 +56,6 @@ export function useUpdateNode(
   surveyId: number | null,
   versionNumber: number | null,
 ) {
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ nodeId, body }: { nodeId: number; body: components['schemas']['UpdateNodeRequest'] }) => {
       if (projectId == null || surveyId == null || versionNumber == null) {
@@ -75,11 +68,6 @@ export function useUpdateNode(
       if (error) throw error
       return data
     },
-    onSuccess: () => {
-      if (projectId != null && surveyId != null && versionNumber != null) {
-        void queryClient.invalidateQueries({ queryKey: nodeKeys.list(projectId, surveyId, versionNumber) })
-      }
-    },
   })
 }
 
@@ -88,7 +76,6 @@ export function useDeleteNode(
   surveyId: number | null,
   versionNumber: number | null,
 ) {
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (nodeId: number) => {
       if (projectId == null || surveyId == null || versionNumber == null) {
@@ -99,11 +86,6 @@ export function useDeleteNode(
         { params: { path: { project_id: projectId, survey_id: surveyId, version_number: versionNumber, node_id: nodeId } } },
       )
       if (error) throw error
-    },
-    onSuccess: () => {
-      if (projectId != null && surveyId != null && versionNumber != null) {
-        void queryClient.invalidateQueries({ queryKey: nodeKeys.list(projectId, surveyId, versionNumber) })
-      }
     },
   })
 }

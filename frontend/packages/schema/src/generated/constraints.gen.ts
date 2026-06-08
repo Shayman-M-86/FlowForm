@@ -4,6 +4,16 @@
 // Subtypes
 // ──────────────────────────────────────────────────────────────────────────
 
+export const QuestionNodeResponseConstraints = {
+  node_key: { maxLength: 128 },
+  node_type: { maxLength: 8 },
+} as const;
+
+export const RuleNodeResponseConstraints = {
+  node_key: { maxLength: 128 },
+  node_type: { maxLength: 4 },
+} as const;
+
 export const ChoiceOptionMapConfigConstraints = {
   combine: { maxLength: 3 },
 } as const;
@@ -143,19 +153,9 @@ export const MatchingQuestionSchemaInConstraints = {
   title: { minLength: 0, maxLength: 500 },
 } as const;
 
-export const RatingConditionInConstraints = {
-  target_id: { minLength: 1, maxLength: 128 },
-  family: { maxLength: 6 },
-} as const;
-
 export const RatingUIInConstraints = {
   left_label: { minLength: 1, maxLength: 50 },
   right_label: { minLength: 1, maxLength: 50 },
-} as const;
-
-export const RatingEmojiDefinitionInConstraints = {
-  variant: { maxLength: 5 },
-  emoji_list: { maxLength: 16 },
 } as const;
 
 export const RatingSliderDefinitionInConstraints = {
@@ -167,10 +167,20 @@ export const RatingStarDefinitionInConstraints = {
   stars: { minimum: 1, maximum: 12 },
 } as const;
 
+export const RatingEmojiDefinitionInConstraints = {
+  variant: { maxLength: 5 },
+  emoji_list: { maxLength: 16 },
+} as const;
+
 export const RatingQuestionSchemaInConstraints = {
   family: { maxLength: 6 },
   label: { minLength: 1, maxLength: 1000 },
   title: { minLength: 0, maxLength: 500 },
+} as const;
+
+export const RatingConditionInConstraints = {
+  target_id: { minLength: 1, maxLength: 128 },
+  family: { maxLength: 6 },
 } as const;
 
 export const RuleSetItemInConstraints = {
@@ -394,11 +404,6 @@ export const MemberUserResponsesConstraints = {
 export const ProjectMemberResponsesConstraints = {
   status: { maxLength: 9 },
   created_at: { maxLength: 35 },
-} as const;
-
-export const NodeResponsesConstraints = {
-  node_key: { maxLength: 128 },
-  node_type: { maxLength: 8 },
 } as const;
 
 export const ScoringRuleResponsesConstraints = {

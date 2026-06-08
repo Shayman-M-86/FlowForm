@@ -26,7 +26,10 @@ class SurveyQuestion(TimestampMixin, CoreBase):
 
     __tablename__ = "survey_questions"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    # autoincrement must be explicit: this is part of a composite primary key
+    # (id + survey_version_id), and SQLAlchemy only auto-enables SERIAL/IDENTITY
+    # behaviour for single-column PKs unless told otherwise.
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 
     survey_version_id: Mapped[int] = mapped_column(
         BigInteger,

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
-import type { SurveyNode } from '@flowform/builder'
+import { findIncompleteNodeIds, type SurveyNode } from '@flowform/builder'
 import type { ToastVariant } from '@flowform/ui'
 import { useProject } from '@/api/hooks/projects'
 import { useSurvey } from '@/api/hooks/surveys'
@@ -14,6 +15,7 @@ import {
   type SurveyVersionOut,
 } from '@/api/hooks/versions'
 import {
+  nodeKeys,
   useCreateNode,
   useDeleteNode,
   useSurveyNodes,
@@ -136,6 +138,7 @@ function pickDefaultVersion(versions: SurveyVersionOut[]): SurveyVersionOut | un
 }
 
 export function useSurveyBuilderController() {
+  const queryClient = useQueryClient()
   const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/builder' })
   const { data: project, isLoading: isProjectLoading, isError: isProjectError } = useProject(slug)
   const { data: survey, isLoading: isSurveyLoading, isError: isSurveyError } = useSurvey(slug, surveySlug)
@@ -170,6 +173,7 @@ export function useSurveyBuilderController() {
   const deleteNode = useDeleteNode(projectId, surveyId > 0 ? surveyId : null, selectedVersion?.version_number ?? null)
 
   const [nodes, setNodesState] = useState<SurveyNode[]>([])
+  const [invalidNodeIds, setInvalidNodeIds] = useState<Set<number>>(() => new Set())
   const [isSaving, setIsSaving] = useState(false)
   const [toast, setToast] = useState<ToastState | null>(null)
   const [pendingSwitch, setPendingSwitch] = useState<PendingSwitch | null>(null)
@@ -210,6 +214,11 @@ export function useSurveyBuilderController() {
 
   const setNodes = useCallback((nextNodes: SurveyNode[]) => {
     setNodesState(nextNodes)
+    // Once validation has been surfaced (a blocked save), keep the highlights in
+    // sync as the user fills fields in — clearing each node as it becomes valid.
+    setInvalidNodeIds((current) =>
+      current.size === 0 ? current : findIncompleteNodeIds(nextNodes),
+    )
     if (projectId == null || surveyId <= 0 || selectedVersion?.status !== 'draft') return
 
     const backend = toSurveyNodes(backendNodes)
@@ -222,6 +231,14 @@ export function useSurveyBuilderController() {
 
   const saveDraft = useCallback(async () => {
     if (!selectedVersion || selectedVersion.status !== 'draft' || projectId == null || surveyId <= 0) return
+
+    const incomplete = findIncompleteNodeIds(nodes)
+    if (incomplete.size > 0) {
+      setInvalidNodeIds(incomplete)
+      showToast('error', 'Fill in all required fields before saving.')
+      throw new Error('Validation failed')
+    }
+    setInvalidNodeIds(new Set())
 
     setIsSaving(true)
     try {
@@ -254,8 +271,17 @@ export function useSurveyBuilderController() {
         }
       }
 
+      // The mutations already returned the authoritative server state for every
+      // node, so seed the nodes-list cache directly instead of invalidating it —
+      // that avoids a redundant refetch GET per saved node.
+      const savedNodes = [...savedById.values()]
+      queryClient.setQueryData<NodeOut[]>(
+        nodeKeys.list(projectId, surveyId, selectedVersion.version_number),
+        savedNodes,
+      )
+
       clearSurveyBuilderDraft(projectId, surveyId, selectedVersion.id)
-      setNodesState(toSurveyNodes([...savedById.values()]))
+      setNodesState(toSurveyNodes(savedNodes))
       loadedVersionIdRef.current = selectedVersion.id
       showToast('success', 'Draft saved.')
     } catch (error) {
@@ -270,7 +296,7 @@ export function useSurveyBuilderController() {
     } finally {
       setIsSaving(false)
     }
-  }, [backendNodes, createNode, deleteNode, nodes, projectId, selectedVersion, showToast, surveyId, updateNode])
+  }, [backendNodes, createNode, deleteNode, nodes, projectId, queryClient, selectedVersion, showToast, surveyId, updateNode])
 
   const selectVersion = useCallback((versionId: number) => {
     if (isDirty && selectedVersion?.status === 'draft' && versionId !== selectedVersion.id) {
@@ -306,6 +332,12 @@ export function useSurveyBuilderController() {
     if (projectId == null || surveyId <= 0) return
     try {
       const version = await createVersion.mutateAsync()
+      // A freshly created draft is always empty, so prime the nodes cache with an
+      // empty list instead of issuing a redundant fetch for content we know isn't there.
+      queryClient.setQueryData<NodeOut[]>(
+        nodeKeys.list(projectId, surveyId, version.version_number),
+        [],
+      )
       setSelectedVersionId(version.id)
       loadedVersionIdRef.current = null
       showToast('success', 'New draft created.')
@@ -313,7 +345,7 @@ export function useSurveyBuilderController() {
       logBuilderFailure('Failed to create draft.', error, { projectId, surveyId })
       showToast('error', 'Failed to create draft.')
     }
-  }, [createVersion, projectId, showToast, surveyId])
+  }, [createVersion, projectId, queryClient, showToast, surveyId])
 
   const copyToDraft = useCallback(async () => {
     if (!selectedVersion || projectId == null || surveyId <= 0) return
@@ -376,6 +408,7 @@ export function useSurveyBuilderController() {
     selectVersion,
     nodes,
     setNodes,
+    invalidNodeIds,
     isLoading: isProjectLoading || isSurveyLoading || versionsQuery.isLoading || nodesQuery.isLoading,
     isError: isProjectError || isSurveyError || versionsQuery.isError || nodesQuery.isError,
     isSaving,
