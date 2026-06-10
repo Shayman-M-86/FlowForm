@@ -2,7 +2,7 @@
 
 Agent-oriented checklist for implementing the session and response encryption plan.
 
-This checklist assumes the current submission flow may be broken during the work and that no historical data migration is required. Schema compatibility with the existing `SurveySubmission`, `Submission`, and `SubmissionAnswer` model is not a goal for the initial implementation.
+This checklist assumes the current submission flow may be broken during the work and that no historical data migration is required. Schema compatibility with the legacy `SurveySubmission`, `Submission`, and `SubmissionAnswer` models is not a goal for the initial implementation.
 
 ## Ground Rules
 
@@ -28,8 +28,11 @@ This checklist assumes the current submission flow may be broken during the work
   - [ ] `backend/app/api/v1/projects/submissions.py`
   - [ ] `backend/app/services/submissions.py`
   - [ ] `backend/app/gateway/submission_gateway.py`
-  - [ ] `backend/app/schema/orm/core/survey_submission.py`
-  - [ ] `backend/app/schema/orm/response/submission.py`
+  - [ ] `backend/app/schema/orm/core/submission_session.py`
+  - [ ] `backend/app/schema/orm/core/project_subject.py`
+  - [ ] `backend/app/schema/orm/response/response_envelope.py`
+  - [ ] `backend/app/schema/orm/response/response_answer.py`
+  - [ ] `backend/app/schema/orm/response/response_answer_revision.py`
   - [ ] `backend/app/schema/orm/response/submission_answer.py`
 
 Done when:
@@ -39,42 +42,59 @@ Done when:
 
 ## Phase 1: Schema First
 
-- [ ] Add or replace core ORM models for:
-  - [ ] `project_subjects`
-  - [ ] `submission_sessions`
-  - [ ] `submission_events`
-- [ ] Add or replace response ORM models for:
-  - [ ] `response_envelopes`
-  - [ ] `response_answers`
-  - [ ] `response_answer_revisions`
-- [ ] Use the final encrypted response columns from the start:
-  - [ ] `session_locator`
-  - [ ] `linkage_key_version`
-  - [ ] `wrapped_dek`
-  - [ ] `kms_key_arn`
-  - [ ] `crypto_version`
-  - [ ] `answer_locator`
-  - [ ] `latest_revision_id`
-  - [ ] `ciphertext`
-  - [ ] `nonce`
-  - [ ] `revision_number`
-- [ ] Add database constraints that protect core invariants:
-  - [ ] unique browser session token hash
-  - [ ] valid session status values
-  - [ ] completed sessions have `completed_at`
-  - [ ] response envelope has a unique 32-byte `session_locator`
-  - [ ] response answer is unique by `(envelope_id, answer_locator)`
-  - [ ] answer revision is unique by `(answer_id, revision_number)`
-  - [ ] nonce is unique by `(envelope_id, nonce)`
-  - [ ] latest revision belongs to the same logical answer
-- [ ] Add schema creation/update path for both databases.
-- [ ] Remove or isolate old plaintext answer schema assumptions where they conflict.
+- [x] Add or replace core ORM models for:
+  - [x] `project_subjects`
+  - [x] `submission_sessions`
+  - [x] `submission_events`
+- [x] Add or replace response ORM models for:
+  - [x] `response_envelopes`
+  - [x] `response_answers`
+  - [x] `response_answer_revisions`
+- [x] Use the final encrypted response columns from the start:
+  - [x] `session_locator`
+  - [x] `linkage_key_version`
+  - [x] `wrapped_dek`
+  - [x] `kms_key_arn`
+  - [x] `crypto_version`
+  - [x] `answer_locator`
+  - [x] `latest_revision_id`
+  - [x] `ciphertext`
+  - [x] `nonce`
+  - [x] `revision_number`
+- [x] Add database constraints that protect core invariants:
+  - [x] unique browser session token hash
+  - [x] valid session status values
+  - [x] completed sessions have `completed_at`
+  - [x] response envelope has a unique 32-byte `session_locator`
+  - [x] response answer is unique by `(envelope_id, answer_locator)`
+  - [x] answer revision is unique by `(answer_id, revision_number)`
+  - [x] nonce is unique by `(envelope_id, nonce)`
+  - [x] latest revision belongs to the same logical answer
+- [x] Add schema creation/update path for both databases.
+- [x] Remove or isolate old plaintext answer schema assumptions where they conflict.
+- [x] Update `app/db/error_handling/integrity_rules.py` to cover the new core
+      models (`ProjectSubject`, `SubmissionSession`, `SubmissionEvent`) and
+      the new response models (`ResponseEnvelope`, `ResponseAnswer`,
+      `ResponseAnswerRevision`), replacing the removed
+      `ResponseSubjectMapping`/`SurveySubmission` rule sets.
+- [x] Normalize `CheckConstraint` naming across `app/schema/orm/core/` to
+      match the `NAMING_CONVENTION` in `app/db/base.py` (short names for
+      single-table CHECKs, full explicit names for multi-column
+      UNIQUE/FOREIGN KEY constraints).
 
 Done when:
 
-- [ ] Core and response schemas can be created from an empty database.
-- [ ] ORM metadata includes the new tables.
-- [ ] Database-level constraints reject obvious invalid rows.
+- [x] Core and response schemas can be created from an empty database.
+- [x] ORM metadata includes the new tables.
+- [x] Database-level constraints reject obvious invalid rows.
+
+Test status (2026-06-10): fixed a stale composite-PK bug in
+`test_survey_content.py` (4 tests, unrelated to this rework). Remaining 72
+failures are all in old plaintext-submission tests
+(`SurveySubmission`/`Submission`/`SubmissionAnswer`/`ResponseSubjectMapping`
+factories) hitting new `response_envelopes` NOT NULL constraints — expected
+casualties to be deleted once Phase 3-4 services replace the old submission
+path, not fixed now.
 
 ## Phase 2: API Contracts
 

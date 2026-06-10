@@ -86,17 +86,19 @@ from app.schema.orm.core import (
     ProjectInvitation,
     ProjectMembership,
     ProjectRole,
-    ResponseSubjectMapping,
+    ProjectSubject,
+    SubmissionEvent,
+    SubmissionSession,
     Survey,
     SurveyLink,
     SurveyMembershipRole,
     SurveyQuestion,
     SurveyRole,
     SurveyScoringRule,
-    SurveySubmission,
     SurveyVersion,
     User,
 )
+from app.schema.orm.response import ResponseAnswer, ResponseAnswerRevision, ResponseEnvelope
 
 type RuleContext = (
     User
@@ -105,14 +107,18 @@ type RuleContext = (
     | Survey
     | SurveyVersion
     | SurveyLink
-    | ResponseSubjectMapping
-    | SurveySubmission
+    | ProjectSubject
+    | SubmissionSession
+    | SubmissionEvent
     | SurveyQuestion
     | SurveyRole
     | SurveyScoringRule
     | ProjectRole
     | ProjectMembership
     | SurveyMembershipRole
+    | ResponseEnvelope
+    | ResponseAnswer
+    | ResponseAnswerRevision
 )
 allowed_parameters = {
     "auth0_user_id",
@@ -131,15 +137,19 @@ allowed_parameters = {
     "assigned_email",
     "requires_auth",
     "user_id",
-    "submission_id",
+    "session_id",
+    "session_status",
+    "event_id",
+    "event_type",
+    "question_node_id",
+    "project_subject_id",
     "survey_version_id",
-    "has_submitted_by_user",
     "response_store_id",
-    "external_submission_id",
     "pseudonymous_subject_id",
     "node_type",
     "survey_question_id",
     "survey_scoring_rule_id",
+    "scoring_key",
     "project_role_id",
     "name",
     "role_id",
@@ -147,6 +157,11 @@ allowed_parameters = {
     "published_version_id",
     "invitation_id",
     "invited_email",
+    "envelope_id",
+    "answer_id",
+    "answer_locator",
+    "revision_id",
+    "client_mutation_id",
 }
 
 
@@ -198,25 +213,34 @@ def _survey_link_ctx(link: SurveyLink) -> dict[str, object]:
     }
 
 
-def _subject_mapping_ctx(mapping: ResponseSubjectMapping) -> dict[str, object]:
+def _project_subject_ctx(subject: ProjectSubject) -> dict[str, object]:
     return {
-        "project_id": mapping.project_id,
-        "user_id": mapping.user_id,
+        "project_id": subject.project_id,
+        "user_id": subject.user_id,
+        "pseudonymous_subject_id": subject.pseudonymous_subject_id,
     }
 
 
-def _submission_ctx(submission: SurveySubmission) -> dict[str, object]:
+def _submission_session_ctx(session: SubmissionSession) -> dict[str, object]:
     return {
-        "submission_id": submission.id,
-        "project_id": submission.project_id,
-        "survey_id": submission.survey_id,
-        "survey_version_id": submission.survey_version_id,
-        "response_store_id": submission.response_store_id,
-        "survey_link_id": submission.survey_link_id,
-        "external_submission_id": submission.external_submission_id,
-        "pseudonymous_subject_id": submission.pseudonymous_subject_id,
-        "status": submission.status,
-        "has_submitted_by_user": submission.submitted_by_user_id is not None,
+        "session_id": session.id,
+        "project_id": session.project_id,
+        "survey_id": session.survey_id,
+        "survey_version_id": session.survey_version_id,
+        "response_store_id": session.response_store_id,
+        "survey_link_id": session.link_id,
+        "project_subject_id": session.project_subject_id,
+        "session_status": session.session_status,
+    }
+
+
+def _submission_event_ctx(event: SubmissionEvent) -> dict[str, object]:
+    return {
+        "event_id": event.id,
+        "session_id": event.session_id,
+        "survey_version_id": event.survey_version_id,
+        "event_type": event.event_type,
+        "question_node_id": event.question_node_id,
     }
 
 
@@ -232,6 +256,7 @@ def _survey_scoring_rule_ctx(rule: SurveyScoringRule) -> dict[str, object]:
     return {
         "survey_scoring_rule_id": rule.id,
         "survey_version_id": rule.survey_version_id,
+        "scoring_key": rule.scoring_key,
     }
 
 
@@ -256,6 +281,28 @@ def _survey_membership_role_ctx(membership_role: SurveyMembershipRole) -> dict[s
     return {
         "survey_id": membership_role.survey_id,
         "role_id": membership_role.role_id,
+    }
+
+
+def _response_envelope_ctx(envelope: ResponseEnvelope) -> dict[str, object]:
+    return {
+        "envelope_id": envelope.id,
+    }
+
+
+def _response_answer_ctx(answer: ResponseAnswer) -> dict[str, object]:
+    return {
+        "answer_id": answer.id,
+        "envelope_id": answer.envelope_id,
+    }
+
+
+def _response_answer_revision_ctx(revision: ResponseAnswerRevision) -> dict[str, object]:
+    return {
+        "revision_id": revision.id,
+        "answer_id": revision.answer_id,
+        "envelope_id": revision.envelope_id,
+        "client_mutation_id": revision.client_mutation_id,
     }
 
 
@@ -440,103 +487,155 @@ SURVEY_LINK_RULES: tuple[DbErrorRule, ...] = (
 
 )
 
-RESPONSE_SUBJECT_MAPPING_RULES: tuple[DbErrorRule, ...] = (
+PROJECT_SUBJECT_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
-        "uq_response_subject_mappings_project_id_user_id",
+        "uq_project_subjects_project_id_user_id",
         lambda ctx, _exc: DbIntegrityError(
             409,
             "SUBJECT_USER_CONFLICT",
-            f"Project id={ctx['project_id']} already has a subject mapping for user id={ctx['user_id']}.",
+            f"Project id={ctx['project_id']} already has a subject for user id={ctx['user_id']}.",
         ),
-        extractor=_subject_mapping_ctx,
+        extractor=_project_subject_ctx,
     ),
     unique_rule(
-        "uq_response_subject_mappings_project_id_pseudonymous_subject_id",
+        "uq_project_subjects_project_id_pseudonymous_subject_id",
         lambda ctx, _exc: DbIntegrityError(
             409,
             "SUBJECT_ID_CONFLICT",
-            f"Project id={ctx['project_id']} already uses pseudonymous subject id={ctx['pseudonymous_subject_id']}.",
+            f"Project id={ctx['project_id']} already uses pseudonymous subject id={ctx['pseudonymous_subject_id']!r}.",
         ),
-        extractor=_subject_mapping_ctx,
+        extractor=_project_subject_ctx,
     ),
 )
 
-SURVEY_SUBMISSION_RULES: tuple[DbErrorRule, ...] = (
+SUBMISSION_SESSION_RULES: tuple[DbErrorRule, ...] = (
+    unique_rule(
+        "uq_submission_sessions_browser_session_token_hash",
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
+            409,
+            "SESSION_TOKEN_CONFLICT",
+            "This browser session token is already in use.",
+        ),
+        extractor=_submission_session_ctx,
+    ),
     foreign_key_rule(
-        "fk_survey_submissions_survey_same_project",
+        "fk_submission_sessions_survey_same_project",
         lambda ctx, _exc: DbIntegrityError(
             409,
-            "SUBMISSION_SURVEY_PROJECT_CONFLICT",
+            "SESSION_SURVEY_PROJECT_CONFLICT",
             f"Survey id={ctx['survey_id']} does not belong to project id={ctx['project_id']}.",
         ),
-        extractor=_submission_ctx,
+        extractor=_submission_session_ctx,
     ),
     foreign_key_rule(
-        "fk_survey_submissions_version_same_survey",
+        "fk_submission_sessions_version_same_survey",
         lambda ctx, _exc: DbIntegrityError(
             409,
-            "SUBMISSION_VERSION_SURVEY_CONFLICT",
+            "SESSION_VERSION_SURVEY_CONFLICT",
             f"Survey version id={ctx['survey_version_id']} does not belong to survey id={ctx['survey_id']}.",
         ),
-        extractor=_submission_ctx,
+        extractor=_submission_session_ctx,
     ),
     foreign_key_rule(
-        "fk_survey_submissions_store_same_project",
+        "fk_submission_sessions_store_same_project",
         lambda ctx, _exc: DbIntegrityError(
             409,
-            "SUBMISSION_STORE_PROJECT_CONFLICT",
+            "SESSION_STORE_PROJECT_CONFLICT",
             f"Response store id={ctx['response_store_id']} does not belong to project id={ctx['project_id']}.",
         ),
-        extractor=_submission_ctx,
+        extractor=_submission_session_ctx,
     ),
     foreign_key_rule(
-        "fk_survey_submissions_survey_link_same_survey",
+        "fk_submission_sessions_link_same_survey",
         lambda ctx, _exc: DbIntegrityError(
             409,
-            "SUBMISSION_LINK_SURVEY_CONFLICT",
+            "SESSION_LINK_SURVEY_CONFLICT",
             f"Survey link id={ctx['survey_link_id']} does not belong to survey id={ctx['survey_id']}.",
         ),
-        extractor=_submission_ctx,
+        extractor=_submission_session_ctx,
     ),
     foreign_key_rule(
-        "fk_survey_submissions_subject_same_project",
+        "fk_submission_sessions_project_subject_same_project",
         lambda ctx, _exc: DbIntegrityError(
             409,
-            "SUBMISSION_SUBJECT_PROJECT_CONFLICT",
-            f"Pseudonymous subject id={ctx['pseudonymous_subject_id']!r} does not belong"
-            f" to project id={ctx['project_id']}.",
+            "SESSION_SUBJECT_PROJECT_CONFLICT",
+            f"Project subject id={ctx['project_subject_id']} does not belong to project id={ctx['project_id']}.",
         ),
-        extractor=_submission_ctx,
-    ),
-    unique_rule(
-        "uq_survey_submissions_external_submission_id",
-        lambda ctx, _exc: DbIntegrityError(
-            409,
-            "SUBMISSION_EXTERNAL_ID_CONFLICT",
-            f"External submission id={ctx['external_submission_id']!r} is already in use "
-            f"for response_store_id={ctx['response_store_id']}.",
-        ),
-        extractor=_submission_ctx,
+        extractor=_submission_session_ctx,
     ),
     #
-    # ck_survey_submissions_status_valid
+    # ck_submission_sessions_session_status_valid
     #
-    # The `status` column is server-controlled — it is not exposed in any
-    # request schema. Clients cannot set it. The default is "pending" and
-    # internal delivery code transitions it to "stored" or "failed".
-    # If this CHECK ever fires, internal code wrote an invalid status value.
-    # That is a server bug, not a client error, so the rule returns 500 with
-    # a loud message rather than disguising the violation as a 422.
+    # `session_status` is server-controlled — it is not exposed in any
+    # request schema. The default is "in_progress" and internal code
+    # transitions it to "completed" or "abandoned". If this CHECK ever
+    # fires, internal code wrote an invalid status value — a server bug,
+    # not a client error.
     check_rule(
-        "ck_survey_submissions_status_valid",
+        "ck_submission_sessions_session_status_valid",
         lambda ctx, _exc: DbIntegrityError(
             500,
-            "SUBMISSION_STATE_INVALID",
-            f"Server invariant violated: submission id={ctx['submission_id']} was written with"
-            f" invalid status={ctx['status']!r}."
-            " Status is server-controlled and must be one of 'pending', 'stored', 'failed'.",
+            "SESSION_STATE_INVALID",
+            f"Server invariant violated: session id={ctx['session_id']} was written with"
+            f" invalid session_status={ctx['session_status']!r}."
+            " session_status is server-controlled and must be one of"
+            " 'in_progress', 'completed', 'abandoned'.",
         ),
-        extractor=_submission_ctx,
+        extractor=_submission_session_ctx,
+    ),
+    #
+    # ck_submission_sessions_completed_requires_completed_at
+    #
+    # `completed_at` is server-controlled, written only when a session
+    # transitions to "completed". If this CHECK fires, internal code wrote
+    # an inconsistent state — a server bug, not a client error.
+    check_rule(
+        "ck_submission_sessions_completed_requires_completed_at",
+        lambda ctx, _exc: DbIntegrityError(
+            500,
+            "SESSION_COMPLETION_STATE_INVALID",
+            f"Server invariant violated: session id={ctx['session_id']} reached"
+            " session_status='completed' without completed_at being set.",
+        ),
+        extractor=_submission_session_ctx,
+    ),
+)
+
+SUBMISSION_EVENT_RULES: tuple[DbErrorRule, ...] = (
+    foreign_key_rule(
+        "fk_submission_events_session_version",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "EVENT_SESSION_VERSION_CONFLICT",
+            f"Session id={ctx['session_id']} does not belong to survey version id={ctx['survey_version_id']}.",
+        ),
+        extractor=_submission_event_ctx,
+    ),
+    foreign_key_rule(
+        "fk_submission_events_question_node_same_version",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "EVENT_QUESTION_VERSION_CONFLICT",
+            f"Question node id={ctx['question_node_id']} does not belong to"
+            f" survey version id={ctx['survey_version_id']}.",
+        ),
+        extractor=_submission_event_ctx,
+    ),
+    #
+    # ck_submission_events_event_type_valid
+    #
+    # `event_type` is server-controlled — it is not exposed in any request
+    # schema. If this CHECK fires, internal code wrote an invalid event
+    # type — a server bug, not a client error.
+    check_rule(
+        "ck_submission_events_event_type_valid",
+        lambda ctx, _exc: DbIntegrityError(
+            500,
+            "EVENT_TYPE_INVALID",
+            f"Server invariant violated: event id={ctx['event_id']} was written with"
+            f" invalid event_type={ctx['event_type']!r}.",
+        ),
+        extractor=_submission_event_ctx,
     ),
 )
 
@@ -593,6 +692,8 @@ SURVEY_SCORING_RULE_RULES: tuple[DbErrorRule, ...] = (
         extractor=_survey_scoring_rule_ctx,
     ),
 )
+
+
 def _survey_role_ctx(role: SurveyRole) -> dict[str, object]:
     return {
         "project_id": role.project_id,
@@ -610,15 +711,6 @@ SURVEY_ROLE_RULES: tuple[DbErrorRule, ...] = (
         ),
         extractor=_survey_role_ctx,
     ),
-    check_rule(
-        "ck_survey_roles_description_len",
-        lambda ctx, _exc: DbIntegrityError(
-            422,
-            "ROLE_DESCRIPTION_INVALID",
-            f"Survey role description for project id={ctx['project_id']} is blank or exceeds 500 characters.",
-        ),
-        extractor=_survey_role_ctx,
-    ),
 )
 
 PROJECT_ROLE_RULES: tuple[DbErrorRule, ...] = (
@@ -631,16 +723,9 @@ PROJECT_ROLE_RULES: tuple[DbErrorRule, ...] = (
         ),
         extractor=_project_role_ctx,
     ),
-    check_rule(
-        "ck_project_roles_description_len",
-        lambda ctx, _exc: DbIntegrityError(
-            422,
-            "ROLE_DESCRIPTION_INVALID",
-            f"Project role description for project id={ctx['project_id']} is blank or exceeds 500 characters.",
-        ),
-        extractor=_project_role_ctx,
-    ),
 )
+
+
 PROJECT_MEMBERSHIP_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
         "uq_project_memberships_user_project",
@@ -742,6 +827,52 @@ PROJECT_INVITATION_RULES: tuple[DbErrorRule, ...] = (
     ),
 )
 
+RESPONSE_ENVELOPE_RULES: tuple[DbErrorRule, ...] = (
+    unique_rule(
+        "uq_response_envelopes_session_locator",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "ENVELOPE_EXISTS",
+            f"A response envelope already exists for this session (id={ctx['envelope_id']}).",
+        ),
+        extractor=_response_envelope_ctx,
+    ),
+)
+
+RESPONSE_ANSWER_RULES: tuple[DbErrorRule, ...] = (
+    unique_rule(
+        "uq_response_answers_envelope_id_answer_locator",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "ANSWER_EXISTS",
+            f"An answer already exists for this question in envelope id={ctx['envelope_id']}.",
+        ),
+        extractor=_response_answer_ctx,
+    ),
+)
+
+RESPONSE_ANSWER_REVISION_RULES: tuple[DbErrorRule, ...] = (
+    unique_rule(
+        "uq_response_answer_revisions_answer_id_client_mutation_id",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "REVISION_MUTATION_CONFLICT",
+            f"A revision for answer id={ctx['answer_id']} with"
+            f" client_mutation_id={ctx['client_mutation_id']} already exists.",
+        ),
+        extractor=_response_answer_revision_ctx,
+    ),
+    foreign_key_rule(
+        "fk_response_answer_revisions_answer_same_envelope",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "REVISION_ANSWER_ENVELOPE_MISMATCH",
+            f"Answer id={ctx['answer_id']} does not belong to envelope id={ctx['envelope_id']}.",
+        ),
+        extractor=_response_answer_revision_ctx,
+    ),
+)
+
 RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
     User: USER_RULES,
     Project: PROJECT_RULES,
@@ -750,11 +881,15 @@ RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
     SurveyVersion: SURVEY_VERSION_RULES,
     SurveyLink: SURVEY_LINK_RULES,
     SurveyRole: SURVEY_ROLE_RULES,
-    ResponseSubjectMapping: RESPONSE_SUBJECT_MAPPING_RULES,
-    SurveySubmission: SURVEY_SUBMISSION_RULES,
+    ProjectSubject: PROJECT_SUBJECT_RULES,
+    SubmissionSession: SUBMISSION_SESSION_RULES,
+    SubmissionEvent: SUBMISSION_EVENT_RULES,
     SurveyQuestion: SURVEY_QUESTION_RULES,
     SurveyScoringRule: SURVEY_SCORING_RULE_RULES,
     ProjectRole: PROJECT_ROLE_RULES,
     ProjectMembership: PROJECT_MEMBERSHIP_RULES,
     SurveyMembershipRole: SURVEY_MEMBERSHIP_ROLE_RULES,
+    ResponseEnvelope: RESPONSE_ENVELOPE_RULES,
+    ResponseAnswer: RESPONSE_ANSWER_RULES,
+    ResponseAnswerRevision: RESPONSE_ANSWER_REVISION_RULES,
 }

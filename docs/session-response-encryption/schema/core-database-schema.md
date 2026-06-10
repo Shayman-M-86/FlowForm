@@ -1,105 +1,164 @@
 # Core Database Schema
 
-Core database tables for respondent sessions, subject association, and submission events.
+Core database tables for project-level participant identities, respondent
+sessions, and core-side submission analytics events.
+
+These tables extend the existing FlowForm core schema. They reference existing
+`projects`, `users`, `surveys`, `survey_versions`, `response_stores`,
+`survey_links`, and `survey_questions` rows. Raw answers are not stored here.
 
 ```sql
-CREATE TYPE submission_event_type AS ENUM (
-    'session_started',
-    'question_viewed',
-    'answer_saved',
-    'session_completed'
-);
-
-CREATE TYPE submission_session_status AS ENUM (
-    'in_progress',
-    'completed',
-    'abandoned'
-);
-
-CREATE TABLE links (
-    id UUID PRIMARY KEY
-);
-
 CREATE TABLE project_subjects (
-    id                          UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    pseudonymous_subject_id TEXT NOT NULL,
+    user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    project_id                  UUID NOT NULL,
+    CONSTRAINT uq_project_subjects_project_id_id
+        UNIQUE (project_id, id),
 
-    pseudonymous_subject_id     TEXT NOT NULL,
-
-    user_id                     UUID NULL,
-
-    created_at                  TIMESTAMPTZ NOT NULL,
-
-    -- Prevents the same pseudonymous participant ID from being registered
-    -- twice within one project.
-    CONSTRAINT uq_project_subjects_project_pseudonymous_subject
+    CONSTRAINT uq_project_subjects_project_id_pseudonymous_subject_id
         UNIQUE (project_id, pseudonymous_subject_id),
 
-    -- Prevents the same known user from receiving multiple subject records
-    -- within one project. Multiple NULL values remain allowed.
-    CONSTRAINT uq_project_subjects_project_user
-        UNIQUE (project_id, user_id)
-);
+    CONSTRAINT uq_project_subjects_project_id_user_id
+        UNIQUE (project_id, user_id),
 
+    CONSTRAINT ck_project_subjects_pseudonymous_subject_id_len
+        CHECK (char_length(btrim(pseudonymous_subject_id)) BETWEEN 1 AND 128)
+);
 
 CREATE TABLE submission_sessions (
-    -- Random core-database UUID representing one survey attempt. Used as the
-    -- private input when deriving the response-side session_locator.
-    id                          UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id BIGINT NOT NULL,
+    survey_id BIGINT NOT NULL,
+    survey_version_id BIGINT NOT NULL,
+    response_store_id BIGINT NOT NULL,
+    link_id BIGINT,
+    project_subject_id UUID,
+    browser_session_token_hash BYTEA NOT NULL,
+    linkage_key_version SMALLINT NOT NULL DEFAULT 1,
+    session_status TEXT NOT NULL DEFAULT 'in_progress',
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ NOT NULL,
+    last_activity_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    -- Optional reference to the link used to access the survey. May remain NULL
-    -- when the session was created through another access method.
-    link_id                     UUID NULL
-                                REFERENCES links (id),
+    CONSTRAINT uq_submission_sessions_browser_session_token_hash
+        UNIQUE (browser_session_token_hash),
 
-    -- Optional participant association. Remains NULL for fully anonymous survey
-    -- sessions.
-    project_subject_id          UUID NULL
-                                REFERENCES project_subjects (id),
+    CONSTRAINT uq_submission_sessions_id_survey_version_id
+        UNIQUE (id, survey_version_id),
 
-    survey_version_id           UUID NOT NULL,
+    CONSTRAINT ck_submission_sessions_browser_session_token_hash_len
+        CHECK (length(browser_session_token_hash) >= 32),
 
-    -- Hash of the random token held by the respondent's browser. Allows an
-    -- in-progress session to be resumed without storing the raw browser token.
-    browser_session_token_hash  BYTEA NOT NULL UNIQUE,
+    CONSTRAINT ck_submission_sessions_linkage_key_version_valid
+        CHECK (linkage_key_version > 0),
 
-    -- Identifies which external linkage-secret version the backend must use
-    -- when deriving the response-side session_locator and answer_locator values.
-    linkage_key_version         SMALLINT NOT NULL DEFAULT 1,
+    CONSTRAINT ck_submission_sessions_session_status_valid
+        CHECK (session_status IN ('in_progress', 'completed', 'abandoned')),
 
-    session_status              submission_session_status NOT NULL,
-    started_at                  TIMESTAMPTZ NOT NULL,
-    completed_at                TIMESTAMPTZ NULL,
-    expires_at                  TIMESTAMPTZ NOT NULL,
-    last_activity_at            TIMESTAMPTZ NOT NULL
+    CONSTRAINT ck_submission_sessions_completed_requires_completed_at
+        CHECK (session_status <> 'completed' OR completed_at IS NOT NULL),
+
+    CONSTRAINT ck_submission_sessions_completed_at_after_started_at
+        CHECK (
+            completed_at IS NULL
+            OR completed_at >= started_at
+        ),
+
+    CONSTRAINT ck_submission_sessions_expires_at_after_started_at
+        CHECK (expires_at > started_at),
+
+    CONSTRAINT fk_submission_sessions_survey_same_project
+        FOREIGN KEY (project_id, survey_id)
+        REFERENCES surveys(project_id, id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_submission_sessions_version_same_survey
+        FOREIGN KEY (survey_id, survey_version_id)
+        REFERENCES survey_versions(survey_id, id)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_submission_sessions_store
+        FOREIGN KEY (response_store_id)
+        REFERENCES response_stores(id)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_submission_sessions_store_same_project
+        FOREIGN KEY (project_id, response_store_id)
+        REFERENCES response_stores(project_id, id),
+
+    CONSTRAINT fk_submission_sessions_link
+        FOREIGN KEY (link_id)
+        REFERENCES survey_links(id)
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_submission_sessions_link_same_survey
+        FOREIGN KEY (survey_id, link_id)
+        REFERENCES survey_links(survey_id, id),
+
+    CONSTRAINT fk_submission_sessions_project_subject
+        FOREIGN KEY (project_subject_id)
+        REFERENCES project_subjects(id)
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_submission_sessions_project_subject_same_project
+        FOREIGN KEY (project_id, project_subject_id)
+        REFERENCES project_subjects(project_id, id)
 );
-
 
 CREATE TABLE submission_events (
-    -- Random local UUID representing one analytics event.
-    id                  UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID NOT NULL,
+    survey_version_id BIGINT NOT NULL,
+    event_type TEXT NOT NULL,
+    question_node_id UUID,
+    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    -- Associates the event with one survey session. Events are deleted
-    -- automatically if the parent session is removed.
-    session_id          UUID NOT NULL
-                        REFERENCES submission_sessions (id)
-                        ON DELETE CASCADE,
+    CONSTRAINT ck_submission_events_event_type_valid
+        CHECK (event_type IN ('session_started', 'question_viewed', 'answer_saved', 'session_completed')),
 
-    event_type          submission_event_type NOT NULL,
+    CONSTRAINT ck_submission_events_question_required_for_question_events
+        CHECK (
+            event_type NOT IN ('question_viewed', 'answer_saved')
+            OR question_node_id IS NOT NULL
+        ),
 
-    -- Identifies the relevant survey question for question_viewed and
-    -- answer_saved events. Remains NULL for session-level events. This
-    -- plaintext value stays only in the core database.
-    question_node_id    UUID NULL,
+    CONSTRAINT ck_submission_events_question_absent_for_session_events
+        CHECK (
+            event_type NOT IN ('session_started', 'session_completed')
+            OR question_node_id IS NULL
+        ),
 
-    received_at         TIMESTAMPTZ NOT NULL
+    CONSTRAINT fk_submission_events_session_version
+        FOREIGN KEY (session_id, survey_version_id)
+        REFERENCES submission_sessions(id, survey_version_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_submission_events_question_node
+        FOREIGN KEY (question_node_id)
+        REFERENCES survey_questions(id)
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_submission_events_question_node_same_version
+        FOREIGN KEY (survey_version_id, question_node_id)
+        REFERENCES survey_questions(survey_version_id, id)
 );
 
+CREATE INDEX idx_project_subjects_project ON project_subjects(project_id);
+CREATE INDEX idx_project_subjects_user ON project_subjects(user_id);
 
-CREATE INDEX idx_submission_sessions_last_activity
-    ON submission_sessions (session_status, last_activity_at);
+CREATE INDEX idx_submission_sessions_project ON submission_sessions(project_id);
+CREATE INDEX idx_submission_sessions_survey ON submission_sessions(survey_id);
+CREATE INDEX idx_submission_sessions_survey_version ON submission_sessions(survey_version_id);
+CREATE INDEX idx_submission_sessions_store ON submission_sessions(response_store_id);
+CREATE INDEX idx_submission_sessions_link ON submission_sessions(link_id);
+CREATE INDEX idx_submission_sessions_project_subject ON submission_sessions(project_subject_id);
+CREATE INDEX idx_submission_sessions_last_activity ON submission_sessions(session_status, last_activity_at);
+CREATE INDEX idx_submission_sessions_expires_at ON submission_sessions(expires_at);
 
-CREATE INDEX idx_submission_events_session_received_at
-    ON submission_events (session_id, received_at);
+CREATE INDEX idx_submission_events_session_received_at ON submission_events(session_id, received_at);
+CREATE INDEX idx_submission_events_question_node ON submission_events(question_node_id);
 ```

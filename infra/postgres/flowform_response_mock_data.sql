@@ -3,54 +3,63 @@
 -- FLOWFORM RESPONSE DATABASE MOCK DATA
 -- =========================================
 -- Purpose:
--- - seeds realistic submission payloads for the response database
+-- - seeds encrypted response envelopes/answers/revisions for the response database
 -- - matches flowform_response_db_schema_v4.sql
--- - aligns core_submission_id with survey_submissions.id from the core mock seed
+-- - session_locator/answer_locator are dev-mode placeholders derived with
+--   digest(), standing in for the real HMAC-SHA-256 locators. They line up
+--   with the submission_sessions / survey_questions UUIDs from the core mock
+--   seed (see flowform_core_mock_data.sql).
+-- - wrapped_dek/ciphertext/nonce are placeholder bytes, not real ciphertext.
 --
 -- Safe to run on an empty schema after running the matching core mock data.
 
 BEGIN;
 
 -- =========================================
--- SUBMISSIONS
+-- RESPONSE ENVELOPES
 -- =========================================
+-- One envelope per submission_sessions row (session_locator derived from the
+-- core session UUID).
 
-INSERT INTO submissions (id, core_submission_id, survey_id, survey_version_id, project_id, pseudonymous_subject_id, is_anonymous, submitted_at, metadata, created_at) VALUES
-    (1, 1, 1, 2, 1, '11111111-1111-1111-1111-111111111111', FALSE, NOW() - INTERVAL '4 days', $json${"channel":"slug","source":"web_app","ip_hash":"3f6f5c"}$json$::jsonb, NOW() - INTERVAL '4 days'),
-    (2, 2, 1, 2, 1, '66666666-6666-6666-6666-666666666666', FALSE, NOW() - INTERVAL '3 days', $json${"channel":"public_link","source":"public_form"}$json$::jsonb, NOW() - INTERVAL '3 days'),
-    (3, 4, 3, 5, 2, '33333333-3333-3333-3333-333333333333', FALSE, NOW() - INTERVAL '18 hours', $json${"channel":"public_link","campaign":"beta-april"}$json$::jsonb, NOW() - INTERVAL '18 hours');
-
--- =========================================
--- SUBMISSION ANSWERS
--- =========================================
-
-INSERT INTO submission_answers (id, submission_id, question_key, answer_family, answer_value, created_at) VALUES
-    (1, 1, 'engagement_score', 'rating', $json${"value":8}$json$::jsonb, NOW() - INTERVAL '4 days'),
-    (2, 1, 'team_support', 'choice', $json${"selected":["very_supported"]}$json$::jsonb, NOW() - INTERVAL '4 days'),
-    (3, 1, 'manager_feedback', 'field', $json${"value":"More frequent one-on-ones would help."}$json$::jsonb, NOW() - INTERVAL '4 days'),
-    (4, 2, 'engagement_score', 'rating', $json${"value":6}$json$::jsonb, NOW() - INTERVAL '3 days'),
-    (5, 2, 'team_support', 'choice', $json${"selected":["somewhat_supported"]}$json$::jsonb, NOW() - INTERVAL '3 days'),
-    (6, 2, 'manager_feedback', 'field', $json${"value":"Clearer priorities across the week."}$json$::jsonb, NOW() - INTERVAL '3 days'),
-    (7, 3, 'signup_ease', 'rating', $json${"value":9}$json$::jsonb, NOW() - INTERVAL '18 hours'),
-    (8, 3, 'feature_interest', 'matching', $json${"matches":[{"left_id":"founder","right_id":"automation"},{"left_id":"marketer","right_id":"analytics"}]}$json$::jsonb, NOW() - INTERVAL '18 hours'),
-    (9, 3, 'followup_email', 'field', $json${"value":"interested.user@example.test"}$json$::jsonb, NOW() - INTERVAL '18 hours');
+INSERT INTO response_envelopes (id, session_locator, linkage_key_version, wrapped_dek, kms_key_arn, kms_context_version, crypto_version) VALUES
+    ('eeeeeeee-0000-0000-0000-000000000001', digest('aaaaaaaa-0000-0000-0000-000000000001', 'sha256'), 1, decode(repeat('aa', 32), 'hex'), 'arn:aws:kms:us-east-1:000000000000:key/dev-mock-key', 1, 1),
+    ('eeeeeeee-0000-0000-0000-000000000002', digest('aaaaaaaa-0000-0000-0000-000000000002', 'sha256'), 1, decode(repeat('aa', 32), 'hex'), 'arn:aws:kms:us-east-1:000000000000:key/dev-mock-key', 1, 1),
+    ('eeeeeeee-0000-0000-0000-000000000003', digest('aaaaaaaa-0000-0000-0000-000000000003', 'sha256'), 1, decode(repeat('aa', 32), 'hex'), 'arn:aws:kms:us-east-1:000000000000:key/dev-mock-key', 1, 1),
+    ('eeeeeeee-0000-0000-0000-000000000004', digest('aaaaaaaa-0000-0000-0000-000000000004', 'sha256'), 1, decode(repeat('aa', 32), 'hex'), 'arn:aws:kms:us-east-1:000000000000:key/dev-mock-key', 1, 1);
 
 -- =========================================
--- SUBMISSION EVENTS
+-- RESPONSE ANSWERS
 -- =========================================
+-- answer_locator derived from (session_uuid, question_node_id) so each
+-- logical answer is unique within its envelope.
 
-INSERT INTO submission_events (id, submission_id, event_type, event_payload, created_at) VALUES
-    (1, 1, 'stored', $json${"destination":"platform_postgres","attempt":1}$json$::jsonb, NOW() - INTERVAL '4 days'),
-    (2, 2, 'stored', $json${"destination":"platform_postgres","attempt":1}$json$::jsonb, NOW() - INTERVAL '3 days'),
-    (3, 3, 'received', $json${"channel":"public_link"}$json$::jsonb, NOW() - INTERVAL '18 hours 5 minutes'),
-    (4, 3, 'stored', $json${"destination":"platform_analytics","attempt":1}$json$::jsonb, NOW() - INTERVAL '18 hours');
+INSERT INTO response_answers (id, envelope_id, answer_locator, latest_revision_id) VALUES
+    ('a1111111-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000001', digest('aaaaaaaa-0000-0000-0000-000000000001:00000000-0000-0000-0000-000000000001', 'sha256'), 'd1111111-0000-0000-0000-000000000001'),
+    ('a1111111-0000-0000-0000-000000000002', 'eeeeeeee-0000-0000-0000-000000000001', digest('aaaaaaaa-0000-0000-0000-000000000001:00000000-0000-0000-0000-000000000002', 'sha256'), 'd1111111-0000-0000-0000-000000000002'),
+
+    ('a2222222-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000002', digest('aaaaaaaa-0000-0000-0000-000000000002:00000000-0000-0000-0000-000000000003', 'sha256'), 'd2222222-0000-0000-0000-000000000001'),
+    ('a2222222-0000-0000-0000-000000000002', 'eeeeeeee-0000-0000-0000-000000000002', digest('aaaaaaaa-0000-0000-0000-000000000002:00000000-0000-0000-0000-000000000005', 'sha256'), 'd2222222-0000-0000-0000-000000000002'),
+
+    ('a4444444-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000004', digest('aaaaaaaa-0000-0000-0000-000000000004:00000000-0000-0000-0000-000000000011', 'sha256'), 'd4444444-0000-0000-0000-000000000001'),
+    ('a4444444-0000-0000-0000-000000000002', 'eeeeeeee-0000-0000-0000-000000000004', digest('aaaaaaaa-0000-0000-0000-000000000004:00000000-0000-0000-0000-000000000012', 'sha256'), 'd4444444-0000-0000-0000-000000000002');
 
 -- =========================================
--- SEQUENCE RESET
+-- RESPONSE ANSWER REVISIONS
 -- =========================================
+-- ciphertext/nonce are placeholder bytes, not real AES-GCM output.
 
-SELECT setval('submissions_id_seq', COALESCE((SELECT MAX(id) FROM submissions), 1), true);
-SELECT setval('submission_answers_id_seq', COALESCE((SELECT MAX(id) FROM submission_answers), 1), true);
-SELECT setval('submission_events_id_seq', COALESCE((SELECT MAX(id) FROM submission_events), 1), true);
+INSERT INTO response_answer_revisions (id, answer_id, envelope_id, revision_number, ciphertext, nonce, client_mutation_id) VALUES
+    -- session 1 (survey 1 v2): engagement_score, team_support
+    ('d1111111-0000-0000-0000-000000000001', 'a1111111-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000001', 1, decode(repeat('11', 16), 'hex'), decode('111111111111111111111111', 'hex'), '11111111-aaaa-0000-0000-000000000001'),
+    ('d1111111-0000-0000-0000-000000000002', 'a1111111-0000-0000-0000-000000000002', 'eeeeeeee-0000-0000-0000-000000000001', 1, decode(repeat('12', 16), 'hex'), decode('121212121212121212121212', 'hex'), '11111111-aaaa-0000-0000-000000000002'),
+
+    -- session 2 (survey 1 v2): engagement_score, manager_feedback (with one revision)
+    ('d2222222-0000-0000-0000-000000000001', 'a2222222-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000002', 1, decode(repeat('21', 16), 'hex'), decode('212121212121212121212121', 'hex'), '22222222-aaaa-0000-0000-000000000001'),
+    ('d2222222-0000-0000-0000-000000000003', 'a2222222-0000-0000-0000-000000000002', 'eeeeeeee-0000-0000-0000-000000000002', 1, decode(repeat('22', 16), 'hex'), decode('222222222222222222222222', 'hex'), '22222222-aaaa-0000-0000-000000000003'),
+    ('d2222222-0000-0000-0000-000000000002', 'a2222222-0000-0000-0000-000000000002', 'eeeeeeee-0000-0000-0000-000000000002', 2, decode(repeat('23', 16), 'hex'), decode('232323232323232323232323', 'hex'), '22222222-aaaa-0000-0000-000000000002'),
+
+    -- session 4 (survey 3 v5): signup_ease, feature_interest
+    ('d4444444-0000-0000-0000-000000000001', 'a4444444-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000004', 1, decode(repeat('41', 16), 'hex'), decode('414141414141414141414141', 'hex'), '44444444-aaaa-0000-0000-000000000001'),
+    ('d4444444-0000-0000-0000-000000000002', 'a4444444-0000-0000-0000-000000000002', 'eeeeeeee-0000-0000-0000-000000000004', 1, decode(repeat('42', 16), 'hex'), decode('424242424242424242424242', 'hex'), '44444444-aaaa-0000-0000-000000000002');
 
 COMMIT;

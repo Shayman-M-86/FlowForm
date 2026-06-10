@@ -28,7 +28,7 @@ app/
 │   └── response/
 │       ├── response_envelopes.py
 │       ├── response_answers.py
-│       └── response_revisions.py
+│       └── response_answer_revisions.py
 │
 ├── services/
 │   └── submissions/
@@ -265,7 +265,6 @@ Add:
 
 ```text
 kms_context_version SMALLINT NOT NULL
-created_at TIMESTAMPTZ NOT NULL
 ```
 
 ### 35.2 Revision additions
@@ -273,7 +272,6 @@ created_at TIMESTAMPTZ NOT NULL
 Add:
 
 ```text
-saved_at TIMESTAMPTZ NOT NULL
 client_mutation_id UUID NOT NULL
 ```
 

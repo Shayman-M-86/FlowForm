@@ -28,9 +28,7 @@ def test_survey_question_can_be_created(db_session: scoped_session[Session], sur
     db_session.add(question)
     db_session.flush()
 
-    saved = db_session.get(
-        SurveyQuestion, {"id": question.id, "survey_version_id": survey_version.id}
-    )
+    saved = db_session.get(SurveyQuestion, question.id)
     assert saved is not None, "SurveyQuestion was not persisted"
     assert saved.survey_version_id == survey_version.id, (
         f"survey_version_id={saved.survey_version_id!r}, expected {survey_version.id!r}"
@@ -153,12 +151,11 @@ def test_survey_question_cascades_on_version_delete(
     db_session.flush()
 
     question_id = question.id
-    version_id = survey_version.id
     db_session.delete(survey_version)
     db_session.flush()
     db_session.expire_all()
 
-    assert db_session.get(SurveyQuestion, {"id": question_id, "survey_version_id": version_id}) is None, (
+    assert db_session.get(SurveyQuestion, question_id) is None, (
         "SurveyQuestion should have been deleted when its survey version was deleted"
     )
 
@@ -175,9 +172,7 @@ def test_survey_rule_can_be_created(db_session: scoped_session[Session], survey_
     db_session.add(rule)
     db_session.flush()
 
-    saved = db_session.get(
-        SurveyQuestion, {"id": rule.id, "survey_version_id": survey_version.id}
-    )
+    saved = db_session.get(SurveyQuestion, rule.id)
     assert saved is not None, "Rule node was not persisted"
     assert saved.survey_version_id == survey_version.id
     assert saved.node_type == "rule"
@@ -263,12 +258,11 @@ def test_survey_rule_cascades_on_version_delete(
     db_session.flush()
 
     rule_id = rule.id
-    version_id = survey_version.id
     db_session.delete(survey_version)
     db_session.flush()
     db_session.expire_all()
 
-    assert db_session.get(SurveyQuestion, {"id": rule_id, "survey_version_id": version_id}) is None, (
+    assert db_session.get(SurveyQuestion, rule_id) is None, (
         "Rule node should have been deleted when its survey version was deleted"
     )
 

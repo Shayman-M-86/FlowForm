@@ -60,7 +60,7 @@ class SurveyRole(CoreBase):
         UniqueConstraint("project_id", "name", name="uq_survey_roles_project_id_name"),
         CheckConstraint(
             "description IS NULL OR char_length(btrim(description)) BETWEEN 1 AND 500",
-            name="ck_survey_roles_description_len",
+            name="description_len",
         ),
     )
 
@@ -143,16 +143,16 @@ class SurveyLink(CoreBase):
         UniqueConstraint("token_hash", name="uq_survey_links_token_hash"),
         UniqueConstraint("survey_id", "id", name="uq_survey_links_survey_id_id"),
         UniqueConstraint("survey_id", "token_prefix", name="uq_survey_links_survey_id_token_prefix"),
-        CheckConstraint("char_length(token_prefix) BETWEEN 8 AND 32", name="ck_survey_links_token_prefix_len"),
-        CheckConstraint("char_length(token_hash) >= 32", name="ck_survey_links_token_hash_len"),
+        CheckConstraint("char_length(token_prefix) BETWEEN 8 AND 32", name="token_prefix_len"),
+        CheckConstraint("char_length(token_hash) >= 32", name="token_hash_len"),
         CheckConstraint(
             "char_length(btrim(name)) BETWEEN 1 AND 120",
-            name="ck_survey_links_name_len",
+            name="name_len",
         ),
         # requires_auth links must be addressed to a specific email
         CheckConstraint(
             "NOT requires_auth OR assigned_email IS NOT NULL",
-            name="ck_survey_links_requires_auth_needs_assignment",
+            name="requires_auth_needs_assignment",
         ),
     )
 

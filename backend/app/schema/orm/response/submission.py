@@ -1,41 +1,10 @@
-import uuid
-from datetime import datetime
-from typing import TYPE_CHECKING
+"""Temporary compatibility import for the response-infrastructure rework."""
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.schema.orm.response.response_envelope import ResponseEnvelope
 
-from app.db.base import ResponseBase
+# TEMP(rework): Legacy imports still ask for Submission while the response DB
+# is being replaced by encrypted ResponseEnvelope/ResponseAnswer rows.
+# Remove this alias after services/tests import ResponseEnvelope directly.
+Submission = ResponseEnvelope
 
-if TYPE_CHECKING:
-    from app.schema.orm.response.submission_answer import SubmissionAnswer
-    from app.schema.orm.response.submission_event import SubmissionEvent
-
-
-class Submission(ResponseBase):
-    """Raw submission payload stored in the isolated response database."""
-
-    __tablename__ = "submissions"
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    core_submission_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
-    survey_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    survey_version_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    project_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    pseudonymous_subject_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    is_anonymous: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    submission_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-
-    __table_args__ = (
-        CheckConstraint("metadata IS NULL OR jsonb_typeof(metadata) = 'object'", name="metadata_is_object"),
-    )
-
-    answers: Mapped[list[SubmissionAnswer]] = relationship(
-        "SubmissionAnswer", back_populates="submission", cascade="all, delete-orphan"
-    )
-    events: Mapped[list[SubmissionEvent]] = relationship(
-        "SubmissionEvent", back_populates="submission", cascade="all, delete-orphan"
-    )
+__all__ = ["Submission"]

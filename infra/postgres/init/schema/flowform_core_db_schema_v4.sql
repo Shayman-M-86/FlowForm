@@ -360,7 +360,7 @@ CREATE UNIQUE INDEX uq_survey_versions_one_published
 -- =========================================
 
 CREATE TABLE survey_questions (
-    id BIGSERIAL NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     survey_version_id BIGINT NOT NULL
         REFERENCES survey_versions(id)
@@ -401,7 +401,8 @@ CREATE TABLE survey_questions (
             OR question_schema->>'family' IN ('choice', 'field', 'matching', 'rating')
         ),
 
-    PRIMARY KEY (id, survey_version_id)
+    CONSTRAINT uq_survey_questions_survey_version_id_id
+        UNIQUE (survey_version_id, id)
 );
 
 CREATE UNIQUE INDEX uq_survey_questions_survey_version_id_question_key
@@ -569,133 +570,158 @@ CREATE TABLE survey_links (
 );
 
 -- =========================================
--- PSEUDONYMOUS SUBJECT MAPPINGS
+-- SESSION AND RESPONSE ENCRYPTION
 -- =========================================
--- Maps an internal user to a stable pseudonymous identifier for a project.
--- This identifier can be written to the response DB instead of the real user_id.
+-- Tables supporting encrypted, pseudonymous survey submission sessions.
+-- See docs/session-response-encryption/ for the full design.
+--
+-- Notes:
+-- - project_subjects is the project-level participant identity table.
+-- - submission_sessions is the canonical core-side record for one survey
+--   attempt. A completed submission is a completed session.
+-- - response_store_id is snapshotted when the session begins so one session
+--   has a stable response destination even if survey defaults change later.
+-- - submission_events here is core-side analytics metadata, distinct from
+--   the response-database submission_events table.
 
-CREATE TABLE response_subject_mappings (
-    id BIGSERIAL PRIMARY KEY,
+CREATE TABLE project_subjects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    pseudonymous_subject_id UUID NOT NULL,
+    pseudonymous_subject_id TEXT NOT NULL,
+    user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT uq_response_subject_mappings_project_id_id
+
+    CONSTRAINT uq_project_subjects_project_id_id
         UNIQUE (project_id, id),
 
-    CONSTRAINT uq_response_subject_mappings_project_id_user_id
+    CONSTRAINT uq_project_subjects_project_id_pseudonymous_subject_id
+        UNIQUE (project_id, pseudonymous_subject_id),
+
+    CONSTRAINT uq_project_subjects_project_id_user_id
         UNIQUE (project_id, user_id),
 
-    CONSTRAINT uq_response_subject_mappings_project_id_pseudonymous_subject_id
-        UNIQUE (project_id, pseudonymous_subject_id)
+    CONSTRAINT ck_project_subjects_pseudonymous_subject_id_len
+        CHECK (char_length(btrim(pseudonymous_subject_id)) BETWEEN 1 AND 128)
 );
 
--- =========================================
--- SURVEY SUBMISSION REGISTRY
--- =========================================
--- Metadata only. Raw answers are stored in the separate response database.
--- response_store_id is NOT NULL and RESTRICTed so the historical destination is never lost.
-
-CREATE TABLE survey_submissions (
-    id BIGSERIAL PRIMARY KEY,
+CREATE TABLE submission_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id BIGINT NOT NULL,
     survey_id BIGINT NOT NULL,
     survey_version_id BIGINT NOT NULL,
     response_store_id BIGINT NOT NULL,
-    submission_channel TEXT NOT NULL,
-    submitted_by_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-    survey_link_id BIGINT,
-    pseudonymous_subject_id UUID,
-    external_submission_id TEXT,
-    status TEXT NOT NULL DEFAULT 'pending',
-    is_anonymous BOOLEAN NOT NULL DEFAULT FALSE,
-    started_at TIMESTAMPTZ,
-    submitted_at TIMESTAMPTZ,
-    last_delivery_attempt_at TIMESTAMPTZ,
-    delivery_error TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT ck_survey_submissions_submission_channel_valid
-        CHECK (submission_channel IN ('link', 'slug', 'system')),
+    link_id BIGINT,
+    project_subject_id UUID,
+    browser_session_token_hash BYTEA NOT NULL,
+    linkage_key_version SMALLINT NOT NULL DEFAULT 1,
+    session_status TEXT NOT NULL DEFAULT 'in_progress',
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ NOT NULL,
+    last_activity_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT ck_survey_submissions_status_valid
-        CHECK (status IN ('pending', 'stored', 'failed')),
+    CONSTRAINT uq_submission_sessions_browser_session_token_hash
+        UNIQUE (browser_session_token_hash),
 
-    CONSTRAINT ck_survey_submissions_submitted_at_after_started_at
+    CONSTRAINT uq_submission_sessions_id_survey_version_id
+        UNIQUE (id, survey_version_id),
+
+    CONSTRAINT ck_submission_sessions_browser_session_token_hash_len
+        CHECK (length(browser_session_token_hash) >= 32),
+
+    CONSTRAINT ck_submission_sessions_linkage_key_version_valid
+        CHECK (linkage_key_version > 0),
+
+    CONSTRAINT ck_submission_sessions_session_status_valid
+        CHECK (session_status IN ('in_progress', 'completed', 'abandoned')),
+
+    CONSTRAINT ck_submission_sessions_completed_requires_completed_at
+        CHECK (session_status <> 'completed' OR completed_at IS NOT NULL),
+
+    CONSTRAINT ck_submission_sessions_completed_at_after_started_at
         CHECK (
-            submitted_at IS NULL
-            OR started_at IS NULL
-            OR submitted_at >= started_at
+            completed_at IS NULL
+            OR completed_at >= started_at
         ),
 
-    CONSTRAINT ck_survey_submissions_link_requires_link_id
-        CHECK (
-            submission_channel <> 'link'
-            OR survey_link_id IS NOT NULL
-        ),
+    CONSTRAINT ck_submission_sessions_expires_at_after_started_at
+        CHECK (expires_at > started_at),
 
-    -- A link submission may be unauthenticated (private invite link) or
-    -- authenticated (general or assigned link). Per-link auth requirement is
-    -- enforced in the service layer using survey_links.requires_auth.
-
-    CONSTRAINT ck_survey_submissions_system_has_no_actor
-        CHECK (
-            submission_channel <> 'system'
-            OR (submitted_by_user_id IS NULL AND survey_link_id IS NULL)
-        ),
-
-    CONSTRAINT ck_survey_submissions_slug_has_no_link
-        CHECK (
-            submission_channel <> 'slug'
-            OR survey_link_id IS NULL
-        ),
-
-    CONSTRAINT ck_survey_submissions_anonymous_has_no_user
-        CHECK (NOT is_anonymous OR submitted_by_user_id IS NULL),
-
-    CONSTRAINT ck_survey_submissions_anonymous_has_no_subject
-        CHECK (NOT is_anonymous OR pseudonymous_subject_id IS NULL),
-
-    -- Link submissions may be anonymous when the link does not require auth
-    -- (e.g. private invite links). Authenticated link enforcement lives in the
-    -- service layer.
-
-    CONSTRAINT ck_survey_submissions_identified_slug_requires_user
-        CHECK (
-            submission_channel <> 'slug'
-            OR is_anonymous
-            OR submitted_by_user_id IS NOT NULL
-        ),
-    CONSTRAINT fk_survey_submissions_survey_same_project
+    CONSTRAINT fk_submission_sessions_survey_same_project
         FOREIGN KEY (project_id, survey_id)
         REFERENCES surveys(project_id, id)
         ON DELETE CASCADE,
-    CONSTRAINT fk_survey_submissions_version_same_survey
+
+    CONSTRAINT fk_submission_sessions_version_same_survey
         FOREIGN KEY (survey_id, survey_version_id)
         REFERENCES survey_versions(survey_id, id)
         ON DELETE RESTRICT,
-    CONSTRAINT fk_survey_submissions_store
+
+    CONSTRAINT fk_submission_sessions_store
         FOREIGN KEY (response_store_id)
         REFERENCES response_stores(id)
         ON DELETE RESTRICT,
-    CONSTRAINT fk_survey_submissions_store_same_project
+
+    CONSTRAINT fk_submission_sessions_store_same_project
         FOREIGN KEY (project_id, response_store_id)
         REFERENCES response_stores(project_id, id),
-    CONSTRAINT fk_survey_submissions_survey_link
-        FOREIGN KEY (survey_link_id)
+
+    CONSTRAINT fk_submission_sessions_link
+        FOREIGN KEY (link_id)
         REFERENCES survey_links(id)
         ON DELETE SET NULL,
-    CONSTRAINT fk_survey_submissions_survey_link_same_survey
-        FOREIGN KEY (survey_id, survey_link_id)
+
+    CONSTRAINT fk_submission_sessions_link_same_survey
+        FOREIGN KEY (survey_id, link_id)
         REFERENCES survey_links(survey_id, id),
-    CONSTRAINT fk_survey_submissions_subject_same_project
-        FOREIGN KEY (project_id, pseudonymous_subject_id)
-        REFERENCES response_subject_mappings(project_id, pseudonymous_subject_id)
-        ON DELETE RESTRICT
+
+    CONSTRAINT fk_submission_sessions_project_subject
+        FOREIGN KEY (project_subject_id)
+        REFERENCES project_subjects(id)
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_submission_sessions_project_subject_same_project
+        FOREIGN KEY (project_id, project_subject_id)
+        REFERENCES project_subjects(project_id, id)
 );
 
-CREATE UNIQUE INDEX uq_survey_submissions_external_submission_id
-    ON survey_submissions (response_store_id, external_submission_id)
-    WHERE external_submission_id IS NOT NULL;
+CREATE TABLE submission_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID NOT NULL,
+    survey_version_id BIGINT NOT NULL,
+    event_type TEXT NOT NULL,
+    question_node_id UUID,
+    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT ck_submission_events_event_type_valid
+        CHECK (event_type IN ('session_started', 'question_viewed', 'answer_saved', 'session_completed')),
+
+    CONSTRAINT ck_submission_events_question_required_for_question_events
+        CHECK (
+            event_type NOT IN ('question_viewed', 'answer_saved')
+            OR question_node_id IS NOT NULL
+        ),
+
+    CONSTRAINT ck_submission_events_question_absent_for_session_events
+        CHECK (
+            event_type NOT IN ('session_started', 'session_completed')
+            OR question_node_id IS NULL
+        ),
+
+    CONSTRAINT fk_submission_events_session_version
+        FOREIGN KEY (session_id, survey_version_id)
+        REFERENCES submission_sessions(id, survey_version_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_submission_events_question_node
+        FOREIGN KEY (question_node_id)
+        REFERENCES survey_questions(id)
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_submission_events_question_node_same_version
+        FOREIGN KEY (survey_version_id, question_node_id)
+        REFERENCES survey_questions(survey_version_id, id)
+);
 
 -- =========================================
 -- AUDIT LOG
@@ -763,8 +789,6 @@ CREATE INDEX idx_project_memberships_project ON project_memberships(project_id);
 CREATE INDEX idx_project_memberships_role ON project_memberships(role_id);
 
 CREATE INDEX idx_response_stores_project ON response_stores(project_id);
-CREATE INDEX idx_response_subject_mappings_project_user ON response_subject_mappings(project_id, user_id);
-CREATE INDEX idx_response_subject_mappings_project_subject ON response_subject_mappings(project_id, pseudonymous_subject_id);
 
 CREATE INDEX idx_surveys_project ON surveys(project_id);
 CREATE INDEX idx_surveys_slug ON surveys(public_slug);
@@ -784,15 +808,20 @@ CREATE INDEX idx_survey_links_survey ON survey_links(survey_id);
 CREATE INDEX idx_survey_links_prefix ON survey_links(token_prefix);
 CREATE INDEX idx_survey_links_hash ON survey_links(token_hash);
 
-CREATE INDEX idx_survey_submissions_project ON survey_submissions(project_id);
-CREATE INDEX idx_survey_submissions_survey ON survey_submissions(survey_id);
-CREATE INDEX idx_survey_submissions_version ON survey_submissions(survey_version_id);
-CREATE INDEX idx_survey_submissions_survey_link ON survey_submissions(survey_link_id);
-CREATE INDEX idx_survey_submissions_store ON survey_submissions(response_store_id);
-CREATE INDEX idx_survey_submissions_channel ON survey_submissions(submission_channel);
-CREATE INDEX idx_survey_submissions_submitted_by ON survey_submissions(submitted_by_user_id);
-CREATE INDEX idx_survey_submissions_pseudonymous_subject ON survey_submissions(pseudonymous_subject_id);
-CREATE INDEX idx_survey_submissions_status ON survey_submissions(status);
-CREATE INDEX idx_survey_submissions_submitted_at ON survey_submissions(submitted_at);
+CREATE INDEX idx_project_subjects_project ON project_subjects(project_id);
+CREATE INDEX idx_project_subjects_user ON project_subjects(user_id);
+
+CREATE INDEX idx_submission_sessions_project ON submission_sessions(project_id);
+CREATE INDEX idx_submission_sessions_survey ON submission_sessions(survey_id);
+CREATE INDEX idx_submission_sessions_survey_version ON submission_sessions(survey_version_id);
+CREATE INDEX idx_submission_sessions_store ON submission_sessions(response_store_id);
+CREATE INDEX idx_submission_sessions_link ON submission_sessions(link_id);
+CREATE INDEX idx_submission_sessions_project_subject ON submission_sessions(project_subject_id);
+CREATE INDEX idx_submission_sessions_last_activity ON submission_sessions(session_status, last_activity_at);
+CREATE INDEX idx_submission_sessions_expires_at ON submission_sessions(expires_at);
+
+CREATE INDEX idx_submission_events_session_received_at ON submission_events(session_id, received_at);
+CREATE INDEX idx_submission_events_survey_version ON submission_events(survey_version_id);
+CREATE INDEX idx_submission_events_question_node ON submission_events(question_node_id);
 
 CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
