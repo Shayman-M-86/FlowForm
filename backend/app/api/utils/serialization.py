@@ -1,10 +1,13 @@
 # app/api/utils/serialization.py
 
+from logging import getLogger
 from typing import Any
 
 from pydantic import TypeAdapter, ValidationError
 
 from app.core.errors import ResponseValidationError
+
+logger = getLogger(__name__)
 
 
 def serialize(schema: Any, value: Any) -> Any:
@@ -23,6 +26,11 @@ def serialize(schema: Any, value: Any) -> Any:
         )
 
     except ValidationError as exc:
+        logger.warning(
+            "Response validation failed for schema %s: %s",
+            getattr(schema, "__name__", repr(schema)),
+            exc.errors(),
+        )
         raise ResponseValidationError(
             schema_name=getattr(schema, "__name__", repr(schema)),
             original_error=exc,

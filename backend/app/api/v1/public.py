@@ -1,18 +1,34 @@
+from datetime import UTC, datetime
 from logging import getLogger
+from uuid import UUID
 
-from flask import Blueprint, request
+from flask import Blueprint, jsonify, make_response, request
 
 from app.api.utils.validation import parse, parse_query
+from app.api.v1.public_submission_session_temp import (
+    build_placeholder_session_response,
+    set_placeholder_submission_session_cookie,
+)
 from app.core.extensions import auth
 from app.db.context import get_core_db, get_response_db
 from app.openapi import openapi_route
 from app.schema.api.requests.public_links import ResolveTokenRequest
+from app.schema.api.requests.submission_sessions import (
+    QuestionViewedEventRequest,
+    SaveSubmissionSessionAnswerRequest,
+    StartSubmissionSessionRequest,
+)
 from app.schema.api.requests.submissions.create import (
     LinkSubmissionRequest,
     SlugSubmissionRequest,
 )
 from app.schema.api.requests.surveys import ListPublicSurveysRequest
 from app.schema.api.responses.public_links import PublicLinkResponses, ResolveLinkResponses
+from app.schema.api.responses.submission_sessions import (
+    CompleteSubmissionSessionResponses,
+    PublicSubmissionSessionResponses,
+    SubmissionSessionAnswerResponses,
+)
 from app.schema.api.responses.submissions import AnswerResponses, CoreSubmissionResponses, LinkedSubmissionResponses
 from app.schema.api.responses.surveys import (
     PaginatedPublicSurveysResponses,
@@ -79,7 +95,7 @@ def get_public_survey(public_slug: str):
 
 @openapi_route(
     summary="Resolve survey link",
-    query_model=ResolveTokenRequest,
+    request_model=ResolveTokenRequest,
     response_model=ResolveLinkResponses,
     tags=["Public Links"],
     auth="optional",
@@ -88,10 +104,10 @@ def get_public_survey(public_slug: str):
         "If the resolved link requires authentication, a bearer token must be supplied."
     ),
 )
-@public_bp.route("/links/resolve", methods=["GET"])
+@public_bp.route("/links/resolve", methods=["POST"])
 @auth.optional_auth()
 def resolve_link():
-    payload = parse_query(ResolveTokenRequest, request)
+    payload = parse(ResolveTokenRequest, request)
 
     core_db = get_core_db()
 
@@ -107,6 +123,93 @@ def resolve_link():
     return response.model_dump(mode="json"), 200
 
 
+# TODO(phase3): Replace this contract stub with the real public session service
+# once core session creation and response envelope creation are coordinated.
+@openapi_route(
+    summary="Start submission session",
+    request_model=StartSubmissionSessionRequest,
+    response_model=PublicSubmissionSessionResponses,
+    status_code=201,
+    tags=["Public Submission Sessions"],
+    auth_required=False,
+)
+@public_bp.route("/submission-sessions", methods=["POST"])
+def start_submission_session():
+    parse(StartSubmissionSessionRequest, request)
+    response = build_placeholder_session_response()
+    flask_response = make_response(jsonify(response.model_dump(mode="json")), 201)
+    return set_placeholder_submission_session_cookie(flask_response)
+
+
+# TODO(phase3): Rework this placeholder to read the current session from the
+# HttpOnly resume cookie after browser token hashing/storage exists.
+@openapi_route(
+    summary="Get current submission session",
+    response_model=PublicSubmissionSessionResponses,
+    tags=["Public Submission Sessions"],
+    auth_required=False,
+)
+@public_bp.route("/submission-sessions/current", methods=["GET"])
+def get_current_submission_session():
+    response = build_placeholder_session_response()
+    return response.model_dump(mode="json"), 200
+
+
+# TODO(phase4): Rework this placeholder to validate against the frozen survey
+# version and create encrypted response answer revisions.
+@openapi_route(
+    summary="Save submission session answer",
+    request_model=SaveSubmissionSessionAnswerRequest,
+    response_model=SubmissionSessionAnswerResponses,
+    tags=["Public Submission Sessions"],
+    auth_required=False,
+)
+@public_bp.route("/submission-sessions/current/answers/<uuid:question_node_id>", methods=["PUT"])
+def save_submission_session_answer(question_node_id: UUID):
+    payload = parse(SaveSubmissionSessionAnswerRequest, request)
+    response = SubmissionSessionAnswerResponses(
+        question_node_id=question_node_id,
+        state=payload.state,
+        answer_family=payload.answer_family,
+        answer_value=payload.answer_value,
+        revision_number=1,
+        client_mutation_id=payload.client_mutation_id,
+        saved_at=datetime.now(UTC),
+    )
+    return response.model_dump(mode="json"), 200
+
+
+# TODO(phase3): Rework this placeholder to persist core-side analytics events;
+# event write failures should stay secondary to the respondent flow.
+@openapi_route(
+    summary="Record submission session question view",
+    request_model=QuestionViewedEventRequest,
+    status_code=204,
+    tags=["Public Submission Sessions"],
+    auth_required=False,
+)
+@public_bp.route("/submission-sessions/current/events/question-viewed", methods=["POST"])
+def record_submission_session_question_viewed():
+    parse(QuestionViewedEventRequest, request)
+    return "", 204
+
+
+# TODO(phase5): Rework this placeholder to complete the core session
+# idempotently and reject later answer edits.
+@openapi_route(
+    summary="Complete submission session",
+    response_model=CompleteSubmissionSessionResponses,
+    tags=["Public Submission Sessions"],
+    auth_required=False,
+)
+@public_bp.route("/submission-sessions/current/complete", methods=["POST"])
+def complete_submission_session():
+    response = CompleteSubmissionSessionResponses(status="completed", completed_at=datetime.now(UTC))
+    return response.model_dump(mode="json"), 200
+
+
+# TODO(phase2): Decommission this legacy one-shot plaintext submission endpoint
+# after the public session routes become the respondent write path.
 @openapi_route(
     summary="Create slug submission",
     request_model=SlugSubmissionRequest,
@@ -139,6 +242,8 @@ def create_slug_submission():
     return response.model_dump(mode="json"), 201
 
 
+# TODO(phase2): Decommission this legacy one-shot plaintext submission endpoint
+# after link-token access is folded into POST /public/submission-sessions.
 @openapi_route(
     summary="Create link submission",
     request_model=LinkSubmissionRequest,

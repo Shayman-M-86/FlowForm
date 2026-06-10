@@ -12,6 +12,7 @@ This folder splits the original session and response encryption plan into focuse
 - [Answer flows](answer-flows.md) - answer saves, revision history, clearing answers, canonical answers, and idempotency.
 - [Admin and operations](admin-and-operations.md) - admin reads, exports, deletion, consistency, IAM/KMS, rotation, logging, and failure scenarios.
 - [Backend implementation](backend-implementation.md) - service boundaries, interfaces, API surface, schema notes, and local development.
+- [API structure](api-structure.md) - authoritative respondent-facing API surface: endpoints, request/response shapes, status codes, and frontend call sequences.
 - [Testing plan](testing-plan.md) - test coverage by behavior area.
 - [Implementation order](implementation-order.md) - staged rollout, version-one decisions, and final summary.
 - [Implementation checklist](implementation-checklist.md) - agent-ready task checklist for schema-first implementation.

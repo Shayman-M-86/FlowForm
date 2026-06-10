@@ -229,9 +229,30 @@ class AnswerSaver:
 
 ## 30. Suggested API surface
 
-Exact route names can follow the existing FlowForm API conventions.
+> The full respondent-facing surface — including request/response shapes,
+> status codes, and the frontend call sequences — is specified in
+> [api-structure.md](api-structure.md). This section is the summary; that
+> document is authoritative for the public routes.
 
-A reasonable shape is:
+Exact route names follow the existing FlowForm API conventions.
+
+Respondent discovery and access resolution (these reuse pre-existing public
+routes; only the verb on link-resolve changes):
+
+```text
+GET    /public/surveys
+GET    /public/surveys/{public_slug}
+POST   /public/links/resolve
+```
+
+> **Decision: link-resolve is `POST`, not `GET`.** The existing route is
+> `GET /public/links/resolve?token=...`. It moves to `POST` with the token in
+> the JSON body so the token never enters query strings, browser history, or
+> logs — consistent with the never-log rules in
+> [admin-and-operations.md §33.1](admin-and-operations.md). This is a behavior
+> change to the existing route, not a new endpoint.
+
+Respondent session lifecycle:
 
 ```text
 POST   /public/submission-sessions
@@ -240,6 +261,12 @@ PUT    /public/submission-sessions/current/answers/{question_node_id}
 POST   /public/submission-sessions/current/events/question-viewed
 POST   /public/submission-sessions/current/complete
 ```
+
+> **Decision: sessions are addressed as `current`, never `{session_id}`.** The
+> session is identified server-side from the `HttpOnly` resume cookie (hashed
+> to `browser_session_token_hash`); the UUID never appears in the URL. The
+> `session_id` that the locator service ([§29.2](#292-locator-service))
+> consumes is loaded from that row, not taken from the path.
 
 Administrator routes:
 
