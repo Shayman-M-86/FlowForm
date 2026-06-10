@@ -98,12 +98,12 @@ path, not fixed now.
 
 ## Phase 2: API Contracts
 
-- [ ] Add public session routes:
-  - [ ] `POST /public/submission-sessions`
-  - [ ] `GET /public/submission-sessions/current`
-  - [ ] `PUT /public/submission-sessions/current/answers/{question_node_id}`
-  - [ ] `POST /public/submission-sessions/current/events/question-viewed`
-  - [ ] `POST /public/submission-sessions/current/complete`
+- [x] Add public session routes:
+  - [x] `POST /public/submission-sessions`
+  - [x] `GET /public/submission-sessions/current`
+  - [x] `PUT /public/submission-sessions/current/answers/{question_node_id}`
+  - [x] `POST /public/submission-sessions/current/events/question-viewed`
+  - [x] `POST /public/submission-sessions/current/complete`
 - [ ] Add administrator response routes:
   - [ ] `GET /projects/{project_id}/surveys/{survey_id}/responses`
   - [ ] `GET /projects/{project_id}/surveys/{survey_id}/responses/{session_id}`
@@ -111,22 +111,41 @@ path, not fixed now.
   - [ ] `POST /projects/{project_id}/surveys/{survey_id}/responses/export`
   - [ ] `DELETE /projects/{project_id}/surveys/{survey_id}/responses/{session_id}`
 - [ ] Add request and response schemas for:
-  - [ ] start session
-  - [ ] current session
-  - [ ] save answer
-  - [ ] question-viewed event
-  - [ ] complete session
+  - [x] start session
+  - [x] current session
+  - [x] save answer
+  - [x] question-viewed event
+  - [x] complete session
   - [ ] list admin responses
   - [ ] admin response detail
   - [ ] admin response history
-- [ ] Keep plaintext answers out of response-database API shapes.
-- [ ] Decide whether old `/public/submissions/slug` and `/public/submissions/link` routes are removed, disabled, or left temporarily broken.
+- [x] Keep plaintext answers out of response-database API shapes.
+- [x] Decide whether old `/public/submissions/slug` and `/public/submissions/link` routes are removed, disabled, or left temporarily broken.
 
 Done when:
 
 - [ ] Routes exist and validate request shapes.
 - [ ] Routes return stable placeholder responses where service behavior is not implemented yet.
-- [ ] OpenAPI generation still works if this repo uses generated API docs.
+- [x] OpenAPI generation still works if this repo uses generated API docs.
+
+Phase 2 public-contract status (2026-06-11):
+
+- Added the five public respondent session route stubs in
+  `backend/app/api/v1/public.py`.
+- Moved link resolution from `GET /public/links/resolve?token=...` to
+  `POST /public/links/resolve` with the token in the JSON body, matching
+  `api-structure.md`.
+- Added `backend/app/schema/api/requests/submission_sessions.py` and
+  `backend/app/schema/api/responses/submission_sessions.py` for the public
+  session contracts.
+- Kept the old one-shot `/public/submissions/slug` and
+  `/public/submissions/link` routes temporarily in place, with decommission
+  TODOs beside the endpoints.
+- Kept route behavior skeletal: the session routes validate the final request
+  shapes and return stable placeholder response bodies/cookies until Phase 3-5
+  services wire real core/response database behavior.
+- Added `backend/tests/unit/test_submission_session_contracts.py` to pin the
+  request validation and OpenAPI path/method contract.
 
 ## Phase 3: Service Skeleton Without Real Crypto
 
