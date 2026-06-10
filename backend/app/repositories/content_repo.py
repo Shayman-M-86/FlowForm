@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -38,7 +40,7 @@ def list_rules(db: Session, version_id: int) -> list[SurveyQuestion]:
     )
 
 
-def get_node(db: Session, version_id: int, node_id: int) -> SurveyQuestion | None:
+def get_node(db: Session, version_id: int, node_id: UUID) -> SurveyQuestion | None:
     return db.scalar(
         select(SurveyQuestion).where(
             SurveyQuestion.survey_version_id == version_id,

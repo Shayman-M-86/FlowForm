@@ -248,7 +248,7 @@ function validateGraphIdentity(
   issues: SurveyNodeImportIssue[],
 ): Map<string, QuestionIndex> {
   const nodeKeys = new Map<string, number>();
-  const nodeIds = new Map<number, number>();
+  const nodeIds = new Map<string, number>();
   const sortKeys = new Map<number, number>();
   const questionById = new Map<string, QuestionIndex>();
 

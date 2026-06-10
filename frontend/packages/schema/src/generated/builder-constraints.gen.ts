@@ -140,11 +140,13 @@ export const RuleIfInConstraints = {
 } as const;
 
 export const CreateQuestionNodeRequestConstraints = {
+  id: { maxLength: 36 },
   node_key: { minLength: 1, maxLength: 128 },
   node_type: { maxLength: 8 },
 } as const;
 
 export const CreateRuleNodeRequestConstraints = {
+  id: { maxLength: 36 },
   node_key: { minLength: 1, maxLength: 128 },
   node_type: { maxLength: 4 },
 } as const;

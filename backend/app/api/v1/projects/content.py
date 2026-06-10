@@ -1,5 +1,6 @@
-from flask import g, request
+from uuid import UUID
 
+from flask import g, request
 
 from app.api.utils.serialization import serialize
 from app.api.utils.validation import parse
@@ -59,10 +60,10 @@ def create_node(project_id: int, survey_id: int, version_number: int):
 
 
 @openapi_route(summary="Get survey content node", response_model=NodeResponses, tags=["Survey Content"])
-@projects_bp.route(f"{_NBASE}/<bint:node_id>", methods=["GET"])
+@projects_bp.route(f"{_NBASE}/<uuid:node_id>", methods=["GET"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.view)
-def get_node(project_id: int, survey_id: int, version_number: int, node_id: int):
+def get_node(project_id: int, survey_id: int, version_number: int, node_id: UUID):
     node = content_svc.get_node(
         db=get_core_db(),
         project_id=project_id,
@@ -80,10 +81,10 @@ def get_node(project_id: int, survey_id: int, version_number: int, node_id: int)
     response_model=NodeResponses,
     tags=["Survey Content"],
 )
-@projects_bp.route(f"{_NBASE}/<bint:node_id>", methods=["PATCH"])
+@projects_bp.route(f"{_NBASE}/<uuid:node_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.edit)
-def update_node(project_id: int, survey_id: int, version_number: int, node_id: int):
+def update_node(project_id: int, survey_id: int, version_number: int, node_id: UUID):
     payload = parse(UpdateNodeRequest, request)
     node = content_svc.update_node(
         db=get_core_db(),
@@ -98,10 +99,10 @@ def update_node(project_id: int, survey_id: int, version_number: int, node_id: i
 
 
 @openapi_route(summary="Delete survey content node", tags=["Survey Content"], status_code=204)
-@projects_bp.route(f"{_NBASE}/<bint:node_id>", methods=["DELETE"])
+@projects_bp.route(f"{_NBASE}/<uuid:node_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.edit)
-def delete_node(project_id: int, survey_id: int, version_number: int, node_id: int):
+def delete_node(project_id: int, survey_id: int, version_number: int, node_id: UUID):
     content_svc.delete_node(
         db=get_core_db(),
         project_id=project_id,

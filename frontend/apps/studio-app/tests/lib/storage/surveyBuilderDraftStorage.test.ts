@@ -12,7 +12,7 @@ const SURVEY_ID = 34
 const VERSION_ID = 56
 
 const nodes: SurveyNode[] = [{
-  id: 1,
+  id: '11111111-1111-4111-8111-111111111111',
   node_key: 'q1',
   node_type: 'question',
   sort_key: 100000,

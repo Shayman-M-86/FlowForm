@@ -611,9 +611,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
+          type: string
+          format: uuid
       responses:
         '200':
           description: Successful response.
@@ -671,9 +670,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
+          type: string
+          format: uuid
       requestBody:
         required: true
         content:
@@ -737,9 +735,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
+          type: string
+          format: uuid
       responses:
         '204':
           description: No content.
@@ -3991,8 +3988,10 @@ components:
       description: API response shape for a question node.
       properties:
         id:
+          format: uuid
           title: Id
-          type: integer
+          type: string
+          maxLength: 36
         node_key:
           title: Node Key
           type: string
@@ -4292,8 +4291,10 @@ components:
       description: API response shape for a rule node.
       properties:
         id:
+          format: uuid
           title: Id
-          type: integer
+          type: string
+          maxLength: 36
         node_key:
           title: Node Key
           type: string
@@ -4387,10 +4388,10 @@ components:
       description: Validates requests that create a new question node.
       properties:
         id:
-          exclusiveMaximum: 2147483647
-          exclusiveMinimum: 0
+          format: uuid
           title: Id
-          type: integer
+          type: string
+          maxLength: 36
         node_key:
           maxLength: 128
           minLength: 1
@@ -4433,10 +4434,10 @@ components:
       description: Validates requests that create a new rule node.
       properties:
         id:
-          exclusiveMaximum: 2147483647
-          exclusiveMinimum: 0
+          format: uuid
           title: Id
-          type: integer
+          type: string
+          maxLength: 36
         node_key:
           maxLength: 128
           minLength: 1
@@ -4477,10 +4478,10 @@ components:
       description: Validates partial updates to an existing survey content node.
       properties:
         id:
-          exclusiveMaximum: 2147483647
-          exclusiveMinimum: 0
+          format: uuid
           title: Id
-          type: integer
+          type: string
+          maxLength: 36
         node_key:
           anyOf:
           - maxLength: 128
@@ -6646,46 +6647,56 @@ components:
               value:
                 code: SURVEY_ROLE_NAME_CONFLICT
                 message: Project already has a survey role named '<name>'.
-            uq_response_subject_mappings_project_id_user_id:
+            uq_project_subjects_project_id_user_id:
               summary: 'DB rule: SUBJECT_USER_CONFLICT'
               value:
                 code: SUBJECT_USER_CONFLICT
-                message: Project id=<project_id> already has a subject mapping for user id=<user_id>.
-            uq_response_subject_mappings_project_id_pseudonymous_subject_id:
+                message: Project id=<project_id> already has a subject for user id=<user_id>.
+            uq_project_subjects_project_id_pseudonymous_subject_id:
               summary: 'DB rule: SUBJECT_ID_CONFLICT'
               value:
                 code: SUBJECT_ID_CONFLICT
-                message: Project id=<project_id> already uses pseudonymous subject id=<pseudonymous_subject_id>.
-            fk_survey_submissions_survey_same_project:
-              summary: 'DB rule: SUBMISSION_SURVEY_PROJECT_CONFLICT'
+                message: Project id=<project_id> already uses pseudonymous subject id='<pseudonymous_subject_id>'.
+            uq_submission_sessions_browser_session_token_hash:
+              summary: 'DB rule: SESSION_TOKEN_CONFLICT'
               value:
-                code: SUBMISSION_SURVEY_PROJECT_CONFLICT
+                code: SESSION_TOKEN_CONFLICT
+                message: This browser session token is already in use.
+            fk_submission_sessions_survey_same_project:
+              summary: 'DB rule: SESSION_SURVEY_PROJECT_CONFLICT'
+              value:
+                code: SESSION_SURVEY_PROJECT_CONFLICT
                 message: Survey id=<survey_id> does not belong to project id=<project_id>.
-            fk_survey_submissions_version_same_survey:
-              summary: 'DB rule: SUBMISSION_VERSION_SURVEY_CONFLICT'
+            fk_submission_sessions_version_same_survey:
+              summary: 'DB rule: SESSION_VERSION_SURVEY_CONFLICT'
               value:
-                code: SUBMISSION_VERSION_SURVEY_CONFLICT
+                code: SESSION_VERSION_SURVEY_CONFLICT
                 message: Survey version id=<survey_version_id> does not belong to survey id=<survey_id>.
-            fk_survey_submissions_store_same_project:
-              summary: 'DB rule: SUBMISSION_STORE_PROJECT_CONFLICT'
+            fk_submission_sessions_store_same_project:
+              summary: 'DB rule: SESSION_STORE_PROJECT_CONFLICT'
               value:
-                code: SUBMISSION_STORE_PROJECT_CONFLICT
+                code: SESSION_STORE_PROJECT_CONFLICT
                 message: Response store id=<response_store_id> does not belong to project id=<project_id>.
-            fk_survey_submissions_survey_link_same_survey:
-              summary: 'DB rule: SUBMISSION_LINK_SURVEY_CONFLICT'
+            fk_submission_sessions_link_same_survey:
+              summary: 'DB rule: SESSION_LINK_SURVEY_CONFLICT'
               value:
-                code: SUBMISSION_LINK_SURVEY_CONFLICT
+                code: SESSION_LINK_SURVEY_CONFLICT
                 message: Survey link id=<survey_link_id> does not belong to survey id=<survey_id>.
-            fk_survey_submissions_subject_same_project:
-              summary: 'DB rule: SUBMISSION_SUBJECT_PROJECT_CONFLICT'
+            fk_submission_sessions_project_subject_same_project:
+              summary: 'DB rule: SESSION_SUBJECT_PROJECT_CONFLICT'
               value:
-                code: SUBMISSION_SUBJECT_PROJECT_CONFLICT
-                message: Pseudonymous subject id='<pseudonymous_subject_id>' does not belong to project id=<project_id>.
-            uq_survey_submissions_external_submission_id:
-              summary: 'DB rule: SUBMISSION_EXTERNAL_ID_CONFLICT'
+                code: SESSION_SUBJECT_PROJECT_CONFLICT
+                message: Project subject id=<project_subject_id> does not belong to project id=<project_id>.
+            fk_submission_events_session_version:
+              summary: 'DB rule: EVENT_SESSION_VERSION_CONFLICT'
               value:
-                code: SUBMISSION_EXTERNAL_ID_CONFLICT
-                message: External submission id='<external_submission_id>' is already in use for response_store_id=<response_store_id>.
+                code: EVENT_SESSION_VERSION_CONFLICT
+                message: Session id=<session_id> does not belong to survey version id=<survey_version_id>.
+            fk_submission_events_question_node_same_version:
+              summary: 'DB rule: EVENT_QUESTION_VERSION_CONFLICT'
+              value:
+                code: EVENT_QUESTION_VERSION_CONFLICT
+                message: Question node id=<question_node_id> does not belong to survey version id=<survey_version_id>.
             uq_survey_questions_survey_version_id_question_key:
               summary: 'DB rule: RULE_KEY_CONFLICT'
               value:
@@ -6736,6 +6747,26 @@ components:
               value:
                 code: SURVEY_ROLE_PROJECT_MISMATCH
                 message: The survey role does not belong to the given project.
+            uq_response_envelopes_session_locator:
+              summary: 'DB rule: ENVELOPE_EXISTS'
+              value:
+                code: ENVELOPE_EXISTS
+                message: A response envelope already exists for this session (id=<envelope_id>).
+            uq_response_answers_envelope_id_answer_locator:
+              summary: 'DB rule: ANSWER_EXISTS'
+              value:
+                code: ANSWER_EXISTS
+                message: An answer already exists for this question in envelope id=<envelope_id>.
+            uq_response_answer_revisions_answer_id_client_mutation_id:
+              summary: 'DB rule: REVISION_MUTATION_CONFLICT'
+              value:
+                code: REVISION_MUTATION_CONFLICT
+                message: A revision for answer id=<answer_id> with client_mutation_id=<client_mutation_id> already exists.
+            fk_response_answer_revisions_answer_same_envelope:
+              summary: 'DB rule: REVISION_ANSWER_ENVELOPE_MISMATCH'
+              value:
+                code: REVISION_ANSWER_ENVELOPE_MISMATCH
+                message: Answer id=<answer_id> does not belong to envelope id=<envelope_id>.
     ValidationError:
       description: Request was syntactically valid but semantically invalid.
       content:
@@ -6758,16 +6789,6 @@ components:
               value:
                 code: SURVEY_VISIBILITY_MISMATCH
                 message: <example>
-            ck_survey_roles_description_len:
-              summary: 'DB rule: ROLE_DESCRIPTION_INVALID'
-              value:
-                code: ROLE_DESCRIPTION_INVALID
-                message: Survey role description for project id=<project_id> is blank or exceeds 500 characters.
-            ck_project_roles_description_len:
-              summary: 'DB rule: ROLE_DESCRIPTION_INVALID'
-              value:
-                code: ROLE_DESCRIPTION_INVALID
-                message: Project role description for project id=<project_id> is blank or exceeds 500 characters.
             pydantic_field_validation:
               summary: Pydantic field validation failure
               value:
@@ -6816,12 +6837,23 @@ components:
                 code: VERSION_PUBLISH_STATE_INVALID
                 message: 'Server invariant violated: survey version id=<survey_version_id> reached status=''published'' without
                   both compiled_schema and published_at. This indicates a code path bypassed surveys_repo.publish_version.'
-            ck_survey_submissions_status_valid:
-              summary: 'DB rule: SUBMISSION_STATE_INVALID'
+            ck_submission_sessions_session_status_valid:
+              summary: 'DB rule: SESSION_STATE_INVALID'
               value:
-                code: SUBMISSION_STATE_INVALID
-                message: 'Server invariant violated: submission id=<submission_id> was written with invalid status=''<status>''.
-                  Status is server-controlled and must be one of ''pending'', ''stored'', ''failed''.'
+                code: SESSION_STATE_INVALID
+                message: 'Server invariant violated: session id=<session_id> was written with invalid session_status=''<session_status>''.
+                  session_status is server-controlled and must be one of ''in_progress'', ''completed'', ''abandoned''.'
+            ck_submission_sessions_completed_requires_completed_at:
+              summary: 'DB rule: SESSION_COMPLETION_STATE_INVALID'
+              value:
+                code: SESSION_COMPLETION_STATE_INVALID
+                message: 'Server invariant violated: session id=<session_id> reached session_status=''completed'' without
+                  completed_at being set.'
+            ck_submission_events_event_type_valid:
+              summary: 'DB rule: EVENT_TYPE_INVALID'
+              value:
+                code: EVENT_TYPE_INVALID
+                message: 'Server invariant violated: event id=<event_id> was written with invalid event_type=''<event_type>''.'
             ck_project_memberships_status_valid:
               summary: 'DB rule: MEMBERSHIP_STATE_INVALID'
               value:

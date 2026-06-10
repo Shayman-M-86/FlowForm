@@ -57,7 +57,7 @@ export function useUpdateNode(
   versionNumber: number | null,
 ) {
   return useMutation({
-    mutationFn: async ({ nodeId, body }: { nodeId: number; body: components['schemas']['UpdateNodeRequest'] }) => {
+    mutationFn: async ({ nodeId, body }: { nodeId: string; body: components['schemas']['UpdateNodeRequest'] }) => {
       if (projectId == null || surveyId == null || versionNumber == null) {
         throw new Error('projectId, surveyId and versionNumber are required')
       }
@@ -77,7 +77,7 @@ export function useDeleteNode(
   versionNumber: number | null,
 ) {
   return useMutation({
-    mutationFn: async (nodeId: number) => {
+    mutationFn: async (nodeId: string) => {
       if (projectId == null || surveyId == null || versionNumber == null) {
         throw new Error('projectId, surveyId and versionNumber are required')
       }

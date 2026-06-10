@@ -41,6 +41,7 @@ type PendingSwitch = {
 }
 
 type SaveNode = SurveyNode & { sort_key: number }
+type NodeId = SurveyNode['id']
 
 function logBuilderFailure(message: string, error: unknown, details?: Record<string, unknown>) {
   console.error(`[SurveyBuilder] ${message}`, { error, ...details })
@@ -173,7 +174,7 @@ export function useSurveyBuilderController() {
   const deleteNode = useDeleteNode(projectId, surveyId > 0 ? surveyId : null, selectedVersion?.version_number ?? null)
 
   const [nodes, setNodesState] = useState<SurveyNode[]>([])
-  const [invalidNodeIds, setInvalidNodeIds] = useState<Set<number>>(() => new Set())
+  const [invalidNodeIds, setInvalidNodeIds] = useState<Set<NodeId>>(() => new Set())
   const [isSaving, setIsSaving] = useState(false)
   const [toast, setToast] = useState<ToastState | null>(null)
   const [pendingSwitch, setPendingSwitch] = useState<PendingSwitch | null>(null)
@@ -246,7 +247,7 @@ export function useSurveyBuilderController() {
       const backendById = new Map(backendNodes.map((node) => [node.id, node]))
       const backendByKey = new Map(backendNodes.map((node) => [node.node_key, node]))
       const savedById = new Map(backendNodes.map((node) => [node.id, node]))
-      const matchedBackendIds = new Set<number>()
+      const matchedBackendIds = new Set<NodeId>()
 
       for (const node of plannedNodes) {
         const existing = backendById.get(node.id) ?? backendByKey.get(node.node_key)

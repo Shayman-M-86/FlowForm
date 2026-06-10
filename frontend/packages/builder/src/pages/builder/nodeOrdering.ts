@@ -6,6 +6,7 @@ import { incrementQuestionId } from "../../components/node/NodePillUtils";
 import type { NodeKind } from "./nodeFactories";
 
 type SurveyNode = CreateQuestionNodeRequest | CreateRuleNodeRequest;
+type NodeId = SurveyNode["id"];
 
 const SORT_KEY_STEP = 100000;
 
@@ -31,7 +32,7 @@ export function computeNextNodeKey(nodes: SurveyNode[], kind: NodeKind): string 
 /** Move a node up or down by one position. Returns the same array if it can't move. */
 export function moveNode(
   nodes: SurveyNode[],
-  id: number,
+  id: NodeId,
   direction: "up" | "down",
 ): SurveyNode[] {
   const currentIndex = nodes.findIndex((node) => node.id === id);
@@ -72,7 +73,7 @@ export function isNodeIncomplete(node: SurveyNode): boolean {
 }
 
 /** Ids of every node with an empty required field — see {@link isNodeIncomplete}. */
-export function findIncompleteNodeIds(nodes: SurveyNode[]): Set<number> {
+export function findIncompleteNodeIds(nodes: SurveyNode[]): Set<NodeId> {
   return new Set(nodes.filter(isNodeIncomplete).map((node) => node.id));
 }
 
@@ -80,8 +81,8 @@ export function findIncompleteNodeIds(nodes: SurveyNode[]): Set<number> {
  * The only validation the builder keeps: flag every node whose node_key collides
  * with another node's key. Returns the set of offending node ids.
  */
-export function findDuplicateNodeKeyIds(nodes: SurveyNode[]): Set<number> {
-  const idsByKey = new Map<string, number[]>();
+export function findDuplicateNodeKeyIds(nodes: SurveyNode[]): Set<NodeId> {
+  const idsByKey = new Map<string, NodeId[]>();
 
   for (const node of nodes) {
     const key = node.node_key.trim();
@@ -89,7 +90,7 @@ export function findDuplicateNodeKeyIds(nodes: SurveyNode[]): Set<number> {
     idsByKey.set(key, [...(idsByKey.get(key) ?? []), node.id]);
   }
 
-  const duplicates = new Set<number>();
+  const duplicates = new Set<NodeId>();
   for (const ids of idsByKey.values()) {
     if (ids.length > 1) ids.forEach((id) => duplicates.add(id));
   }

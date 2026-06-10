@@ -5,6 +5,7 @@ import type {
 
 type SurveyNode = CreateQuestionNodeRequest | CreateRuleNodeRequest;
 type QuestionNode = CreateQuestionNodeRequest;
+type NodeId = SurveyNode["id"];
 
 export interface RuleSiblings {
   previous: QuestionNode[];
@@ -17,12 +18,12 @@ export interface RuleSiblings {
  * to resolve a condition's target_id (node_key) to a readable label and its
  * content. Keyed by the rule node's id.
  */
-export function buildRuleSiblings(nodes: SurveyNode[]): Map<number, RuleSiblings> {
+export function buildRuleSiblings(nodes: SurveyNode[]): Map<NodeId, RuleSiblings> {
   const questionNodes = nodes.filter(
     (node): node is QuestionNode => node.node_type !== "rule",
   );
 
-  const siblings = new Map<number, RuleSiblings>();
+  const siblings = new Map<NodeId, RuleSiblings>();
   const previous: QuestionNode[] = [];
   let consumed = 0;
 

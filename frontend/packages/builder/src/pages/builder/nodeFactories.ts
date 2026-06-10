@@ -8,22 +8,9 @@ type SurveyNode = CreateQuestionNodeRequest | CreateRuleNodeRequest;
 export type QuestionFamily = "choice" | "matching" | "rating" | "field";
 export type NodeKind = QuestionFamily | "rule";
 
-// Backend contract: a node id is a positive 32-bit integer (0 < id < 2147483647).
-// Collisions are scoped to a single survey version (PK is (survey_version_id, id)),
-// so the ~2.1e9 space is more than enough to keep them vanishingly unlikely.
-const NODE_ID_MAX = 2147483646; // one below the backend's exclusive maximum
-
-/** Stable client-side identity for a node: a random integer in [1, NODE_ID_MAX]. */
-export function createNodeId(): number {
-  const buffer = new Uint32Array(1);
-  // Rejection-sample to avoid modulo bias against the top of the uint32 range.
-  const limit = Math.floor(0x100000000 / NODE_ID_MAX) * NODE_ID_MAX;
-  let value: number;
-  do {
-    crypto.getRandomValues(buffer);
-    value = buffer[0];
-  } while (value >= limit);
-  return (value % NODE_ID_MAX) + 1;
+/** Stable client-side identity for a node in the backend UUID contract. */
+export function createNodeId(): string {
+  return crypto.randomUUID();
 }
 
 function createDefaultContent(kind: NodeKind): SurveyNode["content"] {

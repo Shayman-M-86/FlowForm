@@ -1503,8 +1503,11 @@ export interface components {
          * @description API response shape for a question node.
          */
         QuestionNodeResponse: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             /** Node Key */
             node_key: string;
             /** Sort Key */
@@ -1672,8 +1675,11 @@ export interface components {
          * @description API response shape for a rule node.
          */
         RuleNodeResponse: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             /** Node Key */
             node_key: string;
             /** Sort Key */
@@ -1728,8 +1734,11 @@ export interface components {
          * @description Validates requests that create a new question node.
          */
         CreateQuestionNodeRequest: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             /** Node Key */
             node_key: string;
             /**
@@ -1747,8 +1756,11 @@ export interface components {
          * @description Validates requests that create a new rule node.
          */
         CreateRuleNodeRequest: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             /** Node Key */
             node_key: string;
             /**
@@ -1767,8 +1779,11 @@ export interface components {
          * @description Validates partial updates to an existing survey content node.
          */
         UpdateNodeRequest: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             /**
              * Node Key
              * @default null
@@ -3451,7 +3466,7 @@ export interface operations {
                 project_id: number;
                 survey_id: number;
                 version_number: number;
-                node_id: number;
+                node_id: string;
             };
             cookie?: never;
         };
@@ -3484,7 +3499,7 @@ export interface operations {
                 project_id: number;
                 survey_id: number;
                 version_number: number;
-                node_id: number;
+                node_id: string;
             };
             cookie?: never;
         };
@@ -3515,7 +3530,7 @@ export interface operations {
                 project_id: number;
                 survey_id: number;
                 version_number: number;
-                node_id: number;
+                node_id: string;
             };
             cookie?: never;
         };

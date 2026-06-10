@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Annotated, Literal
+from uuid import UUID
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
@@ -35,8 +36,8 @@ class CreateQuestionNodeRequest(BaseModel):
     """Validates requests that create a new question node."""
 
     model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
-    
-    id: int = Field(gt=0, lt=limits.INT_ID_MAX)
+
+    id: UUID
     node_key: SchemaIdStr
     node_type: Literal["question"]
     sort_key: NodeSortKey
@@ -47,8 +48,8 @@ class CreateRuleNodeRequest(BaseModel):
     """Validates requests that create a new rule node."""
 
     model_config = ConfigDict(extra="forbid", json_schema_extra={"x-flowform-export": "builder"})
-    
-    id: int = Field(gt=0, lt=limits.INT_ID_MAX)
+
+    id: UUID
     node_key: SchemaIdStr
     node_type: Literal["rule"]
     sort_key: NodeSortKey
@@ -66,7 +67,7 @@ class UpdateNodeRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: int = Field(gt=0, lt=limits.INT_ID_MAX)
+    id: UUID
     node_key: SchemaIdStr | None = None
     node_type: Literal["question", "rule"] | None = None
     sort_key: int | None = Field(default=None, gt=limits.CONTENT_SORT_KEY_MIN_EXCLUSIVE)

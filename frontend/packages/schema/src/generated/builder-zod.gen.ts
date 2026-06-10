@@ -184,7 +184,7 @@ export const RuleSchemaInSchema = z.object({
 });
 
 export const CreateQuestionNodeRequestSchema = z.object({
-  id: z.number().int().gt(0).lt(2147483647),
+  id: z.string().uuid().max(36),
   node_key: z.string().min(1).max(128),
   node_type: z.literal("question"),
   sort_key: z.number().int().gt(0),
@@ -192,7 +192,7 @@ export const CreateQuestionNodeRequestSchema = z.object({
 });
 
 export const CreateRuleNodeRequestSchema = z.object({
-  id: z.number().int().gt(0).lt(2147483647),
+  id: z.string().uuid().max(36),
   node_key: z.string().min(1).max(128),
   node_type: z.literal("rule"),
   sort_key: z.number().int().gt(0),

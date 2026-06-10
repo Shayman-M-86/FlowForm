@@ -26,6 +26,7 @@ import {
 import { buildRuleSiblings } from "./ruleRelationships";
 
 type SurveyNode = CreateQuestionNodeRequest | CreateRuleNodeRequest;
+type NodeId = SurveyNode["id"];
 
 const NODE_PAGE_STYLES = `
   .node-page {
@@ -78,7 +79,7 @@ interface NodePageProps {
    * Ids of nodes with an empty required field. When present, the matching pills
    * render their validation rings. Populated by the consumer on a blocked save.
    */
-  invalidNodeIds?: Set<number>;
+  invalidNodeIds?: Set<NodeId>;
 }
 
 export function NodePage({
@@ -89,15 +90,15 @@ export function NodePage({
 }: NodePageProps) {
   // Presentation-only state, keyed by the stable node id. None of this touches
   // the survey schema — the nodes prop is the single source of truth.
-  const [collapsedIds, setCollapsedIds] = useState<Set<number>>(() => new Set());
-  const [editingIds, setEditingIds] = useState<Set<number>>(() => new Set());
+  const [collapsedIds, setCollapsedIds] = useState<Set<NodeId>>(() => new Set());
+  const [editingIds, setEditingIds] = useState<Set<NodeId>>(() => new Set());
 
-  const questionWrapperNodeMap = useRef<Map<number, HTMLDivElement>>(new Map());
+  const questionWrapperNodeMap = useRef<Map<NodeId, HTMLDivElement>>(new Map());
   const pendingMoveAnimation = useRef<{
-    positions: Map<number, number>;
-    movedId: number;
+    positions: Map<NodeId, number>;
+    movedId: NodeId;
   } | null>(null);
-  const newlyAddedNodeId = useRef<number | null>(null);
+  const newlyAddedNodeId = useRef<NodeId | null>(null);
 
   const duplicateIds = useMemo(() => findDuplicateNodeKeyIds(nodes), [nodes]);
 
@@ -196,7 +197,7 @@ export function NodePage({
     onNodesChange(nodes.map((node) => (node.id === next.id ? next : node)));
   }, [nodes, onNodesChange]);
 
-  const removeNode = useCallback((id: number) => {
+  const removeNode = useCallback((id: NodeId) => {
     onNodesChange(nodes.filter((node) => node.id !== id));
     setEditingIds((current) => {
       if (!current.has(id)) return current;
@@ -224,7 +225,7 @@ export function NodePage({
     });
   }, [nodes, onNodesChange]);
 
-  const handleMove = useCallback((id: number, direction: "up" | "down") => {
+  const handleMove = useCallback((id: NodeId, direction: "up" | "down") => {
     pendingMoveAnimation.current = {
       positions: new Map(
         nodes.map((node) => [
@@ -237,7 +238,7 @@ export function NodePage({
     onNodesChange(moveNode(nodes, id, direction));
   }, [nodes, onNodesChange]);
 
-  function setEditMode(id: number, isEditMode: boolean) {
+  function setEditMode(id: NodeId, isEditMode: boolean) {
     setEditingIds((current) => {
       const next = new Set(current);
       if (isEditMode) {
@@ -249,7 +250,7 @@ export function NodePage({
     });
   }
 
-  function expand(id: number) {
+  function expand(id: NodeId) {
     setCollapsedIds((current) => {
       if (!current.has(id)) return current;
       const next = new Set(current);
@@ -258,12 +259,12 @@ export function NodePage({
     });
   }
 
-  function expandInEditMode(id: number) {
+  function expandInEditMode(id: NodeId) {
     expand(id);
     setEditMode(id, true);
   }
 
-  function toggleCollapsed(id: number) {
+  function toggleCollapsed(id: NodeId) {
     setCollapsedIds((current) => {
       const next = new Set(current);
       if (next.has(id)) {

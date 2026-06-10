@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Annotated, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -14,7 +15,7 @@ class _NodeResponseBase(BaseModel):
         populate_by_name=True,
     )
 
-    id: int
+    id: UUID
 
     node_key: str = Field(
         validation_alias="question_key",

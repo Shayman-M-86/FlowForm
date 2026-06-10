@@ -183,7 +183,7 @@ export interface RuleSchemaIn {
 }
 
 export interface CreateQuestionNodeRequest {
-  id: number;
+  id: string;
   node_key: string;
   node_type: "question";
   sort_key: number;
@@ -191,7 +191,7 @@ export interface CreateQuestionNodeRequest {
 }
 
 export interface CreateRuleNodeRequest {
-  id: number;
+  id: string;
   node_key: string;
   node_type: "rule";
   sort_key: number;

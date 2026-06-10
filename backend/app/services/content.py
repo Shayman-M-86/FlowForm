@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy.orm import Session
 
 from app.db.error_handling import commit_with_err_handle
@@ -64,7 +66,7 @@ class ContentService:
         project_id: int,
         survey_id: int,
         version_number: int,
-        node_id: int,
+        node_id: UUID,
         actor: User,  # noqa: ARG002
     ) -> SurveyQuestion:
         version = self._get_version(db, project_id, survey_id, version_number)
@@ -79,7 +81,7 @@ class ContentService:
         project_id: int,
         survey_id: int,
         version_number: int,
-        node_id: int,
+        node_id: UUID,
         data: UpdateNodeRequest,
         actor: User,  # noqa: ARG002
     ) -> SurveyQuestion:
@@ -98,7 +100,7 @@ class ContentService:
         project_id: int,
         survey_id: int,
         version_number: int,
-        node_id: int,
+        node_id: UUID,
         actor: User,  # noqa: ARG002
     ) -> None:
         version = self._get_version(db, project_id, survey_id, version_number)

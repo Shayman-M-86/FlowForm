@@ -361,6 +361,7 @@ function resolveZodType(def, allSchemas) {
 
   if (def.type === "string") {
     let chain = "z.string()";
+    if (def.format === "uuid") chain += ".uuid()";
     if (def.minLength !== undefined) chain += `.min(${def.minLength})`;
     if (def.maxLength !== undefined) chain += `.max(${def.maxLength})`;
     if (def.pattern !== undefined) chain += `.regex(/${def.pattern}/)`;
