@@ -37,12 +37,31 @@ Verify:
 * expired link access fails;
 * inactive link access fails;
 * the session binds to one survey version;
+* known access attaches `submission_sessions.project_subject_id` to
+  `project_subjects.id`;
+* anonymous access leaves `submission_sessions.project_subject_id` null;
+* authenticated-user access resolves through `project_subject_identities`;
+* subject-token access resolves through `project_subject_tokens`;
 * a response envelope is created;
 * only a token hash reaches the core database;
 * the raw browser token is returned only after both stores succeed;
 * an envelope-creation failure does not expose a broken session.
 
-### 37.4 Answer-revision tests
+### 37.4 Subject access tests
+
+Verify:
+
+* anonymous subject creation follows project policy;
+* subject-recognition tokens resolve the correct project subject;
+* expired and revoked recognition tokens fail safely;
+* assigned-subject links resolve only to the assigned project subject;
+* assigned-email links require the matching authenticated identity;
+* identity attachment conflicts are rejected or routed to explicit merge policy;
+* identity revocation prevents future resolution without deleting history;
+* cross-project subject, link, session, and IP-observation references are rejected;
+* IP-observation retention and access rules are enforced.
+
+### 37.5 Answer-revision tests
 
 Verify:
 
@@ -55,7 +74,7 @@ Verify:
 * canonical retrieval returns only the latest revision;
 * history retrieval returns all revisions in order.
 
-### 37.5 Idempotency tests
+### 37.6 Idempotency tests
 
 Verify:
 
@@ -64,7 +83,7 @@ Verify:
 * simultaneous first saves produce one logical answer;
 * simultaneous changes produce unique sequential revisions.
 
-### 37.6 Completion tests
+### 37.7 Completion tests
 
 Verify:
 
@@ -74,7 +93,7 @@ Verify:
 * repeated completion requests are safe;
 * an answer save and completion request cannot race incorrectly.
 
-### 37.7 Rotation tests
+### 37.8 Rotation tests
 
 Verify:
 
@@ -84,7 +103,7 @@ Verify:
 * new envelopes use the active response KEK;
 * crypto-version dispatch works.
 
-### 37.8 Failure tests
+### 37.9 Failure tests
 
 Verify:
 

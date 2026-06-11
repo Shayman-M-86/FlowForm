@@ -5,6 +5,8 @@ This folder splits the original session and response encryption plan into focuse
 ## Start Here
 
 - [Architecture](architecture.md) - purpose, goals, storage boundaries, and high-level system shape.
+- [Project subjects](project-subjects.md) - project-scoped respondent identity relation and how sessions attach to it.
+- [Project subject identity and access](subject-identity-and-access.md) - subject-resolution policy, identity attachments, recognition tokens, assigned links, and IP observations.
 - [Core database schema](schema/core-database-schema.md) - core DB tables for sessions, subjects, links, and events.
 - [Response database schema](schema/response-database-schema.md) - response DB tables for encrypted envelopes, logical answers, and revisions.
 - [Cryptography](cryptography.md) - identifiers, secrets, locators, KMS envelope encryption, local answer encryption, and key caching.

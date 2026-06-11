@@ -19,6 +19,8 @@ This checklist assumes the current submission flow may be broken during the work
 
 - [ ] Read [README.md](README.md).
 - [ ] Read [architecture.md](architecture.md).
+- [ ] Read [project-subjects.md](project-subjects.md).
+- [ ] Read [subject-identity-and-access.md](subject-identity-and-access.md).
 - [ ] Read [schema/core-database-schema.md](schema/core-database-schema.md).
 - [ ] Read [schema/response-database-schema.md](schema/response-database-schema.md).
 - [ ] Read [backend-implementation.md](backend-implementation.md).
@@ -44,6 +46,8 @@ Done when:
 
 - [x] Add or replace core ORM models for:
   - [x] `project_subjects`
+  - [ ] `project_subject_identities`
+  - [ ] `project_subject_tokens`
   - [x] `submission_sessions`
   - [x] `submission_events`
 - [x] Add or replace response ORM models for:
@@ -75,8 +79,7 @@ Done when:
 - [x] Update `app/db/error_handling/integrity_rules.py` to cover the new core
       models (`ProjectSubject`, `SubmissionSession`, `SubmissionEvent`) and
       the new response models (`ResponseEnvelope`, `ResponseAnswer`,
-      `ResponseAnswerRevision`), replacing the removed
-      `ResponseSubjectMapping`/`SurveySubmission` rule sets.
+      `ResponseAnswerRevision`).
 - [x] Normalize `CheckConstraint` naming across `app/schema/orm/core/` to
       match the `NAMING_CONVENTION` in `app/db/base.py` (short names for
       single-table CHECKs, full explicit names for multi-column
@@ -90,11 +93,9 @@ Done when:
 
 Test status (2026-06-10): fixed a stale composite-PK bug in
 `test_survey_content.py` (4 tests, unrelated to this rework). Remaining 72
-failures are all in old plaintext-submission tests
-(`SurveySubmission`/`Submission`/`SubmissionAnswer`/`ResponseSubjectMapping`
-factories) hitting new `response_envelopes` NOT NULL constraints — expected
-casualties to be deleted once Phase 3-4 services replace the old submission
-path, not fixed now.
+failures are all in old plaintext-submission tests hitting new
+`response_envelopes` NOT NULL constraints — expected casualties to be deleted
+once Phase 3-4 services replace the old submission path, not fixed now.
 
 ## Phase 2: API Contracts
 
@@ -147,6 +148,68 @@ Phase 2 public-contract status (2026-06-11):
 - Added `backend/tests/unit/test_submission_session_contracts.py` to pin the
   request validation and OpenAPI path/method contract.
 
+## Phase 2.5: Subject Access Amendment
+
+This amendment folds the project-subject access model into the Phase 2 contract
+before Phase 3 service work begins. It keeps the public session contract stable
+while making subject resolution explicit.
+
+Already done:
+
+- [x] Added [subject-identity-and-access.md](subject-identity-and-access.md) as
+      the durable reference for subject resolution, identity attachments,
+      recognition tokens, assigned links, IP observations, and service/API
+      boundaries.
+- [x] Linked the subject-access reference from [README.md](README.md) and Phase
+      0 orientation.
+- [x] Updated [architecture.md](architecture.md) so core owns
+      `project_subjects`, `project_subject_identities`,
+      `project_subject_tokens`, `survey_links.assigned_subject_id`,
+      `submission_sessions`, and `subject_ip_observations`, while the response
+      database receives none of those identifiers or identifying values.
+- [x] Updated [schema/core-database-schema.md](schema/core-database-schema.md)
+      and `infra/postgres/init/schema/flowform_core_db_schema_v4.sql` for:
+  - [x] `project_subject_identities`
+  - [x] `project_subject_tokens`
+  - [x] `survey_links.assigned_subject_id`
+  - [x] `subject_ip_observations`
+  - [x] same-project foreign keys around subjects, links, sessions, response
+        stores, and IP observations.
+- [x] Added ORM/export coverage for `ProjectSubjectIdentity`,
+      `ProjectSubjectToken`, and `SubjectIpObservation`.
+- [x] Updated [session-flows.md](session-flows.md) so subject resolution occurs
+      before core session creation, with explicit precedence rules for assigned
+      subjects, authenticated context, verified email requirements, and
+      subject-recognition cookies.
+- [x] Updated [api-structure.md](api-structure.md) so subject recognition is
+      server-side and distinct from survey-link tokens and submission resume
+      tokens.
+- [x] Updated [backend-implementation.md](backend-implementation.md) with the
+      subject repositories, subject services, and orchestration boundary between
+      `SurveyAccessResolver`, `ProjectSubjectResolver`, and `SessionStarter`.
+- [x] Updated [testing-plan.md](testing-plan.md) with subject-access coverage
+      for anonymous subject policy, recognition tokens, assigned links,
+      identity conflicts/revocation, cross-project rejection, and IP-observation
+      rules.
+
+Still missing before/inside Phase 3:
+
+- [ ] Implement the subject repositories and services described in
+      [backend-implementation.md](backend-implementation.md); the public session
+      routes still use Phase 2 contract stubs.
+- [ ] Wire `ProjectSubjectResolver` into session start so
+      `submission_sessions.project_subject_id` is resolved from server-owned
+      access/auth/cookie context, never from browser-supplied IDs.
+- [ ] Implement recognition-token issuance, rotation, expiry, revocation, and
+      cookie naming/SameSite policy.
+- [ ] Define the product policy for when anonymous access should create a
+      `project_subjects` row versus leaving `project_subject_id` null.
+- [ ] Define retention and access policy for `subject_ip_observations`.
+- [ ] Keep explicit subject/email/auth identity-upgrade endpoints out of v1
+      unless the product adds a respondent identity-upgrade UI.
+- [ ] Delete `subject-access-doc-integration-checklist.md` once this amendment
+      is fully integrated and the checklist is no longer useful.
+
 ## Phase 3: Service Skeleton Without Real Crypto
 
 - [ ] Define final service/repository boundaries:
@@ -170,6 +233,13 @@ Phase 2 public-contract status (2026-06-11):
 - [ ] The dev implementations must preserve final method signatures and data shapes.
 - [ ] Session start should:
   - [ ] resolve access
+  - [ ] resolve or create the optional `project_subjects` row
+  - [ ] resolve authenticated-user identities through `project_subject_identities`
+  - [ ] resolve subject-recognition tokens through `project_subject_tokens`
+  - [ ] store `project_subjects.id` in `submission_sessions.project_subject_id`
+        when the respondent is known
+  - [ ] leave `submission_sessions.project_subject_id` null for fully anonymous
+        sessions
   - [ ] bind one survey version
   - [ ] generate a high-entropy browser token
   - [ ] store only the token hash in core

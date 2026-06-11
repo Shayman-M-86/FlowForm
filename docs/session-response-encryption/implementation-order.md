@@ -11,6 +11,7 @@ Implement the system in stages.
 Complete:
 
 * core submission-session tables;
+* project-subject relation;
 * core event tables;
 * response-envelope tables;
 * logical-answer tables;
@@ -36,6 +37,7 @@ Implement:
 Implement:
 
 * access resolution;
+* optional project-subject resolution;
 * frozen survey-version binding;
 * browser resume token generation;
 * secure cookie handling;
@@ -127,6 +129,12 @@ Respondent resume:
     raw token in secure HttpOnly cookie
     SHA-256 token hash in core database
 
+Respondent identity:
+    optional project_subjects row in the core database
+    submission_sessions.project_subject_id points to project_subjects.id
+    null project_subject_id means fully anonymous at the core identity layer
+    response database stores no project subject identifiers
+
 Answer history:
     stable logical-answer row
     immutable encrypted revisions
@@ -161,6 +169,9 @@ Security operations:
 A FlowForm survey attempt begins as a core submission session.
 
 That core session receives a random UUID and a hashed browser resume token.
+
+If access resolution identifies a known project participant, the session also
+points to `project_subjects.id`; otherwise `project_subject_id` remains null.
 
 The backend loads a versioned linkage secret from Secrets Manager and uses it to derive an opaque session locator.
 

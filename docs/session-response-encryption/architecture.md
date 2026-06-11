@@ -30,7 +30,7 @@ The core database stores application metadata:
 * surveys;
 * published survey versions;
 * access links;
-* optional subject records;
+* optional project subject records;
 * submission sessions;
 * session status;
 * session analytics events.
@@ -103,7 +103,7 @@ FlowForm uses two PostgreSQL databases.
 │                             │
 │ Surveys and versions        │
 │ Links                       │
-│ Optional subject mappings   │
+│ Optional project subjects   │
 │ Submission sessions         │
 │ Analytics events            │
 └──────────────┬──────────────┘
@@ -225,14 +225,31 @@ The core database answers questions such as:
 Relevant tables include:
 
 ```text
-links
+survey_links
 project_subjects
+project_subject_identities
+project_subject_tokens
 submission_sessions
 submission_events
+subject_ip_observations
 survey_versions
 ```
 
 The core database may store plaintext question-node IDs inside analytics events. This is useful for question-level analytics, but it is a deliberate metadata tradeoff. A conditional survey path can reveal limited information about the respondent even without storing the answer value.
+
+`project_subjects` is the forward relation for project-scoped respondent
+identity. Identity attachments, reusable subject-recognition tokens,
+assigned-subject links, submission sessions, and IP observations stay in core
+around that subject record. `submission_sessions.project_subject_id` may point
+to it when access resolution identifies a known project participant. A null
+`project_subject_id` means the session is fully anonymous at the core identity
+layer. The response database stores opaque locators derived from the core
+session UUID and the external linkage secret; it must not receive
+project-subject IDs, identity IDs, user IDs, email addresses, IP addresses, or
+recognition tokens. See [project-subjects.md](project-subjects.md) for the
+relation boundary and
+[subject-identity-and-access.md](subject-identity-and-access.md) for subject
+resolution and identity-upgrade policy.
 
 ### 5.2 Response database
 

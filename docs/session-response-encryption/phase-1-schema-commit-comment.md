@@ -70,7 +70,6 @@ integration, and hardening remain later-phase work.
   `backend/app/schema/orm/response/__init__.py` so metadata includes the new
   models.
 - Converts legacy import modules into temporary aliases:
-  `ResponseSubjectMapping -> ProjectSubject`,
   `SurveySubmission -> SubmissionSession`,
   `Submission -> ResponseEnvelope`,
   `SubmissionAnswer -> ResponseAnswer`, and
@@ -83,8 +82,7 @@ integration, and hardening remain later-phase work.
 
 - Updates `backend/app/db/error_handling/integrity_rules.py` for the new core and
   response ORM contexts.
-- Replaces the old `SurveySubmission` and `ResponseSubjectMapping` focus with
-  coverage for `ProjectSubject`, `SubmissionSession`, `SubmissionEvent`,
+- Covers `ProjectSubject`, `SubmissionSession`, `SubmissionEvent`,
   `ResponseEnvelope`, `ResponseAnswer`, and `ResponseAnswerRevision`.
 - Adds error-context parameters for session ids/status, event ids/types,
   project subject ids, question node ids, envelope ids, answer ids, revision
@@ -170,9 +168,8 @@ disappear.
 ## Current Risk and Expected Breakage
 
 - The current submission flow may remain broken during the rework.
-- Legacy tests and factories creating `SurveySubmission`, `Submission`,
-  `SubmissionAnswer`, or `ResponseSubjectMapping` rows will fail until deleted
-  or rewritten for the session/envelope/answer model.
+- Legacy tests and factories for the previous plaintext submission shape will
+  fail until deleted or rewritten for the session/envelope/answer model.
 - Temporary aliases are intentionally short-lived and should not become a
   permanent compatibility layer.
 - The response tables have crypto-shaped columns, but this diff does not

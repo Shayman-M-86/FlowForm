@@ -1,22 +1,12 @@
 -- =========================================
 -- FLOWFORM CORE DATABASE SCHEMA (TIGHTENED)
 -- =========================================
--- Purpose:
--- - stores application, RBAC, survey definition, publishing, and submission registry data
--- - does NOT store raw survey answers
---
--- Design notes:
--- - hard delete is used for normal entities such as projects, surveys, stores, roles, memberships, and links
--- - only survey_versions use soft delete because old compiled versions may be required to interpret stored responses
--- - extra composite foreign keys are used to prevent cross-project and cross-survey mismatches
--- - published survey structure is defined by survey_versions.compiled_schema
--- - survey_questions / survey_rules / survey_scoring_rules are draft/build inputs and are locked once a version is published
+-- Stores core app data only; raw answers stay out of this DB.
 
 -- =========================================
 -- HELPERS
 -- =========================================
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
 
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
@@ -234,15 +224,14 @@ CREATE UNIQUE INDEX uq_project_invitations_pending_project_email
     ON project_invitations (project_id, invited_email)
     WHERE status = 'pending';
 
-CREATE INDEX idx_project_invitations_project ON project_invitations(project_id);
-CREATE INDEX idx_project_invitations_email ON project_invitations(invited_email);
-CREATE INDEX idx_project_invitations_status ON project_invitations(status);
+CREATE INDEX ix_project_invitations_project ON project_invitations(project_id);
+CREATE INDEX ix_project_invitations_email ON project_invitations(invited_email);
+CREATE INDEX ix_project_invitations_status ON project_invitations(status);
 
 -- =========================================
 -- RESPONSE STORES
 -- =========================================
--- Defines where a project's or survey's responses should be written.
--- For customer-managed databases, store only a reference to a secret, not raw credentials.
+-- Response destinations; external credentials live in secrets.
 
 CREATE TABLE response_stores (
     id BIGSERIAL PRIMARY KEY,
@@ -312,8 +301,7 @@ CREATE TABLE surveys (
 -- =========================================
 -- SURVEY VERSIONS
 -- =========================================
--- compiled_schema is the authoritative published artifact.
--- Only this table uses soft delete because old compiled versions may be needed later.
+-- Published compiled_schema snapshots are soft-deleted.
 
 CREATE TABLE survey_versions (
     id BIGSERIAL PRIMARY KEY,
@@ -326,6 +314,7 @@ CREATE TABLE survey_versions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ,
+
     CONSTRAINT ck_survey_versions_status_valid
         CHECK (status IN ('draft', 'published', 'archived')),
 
@@ -345,11 +334,12 @@ CREATE TABLE survey_versions (
         UNIQUE (survey_id, version_number)
 );
 
+-- Added after survey_versions exists; SET NULL only clears published_version_id.
 ALTER TABLE surveys
 ADD CONSTRAINT fk_surveys_published_version_same_survey
     FOREIGN KEY (id, published_version_id)
     REFERENCES survey_versions(survey_id, id)
-    ON DELETE SET NULL;
+    ON DELETE SET NULL (published_version_id);
 
 CREATE UNIQUE INDEX uq_survey_versions_one_published
     ON survey_versions (survey_id)
@@ -526,22 +516,192 @@ CREATE TABLE survey_membership_roles (
 );
 
 -- =========================================
+-- SESSION AND RESPONSE ENCRYPTION
+-- =========================================
+-- Pseudonymous session tables; see docs/session-response-encryption/.
+
+CREATE TABLE project_subjects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    subject_code TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT uq_project_subjects_project_id_id
+        UNIQUE (project_id, id),
+
+    -- Project-scoped pseudonymous participant code.
+    CONSTRAINT uq_project_subjects_project_id_subject_code
+        UNIQUE (project_id, subject_code),
+
+    CONSTRAINT ck_project_subjects_subject_code_len
+        CHECK (
+            subject_code = btrim(subject_code)
+            AND char_length(subject_code) BETWEEN 1 AND 128
+        )
+);
+
+-- Revocable identities for known subjects.
+CREATE TABLE project_subject_identities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    project_subject_id UUID NOT NULL,
+
+    identity_type TEXT NOT NULL,
+
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+
+    normalized_email TEXT,
+
+    verification_status TEXT NOT NULL DEFAULT 'unverified',
+    verified_at TIMESTAMPTZ,
+    attached_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    revoked_at TIMESTAMPTZ,
+
+    CONSTRAINT fk_project_subject_identities_subject_same_project
+        FOREIGN KEY (project_id, project_subject_id)
+        REFERENCES project_subjects(project_id, id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT ck_project_subject_identities_identity_type_valid
+        CHECK (identity_type IN ('email', 'authenticated_user')),
+
+    CONSTRAINT ck_project_subject_identities_identity_value_valid
+        CHECK (
+            (
+                identity_type = 'email'
+                AND normalized_email IS NOT NULL
+                AND user_id IS NULL
+            )
+            OR
+            (
+                identity_type = 'authenticated_user'
+                AND user_id IS NOT NULL
+                AND normalized_email IS NULL
+            )
+        ),
+
+    CONSTRAINT ck_project_subject_identities_verification_status_valid
+        CHECK (verification_status IN ('unverified', 'verified')),
+
+    CONSTRAINT ck_project_subject_identities_verified_at_consistent
+        CHECK ((verification_status = 'verified') = (verified_at IS NOT NULL)),
+
+    CONSTRAINT ck_project_subject_identities_normalized_email_valid
+        CHECK (
+            normalized_email IS NULL
+            OR (
+                normalized_email = lower(btrim(normalized_email))
+                AND char_length(normalized_email) BETWEEN 3 AND 320
+            )
+        ),
+
+    CONSTRAINT ck_project_subject_identities_verified_at_after_attached_at
+        CHECK (
+            verified_at IS NULL
+            OR verified_at >= attached_at
+        ),
+
+    CONSTRAINT ck_project_subject_identities_revoked_at_after_attached_at
+        CHECK (
+            revoked_at IS NULL
+            OR revoked_at >= attached_at
+        )
+);
+
+-- One active authenticated subject per project.
+CREATE UNIQUE INDEX uq_project_subject_identities_active_user
+    ON project_subject_identities (project_id, user_id)
+    WHERE (
+        identity_type = 'authenticated_user'
+        AND user_id IS NOT NULL
+        AND revoked_at IS NULL
+    );
+
+-- No duplicate active email on one subject.
+CREATE UNIQUE INDEX uq_project_subject_identities_subject_active_email
+    ON project_subject_identities (project_subject_id, normalized_email)
+    WHERE (
+        identity_type = 'email'
+        AND normalized_email IS NOT NULL
+        AND revoked_at IS NULL
+    );
+
+-- One verified active email owner per project.
+CREATE UNIQUE INDEX uq_project_subject_identities_project_verified_email
+    ON project_subject_identities (project_id, normalized_email)
+    WHERE (
+        identity_type = 'email'
+        AND normalized_email IS NOT NULL
+        AND verification_status = 'verified'
+        AND revoked_at IS NULL
+    );
+
+-- Reusable subject recognition tokens; raw tokens are never stored.
+CREATE TABLE project_subject_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    project_subject_id UUID NOT NULL,
+    token_hash TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    last_used_at TIMESTAMPTZ,
+    revoked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT uq_project_subject_tokens_token_hash
+        UNIQUE (token_hash),
+
+    CONSTRAINT fk_project_subject_tokens_subject_same_project
+        FOREIGN KEY (project_id, project_subject_id)
+        REFERENCES project_subjects(project_id, id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT ck_project_subject_tokens_token_hash_format
+        CHECK (token_hash ~ '^[0-9a-f]{64}$'),
+
+    CONSTRAINT ck_project_subject_tokens_expires_at_after_created_at
+        CHECK (expires_at > created_at),
+
+    CONSTRAINT ck_project_subject_tokens_last_used_at_after_created_at
+        CHECK (
+            last_used_at IS NULL
+            OR last_used_at >= created_at
+        ),
+
+    CONSTRAINT ck_project_subject_tokens_revoked_at_after_created_at
+        CHECK (
+            revoked_at IS NULL
+            OR revoked_at >= created_at
+        ),
+
+    CONSTRAINT ck_project_subject_tokens_last_used_before_revocation
+        CHECK (
+            revoked_at IS NULL
+            OR last_used_at IS NULL
+            OR last_used_at <= revoked_at
+        )
+);
+
+-- =========================================
 -- PUBLIC LINKS
 -- =========================================
--- Store only a hash of the bearer token. The application should look up by
--- a short prefix, then compare the full hash.
+-- Bearer links store token hashes only.
 
 CREATE TABLE survey_links (
     id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
 
-    survey_id BIGINT NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
+    project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    survey_id BIGINT NOT NULL,
     name TEXT NOT NULL,
     token_prefix TEXT NOT NULL,
     token_hash TEXT NOT NULL,
 
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     requires_auth BOOLEAN NOT NULL DEFAULT FALSE,
+
     assigned_email TEXT,
+
+    assigned_subject_id UUID,
+
     expires_at TIMESTAMPTZ,
     used_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -552,66 +712,51 @@ CREATE TABLE survey_links (
     CONSTRAINT uq_survey_links_survey_id_id
         UNIQUE (survey_id, id),
 
+    CONSTRAINT uq_survey_links_project_id_id
+        UNIQUE (project_id, id),
+
     CONSTRAINT uq_survey_links_survey_id_token_prefix
         UNIQUE (survey_id, token_prefix),
+
+    CONSTRAINT fk_survey_links_survey_same_project
+        FOREIGN KEY (project_id, survey_id)
+        REFERENCES surveys(project_id, id)
+        ON DELETE CASCADE,
+
+    -- Do not turn assigned links into general links.
+    CONSTRAINT fk_survey_links_assigned_subject_same_project
+        FOREIGN KEY (project_id, assigned_subject_id)
+        REFERENCES project_subjects(project_id, id)
+        ON DELETE RESTRICT,
 
     CONSTRAINT ck_survey_links_token_prefix_len
         CHECK (char_length(token_prefix) BETWEEN 8 AND 32),
 
-    CONSTRAINT ck_survey_links_token_hash_len
-        CHECK (char_length(token_hash) >= 32),
+    CONSTRAINT ck_survey_links_token_hash_format
+        CHECK (token_hash ~ '^[0-9a-f]{64}$'),
 
     CONSTRAINT ck_survey_links_name_len
         CHECK (char_length(btrim(name)) BETWEEN 1 AND 120),
 
-    -- requires_auth links must be addressed to a specific email
-    CONSTRAINT ck_survey_links_requires_auth_needs_assignment
-        CHECK (NOT requires_auth OR assigned_email IS NOT NULL)
-);
+    CONSTRAINT ck_survey_links_email_assignment_requires_auth
+        CHECK (assigned_email IS NULL OR requires_auth = TRUE),
 
--- =========================================
--- SESSION AND RESPONSE ENCRYPTION
--- =========================================
--- Tables supporting encrypted, pseudonymous survey submission sessions.
--- See docs/session-response-encryption/ for the full design.
---
--- Notes:
--- - project_subjects is the project-level participant identity table.
--- - submission_sessions is the canonical core-side record for one survey
---   attempt. A completed submission is a completed session.
--- - response_store_id is snapshotted when the session begins so one session
---   has a stable response destination even if survey defaults change later.
--- - submission_events here is core-side analytics metadata, distinct from
---   the response-database submission_events table.
-
-CREATE TABLE project_subjects (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    pseudonymous_subject_id TEXT NOT NULL,
-    user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT uq_project_subjects_project_id_id
-        UNIQUE (project_id, id),
-
-    CONSTRAINT uq_project_subjects_project_id_pseudonymous_subject_id
-        UNIQUE (project_id, pseudonymous_subject_id),
-
-    CONSTRAINT uq_project_subjects_project_id_user_id
-        UNIQUE (project_id, user_id),
-
-    CONSTRAINT ck_project_subjects_pseudonymous_subject_id_len
-        CHECK (char_length(btrim(pseudonymous_subject_id)) BETWEEN 1 AND 128)
+    CONSTRAINT ck_survey_links_used_at_requires_assignment
+        CHECK (
+            used_at IS NULL
+            OR assigned_email IS NOT NULL
+            OR assigned_subject_id IS NOT NULL
+        )
 );
 
 CREATE TABLE submission_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id BIGINT NOT NULL,
+    project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     survey_id BIGINT NOT NULL,
     survey_version_id BIGINT NOT NULL,
-    response_store_id BIGINT NOT NULL,
-    link_id BIGINT,
-    project_subject_id UUID,
+    response_store_id BIGINT NOT NULL REFERENCES response_stores(id) ON DELETE RESTRICT,
+    link_id BIGINT REFERENCES survey_links(id) ON DELETE SET NULL,
+    project_subject_id UUID REFERENCES project_subjects(id) ON DELETE SET NULL,
     browser_session_token_hash BYTEA NOT NULL,
     linkage_key_version SMALLINT NOT NULL DEFAULT 1,
     session_status TEXT NOT NULL DEFAULT 'in_progress',
@@ -626,6 +771,12 @@ CREATE TABLE submission_sessions (
     CONSTRAINT uq_submission_sessions_id_survey_version_id
         UNIQUE (id, survey_version_id),
 
+    CONSTRAINT uq_submission_sessions_project_id_id
+        UNIQUE (project_id, id),
+
+    CONSTRAINT uq_submission_sessions_id_project_subject_id
+        UNIQUE (id, project_subject_id),
+
     CONSTRAINT ck_submission_sessions_browser_session_token_hash_len
         CHECK (length(browser_session_token_hash) >= 32),
 
@@ -635,8 +786,8 @@ CREATE TABLE submission_sessions (
     CONSTRAINT ck_submission_sessions_session_status_valid
         CHECK (session_status IN ('in_progress', 'completed', 'abandoned')),
 
-    CONSTRAINT ck_submission_sessions_completed_requires_completed_at
-        CHECK (session_status <> 'completed' OR completed_at IS NOT NULL),
+    CONSTRAINT ck_submission_sessions_completed_at_consistent
+        CHECK ((session_status = 'completed') = (completed_at IS NOT NULL)),
 
     CONSTRAINT ck_submission_sessions_completed_at_after_started_at
         CHECK (
@@ -646,6 +797,15 @@ CREATE TABLE submission_sessions (
 
     CONSTRAINT ck_submission_sessions_expires_at_after_started_at
         CHECK (expires_at > started_at),
+
+    CONSTRAINT ck_submission_sessions_last_activity_at_after_started_at
+        CHECK (last_activity_at >= started_at),
+
+    CONSTRAINT ck_submission_sessions_completed_before_last_activity
+        CHECK (
+            completed_at IS NULL
+            OR completed_at <= last_activity_at
+        ),
 
     CONSTRAINT fk_submission_sessions_survey_same_project
         FOREIGN KEY (project_id, survey_id)
@@ -657,28 +817,16 @@ CREATE TABLE submission_sessions (
         REFERENCES survey_versions(survey_id, id)
         ON DELETE RESTRICT,
 
-    CONSTRAINT fk_submission_sessions_store
-        FOREIGN KEY (response_store_id)
-        REFERENCES response_stores(id)
-        ON DELETE RESTRICT,
 
     CONSTRAINT fk_submission_sessions_store_same_project
         FOREIGN KEY (project_id, response_store_id)
         REFERENCES response_stores(project_id, id),
 
-    CONSTRAINT fk_submission_sessions_link
-        FOREIGN KEY (link_id)
-        REFERENCES survey_links(id)
-        ON DELETE SET NULL,
 
     CONSTRAINT fk_submission_sessions_link_same_survey
         FOREIGN KEY (survey_id, link_id)
         REFERENCES survey_links(survey_id, id),
 
-    CONSTRAINT fk_submission_sessions_project_subject
-        FOREIGN KEY (project_subject_id)
-        REFERENCES project_subjects(id)
-        ON DELETE SET NULL,
 
     CONSTRAINT fk_submission_sessions_project_subject_same_project
         FOREIGN KEY (project_id, project_subject_id)
@@ -690,7 +838,7 @@ CREATE TABLE submission_events (
     session_id UUID NOT NULL,
     survey_version_id BIGINT NOT NULL,
     event_type TEXT NOT NULL,
-    question_node_id UUID,
+    question_node_id UUID REFERENCES survey_questions(id) ON DELETE SET NULL,
     received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT ck_submission_events_event_type_valid
@@ -713,14 +861,44 @@ CREATE TABLE submission_events (
         REFERENCES submission_sessions(id, survey_version_id)
         ON DELETE CASCADE,
 
-    CONSTRAINT fk_submission_events_question_node
-        FOREIGN KEY (question_node_id)
-        REFERENCES survey_questions(id)
-        ON DELETE SET NULL,
-
     CONSTRAINT fk_submission_events_question_node_same_version
         FOREIGN KEY (survey_version_id, question_node_id)
         REFERENCES survey_questions(survey_version_id, id)
+);
+
+-- =========================================
+-- SUBJECT IP OBSERVATIONS
+-- =========================================
+-- Identifying core metadata; never copied to the response DB.
+
+CREATE TABLE subject_ip_observations (
+    id BIGSERIAL PRIMARY KEY,
+    project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+
+    project_subject_id UUID REFERENCES project_subjects(id) ON DELETE CASCADE,
+    submission_session_id UUID REFERENCES submission_sessions(id) ON DELETE CASCADE,
+
+    ip_address INET NOT NULL,
+    observed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT ck_subject_ip_observations_has_owner
+        CHECK (
+            project_subject_id IS NOT NULL
+            OR submission_session_id IS NOT NULL
+        ),
+
+    CONSTRAINT fk_subject_ip_observations_subject_same_project
+        FOREIGN KEY (project_id, project_subject_id)
+        REFERENCES project_subjects(project_id, id),
+
+    CONSTRAINT fk_subject_ip_observations_session_same_project
+        FOREIGN KEY (project_id, submission_session_id)
+        REFERENCES submission_sessions(project_id, id),
+
+    -- If both are present, subject and session must match.
+    CONSTRAINT fk_subject_ip_observations_session_subject_match
+        FOREIGN KEY (submission_session_id, project_subject_id)
+        REFERENCES submission_sessions(id, project_subject_id)
 );
 
 -- =========================================
@@ -784,44 +962,71 @@ FOR EACH ROW EXECUTE FUNCTION prevent_changes_to_published_version_parts();
 -- INDEXES
 -- =========================================
 
-CREATE INDEX idx_project_memberships_user ON project_memberships(user_id);
-CREATE INDEX idx_project_memberships_project ON project_memberships(project_id);
-CREATE INDEX idx_project_memberships_role ON project_memberships(role_id);
+CREATE INDEX ix_project_memberships_user ON project_memberships(user_id);
+CREATE INDEX ix_project_memberships_project ON project_memberships(project_id);
+CREATE INDEX ix_project_memberships_role ON project_memberships(role_id);
 
-CREATE INDEX idx_response_stores_project ON response_stores(project_id);
+CREATE INDEX ix_response_stores_project ON response_stores(project_id);
 
-CREATE INDEX idx_surveys_project ON surveys(project_id);
-CREATE INDEX idx_surveys_slug ON surveys(public_slug);
-CREATE INDEX idx_surveys_default_response_store ON surveys(default_response_store_id);
-CREATE INDEX idx_surveys_published_version ON surveys(published_version_id);
+CREATE INDEX ix_surveys_project ON surveys(project_id);
+CREATE INDEX ix_surveys_slug ON surveys(public_slug);
+CREATE INDEX ix_surveys_default_response_store ON surveys(default_response_store_id);
+CREATE INDEX ix_surveys_published_version ON surveys(published_version_id);
 
-CREATE INDEX idx_survey_versions_survey ON survey_versions(survey_id);
-CREATE INDEX idx_survey_versions_status ON survey_versions(status);
-CREATE INDEX idx_survey_questions_version ON survey_questions(survey_version_id);
-CREATE INDEX idx_survey_scoring_rules_version ON survey_scoring_rules(survey_version_id);
+CREATE INDEX ix_survey_versions_survey ON survey_versions(survey_id);
+CREATE INDEX ix_survey_versions_status ON survey_versions(status);
+CREATE INDEX ix_survey_questions_version ON survey_questions(survey_version_id);
+CREATE INDEX ix_survey_scoring_rules_version ON survey_scoring_rules(survey_version_id);
 
-CREATE INDEX idx_survey_membership_roles_project ON survey_membership_roles(project_id);
-CREATE INDEX idx_survey_membership_roles_membership ON survey_membership_roles(membership_id);
-CREATE INDEX idx_survey_membership_roles_role ON survey_membership_roles(role_id);
+CREATE INDEX ix_survey_membership_roles_project ON survey_membership_roles(project_id);
+CREATE INDEX ix_survey_membership_roles_membership ON survey_membership_roles(membership_id);
+CREATE INDEX ix_survey_membership_roles_role ON survey_membership_roles(role_id);
 
-CREATE INDEX idx_survey_links_survey ON survey_links(survey_id);
-CREATE INDEX idx_survey_links_prefix ON survey_links(token_prefix);
-CREATE INDEX idx_survey_links_hash ON survey_links(token_hash);
+CREATE INDEX ix_survey_links_survey ON survey_links(survey_id);
+CREATE INDEX ix_survey_links_project ON survey_links(project_id);
+CREATE INDEX ix_survey_links_prefix ON survey_links(token_prefix);
+CREATE INDEX ix_survey_links_assigned_subject ON survey_links(assigned_subject_id)
+    WHERE assigned_subject_id IS NOT NULL;
+CREATE INDEX ix_survey_links_active_expiry ON survey_links(expires_at)
+    WHERE is_active = TRUE;
 
-CREATE INDEX idx_project_subjects_project ON project_subjects(project_id);
-CREATE INDEX idx_project_subjects_user ON project_subjects(user_id);
+CREATE INDEX ix_project_subjects_project ON project_subjects(project_id);
 
-CREATE INDEX idx_submission_sessions_project ON submission_sessions(project_id);
-CREATE INDEX idx_submission_sessions_survey ON submission_sessions(survey_id);
-CREATE INDEX idx_submission_sessions_survey_version ON submission_sessions(survey_version_id);
-CREATE INDEX idx_submission_sessions_store ON submission_sessions(response_store_id);
-CREATE INDEX idx_submission_sessions_link ON submission_sessions(link_id);
-CREATE INDEX idx_submission_sessions_project_subject ON submission_sessions(project_subject_id);
-CREATE INDEX idx_submission_sessions_last_activity ON submission_sessions(session_status, last_activity_at);
-CREATE INDEX idx_submission_sessions_expires_at ON submission_sessions(expires_at);
+CREATE INDEX ix_project_subject_identities_subject ON project_subject_identities(project_subject_id);
+CREATE INDEX ix_project_subject_identities_user ON project_subject_identities(user_id)
+    WHERE user_id IS NOT NULL;
+CREATE INDEX ix_project_subject_identities_email ON project_subject_identities(normalized_email)
+    WHERE normalized_email IS NOT NULL;
 
-CREATE INDEX idx_submission_events_session_received_at ON submission_events(session_id, received_at);
-CREATE INDEX idx_submission_events_survey_version ON submission_events(survey_version_id);
-CREATE INDEX idx_submission_events_question_node ON submission_events(question_node_id);
+CREATE INDEX ix_project_subject_tokens_subject ON project_subject_tokens(project_subject_id);
+CREATE INDEX ix_project_subject_tokens_active_expiry ON project_subject_tokens(expires_at)
+    WHERE revoked_at IS NULL;
 
-CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
+CREATE INDEX ix_submission_sessions_project ON submission_sessions(project_id);
+CREATE INDEX ix_submission_sessions_survey ON submission_sessions(survey_id);
+CREATE INDEX ix_submission_sessions_survey_version ON submission_sessions(survey_version_id);
+CREATE INDEX ix_submission_sessions_store ON submission_sessions(response_store_id);
+CREATE INDEX ix_submission_sessions_link ON submission_sessions(link_id)
+    WHERE link_id IS NOT NULL;
+CREATE INDEX ix_submission_sessions_project_subject ON submission_sessions(project_subject_id)
+    WHERE project_subject_id IS NOT NULL;
+CREATE INDEX ix_submission_sessions_last_activity ON submission_sessions(session_status, last_activity_at);
+CREATE INDEX ix_submission_sessions_expires_at ON submission_sessions(expires_at);
+
+CREATE INDEX ix_submission_events_session_received_at ON submission_events(session_id, received_at);
+CREATE INDEX ix_submission_events_survey_version ON submission_events(survey_version_id);
+CREATE INDEX ix_submission_events_question_node ON submission_events(question_node_id)
+    WHERE question_node_id IS NOT NULL;
+
+CREATE INDEX ix_subject_ip_observations_project_observed_at
+    ON subject_ip_observations(project_id, observed_at DESC);
+CREATE INDEX ix_subject_ip_observations_subject_observed_at
+    ON subject_ip_observations(project_subject_id, observed_at DESC)
+    WHERE project_subject_id IS NOT NULL;
+CREATE INDEX ix_subject_ip_observations_session_observed_at
+    ON subject_ip_observations(submission_session_id, observed_at DESC)
+    WHERE submission_session_id IS NOT NULL;
+CREATE INDEX ix_subject_ip_observations_ip_observed_at
+    ON subject_ip_observations(ip_address, observed_at DESC);
+
+CREATE INDEX ix_audit_logs_entity ON audit_logs(entity_type, entity_id);

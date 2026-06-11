@@ -87,6 +87,9 @@ from app.schema.orm.core import (
     ProjectMembership,
     ProjectRole,
     ProjectSubject,
+    ProjectSubjectIdentity,
+    ProjectSubjectToken,
+    SubjectIpObservation,
     SubmissionEvent,
     SubmissionSession,
     Survey,
@@ -108,6 +111,9 @@ type RuleContext = (
     | SurveyVersion
     | SurveyLink
     | ProjectSubject
+    | ProjectSubjectIdentity
+    | ProjectSubjectToken
+    | SubjectIpObservation
     | SubmissionSession
     | SubmissionEvent
     | SurveyQuestion
@@ -146,6 +152,13 @@ allowed_parameters = {
     "survey_version_id",
     "response_store_id",
     "pseudonymous_subject_id",
+    "subject_code",
+    "assigned_subject_id",
+    "normalized_email",
+    "identity_id",
+    "token_id",
+    "ip_observation_id",
+    "submission_session_id",
     "node_type",
     "survey_question_id",
     "survey_scoring_rule_id",
@@ -206,9 +219,11 @@ def _survey_version_ctx(version: SurveyVersion) -> dict[str, object]:
 def _survey_link_ctx(link: SurveyLink) -> dict[str, object]:
     return {
         "survey_link_id": link.id,
+        "project_id": link.project_id,
         "survey_id": link.survey_id,
         "name": link.name,
         "assigned_email": link.assigned_email,
+        "assigned_subject_id": link.assigned_subject_id,
         "requires_auth": link.requires_auth,
     }
 
@@ -216,8 +231,34 @@ def _survey_link_ctx(link: SurveyLink) -> dict[str, object]:
 def _project_subject_ctx(subject: ProjectSubject) -> dict[str, object]:
     return {
         "project_id": subject.project_id,
-        "user_id": subject.user_id,
-        "pseudonymous_subject_id": subject.pseudonymous_subject_id,
+        "subject_code": subject.subject_code,
+    }
+
+
+def _project_subject_identity_ctx(identity: ProjectSubjectIdentity) -> dict[str, object]:
+    return {
+        "identity_id": identity.id,
+        "project_id": identity.project_id,
+        "project_subject_id": identity.project_subject_id,
+        "user_id": identity.user_id,
+        "normalized_email": identity.normalized_email,
+    }
+
+
+def _project_subject_token_ctx(token: ProjectSubjectToken) -> dict[str, object]:
+    return {
+        "token_id": token.id,
+        "project_id": token.project_id,
+        "project_subject_id": token.project_subject_id,
+    }
+
+
+def _subject_ip_observation_ctx(observation: SubjectIpObservation) -> dict[str, object]:
+    return {
+        "ip_observation_id": observation.id,
+        "project_id": observation.project_id,
+        "project_subject_id": observation.project_subject_id,
+        "submission_session_id": observation.submission_session_id,
     }
 
 
@@ -484,27 +525,128 @@ SURVEY_LINK_RULES: tuple[DbErrorRule, ...] = (
         ),
         extractor=_survey_link_ctx,
     ),
-
+    foreign_key_rule(
+        "fk_survey_links_survey_same_project",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "LINK_SURVEY_PROJECT_CONFLICT",
+            f"Survey id={ctx['survey_id']} does not belong to project id={ctx['project_id']}.",
+        ),
+        extractor=_survey_link_ctx,
+    ),
+    foreign_key_rule(
+        "fk_survey_links_assigned_subject_same_project",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "LINK_SUBJECT_PROJECT_CONFLICT",
+            f"Assigned subject id={ctx['assigned_subject_id']} does not belong to project id={ctx['project_id']}.",
+        ),
+        extractor=_survey_link_ctx,
+    ),
 )
 
 PROJECT_SUBJECT_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
-        "uq_project_subjects_project_id_user_id",
+        "uq_project_subjects_project_id_subject_code",
         lambda ctx, _exc: DbIntegrityError(
             409,
-            "SUBJECT_USER_CONFLICT",
-            f"Project id={ctx['project_id']} already has a subject for user id={ctx['user_id']}.",
+            "SUBJECT_CODE_CONFLICT",
+            f"Project id={ctx['project_id']} already uses subject code={ctx['subject_code']!r}.",
         ),
         extractor=_project_subject_ctx,
     ),
-    unique_rule(
-        "uq_project_subjects_project_id_pseudonymous_subject_id",
+)
+
+PROJECT_SUBJECT_IDENTITY_RULES: tuple[DbErrorRule, ...] = (
+    foreign_key_rule(
+        "fk_project_subject_identities_subject_same_project",
         lambda ctx, _exc: DbIntegrityError(
             409,
-            "SUBJECT_ID_CONFLICT",
-            f"Project id={ctx['project_id']} already uses pseudonymous subject id={ctx['pseudonymous_subject_id']!r}.",
+            "IDENTITY_SUBJECT_PROJECT_CONFLICT",
+            f"Project subject id={ctx['project_subject_id']} does not belong to project id={ctx['project_id']}.",
         ),
-        extractor=_project_subject_ctx,
+        extractor=_project_subject_identity_ctx,
+    ),
+    unique_rule(
+        "uq_project_subject_identities_active_user",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "IDENTITY_USER_CONFLICT",
+            f"User id={ctx['user_id']} already has an active subject in project id={ctx['project_id']}.",
+        ),
+        extractor=_project_subject_identity_ctx,
+    ),
+    unique_rule(
+        "uq_project_subject_identities_subject_active_email",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "IDENTITY_SUBJECT_EMAIL_CONFLICT",
+            f"Subject id={ctx['project_subject_id']} already has an active identity for"
+            f" email={ctx['normalized_email']!r}.",
+        ),
+        extractor=_project_subject_identity_ctx,
+    ),
+    unique_rule(
+        "uq_project_subject_identities_project_verified_email",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "IDENTITY_VERIFIED_EMAIL_CONFLICT",
+            f"Email={ctx['normalized_email']!r} is already verified for another subject"
+            f" in project id={ctx['project_id']}.",
+        ),
+        extractor=_project_subject_identity_ctx,
+    ),
+)
+
+PROJECT_SUBJECT_TOKEN_RULES: tuple[DbErrorRule, ...] = (
+    unique_rule(
+        "uq_project_subject_tokens_token_hash",
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
+            409,
+            "SUBJECT_TOKEN_CONFLICT",
+            "This subject recognition token is already in use.",
+        ),
+        extractor=_project_subject_token_ctx,
+    ),
+    foreign_key_rule(
+        "fk_project_subject_tokens_subject_same_project",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "SUBJECT_TOKEN_PROJECT_CONFLICT",
+            f"Project subject id={ctx['project_subject_id']} does not belong to project id={ctx['project_id']}.",
+        ),
+        extractor=_project_subject_token_ctx,
+    ),
+)
+
+SUBJECT_IP_OBSERVATION_RULES: tuple[DbErrorRule, ...] = (
+    foreign_key_rule(
+        "fk_subject_ip_observations_subject_same_project",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "IP_OBSERVATION_SUBJECT_PROJECT_CONFLICT",
+            f"Project subject id={ctx['project_subject_id']} does not belong to project id={ctx['project_id']}.",
+        ),
+        extractor=_subject_ip_observation_ctx,
+    ),
+    foreign_key_rule(
+        "fk_subject_ip_observations_session_same_project",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "IP_OBSERVATION_SESSION_PROJECT_CONFLICT",
+            f"Submission session id={ctx['submission_session_id']} does not belong to project id={ctx['project_id']}.",
+        ),
+        extractor=_subject_ip_observation_ctx,
+    ),
+    foreign_key_rule(
+        "fk_subject_ip_observations_session_subject_match",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "IP_OBSERVATION_SESSION_SUBJECT_MISMATCH",
+            f"Subject id={ctx['project_subject_id']} does not match the subject attached to"
+            f" submission session id={ctx['submission_session_id']}.",
+        ),
+        extractor=_subject_ip_observation_ctx,
     ),
 )
 
@@ -584,18 +726,19 @@ SUBMISSION_SESSION_RULES: tuple[DbErrorRule, ...] = (
         extractor=_submission_session_ctx,
     ),
     #
-    # ck_submission_sessions_completed_requires_completed_at
+    # ck_submission_sessions_completed_at_consistent
     #
     # `completed_at` is server-controlled, written only when a session
-    # transitions to "completed". If this CHECK fires, internal code wrote
-    # an inconsistent state — a server bug, not a client error.
+    # transitions to "completed". The CHECK requires completed_at to be set
+    # iff the session is completed. If it fires, internal code wrote an
+    # inconsistent state — a server bug, not a client error.
     check_rule(
-        "ck_submission_sessions_completed_requires_completed_at",
+        "ck_submission_sessions_completed_at_consistent",
         lambda ctx, _exc: DbIntegrityError(
             500,
             "SESSION_COMPLETION_STATE_INVALID",
-            f"Server invariant violated: session id={ctx['session_id']} reached"
-            " session_status='completed' without completed_at being set.",
+            f"Server invariant violated: session id={ctx['session_id']} has an inconsistent"
+            " completed_at for its session_status.",
         ),
         extractor=_submission_session_ctx,
     ),
@@ -882,6 +1025,9 @@ RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
     SurveyLink: SURVEY_LINK_RULES,
     SurveyRole: SURVEY_ROLE_RULES,
     ProjectSubject: PROJECT_SUBJECT_RULES,
+    ProjectSubjectIdentity: PROJECT_SUBJECT_IDENTITY_RULES,
+    ProjectSubjectToken: PROJECT_SUBJECT_TOKEN_RULES,
+    SubjectIpObservation: SUBJECT_IP_OBSERVATION_RULES,
     SubmissionSession: SUBMISSION_SESSION_RULES,
     SubmissionEvent: SUBMISSION_EVENT_RULES,
     SurveyQuestion: SURVEY_QUESTION_RULES,

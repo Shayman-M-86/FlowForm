@@ -322,7 +322,6 @@ The same exact context must be supplied during decryption. [AWS-2]
 Do not include:
 
 * user IDs;
-* subject IDs;
 * session UUIDs;
 * project IDs;
 * link tokens;

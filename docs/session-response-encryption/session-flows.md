@@ -72,6 +72,40 @@ If the survey owner publishes a newer version halfway through the respondent's s
 
 Never silently move an in-progress session to a different survey version.
 
+### 13.3 Resolve the optional project subject
+
+After resolving the project and access channel, resolve an optional stable
+project subject. Inputs may include an assigned subject from the link, the
+authenticated user context, a verified email requirement, a reusable
+subject-recognition cookie, or a project-specific subject code.
+
+Examples:
+
+* an authenticated respondent maps through `project_subject_identities.user_id`;
+* an assigned link maps to an invited or imported project participant;
+* a subject-recognition token maps through `project_subject_tokens.token_hash`;
+* a project-specific integration supplies a recognized `subject_code`.
+
+Use the strongest explicit constraint first. Do not silently override an
+assigned subject with a weaker browser-recognition signal.
+
+When a subject is found, pass the internal UUID forward:
+
+```text
+project_subjects.id
+```
+
+and store it later as:
+
+```text
+submission_sessions.project_subject_id
+```
+
+If no project subject is found, create an anonymous subject only when project
+policy requires cross-survey continuity or subject-level analytics. Otherwise
+keep `project_subject_id` null and treat the session as fully anonymous at the
+core identity layer.
+
 ---
 
 ## 14. Flow: starting a submission session
@@ -104,7 +138,7 @@ Create the core `submission_sessions` row:
 ```text
 id                         = submission_session_id
 link_id                    = optional link ID
-project_subject_id         = optional subject ID
+project_subject_id         = optional project_subjects.id
 survey_version_id          = frozen published version
 browser_session_token_hash = token hash
 linkage_key_version        = active linkage version
@@ -175,6 +209,7 @@ Do not expose the session to the browser until:
 * the core session exists;
 * the response envelope exists;
 * the resume-token cookie has been prepared.
+* any subject-recognition cookie has been prepared.
 
 If envelope creation fails after the core row was inserted:
 

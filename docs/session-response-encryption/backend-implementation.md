@@ -23,7 +23,11 @@ app/
 │   │   ├── submission_sessions.py
 │   │   ├── submission_events.py
 │   │   ├── survey_versions.py
-│   │   └── project_subjects.py
+│   │   ├── project_subjects.py
+│   │   ├── project_subject_identities.py
+│   │   ├── project_subject_tokens.py
+│   │   ├── subject_ip_observations.py
+│   │   └── survey_links.py
 │   │
 │   └── response/
 │       ├── response_envelopes.py
@@ -33,6 +37,10 @@ app/
 ├── services/
 │   └── submissions/
 │       ├── access_resolver.py
+│       ├── project_subject_resolver.py
+│       ├── subject_recognition_tokens.py
+│       ├── subject_identities.py
+│       ├── subject_ip_observations.py
 │       ├── session_starter.py
 │       ├── session_resumer.py
 │       ├── answer_saver.py
@@ -62,6 +70,11 @@ Examples:
 
 ```text
 CoreSubmissionSessionRepository
+CoreProjectSubjectRepository
+CoreProjectSubjectIdentityRepository
+CoreProjectSubjectTokenRepository
+CoreSubjectIpObservationRepository
+CoreSurveyLinkRepository
 ResponseEnvelopeRepository
 ResponseAnswerRepository
 ResponseRevisionRepository
@@ -72,6 +85,11 @@ Do not place cross-database workflows inside repositories.
 ### 28.2 Service rule
 
 Submission services orchestrate workflows across repositories.
+
+`SurveyAccessResolver` resolves the survey and link requirements.
+`ProjectSubjectResolver` resolves or creates the optional stable subject.
+`SessionStarter` creates the core session and provisions the anonymous response
+envelope after access and subject resolution have completed.
 
 Example:
 
@@ -115,6 +133,16 @@ construct AAD
 encrypt payload
 decrypt payload
 ```
+
+### 28.4 Project subject boundary
+
+Use `ProjectSubject` / `project_subjects` as the forward respondent identity
+relation for the new session system.
+
+The access resolver or a dedicated project-subject service may create or load a
+project subject. Identity lookups live around the subject relation through
+`project_subject_identities`, `project_subject_tokens`, and assigned survey
+links.
 
 ---
 
@@ -224,6 +252,31 @@ class AnswerSaver:
     ) -> SavedAnswerResult:
         ...
 ```
+
+### 29.6 Project subject resolver
+
+```python
+class ProjectSubjectResolver:
+    def resolve_for_access(
+        self,
+        *,
+        project_id: int,
+        access: SubmissionSessionAccess,
+        authenticated_user_id: int | None,
+    ) -> UUID | None:
+        ...
+```
+
+Responsibilities:
+
+* return `project_subjects.id` when the access path identifies a known project
+  subject;
+* create the project subject when the product rule says the access path should
+  materialize one;
+* return `None` for fully anonymous sessions;
+* resolve authenticated users through `project_subject_identities`;
+* resolve subject-recognition tokens through `project_subject_tokens`;
+* resolve assigned links through `survey_links.assigned_subject_id`.
 
 ---
 

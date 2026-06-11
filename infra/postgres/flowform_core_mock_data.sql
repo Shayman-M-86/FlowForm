@@ -169,22 +169,52 @@ INSERT INTO survey_scoring_rules (id, survey_version_id, scoring_key, scoring_sc
     (4, 5, 'feature_interest_answer_key', $json${"target":"feature_interest","bucket":"total","strategy":"matching_answer_key","config":{"correct_pairs":[{"left_id":"founder","right_id":"automation"},{"left_id":"marketer","right_id":"analytics"}],"points_per_correct":1,"penalty_per_incorrect":0,"max_score":2}}$json$::jsonb, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days');
 
 -- =========================================
--- PUBLIC LINKS
--- =========================================
-
-INSERT INTO survey_links (id, survey_id, token_prefix, token_hash, is_active, assigned_email, expires_at, created_at) VALUES
-    (1, 1, 'acmepuls01', repeat('a', 64), TRUE, 'guest@example.test', NOW() + INTERVAL '30 days', NOW() - INTERVAL '5 days'),
-    (2, 3, 'betasign02', repeat('b', 64), TRUE, 'noah@beta.dev', NOW() + INTERVAL '14 days', NOW() - INTERVAL '2 days');
-
--- =========================================
 -- PROJECT SUBJECTS
 -- =========================================
+-- subject_code is the stable project-scoped pseudonymous participant code.
+-- It is NOT derived from a user id or email. Authenticated-user and email
+-- identities attach via project_subject_identities below.
 
-INSERT INTO project_subjects (id, project_id, user_id, pseudonymous_subject_id, created_at) VALUES
-    ('11111111-1111-1111-1111-111111111111', 1, 2, '11111111-1111-1111-1111-111111111111', NOW() - INTERVAL '25 days'),
-    ('22222222-2222-2222-2222-222222222222', 1, 3, '22222222-2222-2222-2222-222222222222', NOW() - INTERVAL '25 days'),
-    ('33333333-3333-3333-3333-333333333333', 2, 5, '33333333-3333-3333-3333-333333333333', NOW() - INTERVAL '11 days'),
-    ('66666666-6666-6666-6666-666666666666', 1, 6, '66666666-6666-6666-6666-666666666666', NOW() - INTERVAL '5 days');
+INSERT INTO project_subjects (id, project_id, subject_code, created_at) VALUES
+    ('11111111-1111-1111-1111-111111111111', 1, 'subj-acme-0001', NOW() - INTERVAL '25 days'),
+    ('22222222-2222-2222-2222-222222222222', 1, 'subj-acme-0002', NOW() - INTERVAL '25 days'),
+    ('33333333-3333-3333-3333-333333333333', 2, 'subj-beta-0001', NOW() - INTERVAL '11 days'),
+    ('66666666-6666-6666-6666-666666666666', 1, 'subj-acme-0003', NOW() - INTERVAL '5 days');
+
+-- =========================================
+-- PROJECT SUBJECT IDENTITIES
+-- =========================================
+-- Revocable attachments. authenticated_user rows carry user_id; email rows
+-- carry normalized_email. A subject may have both an account and an email
+-- identity. At most one active authenticated_user per (project, user_id), and
+-- at most one verified active owner per (project, normalized_email).
+
+INSERT INTO project_subject_identities
+    (id, project_id, project_subject_id, identity_type, user_id, normalized_email, verification_status, verified_at, attached_at) VALUES
+    ('a1a1a1a1-0000-0000-0000-000000000001', 1, '11111111-1111-1111-1111-111111111111', 'authenticated_user', 2, NULL, 'verified', NOW() - INTERVAL '25 days', NOW() - INTERVAL '25 days'),
+    ('a1a1a1a1-0000-0000-0000-000000000002', 1, '22222222-2222-2222-2222-222222222222', 'authenticated_user', 3, NULL, 'verified', NOW() - INTERVAL '25 days', NOW() - INTERVAL '25 days'),
+    ('a1a1a1a1-0000-0000-0000-000000000003', 2, '33333333-3333-3333-3333-333333333333', 'authenticated_user', 5, NULL, 'verified', NOW() - INTERVAL '11 days', NOW() - INTERVAL '11 days'),
+    ('a1a1a1a1-0000-0000-0000-000000000004', 1, '66666666-6666-6666-6666-666666666666', 'email', NULL, 'guest@example.test', 'unverified', NULL, NOW() - INTERVAL '5 days');
+
+-- =========================================
+-- PROJECT SUBJECT TOKENS
+-- =========================================
+-- token_hash is a lowercase hex SHA-256 digest of the raw recognition token.
+
+INSERT INTO project_subject_tokens
+    (id, project_id, project_subject_id, token_hash, expires_at, last_used_at, created_at) VALUES
+    ('b1b1b1b1-0000-0000-0000-000000000001', 1, '11111111-1111-1111-1111-111111111111', encode(digest('subject-token-acme-0001', 'sha256'), 'hex'), NOW() + INTERVAL '90 days', NOW() - INTERVAL '4 days', NOW() - INTERVAL '25 days'),
+    ('b1b1b1b1-0000-0000-0000-000000000002', 2, '33333333-3333-3333-3333-333333333333', encode(digest('subject-token-beta-0001', 'sha256'), 'hex'), NOW() + INTERVAL '90 days', NULL, NOW() - INTERVAL '11 days');
+
+-- =========================================
+-- PUBLIC LINKS
+-- =========================================
+-- project_id is stored directly so the database can prove link, survey, and
+-- assigned subject share a project. Email-assigned links must require auth.
+
+INSERT INTO survey_links (id, project_id, survey_id, token_prefix, token_hash, is_active, requires_auth, assigned_email, assigned_subject_id, expires_at, created_at) VALUES
+    (1, 1, 1, 'acmepuls01', repeat('a', 64), TRUE, TRUE, 'guest@example.test', NULL, NOW() + INTERVAL '30 days', NOW() - INTERVAL '5 days'),
+    (2, 2, 3, 'betasign02', repeat('b', 64), TRUE, TRUE, 'noah@beta.dev', NULL, NOW() + INTERVAL '14 days', NOW() - INTERVAL '2 days');
 
 -- =========================================
 -- SUBMISSION SESSIONS
@@ -212,6 +242,18 @@ INSERT INTO submission_events (id, session_id, survey_version_id, event_type, qu
     (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000004', 5, 'session_started', NULL, NOW() - INTERVAL '18 hours 10 minutes'),
     (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000004', 5, 'answer_saved', '00000000-0000-0000-0000-000000000011', NOW() - INTERVAL '18 hours 5 minutes'),
     (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000004', 5, 'session_completed', NULL, NOW() - INTERVAL '18 hours');
+
+-- =========================================
+-- SUBJECT IP OBSERVATIONS
+-- =========================================
+-- When both subject and session are populated, the subject must match the
+-- subject attached to that session (enforced by composite FK).
+
+INSERT INTO subject_ip_observations (project_id, project_subject_id, submission_session_id, ip_address, observed_at) VALUES
+    (1, '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0000-0000-0000-000000000001', '203.0.113.10', NOW() - INTERVAL '4 days 15 minutes'),
+    (1, '66666666-6666-6666-6666-666666666666', 'aaaaaaaa-0000-0000-0000-000000000002', '203.0.113.22', NOW() - INTERVAL '3 days 20 minutes'),
+    (2, NULL, 'aaaaaaaa-0000-0000-0000-000000000003', '198.51.100.7', NOW() - INTERVAL '2 days 40 minutes'),
+    (1, '11111111-1111-1111-1111-111111111111', NULL, '203.0.113.11', NOW() - INTERVAL '20 days');
 
 -- =========================================
 -- AUDIT LOGS
@@ -274,6 +316,7 @@ SELECT setval('survey_versions_id_seq', COALESCE((SELECT MAX(id) FROM survey_ver
 SELECT setval('survey_scoring_rules_id_seq', COALESCE((SELECT MAX(id) FROM survey_scoring_rules), 1), true);
 SELECT setval('survey_roles_id_seq', COALESCE((SELECT MAX(id) FROM survey_roles), 1), true);
 SELECT setval('survey_links_id_seq', COALESCE((SELECT MAX(id) FROM survey_links), 1), true);
+SELECT setval('subject_ip_observations_id_seq', COALESCE((SELECT MAX(id) FROM subject_ip_observations), 1), true);
 SELECT setval('audit_logs_id_seq', COALESCE((SELECT MAX(id) FROM audit_logs), 1), true);
 
 COMMIT;

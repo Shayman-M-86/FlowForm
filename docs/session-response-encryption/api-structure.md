@@ -144,6 +144,19 @@ Start through a link token:
 { "access": { "type": "link_token", "token": "plaintext-link-token" } }
 ```
 
+If the access method implies a known project subject, the backend derives it
+during access resolution and attaches `submission_sessions.project_subject_id`
+internally.
+
+### 3.3.1 Subject recognition is server-side
+
+The browser never sends `project_subject_id` in a request body. The backend
+resolves an optional project subject from the access channel, authentication
+context, and secure subject-recognition cookie during session start.
+
+The subject-recognition token is distinct from both the survey-link token and
+the submission resume token.
+
 The backend resolves and revalidates access, freezes `survey_version_id`,
 generates a random resume token (storing only its `SHA-256` hash), provisions
 the anonymous response envelope, and returns success **only after both
@@ -170,7 +183,11 @@ Set-Cookie: flowform_submission_session=<random-token>;
 ```
 
 The backend owns and never accepts from the browser: `session_id`,
-`survey_version_id`, `started_at`, `completed_at`, `response_envelope_id`.
+`survey_version_id`, `project_subject_id`, `started_at`, `completed_at`,
+`response_envelope_id`.
+
+Explicit subject/email/auth identity-upgrade endpoints are optional later
+routes. They are not required for the v1 session-start contract.
 
 ### 3.4 Resume / current state
 

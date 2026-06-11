@@ -34,7 +34,9 @@ class SubmissionSession(CoreBase):
     __tablename__ = "submission_sessions"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    project_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    project_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
     survey_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     survey_version_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     response_store_id: Mapped[int] = mapped_column(
@@ -46,7 +48,7 @@ class SubmissionSession(CoreBase):
     project_subject_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("project_subjects.id", ondelete="SET NULL"), nullable=True
     )
-    browser_session_token_hash: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    browser_session_token_hash: Mapped[bytes] = mapped_column(LargeBinary, nullable=False, unique=True)
     linkage_key_version: Mapped[int] = mapped_column(SmallInteger, server_default=text("1"), nullable=False)
     session_status: Mapped[str] = mapped_column(Text, server_default=text("'in_progress'"), nullable=False)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -57,10 +59,9 @@ class SubmissionSession(CoreBase):
     )
 
     __table_args__ = (
-        UniqueConstraint(
-            "browser_session_token_hash", name="uq_submission_sessions_browser_session_token_hash"
-        ),
         UniqueConstraint("id", "survey_version_id", name="uq_submission_sessions_id_survey_version_id"),
+        UniqueConstraint("project_id", "id", name="uq_submission_sessions_project_id_id"),
+        UniqueConstraint("id", "project_subject_id", name="uq_submission_sessions_id_project_subject_id"),
         CheckConstraint("length(browser_session_token_hash) >= 32", name="browser_session_token_hash_len"),
         CheckConstraint("linkage_key_version > 0", name="linkage_key_version_valid"),
         CheckConstraint(
@@ -68,14 +69,19 @@ class SubmissionSession(CoreBase):
             name="session_status_valid",
         ),
         CheckConstraint(
-            "session_status <> 'completed' OR completed_at IS NOT NULL",
-            name="completed_requires_completed_at",
+            "(session_status = 'completed') = (completed_at IS NOT NULL)",
+            name="completed_at_consistent",
         ),
         CheckConstraint(
             "completed_at IS NULL OR completed_at >= started_at",
             name="completed_at_after_started_at",
         ),
         CheckConstraint("expires_at > started_at", name="expires_at_after_started_at"),
+        CheckConstraint("last_activity_at >= started_at", name="last_activity_at_after_started_at"),
+        CheckConstraint(
+            "completed_at IS NULL OR completed_at <= last_activity_at",
+            name="completed_before_last_activity",
+        ),
         ForeignKeyConstraint(
             ["project_id", "survey_id"],
             ["surveys.project_id", "surveys.id"],
@@ -105,8 +111,10 @@ class SubmissionSession(CoreBase):
         ),
     )
 
-    link: Mapped[SurveyLink | None] = relationship("SurveyLink", foreign_keys=[link_id])
-    project_subject: Mapped[ProjectSubject | None] = relationship("ProjectSubject", foreign_keys=[project_subject_id])
+    link: Mapped[SurveyLink | None] = relationship("SurveyLink", foreign_keys=[link_id], overlaps="survey")
+    project_subject: Mapped[ProjectSubject | None] = relationship(
+        "ProjectSubject", foreign_keys=[project_subject_id], overlaps="survey"
+    )
     response_store: Mapped[ResponseStore] = relationship("ResponseStore", foreign_keys=[response_store_id])
     survey: Mapped[Survey] = relationship("Survey", foreign_keys=[project_id, survey_id])
     survey_version: Mapped[SurveyVersion] = relationship("SurveyVersion", foreign_keys=[survey_version_id])
