@@ -4,14 +4,11 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
-    CheckConstraint,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
     Identity,
-    Index,
     func,
-    text,
 )
 from sqlalchemy.dialects.postgresql import INET, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -44,11 +41,8 @@ class SubjectIpObservation(CoreBase):
     ip_address: Mapped[str] = mapped_column(INET, nullable=False)
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
-        CheckConstraint(
-            "project_subject_id IS NOT NULL OR submission_session_id IS NOT NULL",
-            name="has_owner",
-        ),
         ForeignKeyConstraint(
             ["project_id", "project_subject_id"],
             ["project_subjects.project_id", "project_subjects.id"],
@@ -65,28 +59,6 @@ class SubjectIpObservation(CoreBase):
             ["submission_session_id", "project_subject_id"],
             ["submission_sessions.id", "submission_sessions.project_subject_id"],
             name="fk_subject_ip_observations_session_subject_match",
-        ),
-        Index(
-            "ix_subject_ip_observations_project_observed_at",
-            "project_id",
-            text("observed_at DESC"),
-        ),
-        Index(
-            "ix_subject_ip_observations_subject_observed_at",
-            "project_subject_id",
-            text("observed_at DESC"),
-            postgresql_where=text("project_subject_id IS NOT NULL"),
-        ),
-        Index(
-            "ix_subject_ip_observations_session_observed_at",
-            "submission_session_id",
-            text("observed_at DESC"),
-            postgresql_where=text("submission_session_id IS NOT NULL"),
-        ),
-        Index(
-            "ix_subject_ip_observations_ip_observed_at",
-            "ip_address",
-            text("observed_at DESC"),
         ),
     )
 

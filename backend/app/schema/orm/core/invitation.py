@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
-    CheckConstraint,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -50,26 +49,8 @@ class ProjectInvitation(CoreBase):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
-        CheckConstraint(
-            "status IN ('pending', 'accepted', 'declined', 'revoked')",
-            name="status_valid",
-        ),
-        # uq_project_invitations_pending_project_email is a partial unique index
-        # (WHERE status = 'pending') defined in SQL only — SQLAlchemy __table_args__
-        # cannot express partial indexes, so it is not mirrored here.
-        CheckConstraint(
-            "char_length(btrim(invited_email)) BETWEEN 1 AND 254",
-            name="email_len",
-        ),
-        CheckConstraint(
-            "invite_message IS NULL OR char_length(btrim(invite_message)) BETWEEN 1 AND 500",
-            name="message_len",
-        ),
-        CheckConstraint(
-            "status <> 'accepted' OR (accepted_by_user_id IS NOT NULL AND accepted_at IS NOT NULL)",
-            name="accepted_fields",
-        ),
         ForeignKeyConstraint(
             ["project_id", "role_id"],
             ["project_roles.project_id", "project_roles.id"],

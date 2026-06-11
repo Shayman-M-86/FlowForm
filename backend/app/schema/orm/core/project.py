@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     BigInteger,
     Boolean,
-    CheckConstraint,
     Column,
     DateTime,
     ForeignKey,
@@ -90,13 +89,9 @@ class ProjectRole(CoreBase):
         server_default=func.now(),
     )
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
         UniqueConstraint("project_id", "id", name="uq_project_roles_project_id_id"),
-        UniqueConstraint("project_id", "name", name="uq_project_roles_project_name"),
-        CheckConstraint(
-            "description IS NULL OR char_length(btrim(description)) BETWEEN 1 AND 500",
-            name="description_len",
-        ),
     )
 
     permissions: Mapped[list[Permission]] = relationship(
@@ -127,9 +122,8 @@ class ProjectMembership(CoreBase):
     status: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'active'"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
-        CheckConstraint("status IN ('active', 'suspended')", name="status_valid"),
-        UniqueConstraint("user_id", "project_id", name="uq_project_memberships_user_project"),
         UniqueConstraint("project_id", "id", name="uq_project_memberships_project_id_id"),
         ForeignKeyConstraint(
             ["project_id", "role_id"],

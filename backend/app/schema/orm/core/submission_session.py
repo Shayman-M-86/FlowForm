@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
-    CheckConstraint,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -58,30 +57,11 @@ class SubmissionSession(CoreBase):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
         UniqueConstraint("id", "survey_version_id", name="uq_submission_sessions_id_survey_version_id"),
         UniqueConstraint("project_id", "id", name="uq_submission_sessions_project_id_id"),
         UniqueConstraint("id", "project_subject_id", name="uq_submission_sessions_id_project_subject_id"),
-        CheckConstraint("length(browser_session_token_hash) >= 32", name="browser_session_token_hash_len"),
-        CheckConstraint("linkage_key_version > 0", name="linkage_key_version_valid"),
-        CheckConstraint(
-            "session_status IN ('in_progress', 'completed', 'abandoned')",
-            name="session_status_valid",
-        ),
-        CheckConstraint(
-            "(session_status = 'completed') = (completed_at IS NOT NULL)",
-            name="completed_at_consistent",
-        ),
-        CheckConstraint(
-            "completed_at IS NULL OR completed_at >= started_at",
-            name="completed_at_after_started_at",
-        ),
-        CheckConstraint("expires_at > started_at", name="expires_at_after_started_at"),
-        CheckConstraint("last_activity_at >= started_at", name="last_activity_at_after_started_at"),
-        CheckConstraint(
-            "completed_at IS NULL OR completed_at <= last_activity_at",
-            name="completed_before_last_activity",
-        ),
         ForeignKeyConstraint(
             ["project_id", "survey_id"],
             ["surveys.project_id", "surveys.id"],
@@ -132,19 +112,8 @@ class SubmissionEvent(CoreBase):
     question_node_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
-        CheckConstraint(
-            "event_type IN ('session_started', 'question_viewed', 'answer_saved', 'session_completed')",
-            name="event_type_valid",
-        ),
-        CheckConstraint(
-            "event_type NOT IN ('question_viewed', 'answer_saved') OR question_node_id IS NOT NULL",
-            name="question_required_for_question_events",
-        ),
-        CheckConstraint(
-            "event_type NOT IN ('session_started', 'session_completed') OR question_node_id IS NULL",
-            name="question_absent_for_session_events",
-        ),
         ForeignKeyConstraint(
             ["session_id", "survey_version_id"],
             ["submission_sessions.id", "submission_sessions.survey_version_id"],

@@ -53,6 +53,24 @@ Other useful flags for `run-tests-rebuild-teardown.sh`:
 - `--logs=all` — print Docker logs from all services on failure
 - `--verbose` — full output, no spinner
 
+### Schema checks
+
+Cross-check `db/error_handling/integrity_rules.py` against the real constraint
+names. The rules match on the names Postgres reports at runtime, and the DB is
+built from the SQL schema files (never from ORM metadata), so a renamed or
+removed constraint silently turns a 409 into a 500. This script loads both
+schema files into a throwaway `postgres:17`, reads the actual names from
+`pg_constraint`, and reports dead rules, type mismatches, and unmapped
+constraints. Runs from anywhere; requires Docker and `uv`.
+
+```bash
+bash backend/scripts/check-integrity-rule-constraints.sh
+bash backend/scripts/check-integrity-rule-constraints.sh --keep   # leave the container running
+```
+
+Exits non-zero on dead rules or type mismatches; unmapped constraints are
+advisory only.
+
 ---
 
 ## Auth flow

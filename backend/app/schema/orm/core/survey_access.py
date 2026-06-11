@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     BigInteger,
     Boolean,
-    CheckConstraint,
     Column,
     DateTime,
     ForeignKey,
@@ -58,13 +57,9 @@ class SurveyRole(CoreBase):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
         UniqueConstraint("project_id", "id", name="uq_survey_roles_project_id_id"),
-        UniqueConstraint("project_id", "name", name="uq_survey_roles_project_id_name"),
-        CheckConstraint(
-            "description IS NULL OR char_length(btrim(description)) BETWEEN 1 AND 500",
-            name="description_len",
-        ),
     )
 
     permissions: Mapped[list[Permission]] = relationship("Permission", secondary=survey_role_permissions)
@@ -149,10 +144,9 @@ class SurveyLink(CoreBase):
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
         UniqueConstraint("survey_id", "id", name="uq_survey_links_survey_id_id"),
-        UniqueConstraint("project_id", "id", name="uq_survey_links_project_id_id"),
-        UniqueConstraint("survey_id", "token_prefix", name="uq_survey_links_survey_id_token_prefix"),
         ForeignKeyConstraint(
             ["project_id", "survey_id"],
             ["surveys.project_id", "surveys.id"],
@@ -166,23 +160,6 @@ class SurveyLink(CoreBase):
             ["project_subjects.project_id", "project_subjects.id"],
             ondelete="RESTRICT",
             name="fk_survey_links_assigned_subject_same_project",
-        ),
-        CheckConstraint("char_length(token_prefix) BETWEEN 8 AND 32", name="token_prefix_len"),
-        CheckConstraint("token_hash ~ '^[0-9a-f]{64}$'", name="token_hash_format"),
-        CheckConstraint(
-            "char_length(btrim(name)) BETWEEN 1 AND 120",
-            name="name_len",
-        ),
-        # An email-assigned link must require authenticated access.
-        CheckConstraint(
-            "assigned_email IS NULL OR requires_auth = TRUE",
-            name="email_assignment_requires_auth",
-        ),
-        # used_at is reserved for restricted assigned links; general links are
-        # reusable.
-        CheckConstraint(
-            "used_at IS NULL OR assigned_email IS NOT NULL OR assigned_subject_id IS NOT NULL",
-            name="used_at_requires_assignment",
         ),
     )
 

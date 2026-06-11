@@ -15,7 +15,7 @@ examples.
 
 1. **SQL schema** — `infra/postgres/init/schema/flowform_{core,response}_db_schema_v4.sql`. Runtime source of truth. Constraint names matter: `integrity_rules.py` keys off them exactly. Follow `sqlalchemy_constraint_naming_rules.md` in the same dir.
 
-2. **ORM models** — `app/schema/orm/{core,response}/`. Column types and `__table_args__` mirror the SQL. Core and response models never share base or relationship.
+2. **ORM models** — `app/schema/orm/{core,response}/`. Column types/nullability/defaults match the SQL, but `__table_args__` is not a full mirror: the DB is built from SQL (never from ORM metadata), so keep only what SQLAlchemy needs — foreign keys and the composite UNIQUEs that composite FKs target. CHECKs and non-FK UNIQUEs live in SQL only. Core and response models never share base or relationship.
 
 3. **Mock data** — `infra/postgres/flowform_{core,response}_mock_data.sql`. Every CHECK / FK / UNIQUE in the schema must be satisfied by the seed rows. New NOT NULL column → fill every existing `INSERT`. New CHECK → audit every existing row. Removed column → strip from `INSERT` and `setval(...)` lines.
 
@@ -34,6 +34,22 @@ examples.
 10. **Tests** — service-level path tests + a raw-CHECK integration test (style: `tests/integration/core/test_surveys.py`) when the invariant is structural.
 
 11. **OpenAPI** — examples auto-derive. Verify the new error class instantiates cleanly via `_instantiate_for_doc`; restart Flask to bust the spec cache.
+
+## Verify
+
+After touching layer 1 (SQL schema) or layer 9 (integrity rules), run the
+cross-check script. It loads both schema files into a throwaway `postgres:17`,
+reads the actual constraint names from `pg_constraint`, and reports any rule
+that no longer matches a constraint (dead rule → silent 409→500), type
+mismatches, and unmapped constraints. Catches exactly the drift a rename or
+drop introduces. Runs from anywhere; requires Docker and `uv`.
+
+```bash
+bash backend/scripts/check-integrity-rule-constraints.sh
+```
+
+Exits non-zero on dead rules or type mismatches; unmapped constraints are
+advisory only.
 
 ## Cross-cutting
 

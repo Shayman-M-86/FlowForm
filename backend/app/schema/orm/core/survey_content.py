@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, Literal
 
-from sqlalchemy import BigInteger, CheckConstraint, ForeignKey, Integer, Text, UniqueConstraint, func
+from sqlalchemy import BigInteger, ForeignKey, Integer, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -41,49 +41,12 @@ class SurveyQuestion(TimestampMixin, CoreBase):
     node_type: Mapped[SurveyNodeType] = mapped_column(Text, nullable=False)
     question_schema: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
         UniqueConstraint(
             "survey_version_id",
             "id",
             name="uq_survey_questions_survey_version_id_id",
-        ),
-        UniqueConstraint(
-            "survey_version_id",
-            "question_key",
-            name="uq_survey_questions_survey_version_id_question_key",
-        ),
-        UniqueConstraint(
-            "survey_version_id",
-            "sort_key",
-            name="uq_survey_questions_survey_version_id_sort_key",
-        ),
-        CheckConstraint(
-            "node_type IN ('question', 'rule')",
-            name="node_type_valid",
-        ),
-        CheckConstraint(
-            "sort_key > 0",
-            name="sort_key_positive",
-        ),
-        CheckConstraint(
-            "length(question_key) BETWEEN 1 AND 128",
-            name="question_key_len",
-        ),
-        CheckConstraint(
-            "question_key ~ '^[A-Za-z0-9_-]+$'",
-            name="question_key_format",
-        ),
-        CheckConstraint(
-            "length(question_schema::text) <= 10000",
-            name="schema_size",
-        ),
-        CheckConstraint(
-            "node_type <> 'question' OR jsonb_typeof(question_schema) = 'object'",
-            name="question_schema_is_object",
-        ),
-        CheckConstraint(
-            "node_type <> 'question' OR question_schema->>'family' IN ('choice', 'field', 'matching', 'rating')",
-            name="question_family_valid",
         ),
     )
 
@@ -105,45 +68,6 @@ class SurveyScoringRule(TimestampMixin, CoreBase):
     scoring_key: Mapped[str] = mapped_column(Text, nullable=False)
     scoring_schema: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
-    __table_args__ = (
-        UniqueConstraint(
-            "survey_version_id",
-            "scoring_key",
-            name="uq_survey_scoring_rules_survey_version_id_scoring_key",
-        ),
-        CheckConstraint(
-            "jsonb_typeof(scoring_schema) = 'object'",
-            name="scoring_schema_is_object",
-        ),
-        CheckConstraint(
-            "scoring_schema ?& ARRAY['target', 'bucket', 'strategy', 'config']",
-            name="scoring_schema_required_keys_present",
-        ),
-        CheckConstraint(
-            "jsonb_typeof(scoring_schema->'target') = 'string' AND btrim(scoring_schema->>'target') <> ''",
-            name="scoring_target_valid",
-        ),
-        CheckConstraint(
-            "jsonb_typeof(scoring_schema->'bucket') = 'string' AND btrim(scoring_schema->>'bucket') <> ''",
-            name="scoring_bucket_valid",
-        ),
-        CheckConstraint(
-            "scoring_schema->>'strategy' IN ("
-            "'choice_option_map', "
-            "'matching_answer_key', "
-            "'rating_direct', "
-            "'field_numeric_ranges'"
-            ")",
-            name="scoring_strategy_valid",
-        ),
-        CheckConstraint(
-            "jsonb_typeof(scoring_schema->'config') = 'object'",
-            name="scoring_config_is_object",
-        ),
-        CheckConstraint(
-            "(scoring_schema ? 'condition') = FALSE OR jsonb_typeof(scoring_schema->'condition') = 'object'",
-            name="scoring_condition_is_object",
-        ),
-    )
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
 
     survey_version: Mapped[SurveyVersion] = relationship("SurveyVersion", foreign_keys=[survey_version_id])

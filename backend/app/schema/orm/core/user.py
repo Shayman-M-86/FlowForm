@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, Identity, Text, func, text
+from sqlalchemy import BigInteger, Boolean, DateTime, Identity, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
@@ -26,17 +26,8 @@ class User(CoreBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     platform_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    __table_args__ = (
-        CheckConstraint(
-            "NOT platform_admin OR id = 1",
-            name="platform_admin",
-        ),
-        CheckConstraint(
-            "public_id ~ '^[A-Za-z0-9_-]{8}$'",
-            name="public_id_format",
-)
-    )
-    
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
+
     project_memberships: Mapped[list[ProjectMembership]] = relationship(
         "ProjectMembership",
         back_populates="user",
