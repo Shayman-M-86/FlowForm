@@ -81,9 +81,10 @@ def make_survey_version(survey_id: int, user_id: int, version_number: int = 1, s
     return version
 
 
-def make_survey_public_link(survey_id: int, name: str = "test link") -> SurveyPublicLink:
+def make_survey_public_link(project_id: int, survey_id: int, name: str = "test link") -> SurveyPublicLink:
     _, prefix, token_hash = make_token_pair()
     link = SurveyPublicLink()
+    link.project_id = project_id
     link.survey_id = survey_id
     link.name = name
     link.token_prefix = prefix

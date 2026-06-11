@@ -105,28 +105,28 @@ once Phase 3-4 services replace the old submission path, not fixed now.
   - [x] `PUT /public/submission-sessions/current/answers/{question_node_id}`
   - [x] `POST /public/submission-sessions/current/events/question-viewed`
   - [x] `POST /public/submission-sessions/current/complete`
-- [ ] Add administrator response routes:
-  - [ ] `GET /projects/{project_id}/surveys/{survey_id}/responses`
-  - [ ] `GET /projects/{project_id}/surveys/{survey_id}/responses/{session_id}`
-  - [ ] `GET /projects/{project_id}/surveys/{survey_id}/responses/{session_id}/history`
-  - [ ] `POST /projects/{project_id}/surveys/{survey_id}/responses/export`
-  - [ ] `DELETE /projects/{project_id}/surveys/{survey_id}/responses/{session_id}`
+- [x] Add administrator response routes:
+  - [x] `GET /projects/{project_id}/surveys/{survey_id}/responses`
+  - [x] `GET /projects/{project_id}/surveys/{survey_id}/responses/{session_id}`
+  - [x] `GET /projects/{project_id}/surveys/{survey_id}/responses/{session_id}/history`
+  - [x] `POST /projects/{project_id}/surveys/{survey_id}/responses/export`
+  - [x] `DELETE /projects/{project_id}/surveys/{survey_id}/responses/{session_id}`
 - [ ] Add request and response schemas for:
   - [x] start session
   - [x] current session
   - [x] save answer
   - [x] question-viewed event
   - [x] complete session
-  - [ ] list admin responses
-  - [ ] admin response detail
-  - [ ] admin response history
+  - [x] list admin responses
+  - [x] admin response detail
+  - [x] admin response history
 - [x] Keep plaintext answers out of response-database API shapes.
 - [x] Decide whether old `/public/submissions/slug` and `/public/submissions/link` routes are removed, disabled, or left temporarily broken.
 
 Done when:
 
-- [ ] Routes exist and validate request shapes.
-- [ ] Routes return stable placeholder responses where service behavior is not implemented yet.
+- [x] Routes exist and validate request shapes.
+- [x] Routes return stable placeholder responses where service behavior is not implemented yet.
 - [x] OpenAPI generation still works if this repo uses generated API docs.
 
 Phase 2 public-contract status (2026-06-11):
@@ -147,6 +147,29 @@ Phase 2 public-contract status (2026-06-11):
   services wire real core/response database behavior.
 - Added `backend/tests/unit/test_submission_session_contracts.py` to pin the
   request validation and OpenAPI path/method contract.
+
+Phase 2 admin-contract status (2026-06-11):
+
+- Added the five administrator response route stubs in
+  `backend/app/api/v1/projects/responses.py`, registered on `projects_bp`:
+  list, detail, history, export, and delete. Each requires
+  `@auth.require_auth()` and `submission:view` via `require_survey_permission`.
+- Added `backend/app/schema/api/requests/responses.py`
+  (`ListResponsesRequest`, `ExportResponsesRequest`) and
+  `backend/app/schema/api/responses/responses.py` (response summary,
+  paginated list, detail, history, and export shapes). Admin detail/history
+  carry decrypted canonical answers keyed by `question_node_id` only — no
+  response-database locators, crypto material, or `user_id` leak into the API.
+- Kept behavior skeletal: handlers validate request shapes and return stable
+  placeholder bodies (`responses_temp.py`) — empty list/detail/history,
+  202 + null `download_url` for export, 204 for delete — until the Phase 7
+  admin-read service derives locators and decrypts real envelopes.
+- Added admin-contract coverage to
+  `backend/tests/unit/test_submission_session_contracts.py` pinning request
+  validation and the OpenAPI path/method contract for the five routes.
+- Added a per-file `ARG001` ignore for `responses.py` in `pyproject.toml`:
+  handlers must declare every path param for Flask binding and survey-access
+  checks but cannot consume them all until the Phase 7 service lands.
 
 ## Phase 2.5: Subject Access Amendment
 

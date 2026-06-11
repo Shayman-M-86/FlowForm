@@ -8,7 +8,6 @@ from app.services.members import MembersService
 from app.services.projects import ProjectService
 from app.services.public_links import SurveyLinkService
 from app.services.roles import RolesService
-from app.services.submissions import SubmissionQueryService
 from app.services.surveys import SurveyService
 from app.services.users import UserService
 
@@ -23,10 +22,9 @@ project_service = ProjectService()
 roles_service = RolesService()
 survey_link_service = SurveyLinkService()
 survey_service = SurveyService()
-submission_query_service = SubmissionQueryService()
 
 # Import sub-modules to register their routes on projects_bp
 from app.api.v1.projects import (  # noqa: E402, I001
-    content, core, members, public_links, roles, submissions,
+    content, core, members, public_links, roles, survey_responses,
     survey_members, survey_roles, surveys, versions,
 )

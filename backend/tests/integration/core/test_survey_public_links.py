@@ -19,6 +19,7 @@ def test_survey_public_link_can_be_created(
     _, prefix, token_hash = make_token_pair()
 
     link = SurveyLink()
+    link.project_id = survey.project_id
     link.survey_id = survey.id
     link.name = "test link"
     link.token_prefix = prefix
@@ -45,6 +46,7 @@ def test_survey_public_link_unique_token_hash(
     _, prefix_a, token_hash = make_token_pair()
 
     link_a = SurveyLink()
+    link_a.project_id = survey.project_id
     link_a.survey_id = survey.id
     link_a.name = "link a"
     link_a.token_prefix = prefix_a
@@ -55,6 +57,7 @@ def test_survey_public_link_unique_token_hash(
     _, prefix_b, _ = make_token_pair()
 
     link_b = SurveyLink()
+    link_b.project_id = survey.project_id
     link_b.survey_id = survey.id
     link_b.name = "link b"
     link_b.token_prefix = prefix_b
@@ -81,6 +84,7 @@ def test_survey_public_link_unique_prefix_within_survey(
     _, token_prefix, hash_a = make_token_pair()
 
     link_a = SurveyLink()
+    link_a.project_id = survey.project_id
     link_a.survey_id = survey.id
     link_a.name = "link a"
     link_a.token_prefix = token_prefix
@@ -91,6 +95,7 @@ def test_survey_public_link_unique_prefix_within_survey(
     _, _, hash_b = make_token_pair()
 
     link_b = SurveyLink()
+    link_b.project_id = survey.project_id
     link_b.survey_id = survey.id
     link_b.name = "link b"
     link_b.token_prefix = token_prefix
@@ -117,6 +122,7 @@ def test_survey_public_link_rejects_short_token_prefix(
     _, _, token_hash = make_token_pair()
 
     link = SurveyLink()
+    link.project_id = survey.project_id
     link.survey_id = survey.id
     link.name = "test link"
     link.token_prefix = "short"  # 5 chars — below the 8-char minimum
@@ -136,17 +142,18 @@ def test_survey_public_link_rejects_short_token_prefix(
     db_session.rollback()
 
 
-def test_survey_public_link_rejects_short_token_hash(
+def test_survey_public_link_rejects_malformed_token_hash(
     db_session: scoped_session[Session], survey: Survey
 ) -> None:
-    """token_hash must be at least 32 characters."""
+    """token_hash must be a 64-character lowercase hex string."""
     _, prefix, _ = make_token_pair()
 
     link = SurveyLink()
+    link.project_id = survey.project_id
     link.survey_id = survey.id
     link.name = "test link"
     link.token_prefix = prefix
-    link.token_hash = "tooshort"  # 8 chars — below the 32-char minimum
+    link.token_hash = "tooshort"  # not a 64-char hex digest
     db_session.add(link)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -154,8 +161,8 @@ def test_survey_public_link_rejects_short_token_hash(
 
     orig = cast(CheckViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
-    assert constraint == "ck_survey_links_token_hash_len", (
-        f"Expected constraint 'ck_survey_links_token_hash_len', got '{constraint}'\n"
+    assert constraint == "ck_survey_links_token_hash_format", (
+        f"Expected constraint 'ck_survey_links_token_hash_format', got '{constraint}'\n"
         f"DB error: {exc_info.value}"
     )
 
@@ -169,6 +176,7 @@ def test_survey_public_link_requires_token_prefix(
     _, _, token_hash = make_token_pair()
 
     link = SurveyLink()
+    link.project_id = survey.project_id
     link.survey_id = survey.id
     link.name = "test link"
     link.token_prefix = None  # type: ignore[assignment]
@@ -195,6 +203,7 @@ def test_survey_public_link_requires_token_hash(
     _, prefix, _ = make_token_pair()
 
     link = SurveyLink()
+    link.project_id = survey.project_id
     link.survey_id = survey.id
     link.name = "test link"
     link.token_prefix = prefix
@@ -221,6 +230,7 @@ def test_survey_public_link_cascades_on_survey_delete(
     _, prefix, token_hash = make_token_pair()
 
     link = SurveyLink()
+    link.project_id = survey.project_id
     link.survey_id = survey.id
     link.name = "test link"
     link.token_prefix = prefix

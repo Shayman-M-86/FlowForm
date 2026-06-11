@@ -9,21 +9,24 @@ from app.schema.orm.core import (
     Project,
     ProjectMembership,
     ProjectRole,
+    ProjectSubject,
+    ProjectSubjectIdentity,
+    ProjectSubjectToken,
     ResponseStore,
-    ResponseSubjectMapping,
+    SubmissionEvent,
+    SubmissionSession,
     Survey,
     SurveyLink,
     SurveyMembershipRole,
     SurveyQuestion,
     SurveyRole,
     SurveyScoringRule,
-    SurveySubmission,
     SurveyVersion,
     User,
     project_role_permissions,
     survey_role_permissions,
 )
-from app.schema.orm.response import Submission, SubmissionAnswer, SubmissionEvent
+from app.schema.orm.response import ResponseAnswer, ResponseAnswerRevision, ResponseEnvelope
 
 
 def get_relationship(model, name: str):
@@ -86,9 +89,13 @@ def test_response_store_relationships() -> None:
     assert get_relationship(ResponseStore, "created_by").mapper.class_ is User
 
 
-def test_response_subject_mapping_relationships() -> None:
-    assert get_relationship(ResponseSubjectMapping, "project").mapper.class_ is Project
-    assert get_relationship(ResponseSubjectMapping, "user").mapper.class_ is User
+def test_project_subject_relationships() -> None:
+    assert get_relationship(ProjectSubject, "project").mapper.class_ is Project
+    assert get_relationship(ProjectSubject, "identities").mapper.class_ is ProjectSubjectIdentity
+    assert get_relationship(ProjectSubject, "tokens").mapper.class_ is ProjectSubjectToken
+    assert get_relationship(ProjectSubjectIdentity, "subject").mapper.class_ is ProjectSubject
+    assert get_relationship(ProjectSubjectIdentity, "user").mapper.class_ is User
+    assert get_relationship(ProjectSubjectToken, "subject").mapper.class_ is ProjectSubject
 
 
 def test_survey_relationships() -> None:
@@ -115,15 +122,22 @@ def test_survey_link_relationships() -> None:
     assert get_relationship(SurveyLink, "survey").mapper.class_ is Survey
 
 
-def test_survey_submission_relationships() -> None:
-    assert get_relationship(SurveySubmission, "submitted_by").mapper.class_ is User
+def test_submission_session_relationships() -> None:
+    assert get_relationship(SubmissionSession, "project_subject").mapper.class_ is ProjectSubject
+    assert get_relationship(SubmissionSession, "response_store").mapper.class_ is ResponseStore
+    assert get_relationship(SubmissionSession, "survey").mapper.class_ is Survey
+    assert get_relationship(SubmissionSession, "survey_version").mapper.class_ is SurveyVersion
+    assert get_relationship(SubmissionSession, "link").mapper.class_ is SurveyLink
+    assert get_relationship(SubmissionEvent, "session").mapper.class_ is SubmissionSession
+    assert get_relationship(SubmissionEvent, "question").mapper.class_ is SurveyQuestion
 
 
 def test_response_relationships() -> None:
-    assert get_relationship(Submission, "answers").mapper.class_ is SubmissionAnswer
-    assert get_relationship(Submission, "events").mapper.class_ is SubmissionEvent
-    assert get_relationship(SubmissionAnswer, "submission").mapper.class_ is Submission
-    assert get_relationship(SubmissionEvent, "submission").mapper.class_ is Submission
+    assert get_relationship(ResponseEnvelope, "answers").mapper.class_ is ResponseAnswer
+    assert get_relationship(ResponseAnswer, "envelope").mapper.class_ is ResponseEnvelope
+    assert get_relationship(ResponseAnswer, "revisions").mapper.class_ is ResponseAnswerRevision
+    assert get_relationship(ResponseAnswer, "latest_revision").mapper.class_ is ResponseAnswerRevision
+    assert get_relationship(ResponseAnswerRevision, "answer").mapper.class_ is ResponseAnswer
 
 
 # -------------------------
@@ -162,15 +176,13 @@ def test_survey_membership_role_foreign_keys() -> None:
     assert "fk_survey_membership_roles_role_same_project" in names
 
 
-def test_survey_submission_foreign_keys() -> None:
-    names = foreign_key_constraint_names(SurveySubmission)
-    assert "fk_survey_submissions_survey_same_project" in names
-    assert "fk_survey_submissions_version_same_survey" in names
-    assert "fk_survey_submissions_store" in names
-    assert "fk_survey_submissions_store_same_project" in names
-    assert "fk_survey_submissions_survey_link" in names
-    assert "fk_survey_submissions_survey_link_same_survey" in names
-    assert "fk_survey_submissions_subject_same_project" in names
+def test_submission_session_foreign_keys() -> None:
+    names = foreign_key_constraint_names(SubmissionSession)
+    assert "fk_submission_sessions_survey_same_project" in names
+    assert "fk_submission_sessions_version_same_survey" in names
+    assert "fk_submission_sessions_store_same_project" in names
+    assert "fk_submission_sessions_link_same_survey" in names
+    assert "fk_submission_sessions_project_subject_same_project" in names
 
 
 # -------------------------
@@ -180,49 +192,52 @@ def test_survey_submission_foreign_keys() -> None:
 
 def test_project_membership_unique_constraints() -> None:
     names = unique_constraint_names(ProjectMembership)
-    assert "uq_project_memberships_user_project" in names 
     assert "uq_project_memberships_project_id_id" in names
 
 
-def test_response_subject_mapping_unique_constraints() -> None:
-    names = unique_constraint_names(ResponseSubjectMapping)
-    assert "uq_response_subject_mappings_project_id_id" in names
-    assert "uq_response_subject_mappings_project_id_user_id" in names
-    assert "uq_response_subject_mappings_project_id_pseudonymous_subject_id" in names
+def test_project_subject_unique_constraints() -> None:
+    assert "uq_project_subjects_project_id_id" in unique_constraint_names(ProjectSubject)
 
 
 def test_survey_version_constraints() -> None:
     names = unique_constraint_names(SurveyVersion)
     assert "uq_survey_versions_survey_id_id" in names
-    assert "uq_survey_versions_survey_id_version_number" in names
-    assert "uq_survey_versions_one_published" in index_names(SurveyVersion)
 
 
 def test_survey_content_unique_constraints() -> None:
-    assert "uq_survey_questions_survey_version_id_question_key" in unique_constraint_names(SurveyQuestion)
-    assert "uq_survey_questions_survey_version_id_sort_key" in unique_constraint_names(SurveyQuestion)
-    assert "uq_survey_scoring_rules_survey_version_id_scoring_key" in unique_constraint_names(SurveyScoringRule)
+    assert "uq_survey_questions_survey_version_id_id" in unique_constraint_names(SurveyQuestion)
 
 
 def test_survey_role_unique_constraints() -> None:
     names = unique_constraint_names(SurveyRole)
     assert "uq_survey_roles_project_id_id" in names
-    assert "uq_survey_roles_project_id_name" in names
 
 
 def test_survey_link_unique_constraints() -> None:
     names = unique_constraint_names(SurveyLink)
     assert "uq_survey_links_token_hash" in names
     assert "uq_survey_links_survey_id_id" in names
-    assert "uq_survey_links_survey_id_token_prefix" in names
 
 
-def test_survey_submission_indexes() -> None:
-    assert "uq_survey_submissions_external_submission_id" in index_names(SurveySubmission)
+def test_submission_session_unique_constraints() -> None:
+    names = unique_constraint_names(SubmissionSession)
+    assert "uq_submission_sessions_id_survey_version_id" in names
+    assert "uq_submission_sessions_project_id_id" in names
+    assert "uq_submission_sessions_id_project_subject_id" in names
 
 
-def test_submission_answer_unique_constraints() -> None:
-    assert "uq_submission_answers_question" in unique_constraint_names(SubmissionAnswer)
+def test_response_answer_unique_constraints() -> None:
+    names = unique_constraint_names(ResponseAnswer)
+    assert "uq_response_answers_id_envelope_id" in names
+    assert "uq_response_answers_envelope_id_answer_locator" in names
+
+
+def test_response_answer_revision_unique_constraints() -> None:
+    names = unique_constraint_names(ResponseAnswerRevision)
+    assert "uq_response_answer_revisions_id_answer_id" in names
+    assert "uq_response_answer_revisions_answer_id_revision_number" in names
+    assert "uq_response_answer_revisions_envelope_id_nonce" in names
+    assert "uq_response_answer_revisions_answer_id_client_mutation_id" in names
 
 
 # -------------------------

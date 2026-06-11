@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.extensions import db_manager
 from app.db.base import ResponseBase
-from app.schema.orm.response import Submission, SubmissionAnswer, SubmissionEvent
+from app.schema.orm.response import ResponseAnswer, ResponseAnswerRevision, ResponseEnvelope
 
 
 def assert_model_uses_response_db(
@@ -46,9 +46,9 @@ def assert_model_uses_response_db(
 @pytest.mark.parametrize(
     "model",
     [
-        Submission,
-        SubmissionAnswer,
-        SubmissionEvent,
+        ResponseEnvelope,
+        ResponseAnswer,
+        ResponseAnswerRevision,
     ],
 )
 def test_response_models_use_response_db(

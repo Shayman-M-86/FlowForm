@@ -1,14 +1,39 @@
+from collections.abc import Iterator
 from uuid import UUID
 
 import pytest
 from pydantic import ValidationError
 
+import app.api.v1  # noqa: F401  (imported for @openapi_route registration side effect)
+import app.openapi.registry as openapi_registry
 from app.openapi.export import _build_minimal_spec_app
 from app.openapi.spec import build_spec
 from app.schema.api.requests.submission_sessions import (
     SaveSubmissionSessionAnswerRequest,
     StartSubmissionSessionRequest,
 )
+from app.schema.api.requests.survey_responses import ExportSurveyResponsesRequest, ListSurveyResponsesRequest
+
+# Snapshot the global @openapi_route registry at import time, once the v1 route
+# decorators (loaded via ``import app.api.v1`` above) have populated it. Other
+# suites (e.g. test_openapi_spec.py) clear the registry on teardown, so by the
+# time a spec-building test here runs it may be empty depending on collection
+# order. Restoring from this snapshot keeps the spec assertions order-independent
+# without re-importing route modules (which would double-register blueprints).
+_REGISTRY_SNAPSHOT = openapi_registry.get_registered_routes()
+
+
+@pytest.fixture
+def restored_openapi_registry() -> Iterator[None]:
+    """Restore the captured @openapi_route registry for the duration of a test."""
+    saved = openapi_registry.get_registered_routes()
+    openapi_registry.clear_registry()
+    openapi_registry._REGISTRY.extend(_REGISTRY_SNAPSHOT)
+    try:
+        yield
+    finally:
+        openapi_registry.clear_registry()
+        openapi_registry._REGISTRY.extend(saved)
 
 
 def test_start_submission_session_accepts_public_slug_access() -> None:
@@ -86,7 +111,7 @@ def test_clear_answer_forbids_answer_payload() -> None:
     assert "answer_family must be omitted" in exc_info.value.errors()[0]["msg"]
 
 
-def test_submission_session_paths_are_in_openapi_spec() -> None:
+def test_submission_session_paths_are_in_openapi_spec(restored_openapi_registry: None) -> None:
     app = _build_minimal_spec_app()
     spec = build_spec(app)
     paths = spec["paths"]
@@ -110,3 +135,47 @@ def test_save_answer_accepts_client_mutation_uuid() -> None:
     )
 
     assert payload.client_mutation_id == UUID("ce823b7d-5295-4ca6-bbb8-cfe367f28b31")
+
+
+def test_list_responses_request_applies_pagination_defaults() -> None:
+    payload = ListSurveyResponsesRequest.model_validate({})
+
+    assert payload.page == 1
+    assert payload.page_size == 20
+    assert payload.status is None
+
+
+def test_list_responses_request_rejects_unknown_status() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        ListSurveyResponsesRequest.model_validate({"status": "not_a_status"})
+
+    assert exc_info.value.errors()[0]["loc"] == ("status",)
+
+
+def test_export_responses_request_defaults_to_csv() -> None:
+    payload = ExportSurveyResponsesRequest.model_validate({})
+
+    assert payload.format == "csv"
+    assert payload.include_history is False
+    assert payload.session_ids is None
+
+
+def test_export_responses_request_rejects_extra_fields() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        ExportSurveyResponsesRequest.model_validate({"format": "json", "survey_version_id": 3})
+
+    fields = {error["loc"][0] for error in exc_info.value.errors()}
+    assert "survey_version_id" in fields
+
+
+def test_admin_response_paths_are_in_openapi_spec(restored_openapi_registry: None) -> None:
+    app = _build_minimal_spec_app()
+    spec = build_spec(app)
+    paths = spec["paths"]
+
+    base = "/api/v1/projects/{project_id}/surveys/{survey_id}/responses"
+    assert "get" in paths[base]
+    assert "post" in paths[f"{base}/export"]
+    assert "get" in paths[f"{base}/{{session_id}}"]
+    assert "delete" in paths[f"{base}/{{session_id}}"]
+    assert "get" in paths[f"{base}/{{session_id}}/history"]

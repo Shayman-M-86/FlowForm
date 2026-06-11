@@ -90,6 +90,10 @@ ignore = [
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
+# Phase 2 admin response routes are contract-first stubs: handlers must declare
+# every path parameter for Flask binding and survey-access checks, but do not
+# consume all of them until the Phase 7 admin-read service lands.
+"app/api/v1/projects/survey_responses.py" = ["ARG001"]
 "tests/**/*.py" = ["D", "ARG001"]
 "migrations/**/*.py" = ["D"]
 "scripts/**/*.py" = ["D"]

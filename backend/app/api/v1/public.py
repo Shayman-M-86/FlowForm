@@ -10,17 +10,13 @@ from app.api.v1.public_submission_session_temp import (
     set_placeholder_submission_session_cookie,
 )
 from app.core.extensions import auth
-from app.db.context import get_core_db, get_response_db
+from app.db.context import get_core_db
 from app.openapi import openapi_route
 from app.schema.api.requests.public_links import ResolveTokenRequest
 from app.schema.api.requests.submission_sessions import (
     QuestionViewedEventRequest,
     SaveSubmissionSessionAnswerRequest,
     StartSubmissionSessionRequest,
-)
-from app.schema.api.requests.submissions.create import (
-    LinkSubmissionRequest,
-    SlugSubmissionRequest,
 )
 from app.schema.api.requests.surveys import ListPublicSurveysRequest
 from app.schema.api.responses.public_links import PublicLinkResponses, ResolveLinkResponses
@@ -29,7 +25,6 @@ from app.schema.api.responses.submission_sessions import (
     PublicSubmissionSessionResponses,
     SubmissionSessionAnswerResponses,
 )
-from app.schema.api.responses.submissions import AnswerResponses, CoreSubmissionResponses, LinkedSubmissionResponses
 from app.schema.api.responses.surveys import (
     PaginatedPublicSurveysResponses,
     PublicSurveyResponses,
@@ -38,7 +33,6 @@ from app.schema.api.responses.surveys import (
 )
 from app.services.public_links import SurveyLinkService
 from app.services.public_surveys import PublicSurveyService
-from app.services.submissions import SubmissionIntakeService
 from app.services.users import UserService
 
 logger = getLogger(__name__)
@@ -47,7 +41,7 @@ public_bp = Blueprint("public_v1", __name__)
 
 users_service = UserService()
 survey_link_service = SurveyLinkService()
-submission_intake_service = SubmissionIntakeService()
+
 public_survey_service = PublicSurveyService()
 
 
@@ -206,68 +200,3 @@ def record_submission_session_question_viewed():
 def complete_submission_session():
     response = CompleteSubmissionSessionResponses(status="completed", completed_at=datetime.now(UTC))
     return response.model_dump(mode="json"), 200
-
-
-# TODO(phase2): Decommission this legacy one-shot plaintext submission endpoint
-# after the public session routes become the respondent write path.
-@openapi_route(
-    summary="Create slug submission",
-    request_model=SlugSubmissionRequest,
-    response_model=LinkedSubmissionResponses,
-    status_code=201,
-    tags=["Public Submissions"],
-    auth="optional",
-)
-@public_bp.route("/submissions/slug", methods=["POST"])
-@auth.optional_auth()
-def create_slug_submission():
-    payload = parse(SlugSubmissionRequest, request)
-    core_db = get_core_db()
-    response_db = get_response_db()
-    submitted_by_user_id = None
-    current_sub = auth.get_optional_current_user_sub()
-    if current_sub is not None:
-        submitted_by_user_id = users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub).id
-
-    linked = submission_intake_service.create_slug_submission(
-        core_db,
-        response_db,
-        payload=payload,
-        submitted_by_user_id=submitted_by_user_id,
-    )
-    response = LinkedSubmissionResponses(
-        core=CoreSubmissionResponses.model_validate(linked.core_submission),
-        answers=[AnswerResponses.model_validate(a) for a in linked.answers],
-    )
-    return response.model_dump(mode="json"), 201
-
-
-# TODO(phase2): Decommission this legacy one-shot plaintext submission endpoint
-# after link-token access is folded into POST /public/submission-sessions.
-@openapi_route(
-    summary="Create link submission",
-    request_model=LinkSubmissionRequest,
-    response_model=LinkedSubmissionResponses,
-    status_code=201,
-    tags=["Public Submissions"],
-    auth="optional",
-)
-@public_bp.route("/submissions/link", methods=["POST"])
-@auth.optional_auth()
-def create_link_submission():
-    payload = parse(LinkSubmissionRequest, request)
-    core_db = get_core_db()
-    response_db = get_response_db()
-    current_sub = auth.get_optional_current_user_sub()
-    user = users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub) if current_sub is not None else None
-    linked = submission_intake_service.create_link_submission(
-        core_db,
-        response_db,
-        payload=payload,
-        actor=user,
-    )
-    response = LinkedSubmissionResponses(
-        core=CoreSubmissionResponses.model_validate(linked.core_submission),
-        answers=[AnswerResponses.model_validate(a) for a in linked.answers],
-    )
-    return response.model_dump(mode="json"), 201

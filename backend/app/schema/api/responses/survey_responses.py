@@ -1,0 +1,85 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any, Literal
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.schema.api import limits
+from app.schema.api.enums import AnswerFamily
+
+SurveyResponseSessionStatus = Literal["in_progress", "completed", "abandoned"]
+SurveyResponseAnswerState = Literal["answered", "cleared"]
+
+
+class SurveyResponseSummaryResponses(BaseModel):
+    """Admin-facing summary of one respondent submission session.
+
+    Sourced from core session metadata only; carries no decrypted answer
+    payloads and no response-database locators or crypto material.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    session_id: UUID
+    survey_id: int
+    survey_version_id: int
+    status: SurveyResponseSessionStatus
+    started_at: datetime
+    completed_at: datetime | None = None
+    last_activity_at: datetime
+
+
+class PaginatedSurveyResponsesResponses(BaseModel):
+    """Paginated list of admin survey-response summaries."""
+
+    items: list[SurveyResponseSummaryResponses] = Field(max_length=limits.LIST_PAGE_SIZE_MAX)
+    total: int
+    page: int
+    page_size: int
+
+
+class SurveyResponseAnswerResponses(BaseModel):
+    """One decrypted canonical answer in an admin survey-response detail view."""
+
+    question_node_id: UUID
+    state: SurveyResponseAnswerState
+    answer_family: AnswerFamily | None = None
+    answer_value: dict[str, Any] | None = None
+    revision_number: int
+    saved_at: datetime
+
+
+class SurveyResponseDetailResponses(BaseModel):
+    """Admin survey-response detail: session metadata plus canonical decrypted answers."""
+
+    session: SurveyResponseSummaryResponses
+    answers: list[SurveyResponseAnswerResponses] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
+
+
+class SurveyResponseAnswerRevisionResponses(BaseModel):
+    """One historical decrypted answer revision for the answer-history view."""
+
+    question_node_id: UUID
+    state: SurveyResponseAnswerState
+    answer_family: AnswerFamily | None = None
+    answer_value: dict[str, Any] | None = None
+    revision_number: int
+    saved_at: datetime
+
+
+class SurveyResponseHistoryResponses(BaseModel):
+    """Admin answer-history view: every decrypted revision for a session."""
+
+    session: SurveyResponseSummaryResponses
+    revisions: list[SurveyResponseAnswerRevisionResponses] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
+
+
+class SurveyResponseExportResponses(BaseModel):
+    """Result envelope for a survey-response export request."""
+
+    format: Literal["csv", "json"]
+    include_history: bool
+    session_count: int
+    download_url: str | None = None

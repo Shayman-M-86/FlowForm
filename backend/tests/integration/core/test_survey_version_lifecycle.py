@@ -8,12 +8,8 @@ from sqlalchemy.orm import Session, scoped_session
 
 from app.core.errors import AppError
 from app.repositories import surveys_repo
-from app.schema.api.requests.submissions.answers import FieldAnswerIn, FieldAnswerValue
-from app.schema.api.requests.submissions.create import SlugSubmissionRequest
 from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
-from app.services.submissions import SubmissionIntakeService
 from app.services.surveys import SurveyService
-from tests.integration.conftest import DbSessions
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -22,7 +18,6 @@ from tests.integration.core.factories import (
     make_survey_rule,
     make_survey_scoring_rule,
     make_survey_version,
-    make_user,
 )
 
 
@@ -190,72 +185,6 @@ def test_copy_version_to_draft_clones_content_and_creates_new_version_number(
     assert copied_rules[0].question_key == "r1"
     assert len(copied_scoring_rules) == 1
     assert copied_scoring_rules[0].scoring_key == "s1"
-
-
-def test_unpublished_survey_rejects_submission_after_unpublish(
-    db_sessions: DbSessions,
-) -> None:
-    core_db = db_sessions.core
-    response_db = db_sessions.response
-
-    user = make_user(auth0_user_id="auth0|submit-blocked", email="submit-blocked@example.com")
-    core_db.add(user)
-    core_db.flush()
-
-    project = make_project(user.id, name="Submit Project", slug="submit-project")
-    core_db.add(project)
-    core_db.flush()
-
-    store = make_response_store(project.id, user.id, name="primary")
-    core_db.add(store)
-    core_db.flush()
-
-    survey = make_survey(project.id, store.id, user.id, title="Submit Survey")
-    survey.visibility = "public"
-    survey.public_slug = "submit-survey"
-    core_db.add(survey)
-    core_db.flush()
-
-    version = make_survey_version(survey.id, user.id, version_number=1, status="published")
-    version.compiled_schema = {"questions": [{"id": 1, "question_key": "q1"}]}
-    version.published_at = datetime(2024, 1, 1, tzinfo=UTC)
-    core_db.add(version)
-    core_db.flush()
-
-    survey.published_version_id = version.id
-    core_db.flush()
-
-    service = SurveyService()
-    service.archive_version(
-        db=core_db,  # type: ignore[arg-type]
-        project_id=project.id,
-        survey_id=survey.id,
-        version_number=1,
-        actor=user,
-    )
-
-    submission_service = SubmissionIntakeService()
-    payload = SlugSubmissionRequest(
-        public_slug=survey.public_slug, # type: ignore
-        survey_version_id=version.id,
-        answers=[
-            FieldAnswerIn(
-                question_key="q1",
-                answer_family="field",
-                answer_value=FieldAnswerValue(value="test"),
-            )
-        ],
-    )
-
-    with pytest.raises(AppError) as exc_info:
-        submission_service.create_slug_submission(
-            core_db,
-            response_db,
-            payload=payload,
-            submitted_by_user_id=user.id,
-        )
-
-    assert exc_info.value.code == "SURVEY_NOT_PUBLISHED"
 
 
 def test_direct_active_archive_trigger_translates_to_app_error_not_key_error(
