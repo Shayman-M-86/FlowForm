@@ -126,11 +126,20 @@ type RuleContext = (
     | ResponseAnswer
     | ResponseAnswerRevision
 )
+# Fields that may be surfaced to API clients (in error messages) *and* written
+# to server logs. This set is deliberately restricted to values the user
+# supplied or chose (emails, slugs, names, keys, version numbers) plus
+# server-controlled enum/bool descriptors that carry no internal identifier.
+#
+# Internal surrogate identifiers — auto-assigned integer primary keys and the
+# foreign keys referencing them (``*_id``), and the pseudonymous correlation
+# UUID — are intentionally excluded. They must never leak to clients, and per
+# project policy they are kept out of the log summaries too. ``summarize_context``
+# in ``error_registry.py`` iterates this set, so dropping a name here removes it
+# from both the unmatched-fallback response body and the logger extras.
 allowed_parameters = {
     "auth0_user_id",
     "email",
-    "survey_id",
-    "project_id",
     "slug",
     "visibility",
     "has_published_version",
@@ -139,41 +148,16 @@ allowed_parameters = {
     "is_published",
     "is_deleted",
     "public_slug",
-    "survey_link_id",
     "assigned_email",
     "requires_auth",
-    "user_id",
-    "session_id",
     "session_status",
-    "event_id",
     "event_type",
-    "question_node_id",
-    "project_subject_id",
-    "survey_version_id",
-    "response_store_id",
-    "pseudonymous_subject_id",
     "subject_code",
-    "assigned_subject_id",
     "normalized_email",
-    "identity_id",
-    "token_id",
-    "ip_observation_id",
-    "submission_session_id",
     "node_type",
-    "survey_question_id",
-    "survey_scoring_rule_id",
     "scoring_key",
-    "project_role_id",
     "name",
-    "role_id",
-    "default_response_store_id",
-    "published_version_id",
-    "invitation_id",
     "invited_email",
-    "envelope_id",
-    "answer_id",
-    "answer_locator",
-    "revision_id",
     "client_mutation_id",
 }
 
@@ -402,39 +386,37 @@ SURVEY_RULES: tuple[DbErrorRule, ...] = (
     ),
     foreign_key_rule(
         "fk_surveys_default_store",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "SURVEY_STORE_MISSING",
-            f"Default response store id={ctx['default_response_store_id']} does not exist.",
+            "The default response store does not exist.",
         ),
         extractor=_survey_ctx,
     ),
     foreign_key_rule(
         "fk_surveys_default_store_same_project",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "SURVEY_STORE_PROJECT_CONFLICT",
-            f"Default response store id={ctx['default_response_store_id']} does"
-            f" not belong to project id={ctx['project_id']}.",
+            "The default response store does not belong to this project.",
         ),
         extractor=_survey_ctx,
     ),
     foreign_key_rule(
         "fk_surveys_published_version_same_survey",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "SURVEY_PUBLISHED_VERSION_MISMATCH",
-            f"Published version id={ctx['published_version_id']} does not belong to survey id={ctx['survey_id']}.",
+            "The published version does not belong to this survey.",
         ),
         extractor=_survey_ctx,
     ),
     message_rule(
         "published_version_id must reference a published, non-deleted version of the same survey",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "SURVEY_PUBLISHED_VERSION_INVALID",
-            f"Published version id={ctx['published_version_id']} must be a"
-            f" published, non-deleted version of survey id={ctx['survey_id']}.",
+            "The published version must be a published, non-deleted version of this survey.",
         ),
         extractor=_survey_ctx,
     ),
@@ -453,29 +435,29 @@ SURVEY_VERSION_RULES: tuple[DbErrorRule, ...] = (
     ),
     unique_rule(
         "uq_survey_versions_one_published",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "VERSION_PUBLISHED_CONFLICT",
-            f"Survey id={ctx['survey_id']} already has a published version.",
+            "This survey already has a published version.",
         ),
         extractor=_survey_version_ctx,
     ),
     message_rule(
         "Cannot delete the active published survey version while it is referenced by surveys.published_version_id",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "VERSION_DELETE_PROTECTED",
-            f"Published version id={ctx['survey_version_id']} cannot be deleted.",
+            "The active published survey version cannot be deleted.",
         ),
         extractor=_survey_version_ctx,
     ),
     message_rule(
         "Cannot unpublish or soft delete the active published survey"
         " version while it is referenced by surveys.published_version_id",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "VERSION_STATE_PROTECTED",
-            f"Published version id={ctx['survey_version_id']} cannot be unpublished or deleted.",
+            "The active published survey version cannot be unpublished or deleted.",
         ),
         extractor=_survey_version_ctx,
     ),
@@ -495,10 +477,10 @@ SURVEY_VERSION_RULES: tuple[DbErrorRule, ...] = (
     # the invariant violation as a 422.
     check_rule(
         "ck_survey_versions_published_requires_schema_and_timestamp",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             500,
             "VERSION_PUBLISH_STATE_INVALID",
-            f"Server invariant violated: survey version id={ctx['survey_version_id']} reached"
+            "Server invariant violated: a survey version reached"
             " status='published' without both compiled_schema and published_at."
             " This indicates a code path bypassed surveys_repo.publish_version.",
         ),
@@ -518,28 +500,28 @@ SURVEY_LINK_RULES: tuple[DbErrorRule, ...] = (
     ),
     unique_rule(
         "uq_survey_links_survey_id_token_prefix",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "LINK_PREFIX_CONFLICT",
-            f"Survey id={ctx['survey_id']} already has a link with this token prefix.",
+            "This survey already has a link with this token prefix.",
         ),
         extractor=_survey_link_ctx,
     ),
     foreign_key_rule(
         "fk_survey_links_survey_same_project",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "LINK_SURVEY_PROJECT_CONFLICT",
-            f"Survey id={ctx['survey_id']} does not belong to project id={ctx['project_id']}.",
+            "The survey does not belong to this project.",
         ),
         extractor=_survey_link_ctx,
     ),
     foreign_key_rule(
         "fk_survey_links_assigned_subject_same_project",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "LINK_SUBJECT_PROJECT_CONFLICT",
-            f"Assigned subject id={ctx['assigned_subject_id']} does not belong to project id={ctx['project_id']}.",
+            "The assigned subject does not belong to this project.",
         ),
         extractor=_survey_link_ctx,
     ),
@@ -551,7 +533,7 @@ PROJECT_SUBJECT_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             409,
             "SUBJECT_CODE_CONFLICT",
-            f"Project id={ctx['project_id']} already uses subject code={ctx['subject_code']!r}.",
+            f"This project already uses subject code={ctx['subject_code']!r}.",
         ),
         extractor=_project_subject_ctx,
     ),
@@ -560,19 +542,19 @@ PROJECT_SUBJECT_RULES: tuple[DbErrorRule, ...] = (
 PROJECT_SUBJECT_IDENTITY_RULES: tuple[DbErrorRule, ...] = (
     foreign_key_rule(
         "fk_project_subject_identities_subject_same_project",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "IDENTITY_SUBJECT_PROJECT_CONFLICT",
-            f"Project subject id={ctx['project_subject_id']} does not belong to project id={ctx['project_id']}.",
+            "The project subject does not belong to this project.",
         ),
         extractor=_project_subject_identity_ctx,
     ),
     unique_rule(
         "uq_project_subject_identities_active_user",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "IDENTITY_USER_CONFLICT",
-            f"User id={ctx['user_id']} already has an active subject in project id={ctx['project_id']}.",
+            "This user already has an active subject in this project.",
         ),
         extractor=_project_subject_identity_ctx,
     ),
@@ -581,8 +563,7 @@ PROJECT_SUBJECT_IDENTITY_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             409,
             "IDENTITY_SUBJECT_EMAIL_CONFLICT",
-            f"Subject id={ctx['project_subject_id']} already has an active identity for"
-            f" email={ctx['normalized_email']!r}.",
+            f"This subject already has an active identity for email={ctx['normalized_email']!r}.",
         ),
         extractor=_project_subject_identity_ctx,
     ),
@@ -591,8 +572,7 @@ PROJECT_SUBJECT_IDENTITY_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             409,
             "IDENTITY_VERIFIED_EMAIL_CONFLICT",
-            f"Email={ctx['normalized_email']!r} is already verified for another subject"
-            f" in project id={ctx['project_id']}.",
+            f"Email={ctx['normalized_email']!r} is already verified for another subject in this project.",
         ),
         extractor=_project_subject_identity_ctx,
     ),
@@ -610,10 +590,10 @@ PROJECT_SUBJECT_TOKEN_RULES: tuple[DbErrorRule, ...] = (
     ),
     foreign_key_rule(
         "fk_project_subject_tokens_subject_same_project",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "SUBJECT_TOKEN_PROJECT_CONFLICT",
-            f"Project subject id={ctx['project_subject_id']} does not belong to project id={ctx['project_id']}.",
+            "The project subject does not belong to this project.",
         ),
         extractor=_project_subject_token_ctx,
     ),
@@ -622,29 +602,28 @@ PROJECT_SUBJECT_TOKEN_RULES: tuple[DbErrorRule, ...] = (
 SUBJECT_IP_OBSERVATION_RULES: tuple[DbErrorRule, ...] = (
     foreign_key_rule(
         "fk_subject_ip_observations_subject_same_project",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "IP_OBSERVATION_SUBJECT_PROJECT_CONFLICT",
-            f"Project subject id={ctx['project_subject_id']} does not belong to project id={ctx['project_id']}.",
+            "The project subject does not belong to this project.",
         ),
         extractor=_subject_ip_observation_ctx,
     ),
     foreign_key_rule(
         "fk_subject_ip_observations_session_same_project",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "IP_OBSERVATION_SESSION_PROJECT_CONFLICT",
-            f"Submission session id={ctx['submission_session_id']} does not belong to project id={ctx['project_id']}.",
+            "The submission session does not belong to this project.",
         ),
         extractor=_subject_ip_observation_ctx,
     ),
     foreign_key_rule(
         "fk_subject_ip_observations_session_subject_match",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "IP_OBSERVATION_SESSION_SUBJECT_MISMATCH",
-            f"Subject id={ctx['project_subject_id']} does not match the subject attached to"
-            f" submission session id={ctx['submission_session_id']}.",
+            "The subject does not match the subject attached to this submission session.",
         ),
         extractor=_subject_ip_observation_ctx,
     ),
@@ -662,46 +641,46 @@ SUBMISSION_SESSION_RULES: tuple[DbErrorRule, ...] = (
     ),
     foreign_key_rule(
         "fk_submission_sessions_survey_same_project",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "SESSION_SURVEY_PROJECT_CONFLICT",
-            f"Survey id={ctx['survey_id']} does not belong to project id={ctx['project_id']}.",
+            "The survey does not belong to this project.",
         ),
         extractor=_submission_session_ctx,
     ),
     foreign_key_rule(
         "fk_submission_sessions_version_same_survey",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "SESSION_VERSION_SURVEY_CONFLICT",
-            f"Survey version id={ctx['survey_version_id']} does not belong to survey id={ctx['survey_id']}.",
+            "The survey version does not belong to this survey.",
         ),
         extractor=_submission_session_ctx,
     ),
     foreign_key_rule(
         "fk_submission_sessions_store_same_project",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "SESSION_STORE_PROJECT_CONFLICT",
-            f"Response store id={ctx['response_store_id']} does not belong to project id={ctx['project_id']}.",
+            "The response store does not belong to this project.",
         ),
         extractor=_submission_session_ctx,
     ),
     foreign_key_rule(
         "fk_submission_sessions_link_same_survey",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "SESSION_LINK_SURVEY_CONFLICT",
-            f"Survey link id={ctx['survey_link_id']} does not belong to survey id={ctx['survey_id']}.",
+            "The survey link does not belong to this survey.",
         ),
         extractor=_submission_session_ctx,
     ),
     foreign_key_rule(
         "fk_submission_sessions_project_subject_same_project",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "SESSION_SUBJECT_PROJECT_CONFLICT",
-            f"Project subject id={ctx['project_subject_id']} does not belong to project id={ctx['project_id']}.",
+            "The project subject does not belong to this project.",
         ),
         extractor=_submission_session_ctx,
     ),
@@ -718,7 +697,7 @@ SUBMISSION_SESSION_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             500,
             "SESSION_STATE_INVALID",
-            f"Server invariant violated: session id={ctx['session_id']} was written with"
+            "Server invariant violated: a submission session was written with"
             f" invalid session_status={ctx['session_status']!r}."
             " session_status is server-controlled and must be one of"
             " 'in_progress', 'completed', 'abandoned'.",
@@ -734,10 +713,10 @@ SUBMISSION_SESSION_RULES: tuple[DbErrorRule, ...] = (
     # inconsistent state — a server bug, not a client error.
     check_rule(
         "ck_submission_sessions_completed_at_consistent",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             500,
             "SESSION_COMPLETION_STATE_INVALID",
-            f"Server invariant violated: session id={ctx['session_id']} has an inconsistent"
+            "Server invariant violated: a submission session has an inconsistent"
             " completed_at for its session_status.",
         ),
         extractor=_submission_session_ctx,
@@ -747,20 +726,19 @@ SUBMISSION_SESSION_RULES: tuple[DbErrorRule, ...] = (
 SUBMISSION_EVENT_RULES: tuple[DbErrorRule, ...] = (
     foreign_key_rule(
         "fk_submission_events_session_version",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "EVENT_SESSION_VERSION_CONFLICT",
-            f"Session id={ctx['session_id']} does not belong to survey version id={ctx['survey_version_id']}.",
+            "The session does not belong to this survey version.",
         ),
         extractor=_submission_event_ctx,
     ),
     foreign_key_rule(
         "fk_submission_events_question_node_same_version",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "EVENT_QUESTION_VERSION_CONFLICT",
-            f"Question node id={ctx['question_node_id']} does not belong to"
-            f" survey version id={ctx['survey_version_id']}.",
+            "The question node does not belong to this survey version.",
         ),
         extractor=_submission_event_ctx,
     ),
@@ -775,7 +753,7 @@ SUBMISSION_EVENT_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             500,
             "EVENT_TYPE_INVALID",
-            f"Server invariant violated: event id={ctx['event_id']} was written with"
+            "Server invariant violated: a submission event was written with"
             f" invalid event_type={ctx['event_type']!r}.",
         ),
         extractor=_submission_event_ctx,
@@ -788,18 +766,17 @@ SURVEY_QUESTION_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             409,
             "QUESTION_KEY_CONFLICT" if ctx.get("node_type") == "question" else "RULE_KEY_CONFLICT",
-            f"Survey version id={ctx['survey_version_id']} already uses"
-            f" {'question' if ctx.get('node_type') == 'question' else 'rule'}_key"
-            f" (node id={ctx['survey_question_id']}).",
+            f"This survey version already uses that"
+            f" {'question' if ctx.get('node_type') == 'question' else 'rule'}_key.",
         ),
         extractor=_survey_question_ctx,
     ),
     unique_rule(
         "uq_survey_questions_survey_version_id_sort_key",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "SORT_KEY_CONFLICT",
-            f"Survey version id={ctx['survey_version_id']} already uses that sort_key.",
+            "This survey version already uses that sort_key.",
         ),
         extractor=_survey_question_ctx,
     ),
@@ -809,7 +786,7 @@ SURVEY_QUESTION_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             409,
             "QUESTION_VERSION_LOCKED" if ctx.get("node_type") == "question" else "RULE_VERSION_LOCKED",
-            f"Node id={ctx['survey_question_id']} cannot be changed because its survey version is published.",
+            "This node cannot be changed because its survey version is published.",
         ),
         extractor=_survey_question_ctx,
     ),
@@ -821,7 +798,7 @@ SURVEY_SCORING_RULE_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             409,
             "SCORING_KEY_CONFLICT",
-            f"Survey version id={ctx['survey_version_id']} already uses scoring_key={ctx['scoring_key']!r}.",
+            f"This survey version already uses scoring_key={ctx['scoring_key']!r}.",
         ),
         extractor=_survey_scoring_rule_ctx,
     ),
@@ -872,19 +849,19 @@ PROJECT_ROLE_RULES: tuple[DbErrorRule, ...] = (
 PROJECT_MEMBERSHIP_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
         "uq_project_memberships_user_project",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "PROJECT_MEMBERSHIP_CONFLICT",
-            f"User id={ctx['user_id']} is already a member of project id={ctx['project_id']}.",
+            "This user is already a member of this project.",
         ),
         extractor=_project_membership_ctx,
     ),
     foreign_key_rule(
         "fk_project_memberships_role_same_project",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "PROJECT_ROLE_MISMATCH",
-            f"Role id={ctx['role_id']} does not belong to project id={ctx['project_id']}.",
+            "The role does not belong to this project.",
         ),
         extractor=_project_membership_ctx,
     ),
@@ -897,8 +874,8 @@ PROJECT_MEMBERSHIP_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             500,
             "MEMBERSHIP_STATE_INVALID",
-            f"Server invariant violated: membership for user id={ctx['user_id']}"
-            f" in project id={ctx['project_id']} was written with invalid status={ctx['status']!r}.",
+            "Server invariant violated: a project membership was"
+            f" written with invalid status={ctx['status']!r}.",
         ),
         extractor=_project_membership_ctx,
     ),
@@ -939,17 +916,16 @@ PROJECT_INVITATION_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             409,
             "INVITATION_EXISTS",
-            f"A pending invitation already exists for {ctx['invited_email']!r}"
-            f" in project id={ctx['project_id']}.",
+            f"A pending invitation already exists for {ctx['invited_email']!r} in this project.",
         ),
         extractor=_invitation_ctx,
     ),
     foreign_key_rule(
         "fk_project_invitations_role_same_project",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "INVITATION_ROLE_MISMATCH",
-            f"Role id={ctx['role_id']} does not belong to project id={ctx['project_id']}.",
+            "The role does not belong to this project.",
         ),
         extractor=_invitation_ctx,
     ),
@@ -963,7 +939,7 @@ PROJECT_INVITATION_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             500,
             "INVITATION_STATE_INVALID",
-            f"Server invariant violated: invitation id={ctx['invitation_id']} was written"
+            "Server invariant violated: a project invitation was written"
             f" with invalid status={ctx['status']!r}.",
         ),
         extractor=_invitation_ctx,
@@ -973,10 +949,10 @@ PROJECT_INVITATION_RULES: tuple[DbErrorRule, ...] = (
 RESPONSE_ENVELOPE_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
         "uq_response_envelopes_session_locator",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "ENVELOPE_EXISTS",
-            f"A response envelope already exists for this session (id={ctx['envelope_id']}).",
+            "A response envelope already exists for this session.",
         ),
         extractor=_response_envelope_ctx,
     ),
@@ -985,10 +961,10 @@ RESPONSE_ENVELOPE_RULES: tuple[DbErrorRule, ...] = (
 RESPONSE_ANSWER_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
         "uq_response_answers_envelope_id_answer_locator",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "ANSWER_EXISTS",
-            f"An answer already exists for this question in envelope id={ctx['envelope_id']}.",
+            "An answer already exists for this question in this envelope.",
         ),
         extractor=_response_answer_ctx,
     ),
@@ -1000,17 +976,16 @@ RESPONSE_ANSWER_REVISION_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             409,
             "REVISION_MUTATION_CONFLICT",
-            f"A revision for answer id={ctx['answer_id']} with"
-            f" client_mutation_id={ctx['client_mutation_id']} already exists.",
+            f"A revision with client_mutation_id={ctx['client_mutation_id']} already exists for this answer.",
         ),
         extractor=_response_answer_revision_ctx,
     ),
     foreign_key_rule(
         "fk_response_answer_revisions_answer_same_envelope",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "REVISION_ANSWER_ENVELOPE_MISMATCH",
-            f"Answer id={ctx['answer_id']} does not belong to envelope id={ctx['envelope_id']}.",
+            "The answer does not belong to this envelope.",
         ),
         extractor=_response_answer_revision_ctx,
     ),

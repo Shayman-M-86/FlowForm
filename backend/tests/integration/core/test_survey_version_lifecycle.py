@@ -216,4 +216,6 @@ def test_direct_active_archive_trigger_translates_to_app_error_not_key_error(
         surveys_repo.archive_version(db_session, version) # type: ignore
 
     assert exc_info.value.code == "VERSION_STATE_PROTECTED"
-    assert "Published version id=" in exc_info.value.message
+    assert "cannot be unpublished or deleted" in exc_info.value.message
+    # The internal version id must not leak into the client-facing message.
+    assert "id=" not in exc_info.value.message
