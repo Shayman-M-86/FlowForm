@@ -5,14 +5,12 @@ from sqlalchemy.orm import Session
 from app.core.extensions import auth
 from app.db.transaction import commit_or_rollback
 from app.domain import auth_rules
-from app.repositories import projects_repo, users_repo
+from app.repositories import projects_repo as pr
+from app.repositories import users_repo as ur
 from app.schema.api.requests.auth import BootstrapUserRequest
 from app.schema.api.requests.projects import CreateProjectRequest
 from app.services.results import BootstrapCurrentUserResult
 from app.services.users import UserService
-
-
-
 
 _SLUG_INVALID_CHARS_RE = re.compile(r"[^a-z0-9-]+")
 
@@ -40,7 +38,7 @@ class AuthService:
         payload: BootstrapUserRequest,
     ) -> BootstrapCurrentUserResult:
         """Verify the ID token and create or update the local user."""
-        user = users_repo.get_user_by_auth0_user_id(db, access_token_sub)
+        user = ur.get_user_by_auth0_user_id(db, access_token_sub)
         if user:
             return BootstrapCurrentUserResult(user=user, created=False)
 
@@ -61,7 +59,7 @@ class AuthService:
 
         default_project = None
         if created:
-            default_project = projects_repo.create_project(
+            default_project = pr.create_project(
                 db,
                 CreateProjectRequest(
                     name="My Project",

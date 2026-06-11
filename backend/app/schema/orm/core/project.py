@@ -20,6 +20,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
+from app.schema.enums import ProjectMemberStatus
 
 if TYPE_CHECKING:
     from app.schema.orm.core import Permission, Project, ProjectMembership, ProjectRole, SurveyMembershipRole, User
@@ -119,7 +120,7 @@ class ProjectMembership(CoreBase):
     role_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("project_roles.id", ondelete="SET NULL"), nullable=True
     )
-    status: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'active'"))
+    status: Mapped[ProjectMemberStatus] = mapped_column(Text, nullable=False, server_default=text("'active'"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.

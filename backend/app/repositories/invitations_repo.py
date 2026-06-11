@@ -4,8 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.db.error_handling import flush_with_err_handle
+from app.schema.enums import ProjectInvitationStatus
 from app.schema.orm.core.invitation import ProjectInvitation
-from app.schema.orm.core.project import ProjectRole
 
 
 def list_pending_by_project(db: Session, project_id: int) -> list[ProjectInvitation]:
@@ -69,7 +69,7 @@ def update_status(
     db: Session,
     invitation: ProjectInvitation,
     *,
-    status: str,
+    status: ProjectInvitationStatus,
     accepted_by_user_id: int | None = None,
     accepted_at: datetime | None = None,
 ) -> ProjectInvitation:

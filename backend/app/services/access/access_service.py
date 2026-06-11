@@ -10,7 +10,8 @@ from flask import g
 from sqlalchemy.orm import Session
 
 from app.domain import access_rules
-from app.repositories import access_repo, surveys_repo
+from app.repositories import access_repo as ar
+from app.repositories import surveys_repo as sr
 from app.schema.orm.core import ProjectMembership, SurveyMembershipRole, User
 
 logger = logging.getLogger(__name__)
@@ -98,7 +99,7 @@ class AccessService:
             If the user is not a project member, membership will be None
             and permissions will be an empty set.
         """
-        membership = access_repo.get_project_membership(
+        membership = ar.get_project_membership(
             db,
             project_id=project_id,
             user_id=user_id,
@@ -150,7 +151,7 @@ class AccessService:
                 survey_permissions=set(),
             )
 
-        survey = surveys_repo.get_survey(
+        survey = sr.get_survey(
             db,
             project_id=project_id,
             survey_id=survey_id,
@@ -162,7 +163,7 @@ class AccessService:
                 survey_permissions=set(),
             )
 
-        survey_membership_role = access_repo.get_survey_membership_role(
+        survey_membership_role = ar.get_survey_membership_role(
             db,
             project_id=project_id,
             survey_id=survey_id,

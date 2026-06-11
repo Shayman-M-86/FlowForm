@@ -6,8 +6,8 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schema.api import limits
-from app.schema.api.enums import AnswerFamily
 from app.schema.api.requests.helpers import validate_slug
+from app.schema.enums import AnswerFamily, SubmissionAnswerState
 
 
 class PublicSlugSessionAccess(BaseModel):
@@ -60,7 +60,7 @@ class SaveSubmissionSessionAnswerRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     client_mutation_id: UUID
-    state: Literal["answered", "cleared"]
+    state: SubmissionAnswerState
     answer_family: AnswerFamily | None = None
     answer_value: dict[str, Any] | None = None
 

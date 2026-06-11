@@ -18,6 +18,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
+from app.schema.enums import SubmissionEventType, SubmissionSessionStatus
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project_subject import ProjectSubject
@@ -49,7 +50,9 @@ class SubmissionSession(CoreBase):
     )
     browser_session_token_hash: Mapped[bytes] = mapped_column(LargeBinary, nullable=False, unique=True)
     linkage_key_version: Mapped[int] = mapped_column(SmallInteger, server_default=text("1"), nullable=False)
-    session_status: Mapped[str] = mapped_column(Text, server_default=text("'in_progress'"), nullable=False)
+    session_status: Mapped[SubmissionSessionStatus] = mapped_column(
+        Text, server_default=text("'in_progress'"), nullable=False
+    )
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -108,7 +111,7 @@ class SubmissionEvent(CoreBase):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
     session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     survey_version_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    event_type: Mapped[str] = mapped_column(Text, nullable=False)
+    event_type: Mapped[SubmissionEventType] = mapped_column(Text, nullable=False)
     question_node_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

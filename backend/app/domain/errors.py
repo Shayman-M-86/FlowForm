@@ -566,3 +566,20 @@ class ManagementApiCallError(AppError):
             code="MGMT_API_ERROR",
             message="Account management could not be completed at this time.",
         )
+
+
+class SubjectResolutionError(AppError):
+    """Server-invariant error: a referenced project subject could not be resolved.
+
+    Raised when a link/identity/token points at a project_subject_id but the row
+    does not resolve under the expected project. The schema's composite foreign
+    keys make this unreachable today; the guard exists so a future schema change
+    fails loudly instead of silently downgrading a known respondent to anonymous.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=500,
+            code="SUBJECT_RESOLUTION_FAILED",
+            message="A referenced respondent subject could not be resolved.",
+        )

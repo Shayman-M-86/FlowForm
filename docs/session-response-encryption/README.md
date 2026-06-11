@@ -18,3 +18,4 @@ This folder splits the original session and response encryption plan into focuse
 - [Testing plan](testing-plan.md) - test coverage by behavior area.
 - [Implementation order](implementation-order.md) - staged rollout, version-one decisions, and final summary.
 - [Implementation checklist](implementation-checklist.md) - agent-ready task checklist for schema-first implementation.
+- [Session service open issues](session-service-open-issues.md) - deferred policy items and defensive invariants found auditing the session services.

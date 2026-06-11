@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest  # type: ignore[import]
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.schema.orm.core import Project, ProjectRole, ResponseStore, Survey, SurveyVersion, User
 from tests.integration.core.factories import (
@@ -15,7 +15,7 @@ from tests.integration.core.factories import (
 
 
 @pytest.fixture
-def user(db_session: scoped_session[Session]) -> User:
+def user(db_session: Session) -> User:
     user = make_user()
     db_session.add(user)
     db_session.flush()
@@ -23,7 +23,7 @@ def user(db_session: scoped_session[Session]) -> User:
 
 
 @pytest.fixture
-def project(user: User, db_session: scoped_session[Session]) -> Project:
+def project(user: User, db_session: Session) -> Project:
     project = make_project(user.id)
     db_session.add(project)
     db_session.flush()
@@ -31,7 +31,7 @@ def project(user: User, db_session: scoped_session[Session]) -> Project:
 
 
 @pytest.fixture
-def project_role(project: Project, db_session: scoped_session[Session]) -> ProjectRole:
+def project_role(project: Project, db_session: Session) -> ProjectRole:
     role = make_project_role(project.id)
     db_session.add(role)
     db_session.flush()
@@ -39,7 +39,7 @@ def project_role(project: Project, db_session: scoped_session[Session]) -> Proje
 
 
 @pytest.fixture
-def response_store(project: Project, user: User, db_session: scoped_session[Session]) -> ResponseStore:
+def response_store(project: Project, user: User, db_session: Session) -> ResponseStore:
     store = make_response_store(project.id, user.id)
     db_session.add(store)
     db_session.flush()
@@ -51,7 +51,7 @@ def survey(
     project: Project,
     response_store: ResponseStore,
     user: User,
-    db_session: scoped_session[Session],
+    db_session: Session,
 ) -> Survey:
     survey = make_survey(project.id, response_store.id, user.id)
     db_session.add(survey)
@@ -60,7 +60,7 @@ def survey(
 
 
 @pytest.fixture
-def survey_version(survey: Survey, user: User, db_session: scoped_session[Session]) -> SurveyVersion:
+def survey_version(survey: Survey, user: User, db_session: Session) -> SurveyVersion:
     version = make_survey_version(survey.id, user.id)
     db_session.add(version)
     db_session.flush()

@@ -3,18 +3,11 @@ from __future__ import annotations
 from app.domain.errors import (
     SurveyNoResponseStoreError,
     SurveyNotAccessibleError,
-    SurveyNotFoundBySlugError,
     SurveyNotFoundError,
     SurveyNotPublishedError,
     SurveyVisibilityMismatchError,
 )
 from app.schema.orm.core.survey import Survey, SurveyVersion
-
-
-def ensure_not_none(*, survey: Survey | None, survey_id: int, project_id: int) -> Survey:
-    if survey is None:
-        raise SurveyNotFoundError(survey_id=survey_id, project_id=project_id)
-    return survey
 
 
 def ensure_is_published(*, survey: SurveyVersion | None | Survey, survey_id: int, project_id: int) -> SurveyVersion:
@@ -31,12 +24,6 @@ def ensure_is_publicly_accessible(*, survey: Survey) -> Survey:
     """Raise if the survey is not publicly browsable."""
     if survey.visibility != "public":
         raise SurveyNotAccessibleError()
-    return survey
-
-
-def ensure_found_by_slug(*, survey: Survey | None) -> Survey:
-    if survey is None:
-        raise SurveyNotFoundBySlugError()
     return survey
 
 

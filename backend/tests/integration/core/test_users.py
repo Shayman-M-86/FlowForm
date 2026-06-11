@@ -5,13 +5,13 @@ from typing import cast
 import pytest  # type: ignore[import]
 from psycopg.errors import NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.schema.orm.core.user import User
 from tests.integration.core.factories import make_user
 
 
-def test_user_can_be_created(db_session: scoped_session[Session]) -> None:
+def test_user_can_be_created(db_session: Session) -> None:
     """All fields are persisted and the server default populates created_at."""
     user = make_user(auth0_user_id="auth0|u1", email="u1@example.com", display_name="Alice")
     db_session.add(user)
@@ -25,7 +25,7 @@ def test_user_can_be_created(db_session: scoped_session[Session]) -> None:
     assert saved.created_at is not None, "created_at was not set by the server default"
 
 
-def test_user_display_name_is_optional(db_session: scoped_session[Session]) -> None:
+def test_user_display_name_is_optional(db_session: Session) -> None:
     """display_name is nullable — a user can be created without one."""
     user = make_user(auth0_user_id="auth0|nodisplay", email="nodisplay@example.com", display_name=None)
     db_session.add(user)
@@ -36,7 +36,7 @@ def test_user_display_name_is_optional(db_session: scoped_session[Session]) -> N
     assert saved.display_name is None, f"display_name={saved.display_name!r}, expected None"
 
 
-def test_user_requires_auth0_user_id(db_session: scoped_session[Session]) -> None:
+def test_user_requires_auth0_user_id(db_session: Session) -> None:
     """auth0_user_id is NOT NULL — omitting it raises an IntegrityError."""
     user = make_user()
     user.auth0_user_id = None  # type: ignore[assignment]
@@ -54,7 +54,7 @@ def test_user_requires_auth0_user_id(db_session: scoped_session[Session]) -> Non
     db_session.rollback()
 
 
-def test_user_requires_email(db_session: scoped_session[Session]) -> None:
+def test_user_requires_email(db_session: Session) -> None:
     """email is NOT NULL — omitting it raises an IntegrityError."""
     user = make_user()
     user.email = None  # type: ignore[assignment]
@@ -72,7 +72,7 @@ def test_user_requires_email(db_session: scoped_session[Session]) -> None:
     db_session.rollback()
 
 
-def test_user_unique_email(db_session: scoped_session[Session]) -> None:
+def test_user_unique_email(db_session: Session) -> None:
     """Two users cannot share the same email address."""
     user_a = make_user(auth0_user_id="auth0|a", email="dup@example.com")
     db_session.add(user_a)
@@ -93,7 +93,7 @@ def test_user_unique_email(db_session: scoped_session[Session]) -> None:
     db_session.rollback()
 
 
-def test_user_unique_auth0_user_id(db_session: scoped_session[Session]) -> None:
+def test_user_unique_auth0_user_id(db_session: Session) -> None:
     """Two users cannot share the same auth0_user_id."""
     user_a = make_user(auth0_user_id="auth0|same", email="one@example.com")
     db_session.add(user_a)

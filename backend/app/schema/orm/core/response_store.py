@@ -5,6 +5,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
+from app.schema.enums import ResponseStoreType
 from app.schema.orm.base import TimestampMixin
 
 if TYPE_CHECKING:
@@ -22,7 +23,7 @@ class ResponseStore(TimestampMixin, CoreBase):
         BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)
-    store_type: Mapped[str] = mapped_column(Text, nullable=False)
+    store_type: Mapped[ResponseStoreType] = mapped_column(Text, nullable=False)
     connection_reference: Mapped[dict] = mapped_column(JSONB, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_by_user_id: Mapped[int | None] = mapped_column(

@@ -2,8 +2,15 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import commit_with_err_handle
 from app.domain import public_link_rules, survey_rules
-from app.domain.errors import LinkAuthAssignmentRequiredError, PrivateSurveyAssignedEmailRequiredError
-from app.repositories import public_link_repo, surveys_repo
+from app.domain.errors import (
+    LinkAuthAssignmentRequiredError,
+    LinkNotFoundError,
+    PrivateSurveyAssignedEmailRequiredError,
+    SurveyNotFoundError,
+)
+from app.domain.guards import ensure_present
+from app.repositories import public_link_repo as plr
+from app.repositories import surveys_repo as sr
 from app.schema.api.requests.public_links import CreatePublicLinkRequest, ResolveTokenRequest, UpdatePublicLinkRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
@@ -21,8 +28,9 @@ class SurveyLinkService:
         is assigned to an email and an actor is present, the actor's email must
         match the assignment.
         """
-        link_orm: SurveyLink = public_link_rules.ensure_is_not_none(
-            link=public_link_repo.resolve_token(db, payload.token)
+        link_orm: SurveyLink = ensure_present(
+            plr.resolve_token(db, payload.token),
+            error=LinkNotFoundError(),
         )
         public_link_rules.ensure_is_active(link=link_orm)
         public_link_rules.ensure_not_expired(link=link_orm)
@@ -34,14 +42,13 @@ class SurveyLinkService:
         project_id = link_orm.survey.project_id
         survey_id = link_orm.survey_id
 
-        survey_orm: Survey = survey_rules.ensure_not_none(
-            survey=surveys_repo.get_survey(db, project_id=project_id, survey_id=survey_id),
-            survey_id=survey_id,
-            project_id=project_id,
+        survey_orm: Survey = ensure_present(
+            sr.get_survey(db, project_id=project_id, survey_id=survey_id),
+            error=SurveyNotFoundError(survey_id=survey_id, project_id=project_id),
         )
 
         published_version_orm: SurveyVersion = survey_rules.ensure_is_published(
-            survey=surveys_repo.get_published_version(db, survey_orm),
+            survey=sr.get_published_version(db, survey_orm),
             survey_id=survey_id,
             project_id=project_id,
         )
@@ -55,7 +62,7 @@ class SurveyLinkService:
     def list_links(self, db: Session, project_id: int, survey_id: int, actor: User) -> list[SurveyLink]:  # noqa: ARG002
         """List all links for a given survey."""
         self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
-        return list(public_link_repo.list_links(db, survey_id=survey_id))
+        return list(plr.list_links(db, survey_id=survey_id))
 
     def create_link(
         self,
@@ -73,10 +80,10 @@ class SurveyLinkService:
             requires_auth=data.requires_auth,
             assigned_email=data.assigned_email,
         )
-        link, token = public_link_repo.create_link(
+        link, token = plr.create_link(
             db,
             survey_id=survey_id,
-            name=data.name,
+            name=str(data.name),
             assigned_email=data.assigned_email,
             requires_auth=data.requires_auth,
             expires_at=data.expires_at,
@@ -106,7 +113,7 @@ class SurveyLinkService:
             assigned_email=next_assigned_email,
         )
 
-        updated_link = public_link_repo.update_link(
+        updated_link = plr.update_link(
             db,
             link=link,
             is_active=payload.is_active,
@@ -115,7 +122,7 @@ class SurveyLinkService:
             assigned_email=(
                 payload.assigned_email
                 if "assigned_email" in payload.model_fields_set
-                else public_link_repo.UNSET
+                else plr.UNSET
             ),
             expires_at=payload.expires_at,
         )
@@ -127,21 +134,21 @@ class SurveyLinkService:
         """Delete a survey link."""
         self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
         link = self._get_link_invalidate(db, survey_id=survey_id, link_id=link_id)
-        public_link_repo.delete_link(db, link=link)
+        plr.delete_link(db, link=link)
         commit_with_err_handle(db, contexts=[link])
 
     def _ensure_survey_and_public_id_match(self, db: Session, survey_id: int, project_id: int) -> Survey:
         """Ensure that the survey ID and link ID match."""
-        return survey_rules.ensure_not_none(
-            survey=surveys_repo.get_survey(db, project_id=project_id, survey_id=survey_id),
-            survey_id=survey_id,
-            project_id=project_id,
+        return ensure_present(
+            sr.get_survey(db, project_id=project_id, survey_id=survey_id),
+            error=SurveyNotFoundError(survey_id=survey_id, project_id=project_id),
         )
 
     def _get_link_invalidate(self, db: Session, survey_id: int, link_id: int) -> SurveyLink:
         """Ensure that a given link belongs to the specified survey."""
-        link = public_link_rules.ensure_is_not_none(
-            link=public_link_repo.get_link(db, survey_id=survey_id, link_id=link_id)
+        link = ensure_present(
+            plr.get_link(db, survey_id=survey_id, link_id=link_id),
+            error=LinkNotFoundError(),
         )
         return link
 

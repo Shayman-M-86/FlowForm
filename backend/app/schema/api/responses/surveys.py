@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.permissions import ProjectPermission
 from app.schema.api import limits
-from app.schema.api.enums import SurveyVersionStatus, SurveyVisibility
+from app.schema.enums import SurveyVersionStatus, SurveyVisibility
 
 
 class MySurveyPermissionsResponses(BaseModel):

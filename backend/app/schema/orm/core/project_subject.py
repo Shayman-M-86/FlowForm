@@ -16,6 +16,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
+from app.schema.enums import SubjectIdentityType, SubjectIdentityVerificationStatus
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project import Project
@@ -64,12 +65,14 @@ class ProjectSubjectIdentity(CoreBase):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
     project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     project_subject_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    identity_type: Mapped[str] = mapped_column(Text, nullable=False)
+    identity_type: Mapped[SubjectIdentityType] = mapped_column(Text, nullable=False)
     user_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=True
     )
     normalized_email: Mapped[str | None] = mapped_column(Text, nullable=True)
-    verification_status: Mapped[str] = mapped_column(Text, server_default=text("'unverified'"), nullable=False)
+    verification_status: Mapped[SubjectIdentityVerificationStatus] = mapped_column(
+        Text, server_default=text("'unverified'"), nullable=False
+    )
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     attached_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

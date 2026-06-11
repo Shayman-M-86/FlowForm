@@ -9,7 +9,6 @@ from app.schema.orm.core import (
     ProjectSubjectToken,
     ResponseStore,
     # TEMP(rework): Legacy alias for ProjectSubject.
-    ResponseSubjectMapping,
     SubjectIpObservation,
     SubmissionEvent,
     SubmissionSession,
@@ -21,7 +20,6 @@ from app.schema.orm.core import (
     SurveyRole,
     SurveyScoringRule,
     # TEMP(rework): Legacy alias for SubmissionSession.
-    SurveySubmission,
     SurveyVersion,
     User,
     project_role_permissions,
@@ -49,7 +47,6 @@ __all__ = [
     "ResponseAnswerRevision",
     "ResponseEnvelope",
     "ResponseStore",
-    "ResponseSubjectMapping",
     "SubjectIpObservation",
     "Submission",
     "SubmissionAnswer",
@@ -62,7 +59,6 @@ __all__ = [
     "SurveyQuestion",
     "SurveyRole",
     "SurveyScoringRule",
-    "SurveySubmission",
     "SurveyVersion",
     "User",
     "project_role_permissions",

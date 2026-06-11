@@ -8,9 +8,6 @@ from app.schema.orm.core.project_subject import (
     ProjectSubjectToken,
 )
 from app.schema.orm.core.response_store import ResponseStore
-
-# TEMP(rework): Compatibility alias exported for legacy consumers.
-from app.schema.orm.core.response_subject_mapping import ResponseSubjectMapping
 from app.schema.orm.core.subject_ip_observation import SubjectIpObservation
 from app.schema.orm.core.submission_session import SubmissionEvent, SubmissionSession
 from app.schema.orm.core.survey import Survey, SurveyVersion
@@ -22,9 +19,6 @@ from app.schema.orm.core.survey_access import (
     survey_role_permissions,
 )
 from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
-
-# TEMP(rework): Compatibility alias exported for legacy consumers.
-from app.schema.orm.core.survey_submission import SurveySubmission
 from app.schema.orm.core.user import User
 
 __all__ = [
@@ -38,7 +32,6 @@ __all__ = [
     "ProjectSubjectIdentity",
     "ProjectSubjectToken",
     "ResponseStore",
-    "ResponseSubjectMapping",
     "SubjectIpObservation",
     "SubmissionEvent",
     "SubmissionSession",
@@ -49,7 +42,6 @@ __all__ = [
     "SurveyQuestion",
     "SurveyRole",
     "SurveyScoringRule",
-    "SurveySubmission",
     "SurveyVersion",
     "User",
     "project_role_permissions",

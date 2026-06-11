@@ -5,7 +5,7 @@ from typing import cast
 import pytest  # type: ignore[import]
 from psycopg.errors import ForeignKeyViolation
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.schema.orm.core.project import Project, ProjectMembership
 from app.schema.orm.core.survey import Survey
@@ -15,7 +15,7 @@ from tests.integration.core.factories import make_project, make_survey, make_sur
 
 
 def _make_membership(
-    db_session: scoped_session[Session], user: User, project: Project
+    db_session: Session, user: User, project: Project
 ) -> ProjectMembership:
     """Helper: create and flush a ProjectMembership for the given user and project."""
     membership = ProjectMembership()
@@ -27,7 +27,7 @@ def _make_membership(
 
 
 def test_survey_membership_role_can_be_created(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user: User,
     project: Project,
     survey: Survey,
@@ -54,7 +54,7 @@ def test_survey_membership_role_can_be_created(
 
 
 def test_survey_membership_role_rejects_survey_from_different_project(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user: User,
     project: Project,
 ) -> None:
@@ -103,7 +103,7 @@ def test_survey_membership_role_rejects_survey_from_different_project(
 
 
 def test_survey_membership_role_rejects_membership_from_different_project(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user: User,
     project: Project,
     survey: Survey,
@@ -140,7 +140,7 @@ def test_survey_membership_role_rejects_membership_from_different_project(
 
 
 def test_survey_membership_role_rejects_role_from_different_project(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user: User,
     project: Project,
     survey: Survey,

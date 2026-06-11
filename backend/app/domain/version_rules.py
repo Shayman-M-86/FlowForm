@@ -3,7 +3,6 @@ from app.domain.errors import (
     VersionAlreadyArchivedError,
     VersionIsActivePublishedError,
     VersionNotEditableError,
-    VersionNotFoundError,
     VersionNotPublishedError,
 )
 from app.schema.orm.core.survey import Survey, SurveyVersion
@@ -38,9 +37,3 @@ def ensure_is_not_active_published(*, survey: Survey, version: SurveyVersion) ->
 def ensure_is_editable(*, version: SurveyVersion) -> None:
     if version.status != "draft":
         raise VersionNotEditableError(status=version.status)
-
-
-def ensure_not_none(*, version: SurveyVersion | None, version_number: int, survey_id: int) -> SurveyVersion:
-    if version is None:
-        raise VersionNotFoundError(survey_id=survey_id, version_number=version_number)
-    return version

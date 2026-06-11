@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import pytest  # type: ignore[import]
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.repositories import users_repo
 from app.repositories.users_repo import _MAX_PUBLIC_ID_RETRIES, _PUBLIC_ID_CONSTRAINT
 
 
-def test_create_user_generates_public_id(db_session: scoped_session[Session]) -> None:
+def test_create_user_generates_public_id(db_session: Session) -> None:
     """public_id is populated by Postgres after flush."""
     user = users_repo.create_user(
         db_session,  # type: ignore
@@ -21,7 +21,7 @@ def test_create_user_generates_public_id(db_session: scoped_session[Session]) ->
     assert all(c in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_" for c in user.public_id)
 
 
-def test_create_user_public_ids_are_unique(db_session: scoped_session[Session]) -> None:
+def test_create_user_public_ids_are_unique(db_session: Session) -> None:
     """Two different users receive distinct public_ids."""
     user_a = users_repo.create_user(
         db_session,  # type: ignore
@@ -46,7 +46,7 @@ def test_retry_constants_are_correct() -> None:
 
 
 def test_create_user_non_public_id_integrity_error_propagates(
-    db_session: scoped_session[Session],
+    db_session: Session,
 ) -> None:
     """A duplicate email raises IntegrityError, not a silent retry."""
     from sqlalchemy.exc import IntegrityError

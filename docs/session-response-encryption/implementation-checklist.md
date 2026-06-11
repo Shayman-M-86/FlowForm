@@ -111,7 +111,7 @@ once Phase 3-4 services replace the old submission path, not fixed now.
   - [x] `GET /projects/{project_id}/surveys/{survey_id}/responses/{session_id}/history`
   - [x] `POST /projects/{project_id}/surveys/{survey_id}/responses/export`
   - [x] `DELETE /projects/{project_id}/surveys/{survey_id}/responses/{session_id}`
-- [ ] Add request and response schemas for:
+- [x] Add request and response schemas for:
   - [x] start session
   - [x] current session
   - [x] save answer
@@ -217,10 +217,11 @@ Already done:
 
 Still missing before/inside Phase 3:
 
-- [ ] Implement the subject repositories and services described in
-      [backend-implementation.md](backend-implementation.md); the public session
-      routes still use Phase 2 contract stubs.
-- [ ] Wire `ProjectSubjectResolver` into session start so
+- [ ] Finish the subject repositories and services described in
+      [backend-implementation.md](backend-implementation.md); `POST
+      /submission-sessions` now uses `SessionStarter`, while current-session,
+      answer, event, and completion routes still use Phase 2/3 stubs.
+- [x] Wire `ProjectSubjectResolver` into session start so
       `submission_sessions.project_subject_id` is resolved from server-owned
       access/auth/cookie context, never from browser-supplied IDs.
 - [ ] Implement recognition-token issuance, rotation, expiry, revocation, and
@@ -236,12 +237,12 @@ Still missing before/inside Phase 3:
 ## Phase 3: Service Skeleton Without Real Crypto
 
 - [ ] Define final service/repository boundaries:
-  - [ ] core session repository
+  - [x] core session repository
   - [ ] core event repository
   - [ ] response envelope repository
   - [ ] response answer repository
   - [ ] response revision repository
-  - [ ] session start service
+  - [x] session start service
   - [ ] session resume service
   - [ ] answer save service
   - [ ] completion service
@@ -255,17 +256,19 @@ Still missing before/inside Phase 3:
 - [ ] The dev implementations may use deterministic fake locators and reversible placeholder ciphertext.
 - [ ] The dev implementations must preserve final method signatures and data shapes.
 - [ ] Session start should:
-  - [ ] resolve access
-  - [ ] resolve or create the optional `project_subjects` row
-  - [ ] resolve authenticated-user identities through `project_subject_identities`
-  - [ ] resolve subject-recognition tokens through `project_subject_tokens`
-  - [ ] store `project_subjects.id` in `submission_sessions.project_subject_id`
+  - [x] resolve access
+  - [x] resolve the optional `project_subjects` row from server-owned link,
+        auth, or recognition-token context
+  - [ ] create anonymous `project_subjects` rows once product policy is set
+  - [x] resolve authenticated-user identities through `project_subject_identities`
+  - [x] resolve subject-recognition tokens through `project_subject_tokens`
+  - [x] store `project_subjects.id` in `submission_sessions.project_subject_id`
         when the respondent is known
-  - [ ] leave `submission_sessions.project_subject_id` null for fully anonymous
+  - [x] leave `submission_sessions.project_subject_id` null for fully anonymous
         sessions
-  - [ ] bind one survey version
-  - [ ] generate a high-entropy browser token
-  - [ ] store only the token hash in core
+  - [x] bind one survey version
+  - [x] generate a high-entropy browser token
+  - [x] store only the token hash in core
   - [ ] create a response envelope
   - [ ] return the raw browser token only after both stores succeed
 - [ ] Session resume should:

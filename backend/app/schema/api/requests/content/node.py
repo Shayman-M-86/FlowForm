@@ -9,6 +9,7 @@ from app.schema.api import limits
 from app.schema.api.requests.content.questions_schemas import QuestionSchemaIn
 from app.schema.api.requests.content.rule_schemas import RuleSchemaIn
 from app.schema.api.requests.field_types import SchemaIdStr
+from app.schema.enums import SurveyNodeType
 
 _MAX_NODE_CONTENT_BYTES = limits.NODE_CONTENT_BYTES_MAX
 
@@ -69,6 +70,6 @@ class UpdateNodeRequest(BaseModel):
 
     id: UUID
     node_key: SchemaIdStr | None = None
-    node_type: Literal["question", "rule"] | None = None
+    node_type: SurveyNodeType | None = None
     sort_key: int | None = Field(default=None, gt=limits.CONTENT_SORT_KEY_MIN_EXCLUSIVE)
     content: Annotated[QuestionSchemaIn | RuleSchemaIn, AfterValidator(_check_content_size)] | None = None

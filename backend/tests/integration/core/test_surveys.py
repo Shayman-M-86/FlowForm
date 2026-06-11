@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import cast
+from typing import Any, cast
 
 import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation, ForeignKeyViolation, UniqueViolation
 from sqlalchemy import delete as sql_delete
 from sqlalchemy.exc import IntegrityError, ProgrammingError
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.response_store import ResponseStore
@@ -27,7 +27,7 @@ from tests.integration.core.factories import (
 
 
 def test_survey_can_be_created(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
     user: User,
@@ -48,7 +48,7 @@ def test_survey_can_be_created(
 
 
 def test_survey_creator_set_null_on_user_delete(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
 ) -> None:
@@ -72,7 +72,7 @@ def test_survey_creator_set_null_on_user_delete(
 
 
 def test_survey_cascades_on_project_delete(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
     user: User,
@@ -90,7 +90,7 @@ def test_survey_cascades_on_project_delete(
 
 
 def test_survey_requires_title(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
     user: User,
@@ -107,14 +107,14 @@ def test_survey_requires_title(
 
 
 def test_survey_rejects_invalid_visibility(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
     user: User,
 ) -> None:
     """visibility must be one of: private, link_only, public."""
     survey = make_survey(project.id, response_store.id, user.id)
-    survey.visibility = "hidden"
+    survey.visibility = cast(Any, "hidden")
     db_session.add(survey)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -131,7 +131,7 @@ def test_survey_rejects_invalid_visibility(
 
 @pytest.mark.parametrize("visibility", ["private", "link_only", "public"])
 def test_survey_accepts_valid_visibility_values(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
     user: User,
@@ -139,7 +139,7 @@ def test_survey_accepts_valid_visibility_values(
 ) -> None:
     """Each of the three visibility values is accepted."""
     survey = make_survey(project.id, response_store.id, user.id)
-    survey.visibility = visibility
+    survey.visibility = cast(Any, visibility)
     if visibility == "public":
         survey.public_slug = f"slug-{visibility}"
     db_session.add(survey)
@@ -151,7 +151,7 @@ def test_survey_accepts_valid_visibility_values(
 
 
 def test_survey_link_only_rejects_public_slug(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
     user: User,
@@ -176,7 +176,7 @@ def test_survey_link_only_rejects_public_slug(
 
 
 def test_survey_public_visibility_requires_slug(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
     user: User,
@@ -200,7 +200,7 @@ def test_survey_public_visibility_requires_slug(
 
 
 def test_survey_slug_requires_public_visibility(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
     user: User,
@@ -225,7 +225,7 @@ def test_survey_slug_requires_public_visibility(
 
 
 def test_survey_public_slug_is_unique(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
     user: User,
@@ -255,7 +255,7 @@ def test_survey_public_slug_is_unique(
 
 
 def test_survey_default_store_must_belong_to_project(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
     user: User,
@@ -286,7 +286,7 @@ def test_survey_default_store_must_belong_to_project(
 
 
 def test_survey_published_version_must_belong_to_survey(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
     user: User,
@@ -322,7 +322,7 @@ def test_survey_published_version_must_belong_to_survey(
 
 
 def test_survey_version_can_be_created(
-    db_session: scoped_session[Session],
+    db_session: Session,
     survey: Survey,
     user: User,
 ) -> None:
@@ -342,7 +342,7 @@ def test_survey_version_can_be_created(
 
 
 def test_survey_version_unique_version_number_per_survey(
-    db_session: scoped_session[Session], survey: Survey, user: User
+    db_session: Session, survey: Survey, user: User
 ) -> None:
     """Two versions of the same survey cannot share a version_number."""
     version_a = make_survey_version(survey.id, user.id, version_number=1)
@@ -366,7 +366,7 @@ def test_survey_version_unique_version_number_per_survey(
 
 
 def test_survey_version_same_version_number_allowed_across_surveys(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
     user: User,
@@ -385,10 +385,10 @@ def test_survey_version_same_version_number_allowed_across_surveys(
     assert v_a.id != v_b.id, f"Expected distinct version IDs across surveys, got id={v_a.id!r} for both"
 
 
-def test_survey_version_rejects_invalid_status(db_session: scoped_session[Session], survey: Survey, user: User) -> None:
+def test_survey_version_rejects_invalid_status(db_session: Session, survey: Survey, user: User) -> None:
     """status must be one of: draft, published, archived."""
     version = make_survey_version(survey.id, user.id)
-    version.status = "inactive"
+    version.status = cast(Any, "inactive")
     db_session.add(version)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -405,11 +405,11 @@ def test_survey_version_rejects_invalid_status(db_session: scoped_session[Sessio
 
 @pytest.mark.parametrize("status", ["draft", "published", "archived"])
 def test_survey_version_accepts_valid_status_values(
-    db_session: scoped_session[Session], survey: Survey, user: User, status: str
+    db_session: Session, survey: Survey, user: User, status: str
 ) -> None:
     """Each of the three valid status values is accepted."""
     version = make_survey_version(survey.id, user.id)
-    version.status = status
+    version.status = cast(Any, status)
     if status == "published":
         version.compiled_schema = {"fields": []}
         version.published_at = datetime(2024, 1, 1, tzinfo=UTC)
@@ -422,7 +422,7 @@ def test_survey_version_accepts_valid_status_values(
 
 
 def test_survey_version_rejects_non_positive_version_number(
-    db_session: scoped_session[Session], survey: Survey, user: User
+    db_session: Session, survey: Survey, user: User
 ) -> None:
     """version_number must be greater than zero."""
     version = make_survey_version(survey.id, user.id)
@@ -443,7 +443,7 @@ def test_survey_version_rejects_non_positive_version_number(
 
 
 def test_survey_version_published_requires_schema_and_timestamp(
-    db_session: scoped_session[Session], survey: Survey, user: User
+    db_session: Session, survey: Survey, user: User
 ) -> None:
     """A published version must have compiled_schema and published_at set."""
     version = make_survey_version(survey.id, user.id)
@@ -465,7 +465,7 @@ def test_survey_version_published_requires_schema_and_timestamp(
 
 
 def test_survey_version_only_one_published_per_survey(
-    db_session: scoped_session[Session], survey: Survey, user: User
+    db_session: Session, survey: Survey, user: User
 ) -> None:
     """Only one non-deleted published version may exist per survey at a time."""
     v1 = make_survey_version(survey.id, user.id, version_number=1)
@@ -494,7 +494,7 @@ def test_survey_version_only_one_published_per_survey(
 
 
 def test_survey_version_deleted_published_does_not_block_new_published(
-    db_session: scoped_session[Session], survey: Survey, user: User
+    db_session: Session, survey: Survey, user: User
 ) -> None:
     """A soft-deleted published version does not count toward the one-published limit."""
     v1 = make_survey_version(survey.id, user.id, version_number=1)
@@ -516,7 +516,7 @@ def test_survey_version_deleted_published_does_not_block_new_published(
 
 
 def test_survey_version_cascades_on_survey_delete(
-    db_session: scoped_session[Session],
+    db_session: Session,
     project: Project,
     response_store: ResponseStore,
     user: User,
@@ -539,7 +539,7 @@ def test_survey_version_cascades_on_survey_delete(
     )
 
 
-def test_survey_version_creator_set_null_on_user_delete(db_session: scoped_session[Session], survey: Survey) -> None:
+def test_survey_version_creator_set_null_on_user_delete(db_session: Session, survey: Survey) -> None:
     """Deleting the creator nullifies created_by_user_id rather than cascading."""
     creator = make_user(auth0_user_id="auth0|sv-cr-del", email="sv-cr-del@example.com")
     db_session.add(creator)

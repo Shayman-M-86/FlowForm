@@ -13,12 +13,6 @@ from app.domain.errors import (
 from app.schema.orm.core.survey_access import SurveyLink
 
 
-def ensure_is_not_none(*, link: SurveyLink | None) -> SurveyLink:
-    if link is None:
-        raise LinkNotFoundError()
-    return link
-
-
 def ensure_is_active(*, link: SurveyLink) -> None:
     if not link.is_active:
         raise LinkInactiveError()

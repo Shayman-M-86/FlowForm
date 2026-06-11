@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.permissions import ProjectPermission
 from app.schema.api import limits
-from app.schema.api.enums import ProjectInvitationStatus, ProjectMemberStatus
+from app.schema.enums import ProjectInvitationStatus, ProjectMemberStatus
 from app.schema.orm.core.project import ProjectRole
 
 ProjectMemberStatusResponses = Annotated[

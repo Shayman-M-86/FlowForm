@@ -5,7 +5,7 @@ from typing import cast
 import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation, ForeignKeyViolation, NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.schema.orm.core.project import Project, ProjectMembership, ProjectRole
 from app.schema.orm.core.user import User
@@ -16,7 +16,7 @@ from tests.integration.core.factories import make_project, make_project_role, ma
 # ---------------------------------------------------------------------------
 
 
-def test_project_can_be_created(db_session: scoped_session[Session], user: User) -> None:
+def test_project_can_be_created(db_session: Session, user: User) -> None:
     """All fields are persisted and the server default populates created_at."""
     project = make_project(user.id, name="My Project", slug="my-project")
     db_session.add(project)
@@ -30,7 +30,7 @@ def test_project_can_be_created(db_session: scoped_session[Session], user: User)
     assert saved.created_at is not None, "created_at was not set by the server default"
 
 
-def test_project_created_by_user_id_nullable(db_session: scoped_session[Session]) -> None:
+def test_project_created_by_user_id_nullable(db_session: Session) -> None:
     """A project can be created without a creator (system-created projects)."""
     project = make_project(user_id=None, slug="orphan-project")  # type: ignore[arg-type]
     db_session.add(project)
@@ -42,7 +42,7 @@ def test_project_created_by_user_id_nullable(db_session: scoped_session[Session]
 
 
 def test_project_creator_set_null_on_user_delete(
-    db_session: scoped_session[Session],
+    db_session: Session,
 ) -> None:
     """Deleting the creator nullifies created_by_user_id rather than cascading."""
     creator = make_user(auth0_user_id="auth0|del", email="del@example.com")
@@ -62,7 +62,7 @@ def test_project_creator_set_null_on_user_delete(
     )
 
 
-def test_project_unique_slug(db_session: scoped_session[Session], user: User) -> None:
+def test_project_unique_slug(db_session: Session, user: User) -> None:
     """Two projects cannot share the same slug."""
     project_a = make_project(user.id, name="One", slug="same")
     db_session.add(project_a)
@@ -83,7 +83,7 @@ def test_project_unique_slug(db_session: scoped_session[Session], user: User) ->
     db_session.rollback()
 
 
-def test_project_requires_name(db_session: scoped_session[Session], user: User) -> None:
+def test_project_requires_name(db_session: Session, user: User) -> None:
     """name is NOT NULL — omitting it raises an IntegrityError."""
     project = make_project(user.id, slug="no-name")
     project.name = None  # type: ignore[assignment]
@@ -104,7 +104,7 @@ def test_project_requires_name(db_session: scoped_session[Session], user: User) 
 # ---------------------------------------------------------------------------
 
 
-def test_project_role_can_be_created(db_session: scoped_session[Session], project: Project) -> None:
+def test_project_role_can_be_created(db_session: Session, project: Project) -> None:
     """All fields are persisted and the server default populates created_at."""
     role = make_project_role(project.id, name="viewer", is_system_role=False)
     db_session.add(role)
@@ -118,7 +118,7 @@ def test_project_role_can_be_created(db_session: scoped_session[Session], projec
     assert saved.created_at is not None, "created_at was not set by the server default"
 
 
-def test_project_role_is_system_role_defaults_to_false(db_session: scoped_session[Session], project: Project) -> None:
+def test_project_role_is_system_role_defaults_to_false(db_session: Session, project: Project) -> None:
     """is_system_role has a server default of false when not explicitly set."""
     role = ProjectRole()
     role.project_id = project.id
@@ -130,7 +130,7 @@ def test_project_role_is_system_role_defaults_to_false(db_session: scoped_sessio
     assert role.is_system_role is False, f"is_system_role={role.is_system_role!r}, expected False from server default"
 
 
-def test_project_role_unique_name_within_project(db_session: scoped_session[Session], project: Project) -> None:
+def test_project_role_unique_name_within_project(db_session: Session, project: Project) -> None:
     """Two roles in the same project cannot share a name."""
     role_a = make_project_role(project.id, name="editor")
     db_session.add(role_a)
@@ -151,7 +151,7 @@ def test_project_role_unique_name_within_project(db_session: scoped_session[Sess
     db_session.rollback()
 
 
-def test_project_role_same_name_allowed_across_projects(db_session: scoped_session[Session], user: User) -> None:
+def test_project_role_same_name_allowed_across_projects(db_session: Session, user: User) -> None:
     """Role name uniqueness is scoped to a project — different projects may reuse names."""
     project_a = make_project(user.id, name="A", slug="proj-a")
     project_b = make_project(user.id, name="B", slug="proj-b")
@@ -166,7 +166,7 @@ def test_project_role_same_name_allowed_across_projects(db_session: scoped_sessi
     assert role_a.id != role_b.id, f"Expected distinct role IDs across projects, got id={role_a.id!r} for both"
 
 
-def test_project_role_requires_name(db_session: scoped_session[Session], project: Project) -> None:
+def test_project_role_requires_name(db_session: Session, project: Project) -> None:
     """name is NOT NULL — omitting it raises an IntegrityError."""
     role = ProjectRole()
     role.project_id = project.id
@@ -184,10 +184,15 @@ def test_project_role_requires_name(db_session: scoped_session[Session], project
 
 
 def test_project_role_description_is_persisted(
-    db_session: scoped_session[Session], project: Project
+    db_session: Session, project: Project
 ) -> None:
     """description is stored and round-trips correctly."""
-    role = make_project_role(project.id, name="desc-role", is_system_role=False, description="Manages project settings.")
+    role = make_project_role(
+        project.id,
+        name="desc-role",
+        is_system_role=False,
+        description="Manages project settings.",
+    )
     db_session.add(role)
     db_session.flush()
 
@@ -199,7 +204,7 @@ def test_project_role_description_is_persisted(
 
 
 def test_project_role_description_nullable(
-    db_session: scoped_session[Session], project: Project
+    db_session: Session, project: Project
 ) -> None:
     """description defaults to NULL when omitted."""
     role = make_project_role(project.id, name="no-desc-role", is_system_role=False)
@@ -214,7 +219,7 @@ def test_project_role_description_nullable(
 
 
 def test_project_role_description_blank_rejected(
-    db_session: scoped_session[Session], project: Project
+    db_session: Session, project: Project
 ) -> None:
     """Blank/whitespace-only description violates the CHECK constraint."""
     role = make_project_role(project.id, name="blank-desc-role", is_system_role=False, description="   ")
@@ -234,7 +239,7 @@ def test_project_role_description_blank_rejected(
 
 
 def test_project_role_description_too_long_rejected(
-    db_session: scoped_session[Session], project: Project
+    db_session: Session, project: Project
 ) -> None:
     """A description exceeding 500 characters violates the CHECK constraint."""
     role = make_project_role(project.id, name="long-desc-role", is_system_role=False, description="x" * 501)
@@ -258,7 +263,7 @@ def test_project_role_description_too_long_rejected(
 # ---------------------------------------------------------------------------
 
 
-def test_project_membership_can_be_created(db_session: scoped_session[Session], user: User, project: Project) -> None:
+def test_project_membership_can_be_created(db_session: Session, user: User, project: Project) -> None:
     """A membership with no role is persisted and created_at is set by the server."""
     membership = ProjectMembership()
     membership.user_id = user.id
@@ -275,7 +280,7 @@ def test_project_membership_can_be_created(db_session: scoped_session[Session], 
 
 
 def test_project_membership_status_defaults_to_active(
-    db_session: scoped_session[Session], user: User, project: Project
+    db_session: Session, user: User, project: Project
 ) -> None:
     """status has a server default of 'active' when not explicitly set."""
     membership = ProjectMembership()
@@ -289,7 +294,7 @@ def test_project_membership_status_defaults_to_active(
 
 
 def test_project_membership_can_have_role(
-    db_session: scoped_session[Session], user: User, project: Project, project_role: ProjectRole
+    db_session: Session, user: User, project: Project, project_role: ProjectRole
 ) -> None:
     """A membership can optionally reference a role within the same project."""
     membership = ProjectMembership()
@@ -305,13 +310,13 @@ def test_project_membership_can_have_role(
 
 
 def test_project_membership_rejects_invalid_status(
-    db_session: scoped_session[Session], user: User, project: Project
+    db_session: Session, user: User, project: Project
 ) -> None:
-    """status must be 'active' or 'invited' — any other value is rejected."""
+    """status must be 'active' or 'suspended' — any other value is rejected."""
     membership = ProjectMembership()
     membership.user_id = user.id
     membership.project_id = project.id
-    membership.status = "banned"
+    membership.status = "bogus"  # type: ignore[assignment]  # intentionally invalid for the DB CHECK
     db_session.add(membership)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -327,7 +332,7 @@ def test_project_membership_rejects_invalid_status(
 
 
 def test_project_membership_unique_user_project(
-    db_session: scoped_session[Session], user: User, project: Project
+    db_session: Session, user: User, project: Project
 ) -> None:
     """A user can only have one membership record per project."""
     membership_a = ProjectMembership()
@@ -354,7 +359,7 @@ def test_project_membership_unique_user_project(
 
 
 def test_project_membership_role_must_belong_to_same_project(
-    db_session: scoped_session[Session], user: User, project: Project
+    db_session: Session, user: User, project: Project
 ) -> None:
     """A membership cannot reference a role that belongs to a different project."""
     other_project = make_project(user.id, name="Other", slug="other-project")

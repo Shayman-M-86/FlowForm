@@ -5,7 +5,7 @@ from typing import cast
 import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation, NotNullViolation
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.schema.orm.core.audit_log import AuditLog
 from app.schema.orm.core.user import User
@@ -13,7 +13,7 @@ from tests.integration.core.factories import make_audit_log
 
 
 def test_audit_log_can_be_created(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user: User,
 ) -> None:
     log = make_audit_log(
@@ -47,7 +47,7 @@ def test_audit_log_can_be_created(
 
 
 def test_audit_log_can_be_created_without_user(
-    db_session: scoped_session[Session],
+    db_session: Session,
 ) -> None:
     log = make_audit_log(action="system_sweep", entity_type="project", user_id=None)
     db_session.add(log)
@@ -61,7 +61,7 @@ def test_audit_log_can_be_created_without_user(
 
 
 def test_audit_log_metadata_can_be_null(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user: User,
 ) -> None:
     log = make_audit_log(user_id=user.id, metadata=None)
@@ -76,7 +76,7 @@ def test_audit_log_metadata_can_be_null(
 
 
 def test_audit_log_requires_action(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user: User,
 ) -> None:
     log = make_audit_log(user_id=user.id)
@@ -97,7 +97,7 @@ def test_audit_log_requires_action(
 
 
 def test_audit_log_requires_entity_type(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user: User,
 ) -> None:
     log = make_audit_log(user_id=user.id)
@@ -118,7 +118,7 @@ def test_audit_log_requires_entity_type(
 
 
 def test_audit_log_rejects_non_object_metadata(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user: User,
 ) -> None:
     log = make_audit_log(user_id=user.id, metadata=None)

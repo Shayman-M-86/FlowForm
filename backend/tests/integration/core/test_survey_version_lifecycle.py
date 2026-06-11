@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 import pytest  # type: ignore[import]
 from sqlalchemy import select
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
 from app.repositories import surveys_repo
@@ -22,7 +22,7 @@ from tests.integration.core.factories import (
 
 
 def test_archive_active_published_version_unpublishes_and_archives(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user,
 ) -> None:
     project = make_project(user.id, name="Lifecycle Project", slug="lifecycle-project")
@@ -65,7 +65,7 @@ def test_archive_active_published_version_unpublishes_and_archives(
 
 
 def test_publish_new_version_archives_previous_live_version_in_safe_order(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user,
 ) -> None:
     project = make_project(user.id, name="Republish Project", slug="republish-project")
@@ -117,7 +117,7 @@ def test_publish_new_version_archives_previous_live_version_in_safe_order(
 
 
 def test_copy_version_to_draft_clones_content_and_creates_new_version_number(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user,
 ) -> None:
     project = make_project(user.id, name="Copy Project", slug="copy-project")
@@ -188,7 +188,7 @@ def test_copy_version_to_draft_clones_content_and_creates_new_version_number(
 
 
 def test_direct_active_archive_trigger_translates_to_app_error_not_key_error(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user,
 ) -> None:
     project = make_project(user.id, name="Trigger Project", slug="trigger-project")

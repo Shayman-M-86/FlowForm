@@ -42,7 +42,7 @@ def test_bootstrap_new_user_creates_default_project(monkeypatch: pytest.MonkeyPa
     db = Mock()
     db.scalar.return_value = None
 
-    with patch("app.services.auth.projects_repo.create_project", return_value=project) as mock_create, \
+    with patch("app.services.auth.pr.create_project", return_value=project) as mock_create, \
          patch("app.services.auth.commit_or_rollback"):
         service = AuthService(user_service=user_service)
         result = service.bootstrap_current_user(
@@ -69,7 +69,7 @@ def test_bootstrap_existing_user_skips_default_project(monkeypatch: pytest.Monke
     db = Mock()
     db.scalar.return_value = existing_user  # user already exists
 
-    with patch("app.services.auth.projects_repo.create_project") as mock_create:
+    with patch("app.services.auth.pr.create_project") as mock_create:
         service = AuthService(user_service=user_service)
         result = service.bootstrap_current_user(
             db,
@@ -121,7 +121,7 @@ def test_bootstrap_new_user_default_project_slug_is_slug_safe(
     def create_project_side_effect(_db: object, request: object, *, created_by_user_id: int) -> Project:
         return _make_project(created_by_user_id, request.slug)  # type: ignore[attr-defined]
 
-    with patch("app.services.auth.projects_repo.create_project", side_effect=create_project_side_effect), \
+    with patch("app.services.auth.pr.create_project", side_effect=create_project_side_effect), \
          patch("app.services.auth.commit_or_rollback"):
         service = AuthService(user_service=user_service)
         result = service.bootstrap_current_user(

@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.db.error_handling import flush_with_err_handle
+from app.schema.enums import ProjectMemberStatus
 from app.schema.orm.core.project import ProjectMembership
 
 
@@ -44,7 +45,7 @@ def update_membership(
     *,
     fields_set: set[str],
     role_id: int | None,
-    status: str | None,
+    status: ProjectMemberStatus | None,
 ) -> ProjectMembership:
     if "role_id" in fields_set:
         membership.role_id = role_id

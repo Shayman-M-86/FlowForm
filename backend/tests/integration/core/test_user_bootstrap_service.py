@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest  # type: ignore[import]
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.domain.errors import UserBootstrapConflictError
 from app.schema.orm.core.user import User
@@ -9,7 +9,7 @@ from app.services.users import UserService
 from tests.integration.core.factories import make_user
 
 
-def test_bootstrap_user_creates_user(db_session: scoped_session[Session]) -> None:
+def test_bootstrap_user_creates_user(db_session: Session) -> None:
     """bootstrap_user creates a local user row for a new Auth0 subject."""
     service = UserService()
 
@@ -28,7 +28,7 @@ def test_bootstrap_user_creates_user(db_session: scoped_session[Session]) -> Non
 
 
 def test_bootstrap_user_updates_existing_user(
-    db_session: scoped_session[Session],
+    db_session: Session,
 ) -> None:
     """bootstrap_user syncs email and display name for an existing Auth0 subject."""
     existing = make_user(
@@ -56,7 +56,7 @@ def test_bootstrap_user_updates_existing_user(
 
 
 def test_bootstrap_user_raises_conflict_for_duplicate_email(
-    db_session: scoped_session[Session],
+    db_session: Session,
 ) -> None:
     """bootstrap_user returns a clean conflict error when email uniqueness is violated."""
     existing = make_user(

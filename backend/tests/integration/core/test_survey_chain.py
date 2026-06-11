@@ -4,7 +4,7 @@ import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.survey import Survey, SurveyVersion
@@ -14,7 +14,7 @@ from tests.integration.core.factories import make_survey_question
 
 
 def test_user_project_survey_questions_chain(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user: User,
     project: Project,
     survey: Survey,
@@ -98,7 +98,12 @@ def test_user_project_survey_questions_chain(
 
 
 _VALID_QUESTION_SCHEMAS: dict[str, dict] = {
-    "choice": {"family": "choice", "label": "Test", "schema": {"options": [], "min_selected": 0, "max_selected": 1}, "ui": {}},
+    "choice": {
+        "family": "choice",
+        "label": "Test",
+        "schema": {"options": [], "min_selected": 0, "max_selected": 1},
+        "ui": {},
+    },
     "field": {"family": "field", "label": "Test", "schema": {"field_type": "text"}, "ui": {}},
     "matching": {"family": "matching", "label": "Test", "schema": {"left_items": [], "right_items": []}, "ui": {}},
     "rating": {"family": "rating", "label": "Test", "schema": {"min": 0, "max": 10}, "ui": {}},
@@ -107,7 +112,7 @@ _VALID_QUESTION_SCHEMAS: dict[str, dict] = {
 
 @pytest.mark.parametrize("question_type", ["choice", "field", "matching", "rating"])
 def test_survey_question_accepts_valid_type(
-    db_session: scoped_session[Session],
+    db_session: Session,
     survey_version: SurveyVersion,
     question_type: str,
 ) -> None:
@@ -123,7 +128,7 @@ def test_survey_question_accepts_valid_type(
 
 
 def test_survey_question_rejects_invalid_type(
-    db_session: scoped_session[Session],
+    db_session: Session,
     survey_version: SurveyVersion,
 ) -> None:
     """question_schema->>'family' must be one of the four known question families."""

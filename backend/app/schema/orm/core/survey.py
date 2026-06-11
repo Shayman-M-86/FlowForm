@@ -15,6 +15,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
+from app.schema.enums import SurveyVersionStatus, SurveyVisibility
 from app.schema.orm.base import TimestampMixin
 
 if TYPE_CHECKING:
@@ -29,7 +30,7 @@ class Survey(TimestampMixin, CoreBase):
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
-    visibility: Mapped[str] = mapped_column(Text, default="private", nullable=False)
+    visibility: Mapped[SurveyVisibility] = mapped_column(Text, default="private", nullable=False)
     public_slug: Mapped[str | None] = mapped_column(Text, unique=True, nullable=True)
     default_response_store_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     published_version_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
@@ -91,7 +92,7 @@ class SurveyVersion(TimestampMixin, CoreBase):
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     survey_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
-    status: Mapped[str] = mapped_column(Text, default="draft", nullable=False)
+    status: Mapped[SurveyVersionStatus] = mapped_column(Text, default="draft", nullable=False)
     compiled_schema: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by_user_id: Mapped[int | None] = mapped_column(

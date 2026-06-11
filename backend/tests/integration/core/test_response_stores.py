@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 
 import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation, NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.response_store import ResponseStore
@@ -14,7 +14,7 @@ from tests.integration.core.factories import make_project, make_response_store, 
 
 
 def test_response_store_can_be_created(
-    db_session: scoped_session[Session], project: Project, user: User
+    db_session: Session, project: Project, user: User
 ) -> None:
     """All fields are persisted and the server defaults populate created_at and updated_at."""
     store = make_response_store(project.id, user.id, name="primary")
@@ -32,7 +32,7 @@ def test_response_store_can_be_created(
 
 
 def test_response_store_created_by_user_id_nullable(
-    db_session: scoped_session[Session], project: Project
+    db_session: Session, project: Project
 ) -> None:
     """A response store can be created without a creator."""
     store = make_response_store(project.id, user_id=None)  # type: ignore[arg-type]
@@ -45,7 +45,7 @@ def test_response_store_created_by_user_id_nullable(
 
 
 def test_response_store_creator_set_null_on_user_delete(
-    db_session: scoped_session[Session], project: Project
+    db_session: Session, project: Project
 ) -> None:
     """Deleting the creator nullifies created_by_user_id rather than cascading."""
     creator = make_user(auth0_user_id="auth0|rsdel", email="rsdel@example.com")
@@ -66,7 +66,7 @@ def test_response_store_creator_set_null_on_user_delete(
 
 
 def test_response_store_unique_name_within_project(
-    db_session: scoped_session[Session], project: Project, user: User
+    db_session: Session, project: Project, user: User
 ) -> None:
     """Two stores in the same project cannot share a name."""
     store_a = make_response_store(project.id, user.id, name="warehouse")
@@ -90,7 +90,7 @@ def test_response_store_unique_name_within_project(
 
 
 def test_response_store_same_name_allowed_across_projects(
-    db_session: scoped_session[Session], user: User
+    db_session: Session, user: User
 ) -> None:
     """Store name uniqueness is scoped to a project — different projects may reuse names."""
     project_a = make_project(user.id, name="A", slug="rs-proj-a")
@@ -109,11 +109,11 @@ def test_response_store_same_name_allowed_across_projects(
 
 
 def test_response_store_rejects_invalid_store_type(
-    db_session: scoped_session[Session], project: Project, user: User
+    db_session: Session, project: Project, user: User
 ) -> None:
     """store_type must be 'platform_postgres' or 'external_postgres'."""
     store = make_response_store(project.id, user.id)
-    store.store_type = "s3_bucket"
+    store.store_type = cast(Any, "s3_bucket")
     db_session.add(store)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -130,7 +130,7 @@ def test_response_store_rejects_invalid_store_type(
 
 
 def test_response_store_rejects_non_object_connection_reference(
-    db_session: scoped_session[Session], project: Project, user: User
+    db_session: Session, project: Project, user: User
 ) -> None:
     """connection_reference must be a JSON object, not an array or scalar."""
     store = make_response_store(project.id, user.id)
@@ -151,7 +151,7 @@ def test_response_store_rejects_non_object_connection_reference(
 
 
 def test_response_store_requires_name(
-    db_session: scoped_session[Session], project: Project, user: User
+    db_session: Session, project: Project, user: User
 ) -> None:
     """name is NOT NULL — omitting it raises an IntegrityError."""
     store = make_response_store(project.id, user.id)
@@ -172,7 +172,7 @@ def test_response_store_requires_name(
 
 
 def test_response_store_requires_store_type(
-    db_session: scoped_session[Session], project: Project, user: User
+    db_session: Session, project: Project, user: User
 ) -> None:
     """store_type is NOT NULL — omitting it raises an IntegrityError."""
     store = make_response_store(project.id, user.id)
@@ -193,7 +193,7 @@ def test_response_store_requires_store_type(
 
 
 def test_response_store_requires_connection_reference(
-    db_session: scoped_session[Session], project: Project, user: User
+    db_session: Session, project: Project, user: User
 ) -> None:
     """Setting connection_reference to None triggers the object check constraint.
 

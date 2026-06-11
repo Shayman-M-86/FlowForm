@@ -5,7 +5,7 @@ from typing import cast
 import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation, NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.survey_access import SurveyLink
@@ -13,7 +13,7 @@ from tests.integration.core.factories import make_token_pair
 
 
 def test_survey_public_link_can_be_created(
-    db_session: scoped_session[Session], survey: Survey
+    db_session: Session, survey: Survey
 ) -> None:
     """All fields are persisted and server defaults populate is_active and created_at."""
     _, prefix, token_hash = make_token_pair()
@@ -40,7 +40,7 @@ def test_survey_public_link_can_be_created(
 
 
 def test_survey_public_link_unique_token_hash(
-    db_session: scoped_session[Session], survey: Survey
+    db_session: Session, survey: Survey
 ) -> None:
     """token_hash must be globally unique — two links cannot share the same hash."""
     _, prefix_a, token_hash = make_token_pair()
@@ -78,7 +78,7 @@ def test_survey_public_link_unique_token_hash(
 
 
 def test_survey_public_link_unique_prefix_within_survey(
-    db_session: scoped_session[Session], survey: Survey
+    db_session: Session, survey: Survey
 ) -> None:
     """A token_prefix must be unique within a survey."""
     _, token_prefix, hash_a = make_token_pair()
@@ -116,7 +116,7 @@ def test_survey_public_link_unique_prefix_within_survey(
 
 
 def test_survey_public_link_rejects_short_token_prefix(
-    db_session: scoped_session[Session], survey: Survey
+    db_session: Session, survey: Survey
 ) -> None:
     """token_prefix must be between 8 and 32 characters."""
     _, _, token_hash = make_token_pair()
@@ -143,7 +143,7 @@ def test_survey_public_link_rejects_short_token_prefix(
 
 
 def test_survey_public_link_rejects_malformed_token_hash(
-    db_session: scoped_session[Session], survey: Survey
+    db_session: Session, survey: Survey
 ) -> None:
     """token_hash must be a 64-character lowercase hex string."""
     _, prefix, _ = make_token_pair()
@@ -170,7 +170,7 @@ def test_survey_public_link_rejects_malformed_token_hash(
 
 
 def test_survey_public_link_requires_token_prefix(
-    db_session: scoped_session[Session], survey: Survey
+    db_session: Session, survey: Survey
 ) -> None:
     """token_prefix is NOT NULL — omitting it raises an IntegrityError."""
     _, _, token_hash = make_token_pair()
@@ -197,7 +197,7 @@ def test_survey_public_link_requires_token_prefix(
 
 
 def test_survey_public_link_requires_token_hash(
-    db_session: scoped_session[Session], survey: Survey
+    db_session: Session, survey: Survey
 ) -> None:
     """token_hash is NOT NULL — omitting it raises an IntegrityError."""
     _, prefix, _ = make_token_pair()
@@ -224,7 +224,7 @@ def test_survey_public_link_requires_token_hash(
 
 
 def test_survey_public_link_cascades_on_survey_delete(
-    db_session: scoped_session[Session], survey: Survey
+    db_session: Session, survey: Survey
 ) -> None:
     """Deleting the survey removes all its public links."""
     _, prefix, token_hash = make_token_pair()

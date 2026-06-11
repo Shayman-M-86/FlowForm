@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schema.api import limits
-from app.schema.api.enums import AnswerFamily
-
-SurveyResponseSessionStatus = Literal["in_progress", "completed", "abandoned"]
-SurveyResponseAnswerState = Literal["answered", "cleared"]
+from app.schema.enums import AnswerFamily, ExportFormat, SubmissionAnswerState, SubmissionSessionStatus
 
 
 class SurveyResponseSummaryResponses(BaseModel):
@@ -25,7 +22,7 @@ class SurveyResponseSummaryResponses(BaseModel):
     session_id: UUID
     survey_id: int
     survey_version_id: int
-    status: SurveyResponseSessionStatus
+    status: SubmissionSessionStatus
     started_at: datetime
     completed_at: datetime | None = None
     last_activity_at: datetime
@@ -44,7 +41,7 @@ class SurveyResponseAnswerResponses(BaseModel):
     """One decrypted canonical answer in an admin survey-response detail view."""
 
     question_node_id: UUID
-    state: SurveyResponseAnswerState
+    state: SubmissionAnswerState
     answer_family: AnswerFamily | None = None
     answer_value: dict[str, Any] | None = None
     revision_number: int
@@ -62,7 +59,7 @@ class SurveyResponseAnswerRevisionResponses(BaseModel):
     """One historical decrypted answer revision for the answer-history view."""
 
     question_node_id: UUID
-    state: SurveyResponseAnswerState
+    state: SubmissionAnswerState
     answer_family: AnswerFamily | None = None
     answer_value: dict[str, Any] | None = None
     revision_number: int
@@ -79,7 +76,7 @@ class SurveyResponseHistoryResponses(BaseModel):
 class SurveyResponseExportResponses(BaseModel):
     """Result envelope for a survey-response export request."""
 
-    format: Literal["csv", "json"]
+    format: ExportFormat
     include_history: bool
     session_count: int
     download_url: str | None = None

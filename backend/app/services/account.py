@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import ManagementApiCallError, ManagementApiUnavailableError
 from app.middleware.auth.auth0 import ManagementApiClient, ManagementApiError
-from app.repositories import users_repo
+from app.repositories import users_repo as ur
 from app.schema.api.requests.me import (
     ChangeEmailRequest,
     ChangeUsernameRequest,
@@ -75,7 +75,7 @@ class UserAccountService:
 
         # display_name is also mirrored in our DB.
         if data.display_name is not None:
-            users_repo.update_user(actor, email=actor.email, display_name=data.display_name)
+            ur.update_user(actor, email=actor.email, display_name=data.display_name)
             commit_with_err_handle(db)
 
         return actor
@@ -99,7 +99,7 @@ class UserAccountService:
             email=data.email,
         )
 
-        users_repo.update_user_email(actor, email=data.email)
+        ur.update_user_email(actor, email=data.email)
         commit_with_err_handle(db, contexts=[actor])
         return actor
 
@@ -149,7 +149,7 @@ class UserAccountService:
         """
         _call_mgmt(_mgmt(mgmt).delete_user, actor.auth0_user_id)
 
-        users_repo.delete_user(db, actor)
+        ur.delete_user(db, actor)
         # No contexts: deleting a user row cannot violate any translatable
         # constraint — all FK references use ON DELETE CASCADE or SET NULL.
         commit_with_err_handle(db)

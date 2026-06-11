@@ -6,7 +6,8 @@ from typing import Annotated, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schema.api import limits
-from app.schema.api.enums import (
+from app.schema.api.requests.field_types import SchemaIdStr
+from app.schema.enums import (
     ChoiceFamily,
     DateFieldOperator,
     DateFieldType,
@@ -17,7 +18,6 @@ from app.schema.api.enums import (
     NumericFieldOperator,
     RatingFamily,
 )
-from app.schema.api.requests.field_types import SchemaIdStr
 
 DateValueStr = Annotated[str, Field(max_length=limits.DATE_VALUE_MAX)]
 

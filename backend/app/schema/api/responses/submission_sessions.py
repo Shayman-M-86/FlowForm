@@ -7,10 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schema.api import limits
-from app.schema.api.enums import AnswerFamily
-
-SubmissionSessionStatus = Literal["in_progress", "completed", "abandoned"]
-SubmissionSessionAnswerState = Literal["answered", "cleared"]
+from app.schema.enums import AnswerFamily, SubmissionAnswerState, SubmissionSessionStatus
 
 
 class PublicSubmissionSessionSurveyResponses(BaseModel):
@@ -32,7 +29,7 @@ class SubmissionSessionAnswerResponses(BaseModel):
     """Canonical latest answer state returned to a respondent."""
 
     question_node_id: UUID
-    state: SubmissionSessionAnswerState
+    state: SubmissionAnswerState
     answer_family: AnswerFamily | None = None
     answer_value: dict[str, Any] | None = None
     revision_number: int

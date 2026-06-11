@@ -37,7 +37,7 @@ def test_account_management_errors_return_generic_message(monkeypatch: pytest.Mo
     user.email = "user@example.com"
     user.display_name = "Old Name"
     update_user = Mock()
-    monkeypatch.setattr(account_module.users_repo, "update_user", update_user)
+    monkeypatch.setattr(account_module.ur, "update_user", update_user)
 
     with pytest.raises(ManagementApiCallError) as exc_info:
         UserAccountService().update_profile(

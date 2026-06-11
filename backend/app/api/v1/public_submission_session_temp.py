@@ -12,6 +12,7 @@ from app.schema.api.responses.submission_sessions import (
 
 _SUBMISSION_SESSION_COOKIE = "flowform_submission_session"
 _PLACEHOLDER_COOKIE_VALUE = "phase2-placeholder"
+_SUBMISSION_SESSION_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
 
 
 def build_placeholder_session_response(*, now: datetime | None = None) -> PublicSubmissionSessionResponses:
@@ -44,13 +45,17 @@ def set_placeholder_submission_session_cookie(response: Response) -> Response:
     cookie name and security attributes expected by the public contract. The
     placeholder value must not be treated as authentication or persisted state.
     """
+    return set_submission_session_cookie(response, _PLACEHOLDER_COOKIE_VALUE)
+
+
+def set_submission_session_cookie(response: Response, raw_token: str) -> Response:
     response.set_cookie(
         _SUBMISSION_SESSION_COOKIE,
-        _PLACEHOLDER_COOKIE_VALUE,
+        raw_token,
         httponly=True,
         secure=True,
         samesite="Lax",
         path="/api/v1/public/submission-sessions",
-        max_age=60 * 60 * 24 * 7,
+        max_age=_SUBMISSION_SESSION_COOKIE_MAX_AGE_SECONDS,
     )
     return response

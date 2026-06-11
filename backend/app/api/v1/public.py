@@ -7,7 +7,7 @@ from flask import Blueprint, jsonify, make_response, request
 from app.api.utils.validation import parse, parse_query
 from app.api.v1.public_submission_session_temp import (
     build_placeholder_session_response,
-    set_placeholder_submission_session_cookie,
+    set_submission_session_cookie,
 )
 from app.core.extensions import auth
 from app.db.context import get_core_db
@@ -33,6 +33,7 @@ from app.schema.api.responses.surveys import (
 )
 from app.services.public_links import SurveyLinkService
 from app.services.public_surveys import PublicSurveyService
+from app.services.submissions.session_starter import SessionStarter
 from app.services.users import UserService
 
 logger = getLogger(__name__)
@@ -43,6 +44,7 @@ users_service = UserService()
 survey_link_service = SurveyLinkService()
 
 public_survey_service = PublicSurveyService()
+session_starter = SessionStarter()
 
 
 @openapi_route(
@@ -117,22 +119,24 @@ def resolve_link():
     return response.model_dump(mode="json"), 200
 
 
-# TODO(phase3): Replace this contract stub with the real public session service
-# once core session creation and response envelope creation are coordinated.
 @openapi_route(
     summary="Start submission session",
     request_model=StartSubmissionSessionRequest,
     response_model=PublicSubmissionSessionResponses,
     status_code=201,
     tags=["Public Submission Sessions"],
-    auth_required=False,
+    auth="optional",
 )
 @public_bp.route("/submission-sessions", methods=["POST"])
+@auth.optional_auth()
 def start_submission_session():
-    parse(StartSubmissionSessionRequest, request)
-    response = build_placeholder_session_response()
+    payload = parse(StartSubmissionSessionRequest, request)
+    core_db = get_core_db()
+    current_sub = auth.get_optional_current_user_sub()
+    user = users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub) if current_sub is not None else None
+    response, raw_browser_session_token = session_starter.start(core_db, payload=payload, actor=user)
     flask_response = make_response(jsonify(response.model_dump(mode="json")), 201)
-    return set_placeholder_submission_session_cookie(flask_response)
+    return set_submission_session_cookie(flask_response, raw_browser_session_token)
 
 
 # TODO(phase3): Rework this placeholder to read the current session from the

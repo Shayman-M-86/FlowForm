@@ -55,9 +55,9 @@ def test_send_invitation_rejects_system_role(monkeypatch: pytest.MonkeyPatch) ->
     owner_role = _role(role_id=1, is_system_role=True)
     create_invitation = Mock()
 
-    monkeypatch.setattr(members_module.users_repo, "get_user_by_email", Mock(return_value=None))
-    monkeypatch.setattr(members_module.roles_repo, "get_by_id", Mock(return_value=owner_role))
-    monkeypatch.setattr(members_module.invitations_repo, "create_invitation", create_invitation)
+    monkeypatch.setattr(members_module.ur, "get_user_by_email", Mock(return_value=None))
+    monkeypatch.setattr(members_module.rr, "get_by_id", Mock(return_value=owner_role))
+    monkeypatch.setattr(members_module.ir, "create_invitation", create_invitation)
 
     with pytest.raises(MemberOwnerProtectedError):
         service.send_invitation(
@@ -75,8 +75,8 @@ def test_update_member_rejects_changing_owner_to_another_role(monkeypatch: pytes
     owner_membership = _membership(role=_role(role_id=1, is_system_role=True))
     update_membership = Mock()
 
-    monkeypatch.setattr(members_module.members_repo, "get_by_id", Mock(return_value=owner_membership))
-    monkeypatch.setattr(members_module.members_repo, "update_membership", update_membership)
+    monkeypatch.setattr(members_module.mr, "get_by_id", Mock(return_value=owner_membership))
+    monkeypatch.setattr(members_module.mr, "update_membership", update_membership)
 
     with pytest.raises(MemberOwnerProtectedError):
         service.update_member(
@@ -96,9 +96,9 @@ def test_update_member_rejects_assigning_system_role(monkeypatch: pytest.MonkeyP
     owner_role = _role(role_id=1, is_system_role=True)
     update_membership = Mock()
 
-    monkeypatch.setattr(members_module.members_repo, "get_by_id", Mock(return_value=current_membership))
-    monkeypatch.setattr(members_module.roles_repo, "get_by_id", Mock(return_value=owner_role))
-    monkeypatch.setattr(members_module.members_repo, "update_membership", update_membership)
+    monkeypatch.setattr(members_module.mr, "get_by_id", Mock(return_value=current_membership))
+    monkeypatch.setattr(members_module.rr, "get_by_id", Mock(return_value=owner_role))
+    monkeypatch.setattr(members_module.mr, "update_membership", update_membership)
 
     with pytest.raises(MemberOwnerProtectedError):
         service.update_member(
@@ -121,10 +121,10 @@ def test_accept_invitation_rejects_system_role(monkeypatch: pytest.MonkeyPatch) 
     invitee.id = 2
     invitee.email = invitation.invited_email
 
-    monkeypatch.setattr(members_module.invitations_repo, "get_by_id", Mock(return_value=invitation))
-    monkeypatch.setattr(members_module.members_repo, "get_by_user_and_project", Mock(return_value=None))
-    monkeypatch.setattr(members_module.roles_repo, "get_by_id", Mock(return_value=owner_role))
-    monkeypatch.setattr(members_module.members_repo, "create_membership", create_membership)
+    monkeypatch.setattr(members_module.ir, "get_by_id", Mock(return_value=invitation))
+    monkeypatch.setattr(members_module.mr, "get_by_user_and_project", Mock(return_value=None))
+    monkeypatch.setattr(members_module.rr, "get_by_id", Mock(return_value=owner_role))
+    monkeypatch.setattr(members_module.mr, "create_membership", create_membership)
 
     with pytest.raises(MemberOwnerProtectedError):
         service.accept_invitation(Mock(), invitation_id=invitation.id, actor=invitee)

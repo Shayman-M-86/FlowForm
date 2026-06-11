@@ -10,11 +10,11 @@ from pydantic import (
 )
 
 from app.schema.api import limits
-from app.schema.api.enums import ProjectMemberStatus as ProjectMemberStatusValue
 from app.schema.api.requests.helpers import (
     normalise_email,
     validate_future_datetime_utc,
 )
+from app.schema.enums import ProjectMemberStatus as ProjectMemberStatusValue
 
 ProjectName = Annotated[
     str,

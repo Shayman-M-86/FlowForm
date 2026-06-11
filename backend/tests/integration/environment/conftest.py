@@ -5,7 +5,8 @@ import time
 from pathlib import Path
 
 import pytest  # type: ignore[import]
-from helpers import current_database_name, read_env
+
+from tests.integration.environment.helpers import current_database_name, read_env
 
 logger = logging.getLogger("app.tests.integration.environment")
 

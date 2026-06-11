@@ -16,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
+from app.schema.enums import ProjectInvitationStatus
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project import Project, ProjectRole
@@ -39,7 +40,7 @@ class ProjectInvitation(CoreBase):
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     invite_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    status: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'pending'"))
+    status: Mapped[ProjectInvitationStatus] = mapped_column(Text, nullable=False, server_default=text("'pending'"))
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     accepted_by_user_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True

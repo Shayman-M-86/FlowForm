@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+from typing import Literal
 
 from app.schema.orm.core.audit_log import AuditLog
 from app.schema.orm.core.project import Project, ProjectRole
@@ -72,7 +73,15 @@ def make_survey(project_id: int, response_store_id: int, user_id: int, title: st
     return survey
 
 
-def make_survey_version(survey_id: int, user_id: int, version_number: int = 1, status: str = "draft") -> SurveyVersion:
+SurveyVersionStatus = Literal["draft", "published", "archived"]
+
+
+def make_survey_version(
+    survey_id: int,
+    user_id: int,
+    version_number: int = 1,
+    status: SurveyVersionStatus = "draft",
+) -> SurveyVersion:
     version = SurveyVersion()
     version.survey_id = survey_id
     version.version_number = version_number

@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schema.api import limits
-
-SurveyResponseSessionStatus = Literal["in_progress", "completed", "abandoned"]
-SurveyResponseExportFormat = Literal["csv", "json"]
+from app.schema.enums import ExportFormat, SubmissionSessionStatus
 
 
 class ListSurveyResponsesRequest(BaseModel):
@@ -16,7 +13,7 @@ class ListSurveyResponsesRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    status: SurveyResponseSessionStatus | None = None
+    status: SubmissionSessionStatus | None = None
     page: int = Field(default=limits.LIST_PAGE_DEFAULT, ge=limits.LIST_PAGE_MIN)
     page_size: int = Field(
         default=limits.LIST_PAGE_SIZE_DEFAULT,
@@ -30,6 +27,6 @@ class ExportSurveyResponsesRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    format: SurveyResponseExportFormat = "csv"
+    format: ExportFormat = "csv"
     include_history: bool = False
     session_ids: list[UUID] | None = Field(default=None, max_length=limits.LIST_PAGE_SIZE_MAX)

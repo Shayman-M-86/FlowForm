@@ -3,7 +3,15 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schema.api import limits
-from app.schema.api.enums import (
+from app.schema.api.requests.field_types import (
+    ChoiceOptionLabel,
+    MatchingItemLabel,
+    QuestionLabel,
+    QuestionTitle,
+    RatingLabel,
+    SchemaIdStr,
+)
+from app.schema.enums import (
     ChoiceFamily,
     FieldFamily,
     FieldQuestionType,
@@ -13,14 +21,6 @@ from app.schema.api.enums import (
     RatingFamily,
     RatingSliderStyle,
     RatingStarStyle,
-)
-from app.schema.api.requests.field_types import (
-    ChoiceOptionLabel,
-    MatchingItemLabel,
-    QuestionLabel,
-    QuestionTitle,
-    RatingLabel,
-    SchemaIdStr,
 )
 
 # ── Shared leaf models ────────────────────────────────────────────────────────

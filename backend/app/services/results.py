@@ -1,26 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from app.schema.orm.core.project import Project
-from app.schema.orm.core.response_subject_mapping import ResponseSubjectMapping
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
-from app.schema.orm.core.survey_submission import SurveySubmission
 from app.schema.orm.core.user import User
-from app.schema.orm.response.submission import Submission
-from app.schema.orm.response.submission_answer import SubmissionAnswer
-
-
-@dataclass
-class LinkedSubmissionResult:
-    """Domain object wrapping both DB sides of a submission."""
-
-    core_submission: SurveySubmission
-    response_submission: Submission | None
-    subject_mapping: ResponseSubjectMapping | None
-    user: User | None
-    answers: list[SubmissionAnswer] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -56,6 +41,15 @@ class ResolveLinkResult:
     link: SurveyLink
     survey: Survey
     published_version: SurveyVersion
+
+
+@dataclass(slots=True)
+class SubmissionAccessGrant:
+    """Survey/version access granted for a respondent session start."""
+
+    survey: Survey
+    published_version: SurveyVersion
+    link: SurveyLink | None = None
 
 
 @dataclass(slots=True)
