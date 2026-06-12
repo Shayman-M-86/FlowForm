@@ -408,8 +408,8 @@ Allow automatic tasks when prompted, or press `Ctrl+Shift+B` to run the build ta
 Run tests inside Docker:
 
 ```bash
-bash backend/scripts/run-tests-rebuild-teardown.sh --ai
-bash backend/scripts/run-tests-rebuild-teardown.sh --ai -k "test_name"
+bash backend/scripts/run-tests.sh --ai
+bash backend/scripts/run-tests.sh --ai -k "test_name"
 ```
 
 ### Frontend dev servers

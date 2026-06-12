@@ -7,13 +7,13 @@ paths: backend/tests/**/*.py
 Always run tests with the `--ai` flag for compact output:
 
 ```bash
-bash backend/scripts/run-tests-rebuild-teardown.sh --ai
-bash backend/scripts/run-tests-rebuild-teardown.sh --ai -k "test_name"
+bash backend/scripts/run-tests.sh --ai
+bash backend/scripts/run-tests.sh --ai -k "test_name"
 ```
 
 - Filter with `-k` only — never pass file paths as filters
-- `run-tests-rebuild-teardown.sh` — full rebuild + teardown, clean state; use this by default
-- `run-tests-fast.sh` — reuses running containers; only for tight local iteration
+- `run-tests.sh` — full rebuild + teardown, clean state; use this by default
+
 
 ## Session fixtures
 

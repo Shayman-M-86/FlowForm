@@ -41,6 +41,7 @@ def get_link(db: Session, survey_id: int, link_id: int) -> SurveyLink | None:
 def create_link(
     db: Session,
     *,
+    project_id: int,
     survey_id: int,
     name: str,
     assigned_email: str | None,
@@ -50,6 +51,7 @@ def create_link(
     token, prefix, token_hash = _make_token()
 
     link = SurveyLink(
+        project_id=project_id,
         survey_id=survey_id,
         name=name,
         token_prefix=prefix,

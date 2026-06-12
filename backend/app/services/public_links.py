@@ -82,6 +82,7 @@ class SurveyLinkService:
         )
         link, token = plr.create_link(
             db,
+            project_id=project_id,
             survey_id=survey_id,
             name=str(data.name),
             assigned_email=data.assigned_email,

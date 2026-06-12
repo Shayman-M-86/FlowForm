@@ -19,13 +19,13 @@ tags:
 - name: Projects
 - name: Public
 - name: Public Links
-- name: Public Submissions
+- name: Public Submission Sessions
 - name: Roles
 - name: Scoring Rules
-- name: Submissions
 - name: Survey Content
 - name: Survey Links
 - name: Survey Members
+- name: Survey Responses
 - name: Survey Roles
 - name: Survey Versions
 - name: Surveys
@@ -1874,13 +1874,13 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/projects/{project_id}/submissions:
+  /api/v1/projects/{project_id}/surveys/{survey_id}/responses:
     get:
-      operationId: listSubmissions
-      summary: List submissions
-      description: List submissions
+      operationId: listResponses
+      summary: List survey responses
+      description: List survey responses
       tags:
-      - Submissions
+      - Survey Responses
       x-flowform-rbac:
         permission: submission:view
       parameters:
@@ -1892,40 +1892,25 @@ paths:
           minimum: 1
           maximum: 2147483647
       - name: survey_id
-        in: query
-        required: false
+        in: path
+        required: true
         schema:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          default: null
-          title: Survey Id
+          type: integer
+          minimum: 1
+          maximum: 2147483647
       - name: status
         in: query
         required: false
         schema:
           anyOf:
           - enum:
-            - pending
-            - stored
-            - failed
+            - in_progress
+            - completed
+            - abandoned
             type: string
           - type: 'null'
           default: null
           title: Status
-      - name: submission_channel
-        in: query
-        required: false
-        schema:
-          anyOf:
-          - enum:
-            - link
-            - slug
-            - system
-            type: string
-          - type: 'null'
-          default: null
-          title: Submission Channel
       - name: page
         in: query
         required: false
@@ -1949,7 +1934,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedSubmissionsResponses'
+                $ref: '#/components/schemas/PaginatedSurveyResponsesResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -1966,13 +1951,13 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/projects/{project_id}/submissions/{submission_id}:
+  /api/v1/projects/{project_id}/surveys/{survey_id}/responses/{session_id}:
     get:
-      operationId: getSubmission
-      summary: Get submission
-      description: Get submission
+      operationId: getResponseDetail
+      summary: Get survey response detail
+      description: Get survey response detail
       tags:
-      - Submissions
+      - Survey Responses
       x-flowform-rbac:
         permission: submission:view
       parameters:
@@ -1983,34 +1968,180 @@ paths:
           type: integer
           minimum: 1
           maximum: 2147483647
-      - name: submission_id
+      - name: survey_id
         in: path
         required: true
         schema:
           type: integer
           minimum: 1
           maximum: 2147483647
-      - name: include_answers
-        in: query
-        required: false
+      - name: session_id
+        in: path
+        required: true
         schema:
-          default: false
-          title: Include Answers
-          type: boolean
-      - name: resolve_identity
-        in: query
-        required: false
-        schema:
-          default: false
-          title: Resolve Identity
-          type: boolean
+          type: string
+          format: uuid
       responses:
         '200':
           description: Successful response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LinkedSubmissionResponses'
+                $ref: '#/components/schemas/SurveyResponseDetailResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteResponse
+      summary: Delete survey response
+      description: Delete survey response
+      tags:
+      - Survey Responses
+      x-flowform-rbac:
+        permission: submission:view
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: No content.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/projects/{project_id}/surveys/{survey_id}/responses/{session_id}/history:
+    get:
+      operationId: getResponseHistory
+      summary: Get survey response history
+      description: Get survey response history
+      tags:
+      - Survey Responses
+      x-flowform-rbac:
+        permission: submission:view
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyResponseHistoryResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/projects/{project_id}/surveys/{survey_id}/responses/export:
+    post:
+      operationId: exportResponses
+      summary: Export survey responses
+      description: Export survey responses
+      tags:
+      - Survey Responses
+      x-flowform-rbac:
+        permission: submission:view
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportSurveyResponsesRequest'
+      responses:
+        '202':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyResponseExportResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -3091,7 +3222,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/v1/public/links/resolve:
-    get:
+    post:
       operationId: resolveLink
       summary: Resolve survey link
       description: Anonymous access is allowed for links that do not require authentication. If the resolved link requires
@@ -3101,15 +3232,12 @@ paths:
       security:
       - {}
       - BearerAuth: []
-      parameters:
-      - name: token
-        in: query
+      requestBody:
         required: true
-        schema:
-          maxLength: 256
-          minLength: 1
-          title: Token
-          type: string
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveTokenRequest'
       responses:
         '200':
           description: Successful response.
@@ -3133,13 +3261,13 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/public/submissions/slug:
+  /api/v1/public/submission-sessions:
     post:
-      operationId: createSlugSubmission
-      summary: Create slug submission
-      description: Create slug submission
+      operationId: startSubmissionSession
+      summary: Start submission session
+      description: Start submission session
       tags:
-      - Public Submissions
+      - Public Submission Sessions
       security:
       - {}
       - BearerAuth: []
@@ -3148,14 +3276,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SlugSubmissionRequest'
+              $ref: '#/components/schemas/StartSubmissionSessionRequest'
       responses:
         '201':
           description: Successful response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LinkedSubmissionResponses'
+                $ref: '#/components/schemas/PublicSubmissionSessionResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -3172,29 +3300,129 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/public/submissions/link:
-    post:
-      operationId: createLinkSubmission
-      summary: Create link submission
-      description: Create link submission
+  /api/v1/public/submission-sessions/current:
+    get:
+      operationId: getCurrentSubmissionSession
+      summary: Get current submission session
+      description: Get current submission session
       tags:
-      - Public Submissions
-      security:
-      - {}
-      - BearerAuth: []
+      - Public Submission Sessions
+      security: []
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSubmissionSessionResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/public/submission-sessions/current/answers/{question_node_id}:
+    put:
+      operationId: saveSubmissionSessionAnswer
+      summary: Save submission session answer
+      description: Save submission session answer
+      tags:
+      - Public Submission Sessions
+      security: []
+      parameters:
+      - name: question_node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LinkSubmissionRequest'
+              $ref: '#/components/schemas/SaveSubmissionSessionAnswerRequest'
       responses:
-        '201':
+        '200':
           description: Successful response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LinkedSubmissionResponses'
+                $ref: '#/components/schemas/SubmissionSessionAnswerResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/public/submission-sessions/current/events/question-viewed:
+    post:
+      operationId: recordSubmissionSessionQuestionViewed
+      summary: Record submission session question view
+      description: Record submission session question view
+      tags:
+      - Public Submission Sessions
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionViewedEventRequest'
+      responses:
+        '204':
+          description: No content.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/public/submission-sessions/current/complete:
+    post:
+      operationId: completeSubmissionSession
+      summary: Complete submission session
+      description: Complete submission session
+      tags:
+      - Public Submission Sessions
+      security: []
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteSubmissionSessionResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -5329,121 +5557,66 @@ components:
           title: Permissions
       title: UpdateProjectRoleRequest
       type: object
-    CoreSubmissionResponses:
-      description: API response shape for a core submission record.
+    SurveyResponseSummaryResponses:
+      description: 'Admin-facing summary of one respondent submission session.
+
+
+        Sourced from core session metadata only; carries no decrypted answer
+
+        payloads and no response-database locators or crypto material.'
       properties:
-        id:
-          title: Id
-          type: integer
-        project_id:
-          title: Project Id
-          type: integer
+        session_id:
+          format: uuid
+          title: Session Id
+          type: string
+          maxLength: 36
         survey_id:
           title: Survey Id
           type: integer
         survey_version_id:
           title: Survey Version Id
           type: integer
-        response_store_id:
-          title: Response Store Id
-          type: integer
-        submission_channel:
-          enum:
-          - link
-          - slug
-          - system
-          title: Submission Channel
-          type: string
-          maxLength: 6
-        submitted_by_user_id:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Submitted By User Id
-        survey_link_id:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Survey Link Id
-        submitter:
-          anyOf:
-          - $ref: '#/components/schemas/SubmitterResponses'
-          - type: 'null'
-          default: null
-        is_anonymous:
-          title: Is Anonymous
-          type: boolean
         status:
           enum:
-          - pending
-          - stored
-          - failed
+          - in_progress
+          - completed
+          - abandoned
           title: Status
           type: string
-          maxLength: 7
+          maxLength: 11
         started_at:
-          anyOf:
-          - format: date-time
-            type: string
-            maxLength: 35
-          - type: 'null'
-          title: Started At
-        submitted_at:
-          anyOf:
-          - format: date-time
-            type: string
-            maxLength: 35
-          - type: 'null'
-          title: Submitted At
-        created_at:
           format: date-time
-          title: Created At
+          title: Started At
+          type: string
+          maxLength: 35
+        completed_at:
+          anyOf:
+          - format: date-time
+            type: string
+            maxLength: 35
+          - type: 'null'
+          default: null
+          title: Completed At
+        last_activity_at:
+          format: date-time
+          title: Last Activity At
           type: string
           maxLength: 35
       required:
-      - id
-      - project_id
+      - session_id
       - survey_id
       - survey_version_id
-      - response_store_id
-      - submission_channel
-      - submitted_by_user_id
-      - survey_link_id
-      - is_anonymous
       - status
       - started_at
-      - submitted_at
-      - created_at
-      title: CoreSubmissionResponses
+      - last_activity_at
+      title: SurveyResponseSummaryResponses
       type: object
-    SubmitterResponses:
-      description: Lightweight submission submitter identity.
-      properties:
-        id:
-          title: Id
-          type: integer
-        email:
-          title: Email
-          type: string
-          maxLength: 254
-        display_name:
-          anyOf:
-          - type: string
-            maxLength: 100
-          - type: 'null'
-          title: Display Name
-      required:
-      - id
-      - email
-      - display_name
-      title: SubmitterResponses
-      type: object
-    PaginatedSubmissionsResponses:
-      description: API response shape for a paginated list of submissions.
+    PaginatedSurveyResponsesResponses:
+      description: Paginated list of admin survey-response summaries.
       properties:
         items:
           items:
-            $ref: '#/components/schemas/CoreSubmissionResponses'
+            $ref: '#/components/schemas/SurveyResponseSummaryResponses'
           maxItems: 100
           title: Items
           type: array
@@ -5461,59 +5634,194 @@ components:
       - total
       - page
       - page_size
-      title: PaginatedSubmissionsResponses
+      title: PaginatedSurveyResponsesResponses
       type: object
-    AnswerResponses:
-      description: API response shape for a single submission answer.
+    SurveyResponseAnswerResponses:
+      description: One decrypted canonical answer in an admin survey-response detail view.
       properties:
-        id:
-          title: Id
-          type: integer
-        question_key:
-          title: Question Key
+        question_node_id:
+          format: uuid
+          title: Question Node Id
           type: string
-          maxLength: 128
-        answer_family:
+          maxLength: 36
+        state:
           enum:
-          - choice
-          - field
-          - matching
-          - rating
-          title: Answer Family
+          - answered
+          - cleared
+          title: State
           type: string
           maxLength: 8
+        answer_family:
+          anyOf:
+          - enum:
+            - choice
+            - field
+            - matching
+            - rating
+            type: string
+            maxLength: 8
+          - type: 'null'
+          default: null
+          title: Answer Family
         answer_value:
-          additionalProperties: true
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
           title: Answer Value
-          type: object
-        created_at:
+        revision_number:
+          title: Revision Number
+          type: integer
+        saved_at:
           format: date-time
-          title: Created At
+          title: Saved At
           type: string
           maxLength: 35
       required:
-      - id
-      - question_key
-      - answer_family
-      - answer_value
-      - created_at
-      title: AnswerResponses
+      - question_node_id
+      - state
+      - revision_number
+      - saved_at
+      title: SurveyResponseAnswerResponses
       type: object
-    LinkedSubmissionResponses:
-      description: API response shape combining a core submission record with its answers.
+    SurveyResponseDetailResponses:
+      description: 'Admin survey-response detail: session metadata plus canonical decrypted answers.'
       properties:
-        core:
-          $ref: '#/components/schemas/CoreSubmissionResponses'
+        session:
+          $ref: '#/components/schemas/SurveyResponseSummaryResponses'
         answers:
           items:
-            $ref: '#/components/schemas/AnswerResponses'
+            $ref: '#/components/schemas/SurveyResponseAnswerResponses'
           maxItems: 50
           title: Answers
           type: array
       required:
-      - core
+      - session
       - answers
-      title: LinkedSubmissionResponses
+      title: SurveyResponseDetailResponses
+      type: object
+    SurveyResponseAnswerRevisionResponses:
+      description: One historical decrypted answer revision for the answer-history view.
+      properties:
+        question_node_id:
+          format: uuid
+          title: Question Node Id
+          type: string
+          maxLength: 36
+        state:
+          enum:
+          - answered
+          - cleared
+          title: State
+          type: string
+          maxLength: 8
+        answer_family:
+          anyOf:
+          - enum:
+            - choice
+            - field
+            - matching
+            - rating
+            type: string
+            maxLength: 8
+          - type: 'null'
+          default: null
+          title: Answer Family
+        answer_value:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Answer Value
+        revision_number:
+          title: Revision Number
+          type: integer
+        saved_at:
+          format: date-time
+          title: Saved At
+          type: string
+          maxLength: 35
+      required:
+      - question_node_id
+      - state
+      - revision_number
+      - saved_at
+      title: SurveyResponseAnswerRevisionResponses
+      type: object
+    SurveyResponseHistoryResponses:
+      description: 'Admin answer-history view: every decrypted revision for a session.'
+      properties:
+        session:
+          $ref: '#/components/schemas/SurveyResponseSummaryResponses'
+        revisions:
+          items:
+            $ref: '#/components/schemas/SurveyResponseAnswerRevisionResponses'
+          maxItems: 50
+          title: Revisions
+          type: array
+      required:
+      - session
+      - revisions
+      title: SurveyResponseHistoryResponses
+      type: object
+    ExportSurveyResponsesRequest:
+      additionalProperties: false
+      description: Request body for exporting a survey's responses.
+      properties:
+        format:
+          default: csv
+          enum:
+          - csv
+          - json
+          title: Format
+          type: string
+          maxLength: 4
+        include_history:
+          default: false
+          title: Include History
+          type: boolean
+        session_ids:
+          anyOf:
+          - items:
+              format: uuid
+              type: string
+              maxLength: 36
+            maxItems: 100
+            type: array
+          - type: 'null'
+          default: null
+          title: Session Ids
+      title: ExportSurveyResponsesRequest
+      type: object
+    SurveyResponseExportResponses:
+      description: Result envelope for a survey-response export request.
+      properties:
+        format:
+          enum:
+          - csv
+          - json
+          title: Format
+          type: string
+          maxLength: 4
+        include_history:
+          title: Include History
+          type: boolean
+        session_count:
+          title: Session Count
+          type: integer
+        download_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Download Url
+      required:
+      - format
+      - include_history
+      - session_count
+      title: SurveyResponseExportResponses
       type: object
     SurveyMemberResponses:
       description: Embedded user details on a survey member row.
@@ -5987,6 +6295,18 @@ components:
       - survey
       title: PublicSurveyResponses
       type: object
+    ResolveTokenRequest:
+      description: Request body for resolving a public link token.
+      properties:
+        token:
+          maxLength: 256
+          minLength: 1
+          title: Token
+          type: string
+      required:
+      - token
+      title: ResolveTokenRequest
+      type: object
     ResolveLinkResponses:
       description: API response shape for resolving a public link token.
       properties:
@@ -6006,278 +6326,259 @@ components:
       - link
       title: ResolveLinkResponses
       type: object
-    ChoiceAnswerIn:
+    LinkTokenSessionAccess:
       additionalProperties: false
-      description: A single answer payload for a choice-based question within a submission.
+      description: Access descriptor for starting a respondent session from a private link token.
       properties:
-        question_key:
-          maxLength: 128
-          title: Question Key
+        type:
+          const: link_token
+          title: Type
           type: string
-        answer_family:
-          const: choice
-          title: Answer Family
-          type: string
-          maxLength: 6
-        answer_value:
-          $ref: '#/components/schemas/ChoiceAnswerValue'
-      required:
-      - question_key
-      - answer_family
-      - answer_value
-      title: ChoiceAnswerIn
-      type: object
-    ChoiceAnswerValue:
-      additionalProperties: false
-      description: Answer value for choice-based questions, containing a list of selected option IDs.
-      properties:
-        selected:
-          items:
-            maxLength: 128
-            type: string
-          maxItems: 50
-          title: Selected
-          type: array
-      required:
-      - selected
-      title: ChoiceAnswerValue
-      type: object
-    FieldAnswerIn:
-      additionalProperties: false
-      description: A single answer payload for an open-ended question within a submission.
-      properties:
-        question_key:
-          maxLength: 128
-          title: Question Key
-          type: string
-        answer_family:
-          const: field
-          title: Answer Family
-          type: string
-          maxLength: 5
-        answer_value:
-          $ref: '#/components/schemas/FieldAnswerValue'
-      required:
-      - question_key
-      - answer_family
-      - answer_value
-      title: FieldAnswerIn
-      type: object
-    FieldAnswerValue:
-      additionalProperties: false
-      description: Answer value for open-ended questions, containing a free-form response.
-      properties:
-        value:
-          anyOf:
-          - maxLength: 1000
-            type: string
-          - type: integer
-          - type: number
-          - type: boolean
-          - format: date
-            type: string
-            maxLength: 10
-          - type: 'null'
-          title: Value
-      required:
-      - value
-      title: FieldAnswerValue
-      type: object
-    MatchPair:
-      additionalProperties: false
-      description: A single pair of matched items for matching questions.
-      properties:
-        left_id:
-          maxLength: 128
-          title: Left Id
-          type: string
-        right_id:
-          maxLength: 128
-          title: Right Id
-          type: string
-      required:
-      - left_id
-      - right_id
-      title: MatchPair
-      type: object
-    MatchingAnswerIn:
-      additionalProperties: false
-      description: A single answer payload for a matching question within a submission.
-      properties:
-        question_key:
-          maxLength: 128
-          title: Question Key
-          type: string
-        answer_family:
-          const: matching
-          title: Answer Family
-          type: string
-          maxLength: 8
-        answer_value:
-          $ref: '#/components/schemas/MatchingAnswerValue'
-      required:
-      - question_key
-      - answer_family
-      - answer_value
-      title: MatchingAnswerIn
-      type: object
-    MatchingAnswerValue:
-      additionalProperties: false
-      description: Answer value for matching questions, containing a list of matched pairs.
-      properties:
-        matches:
-          items:
-            $ref: '#/components/schemas/MatchPair'
-          maxItems: 50
-          title: Matches
-          type: array
-      required:
-      - matches
-      title: MatchingAnswerValue
-      type: object
-    RatingAnswerIn:
-      additionalProperties: false
-      description: A single answer payload for a rating question within a submission.
-      properties:
-        question_key:
-          maxLength: 128
-          title: Question Key
-          type: string
-        answer_family:
-          const: rating
-          title: Answer Family
-          type: string
-          maxLength: 6
-        answer_value:
-          $ref: '#/components/schemas/RatingAnswerValue'
-      required:
-      - question_key
-      - answer_family
-      - answer_value
-      title: RatingAnswerIn
-      type: object
-    RatingAnswerValue:
-      additionalProperties: false
-      description: Answer value for rating questions, containing a numeric rating.
-      properties:
-        value:
-          anyOf:
-          - type: integer
-          - type: number
-          title: Value
-      required:
-      - value
-      title: RatingAnswerValue
-      type: object
-    SlugSubmissionRequest:
-      description: Request body for creating a public-slug survey submission.
-      properties:
-        started_at:
-          anyOf:
-          - format: date-time
-            type: string
-            maxLength: 35
-          - type: 'null'
-          default: null
-          title: Started At
-        submitted_at:
-          anyOf:
-          - format: date-time
-            type: string
-            maxLength: 35
-          - type: 'null'
-          default: null
-          title: Submitted At
-        answers:
-          items:
-            discriminator:
-              mapping:
-                choice: '#/components/schemas/ChoiceAnswerIn'
-                field: '#/components/schemas/FieldAnswerIn'
-                matching: '#/components/schemas/MatchingAnswerIn'
-                rating: '#/components/schemas/RatingAnswerIn'
-              propertyName: answer_family
-            oneOf:
-            - $ref: '#/components/schemas/ChoiceAnswerIn'
-            - $ref: '#/components/schemas/FieldAnswerIn'
-            - $ref: '#/components/schemas/MatchingAnswerIn'
-            - $ref: '#/components/schemas/RatingAnswerIn'
-          maxItems: 50
-          title: Answers
-          type: array
-        metadata:
-          additionalProperties: true
-          maxProperties: 50
-          title: Metadata
-          type: object
-        public_slug:
-          maxLength: 80
-          title: Public Slug
-          type: string
-        survey_version_id:
-          maximum: 2147483647
-          minimum: 1
-          title: Survey Version Id
-          type: integer
-      required:
-      - public_slug
-      - survey_version_id
-      title: SlugSubmissionRequest
-      type: object
-    LinkSubmissionRequest:
-      description: Request body for creating a survey submission from an authenticated link.
-      properties:
-        started_at:
-          anyOf:
-          - format: date-time
-            type: string
-            maxLength: 35
-          - type: 'null'
-          default: null
-          title: Started At
-        submitted_at:
-          anyOf:
-          - format: date-time
-            type: string
-            maxLength: 35
-          - type: 'null'
-          default: null
-          title: Submitted At
-        answers:
-          items:
-            discriminator:
-              mapping:
-                choice: '#/components/schemas/ChoiceAnswerIn'
-                field: '#/components/schemas/FieldAnswerIn'
-                matching: '#/components/schemas/MatchingAnswerIn'
-                rating: '#/components/schemas/RatingAnswerIn'
-              propertyName: answer_family
-            oneOf:
-            - $ref: '#/components/schemas/ChoiceAnswerIn'
-            - $ref: '#/components/schemas/FieldAnswerIn'
-            - $ref: '#/components/schemas/MatchingAnswerIn'
-            - $ref: '#/components/schemas/RatingAnswerIn'
-          maxItems: 50
-          title: Answers
-          type: array
-        metadata:
-          additionalProperties: true
-          maxProperties: 50
-          title: Metadata
-          type: object
+          maxLength: 10
         token:
           maxLength: 256
           title: Token
           type: string
-        survey_version_id:
-          maximum: 2147483647
-          minimum: 1
-          title: Survey Version Id
-          type: integer
       required:
+      - type
       - token
-      - survey_version_id
-      title: LinkSubmissionRequest
+      title: LinkTokenSessionAccess
+      type: object
+    PublicSlugSessionAccess:
+      additionalProperties: false
+      description: Access descriptor for starting a respondent session from a public survey slug.
+      properties:
+        type:
+          const: public_slug
+          title: Type
+          type: string
+          maxLength: 11
+        public_slug:
+          maxLength: 80
+          title: Public Slug
+          type: string
+      required:
+      - type
+      - public_slug
+      title: PublicSlugSessionAccess
+      type: object
+    StartSubmissionSessionRequest:
+      additionalProperties: false
+      description: Request body for starting or resuming a respondent submission session.
+      properties:
+        access:
+          discriminator:
+            mapping:
+              link_token: '#/components/schemas/LinkTokenSessionAccess'
+              public_slug: '#/components/schemas/PublicSlugSessionAccess'
+            propertyName: type
+          oneOf:
+          - $ref: '#/components/schemas/PublicSlugSessionAccess'
+          - $ref: '#/components/schemas/LinkTokenSessionAccess'
+          title: SubmissionSessionAccess
+      required:
+      - access
+      title: StartSubmissionSessionRequest
+      type: object
+    PublicSubmissionSessionSurveyResponses:
+      description: Public survey summary returned with a respondent session.
+      properties:
+        id:
+          title: Id
+          type: integer
+        title:
+          title: Title
+          type: string
+          maxLength: 200
+      required:
+      - id
+      - title
+      title: PublicSubmissionSessionSurveyResponses
+      type: object
+    PublicSubmissionSessionVersionResponses:
+      description: Published survey version frozen into a respondent session.
+      properties:
+        id:
+          title: Id
+          type: integer
+        version_number:
+          title: Version Number
+          type: integer
+        compiled_schema:
+          additionalProperties: true
+          title: Compiled Schema
+          type: object
+      required:
+      - id
+      - version_number
+      - compiled_schema
+      title: PublicSubmissionSessionVersionResponses
+      type: object
+    SubmissionSessionAnswerResponses:
+      description: Canonical latest answer state returned to a respondent.
+      properties:
+        question_node_id:
+          format: uuid
+          title: Question Node Id
+          type: string
+          maxLength: 36
+        state:
+          enum:
+          - answered
+          - cleared
+          title: State
+          type: string
+          maxLength: 8
+        answer_family:
+          anyOf:
+          - enum:
+            - choice
+            - field
+            - matching
+            - rating
+            type: string
+            maxLength: 8
+          - type: 'null'
+          default: null
+          title: Answer Family
+        answer_value:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Answer Value
+        revision_number:
+          title: Revision Number
+          type: integer
+        client_mutation_id:
+          format: uuid
+          title: Client Mutation Id
+          type: string
+          maxLength: 36
+        saved_at:
+          format: date-time
+          title: Saved At
+          type: string
+          maxLength: 35
+      required:
+      - question_node_id
+      - state
+      - revision_number
+      - client_mutation_id
+      - saved_at
+      title: SubmissionSessionAnswerResponses
+      type: object
+    PublicSubmissionSessionResponses:
+      description: Public respondent session response without raw resume or crypto material.
+      properties:
+        status:
+          enum:
+          - in_progress
+          - completed
+          - abandoned
+          title: Status
+          type: string
+          maxLength: 11
+        started_at:
+          format: date-time
+          title: Started At
+          type: string
+          maxLength: 35
+        expires_at:
+          format: date-time
+          title: Expires At
+          type: string
+          maxLength: 35
+        survey:
+          $ref: '#/components/schemas/PublicSubmissionSessionSurveyResponses'
+        version:
+          $ref: '#/components/schemas/PublicSubmissionSessionVersionResponses'
+        answers:
+          items:
+            $ref: '#/components/schemas/SubmissionSessionAnswerResponses'
+          maxItems: 50
+          title: Answers
+          type: array
+      required:
+      - status
+      - started_at
+      - expires_at
+      - survey
+      - version
+      - answers
+      title: PublicSubmissionSessionResponses
+      type: object
+    SaveSubmissionSessionAnswerRequest:
+      additionalProperties: false
+      description: Request body for saving or clearing one respondent answer revision.
+      properties:
+        client_mutation_id:
+          format: uuid
+          title: Client Mutation Id
+          type: string
+          maxLength: 36
+        state:
+          enum:
+          - answered
+          - cleared
+          title: State
+          type: string
+          maxLength: 8
+        answer_family:
+          anyOf:
+          - enum:
+            - choice
+            - field
+            - matching
+            - rating
+            type: string
+            maxLength: 8
+          - type: 'null'
+          default: null
+          title: Answer Family
+        answer_value:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Answer Value
+      required:
+      - client_mutation_id
+      - state
+      title: SaveSubmissionSessionAnswerRequest
+      type: object
+    QuestionViewedEventRequest:
+      additionalProperties: false
+      description: Request body for recording that a respondent viewed a question.
+      properties:
+        question_node_id:
+          format: uuid
+          title: Question Node Id
+          type: string
+          maxLength: 36
+      required:
+      - question_node_id
+      title: QuestionViewedEventRequest
+      type: object
+    CompleteSubmissionSessionResponses:
+      description: Response body for an idempotent respondent session completion.
+      properties:
+        status:
+          const: completed
+          title: Status
+          type: string
+          maxLength: 9
+        completed_at:
+          format: date-time
+          title: Completed At
+          type: string
+          maxLength: 35
+      required:
+      - status
+      - completed_at
+      title: CompleteSubmissionSessionResponses
       type: object
   responses:
     BadRequestError:
@@ -6581,12 +6882,12 @@ components:
               summary: 'DB rule: INVITATION_EXISTS'
               value:
                 code: INVITATION_EXISTS
-                message: A pending invitation already exists for '<invited_email>' in project id=<project_id>.
+                message: A pending invitation already exists for '<invited_email>' in this project.
             fk_project_invitations_role_same_project:
               summary: 'DB rule: INVITATION_ROLE_MISMATCH'
               value:
                 code: INVITATION_ROLE_MISMATCH
-                message: Role id=<role_id> does not belong to project id=<project_id>.
+                message: The role does not belong to this project.
             surveys_public_slug_key:
               summary: 'DB rule: SURVEY_SLUG_CONFLICT'
               value:
@@ -6596,22 +6897,22 @@ components:
               summary: 'DB rule: SURVEY_STORE_MISSING'
               value:
                 code: SURVEY_STORE_MISSING
-                message: Default response store id=<default_response_store_id> does not exist.
+                message: The default response store does not exist.
             fk_surveys_default_store_same_project:
               summary: 'DB rule: SURVEY_STORE_PROJECT_CONFLICT'
               value:
                 code: SURVEY_STORE_PROJECT_CONFLICT
-                message: Default response store id=<default_response_store_id> does not belong to project id=<project_id>.
+                message: The default response store does not belong to this project.
             fk_surveys_published_version_same_survey:
               summary: 'DB rule: SURVEY_PUBLISHED_VERSION_MISMATCH'
               value:
                 code: SURVEY_PUBLISHED_VERSION_MISMATCH
-                message: Published version id=<published_version_id> does not belong to survey id=<survey_id>.
+                message: The published version does not belong to this survey.
             published_version_id_must_reference_a_published_non_deleted_version_of_the_same_survey:
               summary: 'DB rule: SURVEY_PUBLISHED_VERSION_INVALID'
               value:
                 code: SURVEY_PUBLISHED_VERSION_INVALID
-                message: Published version id=<published_version_id> must be a published, non-deleted version of survey id=<survey_id>.
+                message: The published version must be a published, non-deleted version of this survey.
             uq_survey_versions_survey_id_version_number:
               summary: 'DB rule: VERSION_NUMBER_CONFLICT'
               value:
@@ -6621,17 +6922,17 @@ components:
               summary: 'DB rule: VERSION_PUBLISHED_CONFLICT'
               value:
                 code: VERSION_PUBLISHED_CONFLICT
-                message: Survey id=<survey_id> already has a published version.
+                message: This survey already has a published version.
             cannot_delete_the_active_published_survey_version_while_it_is_referenced_by_surveys_published_version_id:
               summary: 'DB rule: VERSION_DELETE_PROTECTED'
               value:
                 code: VERSION_DELETE_PROTECTED
-                message: Published version id=<survey_version_id> cannot be deleted.
+                message: The active published survey version cannot be deleted.
             cannot_unpublish_or_soft_delete_the_active_published_survey_version_while_it_is_referenced_by_surveys_published_version_id:
               summary: 'DB rule: VERSION_STATE_PROTECTED'
               value:
                 code: VERSION_STATE_PROTECTED
-                message: Published version id=<survey_version_id> cannot be unpublished or deleted.
+                message: The active published survey version cannot be unpublished or deleted.
             uq_survey_links_token_hash:
               summary: 'DB rule: LINK_TOKEN_CONFLICT'
               value:
@@ -6641,22 +6942,72 @@ components:
               summary: 'DB rule: LINK_PREFIX_CONFLICT'
               value:
                 code: LINK_PREFIX_CONFLICT
-                message: Survey id=<survey_id> already has a link with this token prefix.
+                message: This survey already has a link with this token prefix.
+            fk_survey_links_survey_same_project:
+              summary: 'DB rule: LINK_SURVEY_PROJECT_CONFLICT'
+              value:
+                code: LINK_SURVEY_PROJECT_CONFLICT
+                message: The survey does not belong to this project.
+            fk_survey_links_assigned_subject_same_project:
+              summary: 'DB rule: LINK_SUBJECT_PROJECT_CONFLICT'
+              value:
+                code: LINK_SUBJECT_PROJECT_CONFLICT
+                message: The assigned subject does not belong to this project.
             uq_survey_roles_project_id_name:
               summary: 'DB rule: SURVEY_ROLE_NAME_CONFLICT'
               value:
                 code: SURVEY_ROLE_NAME_CONFLICT
                 message: Project already has a survey role named '<name>'.
-            uq_project_subjects_project_id_user_id:
-              summary: 'DB rule: SUBJECT_USER_CONFLICT'
+            uq_project_subjects_project_id_subject_code:
+              summary: 'DB rule: SUBJECT_CODE_CONFLICT'
               value:
-                code: SUBJECT_USER_CONFLICT
-                message: Project id=<project_id> already has a subject for user id=<user_id>.
-            uq_project_subjects_project_id_pseudonymous_subject_id:
-              summary: 'DB rule: SUBJECT_ID_CONFLICT'
+                code: SUBJECT_CODE_CONFLICT
+                message: This project already uses subject code='<subject_code>'.
+            fk_project_subject_identities_subject_same_project:
+              summary: 'DB rule: IDENTITY_SUBJECT_PROJECT_CONFLICT'
               value:
-                code: SUBJECT_ID_CONFLICT
-                message: Project id=<project_id> already uses pseudonymous subject id='<pseudonymous_subject_id>'.
+                code: IDENTITY_SUBJECT_PROJECT_CONFLICT
+                message: The project subject does not belong to this project.
+            uq_project_subject_identities_active_user:
+              summary: 'DB rule: IDENTITY_USER_CONFLICT'
+              value:
+                code: IDENTITY_USER_CONFLICT
+                message: This user already has an active subject in this project.
+            uq_project_subject_identities_subject_active_email:
+              summary: 'DB rule: IDENTITY_SUBJECT_EMAIL_CONFLICT'
+              value:
+                code: IDENTITY_SUBJECT_EMAIL_CONFLICT
+                message: This subject already has an active identity for email='<normalized_email>'.
+            uq_project_subject_identities_project_verified_email:
+              summary: 'DB rule: IDENTITY_VERIFIED_EMAIL_CONFLICT'
+              value:
+                code: IDENTITY_VERIFIED_EMAIL_CONFLICT
+                message: Email='<normalized_email>' is already verified for another subject in this project.
+            uq_project_subject_tokens_token_hash:
+              summary: 'DB rule: SUBJECT_TOKEN_CONFLICT'
+              value:
+                code: SUBJECT_TOKEN_CONFLICT
+                message: This subject recognition token is already in use.
+            fk_project_subject_tokens_subject_same_project:
+              summary: 'DB rule: SUBJECT_TOKEN_PROJECT_CONFLICT'
+              value:
+                code: SUBJECT_TOKEN_PROJECT_CONFLICT
+                message: The project subject does not belong to this project.
+            fk_subject_ip_observations_subject_same_project:
+              summary: 'DB rule: IP_OBSERVATION_SUBJECT_PROJECT_CONFLICT'
+              value:
+                code: IP_OBSERVATION_SUBJECT_PROJECT_CONFLICT
+                message: The project subject does not belong to this project.
+            fk_subject_ip_observations_session_same_project:
+              summary: 'DB rule: IP_OBSERVATION_SESSION_PROJECT_CONFLICT'
+              value:
+                code: IP_OBSERVATION_SESSION_PROJECT_CONFLICT
+                message: The submission session does not belong to this project.
+            fk_subject_ip_observations_session_subject_match:
+              summary: 'DB rule: IP_OBSERVATION_SESSION_SUBJECT_MISMATCH'
+              value:
+                code: IP_OBSERVATION_SESSION_SUBJECT_MISMATCH
+                message: The subject does not match the subject attached to this submission session.
             uq_submission_sessions_browser_session_token_hash:
               summary: 'DB rule: SESSION_TOKEN_CONFLICT'
               value:
@@ -6666,47 +7017,47 @@ components:
               summary: 'DB rule: SESSION_SURVEY_PROJECT_CONFLICT'
               value:
                 code: SESSION_SURVEY_PROJECT_CONFLICT
-                message: Survey id=<survey_id> does not belong to project id=<project_id>.
+                message: The survey does not belong to this project.
             fk_submission_sessions_version_same_survey:
               summary: 'DB rule: SESSION_VERSION_SURVEY_CONFLICT'
               value:
                 code: SESSION_VERSION_SURVEY_CONFLICT
-                message: Survey version id=<survey_version_id> does not belong to survey id=<survey_id>.
+                message: The survey version does not belong to this survey.
             fk_submission_sessions_store_same_project:
               summary: 'DB rule: SESSION_STORE_PROJECT_CONFLICT'
               value:
                 code: SESSION_STORE_PROJECT_CONFLICT
-                message: Response store id=<response_store_id> does not belong to project id=<project_id>.
+                message: The response store does not belong to this project.
             fk_submission_sessions_link_same_survey:
               summary: 'DB rule: SESSION_LINK_SURVEY_CONFLICT'
               value:
                 code: SESSION_LINK_SURVEY_CONFLICT
-                message: Survey link id=<survey_link_id> does not belong to survey id=<survey_id>.
+                message: The survey link does not belong to this survey.
             fk_submission_sessions_project_subject_same_project:
               summary: 'DB rule: SESSION_SUBJECT_PROJECT_CONFLICT'
               value:
                 code: SESSION_SUBJECT_PROJECT_CONFLICT
-                message: Project subject id=<project_subject_id> does not belong to project id=<project_id>.
+                message: The project subject does not belong to this project.
             fk_submission_events_session_version:
               summary: 'DB rule: EVENT_SESSION_VERSION_CONFLICT'
               value:
                 code: EVENT_SESSION_VERSION_CONFLICT
-                message: Session id=<session_id> does not belong to survey version id=<survey_version_id>.
+                message: The session does not belong to this survey version.
             fk_submission_events_question_node_same_version:
               summary: 'DB rule: EVENT_QUESTION_VERSION_CONFLICT'
               value:
                 code: EVENT_QUESTION_VERSION_CONFLICT
-                message: Question node id=<question_node_id> does not belong to survey version id=<survey_version_id>.
+                message: The question node does not belong to this survey version.
             uq_survey_questions_survey_version_id_question_key:
               summary: 'DB rule: RULE_KEY_CONFLICT'
               value:
                 code: RULE_KEY_CONFLICT
-                message: Survey version id=<survey_version_id> already uses rule_key (node id=<survey_question_id>).
+                message: This survey version already uses that rule_key.
             uq_survey_questions_survey_version_id_sort_key:
               summary: 'DB rule: SORT_KEY_CONFLICT'
               value:
                 code: SORT_KEY_CONFLICT
-                message: Survey version id=<survey_version_id> already uses that sort_key.
+                message: This survey version already uses that sort_key.
             cannot_modify_components_of_a_published_survey_version:
               summary: 'DB rule: SCORING_VERSION_LOCKED'
               value:
@@ -6716,7 +7067,7 @@ components:
               summary: 'DB rule: SCORING_KEY_CONFLICT'
               value:
                 code: SCORING_KEY_CONFLICT
-                message: Survey version id=<survey_version_id> already uses scoring_key='<scoring_key>'.
+                message: This survey version already uses scoring_key='<scoring_key>'.
             uq_project_roles_project_name:
               summary: 'DB rule: PROJECT_ROLE_NAME_CONFLICT'
               value:
@@ -6726,12 +7077,12 @@ components:
               summary: 'DB rule: PROJECT_MEMBERSHIP_CONFLICT'
               value:
                 code: PROJECT_MEMBERSHIP_CONFLICT
-                message: User id=<user_id> is already a member of project id=<project_id>.
+                message: This user is already a member of this project.
             fk_project_memberships_role_same_project:
               summary: 'DB rule: PROJECT_ROLE_MISMATCH'
               value:
                 code: PROJECT_ROLE_MISMATCH
-                message: Role id=<role_id> does not belong to project id=<project_id>.
+                message: The role does not belong to this project.
             fk_survey_membership_roles_survey_same_project:
               summary: 'DB rule: SURVEY_MEMBERSHIP_SURVEY_MISMATCH'
               value:
@@ -6751,22 +7102,22 @@ components:
               summary: 'DB rule: ENVELOPE_EXISTS'
               value:
                 code: ENVELOPE_EXISTS
-                message: A response envelope already exists for this session (id=<envelope_id>).
+                message: A response envelope already exists for this session.
             uq_response_answers_envelope_id_answer_locator:
               summary: 'DB rule: ANSWER_EXISTS'
               value:
                 code: ANSWER_EXISTS
-                message: An answer already exists for this question in envelope id=<envelope_id>.
+                message: An answer already exists for this question in this envelope.
             uq_response_answer_revisions_answer_id_client_mutation_id:
               summary: 'DB rule: REVISION_MUTATION_CONFLICT'
               value:
                 code: REVISION_MUTATION_CONFLICT
-                message: A revision for answer id=<answer_id> with client_mutation_id=<client_mutation_id> already exists.
+                message: A revision with client_mutation_id=<client_mutation_id> already exists for this answer.
             fk_response_answer_revisions_answer_same_envelope:
               summary: 'DB rule: REVISION_ANSWER_ENVELOPE_MISMATCH'
               value:
                 code: REVISION_ANSWER_ENVELOPE_MISMATCH
-                message: Answer id=<answer_id> does not belong to envelope id=<envelope_id>.
+                message: The answer does not belong to this envelope.
     ValidationError:
       description: Request was syntactically valid but semantically invalid.
       content:
@@ -6825,41 +7176,43 @@ components:
                 details:
                   constraint_name: null
                   error_key: null
-                  context: {}
+            subject_resolution:
+              summary: SubjectResolutionError
+              value:
+                code: SUBJECT_RESOLUTION_FAILED
+                message: A referenced respondent subject could not be resolved.
             ck_project_invitations_status_valid:
               summary: 'DB rule: INVITATION_STATE_INVALID'
               value:
                 code: INVITATION_STATE_INVALID
-                message: 'Server invariant violated: invitation id=<invitation_id> was written with invalid status=''<status>''.'
+                message: 'Server invariant violated: a project invitation was written with invalid status=''<status>''.'
             ck_survey_versions_published_requires_schema_and_timestamp:
               summary: 'DB rule: VERSION_PUBLISH_STATE_INVALID'
               value:
                 code: VERSION_PUBLISH_STATE_INVALID
-                message: 'Server invariant violated: survey version id=<survey_version_id> reached status=''published'' without
-                  both compiled_schema and published_at. This indicates a code path bypassed surveys_repo.publish_version.'
+                message: 'Server invariant violated: a survey version reached status=''published'' without both compiled_schema
+                  and published_at. This indicates a code path bypassed surveys_repo.publish_version.'
             ck_submission_sessions_session_status_valid:
               summary: 'DB rule: SESSION_STATE_INVALID'
               value:
                 code: SESSION_STATE_INVALID
-                message: 'Server invariant violated: session id=<session_id> was written with invalid session_status=''<session_status>''.
+                message: 'Server invariant violated: a submission session was written with invalid session_status=''<session_status>''.
                   session_status is server-controlled and must be one of ''in_progress'', ''completed'', ''abandoned''.'
-            ck_submission_sessions_completed_requires_completed_at:
+            ck_submission_sessions_completed_at_consistent:
               summary: 'DB rule: SESSION_COMPLETION_STATE_INVALID'
               value:
                 code: SESSION_COMPLETION_STATE_INVALID
-                message: 'Server invariant violated: session id=<session_id> reached session_status=''completed'' without
-                  completed_at being set.'
+                message: 'Server invariant violated: a submission session has an inconsistent completed_at for its session_status.'
             ck_submission_events_event_type_valid:
               summary: 'DB rule: EVENT_TYPE_INVALID'
               value:
                 code: EVENT_TYPE_INVALID
-                message: 'Server invariant violated: event id=<event_id> was written with invalid event_type=''<event_type>''.'
+                message: 'Server invariant violated: a submission event was written with invalid event_type=''<event_type>''.'
             ck_project_memberships_status_valid:
               summary: 'DB rule: MEMBERSHIP_STATE_INVALID'
               value:
                 code: MEMBERSHIP_STATE_INVALID
-                message: 'Server invariant violated: membership for user id=<user_id> in project id=<project_id> was written
-                  with invalid status=''<status>''.'
+                message: 'Server invariant violated: a project membership was written with invalid status=''<status>''.'
             internal_server_error:
               summary: Generic server error
               value:

@@ -28,7 +28,7 @@ Versioned HTTP route handlers. Top-level: auth, health, me, public. Project-scop
 
 ## `backend/tests/`
 
-Test suite split into unit/ and integration/. Unit tests cover services, auth, schemas, and logging. Integration tests run inside Docker via run-tests-rebuild-teardown.sh and cover core DB, response DB, environment, and model-layer behaviour. All sessions use savepoint-based fixtures — commits release savepoints, outer transaction rolls back on teardown.
+Test suite split into unit/ and integration/. Unit tests cover services, auth, schemas, and logging. Integration tests run inside Docker via run-tests.sh and cover core DB, response DB, environment, and model-layer behaviour. All sessions use savepoint-based fixtures — commits release savepoints, outer transaction rolls back on teardown.
 
 ## `frontend/apps/studio-app/src/api/`
 

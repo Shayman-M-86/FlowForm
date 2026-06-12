@@ -36,19 +36,13 @@ Tests run inside Docker. Always use `--ai` for compact output.
 **Full rebuild + teardown** - clean state every run, use this by default:
 
 ```bash
-bash backend/scripts/run-tests-rebuild-teardown.sh --ai
-bash backend/scripts/run-tests-rebuild-teardown.sh --ai -k "test_submission_gateway"
-```
-
-**Fast run** - reuses running containers, faster for tight iteration cycles:
-
-```bash
-bash backend/scripts/run-tests-fast.sh
+bash backend/scripts/run-tests.sh --ai
+bash backend/scripts/run-tests.sh --ai -k "test_submission_gateway"
 ```
 
 Filter with `-k` only - never pass file paths as filters.
 
-Other useful flags for `run-tests-rebuild-teardown.sh`:
+Other useful flags for `run-tests.sh`:
 
 - `--logs=all` - print Docker logs from all services on failure
 - `--verbose` - full output, no spinner

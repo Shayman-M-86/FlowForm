@@ -5,7 +5,6 @@
       "Read(/home/shayman86/my-repos/FlowForm/**)",
       "Edit(/home/shayman86/my-repos/FlowForm/**)",
       "Write(/home/shayman86/my-repos/FlowForm/**)",
-
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
@@ -24,7 +23,6 @@
       "Bash(stat:*)",
       "Bash(file:*)",
       "Bash(xargs:*)",
-
       "Bash(git status:*)",
       "Bash(git log:*)",
       "Bash(git diff:*)",
@@ -36,7 +34,6 @@
       "Bash(git rev-parse:*)",
       "Bash(git shortlog:*)",
       "Bash(git tag:*)",
-
       "Bash(docker ps:*)",
       "Bash(docker inspect:*)",
       "Bash(docker logs:*)",
@@ -48,11 +45,9 @@
       "Bash(docker compose -f infra/docker/docker-compose.test.yml stop:*)",
       "Bash(docker compose -f infra/docker/docker-compose.test.yml build:*)",
       "Bash(docker exec flowform-backend-test:*)",
-
       "Bash(bash backend/scripts/run-tests-fast.sh:*)",
-      "Bash(bash backend/scripts/run-tests-rebuild-teardown.sh:*)",
+      "Bash(bash backend/scripts/run-tests.sh:*)",
       "Bash(bash backend/scripts/pip-audit.sh:*)",
-
       "Bash(uv run:*)",
       "Bash(uv --version)",
       "Bash(uv pip compile:*)",
@@ -64,7 +59,6 @@
       "Bash(uv run pytest tests/unit:*)",
       "Bash(python -m pytest tests/unit:*)",
       "Bash(python3 -m pytest tests/unit:*)",
-
       "Bash(npm run dev:studio:*)",
       "Bash(npm run dev:site:*)",
       "Bash(npm run build:studio:*)",
@@ -89,7 +83,6 @@
       "Bash(rm -rf:*)",
       "Bash(shred:*)",
       "Bash(truncate:*)",
-
       "Bash(git push:*)",
       "Bash(git push --force:*)",
       "Bash(git reset:*)",
@@ -101,14 +94,12 @@
       "Bash(git commit --amend:*)",
       "Bash(git branch -D:*)",
       "Bash(git tag -d:*)",
-
       "Bash(docker rm:*)",
       "Bash(docker rmi:*)",
       "Bash(docker volume rm:*)",
       "Bash(docker system prune:*)",
       "Bash(docker kill:*)",
       "Bash(docker stop:*)",
-
       "Bash(curl:*)",
       "Bash(wget:*)",
       "Bash(nc:*)",
@@ -116,13 +107,10 @@
       "Bash(ssh:*)",
       "Bash(scp:*)",
       "Bash(rsync:*)",
-
       "Bash(sudo:*)",
       "Bash(su:*)",
       "Bash(chmod:*)",
       "Bash(chown:*)",
-
-
       "Bash(psql:*)",
       "Bash(pg_dump:*)",
       "Bash(pg_restore:*)",
@@ -131,7 +119,6 @@
       "Bash(uv run flask db upgrade:*)",
       "Bash(uv run flask db downgrade:*)",
       "Bash(uv run flask db stamp:*)",
-
       "Bash(npm install:*)",
       "Bash(npm install --save:*)",
       "Bash(npm install --save-dev:*)",
