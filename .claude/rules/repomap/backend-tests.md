@@ -4,6 +4,20 @@ paths: backend/tests/**
 
 # backend/tests/
 
-_Last updated: 2026-05-27 by /repomap_
+_Last verified: 2026-06-15_
 
-The test suite is split into `unit/` and `integration/` subdirectories, each with its own `conftest.py`. Unit tests cover services and route handlers (e.g. `test_auth_service.py`, `test_members_service.py`, `test_account_service.py`, `test_public_link_validation.py`) using monkeypatching — for example, Firebase `verify_id_token` is patched to control token verification. Integration tests exercise the ORM layer directly against real database sessions, validating DB constraints (CHECK, FK, NOT NULL, UNIQUE violations via `psycopg.errors`) for models such as `SurveySubmission`, `SurveyQuestion`, and auth bootstrap flows; factory helpers in `tests/integration/core/factories.py` construct valid ORM objects for fixtures.
+Backend tests split by scope:
+
+- `unit/` -> services, route contracts, OpenAPI/spec, schema limits; use
+  monkeypatch/fakes, no real DB unless explicit.
+- `integration/` -> real Postgres sessions in savepoint-backed fixtures; covers
+  core/response ORM routing, constraints, factories, and service/repository
+  behavior.
+- `e2e/` -> Flask test client through route -> auth/RBAC -> service -> repo ->
+  real DB; patches Auth0 token verification and DB session factories.
+
+Root `conftest.py` builds app once, opens core + response connections, and
+provides `core_db_session`, `response_db_session`, plus legacy multi-bind
+`db_session`. Core factories live in `tests/integration/core/factories.py`.
+Run via `backend/scripts/run-tests.sh`; it uses `uv run`, Docker test stack,
+smart rebuild fingerprints, and passes extra args to pytest.

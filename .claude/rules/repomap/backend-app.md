@@ -4,6 +4,36 @@ paths: backend/app/**
 
 # backend/app/
 
-_Last updated: 2026-05-27 by /repomap_
+_Last verified: 2026-06-15_
 
-The top-level Flask application package. It exposes a single `create_app` factory (in `app/core/factory.py`) that wires together extensions, dual-database sessions (core + response), the v1 API blueprint, rate limiting, error handlers, and seed data. Subdirectories follow a strict layered architecture: `api`, `core`, `db`, `domain`, `gateway`, `logging`, `middleware`, `openapi`, `repositories`, `schema`, `services`, and `utils`.
+Top-level Flask app package. Entry point: `create_app` in `core/factory.py`.
+
+Factory order:
+
+- bootstrap logging/settings
+- build Flask app + apply config
+- init extensions: DB manager, Auth0 auth, URL converters, CORS
+- init per-request core + response DB sessions
+- register API v1 blueprints
+- register rate limiting
+- register error handlers + OpenAPI options
+- import ORM package so SQLAlchemy mappings register
+- seed required permission rows
+
+Layer map:
+
+- `api/` -> thin Flask routes + request parsing
+- `core/` -> config, extension singletons, app factory
+- `db/` -> engines, sessions, transaction/error helpers, ORM bases
+- `domain/` -> policy guards + typed errors
+- `repositories/` -> SQLAlchemy data access
+- `schema/` -> Pydantic API contracts + ORM models
+- `services/` -> orchestration, commits, permission/session flows
+- `middleware/` -> auth, rate limit, URL converters
+- `openapi/` -> route metadata + spec generation/export
+- `logging/` -> bootstrap/app/request/audit logging
+- `utils/` -> small shared helpers
+
+Keep direction clean: routes -> services -> domain/repositories/schema. `gateway/`
+has no active source files in current checkout; do not add new gateway code
+without re-establishing its boundary.

@@ -4,6 +4,18 @@ paths: backend/app/domain/**
 
 # backend/app/domain/
 
-_Last updated: 2026-05-27 by /repomap_
+_Last verified: 2026-06-15_
 
-Pure business-logic layer containing rule functions and typed domain errors — no SQLAlchemy imports or HTTP concerns. Files like `survey_rules.py` and `access_rules.py` contain guard functions (e.g. `ensure_visibility_slug_coherent`) that mirror DB CHECK constraints and raise structured `AppError` subclasses defined in `errors.py`. `permissions.py` defines frozen dataclass permission sets (`ProjectPermissionSet`, `SurveyPermissionSet`, `SubmissionPermissionSet`) collected under a single `PERMISSIONS` singleton, which is imported by the schema limits layer.
+Domain policy + typed errors. No HTTP here. Routes/services call domain
+functions; do not duplicate access/survey/link/auth/session policy inline.
+
+Rules = small `ensure_*` guards:
+
+- pass -> `None`
+- fail -> structured `AppError` from `errors.py`
+- usual -> pure ORM/domain-object check, often mirrors DB constraint
+- rare lookup -> narrow repository call, like `submission_access_rules.py`
+
+Use domain for durable policy names + real concepts. Avoid service-local adapter
+objects when concept belongs here. `permissions.py` owns frozen permission sets +
+shared `PERMISSIONS`.
