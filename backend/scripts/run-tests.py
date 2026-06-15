@@ -434,8 +434,31 @@ def remove_compose_volumes(volumes: Iterable[str], verbose: bool) -> None:
     if not names:
         return
 
+    remove_containers_using_volumes(names, verbose)
+
     if run_with_spinner("Removing stale test volumes", ["docker", "volume", "rm", *sorted(set(names))], verbose) != 0:
         raise RunnerError("Failed to remove stale test volumes.")
+
+
+def containers_using_volume(volume: str) -> list[str]:
+    completed = run(
+        ["docker", "ps", "-aq", "--filter", f"volume={volume}"],
+        check=False,
+        capture=True,
+    )
+    return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+
+
+def remove_containers_using_volumes(volumes: Iterable[str], verbose: bool) -> None:
+    containers: set[str] = set()
+    for volume in volumes:
+        containers.update(containers_using_volume(volume))
+
+    if not containers:
+        return
+
+    if run_with_spinner("Removing stale test containers", ["docker", "rm", "-f", *sorted(containers)], verbose) != 0:
+        raise RunnerError("Failed to remove stale test containers.")
 
 
 def container_state(container: str) -> str:

@@ -79,11 +79,26 @@ class ProjectSubjectIdentity(CoreBase):
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
+        # Composite UNIQUE that project_participants' identity FK targets, proving
+        # an identity belongs to a subject within the same project.
+        UniqueConstraint(
+            "project_id",
+            "project_subject_id",
+            "id",
+            name="uq_project_subject_identities_project_subject_id",
+        ),
         ForeignKeyConstraint(
             ["project_id", "project_subject_id"],
             ["project_subjects.project_id", "project_subjects.id"],
             ondelete="CASCADE",
             name="fk_project_subject_identities_subject_same_project",
+        ),
+        ForeignKeyConstraint(
+            ["user_id", "normalized_email"],
+            ["users.id", "users.email"],
+            ondelete="CASCADE",
+            onupdate="CASCADE",
+            name="fk_project_subject_identities_user_email_matches",
         ),
     )
 

@@ -120,6 +120,29 @@ def resolve_link():
 
 
 @openapi_route(
+    summary="Verify authenticated survey link participant",
+    request_model=ResolveTokenRequest,
+    response_model=PublicLinkResponses,
+    tags=["Public Links"],
+    auth_required=True,
+    description=(
+        "Verify the authenticated account against the participant assigned to "
+        "an authenticated survey link. The account email must match the "
+        "participant identity email before the participant is linked to the user."
+    ),
+)
+@public_bp.route("/links/verification/link", methods=["POST"])
+@auth.require_auth()
+def verify_authenticated_link_participant():
+    payload = parse(ResolveTokenRequest, request)
+    core_db = get_core_db()
+    user = users_service.get_user_by_sub(db=core_db, auth0_user_id=auth.get_current_user_sub())
+    link = survey_link_service.verify_authenticated_link_participant(core_db, payload=payload, actor=user)
+    response = PublicLinkResponses.model_validate(link)
+    return response.model_dump(mode="json"), 200
+
+
+@openapi_route(
     summary="Start submission session",
     request_model=StartSubmissionSessionRequest,
     response_model=PublicSubmissionSessionResponses,

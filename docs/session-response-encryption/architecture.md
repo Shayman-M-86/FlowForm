@@ -1,294 +1,177 @@
 # Architecture
 
-Purpose, design goals, technology choices, database responsibilities, and the high-level split between core and response storage.
+This document explains the session/response encryption architecture and marks
+the boundary between implemented code and target design. For exact schema
+details, see [data-model.md](data-model.md). For route behavior, see
+[api-surface.md](api-surface.md). For unfinished work, see
+[remaining-work.md](remaining-work.md).
 
-## 1. Purpose of this document
+## Current Implementation Boundary
 
-This document describes how FlowForm should create, resume, complete, and
-administer survey submission sessions while keeping sensitive answer data
-encrypted and separated from identifying application metadata.
+Implemented now:
 
-It covers:
+- Core schema for project subjects, identities, participants, recognition
+  tokens, submission sessions, events, and response-envelope tables.
+- Public-link resolution and authenticated-link participant checks.
+- Subject resolution through `ProjectSubjectResolver`.
+- Session start through `SessionStarter`.
+- Placeholder contracts for resume, answer save, question-viewed events,
+  completion, and admin response reads.
 
-* the responsibilities of the core and response databases;
-* the identifiers, secrets, and locators used to connect the two stores without
-  exposing respondent identity in the response database;
-* the lifecycle of a respondent submission session;
-* encrypted answer storage, revision history, and canonical-answer reads;
-* operational concerns such as key rotation, logging, failure handling, and
-  testing.
+Not implemented yet:
 
-## 2. Main design goals
+- Response-envelope creation during session start.
+- Resume service and canonical-answer reads.
+- Answer-save service, answer locators, revisions, and idempotency.
+- Completion/lifecycle service.
+- KMS, linkage-secret HMAC locators, DEK handling, AES-GCM encryption, AAD,
+  key caching, and key rotation.
+- Admin read/export/delete paths backed by real response data.
 
-The submission system should satisfy the following requirements.
+## Design Goals
 
-### 2.1 Separate identifying metadata from sensitive answers
+FlowForm needs to collect answers while keeping identifying application
+metadata separate from sensitive answer payloads.
 
 The core database stores application metadata:
 
-* projects;
-* surveys;
-* published survey versions;
-* access links;
-* optional project subject records;
-* submission sessions;
-* session status;
-* session analytics events.
+- projects, surveys, and published survey versions;
+- public and restricted survey links;
+- project-scoped respondent identity records;
+- submission sessions and session status;
+- session analytics events.
 
-The response database stores encrypted answer payloads:
+The response database stores answer material:
 
-* anonymous response envelopes;
-* logical answer records;
-* immutable answer revisions;
-* encrypted answer ciphertext;
-* encryption nonces;
-* wrapped data-encryption keys.
+- anonymous response envelopes;
+- logical answer rows;
+- immutable answer revisions;
+- ciphertext, nonces, and wrapped DEKs.
 
-The response database should not store:
+The response database must not store user IDs, project IDs, survey IDs,
+survey-link IDs, plaintext question IDs, plaintext answers, the core session
+UUID, emails, IP addresses, project-subject IDs, participant IDs, identity
+IDs, or recognition tokens.
 
-* user IDs;
-* project IDs;
-* survey IDs;
-* access-link IDs;
-* plaintext question IDs;
-* plaintext answers;
-* the core submission-session UUID.
-
-This means the response database remains difficult to interpret if it is accessed in isolation.
-
-### 2.2 Preserve answer history
-
-A respondent may change an answer halfway through a survey.
-
-The system must keep:
-
-* the newest successfully saved answer;
-* the complete history of earlier saved values;
-* the order in which revisions were created;
-* a fresh encryption nonce for every saved revision.
-
-Earlier answer ciphertext must never be overwritten.
-
-### 2.3 Allow fast access to the current answers
-
-The system should not scan all revisions every time it renders a resumed survey or exports a response.
-
-Each logical answer has one canonical pointer:
-
-```text
-response_answers.latest_revision_id
-```
-
-That pointer identifies the newest successfully saved encrypted revision.
-
-### 2.4 Avoid unnecessary KMS calls
-
-AWS KMS should protect important cryptographic keys, but it should not be called for every small operation.
-
-The normal answer-save path should encrypt locally after the server has obtained the session DEK.
-
-### 2.5 Support future customer-managed response storage
-
-The response repository boundary should remain clean enough that a future customer-managed response database can be introduced without redesigning the entire core application.
-
----
-
-## 3. High-level architecture
+## Storage Split
 
 FlowForm uses two PostgreSQL databases.
 
 ```text
-┌─────────────────────────────┐
-│ Core PostgreSQL database    │
-│                             │
-│ Surveys and versions        │
-│ Links                       │
-│ Optional project subjects   │
-│ Submission sessions         │
-│ Analytics events            │
-└──────────────┬──────────────┘
-               │
-               │ HMAC-derived locators
-               │ No direct foreign key
-               │
-┌──────────────▼──────────────┐
-│ Response PostgreSQL database│
-│                             │
-│ Anonymous envelopes         │
-│ Logical answers             │
-│ Immutable answer revisions  │
-│ Wrapped DEKs                │
-│ Ciphertext and nonces       │
-└─────────────────────────────┘
+Core PostgreSQL database
+  surveys and versions
+  survey links
+  project subjects, identities, participants, tokens
+  submission sessions
+  analytics events
+
+        HMAC-derived locators
+        no direct foreign key
+
+Response PostgreSQL database
+  response envelopes
+  logical answers
+  immutable answer revisions
+  wrapped DEKs
+  ciphertext and nonces
 ```
 
-The databases are connected only through deterministic opaque locators created by the backend.
+There is no SQL foreign key between the databases. The intended link is
+cryptographic: the backend derives `response_envelopes.session_locator` from
+`submission_sessions.id` and versioned linkage-key material. That design is
+documented in [cryptography-plan.md](cryptography-plan.md), but the real
+locator and encryption services are not implemented yet.
 
-There is deliberately no cross-database foreign key.
+## Core Identity Model
 
----
+The core identity model is project-scoped.
 
-## 4. Technology set
+- `project_subjects` is the pseudonymous subject row for one respondent
+  inside one project.
+- `project_subject_identities` attaches revocable identities to a subject,
+  such as email or authenticated-user identity.
+- `project_participants` binds one subject plus one identity into the
+  assignment target used by `survey_links.assigned_participant_id`.
+- `project_subject_tokens` stores hashed recognition tokens for returning
+  respondent recognition.
+- `subject_ip_observations` stores core-side IP metadata for future policy
+  and abuse controls.
 
-### 4.1 Backend application
+`submission_sessions.project_subject_id` may point to a resolved subject. A
+null value means the core session is anonymous at the identity layer. The
+response database never receives that subject ID; it sees only opaque
+locators.
 
-The backend uses:
+## Session Lifecycle
 
-* Python;
-* Flask;
-* plain SQLAlchemy 2.0;
-* Pydantic v2 for API validation;
-* Boto3 for AWS integration;
-* the Python `cryptography` package for local authenticated encryption.
+The intended lifecycle is:
 
-The backend should continue using explicit SQLAlchemy sessions:
+1. Resolve access from a public slug or survey-link token.
+2. Resolve a subject from server-owned context: assigned participant,
+   authenticated-user identity, recognition token, optional anonymous-subject
+   policy, or none.
+3. Create a core `submission_sessions` row with a frozen survey version and
+   hashed browser resume token.
+4. Create a response envelope tied to the session by a derived locator.
+5. Resume the session by hashing the browser token and loading canonical
+   answers.
+6. Save answers as immutable encrypted revisions.
+7. Complete the session once required canonical answers are valid.
+8. Let admin reads/export/delete go through authorization plus decrypt paths.
 
-```text
-core_db_session
-response_db_session
-```
+Only steps 1-3 are implemented today. Steps 4-8 are tracked in
+[remaining-work.md](remaining-work.md).
 
-Do not hide the two databases behind one implicit global session.
+## Answer Storage Model
 
-Each repository should receive the database session it requires.
-
-### 4.2 Databases
-
-Use two independent PostgreSQL databases:
-
-```text
-flowform_core
-flowform_response
-```
-
-They may initially run on the same PostgreSQL server or cluster, but they must remain logically separate:
-
-* separate database names;
-* separate SQLAlchemy engines;
-* separate credentials;
-* separate migrations;
-* separate repository modules;
-* separate backup and retention considerations.
-
-The response database should be treated as the more sensitive store.
-
-### 4.3 AWS services
-
-Use:
-
-* AWS Key Management Service, or KMS;
-* AWS Secrets Manager;
-* AWS Identity and Access Management, or IAM;
-* AWS CloudTrail for KMS audit visibility.
-
-### 4.4 Frontend
-
-The respondent-facing survey UI uses the existing React application.
-
-The frontend is responsible for:
-
-* resolving the survey access method;
-* starting or resuming a session;
-* rendering the frozen published survey version;
-* submitting answer mutations;
-* sending question-view events where required;
-* completing the session.
-
-The frontend must never receive:
-
-* a DEK;
-* a linkage secret;
-* a KMS key reference;
-* an HMAC locator;
-* plaintext answers belonging to another respondent.
-
----
-
-## 5. Database responsibilities
-
-### 5.1 Core database
-
-The core database answers questions such as:
-
-* Which published survey version is being completed?
-* Was a survey link used?
-* Is the link active and valid?
-* Is this a fully anonymous respondent?
-* Is the respondent associated with a project subject record?
-* Is the session still in progress?
-* When was the last activity?
-* Has the session expired?
-* Which questions were viewed?
-* When was an answer saved?
-* Has the respondent completed the session?
-
-Relevant tables include:
-
-```text
-survey_links
-project_subjects
-project_subject_identities
-project_subject_tokens
-submission_sessions
-submission_events
-subject_ip_observations
-survey_versions
-```
-
-The core database may store plaintext question-node IDs inside analytics events. This is useful for question-level analytics, but it is a deliberate metadata tradeoff. A conditional survey path can reveal limited information about the respondent even without storing the answer value.
-
-`project_subjects` is the forward relation for project-scoped respondent
-identity. Identity attachments, reusable subject-recognition tokens,
-assigned-subject links, submission sessions, and IP observations stay in core
-around that subject record. `submission_sessions.project_subject_id` may point
-to it when access resolution identifies a known project participant. A null
-`project_subject_id` means the session is fully anonymous at the core identity
-layer. The response database stores opaque locators derived from the core
-session UUID and the external linkage secret; it must not receive
-project-subject IDs, identity IDs, user IDs, email addresses, IP addresses, or
-recognition tokens. See [project-subjects.md](project-subjects.md) for the
-relation boundary and
-[subject-identity-and-access.md](subject-identity-and-access.md) for subject
-resolution and identity-upgrade policy.
-
-### 5.2 Response database
-
-The response database answers questions such as:
-
-* Which anonymous encrypted envelope belongs to this session locator?
-* Which logical questions have saved answers?
-* Which encrypted revision is currently canonical?
-* What earlier encrypted revisions exist?
-* Which wrapped DEK protects these rows?
-
-Relevant tables include:
+The response side is shaped around append-only revision history:
 
 ```text
 response_envelopes
+    one envelope per submission session locator
+    contains wrapped DEK metadata
+
 response_answers
+    one logical answer slot per envelope/question locator
+    points to latest_revision_id
+
 response_answer_revisions
+    immutable encrypted revisions
+    carries ciphertext, nonce, revision_number, client_mutation_id
 ```
 
-The response database does not know who the respondent is.
+`response_answers.latest_revision_id` gives fast access to the current
+canonical answer without scanning revision history. Earlier revisions remain
+available for history/audit workflows and are never overwritten.
 
-### 5.3 Relationship between the response tables
+## Technology Boundaries
 
-```text
-response_envelopes
-        │
-        │ one envelope contains many logical answers
-        ▼
-response_answers
-        │
-        │ one logical answer contains many immutable revisions
-        ▼
-response_answer_revisions
-```
+Backend code should keep explicit database boundaries:
 
-The `response_answers` row is stable.
+- core repositories receive a core database session;
+- response repositories receive a response database session;
+- cross-database orchestration belongs in services;
+- domain modules own policy decisions and invariants;
+- API handlers stay thin.
 
-The `response_answer_revisions` rows are append-only.
+The frontend should receive only public contracts: frozen survey content,
+session state, validation errors, and answer-save/completion responses. It
+must never receive a DEK, linkage secret, KMS key reference, HMAC locator, or
+answers belonging to another respondent.
 
-The latest pointer moves forward as new revisions are inserted.
+## Operational Shape
 
----
+The final implementation needs:
+
+- Secrets Manager for versioned linkage secrets;
+- KMS for response DEK generation/unwrapping;
+- IAM policies that separate linkage-secret access from response-key access;
+- CloudTrail visibility for KMS operations;
+- log and Sentry sanitization for tokens, answers, plaintext keys, and raw
+  secrets;
+- reconciliation for cross-database partial failures;
+- metrics for starts, saves, completions, decrypt failures, KMS failures, and
+  reconciliation repairs.
+
+Those operational items are still future work unless explicitly noted in
+[remaining-work.md](remaining-work.md).

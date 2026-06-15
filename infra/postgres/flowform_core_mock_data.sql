@@ -207,14 +207,29 @@ INSERT INTO project_subject_tokens
     ('b1b1b1b1-0000-0000-0000-000000000002', 2, '33333333-3333-3333-3333-333333333333', encode(digest('subject-token-beta-0001', 'sha256'), 'hex'), NOW() + INTERVAL '90 days', NULL, NOW() - INTERVAL '11 days');
 
 -- =========================================
+-- PROJECT PARTICIPANTS
+-- =========================================
+-- A subject participates in a project at most once. Assigned survey links
+-- target a participant within the link's project.
+
+-- Each participant carries a specific subject identity (authenticated_user here).
+INSERT INTO project_participants (id, project_id, project_subject_id, identity_id, created_at) VALUES
+    ('cccccccc-0000-0000-0000-000000000001', 1, '11111111-1111-1111-1111-111111111111', 'a1a1a1a1-0000-0000-0000-000000000001', NOW() - INTERVAL '25 days'),
+    ('cccccccc-0000-0000-0000-000000000002', 2, '33333333-3333-3333-3333-333333333333', 'a1a1a1a1-0000-0000-0000-000000000003', NOW() - INTERVAL '11 days');
+
+-- =========================================
 -- PUBLIC LINKS
 -- =========================================
 -- project_id is stored directly so the database can prove link, survey, and
--- assigned subject share a project. Email-assigned links must require auth.
+-- assigned participant share a project. link_type is one of general, private,
+-- authenticated; private/authenticated links must be assigned to a participant
+-- (which itself carries a subject + identity). assignment_source is always set
+-- (manual | automated). The assigned email is derived by joining through the
+-- participant's identity; it is not stored on survey_links.
 
-INSERT INTO survey_links (id, project_id, survey_id, token_prefix, token_hash, is_active, requires_auth, assigned_email, assigned_subject_id, expires_at, created_at) VALUES
-    (1, 1, 1, 'acmepuls01', repeat('a', 64), TRUE, TRUE, 'guest@example.test', NULL, NOW() + INTERVAL '30 days', NOW() - INTERVAL '5 days'),
-    (2, 2, 3, 'betasign02', repeat('b', 64), TRUE, TRUE, 'noah@beta.dev', NULL, NOW() + INTERVAL '14 days', NOW() - INTERVAL '2 days');
+INSERT INTO survey_links (id, project_id, survey_id, name, token_prefix, token_hash, is_active, link_type, assignment_source, assigned_participant_id, expires_at, created_at) VALUES
+    ('dddddddd-0000-0000-0000-000000000001', 1, 1, 'Acme pulse invite', 'acmepuls01', repeat('a', 64), TRUE, 'authenticated', 'manual', 'cccccccc-0000-0000-0000-000000000001', NOW() + INTERVAL '30 days', NOW() - INTERVAL '5 days'),
+    ('dddddddd-0000-0000-0000-000000000002', 2, 3, 'Beta signup invite', 'betasign02', repeat('b', 64), TRUE, 'authenticated', 'automated', 'cccccccc-0000-0000-0000-000000000002', NOW() + INTERVAL '14 days', NOW() - INTERVAL '2 days');
 
 -- =========================================
 -- SUBMISSION SESSIONS
@@ -222,9 +237,9 @@ INSERT INTO survey_links (id, project_id, survey_id, token_prefix, token_hash, i
 
 INSERT INTO submission_sessions (id, project_id, survey_id, survey_version_id, response_store_id, link_id, project_subject_id, browser_session_token_hash, linkage_key_version, session_status, started_at, completed_at, expires_at, last_activity_at) VALUES
     ('aaaaaaaa-0000-0000-0000-000000000001', 1, 1, 2, 1, NULL, '11111111-1111-1111-1111-111111111111', digest('session-token-0001', 'sha256'), 1, 'completed', NOW() - INTERVAL '4 days 15 minutes', NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days' + INTERVAL '7 days', NOW() - INTERVAL '4 days'),
-    ('aaaaaaaa-0000-0000-0000-000000000002', 1, 1, 2, 1, 1, '66666666-6666-6666-6666-666666666666', digest('session-token-0002', 'sha256'), 1, 'completed', NOW() - INTERVAL '3 days 20 minutes', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days' + INTERVAL '7 days', NOW() - INTERVAL '3 days'),
+    ('aaaaaaaa-0000-0000-0000-000000000002', 1, 1, 2, 1, 'dddddddd-0000-0000-0000-000000000001', '66666666-6666-6666-6666-666666666666', digest('session-token-0002', 'sha256'), 1, 'completed', NOW() - INTERVAL '3 days 20 minutes', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days' + INTERVAL '7 days', NOW() - INTERVAL '3 days'),
     ('aaaaaaaa-0000-0000-0000-000000000003', 2, 3, 5, 3, NULL, NULL, digest('session-token-0003', 'sha256'), 1, 'abandoned', NOW() - INTERVAL '2 days 40 minutes', NULL, NOW() - INTERVAL '2 days 40 minutes' + INTERVAL '7 days', NOW() - INTERVAL '2 days 40 minutes'),
-    ('aaaaaaaa-0000-0000-0000-000000000004', 2, 3, 5, 3, 2, '33333333-3333-3333-3333-333333333333', digest('session-token-0004', 'sha256'), 1, 'completed', NOW() - INTERVAL '18 hours 10 minutes', NOW() - INTERVAL '18 hours', NOW() - INTERVAL '18 hours' + INTERVAL '7 days', NOW() - INTERVAL '18 hours');
+    ('aaaaaaaa-0000-0000-0000-000000000004', 2, 3, 5, 3, 'dddddddd-0000-0000-0000-000000000002', '33333333-3333-3333-3333-333333333333', digest('session-token-0004', 'sha256'), 1, 'completed', NOW() - INTERVAL '18 hours 10 minutes', NOW() - INTERVAL '18 hours', NOW() - INTERVAL '18 hours' + INTERVAL '7 days', NOW() - INTERVAL '18 hours');
 
 -- =========================================
 -- SUBMISSION EVENTS
@@ -315,7 +330,6 @@ SELECT setval('surveys_id_seq', COALESCE((SELECT MAX(id) FROM surveys), 1), true
 SELECT setval('survey_versions_id_seq', COALESCE((SELECT MAX(id) FROM survey_versions), 1), true);
 SELECT setval('survey_scoring_rules_id_seq', COALESCE((SELECT MAX(id) FROM survey_scoring_rules), 1), true);
 SELECT setval('survey_roles_id_seq', COALESCE((SELECT MAX(id) FROM survey_roles), 1), true);
-SELECT setval('survey_links_id_seq', COALESCE((SELECT MAX(id) FROM survey_links), 1), true);
 SELECT setval('subject_ip_observations_id_seq', COALESCE((SELECT MAX(id) FROM subject_ip_observations), 1), true);
 SELECT setval('audit_logs_id_seq', COALESCE((SELECT MAX(id) FROM audit_logs), 1), true);
 

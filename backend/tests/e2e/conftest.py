@@ -48,7 +48,6 @@ from app.repositories import permissions_repo as per
 from app.schema.orm.core import (
     Project,
     ProjectMembership,
-    ProjectRole,
     ResponseStore,
     Survey,
     SurveyVersion,

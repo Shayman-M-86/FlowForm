@@ -42,8 +42,8 @@ class SubmissionSession(CoreBase):
     response_store_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("response_stores.id", ondelete="RESTRICT"), nullable=False
     )
-    link_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("survey_links.id", ondelete="SET NULL"), nullable=True
+    link_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("survey_links.id", ondelete="SET NULL"), nullable=True
     )
     project_subject_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("project_subjects.id", ondelete="SET NULL"), nullable=True

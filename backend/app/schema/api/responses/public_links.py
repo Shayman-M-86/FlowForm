@@ -1,8 +1,10 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
 from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
+from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
 
 
 class PublicLinkResponses(BaseModel):
@@ -10,13 +12,14 @@ class PublicLinkResponses(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: UUID
     survey_id: int
     name: str
     token_prefix: str
     is_active: bool
-    requires_auth: bool
-    assigned_email: str | None
+    link_type: SurveyLinkType
+    assignment_source: SurveyLinkAssignmentSource
+    assigned_participant_id: UUID | None
     expires_at: datetime | None
     used_at: datetime | None
     created_at: datetime
@@ -27,14 +30,15 @@ class PublicLinkCreatedResponses(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: UUID
     survey_id: int
     name: str
     token: str  # plaintext — returned once only, never stored
     token_prefix: str
     is_active: bool
-    requires_auth: bool
-    assigned_email: str | None
+    link_type: SurveyLinkType
+    assignment_source: SurveyLinkAssignmentSource
+    assigned_participant_id: UUID | None
     expires_at: datetime | None
     used_at: datetime | None
     created_at: datetime

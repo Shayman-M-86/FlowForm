@@ -37,6 +37,9 @@ INVITE_MESSAGE_MAX = 500
 SURVEY_TITLE_MAX = 200
 PUBLIC_LINK_NAME_MAX = 120
 
+# Matches ck_project_subjects_subject_code_len (1-128, trimmed).
+SUBJECT_CODE_MAX = 128
+
 
 # Standard API error and serialized scalar limits.
 ERROR_CODE_MAX = 128

@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+from datetime import UTC, datetime
 from typing import Literal
+
+from sqlalchemy.orm import Session
 
 from app.schema.orm.core.audit_log import AuditLog
 from app.schema.orm.core.project import Project, ProjectRole
+from app.schema.orm.core.project_participant import ProjectParticipant
+from app.schema.orm.core.project_subject import ProjectSubject, ProjectSubjectIdentity
 from app.schema.orm.core.response_store import ResponseStore
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyPublicLink, SurveyRole
@@ -98,7 +103,55 @@ def make_survey_public_link(project_id: int, survey_id: int, name: str = "test l
     link.name = name
     link.token_prefix = prefix
     link.token_hash = token_hash
+    link.assignment_source = "manual"
     return link
+
+
+def make_participant_chain(
+    db_session: Session,
+    *,
+    project_id: int,
+    subject_code: str = "subject-1",
+    normalized_email: str = "participant@example.com",
+    user_id: int | None = None,
+) -> ProjectParticipant:
+    """Create a subject + identity + participant chain for a link assignment.
+
+    Pass `user_id` to create an `authenticated_user` identity instead of an
+    `email` identity (for authenticated-link tests).
+    """
+    subject = ProjectSubject(project_id=project_id, subject_code=subject_code)
+    db_session.add(subject)
+    db_session.flush()
+
+    if user_id is not None:
+        identity = ProjectSubjectIdentity(
+            project_id=project_id,
+            project_subject_id=subject.id,
+            identity_type="authenticated_user",
+            user_id=user_id,
+            normalized_email=normalized_email,
+            verification_status="verified",
+            verified_at=datetime.now(UTC),
+        )
+    else:
+        identity = ProjectSubjectIdentity(
+            project_id=project_id,
+            project_subject_id=subject.id,
+            identity_type="email",
+            normalized_email=normalized_email,
+        )
+    db_session.add(identity)
+    db_session.flush()
+
+    participant = ProjectParticipant(
+        project_id=project_id,
+        project_subject_id=subject.id,
+        identity_id=identity.id,
+    )
+    db_session.add(participant)
+    db_session.flush()
+    return participant
 
 
 def make_survey_role(

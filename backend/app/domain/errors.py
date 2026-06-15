@@ -110,13 +110,24 @@ class LinkAssignmentMismatchError(AppError):
 
 
 class LinkAuthAssignmentRequiredError(AppError):
-    """Error raised when an authenticated link is not assigned to an email."""
+    """Error raised when an authenticated link is not assigned to a participant."""
 
     def __init__(self) -> None:
         super().__init__(
             status_code=422,
-            code="LINK_ASSIGNED_EMAIL_REQUIRED",
-            message="Links that require authentication must be assigned to an email.",
+            code="LINK_ASSIGNED_PARTICIPANT_REQUIRED",
+            message="Links that require authentication must be assigned to a participant.",
+        )
+
+
+class LinkParticipantVerificationRequiredError(AppError):
+    """Error raised when an authenticated link's participant is not user-linked."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="LINK_PARTICIPANT_VERIFICATION_REQUIRED",
+            message="This link's participant must complete verification before this link can be used.",
         )
 
 
@@ -143,13 +154,13 @@ class LinkAlreadyUsedError(AppError):
 
 
 class PrivateSurveyAssignedEmailRequiredError(AppError):
-    """Error raised when a private survey link is not assigned to a specific email."""
+    """Error raised when a private survey link is not assigned to a participant."""
 
     def __init__(self) -> None:
         super().__init__(
             status_code=422,
-            code="ASSIGNED_EMAIL_REQUIRED",
-            message="Private surveys require links assigned to a specific email.",
+            code="ASSIGNED_PARTICIPANT_REQUIRED",
+            message="Private surveys require links assigned to a participant.",
         )
 
 
@@ -424,6 +435,46 @@ class UserNotFoundError(AppError):
             status_code=404,
             code="USER_NOT_FOUND",
             message=f"User {user_id} not found.",
+        )
+
+
+class ParticipantNotFoundError(AppError):
+    """Error raised when a project participant cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="PARTICIPANT_NOT_FOUND", message="Participant not found.")
+
+
+class ParticipantIdentityNotVerifiableError(AppError):
+    """Error raised when a participant does not have an email identity to verify."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="PARTICIPANT_IDENTITY_NOT_VERIFIABLE",
+            message="Participant identity cannot be verified from an account email.",
+        )
+
+
+class ParticipantIdentityEmailMismatchError(AppError):
+    """Error raised when the authenticated user's email does not match the participant identity."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="PARTICIPANT_EMAIL_MISMATCH",
+            message="Authenticated account email does not match the participant identity email.",
+        )
+
+
+class ParticipantIdentityUserMismatchError(AppError):
+    """Error raised when a participant identity is already linked to another user."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="PARTICIPANT_USER_MISMATCH",
+            message="Participant identity is linked to a different authenticated user.",
         )
 
 

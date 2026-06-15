@@ -108,7 +108,6 @@ _FORMAT_STRING_MAX_LENGTHS = {
 
 _STRING_FIELD_MAX_LENGTHS = {
     "answer_family": limits.SCHEMA_ID_MAX,
-    "assigned_email": limits.EMAIL_MAX,
     "auth0_user_id": limits.AUTH0_USER_ID_MAX,
     "code": limits.ERROR_CODE_MAX,
     "display_name": limits.PROJECT_NAME_MAX,

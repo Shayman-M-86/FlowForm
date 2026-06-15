@@ -29,7 +29,7 @@ def create_session(
     survey_id: int,
     survey_version_id: int,
     response_store_id: int,
-    link_id: int | None,
+    link_id: UUID | None,
     project_subject_id: UUID | None,
     raw_browser_session_token: str,
     now: datetime | None = None,

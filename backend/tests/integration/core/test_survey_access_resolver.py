@@ -96,6 +96,7 @@ def test_resolve_link_token_inactive_link_raises(
         name="Inactive link",
         token_prefix=token_prefix,
         token_hash=token_hash,
+        assignment_source="manual",
         is_active=False,
     )
     db_session.add(link)

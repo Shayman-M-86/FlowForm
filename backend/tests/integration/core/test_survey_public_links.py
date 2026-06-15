@@ -24,6 +24,7 @@ def test_survey_public_link_can_be_created(
     link.name = "test link"
     link.token_prefix = prefix
     link.token_hash = token_hash
+    link.assignment_source = "manual"
     db_session.add(link)
     db_session.flush()
 
@@ -34,7 +35,11 @@ def test_survey_public_link_can_be_created(
     assert saved.token_prefix == prefix, f"token_prefix={saved.token_prefix!r}, expected {prefix!r}"
     assert saved.token_hash == token_hash, f"token_hash={saved.token_hash!r}, expected {token_hash!r}"
     assert saved.is_active is True, f"is_active={saved.is_active!r}, expected True from server default"
-    assert saved.assigned_email is None, f"assigned_email={saved.assigned_email!r}, expected None"
+    assert saved.link_type == "general", f"link_type={saved.link_type!r}, expected 'general'"
+    assert saved.assignment_source == "manual", f"assignment_source={saved.assignment_source!r}, expected 'manual'"
+    assert saved.assigned_participant_id is None, (
+        f"assigned_participant_id={saved.assigned_participant_id!r}, expected None"
+    )
     assert saved.expires_at is None, f"expires_at={saved.expires_at!r}, expected None"
     assert saved.created_at is not None, "created_at was not set by the server default"
 
@@ -51,6 +56,7 @@ def test_survey_public_link_unique_token_hash(
     link_a.name = "link a"
     link_a.token_prefix = prefix_a
     link_a.token_hash = token_hash
+    link_a.assignment_source = "manual"
     db_session.add(link_a)
     db_session.flush()
 
@@ -62,6 +68,7 @@ def test_survey_public_link_unique_token_hash(
     link_b.name = "link b"
     link_b.token_prefix = prefix_b
     link_b.token_hash = token_hash
+    link_b.assignment_source = "manual"
     db_session.add(link_b)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -89,6 +96,7 @@ def test_survey_public_link_unique_prefix_within_survey(
     link_a.name = "link a"
     link_a.token_prefix = token_prefix
     link_a.token_hash = hash_a
+    link_a.assignment_source = "manual"
     db_session.add(link_a)
     db_session.flush()
 
@@ -100,6 +108,7 @@ def test_survey_public_link_unique_prefix_within_survey(
     link_b.name = "link b"
     link_b.token_prefix = token_prefix
     link_b.token_hash = hash_b
+    link_b.assignment_source = "manual"
     db_session.add(link_b)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -127,6 +136,7 @@ def test_survey_public_link_rejects_short_token_prefix(
     link.name = "test link"
     link.token_prefix = "short"  # 5 chars — below the 8-char minimum
     link.token_hash = token_hash
+    link.assignment_source = "manual"
     db_session.add(link)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -154,6 +164,7 @@ def test_survey_public_link_rejects_malformed_token_hash(
     link.name = "test link"
     link.token_prefix = prefix
     link.token_hash = "tooshort"  # not a 64-char hex digest
+    link.assignment_source = "manual"
     db_session.add(link)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -181,6 +192,7 @@ def test_survey_public_link_requires_token_prefix(
     link.name = "test link"
     link.token_prefix = None  # type: ignore[assignment]
     link.token_hash = token_hash
+    link.assignment_source = "manual"
     db_session.add(link)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -208,6 +220,7 @@ def test_survey_public_link_requires_token_hash(
     link.name = "test link"
     link.token_prefix = prefix
     link.token_hash = None  # type: ignore[assignment]
+    link.assignment_source = "manual"
     db_session.add(link)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -235,6 +248,7 @@ def test_survey_public_link_cascades_on_survey_delete(
     link.name = "test link"
     link.token_prefix = prefix
     link.token_hash = token_hash
+    link.assignment_source = "manual"
     db_session.add(link)
     db_session.flush()
 

@@ -199,6 +199,20 @@ def test_project_subject_unique_constraints() -> None:
     assert "uq_project_subjects_project_id_id" in unique_constraint_names(ProjectSubject)
 
 
+def test_project_subject_identity_foreign_keys() -> None:
+    names = foreign_key_constraint_names(ProjectSubjectIdentity)
+    assert "fk_project_subject_identities_subject_same_project" in names
+    assert "fk_project_subject_identities_user_email_matches" in names
+
+
+def test_project_subject_identity_unique_constraints() -> None:
+    assert "uq_project_subject_identities_project_subject_id" in unique_constraint_names(ProjectSubjectIdentity)
+
+
+def test_user_unique_constraints() -> None:
+    assert "uq_users_id_email" in unique_constraint_names(User)
+
+
 def test_survey_version_constraints() -> None:
     names = unique_constraint_names(SurveyVersion)
     assert "uq_survey_versions_survey_id_id" in names

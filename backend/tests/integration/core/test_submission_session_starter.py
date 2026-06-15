@@ -7,13 +7,12 @@ from sqlalchemy.orm import Session
 
 from app.repositories.core.submission_sessions import hash_browser_session_token
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
-from app.schema.orm.core.project_subject import ProjectSubject
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
 from app.services.submissions.session_starter import SessionStarter
-from tests.integration.core.factories import make_token_pair
+from tests.integration.core.factories import make_participant_chain, make_token_pair
 
 
 def _publish_public_survey(
@@ -67,9 +66,7 @@ def test_start_assigned_link_session_uses_server_owned_subject(
     survey_version: SurveyVersion,
 ) -> None:
     _publish_public_survey(db_session, survey=survey, survey_version=survey_version)
-    subject = ProjectSubject(project_id=survey.project_id, subject_code="assigned-subject")
-    db_session.add(subject)
-    db_session.flush()
+    participant = make_participant_chain(db_session, project_id=survey.project_id, subject_code="assigned-subject")
 
     raw_token, token_prefix, token_hash = make_token_pair()
     link = SurveyLink(
@@ -78,7 +75,9 @@ def test_start_assigned_link_session_uses_server_owned_subject(
         name="Assigned respondent",
         token_prefix=token_prefix,
         token_hash=token_hash,
-        assigned_subject_id=subject.id,
+        link_type="private",
+        assignment_source="manual",
+        assigned_participant_id=participant.id,
     )
     db_session.add(link)
     db_session.flush()
@@ -90,7 +89,7 @@ def test_start_assigned_link_session_uses_server_owned_subject(
     assert saved is not None
     assert response.survey.id == survey.id
     assert saved.link_id == link.id
-    assert saved.project_subject_id == subject.id
+    assert saved.project_subject_id == participant.project_subject_id
     assert link.used_at is not None
 
 
@@ -107,6 +106,7 @@ def test_start_unassigned_reusable_link_session_does_not_stamp_used_at(
         name="Reusable anonymous link",
         token_prefix=token_prefix,
         token_hash=token_hash,
+        assignment_source="manual",
     )
     db_session.add(link)
     db_session.flush()

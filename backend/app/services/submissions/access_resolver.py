@@ -44,7 +44,7 @@ class SurveyAccessResolver:
         return SubmissionAccessGrant(survey=survey, published_version=published_version)
 
     def _resolve_link(self, db: Session, *, link: SurveyLink, actor: User | None) -> SubmissionAccessGrant:
-        submission_access_rules.ensure_link_token_access(link=link, actor=actor)
+        submission_access_rules.ensure_link_token_access(db, project_id=link.project_id, link=link, actor=actor)
         survey = ensure_present(
             sr.get_survey(db, project_id=link.project_id, survey_id=link.survey_id),
             error=SurveyNotFoundError(survey_id=link.survey_id, project_id=link.project_id),

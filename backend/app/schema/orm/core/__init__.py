@@ -2,6 +2,7 @@ from app.schema.orm.core.audit_log import AuditLog
 from app.schema.orm.core.invitation import ProjectInvitation
 from app.schema.orm.core.permission import Permission
 from app.schema.orm.core.project import Project, ProjectMembership, ProjectRole, project_role_permissions
+from app.schema.orm.core.project_participant import ProjectParticipant
 from app.schema.orm.core.project_subject import (
     ProjectSubject,
     ProjectSubjectIdentity,
@@ -27,6 +28,7 @@ __all__ = [
     "Project",
     "ProjectInvitation",
     "ProjectMembership",
+    "ProjectParticipant",
     "ProjectRole",
     "ProjectSubject",
     "ProjectSubjectIdentity",

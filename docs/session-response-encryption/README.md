@@ -1,21 +1,42 @@
-# Session And Response Encryption Plan
+# Session And Response Encryption
 
-This folder splits the original session and response encryption plan into focused documents.
+This folder is the consolidated reference for FlowForm's session/response
+encryption work. It separates current implementation truth from the remaining
+roadmap so future agents do not need to reconcile older phase notes, dated
+summaries, and schema drafts by hand.
 
-## Start Here
+## Current State
 
-- [Architecture](architecture.md) - purpose, goals, storage boundaries, and high-level system shape.
-- [Project subjects](project-subjects.md) - project-scoped respondent identity relation and how sessions attach to it.
-- [Project subject identity and access](subject-identity-and-access.md) - subject-resolution policy, identity attachments, recognition tokens, assigned links, and IP observations.
-- [Core database schema](schema/core-database-schema.md) - core DB tables for sessions, subjects, links, and events.
-- [Response database schema](schema/response-database-schema.md) - response DB tables for encrypted envelopes, logical answers, and revisions.
-- [Cryptography](cryptography.md) - identifiers, secrets, locators, KMS envelope encryption, local answer encryption, and key caching.
-- [Session flows](session-flows.md) - access resolution, session start/resume, question-view events, completion, abandonment, and expiry.
-- [Answer flows](answer-flows.md) - answer saves, revision history, clearing answers, canonical answers, and idempotency.
-- [Admin and operations](admin-and-operations.md) - admin reads, exports, deletion, consistency, IAM/KMS, rotation, logging, and failure scenarios.
-- [Backend implementation](backend-implementation.md) - service boundaries, interfaces, API surface, schema notes, and local development.
-- [API structure](api-structure.md) - authoritative respondent-facing API surface: endpoints, request/response shapes, status codes, and frontend call sequences.
-- [Testing plan](testing-plan.md) - test coverage by behavior area.
-- [Implementation order](implementation-order.md) - staged rollout, version-one decisions, and final summary.
-- [Implementation checklist](implementation-checklist.md) - agent-ready task checklist for schema-first implementation.
-- [Session service open issues](session-service-open-issues.md) - deferred policy items and defensive invariants found auditing the session services.
+Phase 1 schema work is in place. The subject-access model and session-start
+path are mostly real: link resolution, authenticated-link participant checks,
+subject resolution, and `POST /api/v1/public/submission-sessions` all run
+through live services and integration tests. Resume, answer save,
+question-viewed events, completion, response-envelope creation, admin reads,
+frontend incremental saves, and real cryptography are still pending or
+placeholder-only.
+
+## Docs
+
+- [Architecture](architecture.md) - conceptual boundaries: core vs. response
+  storage, identity separation, locators, frontend/backend responsibilities,
+  and implementation status.
+- [Data model](data-model.md) - current core and response schema, including
+  `project_subjects`, `project_participants`, `submission_sessions`,
+  `response_envelopes`, answers, revisions, and key constraints.
+- [Flows](flows.md) - respondent-facing flows as currently implemented,
+  including link resolution, subject resolution, session start, and the
+  stubbed resume/save/event/complete paths.
+- [API surface](api-surface.md) - current REST routes, with each route marked
+  real, placeholder, removed, or planned.
+- [Cryptography plan](cryptography-plan.md) - forward-looking design for
+  HMAC locators, KMS-backed DEKs, AES-GCM answer encryption, AAD, caching,
+  and rotation. This is not implemented yet.
+- [Remaining work](remaining-work.md) - actionable roadmap by phase, plus
+  open product/engineering decisions.
+- [Testing plan](testing-plan.md) - coverage already present and tests that
+  become possible after later phases land.
+
+The SQL files remain the source of truth for raw schema details:
+
+- `infra/postgres/init/schema/flowform_core_db_schema_v4.sql`
+- `infra/postgres/init/schema/flowform_response_db_schema_v4.sql`

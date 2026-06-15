@@ -16,7 +16,7 @@ from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
 from app.services.submissions.project_subject_resolver import ProjectSubjectResolver
-from tests.integration.core.factories import make_token_pair
+from tests.integration.core.factories import make_participant_chain, make_token_pair
 
 
 def _make_subject(
@@ -28,12 +28,12 @@ def _make_subject(
     return subject
 
 
-def test_resolve_prefers_link_assigned_subject(
+def test_resolve_prefers_link_assigned_participant(
     db_session: Session,
     project: Project,
     survey: Survey,
 ) -> None:
-    subject = _make_subject(db_session, project=project)
+    participant = make_participant_chain(db_session, project_id=project.id, subject_code="subject-1")
     _, token_prefix, token_hash = make_token_pair()
     link = SurveyLink(
         project_id=project.id,
@@ -41,7 +41,9 @@ def test_resolve_prefers_link_assigned_subject(
         name="Assigned link",
         token_prefix=token_prefix,
         token_hash=token_hash,
-        assigned_subject_id=subject.id,
+        link_type="private",
+        assignment_source="manual",
+        assigned_participant_id=participant.id,
     )
     db_session.add(link)
     db_session.flush()
@@ -53,8 +55,9 @@ def test_resolve_prefers_link_assigned_subject(
         actor=None,
     )
 
-    assert resolved is not None
-    assert resolved.id == subject.id
+    assert resolved.source == "assigned_link"
+    assert resolved.subject is not None
+    assert resolved.subject.id == participant.project_subject_id
 
 
 def test_resolve_uses_actor_active_user_identity(
@@ -68,6 +71,7 @@ def test_resolve_uses_actor_active_user_identity(
         project_subject_id=subject.id,
         identity_type="authenticated_user",
         user_id=user.id,
+        normalized_email=user.email,
         verification_status="verified",
         verified_at=datetime.now(UTC),
     )
@@ -81,8 +85,9 @@ def test_resolve_uses_actor_active_user_identity(
         actor=user,
     )
 
-    assert resolved is not None
-    assert resolved.id == subject.id
+    assert resolved.source == "authenticated_user"
+    assert resolved.subject is not None
+    assert resolved.subject.id == subject.id
 
 
 def test_resolve_ignores_actor_without_identity(
@@ -97,7 +102,8 @@ def test_resolve_ignores_actor_without_identity(
         actor=user,
     )
 
-    assert resolved is None
+    assert resolved.source == "none"
+    assert resolved.subject is None
 
 
 def test_resolve_uses_recognition_token_and_marks_used(
@@ -123,8 +129,9 @@ def test_resolve_uses_recognition_token_and_marks_used(
         recognition_token=raw_token,
     )
 
-    assert resolved is not None
-    assert resolved.id == subject.id
+    assert resolved.source == "recognition_token"
+    assert resolved.subject is not None
+    assert resolved.subject.id == subject.id
     assert token.last_used_at is not None
 
 
@@ -152,7 +159,8 @@ def test_resolve_ignores_revoked_recognition_token(
         recognition_token=raw_token,
     )
 
-    assert resolved is None
+    assert resolved.source == "none"
+    assert resolved.subject is None
 
 
 def test_resolve_returns_none_when_no_context_matches(
@@ -166,7 +174,8 @@ def test_resolve_returns_none_when_no_context_matches(
         actor=None,
     )
 
-    assert resolved is None
+    assert resolved.source == "none"
+    assert resolved.subject is None
 
 
 def test_resolve_creates_anonymous_subject_when_requested(
@@ -181,7 +190,8 @@ def test_resolve_creates_anonymous_subject_when_requested(
         create_anonymous_subject=True,
     )
 
-    assert resolved is not None
-    assert resolved.project_id == project.id
-    persisted = db_session.scalar(select(ProjectSubject).where(ProjectSubject.id == resolved.id))
+    assert resolved.source == "anonymous_created"
+    assert resolved.subject is not None
+    assert resolved.subject.project_id == project.id
+    persisted = db_session.scalar(select(ProjectSubject).where(ProjectSubject.id == resolved.subject.id))
     assert persisted is not None

@@ -85,6 +85,7 @@ from app.schema.orm.core import (
     Project,
     ProjectInvitation,
     ProjectMembership,
+    ProjectParticipant,
     ProjectRole,
     ProjectSubject,
     ProjectSubjectIdentity,
@@ -110,6 +111,7 @@ type RuleContext = (
     | Survey
     | SurveyVersion
     | SurveyLink
+    | ProjectParticipant
     | ProjectSubject
     | ProjectSubjectIdentity
     | ProjectSubjectToken
@@ -148,8 +150,8 @@ allowed_parameters = {
     "is_published",
     "is_deleted",
     "public_slug",
-    "assigned_email",
-    "requires_auth",
+    "link_type",
+    "assignment_source",
     "session_status",
     "event_type",
     "subject_code",
@@ -206,9 +208,9 @@ def _survey_link_ctx(link: SurveyLink) -> dict[str, object]:
         "project_id": link.project_id,
         "survey_id": link.survey_id,
         "name": link.name,
-        "assigned_email": link.assigned_email,
-        "assigned_subject_id": link.assigned_subject_id,
-        "requires_auth": link.requires_auth,
+        "link_type": link.link_type,
+        "assignment_source": link.assignment_source,
+        "assigned_participant_id": link.assigned_participant_id,
     }
 
 
@@ -226,6 +228,15 @@ def _project_subject_identity_ctx(identity: ProjectSubjectIdentity) -> dict[str,
         "project_subject_id": identity.project_subject_id,
         "user_id": identity.user_id,
         "normalized_email": identity.normalized_email,
+    }
+
+
+def _project_participant_ctx(participant: ProjectParticipant) -> dict[str, object]:
+    return {
+        "participant_id": participant.id,
+        "project_id": participant.project_id,
+        "project_subject_id": participant.project_subject_id,
+        "identity_id": participant.identity_id,
     }
 
 
@@ -517,11 +528,11 @@ SURVEY_LINK_RULES: tuple[DbErrorRule, ...] = (
         extractor=_survey_link_ctx,
     ),
     foreign_key_rule(
-        "fk_survey_links_assigned_subject_same_project",
+        "fk_survey_links_assigned_participant_same_project",
         lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
-            "LINK_SUBJECT_PROJECT_CONFLICT",
-            "The assigned subject does not belong to this project.",
+            "LINK_PARTICIPANT_PROJECT_CONFLICT",
+            "The assigned participant does not belong to this project.",
         ),
         extractor=_survey_link_ctx,
     ),
@@ -575,6 +586,36 @@ PROJECT_SUBJECT_IDENTITY_RULES: tuple[DbErrorRule, ...] = (
             f"Email={ctx['normalized_email']!r} is already verified for another subject in this project.",
         ),
         extractor=_project_subject_identity_ctx,
+    ),
+)
+
+PROJECT_PARTICIPANT_RULES: tuple[DbErrorRule, ...] = (
+    unique_rule(
+        "uq_project_participants_project_subject",
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
+            409,
+            "PARTICIPANT_SUBJECT_CONFLICT",
+            "This subject is already a participant in this project.",
+        ),
+        extractor=_project_participant_ctx,
+    ),
+    foreign_key_rule(
+        "fk_project_participants_subject_same_project",
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
+            409,
+            "PARTICIPANT_SUBJECT_PROJECT_CONFLICT",
+            "The project subject does not belong to this project.",
+        ),
+        extractor=_project_participant_ctx,
+    ),
+    foreign_key_rule(
+        "fk_project_participants_identity_same_subject",
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
+            409,
+            "PARTICIPANT_IDENTITY_SUBJECT_CONFLICT",
+            "The identity does not belong to this subject.",
+        ),
+        extractor=_project_participant_ctx,
     ),
 )
 
@@ -999,6 +1040,7 @@ RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
     SurveyVersion: SURVEY_VERSION_RULES,
     SurveyLink: SURVEY_LINK_RULES,
     SurveyRole: SURVEY_ROLE_RULES,
+    ProjectParticipant: PROJECT_PARTICIPANT_RULES,
     ProjectSubject: PROJECT_SUBJECT_RULES,
     ProjectSubjectIdentity: PROJECT_SUBJECT_IDENTITY_RULES,
     ProjectSubjectToken: PROJECT_SUBJECT_TOKEN_RULES,

@@ -43,6 +43,15 @@ ProjectRoleDescription = Annotated[
     ),
 ]
 
+SubjectCode = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=1,
+        max_length=limits.SUBJECT_CODE_MAX,
+    ),
+]
+
 PublicLinkName = Annotated[
     str,
     StringConstraints(

@@ -28,6 +28,14 @@ Use when constraints or `integrity_rules.py` change.
 
 ## Workflow
 
+0. Before enforcing a constraint, confirm it agrees with existing behavior.
+   A CHECK/UNIQUE/FK is itself a claim about the data model — verify the
+   consumption and domain layers (`app/domain/`, `app/services/`) actually
+   forbid the same combinations. If a constraint contradicts a supported
+   feature, the constraint is the bug: fix or drop it, do not add enforcement
+   on top of it. (E.g. a CHECK forbidding email-assigned links without auth
+   contradicted the supported "private invite link" — the fix was to drop the
+   CHECK, not validate it.)
 1. Add/change SQL constraint first.
 2. Add upstream validation if client can trigger it:
    `schema/api/requests`, `domain`, then `services`.
@@ -48,3 +56,7 @@ bash backend/scripts/check-integrity-rule-constraints.sh --verbose
 ```
 
 Fail means dead rule, wrong matcher type, or likely `UNHANDLED_DB_INTEGRITY_ERROR`.
+
+A "missing rule" failure does not always mean a rule is owed. It can also mean
+the constraint itself is wrong (see step 0). Decide whether to map the
+constraint or remove it before adding a rule to satisfy the checker.

@@ -1,118 +1,146 @@
 # Testing Plan
 
-Focused test coverage for locators, encryption, sessions, revisions, idempotency, completion, rotation, and failure cases.
+Focused test coverage for locators, encryption, sessions, revisions,
+idempotency, completion, rotation, and failure cases.
+
+Status legend: **Covered**, **Partially covered**, **Not yet implementable**.
+For anything not yet implementable, see
+[remaining-work.md](remaining-work.md) for the phase that unblocks it.
 
 ## 37. Test plan
 
-### 37.1 Locator tests
+### 37.1 Locator tests  -  not yet implementable
 
-Verify:
+No locator service exists yet (Phase 3 introduces a dev/fake locator service;
+Phase 6 introduces the real HMAC-SHA-256 implementation). None of the
+"same session/secret produce the same locator", "different linkage versions
+produce different locators", etc. checks can be written until then. Keep this
+section as the forward-looking plan for Phase 6  -  see
+[remaining-work.md](remaining-work.md) Phase 6.
 
-* same session ID and same secret produce the same session locator;
-* different sessions produce different locators;
-* different linkage versions produce different locators;
-* session and answer purpose labels cannot collide;
-* different question IDs produce different answer locators;
-* decrypted question IDs recompute to the stored answer locator.
+### 37.2 Encryption tests  -  not yet implementable
 
-### 37.2 Encryption tests
+No cipher/DEK provider exists yet. Round-trip, fresh-nonce, tamper-detection,
+and nonce-reuse-rejection checks all depend on Phase 6 real cryptography (or
+at minimum the Phase 3 dev cipher for shape-level tests). See
+[remaining-work.md](remaining-work.md) Phase 6.
 
-Verify:
+### 37.3 Session-start tests  -  covered (core resolution); envelope items remain
 
-* encryption followed by decryption restores the payload;
-* each save generates a fresh nonce;
-* ciphertext changes cause decryption failure;
-* nonce changes cause decryption failure;
-* AAD changes cause decryption failure;
-* wrong DEK causes decryption failure;
-* cleared answers decrypt correctly;
-* the database rejects nonce reuse within one envelope.
+`backend/tests/integration/core/test_submission_session_starter.py` covers:
 
-### 37.3 Session-start tests
+* valid public-slug access starts a session and binds the published survey
+  version (`test_start_public_slug_session_creates_anonymous_core_session`)
+* valid assigned-link access starts a session, attaches the link's assigned
+  participant's `project_subject_id`, and stamps the link `used_at`
+  (`test_start_assigned_link_session_uses_server_owned_subject`)
+* an unassigned reusable link starts a session without stamping `used_at`,
+  honoring `ck_survey_links_used_at_requires_assignment`
+  (`test_start_unassigned_reusable_link_session_does_not_stamp_used_at`)
+* the session binds to exactly one survey version
+* `submission_sessions.project_subject_id` is set when a subject resolves and
+  left null for anonymous sessions
+* only the browser session token *hash* is persisted
+  (`hash_browser_session_token` comparison)
 
-Verify:
+Expired/inactive link rejection is covered at the access-resolver layer (see
+37.4 below), which `SessionStarter` depends on.
 
-* valid public access starts a session;
-* valid link access starts a session;
-* expired link access fails;
-* inactive link access fails;
-* the session binds to one survey version;
-* known access attaches `submission_sessions.project_subject_id` to
-  `project_subjects.id`;
-* anonymous access leaves `submission_sessions.project_subject_id` null;
-* authenticated-user access resolves through `project_subject_identities`;
-* subject-token access resolves through `project_subject_tokens`;
-* a response envelope is created;
-* only a token hash reaches the core database;
-* the raw browser token is returned only after both stores succeed;
-* an envelope-creation failure does not expose a broken session.
+**Remaining  -  see [remaining-work.md](remaining-work.md) Phase 3:**
 
-### 37.4 Subject access tests
+* a response envelope is created during session start
+* only a token hash reaches the core database *and* the raw browser token is
+  returned only after both the core and response stores succeed (currently
+  there's only one store, so this can't be tested end-to-end yet)
+* an envelope-creation failure does not expose a broken session
 
-Verify:
+### 37.4 Subject access tests  -  covered; one item blocked on policy
 
-* anonymous subject creation follows project policy;
-* subject-recognition tokens resolve the correct project subject;
-* expired and revoked recognition tokens fail safely;
-* assigned-subject links resolve only to the assigned project subject;
-* assigned-email links require the matching authenticated identity;
-* identity attachment conflicts are rejected or routed to explicit merge policy;
-* identity revocation prevents future resolution without deleting history;
-* cross-project subject, link, session, and IP-observation references are rejected;
-* IP-observation retention and access rules are enforced.
+`backend/tests/integration/core/test_project_subject_resolver.py` covers:
 
-### 37.5 Answer-revision tests
+* assigned-link resolution takes priority and resolves to the link's assigned
+  participant's subject (`test_resolve_prefers_link_assigned_participant`)
+* authenticated-user resolution via a verified `project_subject_identities`
+  row (`test_resolve_uses_actor_active_user_identity`)
+* an authenticated actor with no identity row resolves to `source == "none"`
+  (`test_resolve_ignores_actor_without_identity`)
+* recognition-token resolution and `last_used_at` stamping
+  (`test_resolve_uses_recognition_token_and_marks_used`)
+* revoked recognition tokens are ignored
+  (`test_resolve_ignores_revoked_recognition_token`)
+* no-context resolution returns `source == "none"`, subject `None`
+  (`test_resolve_returns_none_when_no_context_matches`)
+* anonymous-subject creation *when explicitly requested*
+  (`test_resolve_creates_anonymous_subject_when_requested`)  -  this exercises
+  the resolver's `create_anonymous_subject=True` path directly; it is not
+  reachable through `SessionStarter` today (see below)
 
-Verify:
+`backend/tests/integration/core/test_survey_access_resolver.py` covers
+link/slug resolution that subject access depends on:
 
-* first save creates one logical answer and one revision;
-* changed answer inserts revision two;
-* the first ciphertext remains unchanged;
-* latest pointer moves forward;
-* clear-answer state inserts another revision;
-* history remains available;
-* canonical retrieval returns only the latest revision;
-* history retrieval returns all revisions in order.
+* public-slug resolution returns the published version
+  (`test_resolve_public_slug_returns_published_version`)
+* unknown slug raises `SurveyNotFoundBySlugError`
+* public survey without a published version raises `SurveyNotPublishedError`
+* unknown link token raises `LinkNotFoundError`
+* inactive link raises `LinkInactiveError`
+  (`test_resolve_link_token_inactive_link_raises`)
 
-### 37.6 Idempotency tests
+**Remaining:**
 
-Verify:
+* **anonymous-subject creation by policy**  -  the resolver supports it and is
+  unit/integration-tested in isolation, but `SessionStarter` never sets
+  `create_anonymous_subject=True`. Wiring this through end-to-end is blocked
+  on the open product-policy decision  -  see
+  [remaining-work.md](remaining-work.md) open decisions
+* assigned-email links requiring a matching authenticated identity  -  no test
+  found; identity-attachment is not yet implemented
+* identity attachment conflicts / revocation-without-deleting-history /
+  cross-project reference rejection / `subject_ip_observations`
+  retention  -  no dedicated tests found; cross-project FK rejection is largely
+  enforced by the schema (see the session-service open-issues audit item)
+  rather than exercised by an integration test
+* expired link access  -  `LinkInactiveError` is covered for `is_active=False`;
+  an explicit expiry-based rejection test was not found
 
-* retrying one mutation ID does not create another revision;
-* retrying after a simulated lost HTTP response returns success;
-* simultaneous first saves produce one logical answer;
-* simultaneous changes produce unique sequential revisions.
+### 37.5 Answer-revision tests  -  not yet implementable
 
-### 37.7 Completion tests
+Depends on the response-answer/revision repositories and the answer-save
+service (Phase 4). See [remaining-work.md](remaining-work.md) Phase 4.
 
-Verify:
+### 37.6 Idempotency tests  -  not yet implementable
 
-* completion validates canonical answers;
-* incomplete required answers prevent completion;
-* completion freezes respondent edits;
-* repeated completion requests are safe;
-* an answer save and completion request cannot race incorrectly.
+Depends on `client_mutation_id` handling in the answer-save service
+(Phase 4). See [remaining-work.md](remaining-work.md) Phase 4.
 
-### 37.8 Rotation tests
+### 37.7 Completion tests  -  not yet implementable
 
-Verify:
+Depends on the completion service (Phase 5). See
+[remaining-work.md](remaining-work.md) Phase 5.
 
-* old linkage-key versions remain readable;
-* new sessions use the active linkage version;
-* old wrapped DEKs decrypt with their stored KMS key ARN;
-* new envelopes use the active response KEK;
-* crypto-version dispatch works.
+### 37.8 Rotation tests  -  not yet implementable
 
-### 37.9 Failure tests
+Depends on real linkage-secret and DEK/KMS key versioning (Phase 6). See
+[remaining-work.md](remaining-work.md) Phase 6.
 
-Verify:
+### 37.9 Failure tests  -  not yet implementable
 
-* KMS failure returns a safe error;
-* Secrets Manager failure returns a safe error on cache miss;
-* cached linkage secrets survive a short Secrets Manager outage;
-* cached DEKs survive a short KMS outage;
-* response-database failure does not claim save success;
-* analytics failure does not delete a committed answer;
-* pending deletion retries safely.
+Depends on the response envelope/answer write paths and reconciliation tasks
+(Phases 3-4 for the envelope/answer paths; Phase 9 for reconciliation and
+cached-secret/DEK outage handling). See
+[remaining-work.md](remaining-work.md) Phases 3-4 and 9.
+
+## Peripheral but relevant coverage
+
+These test files don't map to a single numbered section above but cover
+adjacent contract/validation behavior that the session flow depends on:
+
+* `backend/tests/integration/core/test_survey_public_links.py`  -  survey
+  public-link resolution
+* `backend/tests/unit/test_public_link_validation.py`  -  public-link
+  validation rules
+* `backend/tests/unit/test_submission_session_contracts.py`  -  pins the
+  Phase 2 placeholder response shapes/cookies for the public session routes,
+  so Phase 3+ work has a contract to preserve or deliberately change
 
 ---

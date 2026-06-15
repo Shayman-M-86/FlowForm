@@ -39,7 +39,7 @@ class SessionStarter:
     ) -> tuple[PublicSubmissionSessionResponses, str]:
         access = self._access_resolver.resolve(db, payload=payload, actor=actor)
         response_store_id = survey_rules.ensure_has_response_store(survey=access.survey)
-        subject = self._subject_resolver.resolve(
+        resolved_subject = self._subject_resolver.resolve(
             db,
             project_id=access.survey.project_id,
             link=access.link,
@@ -47,6 +47,7 @@ class SessionStarter:
             recognition_token=recognition_token,
             create_anonymous_subject=False,
         )
+        subject = resolved_subject.subject
         raw_browser_session_token = ssr.generate_browser_session_token()
         session = ssr.create_session(
             db,

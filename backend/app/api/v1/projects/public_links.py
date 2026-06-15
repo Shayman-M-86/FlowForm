@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from flask import g, request
 
 from app.api.utils.validation import parse
@@ -62,10 +64,10 @@ def create_public_link(project_id: int, survey_id: int):
     response_model=PublicLinkResponses,
     tags=["Survey Links"],
 )
-@projects_bp.route(f"{_LBASE}/<bint:link_id>", methods=["PATCH"])
+@projects_bp.route(f"{_LBASE}/<uuid:link_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.edit)
-def update_public_link(project_id: int, survey_id: int, link_id: int):
+def update_public_link(project_id: int, survey_id: int, link_id: UUID):
     payload = parse(UpdatePublicLinkRequest, request)
     updated_link = survey_link_service.update_link(
         db=get_core_db(),
@@ -79,10 +81,10 @@ def update_public_link(project_id: int, survey_id: int, link_id: int):
 
 
 @openapi_route(summary="Delete survey link", tags=["Survey Links"], status_code=204)
-@projects_bp.route(f"{_LBASE}/<bint:link_id>", methods=["DELETE"])
+@projects_bp.route(f"{_LBASE}/<uuid:link_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.edit)
-def delete_public_link(project_id: int, survey_id: int, link_id: int):
+def delete_public_link(project_id: int, survey_id: int, link_id: UUID):
     survey_link_service.delete_link(
         db=get_core_db(), survey_id=survey_id, project_id=project_id, link_id=link_id, actor=g.actor
     )

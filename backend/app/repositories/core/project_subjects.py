@@ -33,3 +33,14 @@ def create_subject(db: Session, *, project_id: int, subject_code: str | None = N
     db.add(subject)
     flush_with_err_handle(db, contexts=[subject])
     return subject
+
+
+def set_subject_code(db: Session, *, subject: ProjectSubject, subject_code: str) -> ProjectSubject:
+    subject.subject_code = subject_code
+    flush_with_err_handle(db, contexts=[subject])
+    return subject
+
+
+def delete_subject(db: Session, *, subject: ProjectSubject) -> None:
+    db.delete(subject)
+    flush_with_err_handle(db, contexts=[subject])

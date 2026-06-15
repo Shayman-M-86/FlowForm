@@ -18,6 +18,7 @@ from app.repositories.core import (
 from app.schema.orm.core.project_subject import ProjectSubject
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
+from app.services.results import ResolvedProjectSubject
 
 
 class ProjectSubjectResolver:
@@ -32,9 +33,11 @@ class ProjectSubjectResolver:
         actor: User | None,
         recognition_token: str | None = None,
         create_anonymous_subject: bool = False,
-    ) -> ProjectSubject | None:
-        if link is not None and link.assigned_subject_id is not None:
-            return self._require_subject(db, project_id=project_id, subject_id=link.assigned_subject_id)
+    ) -> ResolvedProjectSubject:
+        if link is not None and link.assigned_participant_id is not None:
+            participant = ensure_present(link.assigned_participant, error=SubjectResolutionError())
+            subject = self._require_subject(db, project_id=project_id, subject_id=participant.project_subject_id)
+            return ResolvedProjectSubject(subject=subject, source="assigned_link")
 
         if actor is not None:
             identity = psir.get_active_user_identity(
@@ -43,7 +46,8 @@ class ProjectSubjectResolver:
                 user_id=actor.id,
             )
             if identity is not None:
-                return self._require_subject(db, project_id=project_id, subject_id=identity.project_subject_id)
+                subject = self._require_subject(db, project_id=project_id, subject_id=identity.project_subject_id)
+                return ResolvedProjectSubject(subject=subject, source="authenticated_user")
 
         if recognition_token is not None:
             token = pstr.get_active_token(
@@ -54,16 +58,17 @@ class ProjectSubjectResolver:
             if token is not None:
                 subject = self._require_subject(db, project_id=project_id, subject_id=token.project_subject_id)
                 pstr.mark_used(db, token=token)
-                return subject
+                return ResolvedProjectSubject(subject=subject, source="recognition_token")
 
         # TODO(subject-policy): SessionStarter always passes create_anonymous_subject=False,
         # so this branch is currently unreachable in the live flow. Resolve the open
         # checklist item "when anonymous access should create a project_subjects row
         # versus leaving project_subject_id null" before relying on it.
         if create_anonymous_subject:
-            return psr.create_subject(db, project_id=project_id)
+            subject = psr.create_subject(db, project_id=project_id)
+            return ResolvedProjectSubject(subject=subject, source="anonymous_created")
 
-        return None
+        return ResolvedProjectSubject(subject=None, source="none")
 
     def _require_subject(self, db: Session, *, project_id: int, subject_id: UUID) -> ProjectSubject:
         """Resolve a subject that is referenced by server-owned context.

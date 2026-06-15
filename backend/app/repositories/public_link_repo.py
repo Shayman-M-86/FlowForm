@@ -1,11 +1,13 @@
 import hashlib
 import secrets
+import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
+from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
 from app.schema.orm.core.survey_access import SurveyLink
 
 _TOKEN_BYTES = 32
@@ -29,7 +31,7 @@ def list_links(db: Session, survey_id: int) -> list[SurveyLink]:
     return list(db.scalars(select(SurveyLink).where(SurveyLink.survey_id == survey_id)))
 
 
-def get_link(db: Session, survey_id: int, link_id: int) -> SurveyLink | None:
+def get_link(db: Session, survey_id: int, link_id: uuid.UUID) -> SurveyLink | None:
     return db.scalar(
         select(SurveyLink).where(
             SurveyLink.survey_id == survey_id,
@@ -44,8 +46,9 @@ def create_link(
     project_id: int,
     survey_id: int,
     name: str,
-    assigned_email: str | None,
-    requires_auth: bool,
+    link_type: SurveyLinkType,
+    assignment_source: SurveyLinkAssignmentSource,
+    assigned_participant_id: uuid.UUID | None,
     expires_at: datetime | None,
 ) -> tuple[SurveyLink, str]:
     token, prefix, token_hash = _make_token()
@@ -56,8 +59,9 @@ def create_link(
         name=name,
         token_prefix=prefix,
         token_hash=token_hash,
-        assigned_email=assigned_email,
-        requires_auth=requires_auth,
+        link_type=link_type,
+        assignment_source=assignment_source,
+        assigned_participant_id=assigned_participant_id,
         expires_at=expires_at,
     )
     db.add(link)
@@ -71,8 +75,9 @@ def update_link(
     link: SurveyLink,
     is_active: bool | None = None,
     name: str | None = None,
-    requires_auth: bool | None = None,
-    assigned_email: str | None | _UnsetType = _UNSET,
+    link_type: SurveyLinkType | _UnsetType = _UNSET,
+    assignment_source: SurveyLinkAssignmentSource | _UnsetType = _UNSET,
+    assigned_participant_id: uuid.UUID | None | _UnsetType = _UNSET,
     expires_at: datetime | None | _UnsetType = _UNSET,
 ) -> SurveyLink:
     if is_active is not None:
@@ -81,11 +86,14 @@ def update_link(
     if name is not None:
         link.name = name
 
-    if requires_auth is not None:
-        link.requires_auth = requires_auth
+    if not isinstance(link_type, _UnsetType):
+        link.link_type = link_type
 
-    if not isinstance(assigned_email, _UnsetType):
-        link.assigned_email = assigned_email
+    if not isinstance(assignment_source, _UnsetType):
+        link.assignment_source = assignment_source
+
+    if not isinstance(assigned_participant_id, _UnsetType):
+        link.assigned_participant_id = assigned_participant_id
 
     if not isinstance(expires_at, _UnsetType):
         link.expires_at = expires_at

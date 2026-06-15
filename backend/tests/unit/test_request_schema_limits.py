@@ -66,13 +66,6 @@ def _too_long(limit: int) -> str:
             limits.PUBLIC_LINK_NAME_MAX,
         ),
         (
-            lambda value: CreatePublicLinkRequest(
-                name="Valid link",
-                assigned_email=value,
-            ),
-            limits.EMAIL_MAX,
-        ),
-        (
             lambda value: ResolveTokenRequest(token=value),
             limits.TOKEN_MAX,
         ),
