@@ -7,11 +7,7 @@ from app.domain import survey_rules
 from app.repositories import public_link_repo as plr
 from app.repositories.core import submission_sessions as ssr
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
-from app.schema.api.responses.submission_sessions import (
-    PublicSubmissionSessionResponses,
-    PublicSubmissionSessionSurveyResponses,
-    PublicSubmissionSessionVersionResponses,
-)
+from app.schema.api.responses.submission_sessions import PublicSubmissionSessionResponses
 from app.schema.orm.core.user import User
 from app.services.submissions.access_resolver import SurveyAccessResolver
 from app.services.submissions.project_subject_resolver import ProjectSubjectResolver
@@ -69,12 +65,6 @@ class SessionStarter:
             status=session.session_status,
             started_at=session.started_at,
             expires_at=session.expires_at,
-            survey=PublicSubmissionSessionSurveyResponses(id=access.survey.id, title=access.survey.title),
-            version=PublicSubmissionSessionVersionResponses(
-                id=access.published_version.id,
-                version_number=access.published_version.version_number,
-                compiled_schema=access.published_version.compiled_schema or {},
-            ),
-            answers=[],
+            survey_version_id=access.published_version.id,
         )
         return response, raw_browser_session_token

@@ -4,25 +4,9 @@ from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
-from app.schema.api import limits
 from app.schema.enums import AnswerFamily, SubmissionAnswerState, SubmissionSessionStatus
-
-
-class PublicSubmissionSessionSurveyResponses(BaseModel):
-    """Public survey summary returned with a respondent session."""
-
-    id: int
-    title: str
-
-
-class PublicSubmissionSessionVersionResponses(BaseModel):
-    """Published survey version frozen into a respondent session."""
-
-    id: int
-    version_number: int
-    compiled_schema: dict[str, Any]
 
 
 class SubmissionSessionAnswerResponses(BaseModel):
@@ -38,16 +22,14 @@ class SubmissionSessionAnswerResponses(BaseModel):
 
 
 class PublicSubmissionSessionResponses(BaseModel):
-    """Public respondent session response without raw resume or crypto material."""
+    """Session start/current acknowledgement without survey content or crypto material."""
 
     model_config = ConfigDict(from_attributes=True)
 
     status: SubmissionSessionStatus
     started_at: datetime
     expires_at: datetime
-    survey: PublicSubmissionSessionSurveyResponses
-    version: PublicSubmissionSessionVersionResponses
-    answers: list[SubmissionSessionAnswerResponses] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
+    survey_version_id: int
 
 
 class CompleteSubmissionSessionResponses(BaseModel):

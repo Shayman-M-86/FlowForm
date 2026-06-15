@@ -47,8 +47,7 @@ def test_start_public_slug_session_creates_anonymous_core_session(
     saved = db_session.scalar(select(SubmissionSession).where(SubmissionSession.survey_id == survey.id))
     assert saved is not None
     assert response.status == "in_progress"
-    assert response.survey.id == survey.id
-    assert response.version.id == survey_version.id
+    assert response.survey_version_id == survey_version.id
     assert saved.project_id == survey.project_id
     assert saved.survey_id == survey.id
     assert saved.survey_version_id == survey_version.id
@@ -88,7 +87,7 @@ def test_start_assigned_link_session_uses_server_owned_subject(
 
     saved = db_session.scalar(select(SubmissionSession).where(SubmissionSession.link_id == link.id))
     assert saved is not None
-    assert response.survey.id == survey.id
+    assert response.survey_version_id == survey_version.id
     assert saved.link_id == link.id
     assert saved.project_subject_id == participant.project_subject_id
     assert link.used_at is not None
@@ -117,7 +116,7 @@ def test_start_unassigned_reusable_link_session_does_not_stamp_used_at(
 
     saved = db_session.scalar(select(SubmissionSession).where(SubmissionSession.link_id == link.id))
     assert saved is not None
-    assert response.survey.id == survey.id
+    assert response.survey_version_id == survey_version.id
     assert saved.link_id == link.id
     assert saved.project_subject_id is None
     # A reusable link with no assignment must not be stamped used_at; the DB

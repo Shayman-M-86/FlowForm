@@ -266,15 +266,29 @@ export const UpdateMemberRequestConstraints = {
   status: { maxLength: 9 },
 } as const;
 
+export const CreateParticipantRequestConstraints = {
+  email: { maxLength: 254 },
+  subject_code: { minLength: 1, maxLength: 128 },
+} as const;
+
+export const UpdateParticipantRequestConstraints = {
+  email: { maxLength: 254 },
+  subject_code: { minLength: 1, maxLength: 128 },
+} as const;
+
 export const CreatePublicLinkRequestConstraints = {
   name: { minLength: 1, maxLength: 120 },
-  assigned_email: { maxLength: 254 },
+  link_type: { maxLength: 13 },
+  assignment_source: { maxLength: 9 },
+  assigned_participant_id: { maxLength: 36 },
   expires_at: { maxLength: 35 },
 } as const;
 
 export const UpdatePublicLinkRequestConstraints = {
   name: { minLength: 1, maxLength: 120 },
-  assigned_email: { maxLength: 254 },
+  link_type: { maxLength: 13 },
+  assignment_source: { maxLength: 9 },
+  assigned_participant_id: { maxLength: 36 },
   expires_at: { maxLength: 35 },
 } as const;
 
@@ -333,12 +347,14 @@ export const ResolveTokenRequestConstraints = {
 } as const;
 
 export const SaveSubmissionSessionAnswerRequestConstraints = {
+  question_node_id: { maxLength: 36 },
   client_mutation_id: { maxLength: 36 },
   state: { maxLength: 8 },
   answer_family: { maxLength: 8 },
 } as const;
 
-export const QuestionViewedEventRequestConstraints = {
+export const SubmissionSessionEventRequestConstraints = {
+  event_type: { maxLength: 15 },
   question_node_id: { maxLength: 36 },
 } as const;
 
@@ -393,10 +409,19 @@ export const ScoringRuleResponsesConstraints = {
   updated_at: { maxLength: 35 },
 } as const;
 
+export const ParticipantResponsesConstraints = {
+  id: { maxLength: 36 },
+  email: { maxLength: 254 },
+  created_at: { maxLength: 35 },
+} as const;
+
 export const PublicLinkResponsesConstraints = {
+  id: { maxLength: 36 },
   name: { maxLength: 120 },
   token_prefix: { maxLength: 32 },
-  assigned_email: { maxLength: 254 },
+  link_type: { maxLength: 13 },
+  assignment_source: { maxLength: 9 },
+  assigned_participant_id: { maxLength: 36 },
   expires_at: { maxLength: 35 },
   used_at: { maxLength: 35 },
   created_at: { maxLength: 35 },
@@ -482,8 +507,10 @@ export const PaginatedPublicSurveysResponsesConstraints = {
   items: { maxItems: 100 },
 } as const;
 
-export const PublicSubmissionSessionSurveyResponsesConstraints = {
-  title: { maxLength: 200 },
+export const PublicSubmissionSessionResponsesConstraints = {
+  status: { maxLength: 11 },
+  started_at: { maxLength: 35 },
+  expires_at: { maxLength: 35 },
 } as const;
 
 export const SubmissionSessionAnswerResponsesConstraints = {
@@ -492,13 +519,6 @@ export const SubmissionSessionAnswerResponsesConstraints = {
   answer_family: { maxLength: 8 },
   client_mutation_id: { maxLength: 36 },
   saved_at: { maxLength: 35 },
-} as const;
-
-export const PublicSubmissionSessionResponsesConstraints = {
-  status: { maxLength: 11 },
-  started_at: { maxLength: 35 },
-  expires_at: { maxLength: 35 },
-  answers: { maxItems: 50 },
 } as const;
 
 export const CompleteSubmissionSessionResponsesConstraints = {

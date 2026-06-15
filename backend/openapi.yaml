@@ -16,6 +16,7 @@ tags:
 - name: Health
 - name: Me
 - name: Members
+- name: Participants
 - name: Projects
 - name: Public
 - name: Public Links
@@ -1484,6 +1485,184 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/v1/projects/{project_id}/participants:
+    get:
+      operationId: listParticipants
+      summary: List participants
+      description: List participants
+      tags:
+      - Participants
+      x-flowform-rbac:
+        permission: project:manage_members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListParticipantsResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createParticipant
+      summary: Create participant
+      description: Create participant
+      tags:
+      - Participants
+      x-flowform-rbac:
+        permission: project:manage_members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateParticipantRequest'
+      responses:
+        '201':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/projects/{project_id}/participants/{participant_id}:
+    patch:
+      operationId: updateParticipant
+      summary: Update participant
+      description: Update participant
+      tags:
+      - Participants
+      x-flowform-rbac:
+        permission: project:manage_members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: participant_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateParticipantRequest'
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteParticipant
+      summary: Delete participant
+      description: Delete participant
+      tags:
+      - Participants
+      x-flowform-rbac:
+        permission: project:manage_members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: participant_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: No content.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/v1/projects/{project_id}/surveys/{survey_id}/links:
     get:
       operationId: listPublicLinks
@@ -1611,9 +1790,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
+          type: string
+          format: uuid
       requestBody:
         required: true
         content:
@@ -1670,9 +1848,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
+          type: string
+          format: uuid
       responses:
         '204':
           description: No content.
@@ -3261,7 +3438,44 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/public/submission-sessions:
+  /api/v1/public/links/verification/link:
+    post:
+      operationId: verifyAuthenticatedLinkParticipant
+      summary: Verify authenticated survey link participant
+      description: Verify the authenticated account against the participant assigned to an authenticated survey link. The
+        account email must match the participant identity email before the participant is linked to the user.
+      tags:
+      - Public Links
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveTokenRequest'
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicLinkResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/public/submission-session/start:
     post:
       operationId: startSubmissionSession
       summary: Start submission session
@@ -3300,38 +3514,7 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/public/submission-sessions/current:
-    get:
-      operationId: getCurrentSubmissionSession
-      summary: Get current submission session
-      description: Get current submission session
-      tags:
-      - Public Submission Sessions
-      security: []
-      responses:
-        '200':
-          description: Successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicSubmissionSessionResponses'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/v1/public/submission-sessions/current/answers/{question_node_id}:
+  /api/v1/public/submission-session/answer:
     put:
       operationId: saveSubmissionSessionAnswer
       summary: Save submission session answer
@@ -3339,13 +3522,6 @@ paths:
       tags:
       - Public Submission Sessions
       security: []
-      parameters:
-      - name: question_node_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
       requestBody:
         required: true
         content:
@@ -3375,11 +3551,11 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/public/submission-sessions/current/events/question-viewed:
+  /api/v1/public/submission-session/event:
     post:
-      operationId: recordSubmissionSessionQuestionViewed
-      summary: Record submission session question view
-      description: Record submission session question view
+      operationId: recordSubmissionSessionEvent
+      summary: Record submission session event
+      description: Record submission session event
       tags:
       - Public Submission Sessions
       security: []
@@ -3388,7 +3564,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/QuestionViewedEventRequest'
+              $ref: '#/components/schemas/SubmissionSessionEventRequest'
       responses:
         '204':
           description: No content.
@@ -3408,7 +3584,7 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/public/submission-sessions/current/complete:
+  /api/v1/public/submission-session/complete:
     post:
       operationId: completeSubmissionSession
       summary: Complete submission session
@@ -5252,12 +5428,96 @@ components:
           title: Status
       title: UpdateMemberRequest
       type: object
+    ParticipantResponses:
+      description: API response shape for a project participant.
+      properties:
+        id:
+          format: uuid
+          title: Id
+          type: string
+          maxLength: 36
+        subject_code:
+          title: Subject Code
+          type: string
+        email:
+          anyOf:
+          - type: string
+            maxLength: 254
+          - type: 'null'
+          title: Email
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+          maxLength: 35
+      required:
+      - id
+      - subject_code
+      - email
+      - created_at
+      title: ParticipantResponses
+      type: object
+    ListParticipantsResponses:
+      description: API response shape for listing a project's participants.
+      properties:
+        participants:
+          items:
+            $ref: '#/components/schemas/ParticipantResponses'
+          title: Participants
+          type: array
+      required:
+      - participants
+      title: ListParticipantsResponses
+      type: object
+    CreateParticipantRequest:
+      description: Request body for creating a participant (subject + email identity + participant).
+      properties:
+        email:
+          format: email
+          maxLength: 254
+          title: Email
+          type: string
+        subject_code:
+          anyOf:
+          - maxLength: 128
+            minLength: 1
+            type: string
+          - type: 'null'
+          default: null
+          title: Subject Code
+      required:
+      - email
+      title: CreateParticipantRequest
+      type: object
+    UpdateParticipantRequest:
+      description: Request body for updating a participant's assigned email and/or subject code.
+      properties:
+        email:
+          anyOf:
+          - format: email
+            maxLength: 254
+            type: string
+          - type: 'null'
+          default: null
+          title: Email
+        subject_code:
+          anyOf:
+          - maxLength: 128
+            minLength: 1
+            type: string
+          - type: 'null'
+          default: null
+          title: Subject Code
+      title: UpdateParticipantRequest
+      type: object
     PublicLinkResponses:
       description: API response shape for a survey link.
       properties:
         id:
+          format: uuid
           title: Id
-          type: integer
+          type: string
+          maxLength: 36
         survey_id:
           title: Survey Id
           type: integer
@@ -5272,15 +5532,28 @@ components:
         is_active:
           title: Is Active
           type: boolean
-        requires_auth:
-          title: Requires Auth
-          type: boolean
-        assigned_email:
+        link_type:
+          enum:
+          - general
+          - private
+          - authenticated
+          title: Link Type
+          type: string
+          maxLength: 13
+        assignment_source:
+          enum:
+          - manual
+          - automated
+          title: Assignment Source
+          type: string
+          maxLength: 9
+        assigned_participant_id:
           anyOf:
-          - type: string
-            maxLength: 254
+          - format: uuid
+            type: string
+            maxLength: 36
           - type: 'null'
-          title: Assigned Email
+          title: Assigned Participant Id
         expires_at:
           anyOf:
           - format: date-time
@@ -5306,8 +5579,9 @@ components:
       - name
       - token_prefix
       - is_active
-      - requires_auth
-      - assigned_email
+      - link_type
+      - assignment_source
+      - assigned_participant_id
       - expires_at
       - used_at
       - created_at
@@ -5333,18 +5607,31 @@ components:
           minLength: 1
           title: Name
           type: string
-        assigned_email:
+        link_type:
+          default: general
+          enum:
+          - general
+          - private
+          - authenticated
+          title: Link Type
+          type: string
+          maxLength: 13
+        assignment_source:
+          default: manual
+          enum:
+          - manual
+          - automated
+          title: Assignment Source
+          type: string
+          maxLength: 9
+        assigned_participant_id:
           anyOf:
-          - format: email
-            maxLength: 254
+          - format: uuid
             type: string
+            maxLength: 36
           - type: 'null'
           default: null
-          title: Assigned Email
-        requires_auth:
-          default: false
-          title: Requires Auth
-          type: boolean
+          title: Assigned Participant Id
         expires_at:
           anyOf:
           - format: date-time
@@ -5393,20 +5680,35 @@ components:
           - type: 'null'
           default: null
           title: Name
-        assigned_email:
+        link_type:
           anyOf:
-          - format: email
-            maxLength: 254
+          - enum:
+            - general
+            - private
+            - authenticated
             type: string
+            maxLength: 13
           - type: 'null'
           default: null
-          title: Assigned Email
-        requires_auth:
+          title: Link Type
+        assignment_source:
           anyOf:
-          - type: boolean
+          - enum:
+            - manual
+            - automated
+            type: string
+            maxLength: 9
           - type: 'null'
           default: null
-          title: Requires Auth
+          title: Assignment Source
+        assigned_participant_id:
+          anyOf:
+          - format: uuid
+            type: string
+            maxLength: 36
+          - type: 'null'
+          default: null
+          title: Assigned Participant Id
         expires_at:
           anyOf:
           - format: date-time
@@ -6380,39 +6682,82 @@ components:
       - access
       title: StartSubmissionSessionRequest
       type: object
-    PublicSubmissionSessionSurveyResponses:
-      description: Public survey summary returned with a respondent session.
+    PublicSubmissionSessionResponses:
+      description: Session start/current acknowledgement without survey content or crypto material.
       properties:
-        id:
-          title: Id
-          type: integer
-        title:
-          title: Title
+        status:
+          enum:
+          - in_progress
+          - completed
+          - abandoned
+          title: Status
           type: string
-          maxLength: 200
+          maxLength: 11
+        started_at:
+          format: date-time
+          title: Started At
+          type: string
+          maxLength: 35
+        expires_at:
+          format: date-time
+          title: Expires At
+          type: string
+          maxLength: 35
+        survey_version_id:
+          title: Survey Version Id
+          type: integer
       required:
-      - id
-      - title
-      title: PublicSubmissionSessionSurveyResponses
+      - status
+      - started_at
+      - expires_at
+      - survey_version_id
+      title: PublicSubmissionSessionResponses
       type: object
-    PublicSubmissionSessionVersionResponses:
-      description: Published survey version frozen into a respondent session.
+    SaveSubmissionSessionAnswerRequest:
+      additionalProperties: false
+      description: Request body for saving or clearing one respondent answer revision.
       properties:
-        id:
-          title: Id
-          type: integer
-        version_number:
-          title: Version Number
-          type: integer
-        compiled_schema:
-          additionalProperties: true
-          title: Compiled Schema
-          type: object
+        question_node_id:
+          format: uuid
+          title: Question Node Id
+          type: string
+          maxLength: 36
+        client_mutation_id:
+          format: uuid
+          title: Client Mutation Id
+          type: string
+          maxLength: 36
+        state:
+          enum:
+          - answered
+          - cleared
+          title: State
+          type: string
+          maxLength: 8
+        answer_family:
+          anyOf:
+          - enum:
+            - choice
+            - field
+            - matching
+            - rating
+            type: string
+            maxLength: 8
+          - type: 'null'
+          default: null
+          title: Answer Family
+        answer_value:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Answer Value
       required:
-      - id
-      - version_number
-      - compiled_schema
-      title: PublicSubmissionSessionVersionResponses
+      - question_node_id
+      - client_mutation_id
+      - state
+      title: SaveSubmissionSessionAnswerRequest
       type: object
     SubmissionSessionAnswerResponses:
       description: Canonical latest answer state returned to a respondent.
@@ -6469,98 +6814,24 @@ components:
       - saved_at
       title: SubmissionSessionAnswerResponses
       type: object
-    PublicSubmissionSessionResponses:
-      description: Public respondent session response without raw resume or crypto material.
-      properties:
-        status:
-          enum:
-          - in_progress
-          - completed
-          - abandoned
-          title: Status
-          type: string
-          maxLength: 11
-        started_at:
-          format: date-time
-          title: Started At
-          type: string
-          maxLength: 35
-        expires_at:
-          format: date-time
-          title: Expires At
-          type: string
-          maxLength: 35
-        survey:
-          $ref: '#/components/schemas/PublicSubmissionSessionSurveyResponses'
-        version:
-          $ref: '#/components/schemas/PublicSubmissionSessionVersionResponses'
-        answers:
-          items:
-            $ref: '#/components/schemas/SubmissionSessionAnswerResponses'
-          maxItems: 50
-          title: Answers
-          type: array
-      required:
-      - status
-      - started_at
-      - expires_at
-      - survey
-      - version
-      - answers
-      title: PublicSubmissionSessionResponses
-      type: object
-    SaveSubmissionSessionAnswerRequest:
+    SubmissionSessionEventRequest:
       additionalProperties: false
-      description: Request body for saving or clearing one respondent answer revision.
+      description: Request body for recording a respondent session event.
       properties:
-        client_mutation_id:
-          format: uuid
-          title: Client Mutation Id
+        event_type:
+          const: question_viewed
+          title: Event Type
           type: string
-          maxLength: 36
-        state:
-          enum:
-          - answered
-          - cleared
-          title: State
-          type: string
-          maxLength: 8
-        answer_family:
-          anyOf:
-          - enum:
-            - choice
-            - field
-            - matching
-            - rating
-            type: string
-            maxLength: 8
-          - type: 'null'
-          default: null
-          title: Answer Family
-        answer_value:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          default: null
-          title: Answer Value
-      required:
-      - client_mutation_id
-      - state
-      title: SaveSubmissionSessionAnswerRequest
-      type: object
-    QuestionViewedEventRequest:
-      additionalProperties: false
-      description: Request body for recording that a respondent viewed a question.
-      properties:
+          maxLength: 15
         question_node_id:
           format: uuid
           title: Question Node Id
           type: string
           maxLength: 36
       required:
+      - event_type
       - question_node_id
-      title: QuestionViewedEventRequest
+      title: SubmissionSessionEventRequest
       type: object
     CompleteSubmissionSessionResponses:
       description: Response body for an idempotent respondent session completion.
@@ -6667,6 +6938,11 @@ components:
               value:
                 code: LINK_ASSIGNED_TO_ANOTHER_USER
                 message: This link is assigned to a different user.
+            link_participant_verification_required:
+              summary: LinkParticipantVerificationRequiredError
+              value:
+                code: LINK_PARTICIPANT_VERIFICATION_REQUIRED
+                message: This link's participant must complete verification before this link can be used.
             link_already_used:
               summary: LinkAlreadyUsedError
               value:
@@ -6677,6 +6953,16 @@ components:
               value:
                 code: SURVEY_NOT_ACCESSIBLE
                 message: This survey is not accessible in this context.
+            participant_identity_email_mismatch:
+              summary: ParticipantIdentityEmailMismatchError
+              value:
+                code: PARTICIPANT_EMAIL_MISMATCH
+                message: Authenticated account email does not match the participant identity email.
+            participant_identity_user_mismatch:
+              summary: ParticipantIdentityUserMismatchError
+              value:
+                code: PARTICIPANT_USER_MISMATCH
+                message: Participant identity is linked to a different authenticated user.
             member_self_action:
               summary: MemberSelfActionError
               value:
@@ -6744,6 +7030,11 @@ components:
               value:
                 code: USER_NOT_FOUND
                 message: User <example> not found.
+            participant_not_found:
+              summary: ParticipantNotFoundError
+              value:
+                code: PARTICIPANT_NOT_FOUND
+                message: Participant not found.
             invitation_not_found:
               summary: InvitationNotFoundError
               value:
@@ -6828,6 +7119,11 @@ components:
               value:
                 code: CONFLICT
                 message: <example>
+            participant_identity_not_verifiable:
+              summary: ParticipantIdentityNotVerifiableError
+              value:
+                code: PARTICIPANT_IDENTITY_NOT_VERIFIABLE
+                message: Participant identity cannot be verified from an account email.
             invitation_already_exists:
               summary: InvitationAlreadyExistsError
               value:
@@ -6948,16 +7244,31 @@ components:
               value:
                 code: LINK_SURVEY_PROJECT_CONFLICT
                 message: The survey does not belong to this project.
-            fk_survey_links_assigned_subject_same_project:
-              summary: 'DB rule: LINK_SUBJECT_PROJECT_CONFLICT'
+            fk_survey_links_assigned_participant_same_project:
+              summary: 'DB rule: LINK_PARTICIPANT_PROJECT_CONFLICT'
               value:
-                code: LINK_SUBJECT_PROJECT_CONFLICT
-                message: The assigned subject does not belong to this project.
+                code: LINK_PARTICIPANT_PROJECT_CONFLICT
+                message: The assigned participant does not belong to this project.
             uq_survey_roles_project_id_name:
               summary: 'DB rule: SURVEY_ROLE_NAME_CONFLICT'
               value:
                 code: SURVEY_ROLE_NAME_CONFLICT
                 message: Project already has a survey role named '<name>'.
+            uq_project_participants_project_subject:
+              summary: 'DB rule: PARTICIPANT_SUBJECT_CONFLICT'
+              value:
+                code: PARTICIPANT_SUBJECT_CONFLICT
+                message: This subject is already a participant in this project.
+            fk_project_participants_subject_same_project:
+              summary: 'DB rule: PARTICIPANT_SUBJECT_PROJECT_CONFLICT'
+              value:
+                code: PARTICIPANT_SUBJECT_PROJECT_CONFLICT
+                message: The project subject does not belong to this project.
+            fk_project_participants_identity_same_subject:
+              summary: 'DB rule: PARTICIPANT_IDENTITY_SUBJECT_CONFLICT'
+              value:
+                code: PARTICIPANT_IDENTITY_SUBJECT_CONFLICT
+                message: The identity does not belong to this subject.
             uq_project_subjects_project_id_subject_code:
               summary: 'DB rule: SUBJECT_CODE_CONFLICT'
               value:
@@ -7128,13 +7439,13 @@ components:
             link_auth_assignment_required:
               summary: LinkAuthAssignmentRequiredError
               value:
-                code: LINK_ASSIGNED_EMAIL_REQUIRED
-                message: Links that require authentication must be assigned to an email.
+                code: LINK_ASSIGNED_PARTICIPANT_REQUIRED
+                message: Links that require authentication must be assigned to a participant.
             private_survey_assigned_email_required:
               summary: PrivateSurveyAssignedEmailRequiredError
               value:
-                code: ASSIGNED_EMAIL_REQUIRED
-                message: Private surveys require links assigned to a specific email.
+                code: ASSIGNED_PARTICIPANT_REQUIRED
+                message: Private surveys require links assigned to a participant.
             survey_visibility_mismatch:
               summary: SurveyVisibilityMismatchError
               value:

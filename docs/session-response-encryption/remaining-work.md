@@ -39,11 +39,12 @@ reads, frontend integration, and hardening.
 - [ ] Return the raw browser token only after both the core and response
       stores succeed
 
-**Session resume**
+**Cookie-backed session guard**
 - [ ] Hash the browser token
 - [ ] Load an in-progress session
 - [ ] Reject expired, completed, or abandoned sessions
-- [ ] Return current canonical answers when available
+- [ ] Use this lookup internally for answer/event/complete commands; do not
+      expose in-process answer hydration through a public read endpoint
 
 **Temporary crypto interfaces (dev implementations)**
 

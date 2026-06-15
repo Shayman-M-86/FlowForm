@@ -35,13 +35,12 @@ Source: `backend/app/api/v1/public.py`
 
 | Method | Path | Status |
 |---|---|---|
-| `POST` | `/api/v1/public/submission-sessions` | **Real** |
-| `GET` | `/api/v1/public/submission-sessions/current` | **Placeholder** (`TODO(phase3)`) |
-| `PUT` | `/api/v1/public/submission-sessions/current/answers/{question_node_id}` | **Placeholder** (`TODO(phase4)`) |
-| `POST` | `/api/v1/public/submission-sessions/current/events/question-viewed` | **Placeholder** (`TODO(phase3)`) |
-| `POST` | `/api/v1/public/submission-sessions/current/complete` | **Placeholder** (`TODO(phase5)`) |
+| `POST` | `/api/v1/public/submission-session/start` | **Real** |
+| `PUT` | `/api/v1/public/submission-session/answer` | **Placeholder** (`TODO(phase4)`) |
+| `POST` | `/api/v1/public/submission-session/event` | **Placeholder** (`TODO(phase3)`) |
+| `POST` | `/api/v1/public/submission-session/complete` | **Placeholder** (`TODO(phase5)`) |
 
-### 2.1 `POST /submission-sessions`  -  real
+### 2.1 `POST /submission-session/start`  -  real
 
 Implemented via `SessionStarter.start()`. Accepts `StartSubmissionSessionRequest`,
 a discriminated union on `access.type`:
@@ -56,29 +55,26 @@ a discriminated union on `access.type`:
 
 Auth is optional (`@auth.optional_auth()`). The handler resolves the optional
 current user, calls `SessionStarter.start(core_db, payload=payload, actor=user)`,
-and returns `201` with a `PublicSubmissionSessionResponses` body. The raw
-browser session token returned by the starter is set via
+and returns `201` with a `PublicSubmissionSessionResponses` acknowledgement:
+`status`, `started_at`, `expires_at`, and `survey_version_id`. It does **not**
+return the survey, survey version object, `compiled_schema`, or in-process
+answers. The raw browser session token returned by the starter is set via
 `set_submission_session_cookie()` (`HttpOnly`, resume cookie), matching the
 session-start flow summarized in [flows.md](flows.md).
 
-### 2.2 `GET /submission-sessions/current`  -  placeholder
+### 2.2 No public current-session read route
 
-Marked `TODO(phase3)`. Current behavior:
+There is intentionally no `GET /api/v1/public/submission-session` or
+`GET /api/v1/public/submission-sessions/current` route. The cookie is used as an
+internal credential for command endpoints, not as a public way to rehydrate
+in-process encrypted answer data.
 
-- Ignores the resume cookie entirely.
-- Returns `build_placeholder_session_response()`  -  a static stub  -  with `200`.
-
-Intended final behavior: read the
-`HttpOnly` resume cookie, hash it (`SHA-256`), load the session by
-`browser_session_token_hash`, check status/expiry, derive the response
-locator, load and decrypt canonical latest revisions, and return
-`PublicSubmissionSessionResponses` with populated `answers`.
-
-### 2.3 `PUT /submission-sessions/current/answers/{question_node_id}`  -  placeholder
+### 2.3 `PUT /submission-session/answer`  -  placeholder
 
 Marked `TODO(phase4)`. Current behavior:
 
 - Parses `SaveSubmissionSessionAnswerRequest` (validates request shape only).
+- Accepts `question_node_id` in the request body, not the route path.
 - Echoes the input straight back as `SubmissionSessionAnswerResponses`, with
   `revision_number` hardcoded to `1` and `saved_at=datetime.now(UTC)`.
 - Does **not** persist anything  -  no response-DB write, no core session update.
@@ -100,11 +96,13 @@ The response write (step 3/4) is authoritative; the analytics insert
 (steps 5-6) is secondary. Real revision numbering and `client_mutation_id`
 based idempotency replace the current hardcoded `revision_number=1`.
 
-### 2.4 `POST /submission-sessions/current/events/question-viewed`  -  placeholder
+### 2.4 `POST /submission-session/event`  -  placeholder
 
 Marked `TODO(phase3)`. Current behavior:
 
-- Parses `QuestionViewedEventRequest` (validates request shape only).
+- Parses `SubmissionSessionEventRequest` (validates request shape only). The
+  current client event type is `question_viewed`, with `question_node_id` in the
+  request body.
 - Returns `204` with no persistence.
 
 Intended final behavior: validate
@@ -112,7 +110,7 @@ the node belongs to the frozen version and insert a core `question_viewed`
 analytics event. This is secondary metadata  -  if the insert fails, the
 respondent must still continue (non-blocking failure).
 
-### 2.5 `POST /submission-sessions/current/complete`  -  placeholder
+### 2.5 `POST /submission-session/complete`  -  placeholder
 
 Marked `TODO(phase5)`. Current behavior:
 
@@ -178,7 +176,7 @@ Body-based `ResolveTokenRequest`:
 Auth is optional (`@auth.optional_auth()`). Resolves token hash -> active ->
 expiry -> auth-required -> assigned-email -> single-use -> survey -> published
 version via `SurveyLinkService.resolve_link()`. This is a **preview**, not an
-authorization grant  -  `POST /submission-sessions` revalidates the link. This
+authorization grant  -  `POST /submission-session/start` revalidates the link. This
 already matches the verb-change decision described in [flows.md](flows.md)
 (the route was `GET ...?token=`; it is now `POST` with the token in the body).
 
@@ -237,11 +235,11 @@ For the remaining work, see [remaining-work.md](remaining-work.md).
 | `GET /public/surveys/{public_slug}` | Real |
 | `POST /public/links/resolve` | Real |
 | `POST /public/links/verification/link` | Real (authenticated) |
-| `POST /public/submission-sessions` | Real |
-| `GET /public/submission-sessions/current` | Placeholder (phase3) |
-| `PUT /public/submission-sessions/current/answers/{question_node_id}` | Placeholder (phase4) |
-| `POST /public/submission-sessions/current/events/question-viewed` | Placeholder (phase3) |
-| `POST /public/submission-sessions/current/complete` | Placeholder (phase5) |
+| `POST /public/submission-session/start` | Real |
+| `GET /public/submission-session` | Not present by design |
+| `PUT /public/submission-session/answer` | Placeholder (phase4) |
+| `POST /public/submission-session/event` | Placeholder (phase3) |
+| `POST /public/submission-session/complete` | Placeholder (phase5) |
 | `POST /public/submissions/slug` | Removed (fully gone) |
 | `POST /public/submissions/link` | Removed (fully gone) |
 | `GET /projects/{project_id}/surveys/{survey_id}/links` | Real |

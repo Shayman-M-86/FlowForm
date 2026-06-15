@@ -28,6 +28,7 @@ SubmissionChannel = Literal["link", "slug", "system"]
 SubmissionStatus = Literal["pending", "stored", "failed"]
 SubmissionSessionStatus = Literal["in_progress", "completed", "abandoned"]
 SubmissionEventType = Literal["session_started", "question_viewed", "answer_saved", "session_completed"]
+SubmissionSessionClientEventType = Literal["question_viewed"]
 SubmissionAnswerState = Literal["answered", "cleared"]
 ExportFormat = Literal["csv", "json"]
 

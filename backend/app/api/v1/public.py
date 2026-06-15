@@ -1,22 +1,18 @@
 from datetime import UTC, datetime
 from logging import getLogger
-from uuid import UUID
 
-from flask import Blueprint, jsonify, make_response, request
+from flask import Blueprint, request
 
+from app.api.utils.submission_session_cookie import set_submission_session_cookie
 from app.api.utils.validation import parse, parse_query
-from app.api.v1.public_submission_session_temp import (
-    build_placeholder_session_response,
-    set_submission_session_cookie,
-)
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.openapi import openapi_route
 from app.schema.api.requests.public_links import ResolveTokenRequest
 from app.schema.api.requests.submission_sessions import (
-    QuestionViewedEventRequest,
     SaveSubmissionSessionAnswerRequest,
     StartSubmissionSessionRequest,
+    SubmissionSessionEventRequest,
 )
 from app.schema.api.requests.surveys import ListPublicSurveysRequest
 from app.schema.api.responses.public_links import PublicLinkResponses, ResolveLinkResponses
@@ -150,7 +146,7 @@ def verify_authenticated_link_participant():
     tags=["Public Submission Sessions"],
     auth="optional",
 )
-@public_bp.route("/submission-sessions", methods=["POST"])
+@public_bp.route("/submission-session/start", methods=["POST"])
 @auth.optional_auth()
 def start_submission_session():
     payload = parse(StartSubmissionSessionRequest, request)
@@ -158,22 +154,8 @@ def start_submission_session():
     current_sub = auth.get_optional_current_user_sub()
     user = users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub) if current_sub is not None else None
     response, raw_browser_session_token = session_starter.start(core_db, payload=payload, actor=user)
-    flask_response = make_response(jsonify(response.model_dump(mode="json")), 201)
-    return set_submission_session_cookie(flask_response, raw_browser_session_token)
-
-
-# TODO(phase3): Rework this placeholder to read the current session from the
-# HttpOnly resume cookie after browser token hashing/storage exists.
-@openapi_route(
-    summary="Get current submission session",
-    response_model=PublicSubmissionSessionResponses,
-    tags=["Public Submission Sessions"],
-    auth_required=False,
-)
-@public_bp.route("/submission-sessions/current", methods=["GET"])
-def get_current_submission_session():
-    response = build_placeholder_session_response()
-    return response.model_dump(mode="json"), 200
+    set_submission_session_cookie(raw_browser_session_token)
+    return response.model_dump(mode="json"), 201
 
 
 # TODO(phase4): Rework this placeholder to validate against the frozen survey
@@ -185,11 +167,11 @@ def get_current_submission_session():
     tags=["Public Submission Sessions"],
     auth_required=False,
 )
-@public_bp.route("/submission-sessions/current/answers/<uuid:question_node_id>", methods=["PUT"])
-def save_submission_session_answer(question_node_id: UUID):
+@public_bp.route("/submission-session/answer", methods=["PUT"])
+def save_submission_session_answer():
     payload = parse(SaveSubmissionSessionAnswerRequest, request)
     response = SubmissionSessionAnswerResponses(
-        question_node_id=question_node_id,
+        question_node_id=payload.question_node_id,
         state=payload.state,
         answer_family=payload.answer_family,
         answer_value=payload.answer_value,
@@ -203,15 +185,15 @@ def save_submission_session_answer(question_node_id: UUID):
 # TODO(phase3): Rework this placeholder to persist core-side analytics events;
 # event write failures should stay secondary to the respondent flow.
 @openapi_route(
-    summary="Record submission session question view",
-    request_model=QuestionViewedEventRequest,
+    summary="Record submission session event",
+    request_model=SubmissionSessionEventRequest,
     status_code=204,
     tags=["Public Submission Sessions"],
     auth_required=False,
 )
-@public_bp.route("/submission-sessions/current/events/question-viewed", methods=["POST"])
-def record_submission_session_question_viewed():
-    parse(QuestionViewedEventRequest, request)
+@public_bp.route("/submission-session/event", methods=["POST"])
+def record_submission_session_event():
+    parse(SubmissionSessionEventRequest, request)
     return "", 204
 
 
@@ -223,7 +205,7 @@ def record_submission_session_question_viewed():
     tags=["Public Submission Sessions"],
     auth_required=False,
 )
-@public_bp.route("/submission-sessions/current/complete", methods=["POST"])
+@public_bp.route("/submission-session/complete", methods=["POST"])
 def complete_submission_session():
     response = CompleteSubmissionSessionResponses(status="completed", completed_at=datetime.now(UTC))
     return response.model_dump(mode="json"), 200

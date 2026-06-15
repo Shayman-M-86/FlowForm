@@ -10,14 +10,16 @@ Respondent flows fall into two groups:
 
 - **Implemented**  -  link resolution, subject resolution, and session start
   are fully wired: `POST /links/resolve`, `POST /links/verification/link`,
-  and `POST /submission-sessions` all run through real domain/service code
+  and `POST /submission-session/start` all run through real domain/service code
   and write to the database.
-- **Stubbed**  -  `GET /submission-sessions/current`,
-  `PUT /submission-sessions/current/answers/<question_node_id>`,
-  `POST /submission-sessions/current/events/question-viewed`, and
-  `POST /submission-sessions/current/complete` are placeholders marked with
-  `TODO(phaseN)` comments in `backend/app/api/v1/public.py`. They return
-  stable, schema-valid stub responses but do not read or write session state.
+- **Stubbed command routes**  -  `PUT /submission-session/answer`,
+  `POST /submission-session/event`, and `POST /submission-session/complete` are
+  placeholders marked with `TODO(phaseN)` comments in
+  `backend/app/api/v1/public.py`. They return stable, schema-valid stub
+  responses but do not read or write session state.
+- **Not present by design**  -  there is no public current-session read route.
+  Cookie-backed session lookup is intended as an internal guard for command
+  routes, not a respondent data-rehydration endpoint.
 
 ## 2. Link resolution flow
 
@@ -64,7 +66,7 @@ For an **authenticated link** accessed by a **logged-in actor**:
 `ensure_link_token_access` is the same function called by
 `SurveyAccessResolver._resolve_link`
 (`backend/app/services/submissions/access_resolver.py`) when resolving a link
-token for `POST /submission-sessions`. This means session start now enforces
+token for `POST /submission-session/start`. This means session start now enforces
 the **same authenticated-link checks** as `POST /links/resolve`  -  a
 behavior change from the earlier split implementation. Previously these two
 entry points could diverge; now both go through one shared rule, so an
@@ -130,7 +132,7 @@ recognition-cookie, or IP-observation policy is expanded.
 
 ## 4. Session start flow
 
-`POST /submission-sessions` -> `SessionStarter.start`
+`POST /submission-session/start` -> `SessionStarter.start`
 (`backend/app/services/submissions/session_starter.py`):
 
 1. `SurveyAccessResolver.resolve(db, payload=payload, actor=actor)` resolves
@@ -158,13 +160,13 @@ recognition-cookie, or IP-observation policy is expanded.
    `ck_survey_links_used_at_requires_assignment`.
 7. `commit_with_err_handle(db, contexts=[session])` commits the transaction.
 8. A `PublicSubmissionSessionResponses` is built from the session and grant:
-   `status`, `started_at`, `expires_at`, a `survey` summary (`id`, `title`), a
-   `version` summary (`id`, `version_number`, `compiled_schema`), and an empty
-   `answers` list.
+   `status`, `started_at`, `expires_at`, and `survey_version_id`. It does not
+   return the survey, survey version object, `compiled_schema`, or in-process
+   answers.
 9. The route (`backend/app/api/v1/public.py`,
-   `start_submission_session`) calls `set_submission_session_cookie` on the
-   response to set the HttpOnly resume-token cookie from the raw browser
-   session token, and returns 201.
+   `start_submission_session`) registers `set_submission_session_cookie` so the
+   HttpOnly resume-token cookie is attached to the Flask response, and returns
+   the normal `(body, 201)` route tuple.
 
 **Note on encryption machinery**: the current implementation has **no
 response-envelope, DEK, or KMS logic**. Per-session envelope creation during
@@ -173,26 +175,22 @@ is omitted here as "not yet implemented."
 
 ## 5. Stubbed flows
 
-All four endpoints below live in `backend/app/api/v1/public.py` and are
+All three endpoints below live in `backend/app/api/v1/public.py` and are
 explicitly marked with `TODO(phaseN)` comments. They currently return stable,
 schema-valid placeholder responses with no session-state reads or writes.
 
-### `GET /submission-sessions/current`
+### No public current-session read route
 
-`TODO(phase3)`. Currently returns `build_placeholder_session_response()`
-unconditionally  -  no cookie is read.
+Public mid-session data reads are not part of the respondent API. Cookie-backed
+session lookup should become an internal guard used by answer/event/complete
+commands, not a route that returns in-process encrypted answer state.
 
-**Intended**: read the resume-token
-cookie, hash it, look up the matching `submission_sessions` row, load the
-session's canonical answers, and build the real
-`PublicSubmissionSessionResponses` (including the persisted `answers` list).
-
-### `PUT /submission-sessions/current/answers/<question_node_id>`
+### `PUT /submission-session/answer`
 
 `TODO(phase4)`. Currently parses `SaveSubmissionSessionAnswerRequest` and
 echoes the payload back as a `SubmissionSessionAnswerResponses` with a
 hardcoded `revision_number=1` and `saved_at=datetime.now(UTC)`  -  nothing is
-persisted.
+persisted. `question_node_id` is in the request body.
 
 **Intended**: resolve the response
 envelope/DEK for the session, locate the answer slot for
@@ -201,17 +199,18 @@ insert a new answer revision, and enforce idempotency via
 `client_mutation_id` (a repeat request with the same `client_mutation_id`
 should return the existing revision rather than creating a new one).
 
-### `POST /submission-sessions/current/events/question-viewed`
+### `POST /submission-session/event`
 
-`TODO(phase3)`. Currently parses `QuestionViewedEventRequest` and returns
-`204` with no body  -  nothing is persisted.
+`TODO(phase3)`. Currently parses `SubmissionSessionEventRequest` and returns
+`204` with no body  -  nothing is persisted. The current client event type is
+`question_viewed`.
 
 **Intended**: insert a
 `question_viewed` analytics event row on the core side. This write should be
 non-blocking  -  a failure to record the event must not fail the respondent's
 request.
 
-### `POST /submission-sessions/current/complete`
+### `POST /submission-session/complete`
 
 `TODO(phase5)`. Currently returns
 `CompleteSubmissionSessionResponses(status="completed", completed_at=datetime.now(UTC))`
@@ -239,7 +238,7 @@ the original completion result rather than erroring).
   corrected field name throughout.
 
 - **Session-start / link-resolve unification**  -  prior to
-  the current shared-rule implementation, `POST /submission-sessions` and
+  the current shared-rule implementation, `POST /submission-session/start` and
   `POST /links/resolve` could enforce different rules for authenticated links.
   Both now call the same
   `submission_access_rules.ensure_link_token_access` (section 2), so the

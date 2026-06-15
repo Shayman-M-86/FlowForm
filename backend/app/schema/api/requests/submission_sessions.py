@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.schema.api import limits
 from app.schema.api.requests.helpers import validate_slug
-from app.schema.enums import AnswerFamily, SubmissionAnswerState
+from app.schema.enums import AnswerFamily, SubmissionAnswerState, SubmissionSessionClientEventType
 
 
 class PublicSlugSessionAccess(BaseModel):
@@ -59,6 +59,7 @@ class SaveSubmissionSessionAnswerRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    question_node_id: UUID
     client_mutation_id: UUID
     state: SubmissionAnswerState
     answer_family: AnswerFamily | None = None
@@ -80,9 +81,10 @@ class SaveSubmissionSessionAnswerRequest(BaseModel):
         return self
 
 
-class QuestionViewedEventRequest(BaseModel):
-    """Request body for recording that a respondent viewed a question."""
+class SubmissionSessionEventRequest(BaseModel):
+    """Request body for recording a respondent session event."""
 
     model_config = ConfigDict(extra="forbid")
 
+    event_type: SubmissionSessionClientEventType
     question_node_id: UUID

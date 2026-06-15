@@ -9,7 +9,7 @@ summaries, and schema drafts by hand.
 
 Phase 1 schema work is in place. The subject-access model and session-start
 path are mostly real: link resolution, authenticated-link participant checks,
-subject resolution, and `POST /api/v1/public/submission-sessions` all run
+subject resolution, and `POST /api/v1/public/submission-session/start` all run
 through live services and integration tests. Resume, answer save,
 question-viewed events, completion, response-envelope creation, admin reads,
 frontend incremental saves, and real cryptography are still pending or
