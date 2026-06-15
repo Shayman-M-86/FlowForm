@@ -7,14 +7,18 @@ checklist Phase 3 onward, the `TODO(phase*)` markers in
 ## Status summary
 
 Phase 1 (schema) is done. Phase 2 (API contracts  -  public and admin route
-stubs) is done. Phase 2.5 (subject access model) is mostly done:
+stubs) is done. Phase 2.5 (subject access model) is done for the conservative
+v1 policy:
 `SessionStarter`, `ProjectSubjectResolver`, and `SurveyAccessResolver` are
 real, integration-tested services. The session-start service is real  -  it
 resolves access (public slug or link token), resolves the optional subject
 from server-owned context, binds one survey version, and generates/hashes a
-browser session token. What remains is everything downstream of session
-start: response envelopes, resume, answer revisions, completion, real
-cryptography, admin reads, frontend integration, and hardening.
+browser session token. Anonymous public/general-link sessions do not create
+`project_subjects` rows by default, recognition tokens are consume-only, and
+`subject_ip_observations` remains schema-only until retention/access policy is
+expanded. What remains is everything downstream of session start: response
+envelopes, resume, answer revisions, completion, real cryptography, admin
+reads, frontend integration, and hardening.
 
 ## Phase 3 remainder  -  service skeleton without real crypto
 
@@ -123,31 +127,25 @@ locators and reversible placeholder ciphertext until Phase 6:
 - [ ] IAM/KMS policy documentation
 - [ ] Key-rotation runbook
 
-## Open decisions
+## Deferred policy items
 
 From the session-service open-issues audit:
 
-- **Anonymous-subject-creation policy**  -  `ProjectSubjectResolver` has a
-  `create_anonymous_subject` branch marked `TODO(subject-policy)` that is
-  dead in production (`SessionStarter` always passes `False`). Blocked on a
-  product decision about when anonymous access should create a
-  `project_subjects` row vs. leave `project_subject_id` null. Resolving this
-  unblocks either wiring the flag through `SessionStarter` (with a test) or
-  removing the dead branch.
+- **Anonymous-subject-creation policy**  -  decided for v1: `SessionStarter`
+  always passes `create_anonymous_subject=False`, so anonymous public/general
+  link sessions keep `project_subject_id` null. The explicit resolver branch
+  remains a lower-level helper for future flows that deliberately create an
+  anonymous subject.
 - **Dangling subject reference guard**  -  `ProjectSubjectResolver._require_subject`
   raises `SubjectResolutionError` if a referenced subject can't resolve. This
   is currently FK-guaranteed unreachable. If composite FK coverage is ever
   relaxed, add a focused test that forces the dangling state and asserts the
   error.
-- **`project_subject_identities.create_user_identity` CHECK violation**  -  sets
-  `verification_status='verified'` without `verified_at`, violating
-  `ck_project_subject_identities_verified_at_consistent`. Zero production
-  callers today. Fix (set `verified_at` or default to `unverified`) or delete
-  when identity attachment is implemented.
 - **Recognition-token issuance/rotation/expiry/revocation/cookie policy**  - 
-  still missing (unchecked Phase 2.5 item).
-- **`subject_ip_observations` retention/access policy**  -  still undecided.
+  consume-only in v1. Existing valid tokens may resolve subjects, but runtime
+  issuance, rotation, cookie setting, and revocation endpoints are deferred.
+- **`subject_ip_observations` retention/access policy**  -  schema-only in v1.
+  Do not write runtime observations until retention, access, and abuse/security
+  use cases are explicitly defined.
 - **Respondent identity-upgrade endpoints**  -  deliberately out of v1 scope
   unless product adds a UI for it.
-- **`subject-access-doc-integration-checklist.md`**  -  delete once the Phase
-  2.5 amendment is fully integrated and the checklist is no longer useful.

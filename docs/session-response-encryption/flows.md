@@ -108,10 +108,11 @@ precedence order:
 4. **Anonymous subject creation**  -  else if `create_anonymous_subject=True`:
    `psr.create_subject(db, project_id=project_id)`, returns
    `ResolvedProjectSubject(subject=subject, source="anonymous_created")`.
-   **This branch is dead/unreachable in the live flow today**  - 
+   **This branch is not used by the live v1 session-start flow**  -
    `SessionStarter.start` always calls `resolve(...)` with
-   `create_anonymous_subject=False` (see the `TODO(subject-policy)` comment in
-   `project_subject_resolver.py`).
+   `create_anonymous_subject=False`. Anonymous public/general-link sessions
+   therefore keep `submission_sessions.project_subject_id = NULL` unless a
+   server-owned context resolves a real subject.
 
 5. **None**  -  otherwise, returns `ResolvedProjectSubject(subject=None, source="none")`.
 
@@ -122,9 +123,10 @@ foreign keys should make a dangling `project_subject_id` reference impossible,
 so a miss here indicates a broken invariant rather than a reason to silently
 fall back to an anonymous session.
 
-The open policy decision for when (if ever) anonymous access should create a
-`project_subjects` row  -  i.e., whether/when `create_anonymous_subject=True`
-should be used  -  is tracked in [remaining-work.md](remaining-work.md).
+V1 policy: anonymous access does not create `project_subjects` rows by default.
+The explicit `create_anonymous_subject=True` branch remains available for future
+flows that deliberately need a project-scoped subject before identity,
+recognition-cookie, or IP-observation policy is expanded.
 
 ## 4. Session start flow
 
@@ -247,6 +249,6 @@ the original completion result rather than erroring).
 
 - **Anonymous subject creation policy**  -  `ProjectSubjectResolver`'s
   `create_anonymous_subject=True` branch (section 3, step 4) exists in code
-  but is unreachable from `SessionStarter.start`. The decision of whether and
-  when to create a `project_subjects` row for anonymous respondents remains
-  open; see [remaining-work.md](remaining-work.md).
+  but is not used by `SessionStarter.start`. V1 keeps anonymous public/general
+  link sessions as `project_subject_id = NULL`; creating anonymous subject rows
+  is reserved for a future flow with explicit product policy.

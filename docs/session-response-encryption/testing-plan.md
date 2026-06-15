@@ -54,7 +54,7 @@ Expired/inactive link rejection is covered at the access-resolver layer (see
   there's only one store, so this can't be tested end-to-end yet)
 * an envelope-creation failure does not expose a broken session
 
-### 37.4 Subject access tests  -  covered; one item blocked on policy
+### 37.4 Subject access tests  -  covered for v1 policy
 
 `backend/tests/integration/core/test_project_subject_resolver.py` covers:
 
@@ -72,8 +72,10 @@ Expired/inactive link rejection is covered at the access-resolver layer (see
   (`test_resolve_returns_none_when_no_context_matches`)
 * anonymous-subject creation *when explicitly requested*
   (`test_resolve_creates_anonymous_subject_when_requested`)  -  this exercises
-  the resolver's `create_anonymous_subject=True` path directly; it is not
-  reachable through `SessionStarter` today (see below)
+  the resolver's `create_anonymous_subject=True` path directly; it is not used
+  by `SessionStarter` under the conservative v1 policy
+* `project_subject_identities.create_user_identity` stores the authenticated
+  user's normalized email, `verified_at`, and matching verified status
 
 `backend/tests/integration/core/test_survey_access_resolver.py` covers
 link/slug resolution that subject access depends on:
@@ -88,18 +90,16 @@ link/slug resolution that subject access depends on:
 
 **Remaining:**
 
-* **anonymous-subject creation by policy**  -  the resolver supports it and is
-  unit/integration-tested in isolation, but `SessionStarter` never sets
-  `create_anonymous_subject=True`. Wiring this through end-to-end is blocked
-  on the open product-policy decision  -  see
-  [remaining-work.md](remaining-work.md) open decisions
+* **anonymous-subject creation by policy**  -  decided for v1: `SessionStarter`
+  keeps `create_anonymous_subject=False`, so anonymous public/general-link
+  sessions keep `project_subject_id` null
 * assigned-email links requiring a matching authenticated identity  -  no test
   found; identity-attachment is not yet implemented
 * identity attachment conflicts / revocation-without-deleting-history /
   cross-project reference rejection / `subject_ip_observations`
-  retention  -  no dedicated tests found; cross-project FK rejection is largely
-  enforced by the schema (see the session-service open-issues audit item)
-  rather than exercised by an integration test
+  retention  -  no dedicated runtime tests found; IP observations are
+  schema-only in v1, and cross-project FK rejection is largely enforced by the
+  schema rather than exercised by an integration test
 * expired link access  -  `LinkInactiveError` is covered for `is_active=False`;
   an explicit expiry-based rejection test was not found
 

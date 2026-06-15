@@ -54,6 +54,7 @@ def test_start_public_slug_session_creates_anonymous_core_session(
     assert saved.survey_version_id == survey_version.id
     assert saved.response_store_id == survey.default_response_store_id
     assert saved.link_id is None
+    # V1 policy: anonymous public sessions do not create project_subjects rows.
     assert saved.project_subject_id is None
     assert saved.browser_session_token_hash == hash_browser_session_token(raw_browser_session_token)
     assert saved.expires_at > saved.started_at

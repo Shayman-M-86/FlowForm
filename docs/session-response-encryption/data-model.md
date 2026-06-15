@@ -26,9 +26,14 @@ the ground truth**. The discrepancies found are called out explicitly below.
 
 ### `project_subjects`
 
-The pseudonymous, project-scoped participant record. Every respondent
-interaction (sessions, identities, participants, IP observations) is anchored
-to a `project_subjects` row, never to a `users` row directly.
+The pseudonymous, project-scoped participant record. When a respondent has a
+stable subject identity, sessions, identities, participants, and IP observations
+anchor to a `project_subjects` row, never to a `users` row directly.
+
+V1 policy: anonymous public/general-link sessions do not create
+`project_subjects` rows by default. A session may leave
+`submission_sessions.project_subject_id` null unless an assigned link,
+authenticated-user identity, or existing recognition token resolves a subject.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -165,6 +170,10 @@ is **derived** by joining `project_participants.identity_id` ->
 Reusable subject-recognition tokens. Raw tokens are never stored  -  only a
 SHA-256 hash.
 
+V1 policy: recognition tokens are consume-only. Existing valid tokens can
+resolve a subject and update `last_used_at`, but the live session-start flow
+does not issue, rotate, revoke, or set recognition cookies yet.
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID PK | default `gen_random_uuid()` |
@@ -197,6 +206,9 @@ Constraints:
 
 Append-only IP metadata, tied to a subject and/or a session. **Never copied
 to the response database**  -  this is identity-bearing core metadata.
+
+V1 policy: this table is schema-only. Runtime writes are deferred until
+retention, access, and abuse/security use cases are explicitly defined.
 
 | Column | Type | Notes |
 |---|---|---|

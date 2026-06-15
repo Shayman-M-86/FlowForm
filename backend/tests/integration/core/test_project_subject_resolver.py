@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.repositories.core import project_subject_tokens
+from app.repositories.core import project_subject_identities, project_subject_tokens
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.project_subject import (
     ProjectSubject,
@@ -88,6 +88,30 @@ def test_resolve_uses_actor_active_user_identity(
     assert resolved.source == "authenticated_user"
     assert resolved.subject is not None
     assert resolved.subject.id == subject.id
+
+
+def test_create_user_identity_sets_verified_email_fields(
+    db_session: Session,
+    project: Project,
+    user: User,
+) -> None:
+    subject = _make_subject(db_session, project=project)
+    current = datetime.now(UTC)
+
+    identity = project_subject_identities.create_user_identity(
+        db_session,
+        project_id=project.id,
+        project_subject_id=subject.id,
+        user=user,
+        now=current,
+    )
+
+    assert identity.identity_type == "authenticated_user"
+    assert identity.user_id == user.id
+    assert identity.normalized_email == user.email.strip().lower()
+    assert identity.verification_status == "verified"
+    assert identity.verified_at == current
+    assert identity.attached_at == current
 
 
 def test_resolve_ignores_actor_without_identity(

@@ -48,14 +48,19 @@ def create_user_identity(
     *,
     project_id: int,
     project_subject_id: UUID,
-    user_id: int,
+    user: User,
+    now: datetime | None = None,
 ) -> ProjectSubjectIdentity:
+    current = now or datetime.now(UTC)
     identity = ProjectSubjectIdentity(
         project_id=project_id,
         project_subject_id=project_subject_id,
         identity_type="authenticated_user",
-        user_id=user_id,
+        user_id=user.id,
+        normalized_email=user.email.strip().lower(),
         verification_status="verified",
+        verified_at=current,
+        attached_at=current,
     )
     db.add(identity)
     flush_with_err_handle(db, contexts=[identity])

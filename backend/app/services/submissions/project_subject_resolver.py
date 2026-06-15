@@ -60,10 +60,8 @@ class ProjectSubjectResolver:
                 pstr.mark_used(db, token=token)
                 return ResolvedProjectSubject(subject=subject, source="recognition_token")
 
-        # TODO(subject-policy): SessionStarter always passes create_anonymous_subject=False,
-        # so this branch is currently unreachable in the live flow. Resolve the open
-        # checklist item "when anonymous access should create a project_subjects row
-        # versus leaving project_subject_id null" before relying on it.
+        # V1 policy: SessionStarter keeps anonymous public/general-link sessions
+        # unassigned. This branch remains an explicit lower-level helper path.
         if create_anonymous_subject:
             subject = psr.create_subject(db, project_id=project_id)
             return ResolvedProjectSubject(subject=subject, source="anonymous_created")
