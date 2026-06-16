@@ -1,8 +1,8 @@
 """Resolve the stable ProjectSubject for a respondent session.
 
-Docs: docs/Policies and Services/Flows/shared/logged-in-reconciliation.md
+Docs: docs/Policies and Services/Flows/shared/subject-resolution.md
+      docs/Policies and Services/Flows/shared/logged-in-reconciliation.md
       docs/Policies and Services/core-policies.md — Recognition token policy
-      docs/Policies and Services/Logical-flow.md
 """
 from __future__ import annotations
 
@@ -15,22 +15,25 @@ from app.domain.guards import ensure_present
 from app.repositories.core import project_subject_identities as sub_id
 from app.repositories.core import project_subjects as subjects
 from app.schema.orm.core.project_subject import ProjectSubject
-from app.schema.orm.core.survey_access import SurveyLink
-from app.schema.orm.core.user import User
 from app.services.public_submissions.core.subject_token import SubjectTokenService
-from app.services.results import ResolvedProjectSubject
+from app.services.results import SubjectResolutionResult
 
 
 class SubjectResolver:
     """Resolve the session's ProjectSubject using the priority waterfall.
 
-    Priority:
-      1. Assigned link subject (private / authenticated)
-      2. Authenticated user identity + recognition token reconciliation
-      3. Recognition token subject (anonymous returning browser)
-      4. Newly created anonymous subject (no token, no identity)
+    Priority for open-access (public slug / general link):
+      1. Logged-in identity subject
+      2. Recognition token subject
+      3. New anonymous subject
 
-    Docs: core-policies.md — Subject resolution order
+    Priority for assigned-access (private / authenticated link):
+      1. Assigned subject (always wins)
+      2. Token used only for continuity cleanup
+
+    Returns SubjectResolutionResult — callers apply merge writes and token
+    mechanics before committing.
+    Docs: shared/subject-resolution.md
     """
 
     def __init__(self, *, token_service: SubjectTokenService | None = None) -> None:
@@ -41,15 +44,30 @@ class SubjectResolver:
         db: Session,
         *,
         project_id: int,
-        link: SurveyLink | None,
-        actor: User | None,
-        recognition_token: str | None = None,
-    ) -> ResolvedProjectSubject:
-        """Full waterfall: assigned → open-access reconciliation."""
-        if link is not None and link.assigned_participant_id is not None:
-            return self.resolve_assigned_subject(db, project_id=project_id, link=link)
+        access_method: str,
+        assigned_subject_id: UUID | None,
+        token_subject_id: UUID | None,
+        canonical_token_subject_id: UUID | None,
+        actor_user_id: int | None,
+    ) -> SubjectResolutionResult:
+        """Route to assigned or open-access resolution based on access method.
+
+        Docs: shared/subject-resolution.md — Service responsibilities
+        """
+        if access_method in ("private_link", "authenticated_assigned_link"):
+            return self.resolve_assigned_subject(
+                db,
+                project_id=project_id,
+                assigned_subject_id=assigned_subject_id,
+                token_subject_id=token_subject_id,
+                canonical_token_subject_id=canonical_token_subject_id,
+            )
         return self.resolve_for_open_access(
-            db, project_id=project_id, actor=actor, recognition_token=recognition_token
+            db,
+            project_id=project_id,
+            token_subject_id=token_subject_id,
+            canonical_token_subject_id=canonical_token_subject_id,
+            actor_user_id=actor_user_id,
         )
 
     def resolve_assigned_subject(
@@ -57,108 +75,187 @@ class SubjectResolver:
         db: Session,
         *,
         project_id: int,
-        link: SurveyLink,
-    ) -> ResolvedProjectSubject:
-        """Resolve the assigned participant's ProjectSubject from a private/authenticated link.
+        assigned_subject_id: UUID | None,
+        token_subject_id: UUID | None,
+        canonical_token_subject_id: UUID | None,
+    ) -> SubjectResolutionResult:
+        """Assigned subject is always canonical. Token used only for continuity cleanup.
 
-        Errors if the link has no assigned_participant_id or the subject row is missing.
-        Docs: Private-link-access-Flow.md §6, Authenticated-link-access-Flow.md §8
+        Docs: shared/subject-resolution.md — Assigned-access subject resolution
         """
-        participant = ensure_present(link.assigned_participant, error=SubjectResolutionError())
-        subject = self._require_subject(db, project_id=project_id, subject_id=participant.project_subject_id)
-        return ResolvedProjectSubject(subject=subject, source="assigned_link")
+        if assigned_subject_id is None:
+            raise SubjectResolutionError()
+
+        assigned = self._require_subject(db, project_id=project_id, subject_id=assigned_subject_id)
+        canonical_assigned = self._resolve_to_canonical(db, project_id=project_id, subject=assigned)
+
+        if token_subject_id is None:
+            return SubjectResolutionResult(
+                final_subject_id=canonical_assigned.id,
+                subject_source="assigned_link",
+                token_action="issue",
+            )
+
+        # Resolve token candidate to canonical before comparing.
+        effective_token_subject_id = canonical_token_subject_id or token_subject_id
+        if effective_token_subject_id == canonical_assigned.id:
+            # Token already points at assigned canonical — keep or rotate to canonical.
+            if token_subject_id == canonical_assigned.id:
+                return SubjectResolutionResult(
+                    final_subject_id=canonical_assigned.id,
+                    subject_source="assigned_link",
+                    token_action="keep",
+                )
+            # Token points at a non-canonical that resolves to the same canonical.
+            return SubjectResolutionResult(
+                final_subject_id=canonical_assigned.id,
+                subject_source="assigned_link",
+                token_action="rotate",
+            )
+
+        # Token canonical differs from assigned subject — merge token into assigned.
+        return SubjectResolutionResult(
+            final_subject_id=canonical_assigned.id,
+            subject_source="assigned_link",
+            token_action="rotate",
+            merge_subject_id=effective_token_subject_id,
+            merge_into_subject_id=canonical_assigned.id,
+        )
 
     def resolve_for_open_access(
         self,
         db: Session,
         *,
         project_id: int,
-        actor: User | None,
-        recognition_token: str | None,
-    ) -> ResolvedProjectSubject:
-        """Resolve subject for public slug / general link access.
+        token_subject_id: UUID | None,
+        canonical_token_subject_id: UUID | None,
+        actor_user_id: int | None,
+    ) -> SubjectResolutionResult:
+        """Public slug / general link resolution.
 
-        Runs logged-in reconciliation first, then falls back to token lookup,
-        then creates a new anonymous subject.
-        Docs: shared/logged-in-reconciliation.md, Logical-flow.md
+        Authority: identity > token > new anonymous subject.
+        Docs: shared/subject-resolution.md — Open-access subject resolution
         """
-        token_subject: ProjectSubject | None = None
-        if recognition_token:
-            token_subject = self._token_service.lookup(
-                db, project_id=project_id, raw_token=recognition_token
-            )
+        # Resolve token candidate to canonical upfront.
+        effective_token_subject_id: UUID | None = None
+        if token_subject_id is not None:
+            effective_token_subject_id = canonical_token_subject_id or token_subject_id
 
-        if actor is not None:
-            return self.reconcile_identity_and_token(
+        if actor_user_id is not None:
+            return self._reconcile_identity_and_token(
                 db,
                 project_id=project_id,
-                actor=actor,
-                token_subject=token_subject,
+                actor_user_id=actor_user_id,
+                token_subject_id=token_subject_id,
+                effective_token_subject_id=effective_token_subject_id,
             )
 
-        if token_subject is not None:
-            return ResolvedProjectSubject(subject=token_subject, source="recognition_token")
+        if effective_token_subject_id is not None:
+            return SubjectResolutionResult(
+                final_subject_id=effective_token_subject_id,
+                subject_source="recognition_token",
+                token_action="mark_used",
+            )
 
-        subject = subjects.create_subject(db, project_id=project_id)
-        return ResolvedProjectSubject(subject=subject, source="anonymous_created")
+        new_subject = subjects.create_subject(db, project_id=project_id)
+        return SubjectResolutionResult(
+            final_subject_id=new_subject.id,
+            subject_source="anonymous_created",
+            token_action="issue",
+        )
 
-    def reconcile_identity_and_token(
+    def _reconcile_identity_and_token(
         self,
         db: Session,
         *,
         project_id: int,
-        actor: User,
-        token_subject: ProjectSubject | None,
-    ) -> ResolvedProjectSubject:
-        """Reconcile a logged-in user identity against an existing token subject.
+        actor_user_id: int,
+        token_subject_id: UUID | None,
+        effective_token_subject_id: UUID | None,
+    ) -> SubjectResolutionResult:
+        """Reconcile logged-in user identity against token candidate.
 
-        Implements the 7-case table from Logical-flow.md:
-
-          no identity + no token  → create subject, create user identity
-          no identity + token     → attach user identity to token subject
-          identity + no token     → use identity subject
-          identity + same token   → use identity subject
-          identity + diff token   → merge token subject into identity subject
-                                    via canonical_subject_id; rotate token
-
-        Docs: shared/logged-in-reconciliation.md, core-policies.md — Token/identity conflict
+        Implements the 7-case table from shared/logged-in-reconciliation.md.
+        No identity writes or token side effects — returns instructions only.
         """
-        identity = sub_id.get_active_user_identity(db, project_id=project_id, user_id=actor.id)
+        identity = sub_id.get_active_user_identity(
+            db, project_id=project_id, user_id=actor_user_id
+        )
 
         if identity is None:
-            if token_subject is not None:
-                # Attach the logged-in user to the existing token subject.
-                sub_id.create_user_identity(
-                    db,
-                    project_id=project_id,
-                    project_subject_id=token_subject.id,
-                    user=actor,
+            if effective_token_subject_id is not None:
+                # Attach identity to existing token subject — caller writes identity row.
+                return SubjectResolutionResult(
+                    final_subject_id=effective_token_subject_id,
+                    subject_source="authenticated_user",
+                    token_action="mark_used",
+                    needs_identity_write=True,
                 )
-                self._token_service.rotate(db, project_id=project_id, subject=token_subject)
-                return ResolvedProjectSubject(subject=token_subject, source="authenticated_user")
-            else:
-                # Brand new: create subject and attach identity.
-                subject = subjects.create_subject(db, project_id=project_id)
-                sub_id.create_user_identity(
-                    db, project_id=project_id, project_subject_id=subject.id, user=actor
-                )
-                return ResolvedProjectSubject(subject=subject, source="authenticated_user")
+            # No identity, no token — create new subject, issue token, create identity.
+            new_subject = subjects.create_subject(db, project_id=project_id)
+            return SubjectResolutionResult(
+                final_subject_id=new_subject.id,
+                subject_source="authenticated_user",
+                token_action="issue",
+                needs_identity_write=True,
+            )
 
-        # Identity exists — it is canonical.
+        # Identity exists — resolve it to canonical.
         identity_subject = self._require_subject(
             db, project_id=project_id, subject_id=identity.project_subject_id
         )
+        canonical_identity = self._resolve_to_canonical(
+            db, project_id=project_id, subject=identity_subject
+        )
 
-        if token_subject is not None and token_subject.id != identity_subject.id:
-            # Token subject differs from identity subject — merge it in.
-            subjects.set_canonical_subject(
-                db, subject=token_subject, canonical=identity_subject
+        if effective_token_subject_id is None:
+            return SubjectResolutionResult(
+                final_subject_id=canonical_identity.id,
+                subject_source="authenticated_user",
+                token_action="issue",
             )
-            self._token_service.rotate(db, project_id=project_id, subject=identity_subject)
 
-        return ResolvedProjectSubject(subject=identity_subject, source="authenticated_user")
+        if effective_token_subject_id == canonical_identity.id:
+            # Token canonical same as identity canonical.
+            if token_subject_id == canonical_identity.id:
+                return SubjectResolutionResult(
+                    final_subject_id=canonical_identity.id,
+                    subject_source="authenticated_user",
+                    token_action="mark_used",
+                )
+            # Token points at non-canonical that resolves to identity — rotate to canonical.
+            return SubjectResolutionResult(
+                final_subject_id=canonical_identity.id,
+                subject_source="authenticated_user",
+                token_action="rotate",
+            )
 
-    def _require_subject(self, db: Session, *, project_id: int, subject_id: UUID) -> ProjectSubject:
+        # Token canonical differs from identity canonical — merge token subject into identity.
+        return SubjectResolutionResult(
+            final_subject_id=canonical_identity.id,
+            subject_source="authenticated_user",
+            token_action="rotate",
+            merge_subject_id=effective_token_subject_id,
+            merge_into_subject_id=canonical_identity.id,
+        )
+
+    def _resolve_to_canonical(
+        self,
+        db: Session,
+        *,
+        project_id: int,
+        subject: ProjectSubject,
+    ) -> ProjectSubject:
+        """Follow canonical_subject_id one level. Doc: do not create canonical chains."""
+        if subject.canonical_subject_id is None:
+            return subject
+        return self._require_subject(
+            db, project_id=project_id, subject_id=subject.canonical_subject_id
+        )
+
+    def _require_subject(
+        self, db: Session, *, project_id: int, subject_id: UUID
+    ) -> ProjectSubject:
         """Load a subject that must exist — a miss is a broken server invariant."""
         return ensure_present(
             subjects.get_subject(db, project_id=project_id, subject_id=subject_id),

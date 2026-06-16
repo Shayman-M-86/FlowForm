@@ -140,7 +140,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json; print(json.load(sys.stdin).get('file_path',''))\"); case \"$FILE\" in *.py) if [ -x /tmp/flowform-venv/bin/ruff ]; then VIRTUAL_ENV=/tmp/flowform-venv /tmp/flowform-venv/bin/ruff check --fix \"$FILE\" 2>/dev/null; fi ;; esac"
+            "command": "python3 -c \"\nimport sys, json, subprocess, os\ndata = json.load(sys.stdin)\nf = data.get('tool_input', {}).get('file_path', '')\nif not f.endswith('.py'): sys.exit(0)\nbackend = '/home/shayman86/my-repos/FlowForm/backend'\nif not f.startswith(backend): sys.exit(0)\nsubprocess.run(['uv', 'run', '--extra', 'dev', 'python', '-m', 'py_compile', f], cwd=backend, capture_output=True)\nsubprocess.run(['uv', 'run', '--extra', 'dev', 'ruff', 'check', '--fix', '--unfixable', 'F401,F811', f], cwd=backend, capture_output=True)\n\"",
+            "statusMessage": "py_compile + ruff --fix"
           }
         ]
       }

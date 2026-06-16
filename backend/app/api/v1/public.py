@@ -134,9 +134,17 @@ def verify_authenticated_link_participant():
     payload = parse(ResolveTokenRequest, request)
     core_db = get_core_db()
     user = users_service.get_user_by_sub(db=core_db, auth0_user_id=auth.get_current_user_sub())
-    link = survey_resolve_service.verify_authenticated_link_participant(core_db, payload=payload, actor=user)
-    response = PublicLinkResponses.model_validate(link)
-    return response.model_dump(mode="json"), 200
+    result = survey_resolve_service.verify_authenticated_link_participant(
+        core_db,
+        payload=payload,
+        actor=user,
+        recognition_token=get_recognition_token(),
+    )
+    response = PublicLinkResponses.model_validate(result.link)
+    flask_response = response.model_dump(mode="json"), 200
+    if result.raw_recognition_token is not None:
+        set_recognition_cookie(result.raw_recognition_token)
+    return flask_response
 
 
 @openapi_route(

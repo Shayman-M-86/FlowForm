@@ -10,7 +10,13 @@ from app.repositories import surveys_repo as sr
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
-from app.services.results import SubmissionAccessGrant
+from app.services.results import SubmissionAccessGrant, SubmissionAccessMethod
+
+_LINK_ACCESS_METHODS: dict[str, SubmissionAccessMethod] = {
+    "general": "general_link",
+    "private": "private_link",
+    "authenticated": "authenticated_assigned_link",
+}
 
 
 class SurveyAccessResolver:
@@ -41,7 +47,19 @@ class SurveyAccessResolver:
             survey_id=survey.id,
             project_id=survey.project_id,
         )
-        return SubmissionAccessGrant(survey=survey, published_version=published_version)
+        return SubmissionAccessGrant(
+            access_method="public_slug",
+            project_id=survey.project_id,
+            survey_id=survey.id,
+            survey_version_id=published_version.id,
+            link_id=None,
+            assigned_subject_id=None,
+            requires_auth=False,
+            is_single_use=False,
+            survey=survey,
+            published_version=published_version,
+            link=None,
+        )
 
     def _resolve_link(self, db: Session, *, link: SurveyLink, actor: User | None) -> SubmissionAccessGrant:
         survey = ensure_present(
@@ -56,4 +74,21 @@ class SurveyAccessResolver:
             survey_id=survey.id,
             project_id=survey.project_id,
         )
-        return SubmissionAccessGrant(survey=survey, published_version=published_version, link=link)
+        assigned_subject_id = (
+            link.assigned_participant.project_subject_id
+            if link.assigned_participant is not None
+            else None
+        )
+        return SubmissionAccessGrant(
+            access_method=_LINK_ACCESS_METHODS[link.link_type],
+            project_id=survey.project_id,
+            survey_id=survey.id,
+            survey_version_id=published_version.id,
+            link_id=link.id,
+            assigned_subject_id=assigned_subject_id,
+            requires_auth=link.link_type == "authenticated",
+            is_single_use=link.is_single_use,
+            survey=survey,
+            published_version=published_version,
+            link=link,
+        )
