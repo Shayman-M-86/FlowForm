@@ -7,8 +7,8 @@ from app.services.content import ContentService
 from app.services.members import MembersService
 from app.services.participants import ParticipantService
 from app.services.projects import ProjectService
-from app.services.public_links import SurveyLinkService
 from app.services.roles import RolesService
+from app.services.survey_links import SurveyLinkService
 from app.services.surveys import SurveyService
 from app.services.users import UserService
 

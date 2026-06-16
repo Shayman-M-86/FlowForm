@@ -10,8 +10,10 @@ from app.domain.errors import (
     LinkInactiveError,
     LinkNotFoundError,
     LinkParticipantVerificationRequiredError,
+    PrivateSurveyAssignedEmailRequiredError,
 )
 from app.schema.orm.core.project_subject import ProjectSubjectIdentity
+from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
 
@@ -52,3 +54,13 @@ def ensure_actor_matches_participant_identity(*, identity: ProjectSubjectIdentit
 def ensure_survey_id_matches(*, link: SurveyLink, survey_id: int) -> None:
     if link.survey_id != survey_id:
         raise LinkNotFoundError()
+
+
+def ensure_link_allowed_by_survey_visibility(*, survey: Survey, link: SurveyLink) -> None:
+    """A general (unassigned) link cannot be used to access a private survey.
+
+    Enforced at resolve/session-start time so that a survey visibility change
+    after link creation is still honoured.
+    """
+    if survey.visibility == "private" and link.link_type == "general":
+        raise PrivateSurveyAssignedEmailRequiredError()

@@ -528,8 +528,16 @@ CREATE TABLE survey_membership_roles (
 
 CREATE TABLE project_subjects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+
+    project_id BIGINT NOT NULL
+        REFERENCES projects(id) ON DELETE CASCADE,
+
     subject_code TEXT NOT NULL,
+
+    -- If null, this row is the canonical subject.
+    -- If set, this row is an alias/merged subject pointing to the canonical subject.
+    canonical_subject_id UUID NULL,
+
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT uq_project_subjects_project_id_id
@@ -543,9 +551,23 @@ CREATE TABLE project_subjects (
         CHECK (
             subject_code = btrim(subject_code)
             AND char_length(subject_code) BETWEEN 1 AND 128
-        )
+        ),
+
+    CONSTRAINT ck_project_subjects_not_self_canonical
+        CHECK (
+            canonical_subject_id IS NULL
+            OR canonical_subject_id <> id
+        ),
+
+    CONSTRAINT fk_project_subjects_canonical_subject
+        FOREIGN KEY (project_id, canonical_subject_id)
+        REFERENCES project_subjects(project_id, id)
+        ON DELETE RESTRICT
 );
 
+CREATE INDEX ix_project_subjects_canonical_subject_id
+    ON project_subjects(project_id, canonical_subject_id)
+    WHERE canonical_subject_id IS NOT NULL;
 -- Revocable identities for known subjects.
 CREATE TABLE project_subject_identities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

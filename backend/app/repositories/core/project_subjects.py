@@ -41,6 +41,15 @@ def set_subject_code(db: Session, *, subject: ProjectSubject, subject_code: str)
     return subject
 
 
+def set_canonical_subject(
+    db: Session, *, subject: ProjectSubject, canonical: ProjectSubject
+) -> ProjectSubject:
+    """Point subject to canonical as a merged/alias row. canonical must be in the same project."""
+    subject.canonical_subject_id = canonical.id
+    flush_with_err_handle(db, contexts=[subject])
+    return subject
+
+
 def delete_subject(db: Session, *, subject: ProjectSubject) -> None:
     db.delete(subject)
     flush_with_err_handle(db, contexts=[subject])

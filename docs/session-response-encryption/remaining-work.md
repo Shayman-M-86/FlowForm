@@ -57,16 +57,14 @@ locators and reversible placeholder ciphertext until Phase 6:
 - [ ] AAD builder
 
 **`public.py` placeholders to replace**
-- [ ] `public.py:165` `TODO(phase3)`  -  current-session route returns a
-      placeholder; needs a real session lookup (via the resume service)
-- [ ] `public.py:203` `TODO(phase3)`  -  question-viewed event route is a
+- [ ] `public.py:185` `TODO(phase3)`  -  question-viewed event route is a
       placeholder; needs real persistence via the core event repository
 
 ## Phase 4-5
 
 ### Phase 4  -  answer revision mechanics
 - [ ] Validate answers against the frozen survey version
-      (`public.py:179` `TODO(phase4)`)
+      (`public.py:161` `TODO(phase4)`)
 - [ ] First-save: derive/fake `answer_locator`, create `response_answers`,
       create revision 1, set `latest_revision_id`, record `answer_saved`
       event after the response write commits
@@ -80,7 +78,7 @@ locators and reversible placeholder ciphertext until Phase 6:
 
 ### Phase 5  -  completion and session lifecycle
 - [ ] Question-viewed events
-- [ ] Completion (`public.py:218` `TODO(phase5)`): validate required
+- [ ] Completion (`public.py:200` `TODO(phase5)`): validate required
       canonical answers, set status to `completed`, set `completed_at`,
       reject further respondent edits
 - [ ] Abandonment/expiry: reject writes to expired sessions, provide a

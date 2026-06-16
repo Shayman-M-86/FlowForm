@@ -3,7 +3,11 @@ from logging import getLogger
 
 from flask import Blueprint, request
 
-from app.api.utils.submission_session_cookie import set_submission_session_cookie
+from app.api.utils.submission_session_cookie import (
+    get_recognition_token,
+    set_recognition_cookie,
+    set_submission_session_cookie,
+)
 from app.api.utils.validation import parse, parse_query
 from app.core.extensions import auth
 from app.db.context import get_core_db
@@ -27,9 +31,8 @@ from app.schema.api.responses.surveys import (
     SurveyResponses,
     SurveyVersionResponses,
 )
-from app.services.public_links import SurveyLinkService
-from app.services.public_surveys import PublicSurveyService
-from app.services.submissions.session_starter import SessionStarter
+from app.services.public_submissions.api.session_management import SessionManagementService
+from app.services.public_submissions.api.survey_resolve import SurveyResolveService
 from app.services.users import UserService
 
 logger = getLogger(__name__)
@@ -37,10 +40,8 @@ logger = getLogger(__name__)
 public_bp = Blueprint("public_v1", __name__)
 
 users_service = UserService()
-survey_link_service = SurveyLinkService()
-
-public_survey_service = PublicSurveyService()
-session_starter = SessionStarter()
+survey_resolve_service = SurveyResolveService()
+session_management_service = SessionManagementService()
 
 
 @openapi_route(
@@ -55,7 +56,7 @@ def list_public_surveys():
     params = parse_query(ListPublicSurveysRequest, request)
     core_db = get_core_db()
 
-    result = public_survey_service.list_public_surveys(core_db, page=params.page, page_size=params.page_size)
+    result = survey_resolve_service.list_public_surveys(core_db, page=params.page, page_size=params.page_size)
     response = PaginatedPublicSurveysResponses(
         items=[SurveyResponses.model_validate(s) for s in result.surveys],
         total=result.total,
@@ -75,7 +76,7 @@ def list_public_surveys():
 def get_public_survey(public_slug: str):
     core_db = get_core_db()
 
-    result = public_survey_service.get_public_survey(core_db, public_slug=public_slug)
+    result = survey_resolve_service.get_public_survey(core_db, public_slug=public_slug)
     response = PublicSurveyResponses(
         survey=SurveyResponses.model_validate(result.survey),
         published_version=(
@@ -105,7 +106,7 @@ def resolve_link():
 
     current_sub = auth.get_optional_current_user_sub()
     user = users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub) if current_sub is not None else None
-    result = survey_link_service.resolve_link(core_db, payload=payload, actor=user)
+    result = survey_resolve_service.resolve_link(core_db, payload=payload, actor=user)
     response = ResolveLinkResponses(
         link=PublicLinkResponses.model_validate(result.link),
         survey=SurveyResponses.model_validate(result.survey),
@@ -133,7 +134,7 @@ def verify_authenticated_link_participant():
     payload = parse(ResolveTokenRequest, request)
     core_db = get_core_db()
     user = users_service.get_user_by_sub(db=core_db, auth0_user_id=auth.get_current_user_sub())
-    link = survey_link_service.verify_authenticated_link_participant(core_db, payload=payload, actor=user)
+    link = survey_resolve_service.verify_authenticated_link_participant(core_db, payload=payload, actor=user)
     response = PublicLinkResponses.model_validate(link)
     return response.model_dump(mode="json"), 200
 
@@ -153,8 +154,15 @@ def start_submission_session():
     core_db = get_core_db()
     current_sub = auth.get_optional_current_user_sub()
     user = users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub) if current_sub is not None else None
-    response, raw_browser_session_token = session_starter.start(core_db, payload=payload, actor=user)
+    response, raw_browser_session_token, raw_recognition_token = session_management_service.start_session(
+        core_db,
+        payload=payload,
+        actor=user,
+        recognition_token=get_recognition_token(),
+    )
     set_submission_session_cookie(raw_browser_session_token)
+    if raw_recognition_token is not None:
+        set_recognition_cookie(raw_recognition_token)
     return response.model_dump(mode="json"), 201
 
 

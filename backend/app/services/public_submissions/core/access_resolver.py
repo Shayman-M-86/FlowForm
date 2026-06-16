@@ -1,3 +1,11 @@
+"""Resolve respondent access to a survey via public slug or link token.
+
+Docs: docs/Policies and Services/Flows/Public-slug-flow.md
+      docs/Policies and Services/Flows/General-Link-Flow.md
+      docs/Policies and Services/Flows/Private-link-access-Flow.md
+      docs/Policies and Services/Flows/Authenticated-link-access-Flow.md
+      docs/Policies and Services/Flows/shared/resolve-link-token.md
+"""
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
@@ -13,8 +21,13 @@ from app.schema.orm.core.user import User
 from app.services.results import SubmissionAccessGrant
 
 
-class SurveyAccessResolver:
-    """Resolve public-slug or link-token access for respondent session starts."""
+class AccessResolver:
+    """Resolve public-slug or link-token access into a validated SubmissionAccessGrant.
+
+    Shared entry point for both survey resolve (preview) and session start.
+    Checks: link state, link type, survey visibility, published version.
+    Does NOT resolve subject or token — that is SubjectResolver's job.
+    """
 
     def resolve(
         self,
@@ -23,14 +36,19 @@ class SurveyAccessResolver:
         payload: StartSubmissionSessionRequest,
         actor: User | None,
     ) -> SubmissionAccessGrant:
+        """Route to public-slug or link-token resolution based on access type."""
         access = payload.access
         if access.type == "public_slug":
-            return self._resolve_public_slug(db, public_slug=access.public_slug)
+            return self.resolve_public_slug(db, public_slug=access.public_slug)
 
         link = ensure_present(plr.resolve_token(db, access.token), error=LinkNotFoundError())
-        return self._resolve_link(db, link=link, actor=actor)
+        return self.resolve_link_token(db, link=link, actor=actor)
 
-    def _resolve_public_slug(self, db: Session, *, public_slug: str) -> SubmissionAccessGrant:
+    def resolve_public_slug(self, db: Session, *, public_slug: str) -> SubmissionAccessGrant:
+        """Validate slug, check visibility=public, check published version.
+
+        Docs: Public-slug-flow.md §1
+        """
         survey = ensure_present(
             sr.get_by_public_slug(db, public_slug=public_slug),
             error=SurveyNotFoundBySlugError(),
@@ -43,7 +61,18 @@ class SurveyAccessResolver:
         )
         return SubmissionAccessGrant(survey=survey, published_version=published_version)
 
-    def _resolve_link(self, db: Session, *, link: SurveyLink, actor: User | None) -> SubmissionAccessGrant:
+    def resolve_link_token(
+        self,
+        db: Session,
+        *,
+        link: SurveyLink,
+        actor: User | None,
+    ) -> SubmissionAccessGrant:
+        """Run all link state checks, fetch survey, check published version.
+
+        Shared by General, Private, Authenticated flows.
+        Docs: shared/resolve-link-token.md
+        """
         survey = ensure_present(
             sr.get_survey(db, project_id=link.project_id, survey_id=link.survey_id),
             error=SurveyNotFoundError(survey_id=link.survey_id, project_id=link.project_id),

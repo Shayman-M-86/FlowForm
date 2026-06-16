@@ -27,13 +27,22 @@ def test_start_submission_session_returns_json_tuple_and_sets_cookie(
     assert "version" not in body
     assert "answers" not in body
 
+    # The authenticated public-slug start resolves a subject, so both the
+    # session cookie and the returning-browser recognition cookie are set.
     cookies = resp.headers.getlist("Set-Cookie")
-    assert len(cookies) == 1
-    assert "flowform_submission_session=" in cookies[0]
-    assert "HttpOnly" in cookies[0]
-    assert "Secure" in cookies[0]
-    assert "SameSite=Lax" in cookies[0]
-    assert "Path=/api/v1/public/submission-session" in cookies[0]
+    assert len(cookies) == 2
+
+    session_cookie = next(c for c in cookies if "flowform_submission_session=" in c)
+    assert "HttpOnly" in session_cookie
+    assert "Secure" in session_cookie
+    assert "SameSite=Lax" in session_cookie
+    assert "Path=/api/v1/public/submission-session" in session_cookie
+
+    recognition_cookie = next(c for c in cookies if "flowform_subject_recognition=" in c)
+    assert "HttpOnly" in recognition_cookie
+    assert "Secure" in recognition_cookie
+    assert "SameSite=Lax" in recognition_cookie
+    assert "Path=/api/v1/public" in recognition_cookie
 
     saved = core_db_session.scalar(select(SubmissionSession).where(SubmissionSession.survey_id == seed.survey.id))
     assert saved is not None
