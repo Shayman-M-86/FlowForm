@@ -1,8 +1,9 @@
 """Resolve the stable ProjectSubject for a respondent session.
 
-Docs: docs/Policies and Services/Flows/shared/subject-resolution.md
-      docs/Policies and Services/Flows/shared/logged-in-reconciliation.md
-      docs/Policies and Services/core-policies.md — Recognition token policy
+Applies the priority waterfall — identity > token > new anonymous — for open-access
+entries (public slug, general link), and always returns the assigned subject for
+private and authenticated links. Returns a SubjectResolutionResult with merge and
+token-action instructions; the caller applies all writes before committing.
 """
 from __future__ import annotations
 
@@ -29,11 +30,10 @@ class SubjectResolver:
 
     Priority for assigned-access (private / authenticated link):
       1. Assigned subject (always wins)
-      2. Token used only for continuity cleanup
+      2. Token used only for continuity cleanup (merge/rotate if canonical differs)
 
-    Returns SubjectResolutionResult — callers apply merge writes and token
-    mechanics before committing.
-    Docs: shared/subject-resolution.md
+    Returns SubjectResolutionResult with final_subject_id, token_action, and optional
+    merge_subject_id/merge_into_subject_id. No writes here — caller applies all effects.
     """
 
     def __init__(self, *, token_service: SubjectTokenService | None = None) -> None:
@@ -52,7 +52,8 @@ class SubjectResolver:
     ) -> SubjectResolutionResult:
         """Route to assigned or open-access resolution based on access method.
 
-        Docs: shared/subject-resolution.md — Service responsibilities
+        private_link and authenticated_assigned_link always use the assigned subject.
+        All other access methods use the open-access waterfall.
         """
         if access_method in ("private_link", "authenticated_assigned_link"):
             return self.resolve_assigned_subject(
@@ -81,7 +82,9 @@ class SubjectResolver:
     ) -> SubjectResolutionResult:
         """Assigned subject is always canonical. Token used only for continuity cleanup.
 
-        Docs: shared/subject-resolution.md — Assigned-access subject resolution
+        If the token already points at the assigned canonical, keep or rotate it to canonical.
+        If the token canonical differs, merge the token subject into the assigned subject and rotate.
+        No token → issue a new one.
         """
         if assigned_subject_id is None:
             raise SubjectResolutionError()
@@ -133,8 +136,8 @@ class SubjectResolver:
     ) -> SubjectResolutionResult:
         """Public slug / general link resolution.
 
-        Authority: identity > token > new anonymous subject.
-        Docs: shared/subject-resolution.md — Open-access subject resolution
+        Authority waterfall: logged-in identity > recognition token > new anonymous subject.
+        If a logged-in user has no identity yet, one is created on the winning subject.
         """
         # Resolve token candidate to canonical upfront.
         effective_token_subject_id: UUID | None = None
@@ -175,8 +178,9 @@ class SubjectResolver:
     ) -> SubjectResolutionResult:
         """Reconcile logged-in user identity against token candidate.
 
-        Implements the 7-case table from shared/logged-in-reconciliation.md.
-        No identity writes or token side effects — returns instructions only.
+        If no identity exists: attach to the token subject (if any) or create a new subject.
+        If identity exists: token same canonical → keep/rotate; token different → merge token into identity.
+        Returns instructions only — no writes here.
         """
         identity = sub_id.get_active_user_identity(
             db, project_id=project_id, user_id=actor_user_id
@@ -246,7 +250,7 @@ class SubjectResolver:
         project_id: int,
         subject: ProjectSubject,
     ) -> ProjectSubject:
-        """Follow canonical_subject_id one level. Doc: do not create canonical chains."""
+        """Follow canonical_subject_id one level. Canonical chains are not allowed — one hop only."""
         if subject.canonical_subject_id is None:
             return subject
         return self._require_subject(

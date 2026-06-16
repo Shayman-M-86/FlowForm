@@ -2,9 +2,17 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+import pytest
 from sqlalchemy.orm import Session
 
+from app.domain.errors import (
+    LinkInactiveError,
+    LinkNotFoundError,
+    SurveyNotFoundBySlugError,
+    SurveyNotPublishedError,
+)
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
+from app.schema.enums import SurveyVisibility
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
@@ -17,7 +25,7 @@ def _publish_survey(
     *,
     survey: Survey,
     survey_version: SurveyVersion,
-    visibility: str = "public",
+    visibility: SurveyVisibility = "public",
     slug: str | None = "customer-intake",
 ) -> None:
     survey.visibility = visibility
@@ -178,3 +186,52 @@ def test_authenticated_link_grant_carries_auth_requirement(
     assert grant.assigned_subject_id == participant.project_subject_id
     assert grant.requires_auth is True
     assert grant.is_single_use is True
+
+
+def test_resolve_public_slug_unknown_slug_raises(
+    db_session: Session,
+) -> None:
+    with pytest.raises(SurveyNotFoundBySlugError):
+        AccessResolver().resolve(db_session, payload=_slug_payload("no-such-slug"), actor=None)
+
+
+def test_resolve_public_slug_without_published_version_raises(
+    db_session: Session,
+    survey: Survey,
+) -> None:
+    survey.visibility = "public"
+    survey.public_slug = "public-no-version"
+    db_session.flush()
+
+    with pytest.raises(SurveyNotPublishedError):
+        AccessResolver().resolve(db_session, payload=_slug_payload("public-no-version"), actor=None)
+
+
+def test_resolve_link_token_unknown_token_raises(
+    db_session: Session,
+) -> None:
+    with pytest.raises(LinkNotFoundError):
+        AccessResolver().resolve(db_session, payload=_token_payload("unknown-token"), actor=None)
+
+
+def test_resolve_link_token_inactive_link_raises(
+    db_session: Session,
+    survey: Survey,
+    survey_version: SurveyVersion,
+) -> None:
+    _publish_survey(db_session, survey=survey, survey_version=survey_version)
+    raw_token, token_prefix, token_hash = make_token_pair()
+    link = SurveyLink(
+        project_id=survey.project_id,
+        survey_id=survey.id,
+        name="Inactive link",
+        token_prefix=token_prefix,
+        token_hash=token_hash,
+        assignment_source="manual",
+        is_active=False,
+    )
+    db_session.add(link)
+    db_session.flush()
+
+    with pytest.raises(LinkInactiveError):
+        AccessResolver().resolve(db_session, payload=_token_payload(raw_token), actor=None)

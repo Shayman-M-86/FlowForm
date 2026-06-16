@@ -8,7 +8,7 @@ from app.domain.errors import (
     LinkAuthAssignmentRequiredError,
     PrivateSurveyAssignedEmailRequiredError,
 )
-from app.services.public_links import SurveyLinkService
+from app.services.survey_links import SurveyLinkService
 
 
 def test_service_rejects_auth_required_link_without_assignment() -> None:

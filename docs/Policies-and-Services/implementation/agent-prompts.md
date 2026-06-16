@@ -112,3 +112,18 @@ Implement only stale-module quarantine/deletion and focused tests for this pass.
 Do not change behavior in this pass.
 Implement only docstring/comment cleanup for this pass.
 ```
+
+---
+
+## Target 13 Prompt: Implementation Summary
+
+```text
+Do not change any code or tests in this pass.
+Read pass reports 01–12, the flow matrix, and the current service code.
+Produce a summary report covering:
+  - what each flow matrix row now has working end-to-end
+  - what is partially implemented (logic present but untested, or tested but code missing)
+  - what is not yet started (policy doc requires it, no code exists)
+  - any places where current code disagrees with the policy docs
+Write the report to pass-reports/13-implementation-summary.md and stop.
+```

@@ -1,7 +1,9 @@
 """Orchestrate access resolution, subject resolution, and submission session creation.
 
-Docs: docs/Policies and Services/Flows/shared/subject-resolution.md
-      docs/Policies and Services/Flows/shared/logged-in-reconciliation.md
+Entry point for all session-start flows (public slug, general link, private link,
+authenticated link). Resolves the survey and access grant, determines the final
+ProjectSubject, applies merge and identity writes, issues or rotates the recognition
+token, creates the session row, and consumes single-use links — all in one transaction.
 """
 from __future__ import annotations
 
@@ -26,16 +28,15 @@ class SessionStarter:
 
     Sequence:
       1. AccessResolver  → SubmissionAccessGrant   (which survey, which link, visibility check)
-      2. SubjectTokenService.lookup               (browser recognition token candidate)
+      2. SubjectTokenService.lookup               (browser recognition token candidate — read-only)
       3. SubjectResolver → SubjectResolutionResult (final subject + token/merge instructions)
       4. Apply merge writes (canonical_subject_id) if instructed
       5. Apply identity writes if instructed (create or attach identity for logged-in user)
       6. Apply token mechanics (issue / rotate / mark_used / keep)
       7. DB write: create submission session row, consume single-use link
-      8. Return session response + raw recognition token
+      8. Commit, then return session response + raw recognition token
 
     No access or subject policy lives here — this class only orchestrates.
-    Docs: shared/subject-resolution.md — Service responsibilities
     """
 
     def __init__(

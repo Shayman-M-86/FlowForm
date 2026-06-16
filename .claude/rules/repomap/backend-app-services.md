@@ -21,12 +21,14 @@ Access/RBAC -> `services/access/access_service.py`:
   routes, cache access on `flask.g`, attach OpenAPI RBAC metadata
 - platform admins bypass membership checks
 
-Respondent-session work -> `services/submissions/`:
+Respondent-session work -> `services/public_submissions/`:
 
-- `SurveyAccessResolver` -> public slug/link token access
-- `ProjectSubjectResolver` -> assigned link, authenticated user, recognition
-  token, optional anonymous subject policy
-- `SessionStarter` -> core `submission_sessions` row + browser token hash
+- `api/session_management.py` (`SessionManagementService`) -> start/answer/event/complete lifecycle; start delegates to `core/session_starter.py`
+- `api/survey_resolve.py` (`SurveyResolveService`) -> slug browsing, link token resolution, authenticated account linking
+- `core/access_resolver.py` (`AccessResolver`) -> resolves survey + link grant from slug or token; enforces access rules
+- `core/subject_resolver.py` (`SubjectResolver`) -> priority waterfall: identity > token > new anonymous; returns merge/token instructions
+- `core/subject_token.py` (`SubjectTokenService`) -> recognition token lookup, issue, rotate, mark_used
+- `core/session_starter.py` (`SessionStarter`) -> full session-start orchestration: access → subject → merge → token → session row → link consume
 
 No live `SubmissionIntakeService` / `SubmissionGateway`. No response-DB write
 or cross-DB orchestration service yet; response-envelope/answer services remain

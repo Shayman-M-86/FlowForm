@@ -4,9 +4,6 @@ API-facing entry point. Routes in api/v1/public.py call this service directly.
 Start delegates to core/session_starter.py. Answer/event/complete are phase
 placeholders that mirror the current route stubs until the encrypted response
 pipeline lands.
-
-Docs: docs/Policies and Services/service-structure.md
-      docs/session-response-encryption/remaining-work.md
 """
 from __future__ import annotations
 
@@ -40,7 +37,6 @@ class SessionManagementService:
 
         Returns (session_response, raw_browser_session_token, raw_recognition_token).
         The route sets the browser-session and recognition cookies from the raw tokens.
-        Docs: shared/resolve-link-token.md, shared/logged-in-reconciliation.md
         """
         return self._session_starter.start(
             db, payload=payload, actor=actor, recognition_token=recognition_token

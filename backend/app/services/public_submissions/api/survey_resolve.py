@@ -3,8 +3,7 @@
 API-facing entry point. Routes in api/v1/public.py call this service directly.
 Delegates access-method logic to core/access_resolver.py.
 
-Docs: docs/Policies and Services/service-structure.md
-      docs/Policies and Services/Flows/Public-slug-flow.md
+Docs: docs/Policies and Services/Flows/Public-slug-flow.md
       docs/Policies and Services/Flows/Authenticated-link-access-Flow.md
 """
 from __future__ import annotations
@@ -82,8 +81,8 @@ class SurveyResolveService:
         """Resolve a survey link token to its survey and published version.
 
         Authenticated links require a pre-verified participant identity whose
-        user_id matches the authenticated actor.
-        Docs: shared/resolve-link-token.md
+        user_id matches the authenticated actor. Raises LinkNotFoundError if
+        the token does not exist, or access errors if identity checks fail.
         """
         link = ensure_present(plr.resolve_token(db, payload.token), error=LinkNotFoundError())
         grant = self._access_resolver.resolve_link_token(db, link=link, actor=actor)
@@ -103,15 +102,14 @@ class SurveyResolveService:
     ) -> AccountLinkingResult:
         """Link the assigned participant identity to the logged-in user and reconcile token.
 
-        Validates that the link is of type authenticated, the assigned identity email
-        matches the logged-in user's email, then links the identity. After linking,
-        reconciles the browser recognition token against the now-authoritative assigned
-        subject using assigned-access subject resolution.
+        Validates that the link is active, non-expired, unused, of type authenticated,
+        and has an assigned participant whose email matches the logged-in user. After
+        linking the identity, reconciles the browser recognition token against the
+        now-authoritative assigned subject: merges if the token subject differs, rotates
+        if the token points at a non-canonical.
 
-        Returns the raw recognition token only when rotation was required so the caller
-        can update the browser cookie. None means the cookie is unchanged.
-
-        Docs: Authenticated-link-access-Flow.md §5
+        Returns the raw recognition token only when the cookie must change (issue or rotate).
+        None means the existing cookie is correct.
         """
         link = ensure_present(plr.resolve_token(db, payload.token), error=LinkNotFoundError())
         public_link_rules.ensure_is_active(link=link)
