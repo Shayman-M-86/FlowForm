@@ -4,6 +4,7 @@ from flask.testing import FlaskClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.schema.orm.core.project_subject import ProjectSubjectIdentity
 from app.schema.orm.core.submission_session import SubmissionSession
 from tests.e2e.conftest import SeedData
 
@@ -20,15 +21,14 @@ def test_start_submission_session_returns_json_tuple_and_sets_cookie(
 
     assert resp.status_code == 201
     body = resp.get_json()
-    assert set(body) == {"status", "started_at", "expires_at", "survey_version_id"}
+    assert set(body) == {"status", "started_at", "expires_at", "survey_version_id", "survey_schema"}
     assert body["status"] == "in_progress"
     assert body["survey_version_id"] == seed.published_version.id
+    assert body["survey_schema"] is not None
     assert "survey" not in body
     assert "version" not in body
     assert "answers" not in body
 
-    # The authenticated public-slug start resolves a subject, so both the
-    # session cookie and the returning-browser recognition cookie are set.
     cookies = resp.headers.getlist("Set-Cookie")
     assert len(cookies) == 2
 
@@ -46,3 +46,12 @@ def test_start_submission_session_returns_json_tuple_and_sets_cookie(
 
     saved = core_db_session.scalar(select(SubmissionSession).where(SubmissionSession.survey_id == seed.survey.id))
     assert saved is not None
+
+    # Authenticated public-slug path (row 3) must create an identity-linked subject,
+    # not a new anonymous one. This distinguishes row 3 from row 1 (anonymous).
+    identity = core_db_session.scalar(
+        select(ProjectSubjectIdentity).where(
+            ProjectSubjectIdentity.project_subject_id == saved.project_subject_id
+        )
+    )
+    assert identity is not None, "authenticated path must create an identity-linked subject"

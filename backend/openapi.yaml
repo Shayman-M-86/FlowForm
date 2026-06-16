@@ -6683,7 +6683,14 @@ components:
       title: StartSubmissionSessionRequest
       type: object
     PublicSubmissionSessionResponses:
-      description: Session start/current acknowledgement without survey content or crypto material.
+      description: 'Session start acknowledgement.
+
+
+        survey_schema is included only for public_slug access, where the schema is
+
+        returned with the session start response. Link-based paths return the schema
+
+        at pre-session link resolve time, so survey_schema is None there.'
       properties:
         status:
           enum:
@@ -6706,6 +6713,13 @@ components:
         survey_version_id:
           title: Survey Version Id
           type: integer
+        survey_schema:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Survey Schema
       required:
       - status
       - started_at

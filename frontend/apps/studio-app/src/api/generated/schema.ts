@@ -3005,7 +3005,11 @@ export interface components {
         };
         /**
          * PublicSubmissionSessionResponses
-         * @description Session start/current acknowledgement without survey content or crypto material.
+         * @description Session start acknowledgement.
+         *
+         *     survey_schema is included only for public_slug access, where the schema is
+         *     returned with the session start response. Link-based paths return the schema
+         *     at pre-session link resolve time, so survey_schema is None there.
          */
         PublicSubmissionSessionResponses: {
             /**
@@ -3025,6 +3029,13 @@ export interface components {
             expires_at: string;
             /** Survey Version Id */
             survey_version_id: number;
+            /**
+             * Survey Schema
+             * @default null
+             */
+            survey_schema: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * SaveSubmissionSessionAnswerRequest

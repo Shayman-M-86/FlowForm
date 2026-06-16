@@ -187,9 +187,13 @@ def authed_client(
     monkeypatch.setattr(db_manager, "create_core_session", lambda: core_proxy)
     monkeypatch.setattr(db_manager, "create_response_session", lambda: response_proxy)
 
-    # Authenticate as the seeded project member.
-    monkeypatch.setattr(auth, "_extract_bearer_token", lambda: "test-token")
+    # Bypass JWKS verification so any bearer token is accepted as the seeded member.
+    # ``optional_auth`` checks the Authorization header before calling
+    # ``_verify_access_token``; setting ``environ_base`` ensures the header is
+    # present on every request so the route resolves an actor instead of
+    # treating the request as anonymous.
     monkeypatch.setattr(auth, "_verify_access_token", lambda _token: {"sub": _MEMBER_SUB})
 
     with app.test_client() as client:
+        client.environ_base["HTTP_AUTHORIZATION"] = "Bearer test-token"
         yield client

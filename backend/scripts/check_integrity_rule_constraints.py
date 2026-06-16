@@ -170,6 +170,28 @@ INTENTIONALLY_UNMAPPED_CONSTRAINTS: dict[str, str] = {
     "ck_survey_links_used_at_requires_assignment": "used_at is only written by link-consumption service code",
     "ck_surveys_public_requires_slug": "survey visibility/public_slug is validated before persistence",
     "ck_surveys_slug_requires_public_visibility": "survey visibility/public_slug is validated before persistence",
+    # normalized_email is populated from the user record by service code, not from
+    # client input. If this FK fires, internal code passed a mismatched
+    # (user_id, normalized_email) pair — a server bug, not a client conflict.
+    # The unmatched-rule 500 is the correct signal; a rule here would obscure it.
+    "fk_project_subject_identities_user_email_matches": "normalized_email is service-derived from the user record; mismatch is a server bug",
+    # Both CHECKs enforce the participant-assignment invariant that service code
+    # validates before inserting a SurveyLink. Same pattern as
+    # ck_surveys_public_requires_slug — if either fires, a code path bypassed
+    # service-layer validation and the unmatched-rule 500 surfaces that.
+    "ck_survey_links_assigned_requires_participant": "link participant assignment is validated by service code before persistence",
+    "ck_survey_links_general_has_no_assignment": "link participant assignment is validated by service code before persistence",
+    # Defence-in-depth email format/normalisation CHECK. Pydantic validates email
+    # normalisation upstream; if this CHECK fires, a code path bypassed the schema.
+    # Intentionally unmapped — the unmatched-rule 500 surfaces the bypass.
+    "ck_users_email_normalized": "email normalisation is validated by Pydantic upstream; this CHECK is defence-in-depth",
+    # Exists solely to support the composite FK
+    # fk_project_subject_identities_user_email_matches (Postgres requires a unique
+    # index on the referenced columns). Not a standalone business constraint —
+    # email uniqueness is already covered by users_email_key.
+    # The _is_fk_support_unique heuristic misses (id, email) because neither
+    # non-id column ends in _id; added explicitly here.
+    "uq_users_id_email": "FK-support UNIQUE for fk_project_subject_identities_user_email_matches; business email uniqueness covered by users_email_key",
 }
 
 
