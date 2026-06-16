@@ -130,19 +130,22 @@ locators and reversible placeholder ciphertext until Phase 6:
 
 From the session-service open-issues audit:
 
-- **Anonymous-subject-creation policy**  -  decided for v1: `SessionStarter`
-  always passes `create_anonymous_subject=False`, so anonymous public/general
-  link sessions keep `project_subject_id` null. The explicit resolver branch
-  remains a lower-level helper for future flows that deliberately create an
-  anonymous subject.
-- **Dangling subject reference guard**  -  `ProjectSubjectResolver._require_subject`
+- **Anonymous-subject-creation policy**  -  for open-access flows (public slug,
+  general link) `SubjectResolver` always creates a new `project_subjects` row
+  when no other context resolves a subject, so `project_subject_id` is never
+  `NULL` for open-access sessions. For assigned-access flows (private,
+  authenticated link) the assigned subject is always used. There is no
+  `create_anonymous_subject=False` escape hatch in the current code.
+- **Dangling subject reference guard**  -  `SubjectResolver._require_subject`
   raises `SubjectResolutionError` if a referenced subject can't resolve. This
   is currently FK-guaranteed unreachable. If composite FK coverage is ever
   relaxed, add a focused test that forces the dangling state and asserts the
   error.
-- **Recognition-token issuance/rotation/expiry/revocation/cookie policy**  - 
-  consume-only in v1. Existing valid tokens may resolve subjects, but runtime
-  issuance, rotation, cookie setting, and revocation endpoints are deferred.
+- **Recognition-token full lifecycle**  -  issue, rotate, mark_used, keep, and
+  none actions are all implemented in `SubjectTokenService` and wired into
+  session start and account-linking flows. Remaining deferred items: revocation
+  endpoints, cookie-expiry policy, and explicit issuance endpoints accessible
+  to respondents outside of session start.
 - **`subject_ip_observations` retention/access policy**  -  schema-only in v1.
   Do not write runtime observations until retention, access, and abuse/security
   use cases are explicitly defined.

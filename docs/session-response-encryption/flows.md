@@ -21,16 +21,28 @@ Respondent flows fall into two groups:
   Cookie-backed session lookup is intended as an internal guard for command
   routes, not a respondent data-rehydration endpoint.
 
+### Service class map
+
+| Concern | Class | File |
+|---|---|---|
+| Session lifecycle (start/answer/event/complete) | `SessionManagementService` | `services/public_submissions/api/session_management.py` |
+| Survey browsing, link resolution, account linking | `SurveyResolveService` | `services/public_submissions/api/survey_resolve.py` |
+| Access grant from slug or link token | `AccessResolver` | `services/public_submissions/core/access_resolver.py` |
+| Subject priority waterfall + merge/token instructions | `SubjectResolver` | `services/public_submissions/core/subject_resolver.py` |
+| Recognition token lifecycle | `SubjectTokenService` | `services/public_submissions/core/subject_token.py` |
+| Full session-start orchestration | `SessionStarter` | `services/public_submissions/core/session_starter.py` |
+
 ## 2. Link resolution flow
 
-`POST /links/resolve` -> `SurveyLinkService.resolve_link`
-(`backend/app/services/public_links.py`):
+`POST /links/resolve` -> `SurveyResolveService.resolve_link`
+(`backend/app/services/public_submissions/api/survey_resolve.py`):
 
 1. The raw token is resolved to a `SurveyLink` row via
    `plr.resolve_token` (`backend/app/repositories/public_link_repo.py`).
    A miss raises `LinkNotFoundError`.
-2. The resolved link is checked by the shared rule function
-   `submission_access_rules.ensure_link_token_access(db, project_id=..., link=..., actor=...)`
+2. `AccessResolver.resolve_link_token(db, link=link, actor=actor)` is called,
+   which runs
+   `submission_access_rules.ensure_link_token_access(db, project_id=..., link=..., survey=..., actor=...)`
    (`backend/app/domain/submission_access_rules.py`).
 
 `ensure_link_token_access` performs, in order:
@@ -39,6 +51,9 @@ Respondent flows fall into two groups:
 - `public_link_rules.ensure_not_expired(link=link)`
 - `public_link_rules.ensure_auth_satisfied(link=link, actor=actor)`
 - `public_link_rules.ensure_not_used(link=link)`
+- `public_link_rules.ensure_link_allowed_by_survey_visibility(survey=survey, link=link)`  -  a
+  general (unassigned) link on a `visibility="private"` survey raises
+  `PrivateSurveyAssignedEmailRequiredError`.
 
 If `actor is None` or `link.link_type != "authenticated"`, the function
 returns here  -  no participant checks apply.
@@ -64,114 +79,162 @@ For an **authenticated link** accessed by a **logged-in actor**:
 ### Unification with session start
 
 `ensure_link_token_access` is the same function called by
-`SurveyAccessResolver._resolve_link`
-(`backend/app/services/submissions/access_resolver.py`) when resolving a link
-token for `POST /submission-session/start`. This means session start now enforces
-the **same authenticated-link checks** as `POST /links/resolve`  -  a
-behavior change from the earlier split implementation. Previously these two
-entry points could diverge; now both go through one shared rule, so an
+`AccessResolver.resolve_link_token`
+(`backend/app/services/public_submissions/core/access_resolver.py`) when
+resolving a link token for `POST /submission-session/start`. This means session
+start enforces the **same checks** as `POST /links/resolve`  -  link state,
+visibility compatibility, and authenticated-link participant identity  -  so an
 authenticated link that isn't usable via `/links/resolve` is also rejected at
 session start with the same error codes.
 
 ### Separate verification flow
 
 `POST /links/verification/link` ->
-`SurveyLinkService.verify_authenticated_link_participant` ->
+`SurveyResolveService.verify_authenticated_link_participant`
+(`backend/app/services/public_submissions/api/survey_resolve.py`) ->
 `ParticipantService.verify_participant_for_user`
 (`backend/app/services/participants.py`). This is the flow that *creates* the
 authenticated-user identity link in the first place (an email-match rule
-between the actor and the participant's stored email). It is distinct from
-`ensure_link_token_access`, which only *checks* that such an identity already
-exists and matches the actor  -  it does not create or update identities.
+between the actor and the participant's stored email).
+
+After linking the identity, `verify_authenticated_link_participant` also
+reconciles the browser recognition token: it calls `SubjectResolver.resolve_assigned_subject`
+to determine the correct token action (keep, rotate, or issue), applies any
+canonical merge if the token subject differs from the assigned subject, and
+applies the token action via `SubjectTokenService.apply_token_action`. The raw
+recognition token is returned to the route only when it has changed (i.e. when
+the action is `issue` or `rotate`).
+
+This is distinct from `ensure_link_token_access`, which only *checks* that an
+authenticated identity already exists and matches the actor  -  it does not
+create or update identities.
 
 ## 3. Subject resolution flow
 
-`ProjectSubjectResolver.resolve`
-(`backend/app/services/submissions/project_subject_resolver.py`) resolves an
-optional `ResolvedProjectSubject` using only server-owned context, in this
-precedence order:
+`SubjectResolver.resolve`
+(`backend/app/services/public_submissions/core/subject_resolver.py`) routes to
+one of two paths based on `access_method`, then returns a
+`SubjectResolutionResult` carrying `final_subject_id`, `subject_source`,
+`token_action`, and optional merge instructions. The caller (`SessionStarter`)
+applies all writes before committing.
 
-1. **Assigned link**  -  if `link is not None and link.assigned_participant_id is not None`:
-   load `link.assigned_participant` (raises `SubjectResolutionError` if
-   missing), then `_require_subject(db, project_id=..., subject_id=participant.project_subject_id)`.
-   Returns `ResolvedProjectSubject(subject=subject, source="assigned_link")`.
+Recognition-token lookup is performed **before** `SubjectResolver.resolve` is
+called: `SubjectTokenService.lookup` resolves the raw token to a
+`RecognitionTokenLookupResult` (read-only; does not stamp `last_used_at`), and
+the resulting `token_subject_id` / `canonical_token_subject_id` are passed in.
 
-2. **Authenticated user identity**  -  else if `actor is not None`: look up
-   `psir.get_active_user_identity(db, project_id=..., user_id=actor.id)`
-   (`backend/app/repositories/core/project_subject_identities.py`). If found,
-   `_require_subject(db, project_id=..., subject_id=identity.project_subject_id)`.
-   Returns `ResolvedProjectSubject(subject=subject, source="authenticated_user")`.
+### 3a. Assigned-access path (private link, authenticated link)
 
-3. **Recognition token**  -  else if `recognition_token is not None`:
-   `pstr.get_active_token(db, project_id=..., raw_token=recognition_token)`.
-   If found, `_require_subject(...)`, then `pstr.mark_used(db, token=token)`.
-   Returns `ResolvedProjectSubject(subject=subject, source="recognition_token")`.
+The assigned subject always wins. The token is used only for continuity cleanup.
 
-4. **Anonymous subject creation**  -  else if `create_anonymous_subject=True`:
-   `psr.create_subject(db, project_id=project_id)`, returns
-   `ResolvedProjectSubject(subject=subject, source="anonymous_created")`.
-   **This branch is not used by the live v1 session-start flow**  -
-   `SessionStarter.start` always calls `resolve(...)` with
-   `create_anonymous_subject=False`. Anonymous public/general-link sessions
-   therefore keep `submission_sessions.project_subject_id = NULL` unless a
-   server-owned context resolves a real subject.
+1. Load the assigned subject via `_require_subject`. A miss raises
+   `SubjectResolutionError` (server invariant violation).
+2. Resolve to canonical via `_resolve_to_canonical` (one-hop follow of
+   `canonical_subject_id`; canonical chains are not allowed).
+3. If no recognition token: `token_action="issue"`, return
+   `source="assigned_link"`.
+4. Resolve the token candidate to its canonical (`canonical_token_subject_id or
+   token_subject_id`).
+5. If the token canonical **matches** the assigned canonical:
+   - Token points directly at canonical → `token_action="keep"`.
+   - Token points at a non-canonical that resolves to canonical → `token_action="rotate"`.
+6. If the token canonical **differs**: `token_action="rotate"`, set
+   `merge_subject_id=effective_token_subject_id`,
+   `merge_into_subject_id=canonical_assigned.id` (the caller merges the token
+   subject into the assigned subject before committing).
 
-5. **None**  -  otherwise, returns `ResolvedProjectSubject(subject=None, source="none")`.
+### 3b. Open-access path (public slug, general link)
 
-`_require_subject` calls `psr.get_subject(db, project_id=..., subject_id=...)`
-and raises `SubjectResolutionError` if the row is missing. This is a
-server-invariant guard, not a normal-path outcome: the schema's composite
-foreign keys should make a dangling `project_subject_id` reference impossible,
-so a miss here indicates a broken invariant rather than a reason to silently
-fall back to an anonymous session.
+Priority waterfall: logged-in identity > recognition token > new anonymous subject.
 
-V1 policy: anonymous access does not create `project_subjects` rows by default.
-The explicit `create_anonymous_subject=True` branch remains available for future
-flows that deliberately need a project-scoped subject before identity,
-recognition-cookie, or IP-observation policy is expanded.
+**No actor, no token**: `subjects.create_subject(...)` creates a new
+`project_subjects` row and `token_action="issue"`. Anonymous public/general-link
+sessions always get a new subject row  -  `project_subject_id` is never `NULL`
+for open-access sessions.
+
+**Token, no actor**: `final_subject_id = canonical_token_subject_id or
+token_subject_id`, `token_action="mark_used"`.
+
+**Actor present**: `sub_id.get_active_user_identity(...)` is looked up.
+
+- **No identity, token present**: attach identity to the token subject
+  (`final_subject_id = effective_token_subject_id`, `needs_identity_write=True`,
+  `token_action="mark_used"`). Caller writes the identity row.
+- **No identity, no token**: create a new subject, `needs_identity_write=True`,
+  `token_action="issue"`.
+- **Identity found**: resolve to canonical. Then:
+  - No token → `token_action="issue"`.
+  - Token canonical matches identity canonical → `keep` (direct hit) or `rotate`
+    (non-canonical hit).
+  - Token canonical differs → `token_action="rotate"`, merge token subject into
+    identity subject.
+
+`_require_subject` raises `SubjectResolutionError` if a referenced subject row
+is missing. This is a server-invariant guard  -  composite FKs make a dangling
+reference structurally impossible, so a miss indicates a broken invariant.
 
 ## 4. Session start flow
 
-`POST /submission-session/start` -> `SessionStarter.start`
-(`backend/app/services/submissions/session_starter.py`):
+`POST /submission-session/start` -> `SessionManagementService.start_session`
+-> `SessionStarter.start`
+(`backend/app/services/public_submissions/core/session_starter.py`):
 
-1. `SurveyAccessResolver.resolve(db, payload=payload, actor=actor)` resolves
+1. `AccessResolver.resolve(db, payload=payload, actor=actor)` resolves
    either a `public_slug` or a link `token` into a `SubmissionAccessGrant`
-   (`survey`, `published_version`, and optional `link`). For the link path
-   this runs `ensure_link_token_access` as described above (section 2).
+   (`survey`, `published_version`, `access_method`, and optional `link`). For
+   the link path this runs `ensure_link_token_access` as described in section 2.
 2. `survey_rules.ensure_has_response_store(survey=access.survey)` confirms the
    survey has a linked response store, returning `response_store_id`.
-3. `ProjectSubjectResolver.resolve(db, project_id=access.survey.project_id, link=access.link, actor=actor, recognition_token=recognition_token, create_anonymous_subject=False)`
-   resolves the optional subject (section 3). `resolved_subject.subject` may
-   be `None`.
-4. `ssr.generate_browser_session_token()` generates a raw browser session
-   token.
-5. `ssr.create_session(...)` inserts a `submission_sessions` row:
+3. **Recognition token lookup (read-only)**: if a raw `recognition_token` was
+   passed, `SubjectTokenService.lookup(db, project_id=..., raw_token=...)` is
+   called. This resolves the token to `token_subject_id` and
+   `canonical_token_subject_id` without touching `last_used_at`. Invalid or
+   absent tokens produce `token_subject_id=None`.
+4. `SubjectResolver.resolve(db, project_id=..., access_method=...,
+   assigned_subject_id=..., token_subject_id=..., canonical_token_subject_id=...,
+   actor_user_id=...)` returns a `SubjectResolutionResult` (section 3).
+   `final_subject_id` is always set (open-access always creates a new subject
+   if no other context resolves one; it is never `None`).
+5. **Apply canonical merge** (if instructed): if `resolution.merge_subject_id`
+   and `resolution.merge_into_subject_id` are set, `subjects.set_canonical_subject`
+   is called to point the weaker subject at the stronger one before any other
+   write.
+6. **Apply identity write** (if instructed): if `actor is not None` and
+   `resolution.needs_identity_write`, `sub_id.create_user_identity(...)` writes a
+   new `project_subject_identities` row linking the actor to the final subject.
+7. **Apply token mechanics**: `SubjectTokenService.apply_token_action(db, ...,
+   token_action=resolution.token_action, existing_raw_token=recognition_token)`
+   executes the instruction from the resolver:
+   - `issue` — create a new token, return raw token.
+   - `rotate` — revoke existing token for final subject, issue new one, return raw token.
+   - `mark_used` — stamp `last_used_at` on the existing token, return existing raw token.
+   - `keep` / `none` — no write, return `None`.
+8. `ssr.generate_browser_session_token()` generates a raw browser session token.
+9. `ssr.create_session(...)` inserts a `submission_sessions` row:
    - `survey_version_id` is the **frozen** `published_version.id`
-   - `link_id` is `access.link.id` if a link was used, else `None`
-   - `project_subject_id` is `subject.id` if resolved, else `None`
-     (anonymous session)
+   - `link_id` is `access.link_id` if a link was used, else `None`
+   - `project_subject_id` is `resolution.final_subject_id`
    - the browser session token is stored hashed
    - `response_store_id` from step 2
-6. If `access.link is not None and access.link.is_single_use`,
-   `plr.mark_used(db, link=access.link)` marks the link consumed. Only
-   single-use (assigned) links are marked used here  -  stamping `used_at` on
-   an unassigned reusable link would violate
-   `ck_survey_links_used_at_requires_assignment`.
-7. `commit_with_err_handle(db, contexts=[session])` commits the transaction.
-8. A `PublicSubmissionSessionResponses` is built from the session and grant:
-   `status`, `started_at`, `expires_at`, and `survey_version_id`. It does not
-   return the survey, survey version object, `compiled_schema`, or in-process
-   answers.
-9. The route (`backend/app/api/v1/public.py`,
-   `start_submission_session`) registers `set_submission_session_cookie` so the
-   HttpOnly resume-token cookie is attached to the Flask response, and returns
-   the normal `(body, 201)` route tuple.
+10. If `access.link is not None and access.is_single_use`,
+    `plr.mark_used(db, link=access.link)` marks the link consumed. Only
+    single-use (assigned) links are marked used here  -  stamping `used_at` on
+    an unassigned reusable link would violate
+    `ck_survey_links_used_at_requires_assignment`.
+11. `commit_with_err_handle(db, contexts=[session, ...])` commits the transaction.
+12. A `PublicSubmissionSessionResponses` is built from the session and grant:
+    `status`, `started_at`, `expires_at`, `survey_version_id`, and
+    `survey_schema`. `survey_schema` is set to `published_version.compiled_schema`
+    for **public-slug** access; it is `None` for all link-based access (the schema
+    was delivered at link-resolve time).
+13. `SessionStarter.start` returns
+    `(session_response, raw_browser_session_token, raw_recognition_token)`. The
+    route sets both the browser-session cookie and (when non-`None`) the
+    recognition cookie, then returns `201`.
 
 **Note on encryption machinery**: the current implementation has **no
 response-envelope, DEK, or KMS logic**. Per-session envelope creation during
-session start is an aspirational design that has not been implemented  -  it
-is omitted here as "not yet implemented."
+session start is aspirational and has not been implemented.
 
 ## 5. Stubbed flows
 
@@ -226,28 +289,48 @@ the original completion result rather than erroring).
 
 - **Envelope/DEK/KMS encryption**  -  earlier flow docs described
   response-envelope creation at session start and envelope/DEK lookups during
-  answer save. None of this exists in
-  `session_starter.py` or in the stubbed answer-save endpoint today. Treat
-  those sections as the target design for phase 4+, not current behavior.
+  answer save. None of this exists in `session_starter.py` or in the stubbed
+  answer-save endpoint today. Treat those sections as the target design for
+  phase 4+, not current behavior.
 
-- **`assigned_subject_id` -> `assigned_participant_id`**  -  earlier drafts of
-  the session/link docs referenced a (dead) `assigned_subject_id` field on
-  `SurveyLink`. The current schema and code use
-  `link.assigned_participant_id`, with the subject reached indirectly via
-  `participant.project_subject_id` (section 3, step 1). This doc reflects the
+- **`assigned_subject_id` -> `assigned_participant_id`**  -  earlier drafts
+  referenced a (dead) `assigned_subject_id` field on `SurveyLink`. The current
+  schema and code use `link.assigned_participant_id`, with the subject reached
+  indirectly via `participant.project_subject_id`. This doc reflects the
   corrected field name throughout.
 
-- **Session-start / link-resolve unification**  -  prior to
-  the current shared-rule implementation, `POST /submission-session/start` and
-  `POST /links/resolve` could enforce different rules for authenticated links.
-  Both now call the same
-  `submission_access_rules.ensure_link_token_access` (section 2), so the
-  error codes (`LINK_ASSIGNED_PARTICIPANT_REQUIRED`,
-  `LINK_PARTICIPANT_VERIFICATION_REQUIRED`, `LINK_ASSIGNED_TO_ANOTHER_USER`)
-  are consistent across both endpoints.
+- **Session-start / link-resolve unification**  -  both
+  `POST /submission-session/start` and `POST /links/resolve` now call the same
+  `submission_access_rules.ensure_link_token_access`, so error codes
+  (`LINK_ASSIGNED_PARTICIPANT_REQUIRED`, `LINK_PARTICIPANT_VERIFICATION_REQUIRED`,
+  `LINK_ASSIGNED_TO_ANOTHER_USER`) are consistent across both endpoints. The
+  shared function also gained a `survey` parameter and now enforces
+  `ensure_link_allowed_by_survey_visibility` (general link + private survey →
+  rejected).
 
-- **Anonymous subject creation policy**  -  `ProjectSubjectResolver`'s
-  `create_anonymous_subject=True` branch (section 3, step 4) exists in code
-  but is not used by `SessionStarter.start`. V1 keeps anonymous public/general
-  link sessions as `project_subject_id = NULL`; creating anonymous subject rows
-  is reserved for a future flow with explicit product policy.
+- **Anonymous subject creation policy**  -  for open-access flows (public slug,
+  general link), `SubjectResolver` always creates a new `project_subjects` row
+  when no other context resolves a subject. `submission_sessions.project_subject_id`
+  is therefore **never `NULL`** for open-access sessions. Older docs and
+  `data-model.md` described a v1 policy of leaving it `NULL`; that was the
+  intent of the earlier `ProjectSubjectResolver` with `create_anonymous_subject=False`,
+  which no longer exists in this form.
+
+- **Service class renames**  -  `SurveyLinkService` (old) is now
+  `SurveyResolveService`. `SurveyAccessResolver` (old) is now `AccessResolver`.
+  `ProjectSubjectResolver` (old) is now `SubjectResolver`. File paths under
+  `services/submissions/` are now `services/public_submissions/core/` and
+  `services/public_submissions/api/`.
+
+- **Recognition token mechanics**  -  earlier docs described token handling as
+  a single `mark_used` call inside the resolver. The current implementation
+  separates lookup (read-only, `SubjectTokenService.lookup`) from effect
+  (`SubjectTokenService.apply_token_action` with `issue | rotate | mark_used |
+  keep | none`), and the full token state machine now runs as part of session
+  start and account-linking flows.
+
+- **`compiled_schema` in session-start response**  -  public-slug sessions now
+  return `survey_schema=published_version.compiled_schema` in the
+  `PublicSubmissionSessionResponses`. Link-based sessions return `survey_schema=None`
+  (schema was delivered at link-resolve time). Earlier docs stated the response
+  never includes `compiled_schema`.

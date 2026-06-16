@@ -42,8 +42,9 @@ Source: `backend/app/api/v1/public.py`
 
 ### 2.1 `POST /submission-session/start`  -  real
 
-Implemented via `SessionStarter.start()`. Accepts `StartSubmissionSessionRequest`,
-a discriminated union on `access.type`:
+Implemented via `SessionManagementService.start_session` ->
+`SessionStarter.start`. Accepts `StartSubmissionSessionRequest`, a discriminated
+union on `access.type`:
 
 ```json
 { "access": { "type": "public_slug", "public_slug": "customer-intake" } }
@@ -54,13 +55,16 @@ a discriminated union on `access.type`:
 ```
 
 Auth is optional (`@auth.optional_auth()`). The handler resolves the optional
-current user, calls `SessionStarter.start(core_db, payload=payload, actor=user)`,
+current user and recognition cookie, calls `SessionManagementService.start_session`,
 and returns `201` with a `PublicSubmissionSessionResponses` acknowledgement:
-`status`, `started_at`, `expires_at`, and `survey_version_id`. It does **not**
-return the survey, survey version object, `compiled_schema`, or in-process
-answers. The raw browser session token returned by the starter is set via
-`set_submission_session_cookie()` (`HttpOnly`, resume cookie), matching the
-session-start flow summarized in [flows.md](flows.md).
+`status`, `started_at`, `expires_at`, `survey_version_id`, and `survey_schema`.
+`survey_schema` contains `published_version.compiled_schema` for **public-slug**
+access and is `None` for link-based access (the schema was delivered at
+link-resolve time). The raw browser session token is set via
+`set_submission_session_cookie()` (`HttpOnly`, resume cookie). When the session
+start issues or rotates a recognition token, the raw recognition token is also
+returned and set as a separate cookie. See [flows.md §4](flows.md) for the full
+sequence.
 
 ### 2.2 No public current-session read route
 
@@ -174,22 +178,21 @@ Body-based `ResolveTokenRequest`:
 ```
 
 Auth is optional (`@auth.optional_auth()`). Resolves token hash -> active ->
-expiry -> auth-required -> assigned-email -> single-use -> survey -> published
-version via `SurveyLinkService.resolve_link()`. This is a **preview**, not an
-authorization grant  -  `POST /submission-session/start` revalidates the link. This
-already matches the verb-change decision described in [flows.md](flows.md)
-(the route was `GET ...?token=`; it is now `POST` with the token in the body).
+expiry -> auth-required -> visibility compatibility -> single-use -> survey ->
+published version via `SurveyResolveService.resolve_link()`. This is a
+**preview**, not an authorization grant  -  `POST /submission-session/start`
+revalidates the link. The route was previously `GET ...?token=`; it is now
+`POST` with the token in the body.
 
 ### 4.3 `POST /api/v1/public/links/verification/link`  -  real, authenticated
 
 Requires `@auth.require_auth()`. Body is also `ResolveTokenRequest`. Verifies
 the authenticated account against the participant identity assigned to an
 authenticated survey link  -  the account email must match the participant
-identity email before the participant is linked to the user, via
-`SurveyLinkService.verify_authenticated_link_participant()`. Returns
-`PublicLinkResponses`. Full flow detail is in
-[flows.md](flows.md); this section only documents the
-contract.
+identity email  -  via `SurveyResolveService.verify_authenticated_link_participant()`.
+After linking the identity, also reconciles the browser recognition token
+(merge if token subject differs, rotate if non-canonical). Returns
+`PublicLinkResponses`. Full flow detail is in [flows.md §2](flows.md).
 
 ---
 
