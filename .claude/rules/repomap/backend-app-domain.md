@@ -4,18 +4,13 @@ paths: backend/app/domain/**
 
 # backend/app/domain/
 
-_Last verified: 2026-06-15_
+Domain = backend durable biz rules. Reusable from services, no HTTP knowledge.
 
-Domain policy + typed errors. No HTTP here. Routes/services call domain
-functions; do not duplicate access/survey/link/auth/session policy inline.
+Use for:
 
-Rules = small `ensure_*` guards:
+- policy checks and `ensure_*` guards
+- typed domain errors
+- shared permission/rule constants
+- small pure decisions else duplicated
 
-- pass -> `None`
-- fail -> structured `AppError` from `errors.py`
-- usual -> pure ORM/domain-object check, often mirrors DB constraint
-- rare lookup -> narrow repository call, like `submission_access_rules.py`
-
-Use domain for durable policy names + real concepts. Avoid service-local adapter
-objects when concept belongs here. `permissions.py` owns frozen permission sets +
-shared `PERMISSIONS`.
+Prefer pure checks over DB work. Rule needs data → keep lookup narrow, let services coordinate full workflow.

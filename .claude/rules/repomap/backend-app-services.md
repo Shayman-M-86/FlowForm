@@ -4,32 +4,20 @@ paths: backend/app/services/**
 
 # backend/app/services/
 
-_Last verified: 2026-06-15_
+Services are the backend's use-case layer. They orchestrate domain rules,
+repositories, and transactions without knowing HTTP details.
 
-Service layer = orchestration over domain rules + repositories.
+Good service code usually reads in this order:
 
-- input -> `Session`, request DTOs/ids, usually `actor`
-- load/write -> repositories
-- policy -> `app.domain` guard/rule funcs
-- commit -> `commit_with_err_handle()` in service, not repo
-- output -> ORM rows or result dataclasses from `services/results.py`
+- accept typed inputs, ids, sessions, and actor context
+- load and persist through repositories
+- call `app.domain` for policy and business decisions
+- coordinate multi-step workflows in one place
+- own commits and transaction boundaries
+- return ORM rows or small result objects
 
-Access/RBAC -> `services/access/access_service.py`:
+Group services by use case. API-facing services can delegate to smaller core
+services, but routes should not become the workflow layer.
 
-- `AccessService` resolves project/survey membership + permissions
-- `require_project_permission()` / `require_survey_permission()` decorate API
-  routes, cache access on `flask.g`, attach OpenAPI RBAC metadata
-- platform admins bypass membership checks
-
-Respondent-session work -> `services/public_submissions/`:
-
-- `api/session_management.py` (`SessionManagementService`) -> start/answer/event/complete lifecycle; start delegates to `core/session_starter.py`
-- `api/survey_resolve.py` (`SurveyResolveService`) -> slug browsing, link token resolution, authenticated account linking
-- `core/access_resolver.py` (`AccessResolver`) -> resolves survey + link grant from slug or token; enforces access rules
-- `core/subject_resolver.py` (`SubjectResolver`) -> priority waterfall: identity > token > new anonymous; returns merge/token instructions
-- `core/subject_token.py` (`SubjectTokenService`) -> recognition token lookup, issue, rotate, mark_used
-- `core/session_starter.py` (`SessionStarter`) -> full session-start orchestration: access → subject → merge → token → session row → link consume
-
-No live `SubmissionIntakeService` / `SubmissionGateway`. No response-DB write
-or cross-DB orchestration service yet; response-envelope/answer services remain
-future work.
+Avoid services that are just renamed repositories, and avoid repositories that
+quietly perform service-level coordination.

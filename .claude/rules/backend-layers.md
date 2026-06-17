@@ -2,19 +2,15 @@
 paths: backend/app/**/*.py
 ---
 
-# Backend layer rules
+# Backend Layers
 
-Enforce the layer stack — each layer has one job:
+HTTP at edge, persistence at bottom, workflow in middle.
 
-- `models/` — pure SQLAlchemy ORM, no business logic, no cross-db relationships
-- `db/` — engines, sessions, transaction helpers only; nothing else imports engine/connection objects
-- `repositories/` — named query helpers, one DB per repo, no cross-db coordination
-- `services/` — the only layer that touches both databases; all saga workflows go here
-- `schemas/` — Pydantic only; never import from `models/`
-- `api/routes/` — thin HTTP handlers; call a service, return a response; no SQL, no business logic
+- `api/routes/` translate HTTP into service calls.
+- `schema/api/` describes request and response shapes.
+- `services/` own use cases, workflows, and coordination.
+- `repositories/` hide named database queries.
+- `schema/orm/` defines SQLAlchemy tables and relationships.
+- `db/` owns sessions, engines, and transaction helpers.
 
-Cross-db orchestration belongs in `services/` exclusively. Routes must not contain SQL or session management.
-
-The response DB must never receive a real `user_id` — only a `pseudonymous_subject_id` UUID.
-
-`models/core/` uses `CoreBase`; `models/response/` uses `ResponseBase` — never mixed.
+Routes thin. Models passive. HTTP/workflow/persistence mixing → move to owning layer.

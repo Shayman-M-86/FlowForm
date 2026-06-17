@@ -1,39 +1,23 @@
 ---
-paths: backend/app/**
+paths: backend/app/{*.py,core/**,db/**,logging/**,middleware/**,openapi/**,utils/**}
 ---
 
 # backend/app/
 
-_Last verified: 2026-06-15_
+Top-level app infrastructure: factory, config, extensions, middleware,
+OpenAPI, logging, DB wiring, and small shared helpers.
 
-Top-level Flask app package. Entry point: `create_app` in `core/factory.py`.
+`create_app` is the composition root. It wires the app together, but should not
+own feature workflows.
 
-Factory order:
+Keep this area focused on application plumbing:
 
-- bootstrap logging/settings
-- build Flask app + apply config
-- init extensions: DB manager, Auth0 auth, URL converters, CORS
-- init per-request core + response DB sessions
-- register API v1 blueprints
-- register rate limiting
-- register error handlers + OpenAPI options
-- import ORM package so SQLAlchemy mappings register
-- seed required permission rows
+- app factory and config
+- extension singletons and request lifecycle
+- DB session helpers and transaction utilities
+- middleware, URL converters, and rate limiting
+- OpenAPI registration/export
+- logging and audit hooks
 
-Layer map:
-
-- `api/` -> thin Flask routes + request parsing
-- `core/` -> config, extension singletons, app factory
-- `db/` -> engines, sessions, transaction/error helpers, ORM bases
-- `domain/` -> policy guards + typed errors
-- `repositories/` -> SQLAlchemy data access
-- `schema/` -> Pydantic API contracts + ORM models
-- `services/` -> orchestration, commits, permission/session flows
-- `middleware/` -> auth, rate limit, URL converters
-- `openapi/` -> route metadata + spec generation/export
-- `logging/` -> bootstrap/app/request/audit logging
-- `utils/` -> small shared helpers
-
-Keep direction clean: routes -> services -> domain/repositories/schema. `gateway/`
-has no active source files in current checkout; do not add new gateway code
-without re-establishing its boundary.
+Do not add feature-specific orchestration here. Put that in `services/`, with
+local persistence hidden behind `repositories/`.
