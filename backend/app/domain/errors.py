@@ -645,3 +645,69 @@ class SessionStartError(AppError):
             code="SESSION_START_FAILED",
             message=message,
         )
+
+
+class SessionNotFoundError(AppError):
+    """Raised when no session matches the browser resume token."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=404,
+            code="SESSION_NOT_FOUND",
+            message="Session not found.",
+        )
+
+
+class SessionExpiredError(AppError):
+    """Raised when the session has passed its expiry time."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="SESSION_EXPIRED",
+            message="This session has expired.",
+        )
+
+
+class SessionInvalidError(AppError):
+    """Raised when the session is in an invalid state for the requested operation."""
+
+    def __init__(self, message: str = "Session is not in a valid state.") -> None:
+        super().__init__(
+            status_code=409,
+            code="SESSION_INVALID",
+            message=message,
+        )
+
+
+class EnvelopeNotFoundError(AppError):
+    """Raised when the response envelope cannot be found for a session locator."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=500,
+            code="ENVELOPE_NOT_FOUND",
+            message="Response envelope not found.",
+        )
+
+
+class AnswerSaveError(AppError):
+    """Raised when an answer save operation fails."""
+
+    def __init__(self, message: str = "Answer save failed.") -> None:
+        super().__init__(
+            status_code=500,
+            code="ANSWER_SAVE_FAILED",
+            message=message,
+        )
+
+
+class QuestionNotInVersionError(AppError):
+    """Raised when a question node ID does not belong to the frozen survey version."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=400,
+            code="QUESTION_NOT_IN_VERSION",
+            message="Question does not belong to this survey version.",
+        )

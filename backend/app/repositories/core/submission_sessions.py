@@ -5,6 +5,7 @@ import secrets
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
@@ -50,6 +51,22 @@ def create_session(
     db.add(session)
     flush_with_err_handle(db, contexts=[session])
     return session
+
+
+def get_by_token_hash(db: Session, token_hash: bytes) -> SubmissionSession | None:
+    return db.scalar(
+        select(SubmissionSession).where(
+            SubmissionSession.browser_session_token_hash == token_hash,
+        )
+    )
+
+
+def lock_for_update(db: Session, session_id: UUID) -> SubmissionSession | None:
+    return db.scalar(
+        select(SubmissionSession)
+        .where(SubmissionSession.id == session_id)
+        .with_for_update()
+    )
 
 
 def mark_abandoned(db: Session, *, submission_session: SubmissionSession) -> None:

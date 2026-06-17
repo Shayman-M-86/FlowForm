@@ -19,6 +19,7 @@ def create(
     nonce: bytes,
     ciphertext: bytes,
     client_mutation_id: uuid.UUID,
+    revision_id: uuid.UUID | None = None,
 ) -> ResponseAnswerRevision:
     revision = ResponseAnswerRevision(
         answer_id=answer_id,
@@ -28,6 +29,8 @@ def create(
         ciphertext=ciphertext,
         client_mutation_id=client_mutation_id,
     )
+    if revision_id is not None:
+        revision.id = revision_id
     db.add(revision)
     flush_with_err_handle(db, contexts=[revision])
     return revision
