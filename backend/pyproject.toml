@@ -20,6 +20,7 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "idna>=3.16",
     "requests>=2.33.0",
+    "boto3>=1.38.0",
     "sqlalchemy-utils>=0.42.1",
     "urllib3>=2.7.0",
 ]

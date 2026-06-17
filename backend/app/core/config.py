@@ -154,6 +154,16 @@ class AppSettings(BaseModel):
         return self
 
 
+class EncryptionSettings(BaseModel):
+    """AWS encryption settings for session response encryption."""
+
+    kms_key_arn: str
+    linkage_secret_arn: str
+    aws_region: str
+    aws_access_key_id: SecretStr
+    aws_secret_access_key: SecretStr
+
+
 class RateLimitSettings(BaseModel):
     """Global rate limiting configuration."""
 
@@ -185,6 +195,7 @@ class FlowForm(BaseModel):
     server: ServerSettings = Field(default_factory=ServerSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
+    encryption: EncryptionSettings | None = None
 
 
 class DataBase(BaseModel):
