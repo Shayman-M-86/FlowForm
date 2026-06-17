@@ -53,16 +53,17 @@ The response write is authoritative. The core analytics event is secondary.
 The conceptual order is:
 
 1. validate and lock the current session when mutation requires it;
-2. validate the answer against the frozen survey version;
-3. derive the session locator and answer locator;
-4. load the response envelope;
-5. load the plaintext DEK from the local worker cache, otherwise unwrap it with KMS using `wrapped_dek`;
-6. encrypt the answer payload;
-7. insert a new immutable revision;
-8. update the latest pointer for the logical answer;
-9. commit the response transaction;
-10. insert the core answer-saved event;
-11. commit the core transaction.
+2. check whether a revision with the same client mutation ID already exists for this logical answer; if it does, return that revision immediately without proceeding;
+3. validate the answer against the frozen survey version;
+4. derive the session locator and answer locator;
+5. load the response envelope;
+6. load the plaintext DEK from the local worker cache, otherwise unwrap it with KMS using `wrapped_dek`;
+7. encrypt the answer payload;
+8. insert a new immutable revision;
+9. update the latest pointer for the logical answer;
+10. commit the response transaction;
+11. insert the core answer-saved event;
+12. commit the core transaction.
 
 If the analytics event fails after the response write succeeds, the answer should still be treated as saved.
 

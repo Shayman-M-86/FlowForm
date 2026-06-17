@@ -88,7 +88,7 @@ The cache is an optimisation only. It is not the source of truth.
 
 Rules:
 
-- cache key: response envelope ID or session locator;
+- cache key: session locator (derive it from the resume token before any database query; the envelope ID is not known until after the response database lookup, so it cannot serve as a consistent cache key);
 - cache value: plaintext DEK;
 - TTL: no longer than session expiry;
 - clear or evict when the session completes, expires, is abandoned, or when the worker restarts.

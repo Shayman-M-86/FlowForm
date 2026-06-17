@@ -44,7 +44,7 @@ Reconciliation should be able to detect and repair or flag:
 
 Do not claim a response is deleted until required stores have been handled.
 
-For privacy, encrypted response material should be removed before or alongside core metadata deletion or anonymisation. If only one database operation succeeds, mark the deletion pending and retry.
+For privacy, encrypted response material should be removed before core metadata deletion or anonymisation. Delete the response database records first, then the core records. If the response delete succeeds but the core delete fails, the deletion is still retryable and the answer data is already gone. If the core delete is attempted first and fails, the response data is untouched and the full operation can be retried safely. If only one database operation succeeds, mark the deletion pending and retry.
 
 ## Logging rule
 
