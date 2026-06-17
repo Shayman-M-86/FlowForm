@@ -1,4 +1,4 @@
-# Pass 07: Completion, Admin Paths, and Deletion
+# Pass 08: Completion, Admin Paths, and Deletion
 
 ## Goal
 
@@ -49,7 +49,7 @@ that consume the crypto and repository infrastructure built in earlier passes.
 
 ## Out of scope
 
-- Answer save or session loader — pass 05
+- Answer save or session loader — pass 06
 - Changing upstream authorization logic
 
 ## Done when
@@ -62,4 +62,4 @@ that consume the crypto and repository infrastructure built in earlier passes.
 
 ## Dependencies
 
-Pass 06 (integration tests signed off by operator) must be complete.
+Pass 07 (integration tests signed off by operator) must be complete.

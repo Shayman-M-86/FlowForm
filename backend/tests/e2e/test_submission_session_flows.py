@@ -198,7 +198,7 @@ def test_row1_public_slug_anon_no_token(
     assert resp.status_code == 201, resp.get_data(as_text=True)
     body = resp.get_json()
     assert body["status"] == "in_progress"
-    assert body["survey_schema"] is not None
+    assert "survey_schema" not in body
     assert _has_cookie(resp, _SESSION_COOKIE)
     assert _has_cookie(resp, _RECOGNITION_COOKIE)
 
@@ -290,7 +290,7 @@ def test_row6_general_link_anon_no_token(
     assert resp.status_code == 201, resp.get_data(as_text=True)
     body = resp.get_json()
     assert body["status"] == "in_progress"
-    assert body["survey_schema"] is None  # schema returned at pre-session resolve, not here
+    assert "survey_schema" not in body
     assert _has_cookie(resp, _SESSION_COOKIE)
     assert _has_cookie(resp, _RECOGNITION_COOKIE)
 

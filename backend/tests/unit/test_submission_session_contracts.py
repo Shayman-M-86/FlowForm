@@ -73,7 +73,7 @@ def test_start_submission_session_rejects_legacy_submission_fields() -> None:
     assert {"survey_version_id", "started_at", "submitted_at", "answers", "metadata"} <= fields
 
 
-def test_submission_session_response_omits_survey_schema_and_answers() -> None:
+def test_submission_session_response_contains_only_acknowledgement_fields() -> None:
     current = datetime.now(UTC)
     response = PublicSubmissionSessionResponses(
         status="in_progress",
@@ -89,8 +89,8 @@ def test_submission_session_response_omits_survey_schema_and_answers() -> None:
         "started_at": current.isoformat().replace("+00:00", "Z"),
         "expires_at": current.isoformat().replace("+00:00", "Z"),
         "survey_version_id": 31,
-        "survey_schema": None,
     }
+    assert "survey_schema" not in dumped
     assert "survey" not in dumped
     assert "version" not in dumped
     assert "compiled_schema" not in dumped

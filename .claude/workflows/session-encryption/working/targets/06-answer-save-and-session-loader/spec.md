@@ -1,4 +1,4 @@
-# Pass 05: Answer Save and Session Loader
+# Pass 06: Answer Save and Session Loader
 
 ## Goal
 
@@ -57,8 +57,8 @@ Failure must not block the respondent (doc 03).
 
 ## Out of scope
 
-- Completion — pass 07
-- Admin reads or deletion — pass 07
+- Completion — pass 08
+- Admin reads or deletion — pass 08
 
 ## Done when
 
@@ -70,4 +70,4 @@ Failure must not block the respondent (doc 03).
 
 ## Dependencies
 
-Pass 04 (session start) must be complete — loader depends on sessions existing.
+Pass 05 (session-start contract and reconciliation) must be complete — loader depends on the finalized session-start contract.

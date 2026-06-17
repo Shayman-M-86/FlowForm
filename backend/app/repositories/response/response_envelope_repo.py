@@ -34,3 +34,13 @@ def get_by_locator(db: Session, session_locator: bytes) -> ResponseEnvelope | No
     return db.scalar(
         select(ResponseEnvelope).where(ResponseEnvelope.session_locator == session_locator)
     )
+
+
+def delete_by_locator(db: Session, session_locator: bytes) -> bool:
+    """Delete an envelope by session locator. Returns True if a row was deleted."""
+    envelope = get_by_locator(db, session_locator)
+    if envelope is None:
+        return False
+    db.delete(envelope)
+    db.flush()
+    return True

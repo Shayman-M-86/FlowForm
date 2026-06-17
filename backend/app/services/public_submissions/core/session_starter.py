@@ -10,15 +10,15 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings, current_settings
 from app.crypto import DekCache, derive_session_locator, get_linkage_secret, wrap_dek
-from app.crypto.kms import KmsError
-from app.crypto.secrets import LinkageSecretError
 from app.db.error_handling import commit_with_err_handle
 from app.domain import survey_rules
+from app.domain.errors import SessionStartError
 from app.repositories import public_link_repo as plr
 from app.repositories.core import project_subject_identities as sub_id
 from app.repositories.core import project_subjects as subjects
@@ -31,15 +31,14 @@ from app.services.public_submissions.core.access_resolver import AccessResolver
 from app.services.public_submissions.core.subject_resolver import SubjectResolver
 from app.services.public_submissions.core.subject_token import SubjectTokenService
 
+if TYPE_CHECKING:
+    from app.schema.orm.core.submission_session import SubmissionSession
+
 logger = logging.getLogger(__name__)
 
 _DEK_LENGTH = 32
 _CRYPTO_VERSION = 1
 _KMS_CONTEXT_VERSION = 1
-
-
-class SessionStartError(Exception):
-    """Raised when session start fails during envelope creation."""
 
 
 class SessionStarter:
@@ -164,31 +163,22 @@ class SessionStarter:
 
         # --- Response envelope creation ---
         # Core rows are flushed but NOT committed yet. If envelope creation
-        # fails, core rollback undoes the session, single-use link consumption,
-        # and recognition-token side effects.
-        try:
-            session_locator, plaintext_dek = self._create_response_envelope(
-                db, response_db, session=session
-            )
-        except SessionStartError:
-            raise
-        except Exception:
-            logger.error("session_start.envelope_creation_failed")
-            db.rollback()
-            raise SessionStartError("Failed to create response envelope")
-
-        if access.link is not None and access.is_single_use:
-            commit_with_err_handle(db, contexts=[session, access.link])
-        else:
-            commit_with_err_handle(db, contexts=[session])
-
-        # Both DBs committed — safe to return tokens.
-        survey_schema = (
-            access.published_version.compiled_schema
-            if access.access_method == "public_slug"
-            else None
+        # fails, _create_response_envelope rolls back core and raises
+        # SessionStartError — no additional handling needed here.
+        session_locator, plaintext_dek = self._create_response_envelope(
+            db, response_db, session=session
         )
 
+        try:
+            if access.link is not None and access.is_single_use:
+                commit_with_err_handle(db, contexts=[session, access.link])
+            else:
+                commit_with_err_handle(db, contexts=[session])
+        except Exception as err:
+            self._compensate_orphan_envelope(response_db, session_locator)
+            raise SessionStartError("Core commit failed after response envelope creation") from err
+
+        # Both DBs committed — safe to return tokens and cache.
         if self._dek_cache is not None:
             self._dek_cache.put(session_locator, plaintext_dek)
 
@@ -197,7 +187,6 @@ class SessionStarter:
             started_at=session.started_at,
             expires_at=session.expires_at,
             survey_version_id=access.survey_version_id,
-            survey_schema=survey_schema,
         )
         return response, raw_browser_session_token, raw_recognition_token
 
@@ -206,17 +195,13 @@ class SessionStarter:
         db: Session,
         response_db: Session,
         *,
-        session: object,
+        session: SubmissionSession,
     ) -> tuple[bytes, bytes]:
         """Derive locator, generate and wrap DEK, create envelope, commit response DB.
 
         Returns (session_locator, plaintext_dek).
         On failure: rolls back core so no side effects leak.
         """
-        from app.schema.orm.core.submission_session import SubmissionSession
-
-        assert isinstance(session, SubmissionSession)
-
         enc = self._get_encryption_settings()
         core_session_id = str(session.id)
         linkage_key_version = session.linkage_key_version
@@ -256,13 +241,22 @@ class SessionStarter:
 
             commit_with_err_handle(response_db, contexts=[])
 
-        except (KmsError, LinkageSecretError):
-            logger.error("session_start.envelope_creation_failed")
+        except Exception as err:
+            logger.error("session_start.envelope_creation_failed", exc_info=True)
             db.rollback()
-            raise SessionStartError("Failed to create response envelope")
-        except Exception:
-            logger.error("session_start.envelope_creation_failed")
-            db.rollback()
-            raise SessionStartError("Failed to create response envelope")
+            raise SessionStartError("Failed to create response envelope") from err
 
         return session_locator, plaintext_dek
+
+    def _compensate_orphan_envelope(
+        self,
+        response_db: Session,
+        session_locator: bytes,
+    ) -> None:
+        """Best-effort delete of an orphan response envelope after core commit failure."""
+        try:
+            response_envelope_repo.delete_by_locator(response_db, session_locator)
+            response_db.commit()
+        except Exception:
+            response_db.rollback()
+            logger.critical("session_start.orphan_envelope_cleanup_failed", exc_info=True)

@@ -634,3 +634,14 @@ class SubjectResolutionError(AppError):
             code="SUBJECT_RESOLUTION_FAILED",
             message="A referenced respondent subject could not be resolved.",
         )
+
+
+class SessionStartError(AppError):
+    """Raised when session start fails during envelope creation."""
+
+    def __init__(self, message: str = "Session start failed.") -> None:
+        super().__init__(
+            status_code=500,
+            code="SESSION_START_FAILED",
+            message=message,
+        )

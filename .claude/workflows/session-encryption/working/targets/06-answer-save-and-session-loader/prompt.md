@@ -1,8 +1,8 @@
-# Pass 05: Answer Save and Session Loader
+# Pass 06: Answer Save and Session Loader
 
-Read `.claude/workflows/session-encryption/working/targets/05-answer-save-and-session-loader/spec.md` in full before writing any code.
+Read `.claude/workflows/session-encryption/working/targets/06-answer-save-and-session-loader/spec.md` in full before writing any code.
 
-Dependency check: confirm pass 04 report exists in `.claude/workflows/session-encryption/working/pass-reports/`. If not, stop.
+Dependency check: confirm `.claude/workflows/session-encryption/working/pass-reports/05-session-start-contract-and-reconciliation.md` exists. If not, stop.
 
 New files go in `backend/app/services/public_submissions/core/`.
 

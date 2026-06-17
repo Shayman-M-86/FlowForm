@@ -3,8 +3,9 @@
 Verifies that:
 - Successful session start creates both core session and response envelope
 - Resume token is not returned when envelope creation fails
-- Core session is marked abandoned when envelope creation fails after core flush
+- Core session is rolled back when envelope creation fails before core commit
 - DEK is cached on successful start
+- Core commit failure after envelope creation triggers orphan cleanup
 """
 from __future__ import annotations
 
@@ -20,13 +21,12 @@ from app.core.config import EncryptionSettings
 from app.crypto import DekCache
 from app.crypto.kms import KmsError
 from app.crypto.secrets import LinkageSecretError
+from app.db.error_handling import commit_with_err_handle
+from app.domain.errors import SessionStartError
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.response.response_envelope import ResponseEnvelope
-from app.services.public_submissions.core.session_starter import (
-    SessionStarter,
-    SessionStartError,
-)
+from app.services.public_submissions.core.session_starter import SessionStarter
 from tests.conftest import DbSessions
 from tests.integration.core.factories import (
     make_project,
@@ -103,6 +103,25 @@ def _patch_crypto(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+def _fail_response_commit_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make the response DB commit fail before the core DB commit is attempted."""
+    original = commit_with_err_handle
+    call_count = 0
+
+    def _fail_first(db, *args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            db.rollback()
+            raise RuntimeError("response commit failed")
+        return original(db, *args, **kwargs)
+
+    monkeypatch.setattr(
+        "app.services.public_submissions.core.session_starter.commit_with_err_handle",
+        _fail_first,
+    )
+
+
 class TestSuccessfulSessionStart:
 
     def test_session_start_creates_core_session_and_response_envelope(
@@ -165,7 +184,8 @@ class TestSuccessfulSessionStart:
         assert len(cached) == 32, "cached DEK must be 32 bytes"
 
 
-class TestEnvelopeFailureRollback:
+class TestPreCommitEnvelopeFailureRollback:
+    """Envelope creation fails before core commit — core transaction is rolled back."""
 
     def test_kms_failure_rolls_back_core_session(
         self,
@@ -255,3 +275,179 @@ class TestEnvelopeFailureRollback:
             select(SubmissionSession).where(SubmissionSession.survey_id == survey_id)
         )
         assert session is None, "core session must be rolled back on envelope repo failure"
+
+    def test_response_commit_failure_rolls_back_core_session_and_envelope(
+        self,
+        db_sessions: DbSessions,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        survey_id = _seed_published_survey(db_sessions.core, "response-commit-fail-test")
+        _patch_crypto(monkeypatch)
+        _fail_response_commit_once(monkeypatch)
+
+        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+
+        with pytest.raises(SessionStartError, match="Failed to create response envelope"):
+            starter.start(
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("response-commit-fail-test"),
+                actor=None,
+            )
+
+        session = db_sessions.core.scalar(
+            select(SubmissionSession).where(SubmissionSession.survey_id == survey_id)
+        )
+        assert session is None, "core session must be rolled back when response commit fails"
+
+        envelope = db_sessions.response.scalar(select(ResponseEnvelope))
+        assert envelope is None, "response envelope must be rolled back when response commit fails"
+
+
+class TestCoreCommitFailureAfterEnvelopeCreation:
+    """Response envelope committed, then core commit fails — orphan cleanup."""
+
+    @staticmethod
+    def _patch_fail_core_commit(monkeypatch: pytest.MonkeyPatch) -> None:
+        """Make commit_with_err_handle succeed for response DB (1st call) but fail for core (2nd call)."""
+        call_count = 0
+        original = commit_with_err_handle
+
+        def _fail_second(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 2:
+                raise RuntimeError("core commit failed")
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(
+            "app.services.public_submissions.core.session_starter.commit_with_err_handle",
+            _fail_second,
+        )
+
+    def test_core_commit_failure_does_not_return_resume_token(
+        self,
+        db_sessions: DbSessions,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _seed_published_survey(db_sessions.core, "core-fail-test")
+        _patch_crypto(monkeypatch)
+        self._patch_fail_core_commit(monkeypatch)
+
+        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+
+        with pytest.raises(SessionStartError, match="Core commit failed"):
+            starter.start(
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("core-fail-test"),
+                actor=None,
+            )
+
+    def test_core_commit_failure_does_not_cache_dek(
+        self,
+        db_sessions: DbSessions,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _seed_published_survey(db_sessions.core, "core-fail-cache-test")
+        _patch_crypto(monkeypatch)
+        self._patch_fail_core_commit(monkeypatch)
+
+        dek_cache = DekCache()
+        starter = SessionStarter(
+            dek_cache=dek_cache,
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
+
+        with pytest.raises(SessionStartError):
+            starter.start(
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("core-fail-cache-test"),
+                actor=None,
+            )
+
+        assert len(dek_cache._store) == 0, "DEK must not be cached when core commit fails"
+
+    def test_core_commit_failure_leaves_orphan_for_reconciliation(
+        self,
+        db_sessions: DbSessions,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """When cleanup fails (e.g. no DELETE permission), the orphan envelope
+        persists as a reconciliation target. It is inert — no core session
+        references it."""
+        _seed_published_survey(db_sessions.core, "core-fail-cleanup-test")
+        _patch_crypto(monkeypatch)
+        self._patch_fail_core_commit(monkeypatch)
+
+        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+
+        with pytest.raises(SessionStartError):
+            starter.start(
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("core-fail-cleanup-test"),
+                actor=None,
+            )
+
+        db_sessions.response.rollback()
+        envelope = db_sessions.response.scalar(select(ResponseEnvelope))
+        assert envelope is not None, (
+            "orphan envelope persists as reconciliation target when cleanup "
+            "cannot delete (response DB app user lacks DELETE permission)"
+        )
+
+    def test_core_commit_failure_invokes_compensation_with_envelope_locator(
+        self,
+        db_sessions: DbSessions,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _seed_published_survey(db_sessions.core, "core-fail-compensate-call-test")
+        _patch_crypto(monkeypatch)
+        self._patch_fail_core_commit(monkeypatch)
+
+        deleted_locators: list[bytes] = []
+
+        def _record_delete(_db: Session, session_locator: bytes) -> bool:
+            deleted_locators.append(session_locator)
+            return True
+
+        monkeypatch.setattr(
+            "app.services.public_submissions.core.session_starter.response_envelope_repo.delete_by_locator",
+            _record_delete,
+        )
+
+        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+
+        with pytest.raises(SessionStartError, match="Core commit failed"):
+            starter.start(
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("core-fail-compensate-call-test"),
+                actor=None,
+            )
+
+        envelope = db_sessions.response.scalar(select(ResponseEnvelope))
+        assert envelope is not None
+        assert deleted_locators == [envelope.session_locator]
+
+    def test_compensation_failure_rolls_back_response_session_and_logs(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        response_db = MagicMock()
+        monkeypatch.setattr(
+            "app.services.public_submissions.core.session_starter.response_envelope_repo.delete_by_locator",
+            MagicMock(side_effect=RuntimeError("DELETE denied")),
+        )
+        caplog.set_level("ERROR")
+
+        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+
+        starter._compensate_orphan_envelope(response_db, b"\x08" * 32)
+
+        response_db.rollback.assert_called_once_with()
+        response_db.commit.assert_not_called()
+        assert "session_start.orphan_envelope_cleanup_failed" in caplog.text

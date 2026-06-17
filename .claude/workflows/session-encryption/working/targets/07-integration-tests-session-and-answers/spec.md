@@ -1,11 +1,11 @@
-# Pass 06: Integration Tests — Session Start and Answer Save
+# Pass 07: Integration Tests — Session Start and Answer Save
 
 ## Goal
 
 This is a validation pass. Write and run integration tests that verify the
 session start and answer save flows work correctly end-to-end against real
 databases and real AWS. The human operator reviews DB state and test output
-to confirm correctness before pass 07 begins.
+to confirm correctness before pass 08 begins.
 
 ## Human action required
 
@@ -15,7 +15,7 @@ After the agent runs the tests, the operator should:
    are ciphertext (not plaintext), locators are opaque bytes (not UUIDs or question IDs).
 2. Confirm the core DB has no plaintext answers and no response DB IDs.
 3. Confirm KMS was called for DEK wrap on session start and DEK unwrap on answer save.
-4. Sign off before pass 07 starts.
+4. Sign off before pass 08 starts.
 
 ## Test scenarios to cover
 
@@ -53,4 +53,4 @@ After the agent runs the tests, the operator should:
 
 ## Dependencies
 
-Pass 05 (answer save and session loader) must be complete.
+Pass 06 (answer save and session loader) must be complete.

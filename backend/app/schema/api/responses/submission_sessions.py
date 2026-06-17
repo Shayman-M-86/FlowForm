@@ -24,9 +24,8 @@ class SubmissionSessionAnswerResponses(BaseModel):
 class PublicSubmissionSessionResponses(BaseModel):
     """Session start acknowledgement.
 
-    survey_schema is included only for public_slug access, where the schema is
-    returned with the session start response. Link-based paths return the schema
-    at pre-session link resolve time, so survey_schema is None there.
+    Survey schema delivery belongs to discovery and link-resolution flows,
+    not to session start.
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -35,7 +34,6 @@ class PublicSubmissionSessionResponses(BaseModel):
     started_at: datetime
     expires_at: datetime
     survey_version_id: int
-    survey_schema: dict[str, Any] | None = None
 
 
 class CompleteSubmissionSessionResponses(BaseModel):

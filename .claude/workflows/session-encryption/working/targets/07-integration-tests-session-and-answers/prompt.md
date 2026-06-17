@@ -1,10 +1,10 @@
-# Pass 06: Integration Tests — Session Start and Answer Save
+# Pass 07: Integration Tests — Session Start and Answer Save
 
-Read `.claude/workflows/session-encryption/working/targets/06-integration-tests-session-and-answers/spec.md` in full before writing any code.
+Read `.claude/workflows/session-encryption/working/targets/07-integration-tests-session-and-answers/spec.md` in full before writing any code.
 
 Dependency checks:
-- Confirm `backend/app/services/public_submissions/core/answer_save.py` exists (pass 05). If not, stop.
-- Confirm `backend/app/services/public_submissions/core/session_loader.py` exists (pass 05). If not, stop.
+- Confirm `backend/app/services/public_submissions/core/answer_save.py` exists (pass 06). If not, stop.
+- Confirm `backend/app/services/public_submissions/core/session_loader.py` exists (pass 06). If not, stop.
 
 This is a validation pass — write tests only, no new service code.
 New test files go in `backend/tests/integration/response/`.

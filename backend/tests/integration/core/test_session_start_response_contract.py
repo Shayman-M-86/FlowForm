@@ -1,11 +1,10 @@
 """Session start response contract tests.
 
 Verifies that:
-- public slug session start returns survey_schema in the response
-- link-based session start omits survey_schema (schema returned at pre-session resolve)
+- session start does not include survey_schema (schema belongs to discovery/link-resolution)
 - token delivery: browser-session and recognition tokens go to cookies, not body
 
-Docs: Public-slug-flow.md §5, General-Link-Flow.md §9, Private-link-access-Flow.md §5
+Docs: 01-service-boundary.md — survey schema delivery belongs to discovery flows.
 """
 from __future__ import annotations
 
@@ -81,12 +80,12 @@ def _make_private_link(
     return link, raw_token
 
 
-def test_public_slug_session_start_includes_survey_schema(
+def test_public_slug_session_start_omits_survey_schema(
     db_session: Session,
     survey: Survey,
     survey_version: SurveyVersion,
 ) -> None:
-    """Public slug session start must return survey_schema per Public-slug-flow.md §5."""
+    """Session start must not include survey_schema — schema belongs to discovery flows."""
     _publish_survey(db_session, survey=survey, survey_version=survey_version, public_slug="schema-test-slug")
     payload = StartSubmissionSessionRequest.model_validate(
         {"access": {"type": "public_slug", "public_slug": "schema-test-slug"}}
@@ -96,7 +95,7 @@ def test_public_slug_session_start_includes_survey_schema(
         db_session, db_session, payload=payload, actor=None
     )
 
-    assert response.survey_schema == _SCHEMA, "public slug start must include compiled_schema"
+    assert not hasattr(response, "survey_schema"), "session start must not include survey_schema"
 
 
 def test_general_link_session_start_omits_survey_schema(
@@ -104,7 +103,7 @@ def test_general_link_session_start_omits_survey_schema(
     survey: Survey,
     survey_version: SurveyVersion,
 ) -> None:
-    """General link session start must not include survey_schema; it was returned at pre-session resolve."""
+    """Session start must not include survey_schema — schema belongs to discovery flows."""
     _publish_survey(db_session, survey=survey, survey_version=survey_version)
     _link, raw_token = _make_general_link(db_session, survey=survey)
     payload = StartSubmissionSessionRequest.model_validate(
@@ -115,7 +114,7 @@ def test_general_link_session_start_omits_survey_schema(
         db_session, db_session, payload=payload, actor=None
     )
 
-    assert response.survey_schema is None, "link-based start must not include survey_schema"
+    assert not hasattr(response, "survey_schema"), "session start must not include survey_schema"
 
 
 def test_private_link_session_start_omits_survey_schema(
@@ -123,7 +122,7 @@ def test_private_link_session_start_omits_survey_schema(
     survey: Survey,
     survey_version: SurveyVersion,
 ) -> None:
-    """Private link session start must not include survey_schema; it was returned at pre-session resolve."""
+    """Session start must not include survey_schema — schema belongs to discovery flows."""
     _publish_survey(db_session, survey=survey, survey_version=survey_version)
     participant = make_participant_chain(
         db_session, project_id=survey.project_id, subject_code="schema-test-assigned"
@@ -139,7 +138,7 @@ def test_private_link_session_start_omits_survey_schema(
         db_session, db_session, payload=payload, actor=None
     )
 
-    assert response.survey_schema is None, "link-based start must not include survey_schema"
+    assert not hasattr(response, "survey_schema"), "session start must not include survey_schema"
 
 
 def test_public_slug_session_start_returns_browser_session_token(

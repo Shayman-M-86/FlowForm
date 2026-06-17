@@ -14,9 +14,15 @@ Core analytics events are useful, but they must not decide whether an answer was
 
 Session start must not expose a browser resume token until the required core session and response envelope both exist.
 
-If response envelope creation fails before the token is exposed, the service must roll back the uncommitted core session. If a partial core session has already committed, the service must mark it abandoned and add it to reconciliation.
-
 Single-use link consumption and recognition-token side effects must not be committed if encrypted session initialization fails.
+
+### Session start partial states
+
+Two partial states are possible because core and response are separate databases:
+
+**Response envelope creation fails before core commit.** The core session, single-use link consumption, and recognition-token side effects are still uncommitted. The service rolls back the core transaction. No data persists in either database.
+
+**Response envelope committed, core commit fails.** The response envelope exists but no core session references it. The service must not return the browser resume token and must not cache the plaintext DEK. It attempts immediate compensating deletion of the orphan envelope by session locator. If cleanup fails, the orphan envelope is inert — it contains only a wrapped DEK and a session locator with no corresponding core session — and is routed to reconciliation for later removal.
 
 ## Cross-database failure rule
 
@@ -34,6 +40,7 @@ Services must explicitly decide:
 Reconciliation must detect these states and route each one to its remediation workflow:
 
 - core sessions without response envelopes;
+- response envelopes without core sessions (orphan envelopes from failed core commits);
 - response write success with missing analytics event;
 - pending deletions;
 - missing response envelopes during admin reads;

@@ -1,4 +1,4 @@
-# Pass 08: Security Review and E2E
+# Pass 09: Security Review and E2E
 
 ## Goal
 
@@ -47,7 +47,7 @@ All existing E2E tests must still pass — no regressions.
 
 ### Pass report
 
-Write a pass report to `.claude/workflows/session-encryption/working/pass-reports/08-security-review-and-e2e.md` that includes:
+Write a pass report to `.claude/workflows/session-encryption/working/pass-reports/09-security-review-and-e2e.md` that includes:
 
 - Full list of security findings with severity and disposition
 - E2E test results summary
@@ -63,4 +63,4 @@ Write a pass report to `.claude/workflows/session-encryption/working/pass-report
 
 ## Dependencies
 
-Pass 07 (completion, admin, deletion) must be complete.
+Pass 08 (completion, admin, deletion) must be complete.

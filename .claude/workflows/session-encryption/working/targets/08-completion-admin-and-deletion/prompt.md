@@ -1,8 +1,8 @@
-# Pass 07: Completion, Admin Paths, and Deletion
+# Pass 08: Completion, Admin Paths, and Deletion
 
-Read `.claude/workflows/session-encryption/working/targets/07-completion-admin-and-deletion/spec.md` in full before writing any code.
+Read `.claude/workflows/session-encryption/working/targets/08-completion-admin-and-deletion/spec.md` in full before writing any code.
 
-Dependency check: confirm `.claude/workflows/session-encryption/working/pass-reports/06-integration-tests-session-and-answers.md` exists and is signed off. If not, stop.
+Dependency check: confirm `.claude/workflows/session-encryption/working/pass-reports/07-integration-tests-session-and-answers.md` exists and is signed off. If not, stop.
 
 New file: `backend/app/services/public_submissions/core/completion.py`.
 Existing file to extend: `backend/app/services/results.py` — read it fully before editing.
