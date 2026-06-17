@@ -84,11 +84,7 @@ def load_current_session(
         raise SessionNotFoundError()
 
     now = datetime.now(UTC)
-    if session.expires_at.tzinfo is None:
-        from datetime import timezone
-        expires_at = session.expires_at.replace(tzinfo=UTC)
-    else:
-        expires_at = session.expires_at
+    expires_at = session.expires_at.replace(tzinfo=UTC) if session.expires_at.tzinfo is None else session.expires_at
     if now > expires_at:
         raise SessionExpiredError()
 
