@@ -71,8 +71,10 @@ class SubjectTokenService:
         """Apply the token_action instruction from SubjectResolutionResult.
 
         issue   — create a new token for final_subject_id; return raw token.
-        rotate  — revoke any existing token for final_subject_id, issue a new one; return raw token.
-        mark_used — update last_used_at on the existing token; return existing_raw_token so the caller re-sets the cookie.
+        rotate  — revoke any existing token for final_subject_id, issue a new
+                  one; return raw token.
+        mark_used — update last_used_at on the existing token; return
+                    existing_raw_token so the caller re-sets the cookie.
         keep / none — no write; return None (browser cookie unchanged).
         """
         if token_action == "issue":

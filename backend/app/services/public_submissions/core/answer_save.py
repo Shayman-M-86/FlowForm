@@ -11,7 +11,6 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import EncryptionSettings
 from app.crypto import (
     build_aad,
     build_plaintext_payload,
@@ -37,6 +36,11 @@ _KMS_CONTEXT_VERSION = 1
 
 
 class AnswerSaveService:
+    """Service for orchestrating the 12-step answer save sequence.
+    
+    Handles encryption, validation, and persistence of survey answers with
+    proper session management and duplicate detection.
+    """
     def __init__(
         self,
         *,
