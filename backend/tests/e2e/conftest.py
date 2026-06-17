@@ -106,6 +106,18 @@ class SeedData(NamedTuple):
     published_version: SurveyVersion
 
 
+@pytest.fixture(autouse=True)
+def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Auto-mock envelope creation so e2e tests run without AWS."""
+    from app.services.public_submissions.core.session_starter import SessionStarter
+
+    monkeypatch.setattr(
+        SessionStarter,
+        "_create_response_envelope",
+        lambda self, db, response_db, *, session: (b"\x00" * 32, b"\x01" * 32),
+    )
+
+
 @pytest.fixture
 def seed(core_db_session: Session) -> SeedData:
     """Seed a project member (with survey permissions) and a public, published survey.

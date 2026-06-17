@@ -50,3 +50,9 @@ def create_session(
     db.add(session)
     flush_with_err_handle(db, contexts=[session])
     return session
+
+
+def mark_abandoned(db: Session, *, submission_session: SubmissionSession) -> None:
+    """Mark a submission session as abandoned and flush."""
+    submission_session.session_status = "abandoned"
+    flush_with_err_handle(db, contexts=[submission_session])

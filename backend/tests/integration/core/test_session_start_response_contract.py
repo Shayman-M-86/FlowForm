@@ -93,7 +93,7 @@ def test_public_slug_session_start_includes_survey_schema(
     )
 
     response, _browser_token, _recognition_token = SessionStarter().start(
-        db_session, payload=payload, actor=None
+        db_session, db_session, payload=payload, actor=None
     )
 
     assert response.survey_schema == _SCHEMA, "public slug start must include compiled_schema"
@@ -112,7 +112,7 @@ def test_general_link_session_start_omits_survey_schema(
     )
 
     response, _browser_token, _recognition_token = SessionStarter().start(
-        db_session, payload=payload, actor=None
+        db_session, db_session, payload=payload, actor=None
     )
 
     assert response.survey_schema is None, "link-based start must not include survey_schema"
@@ -136,7 +136,7 @@ def test_private_link_session_start_omits_survey_schema(
     )
 
     response, _browser_token, _recognition_token = SessionStarter().start(
-        db_session, payload=payload, actor=None
+        db_session, db_session, payload=payload, actor=None
     )
 
     assert response.survey_schema is None, "link-based start must not include survey_schema"
@@ -154,7 +154,7 @@ def test_public_slug_session_start_returns_browser_session_token(
     )
 
     _response, browser_token, _recognition_token = SessionStarter().start(
-        db_session, payload=payload, actor=None
+        db_session, db_session, payload=payload, actor=None
     )
 
     assert browser_token, "browser session token must be non-empty"
@@ -172,7 +172,7 @@ def test_public_slug_session_start_returns_recognition_token_for_new_subject(
     )
 
     _response, _browser_token, recognition_token = SessionStarter().start(
-        db_session, payload=payload, actor=None
+        db_session, db_session, payload=payload, actor=None
     )
 
     assert recognition_token is not None, "a new anonymous subject must receive a recognition token"

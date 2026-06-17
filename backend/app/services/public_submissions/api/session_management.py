@@ -28,6 +28,7 @@ class SessionManagementService:
     def start_session(
         self,
         db: Session,
+        response_db: Session,
         *,
         payload: StartSubmissionSessionRequest,
         actor: User | None,
@@ -39,7 +40,7 @@ class SessionManagementService:
         The route sets the browser-session and recognition cookies from the raw tokens.
         """
         return self._session_starter.start(
-            db, payload=payload, actor=actor, recognition_token=recognition_token
+            db, response_db, payload=payload, actor=actor, recognition_token=recognition_token
         )
 
     # ------------------------------------------------------------------

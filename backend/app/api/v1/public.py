@@ -10,7 +10,7 @@ from app.api.utils.submission_session_cookie import (
 )
 from app.api.utils.validation import parse, parse_query
 from app.core.extensions import auth
-from app.db.context import get_core_db
+from app.db.context import get_core_db, get_response_db
 from app.openapi import openapi_route
 from app.schema.api.requests.public_links import ResolveTokenRequest
 from app.schema.api.requests.submission_sessions import (
@@ -162,8 +162,10 @@ def start_submission_session():
     core_db = get_core_db()
     current_sub = auth.get_optional_current_user_sub()
     user = users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub) if current_sub is not None else None
+    response_db = get_response_db()
     response, raw_browser_session_token, raw_recognition_token = session_management_service.start_session(
         core_db,
+        response_db,
         payload=payload,
         actor=user,
         recognition_token=get_recognition_token(),

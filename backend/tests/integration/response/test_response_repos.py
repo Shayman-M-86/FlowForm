@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import uuid
+from typing import TYPE_CHECKING
 
 import pytest  # type: ignore[import]
 from sqlalchemy.orm import Session
@@ -11,6 +12,9 @@ from app.repositories.response import (
     response_answer_revision_repo,
     response_envelope_repo,
 )
+
+if TYPE_CHECKING:
+    from app.schema.orm.response.response_envelope import ResponseEnvelope
 
 
 def _locator(seed: int = 0) -> bytes:
@@ -29,9 +33,7 @@ def _wrapped_dek() -> bytes:
     return os.urandom(64)
 
 
-def _create_envelope(db: Session, seed: int = 0) -> ResponseEnvelope:  # noqa: F821
-    from app.schema.orm.response.response_envelope import ResponseEnvelope
-
+def _create_envelope(db: Session, seed: int = 0) -> ResponseEnvelope:
     return response_envelope_repo.create(
         db,
         session_locator=_locator(seed),

@@ -139,7 +139,7 @@ def test_public_slug_no_actor_no_token_creates_anonymous_subject_issues_token(
     _publish(db_session, survey=survey, survey_version=survey_version, slug="fm-row1")
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_slug_payload("fm-row1"),
         actor=None,
         recognition_token=None,
@@ -173,7 +173,7 @@ def test_public_slug_no_actor_valid_canonical_token_uses_token_subject(
     existing_raw = _issue_token_for(db_session, project_id=survey.project_id, subject=existing_subject)
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_slug_payload("fm-row2"),
         actor=None,
         recognition_token=existing_raw,
@@ -207,7 +207,7 @@ def test_public_slug_logged_in_no_token_creates_or_uses_identity_subject(
     _publish(db_session, survey=survey, survey_version=survey_version, slug="fm-row3")
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_slug_payload("fm-row3"),
         actor=user,
         recognition_token=None,
@@ -259,7 +259,7 @@ def test_public_slug_logged_in_different_canonical_token_merges_and_rotates(
     old_raw = _issue_token_for(db_session, project_id=survey.project_id, subject=token_subject)
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_slug_payload("fm-row4"),
         actor=user,
         recognition_token=old_raw,
@@ -303,7 +303,7 @@ def test_general_link_no_actor_valid_token_uses_token_subject(
     existing_raw = _issue_token_for(db_session, project_id=survey.project_id, subject=existing_subject)
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_token_payload(raw_link_token),
         actor=None,
         recognition_token=existing_raw,
@@ -347,7 +347,7 @@ def test_general_link_logged_in_different_canonical_token_merges_and_rotates(
     old_raw = _issue_token_for(db_session, project_id=survey.project_id, subject=token_subject)
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_token_payload(raw_link_token),
         actor=user,
         recognition_token=old_raw,
@@ -392,7 +392,7 @@ def test_private_link_no_token_uses_assigned_subject_and_consumes_link(
     )
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_token_payload(raw_link_token),
         actor=None,
         recognition_token=None,
@@ -437,7 +437,7 @@ def test_private_link_different_canonical_token_merges_rotates_and_consumes(
     old_raw = _issue_token_for(db_session, project_id=survey.project_id, subject=stray_subject)
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_token_payload(raw_link_token),
         actor=None,
         recognition_token=old_raw,
@@ -488,7 +488,7 @@ def test_authenticated_link_unauthenticated_actor_rejected(
 
     with pytest.raises(LinkAuthRequiredError):
         SessionStarter().start(
-            db_session,
+            db_session, db_session,
             payload=_token_payload(raw_link_token),
             actor=None,  # not logged in
             recognition_token=None,
@@ -531,7 +531,7 @@ def test_authenticated_link_matching_identity_no_token_creates_session(
     )
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_token_payload(raw_link_token),
         actor=user,
         recognition_token=None,
@@ -581,7 +581,7 @@ def test_authenticated_link_matching_identity_different_token_merges_and_rotates
     old_raw = _issue_token_for(db_session, project_id=survey.project_id, subject=stray_subject)
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_token_payload(raw_link_token),
         actor=user,
         recognition_token=old_raw,
@@ -636,7 +636,7 @@ def test_authenticated_link_non_matching_identity_rejected(
 
     with pytest.raises(LinkAssignmentMismatchError):
         SessionStarter().start(
-            db_session,
+            db_session, db_session,
             payload=_token_payload(raw_link_token),
             actor=different_user,
             recognition_token=None,
@@ -665,7 +665,7 @@ def test_general_link_no_actor_no_token_creates_anonymous_subject_issues_token(
     link, raw_link_token = _make_link(db_session, survey=survey, link_type="general", slug_suffix="-gl-anon-notoken")
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_token_payload(raw_link_token),
         actor=None,
         recognition_token=None,
@@ -694,7 +694,7 @@ def test_general_link_logged_in_no_token_creates_identity_subject(
     link, raw_link_token = _make_link(db_session, survey=survey, link_type="general", slug_suffix="-gl-auth-notoken")
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_token_payload(raw_link_token),
         actor=user,
         recognition_token=None,
@@ -735,7 +735,7 @@ def test_public_slug_logged_in_same_canonical_token_mark_used(
     existing_raw = _issue_token_for(db_session, project_id=survey.project_id, subject=identity_subject)
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_slug_payload("fm-sc-slug"),
         actor=user,
         recognition_token=existing_raw,
@@ -767,7 +767,7 @@ def test_general_link_logged_in_same_canonical_token_mark_used(
     existing_raw = _issue_token_for(db_session, project_id=survey.project_id, subject=identity_subject)
 
     _response, browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_token_payload(raw_link_token),
         actor=user,
         recognition_token=existing_raw,
@@ -807,7 +807,7 @@ def test_private_link_same_canonical_token_keep(
     existing_raw = _issue_token_for(db_session, project_id=survey.project_id, subject=assigned_subject)
 
     _response, _browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_token_payload(raw_link_token),
         actor=None,
         recognition_token=existing_raw,
@@ -852,7 +852,7 @@ def test_authenticated_link_same_canonical_token_keep(
     existing_raw = _issue_token_for(db_session, project_id=survey.project_id, subject=assigned_subject)
 
     _response, _browser_token, recognition_token = SessionStarter().start(
-        db_session,
+        db_session, db_session,
         payload=_token_payload(raw_link_token),
         actor=user,
         recognition_token=existing_raw,

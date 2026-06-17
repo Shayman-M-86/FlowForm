@@ -78,7 +78,7 @@ def test_single_use_link_consumed_atomically_with_session(
     )
 
     _response, _browser_token, _recognition_token = SessionStarter().start(
-        db_session, payload=payload, actor=None
+        db_session, db_session, payload=payload, actor=None
     )
 
     session = db_session.scalar(
@@ -113,7 +113,7 @@ def test_second_start_on_consumed_link_raises_already_used(
     )
     starter = SessionStarter()
 
-    starter.start(db_session, payload=payload, actor=None)
+    starter.start(db_session, db_session, payload=payload, actor=None)
 
     with pytest.raises(LinkAlreadyUsedError):
-        starter.start(db_session, payload=payload, actor=None)
+        starter.start(db_session, db_session, payload=payload, actor=None)

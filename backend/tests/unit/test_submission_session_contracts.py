@@ -89,6 +89,7 @@ def test_submission_session_response_omits_survey_schema_and_answers() -> None:
         "started_at": current.isoformat().replace("+00:00", "Z"),
         "expires_at": current.isoformat().replace("+00:00", "Z"),
         "survey_version_id": 31,
+        "survey_schema": None,
     }
     assert "survey" not in dumped
     assert "version" not in dumped
