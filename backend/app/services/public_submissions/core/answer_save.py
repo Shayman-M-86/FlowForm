@@ -2,6 +2,7 @@
 
 Also provides the question-viewed event helper.
 """
+
 from __future__ import annotations
 
 import logging
@@ -37,10 +38,11 @@ _KMS_CONTEXT_VERSION = 1
 
 class AnswerSaveService:
     """Service for orchestrating the 12-step answer save sequence.
-    
+
     Handles encryption, validation, and persistence of survey answers with
     proper session management and duplicate detection.
     """
+
     def __init__(
         self,
         *,
@@ -69,9 +71,7 @@ class AnswerSaveService:
 
         # Step 2: Check mutation ID — before any row lock on the logical answer
         answer_locator = self._derive_answer_locator(ctx, question_node_id)
-        existing_answer = response_answer_repo.get_by_locator(
-            response_db, ctx.envelope.id, answer_locator
-        )
+        existing_answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         if existing_answer is not None:
             dup_revision = response_answer_revision_repo.get_by_mutation_id(
                 response_db, existing_answer.id, client_mutation_id
@@ -99,15 +99,11 @@ class AnswerSaveService:
         # Steps 8-9: Insert revision and update latest pointer
         if existing_answer is not None:
             # Changed answer: lock the logical answer row
-            locked_answer = response_answer_repo.lock_for_update(
-                response_db, existing_answer.id
-            )
+            locked_answer = response_answer_repo.lock_for_update(response_db, existing_answer.id)
             if locked_answer is None:
                 raise AnswerSaveError("Logical answer row disappeared.")
 
-            latest_rev = response_answer_revision_repo.get_latest(
-                response_db, locked_answer.id
-            )
+            latest_rev = response_answer_revision_repo.get_latest(response_db, locked_answer.id)
             next_revision_number = (latest_rev.revision_number + 1) if latest_rev else 1
         else:
             next_revision_number = 1
@@ -131,14 +127,10 @@ class AnswerSaveService:
                 )
                 if dup_revision is not None:
                     return dup_revision.id
-                locked_answer = response_answer_repo.lock_for_update(
-                    response_db, answer_row.id
-                )
+                locked_answer = response_answer_repo.lock_for_update(response_db, answer_row.id)
                 if locked_answer is None:
                     raise AnswerSaveError("Logical answer row disappeared after race.")
-                latest_rev = response_answer_revision_repo.get_latest(
-                    response_db, locked_answer.id
-                )
+                latest_rev = response_answer_revision_repo.get_latest(response_db, locked_answer.id)
                 next_revision_number = (latest_rev.revision_number + 1) if latest_rev else 1
                 existing_answer = locked_answer
         else:
@@ -168,9 +160,7 @@ class AnswerSaveService:
         )
 
         # Step 9: Update the latest pointer
-        response_answer_revision_repo.update_latest_pointer(
-            response_db, answer_row.id, revision.id
-        )
+        response_answer_revision_repo.update_latest_pointer(response_db, answer_row.id, revision.id)
 
         # Step 10: Commit the response transaction
         commit_with_err_handle(response_db, contexts=[])
@@ -214,9 +204,7 @@ class AnswerSaveService:
             logger.warning("question_viewed.event_failed", exc_info=True)
             db.rollback()
 
-    def _derive_answer_locator(
-        self, ctx: SessionContext, question_node_id: str
-    ) -> bytes:
+    def _derive_answer_locator(self, ctx: SessionContext, question_node_id: str) -> bytes:
         enc = ctx.encryption_settings
         linkage_secret = get_linkage_secret(
             enc.linkage_secret_arn,
