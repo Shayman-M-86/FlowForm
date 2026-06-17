@@ -5,7 +5,7 @@ idempotency, completion, rotation, and failure cases.
 
 Status legend: **Covered**, **Partially covered**, **Not yet implementable**.
 For anything not yet implementable, see
-[remaining-work.md](remaining-work.md) for the phase that unblocks it.
+[remaining-work-fixed.md](remaining-work-fixed.md) for the phase that unblocks it.
 
 ## 37. Test plan
 
@@ -16,14 +16,14 @@ Phase 6 introduces the real HMAC-SHA-256 implementation). None of the
 "same session/secret produce the same locator", "different linkage versions
 produce different locators", etc. checks can be written until then. Keep this
 section as the forward-looking plan for Phase 6  -  see
-[remaining-work.md](remaining-work.md) Phase 6.
+[remaining-work-fixed.md](remaining-work-fixed.md) Phase 6.
 
 ### 37.2 Encryption tests  -  not yet implementable
 
 No cipher/DEK provider exists yet. Round-trip, fresh-nonce, tamper-detection,
 and nonce-reuse-rejection checks all depend on Phase 6 real cryptography (or
 at minimum the Phase 3 dev cipher for shape-level tests). See
-[remaining-work.md](remaining-work.md) Phase 6.
+[remaining-work-fixed.md](remaining-work-fixed.md) Phase 6.
 
 ### 37.3 Session-start tests  -  covered (core resolution); envelope items remain
 
@@ -46,7 +46,7 @@ at minimum the Phase 3 dev cipher for shape-level tests). See
 Expired/inactive link rejection is covered at the access-resolver layer (see
 37.4 below), which `SessionStarter` depends on.
 
-**Remaining  -  see [remaining-work.md](remaining-work.md) Phase 3:**
+**Remaining  -  see [remaining-work-fixed.md](remaining-work-fixed.md) Phase 3:**
 
 * a response envelope is created during session start
 * only a token hash reaches the core database *and* the raw browser token is
@@ -106,29 +106,29 @@ link/slug resolution that subject access depends on:
 ### 37.5 Answer-revision tests  -  not yet implementable
 
 Depends on the response-answer/revision repositories and the answer-save
-service (Phase 4). See [remaining-work.md](remaining-work.md) Phase 4.
+service (Phase 4). See [remaining-work-fixed.md](remaining-work-fixed.md) Phase 4.
 
 ### 37.6 Idempotency tests  -  not yet implementable
 
 Depends on `client_mutation_id` handling in the answer-save service
-(Phase 4). See [remaining-work.md](remaining-work.md) Phase 4.
+(Phase 4). See [remaining-work-fixed.md](remaining-work-fixed.md) Phase 4.
 
 ### 37.7 Completion tests  -  not yet implementable
 
 Depends on the completion service (Phase 5). See
-[remaining-work.md](remaining-work.md) Phase 5.
+[remaining-work-fixed.md](remaining-work-fixed.md) Phase 5.
 
 ### 37.8 Rotation tests  -  not yet implementable
 
 Depends on real linkage-secret and DEK/KMS key versioning (Phase 6). See
-[remaining-work.md](remaining-work.md) Phase 6.
+[remaining-work-fixed.md](remaining-work-fixed.md) Phase 6.
 
 ### 37.9 Failure tests  -  not yet implementable
 
 Depends on the response envelope/answer write paths and reconciliation tasks
 (Phases 3-4 for the envelope/answer paths; Phase 9 for reconciliation and
 cached-secret/DEK outage handling). See
-[remaining-work.md](remaining-work.md) Phases 3-4 and 9.
+[remaining-work-fixed.md](remaining-work-fixed.md) Phases 3-4 and 9.
 
 ## Peripheral but relevant coverage
 

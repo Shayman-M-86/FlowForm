@@ -4,7 +4,7 @@ This document explains the session/response encryption architecture and marks
 the boundary between implemented code and target design. For exact schema
 details, see [data-model.md](data-model.md). For route behavior, see
 [api-surface.md](api-surface.md). For unfinished work, see
-[remaining-work.md](remaining-work.md).
+[remaining-work-fixed.md](remaining-work-fixed.md).
 
 ## Current Implementation Boundary
 
@@ -120,7 +120,7 @@ The intended lifecycle is:
 8. Let admin reads/export/delete go through authorization plus decrypt paths.
 
 Only steps 1-3 are implemented today. Steps 4-8 are tracked in
-[remaining-work.md](remaining-work.md).
+[remaining-work-fixed.md](remaining-work-fixed.md).
 
 ## Answer Storage Model
 
@@ -174,4 +174,4 @@ The final implementation needs:
   reconciliation repairs.
 
 Those operational items are still future work unless explicitly noted in
-[remaining-work.md](remaining-work.md).
+[remaining-work-fixed.md](remaining-work-fixed.md).

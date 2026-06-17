@@ -17,6 +17,8 @@ placeholder-only.
 
 ## Docs
 
+- [Concepts](concepts/README.md) - concise target behavior for the
+  response-encryption service, without re-explaining subject/access policy.
 - [Architecture](architecture.md) - conceptual boundaries: core vs. response
   storage, identity separation, locators, frontend/backend responsibilities,
   and implementation status.
@@ -31,7 +33,7 @@ placeholder-only.
 - [Cryptography plan](cryptography-plan.md) - forward-looking design for
   HMAC locators, KMS-backed DEKs, AES-GCM answer encryption, AAD, caching,
   and rotation. This is not implemented yet.
-- [Remaining work](remaining-work.md) - actionable roadmap by phase, plus
+- [Remaining work](remaining-work-fixed.md) - actionable roadmap by phase, plus
   open product/engineering decisions.
 - [Testing plan](testing-plan.md) - coverage already present and tests that
   become possible after later phases land.

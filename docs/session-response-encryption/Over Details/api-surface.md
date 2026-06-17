@@ -9,7 +9,7 @@ backend-implementation, admin/operations, and phase-comment notes.
 > code right now* (real vs. placeholder), not the full target design. For
 > respondent flow details, see [flows.md](flows.md). For save-ordering,
 > response-envelope, and crypto/locator work that is still pending, see
-> [remaining-work.md](remaining-work.md) and
+> [remaining-work-fixed.md](remaining-work-fixed.md) and
 > [cryptography-plan.md](cryptography-plan.md).
 
 ---
@@ -226,7 +226,7 @@ revisions. The code comment in `survey_responses.py` is explicit:
 > canonical revisions through the service path  -  never bypassing the
 > decrypt/authorisation flow.
 
-For the remaining work, see [remaining-work.md](remaining-work.md).
+For the remaining work, see [remaining-work-fixed.md](remaining-work-fixed.md).
 
 ---
 
