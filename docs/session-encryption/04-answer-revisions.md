@@ -41,7 +41,7 @@ On first save for a question:
 - create revision 1;
 - set the latest pointer to revision 1.
 
-Simultaneous first saves should be handled by the unique logical answer constraint and retried or resolved safely.
+Simultaneous first saves must be handled by the unique logical answer constraint. The losing writer reloads the stored logical answer row and continues through the normal revision path.
 
 ## Changed answer
 
@@ -53,13 +53,13 @@ On a changed answer:
 - insert the next revision number;
 - move the latest pointer forward.
 
-Revision numbers should be sequential within one logical answer.
+Revision numbers must be sequential within one logical answer.
 
 ## Idempotency
 
-Each answer mutation should carry a client mutation ID.
+Each answer mutation must carry a client mutation ID.
 
-The same mutation ID for the same logical answer should return the existing saved revision rather than creating a duplicate revision.
+The same mutation ID for the same logical answer must return the existing saved revision rather than creating a duplicate revision.
 
 This protects against network retries, browser retries, and lost HTTP responses.
 

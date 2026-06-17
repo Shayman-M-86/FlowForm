@@ -4,6 +4,7 @@
       "Bash(/path/to/FlowForm/tools/mcp/run.sh)",
       "Read(/home/shayman86/my-repos/FlowForm/**)",
       "Edit(/home/shayman86/my-repos/FlowForm/**)",
+      
       "Write(/home/shayman86/my-repos/FlowForm/**)",
       "Bash(ls:*)",
       "Bash(find:*)",
@@ -77,7 +78,26 @@
       "Bash(npx eslint:*)",
       "Read(**/node_modules/**/*.d.ts)",
       "Read(**/node_modules/**/package.json)",
-      "Bash(rmdir:*)"
+      "Bash(rmdir:*)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)",
+      "Bash(bash .claude/workflows/*/scripts/*.sh:*)",
+      "Read(.claude/workflows/**)",
+      "Write(.claude/workflows/**)",
+      "Edit(.claude/workflows/**)",
+      "Read(.claude/skills/**)",
+      "Write(.claude/skills/**)",
+      "Edit(.claude/skills/**)",
+      "Read(.claude/rules/**)",
+      "Write(.claude/rules/**)",
+      "Edit(.claude/rules/**)",
+      "Read(.claude/commands/**)",
+      "Write(.claude/commands/**)",
+      "Edit(.claude/commands/**)",
+      "Read(.claude/agents/**)",
+      "Write(.claude/agents/**)",
+      "Edit(.claude/agents/**)"
+
     ],
     "deny": [
       "Bash(rm -rf:*)",

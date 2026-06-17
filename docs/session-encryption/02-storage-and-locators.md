@@ -15,7 +15,7 @@ The core database stores application metadata:
 - session lifecycle state;
 - analytics events.
 
-The core database may know who or what a session belongs to. It must not store plaintext answers.
+The core database stores respondent identity metadata and session origin metadata. It must not store plaintext answers.
 
 ## Response database
 
@@ -48,7 +48,7 @@ The response database must not store:
 
 ## No direct database join
 
-There should be no SQL foreign key from the response database back to the core database.
+There must be no SQL foreign key from the response database back to the core database.
 
 The backend connects the two stores by deriving opaque values from core identifiers using versioned linkage-secret material.
 
@@ -80,10 +80,10 @@ The answer locator lets the backend update the same logical answer without expos
 
 The response row uses an answer locator so the database can upsert and locate answers privately.
 
-The encrypted payload should also contain the real question node ID. After decryption, the backend can recompute the answer locator and verify that the decrypted question ID matches the row. This is a defensive check against row substitution or accidental data corruption.
+The encrypted payload must also contain the real question node ID. After decryption, the backend recomputes the answer locator and verifies that the decrypted question ID matches the row. This is a defensive check against row substitution and accidental data corruption.
 
 ## Versioning rule
 
-Locator derivation must be versioned. A stored session should always carry enough version metadata for the backend to regenerate the correct locator later.
+Locator derivation must be versioned. A stored session must carry enough version metadata for the backend to regenerate the correct locator later.
 
 New sessions use the active linkage version. Old sessions remain readable through their stored linkage version.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# session-start.sh — boot context for a {{WORKFLOW_NAME}} implementation session.
+# session-start.sh — boot context for a Session Encryption implementation session.
 # Run via the impl-start command at the top of a session.
 # Do NOT use context-mode or ctx_batch_execute to run this — output must be read inline.
 
@@ -19,7 +19,7 @@ STATE_FILE="$WORKING_DIR/state.md"
 current_pass=$(grep '^current_pass:' "$STATE_FILE" | awk '{print $2}')
 status=$(grep '^status:' "$STATE_FILE" | awk '{print $2}')
 
-echo "=== {{WORKFLOW_NAME}} session start ==="
+echo "=== Session Encryption session start ==="
 echo ""
 echo "State: pass $current_pass — $status"
 echo ""

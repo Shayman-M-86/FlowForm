@@ -1,7 +1,7 @@
-Run this at the start of a Policies and Services implementation session.
+Run this at the start of a Session Encryption implementation session.
 
 ```bash
-bash backend/scripts/impl-session-start.sh
+bash .claude/workflows/session-encryption/scripts/session-start.sh
 ```
 
-Run this with the Bash tool directly — do NOT use context-mode or ctx_batch_execute. The output is the context: implementation docs, pass state, and target order are all inline. Read the output, then pick the next target.
+Run this with the Bash tool directly — do NOT use context-mode or ctx_batch_execute. The output is the context: agent rules, source docs, current pass spec, and prompt are all injected inline. Read the full output, then begin the current pass.

@@ -1,8 +1,8 @@
 # Session Response Encryption Concepts
 
-This folder explains the target shape of FlowForm's encrypted response system.
+This folder defines the target shape of FlowForm's encrypted response system.
 
-It is intentionally narrower than the older session-response-encryption notes. It does not re-document subject resolution, link access, survey visibility, or participant assignment. Those flows are treated as upstream decisions that have already produced a valid submission session context.
+It is intentionally narrower than the older session-response-encryption notes. It does not re-document subject resolution, link access, survey visibility, and participant assignment. Those flows are upstream decisions that have already produced a valid submission session context.
 
 ## Purpose
 
@@ -19,7 +19,7 @@ One respondent run through one frozen survey version creates:
 - many logical answers;
 - many immutable encrypted answer revisions.
 
-The response database should not know who the respondent is, which project they belong to, which survey they completed, which link they used, or which plaintext question IDs they answered. It should only store opaque locators, encrypted payloads, nonces, and wrapped key material.
+The response database must not know who the respondent is, which project they belong to, which survey they completed, which link they used, and which plaintext question IDs they answered. It stores only opaque locators, encrypted payloads, nonces, and wrapped key material.
 
 ## What is in scope
 
@@ -33,8 +33,8 @@ The response database should not know who the respondent is, which project they 
 
 ## What is out of scope
 
-- Deciding whether a public slug, general link, private link, or authenticated link is allowed.
-- Deciding which subject wins when recognition tokens, login identity, or assigned participants conflict.
+- Deciding access authorization for public slugs, general links, private links, and authenticated links.
+- Deciding subject precedence when recognition tokens, login identity, and assigned participants conflict.
 - Re-explaining recognition-token lifecycle.
 - Re-explaining survey visibility rules.
 - Frontend UX details beyond the public contract it must obey.
@@ -52,4 +52,4 @@ Those policies are upstream. This service starts after access and subject resolu
 
 ## Agent rule
 
-When implementing a feature, load only the concept file for that concern, then inspect the current schema/API docs as needed. Do not pull subject-resolution docs into response-encryption work unless the bug is explicitly about subject/access behavior.
+When implementing a feature, load only the concept file for that concern, then inspect the current schema/API docs as needed. Pull subject-resolution docs into response-encryption work only for bugs explicitly about subject/access behavior.

@@ -12,11 +12,11 @@ Core analytics events are useful, but they must not decide whether an answer was
 
 ## Session start failure rule
 
-Session start should not expose a browser resume token until the required core session and response envelope both exist.
+Session start must not expose a browser resume token until the required core session and response envelope both exist.
 
-If the core session is created but response envelope creation fails before the token is exposed, the service should roll back or invalidate the partial session.
+If response envelope creation fails before the token is exposed, the service must roll back the uncommitted core session. If a partial core session has already committed, the service must mark it abandoned and add it to reconciliation.
 
-Single-use link consumption and recognition-token side effects should not be committed if encrypted session initialization fails.
+Single-use link consumption and recognition-token side effects must not be committed if encrypted session initialization fails.
 
 ## Cross-database failure rule
 
@@ -27,11 +27,11 @@ Services must explicitly decide:
 - which write is authoritative;
 - which write is secondary;
 - what happens if the secondary write fails;
-- what repair or reconciliation path exists.
+- what repair path and reconciliation path exist.
 
 ## Reconciliation targets
 
-Reconciliation should be able to detect and repair or flag:
+Reconciliation must detect these states and route each one to its remediation workflow:
 
 - core sessions without response envelopes;
 - response write success with missing analytics event;
@@ -44,7 +44,7 @@ Reconciliation should be able to detect and repair or flag:
 
 Do not claim a response is deleted until required stores have been handled.
 
-For privacy, encrypted response material should be removed before core metadata deletion or anonymisation. Delete the response database records first, then the core records. If the response delete succeeds but the core delete fails, the deletion is still retryable and the answer data is already gone. If the core delete is attempted first and fails, the response data is untouched and the full operation can be retried safely. If only one database operation succeeds, mark the deletion pending and retry.
+For privacy, encrypted response material must be removed before core metadata deletion and anonymisation. Delete the response database records first, then the core records. If the response delete succeeds and the core delete fails, the deletion remains retryable and the answer data is already gone. If one database operation succeeds, mark the deletion pending and retry.
 
 ## Logging rule
 
@@ -61,11 +61,11 @@ Never log:
 - full nonce values;
 - KMS decrypted key material.
 
-Errors should use safe IDs, short redacted prefixes where needed, and structured error codes.
+Errors must use safe IDs, short redacted prefixes where needed, and structured error codes.
 
 ## Observability
 
-The system should track:
+The system must track:
 
 - session starts;
 - envelope creation failures;
@@ -79,16 +79,16 @@ The system should track:
 - reconciliation repairs;
 - pending deletion retries.
 
-Metrics should help operate the system without exposing answer content.
+Metrics must help operate the system without exposing answer content.
 
 ## Sentry and tracing
 
 Sentry payloads, traces, and request logs must be sanitized.
 
-Do not allow request bodies, response bodies, cookies, ciphertext blobs, key material, or answer values to be captured by default. Add explicit allowlists for safe fields rather than relying only on blocklists.
+Do not allow request bodies, response bodies, cookies, ciphertext blobs, key material, and answer values to be captured by default. Add explicit allowlists for safe fields rather than relying only on blocklists.
 
 ## Operational rule
 
 Any path that decrypts answers is privileged.
 
-Admin detail, history, export, and deletion should all go through explicit authorization and service-level decrypt/delete flows. They should not query response tables directly from API handlers.
+Admin detail, history, export, and deletion must all go through explicit authorization and service-level decrypt/delete flows. They must not query response tables directly from API handlers.

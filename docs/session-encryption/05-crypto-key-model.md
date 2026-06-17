@@ -8,7 +8,7 @@ This document explains the conceptual cryptography model without turning it into
 
 Do not mix these values:
 
-- access-link token: starts or previews survey access;
+- access-link token: grants pre-session survey access;
 - browser resume token: lets a browser continue an in-progress session;
 - linkage secret: derives response-side locators;
 - KEK: KMS-managed key-encryption key;
@@ -26,7 +26,7 @@ The browser receives the raw token in a secure cookie. The core database stores 
 
 The linkage secret derives deterministic locators.
 
-It should not live in either Postgres database. The backend retrieves the appropriate version from secret storage and uses it to derive session and answer locators.
+It must not live in a Postgres database. The backend retrieves the appropriate version from secret storage and uses it to derive session and answer locators.
 
 The linkage secret needs versioning because old sessions must remain readable after rotation.
 
@@ -42,7 +42,7 @@ The KEK lives in KMS and wraps the DEK. The response database stores the wrapped
 
 When a response envelope is created:
 
-- generate or obtain a fresh per-session DEK;
+- obtain a fresh per-session DEK;
 - store only the wrapped DEK in the response envelope;
 - store the crypto version and KMS context version;
 - keep the plaintext DEK only as long as needed for active encryption work.
@@ -51,18 +51,18 @@ When a response envelope is created:
 
 Use authenticated encryption.
 
-The target design is AES-256-GCM. It protects answer confidentiality and detects tampering with ciphertext or authenticated metadata.
+The target design is AES-256-GCM. It protects answer confidentiality, detects ciphertext tampering, and detects authenticated metadata tampering.
 
-Every answer payload should be encrypted, including values that look harmless, such as choice IDs, dates, ratings, numbers, and cleared-answer states.
+Every answer payload must be encrypted, including values that look harmless, such as choice IDs, dates, ratings, numbers, and cleared-answer states.
 
 ## Plaintext payload
 
-The encrypted plaintext should be a versioned payload that includes:
+The encrypted plaintext must be a versioned payload that includes:
 
 - payload version;
 - question node ID;
 - answer state;
-- answer value or null when cleared.
+- answer value, with null used for cleared answers.
 
 Including the question node ID inside the encrypted payload allows the backend to verify that the decrypted payload matches the answer locator row.
 
@@ -70,19 +70,19 @@ Including the question node ID inside the encrypted payload allows the backend t
 
 Each encrypted revision needs a fresh nonce.
 
-Nonce reuse with the same DEK must be treated as a serious bug. The database should help prevent accidental reuse within one envelope.
+Nonce reuse with the same DEK must be treated as a serious bug. The database must help prevent accidental reuse within one envelope.
 
 ## AAD
 
-Additional Authenticated Data should bind the encrypted revision to its database context.
+Additional Authenticated Data must bind the encrypted revision to its database context.
 
-AAD is not secret, but it is integrity-protected. It should include stable values such as crypto version, envelope ID, answer ID, answer locator, revision ID, and revision number.
+AAD is not secret, but it is integrity-protected. It must include stable values such as crypto version, envelope ID, answer ID, answer locator, revision ID, and revision number.
 
-If a row is swapped or metadata is changed, decryption should fail.
+The decrypt path must fail for every row swap and every metadata change.
 
 ## Plaintext DEK cache policy
 
-The backend may keep the plaintext session DEK in a local worker memory cache while the submission session is active.
+The backend keeps the plaintext session DEK only in a local worker memory cache while the submission session is active.
 
 The cache is an optimisation only. It is not the source of truth.
 
@@ -91,7 +91,7 @@ Rules:
 - cache key: session locator (derive it from the resume token before any database query; the envelope ID is not known until after the response database lookup, so it cannot serve as a consistent cache key);
 - cache value: plaintext DEK;
 - TTL: no longer than session expiry;
-- clear or evict when the session completes, expires, is abandoned, or when the worker restarts.
+- evict when the session completes, expires, is abandoned, and when the worker restarts.
 
 On answer save:
 
@@ -102,7 +102,7 @@ On answer save:
 
 The real source of truth is still `wrapped_dek` in the response database plus KMS decrypt when the cache misses.
 
-Session active means the DEK may be cached. Session over means the DEK should be evicted.
+Active sessions permit worker-local DEK caching. Session completion, expiry, abandonment, and worker restart evict the cached DEK.
 
 Linkage secrets can have their own cache because they are used for deterministic locator derivation and change only through intentional rotation.
 
