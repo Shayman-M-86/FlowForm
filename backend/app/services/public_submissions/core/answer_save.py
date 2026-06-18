@@ -80,7 +80,14 @@ class AnswerSaveService:
                 return dup_revision.id
 
         # Step 3: Validate the answer against the frozen survey version
-        self._validate_question_in_version(db, ctx, question_node_id)
+        question = self._validate_question_in_version(db, ctx, question_node_id)
+
+        # Step 3b: Validate answer shape against question family
+        if answer_state != "cleared" and answer_value is not None:
+            from app.domain.survey_answer_validation import validate_answer_shape
+
+            family = (question.question_schema or {}).get("family")
+            validate_answer_shape(family, answer_value)
 
         # Step 4: Derive session locator and answer locator (locator already derived)
         # Step 5: Load the response envelope (already in ctx)
@@ -88,7 +95,9 @@ class AnswerSaveService:
         # Step 6: Load plaintext DEK from cache; on miss, unwrap with KMS
         plaintext_dek = self._get_or_unwrap_dek(ctx)
 
-        # Step 7: Encrypt the answer payload
+        # Step 7: Encrypt the answer payload. ``answer_value`` is the JSON form of
+        # a canonical SubmissionAnswerValue; the family is not stored (it is
+        # reconstructed from the survey definition at decrypt time).
         plaintext = build_plaintext_payload(
             payload_version=_PAYLOAD_VERSION,
             question_node_id=question_node_id,
@@ -244,7 +253,7 @@ class AnswerSaveService:
         db: Session,
         ctx: SessionContext,
         question_node_id: str,
-    ) -> None:
+    ) -> SurveyQuestion:
         question = db.scalar(
             select(SurveyQuestion).where(
                 SurveyQuestion.survey_version_id == ctx.survey_version.id,
@@ -253,3 +262,4 @@ class AnswerSaveService:
         )
         if question is None:
             raise QuestionNotInVersionError()
+        return question

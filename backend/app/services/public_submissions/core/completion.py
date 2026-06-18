@@ -16,13 +16,12 @@ from sqlalchemy.orm import Session
 from app.crypto import (
     build_aad,
     decrypt_answer,
-    get_linkage_secret,
     parse_plaintext_payload,
     unwrap_dek,
 )
 from app.crypto.dek_cache import DekCache
 from app.db.error_handling import commit_with_err_handle
-from app.domain.errors import CompletionValidationError, SessionInvalidError
+from app.domain.errors import SessionInvalidError
 from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_answer_repo, response_answer_revision_repo
@@ -152,38 +151,48 @@ class CompletionService:
         ctx: SessionContext,
         decrypted_answers: list[DecryptedAnswer],
     ) -> None:
-        # Partial: only checks question_schema.required. Visibility-rule
-        # evaluation, answer-shape validation, and conditional-display
-        # logic are not yet implemented — no engine exists in the codebase
-        # to interpret question_schema visibility/display rules.
         from sqlalchemy import select
 
+        from app.domain.survey_answer_validation import (
+            DecryptedAnswer as ValidationAnswer,
+        )
+        from app.domain.survey_answer_validation import (
+            QuestionNode,
+            RuleNode,
+            validate_submission,
+        )
         from app.schema.orm.core.survey_content import SurveyQuestion
 
-        all_questions = db.scalars(
+        all_nodes = db.scalars(
             select(SurveyQuestion).where(
                 SurveyQuestion.survey_version_id == ctx.survey_version.id,
-                SurveyQuestion.node_type == "question",
             )
         ).all()
 
-        required_question_ids: set[str] = set()
-        for q in all_questions:
-            schema = q.question_schema or {}
-            if schema.get("required", False):
-                required_question_ids.add(str(q.id))
-
-        answered_ids = {
-            a.question_node_id
-            for a in decrypted_answers
-            if a.answer_state != "cleared"
-        }
-
-        missing = required_question_ids - answered_ids
-        if missing:
-            raise CompletionValidationError(
-                f"Missing required answers for {len(missing)} question(s)."
+        questions = [
+            QuestionNode(
+                node_id=str(n.id),
+                family=(n.question_schema or {}).get("family"),
+                sort_key=n.sort_key,
             )
+            for n in all_nodes
+            if n.node_type == "question"
+        ]
+        rules = [
+            RuleNode(sort_key=n.sort_key, rule_schema=n.question_schema or {})
+            for n in all_nodes
+            if n.node_type == "rule"
+        ]
+        validation_answers = [
+            ValidationAnswer(
+                question_node_id=a.question_node_id,
+                answer_state=a.answer_state,
+                answer_value=a.answer_value,
+            )
+            for a in decrypted_answers
+        ]
+
+        validate_submission(questions, rules, validation_answers)
 
     def _get_or_unwrap_dek(self, ctx: SessionContext) -> bytes:
         if self._dek_cache is not None:

@@ -12,7 +12,6 @@ import os
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 import pytest
 from pydantic import SecretStr
@@ -42,6 +41,7 @@ from tests.integration.core.factories import (
     make_response_store,
     make_survey,
     make_survey_question,
+    make_survey_rule,
     make_survey_version,
     make_user,
 )
@@ -83,16 +83,45 @@ def _setup_core_fixtures(core_db: Session, *, required_questions: bool = False):
     core_db.add(version)
     core_db.flush()
 
-    schema = {"id": "q1", "family": "field", "label": "Q1",
-              "field": {"schema": {"field_type": "short_text"}, "ui": {}}}
-    if required_questions:
-        schema["required"] = True
-
     question = make_survey_question(
-        survey_version_id=version.id, question_key="q1", question_schema=schema
+        survey_version_id=version.id,
+        question_key="q1",
+        question_schema={
+            "id": "q1",
+            "family": "field",
+            "label": "Q1",
+            "field": {"schema": {"field_type": "short_text"}, "ui": {}},
+        },
     )
     core_db.add(question)
     core_db.flush()
+
+    if required_questions:
+        rule = make_survey_rule(
+            survey_version_id=version.id,
+            rule_key="require-q1",
+            sort_key=question.sort_key - 1,
+            rule_schema={
+                "id": "require-q1",
+                "if": {
+                    "match": "NONE",
+                    "conditions": [
+                        {
+                            "target_id": str(question.id),
+                            "family": "field",
+                            "requirements": {
+                                "type": "number",
+                                "operator": "GT",
+                                "value": 0,
+                            },
+                        }
+                    ],
+                },
+                "then": {"set": [{"target_id": str(question.id), "required": True}]},
+            },
+        )
+        core_db.add(rule)
+        core_db.flush()
 
     return project, survey, version, question
 
@@ -204,13 +233,6 @@ def _save_encrypted_answer(
     return answer_row
 
 
-def _patch_completion_crypto():
-    return patch(
-        "app.services.public_submissions.core.completion.get_linkage_secret",
-        return_value=_LINKAGE_SECRET,
-    )
-
-
 def _make_service_with_cached_dek(ctx, plaintext_dek):
     from app.crypto.dek_cache import DekCache
     dek_cache = DekCache()
@@ -229,13 +251,12 @@ class TestCompletion:
         _save_encrypted_answer(
             response_db, ctx, plaintext_dek,
             question_node_id=str(question.id),
-            answer_value="my answer",
+            answer_value={"field_type": "short_text", "text": "my answer"},
         )
 
         svc = _make_service_with_cached_dek(ctx, plaintext_dek)
 
-        with _patch_completion_crypto():
-            result = svc.complete_session(core_db, response_db, ctx=ctx)
+        result = svc.complete_session(core_db, response_db, ctx=ctx)
 
         assert result.status == "completed"
         assert result.completed_at is not None
@@ -253,13 +274,12 @@ class TestCompletion:
         _save_encrypted_answer(
             response_db, ctx, plaintext_dek,
             question_node_id=str(question.id),
-            answer_value="my answer",
+            answer_value={"field_type": "short_text", "text": "my answer"},
         )
 
         svc = _make_service_with_cached_dek(ctx, plaintext_dek)
 
-        with _patch_completion_crypto():
-            result1 = svc.complete_session(core_db, response_db, ctx=ctx)
+        result1 = svc.complete_session(core_db, response_db, ctx=ctx)
 
         # Reload the session to get the completed state into the context
         core_db.expire(session)
@@ -271,8 +291,7 @@ class TestCompletion:
             encryption_settings=_FAKE_ENC_SETTINGS,
         )
 
-        with _patch_completion_crypto():
-            result2 = svc.complete_session(core_db, response_db, ctx=ctx2)
+        result2 = svc.complete_session(core_db, response_db, ctx=ctx2)
 
         assert result1.status == result2.status == "completed"
         assert result1.completed_at == result2.completed_at
@@ -288,7 +307,7 @@ class TestCompletion:
         # No answers saved — required question not answered
         svc = _make_service_with_cached_dek(ctx, plaintext_dek)
 
-        with _patch_completion_crypto(), pytest.raises(CompletionValidationError, match="Missing required"):
+        with pytest.raises(CompletionValidationError, match="Missing required"):
             svc.complete_session(core_db, response_db, ctx=ctx)
 
     def test_completion_with_no_required_questions_succeeds(self, db_sessions: DbSessions) -> None:
@@ -300,7 +319,6 @@ class TestCompletion:
         # No answers saved, but no required questions either
         svc = _make_service_with_cached_dek(ctx, plaintext_dek)
 
-        with _patch_completion_crypto():
-            result = svc.complete_session(core_db, response_db, ctx=ctx)
+        result = svc.complete_session(core_db, response_db, ctx=ctx)
 
         assert result.status == "completed"

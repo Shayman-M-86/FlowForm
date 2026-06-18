@@ -8,50 +8,48 @@ notes. It is a routing aid, not a replacement for the pass reports.
 
 ## Session-Encryption Workflow
 
-1. **Canonical answer payload contract**
-   FlowForm currently has a session-answer transport envelope, but not a
-   canonical domain answer model. `SaveSubmissionSessionAnswerRequest` accepts
-   `answer_family` plus `answer_value: dict[str, Any]`, while the encrypted
-   plaintext payload currently stores only `answer_state` and `answer_value`.
-   There is no settled per-family answer shape for choice, field, matching, or
-   rating answers.
-   Deferred because: answer save and completion cannot perform reliable domain
-   validation until the project decides what submitted answers look like for
-   each supported question family and how those shapes are stored/decrypted.
-   To complete: define canonical answer payload schemas per question family,
-   decide whether `answer_family` belongs in the encrypted plaintext payload,
-   and make the public save request, encrypted payload parser/builder, admin
-   decrypt responses, exports, scoring, rules, and completion validation all use
-   the same answer contract.
+1. **Canonical answer payload contract** — ✅ DONE (2026-06-18)
+   Resolved. A single canonical set of per-family answer-value models now lives
+   in `backend/app/schema/api/submission_sessions/answer_payload.py`
+   (`ChoiceAnswerValue`, `FieldAnswerValue` union, `MatchingAnswerValue`,
+   `RatingAnswerValue` union, plus `SubmissionAnswerValue` and a family-directed
+   `parse_answer_value` helper). The request side
+   (`SaveSubmissionSessionAnswerRequest`) and the typed respondent response
+   (`SubmissionSessionAnswerResponse.answer_value: SubmissionAnswerValue | None`)
+   both reuse these models, and admin decrypt reconstructs `answer_family` from
+   the survey definition (`question_schema["family"]`) to validate decrypted
+   values back into the canonical models (graceful raw-dict fallback on unknown
+   question / non-canonical value).
+   Decision recorded: `answer_family` is **NOT** stored in the encrypted payload
+   (`crypto/payload.py` stays family-agnostic) — it is reconstructed at decrypt
+   time. OpenAPI components renamed `*AnswerValueIn` → canonical (frontend TS
+   client must regenerate).
+   Still open (separate items): completion/save **shape validation** against the
+   canonical contract (items #2, #3); scoring/rules/export wiring lands with the
+   admin response API (item #7).
     Further context:
-   - `backend/app/schema/api/requests/submission_sessions/`
-   - `backend/app/crypto/payload.py`
-   - `backend/app/services/public_submissions/core/answer_save.py`
+   - `backend/app/schema/api/submission_sessions/answer_payload.py`
+   - `backend/app/schema/api/requests/submission_sessions/answers.py`
+   - `backend/app/schema/api/responses/submission_sessions/answers.py`
    - `backend/app/services/public_submissions/core/admin_decrypt.py`
-   - `backend/app/schema/api/requests/content/questions_schemas.py`
-   - `backend/app/schema/api/requests/content/rule_schemas.py`
+   - `backend/app/crypto/payload.py`
 
-2. **Completion validation engine**
-   Completion currently checks a stale/ad hoc top-level
-   `question_schema.required` flag. The active question API schemas do not
-   define that field; `required` currently appears as a rule effect/state
-   concept and in rule condition requirements. Visibility paths, answer shapes,
-   conditional display, required-state evaluation, and richer cleared-state
-   semantics still need a domain validation engine.
-   Deferred because: no backend engine currently interprets the survey's
-   visibility/display/required rules, and the canonical answer payload contract
-   is not settled yet.
-   To complete: after the canonical answer payload contract is defined,
-   implement a shared survey-answer validation module and call it from
-   `CompletionService._validate_completion()` after decrypting latest answers.
-   The new engine should replace the `question_schema.required` shortcut with
-   validation against the frozen survey version, evaluated rule state, and the
-   canonical submitted answer shapes.
+2. **Completion validation engine** — ✅ DONE (2026-06-18)
+   Resolved. A shared validation module now lives in
+   `backend/app/domain/survey_answer_validation.py`. It evaluates rule nodes
+   (visibility/required `set` effects) against decrypted answers using the
+   frozen survey version's rule conditions (choice/matching/rating/field
+   families, ALL/ANY/NONE match modes, then/else branches). It validates
+   required-answer completeness (visible + required questions must have a
+   non-cleared answer) and answer shape correctness (via `parse_answer_value`).
+   `CompletionService._validate_completion()` now delegates to this engine
+   instead of checking the stale `question_schema.required` flag.
+   Navigation actions (skip_to, end_and_submit, end_and_discard) are ignored —
+   they are respondent-flow concerns, not completion validation.
     Further context:
+   - `backend/app/domain/survey_answer_validation.py`
    - `backend/app/services/public_submissions/core/completion.py`
-   - `.claude/workflows/session-encryption/working/pass-reports/08-completion-admin-and-deletion.md`
-   - `.claude/workflows/session-encryption/working/targets/08-completion-admin-and-deletion/spec.md`
-   - `docs/session-encryption/03-session-envelope-lifecycle.md`
+   - `backend/tests/unit/domain/test_survey_answer_validation.py`
 
 3. **Save-answer shape validation**
    Answer save verifies that the question node belongs to the frozen survey

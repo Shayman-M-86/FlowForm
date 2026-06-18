@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -21,12 +22,17 @@ from app.crypto import (
     parse_plaintext_payload,
     unwrap_dek,
 )
-from app.domain.errors import EnvelopeNotFoundError, SessionInvalidError
+from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.response import (
     response_answer_repo,
     response_answer_revision_repo,
     response_envelope_repo,
 )
+from app.schema.api.submission_sessions.answer_payload import (
+    SubmissionAnswerValue,
+    parse_answer_value,
+)
+from app.schema.enums import AnswerFamily
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.core.survey_content import SurveyQuestion
 from app.services.results import AdminSessionDetailResult, DecryptedAnswerResult
@@ -34,6 +40,8 @@ from app.services.results import AdminSessionDetailResult, DecryptedAnswerResult
 logger = logging.getLogger(__name__)
 
 _KMS_CONTEXT_VERSION = 1
+
+_VALID_FAMILIES: frozenset[str] = frozenset({"choice", "field", "matching", "rating"})
 
 
 def decrypt_session_detail(
@@ -58,7 +66,7 @@ def decrypt_session_detail(
     )
 
     answers = response_answer_repo.get_all_by_envelope(response_db, envelope.id)
-    question_key_map = _build_question_key_map(db, session.survey_version_id)
+    question_meta_map = _build_question_meta_map(db, session.survey_version_id)
 
     decrypted: list[DecryptedAnswerResult] = []
     for answer in answers:
@@ -78,12 +86,18 @@ def decrypt_session_detail(
             revision_number=latest_rev.revision_number,
         )
 
+        question_key, answer_family = question_meta_map.get(parsed["question_node_id"], (None, None))
         decrypted.append(
             DecryptedAnswerResult(
                 question_node_id=parsed["question_node_id"],
-                question_key=question_key_map.get(parsed["question_node_id"]),
+                question_key=question_key,
+                answer_family=answer_family,
                 answer_state=parsed["answer_state"],
-                answer_value=parsed["answer_value"],
+                answer_value=_resolve_answer_value(
+                    answer_family=answer_family,
+                    answer_state=parsed["answer_state"],
+                    raw_value=parsed["answer_value"],
+                ),
                 revision_number=latest_rev.revision_number,
                 revision_id=str(latest_rev.id),
             )
@@ -113,7 +127,7 @@ def decrypt_session_history(
     )
 
     answers = response_answer_repo.get_all_by_envelope(response_db, envelope.id)
-    question_key_map = _build_question_key_map(db, session.survey_version_id)
+    question_meta_map = _build_question_meta_map(db, session.survey_version_id)
 
     decrypted: list[DecryptedAnswerResult] = []
     for answer in answers:
@@ -131,12 +145,18 @@ def decrypt_session_history(
                 revision_number=rev.revision_number,
             )
 
+            question_key, answer_family = question_meta_map.get(parsed["question_node_id"], (None, None))
             decrypted.append(
                 DecryptedAnswerResult(
                     question_node_id=parsed["question_node_id"],
-                    question_key=question_key_map.get(parsed["question_node_id"]),
+                    question_key=question_key,
+                    answer_family=answer_family,
                     answer_state=parsed["answer_state"],
-                    answer_value=parsed["answer_value"],
+                    answer_value=_resolve_answer_value(
+                        answer_family=answer_family,
+                        answer_state=parsed["answer_state"],
+                        raw_value=parsed["answer_value"],
+                    ),
                     revision_number=rev.revision_number,
                     revision_id=str(rev.id),
                 )
@@ -212,10 +232,51 @@ def _decrypt_revision(
     return parse_plaintext_payload(plaintext_bytes)
 
 
-def _build_question_key_map(db: Session, survey_version_id: int) -> dict[str, str]:
+def _build_question_meta_map(
+    db: Session,
+    survey_version_id: int,
+) -> dict[str, tuple[str, AnswerFamily | None]]:
+    """Map each question node id to its (question_key, answer_family).
+
+    The family is read from the frozen survey definition
+    (``question_schema["family"]``) so decrypt can reconstruct it without
+    storing it in the encrypted payload. Returns ``None`` for the family when
+    the schema lacks a recognizable family value.
+    """
     questions = db.scalars(
         select(SurveyQuestion).where(
             SurveyQuestion.survey_version_id == survey_version_id,
         )
     ).all()
-    return {str(q.id): q.question_key for q in questions}
+    meta: dict[str, tuple[str, AnswerFamily | None]] = {}
+    for q in questions:
+        raw_family = q.question_schema.get("family") if isinstance(q.question_schema, dict) else None
+        family: AnswerFamily | None = raw_family if raw_family in _VALID_FAMILIES else None
+        meta[str(q.id)] = (q.question_key, family)
+    return meta
+
+
+def _resolve_answer_value(
+    *,
+    answer_family: AnswerFamily | None,
+    answer_state: str,
+    raw_value: Any,
+) -> SubmissionAnswerValue | dict[str, Any] | None:
+    """Validate a decrypted raw value into a canonical model when possible.
+
+    Falls back to the raw value (never raises) when the family is unknown or
+    the stored value does not match the canonical shape — e.g. a deleted
+    question, a version skew, or legacy ciphertext predating this contract.
+    """
+    if raw_value is None or answer_state == "cleared" or answer_family is None:
+        return raw_value
+    if not isinstance(raw_value, dict):
+        return raw_value
+    try:
+        return parse_answer_value(answer_family, raw_value)
+    except ValidationError:
+        logger.warning(
+            "Decrypted answer value did not match canonical %s shape; keeping raw value.",
+            answer_family,
+        )
+        return raw_value

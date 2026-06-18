@@ -70,7 +70,7 @@ def save_submission_session_answer(question_node_id: UUID):
         question_node_id=question_node_id,
         state=payload.state,
         answer_family=payload.answer_family,
-        answer_value=payload.answer_value.model_dump(mode="json") if payload.answer_value is not None else None,
+        answer_value=payload.answer_value,
         revision_number=1,
         client_mutation_id=payload.client_mutation_id,
         saved_at=datetime.now(UTC),

@@ -317,3 +317,130 @@ class TestAdminDecryptHistory:
         revisions = [a.revision_number for a in result.answers]
         assert 1 in revisions
         assert 2 in revisions
+
+
+class TestAdminDecryptFamilyReconstruction:
+    """Admin decrypt reconstructs answer_family from the survey definition and
+    validates the decrypted value into the canonical model, with graceful
+    fallback for unknown questions or non-canonical stored values."""
+
+    def test_family_reconstructed_and_value_typed(self, db_sessions: DbSessions) -> None:
+        from app.schema.api.submission_sessions.answer_payload import ChoiceAnswerValue
+
+        core_db, response_db = db_sessions.core, db_sessions.response
+        user = make_user()
+        core_db.add(user)
+        core_db.flush()
+        project = make_project(user_id=user.id)
+        core_db.add(project)
+        core_db.flush()
+        store = make_response_store(project_id=project.id, user_id=user.id)
+        core_db.add(store)
+        core_db.flush()
+        survey = make_survey(project_id=project.id, response_store_id=store.id, user_id=user.id)
+        core_db.add(survey)
+        core_db.flush()
+        version = make_survey_version(survey_id=survey.id, user_id=user.id)
+        core_db.add(version)
+        core_db.flush()
+        question = make_survey_question(
+            survey_version_id=version.id,
+            question_key="q1",
+            question_schema={"id": "q1", "family": "choice", "label": "Pick"},
+        )
+        core_db.add(question)
+        core_db.flush()
+
+        session, envelope, plaintext_dek = _create_session_and_envelope(
+            core_db, response_db, project, survey, version
+        )
+        _save_encrypted_answer(
+            response_db, session, envelope, plaintext_dek,
+            question_node_id=str(question.id),
+            answer_value={"selected": ["o1", "o2"]},
+        )
+
+        p1, p2 = _patch_admin_crypto()
+        with p1, p2 as mock_unwrap:
+            mock_unwrap.return_value = plaintext_dek
+            result = decrypt_session_detail(
+                core_db, response_db, session=session, encryption_settings=_FAKE_ENC_SETTINGS,
+            )
+
+        answer = result.answers[0]
+        assert answer.answer_family == "choice"
+        assert isinstance(answer.answer_value, ChoiceAnswerValue)
+        assert answer.answer_value.selected == ["o1", "o2"]
+
+    def test_unknown_question_node_falls_back(self, db_sessions: DbSessions) -> None:
+        core_db, response_db = db_sessions.core, db_sessions.response
+        project, survey, version, _ = _setup_core_fixtures(core_db)
+        session, envelope, plaintext_dek = _create_session_and_envelope(
+            core_db, response_db, project, survey, version
+        )
+        # Encrypt an answer for a question_node_id that is NOT in the version.
+        orphan_node_id = str(uuid.uuid4())
+        _save_encrypted_answer(
+            response_db, session, envelope, plaintext_dek,
+            question_node_id=orphan_node_id,
+            answer_value={"selected": ["o1"]},
+        )
+
+        p1, p2 = _patch_admin_crypto()
+        with p1, p2 as mock_unwrap:
+            mock_unwrap.return_value = plaintext_dek
+            result = decrypt_session_detail(
+                core_db, response_db, session=session, encryption_settings=_FAKE_ENC_SETTINGS,
+            )
+
+        answer = result.answers[0]
+        assert answer.question_node_id == orphan_node_id
+        assert answer.answer_family is None
+        # Raw dict preserved, never raises.
+        assert answer.answer_value == {"selected": ["o1"]}
+
+    def test_non_canonical_value_falls_back_keeping_family(self, db_sessions: DbSessions) -> None:
+        core_db, response_db = db_sessions.core, db_sessions.response
+        user = make_user()
+        core_db.add(user)
+        core_db.flush()
+        project = make_project(user_id=user.id)
+        core_db.add(project)
+        core_db.flush()
+        store = make_response_store(project_id=project.id, user_id=user.id)
+        core_db.add(store)
+        core_db.flush()
+        survey = make_survey(project_id=project.id, response_store_id=store.id, user_id=user.id)
+        core_db.add(survey)
+        core_db.flush()
+        version = make_survey_version(survey_id=survey.id, user_id=user.id)
+        core_db.add(version)
+        core_db.flush()
+        question = make_survey_question(
+            survey_version_id=version.id,
+            question_key="q1",
+            question_schema={"id": "q1", "family": "choice", "label": "Pick"},
+        )
+        core_db.add(question)
+        core_db.flush()
+
+        session, envelope, plaintext_dek = _create_session_and_envelope(
+            core_db, response_db, project, survey, version
+        )
+        # Stored value does not match the canonical choice shape.
+        _save_encrypted_answer(
+            response_db, session, envelope, plaintext_dek,
+            question_node_id=str(question.id),
+            answer_value={"garbage": True},
+        )
+
+        p1, p2 = _patch_admin_crypto()
+        with p1, p2 as mock_unwrap:
+            mock_unwrap.return_value = plaintext_dek
+            result = decrypt_session_detail(
+                core_db, response_db, session=session, encryption_settings=_FAKE_ENC_SETTINGS,
+            )
+
+        answer = result.answers[0]
+        assert answer.answer_family == "choice"
+        assert answer.answer_value == {"garbage": True}

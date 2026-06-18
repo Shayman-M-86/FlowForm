@@ -1,4 +1,13 @@
-"""Versioned plaintext payload encode/decode for answer encryption."""
+"""Versioned plaintext payload encode/decode for answer encryption.
+
+This module is deliberately family-agnostic. The payload stores ``answer_value``
+as the JSON form of a canonical ``SubmissionAnswerValue`` (see
+``app.schema.api.submission_sessions.answer_payload``) but does NOT record which
+question family it belongs to. The family is reconstructed from the survey
+definition at decrypt time, so validating a decrypted value back into a typed
+model is the decrypt service's job — this layer cannot know the family without
+external context and so never parses ``answer_value`` beyond plain JSON.
+"""
 
 import json
 from typing import Any

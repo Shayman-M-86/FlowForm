@@ -4336,7 +4336,7 @@ components:
       - survey_version_id
       title: StartSubmissionSessionResponse
       type: object
-    ChoiceAnswerValueIn:
+    ChoiceAnswerValue:
       additionalProperties: false
       description: Answer value for a choice question.
       properties:
@@ -4351,9 +4351,9 @@ components:
           type: array
       required:
       - selected
-      title: ChoiceAnswerValueIn
+      title: ChoiceAnswerValue
       type: object
-    DateFieldAnswerValueIn:
+    DateFieldAnswerValue:
       additionalProperties: false
       description: Answer value for a date field question.
       properties:
@@ -4369,9 +4369,9 @@ components:
       required:
       - field_type
       - date
-      title: DateFieldAnswerValueIn
+      title: DateFieldAnswerValue
       type: object
-    EmailFieldAnswerValueIn:
+    EmailFieldAnswerValue:
       additionalProperties: false
       description: Answer value for an email field question.
       properties:
@@ -4388,9 +4388,9 @@ components:
       required:
       - field_type
       - email
-      title: EmailFieldAnswerValueIn
+      title: EmailFieldAnswerValue
       type: object
-    EmojiRatingAnswerValueIn:
+    EmojiRatingAnswerValue:
       additionalProperties: false
       description: Answer value for an emoji rating question.
       properties:
@@ -4405,9 +4405,9 @@ components:
       required:
       - variant
       - number
-      title: EmojiRatingAnswerValueIn
+      title: EmojiRatingAnswerValue
       type: object
-    LongTextFieldAnswerValueIn:
+    LongTextFieldAnswerValue:
       additionalProperties: false
       description: Answer value for a long-text field question.
       properties:
@@ -4424,9 +4424,9 @@ components:
       required:
       - field_type
       - text
-      title: LongTextFieldAnswerValueIn
+      title: LongTextFieldAnswerValue
       type: object
-    MatchingAnswerPairIn:
+    MatchingAnswerPair:
       additionalProperties: false
       description: One prompt-to-match pair in a matching answer.
       properties:
@@ -4443,24 +4443,24 @@ components:
       required:
       - prompt_id
       - match_id
-      title: MatchingAnswerPairIn
+      title: MatchingAnswerPair
       type: object
-    MatchingAnswerValueIn:
+    MatchingAnswerValue:
       additionalProperties: false
       description: Answer value for a matching question.
       properties:
         pairs:
           items:
-            $ref: '#/components/schemas/MatchingAnswerPairIn'
+            $ref: '#/components/schemas/MatchingAnswerPair'
           maxItems: 10
           minItems: 1
           title: Pairs
           type: array
       required:
       - pairs
-      title: MatchingAnswerValueIn
+      title: MatchingAnswerValue
       type: object
-    NumberFieldAnswerValueIn:
+    NumberFieldAnswerValue:
       additionalProperties: false
       description: Answer value for a numeric field question.
       properties:
@@ -4477,9 +4477,9 @@ components:
       required:
       - field_type
       - number
-      title: NumberFieldAnswerValueIn
+      title: NumberFieldAnswerValue
       type: object
-    PhoneFieldAnswerValueIn:
+    PhoneFieldAnswerValue:
       additionalProperties: false
       description: Answer value for a phone field question.
       properties:
@@ -4496,9 +4496,9 @@ components:
       required:
       - field_type
       - phone
-      title: PhoneFieldAnswerValueIn
+      title: PhoneFieldAnswerValue
       type: object
-    ShortTextFieldAnswerValueIn:
+    ShortTextFieldAnswerValue:
       additionalProperties: false
       description: Answer value for a short-text field question.
       properties:
@@ -4515,9 +4515,9 @@ components:
       required:
       - field_type
       - text
-      title: ShortTextFieldAnswerValueIn
+      title: ShortTextFieldAnswerValue
       type: object
-    SliderRatingAnswerValueIn:
+    SliderRatingAnswerValue:
       additionalProperties: false
       description: Answer value for a slider rating question.
       properties:
@@ -4534,9 +4534,9 @@ components:
       required:
       - variant
       - number
-      title: SliderRatingAnswerValueIn
+      title: SliderRatingAnswerValue
       type: object
-    StarsRatingAnswerValueIn:
+    StarsRatingAnswerValue:
       additionalProperties: false
       description: Answer value for a star rating question.
       properties:
@@ -4551,7 +4551,7 @@ components:
       required:
       - variant
       - number
-      title: StarsRatingAnswerValueIn
+      title: StarsRatingAnswerValue
       type: object
     SaveSubmissionSessionAnswerRequest:
       additionalProperties: false
@@ -4583,34 +4583,34 @@ components:
           title: Answer Family
         answer_value:
           anyOf:
-          - $ref: '#/components/schemas/ChoiceAnswerValueIn'
+          - $ref: '#/components/schemas/ChoiceAnswerValue'
           - discriminator:
               mapping:
-                date: '#/components/schemas/DateFieldAnswerValueIn'
-                email: '#/components/schemas/EmailFieldAnswerValueIn'
-                long_text: '#/components/schemas/LongTextFieldAnswerValueIn'
-                number: '#/components/schemas/NumberFieldAnswerValueIn'
-                phone: '#/components/schemas/PhoneFieldAnswerValueIn'
-                short_text: '#/components/schemas/ShortTextFieldAnswerValueIn'
+                date: '#/components/schemas/DateFieldAnswerValue'
+                email: '#/components/schemas/EmailFieldAnswerValue'
+                long_text: '#/components/schemas/LongTextFieldAnswerValue'
+                number: '#/components/schemas/NumberFieldAnswerValue'
+                phone: '#/components/schemas/PhoneFieldAnswerValue'
+                short_text: '#/components/schemas/ShortTextFieldAnswerValue'
               propertyName: field_type
             oneOf:
-            - $ref: '#/components/schemas/ShortTextFieldAnswerValueIn'
-            - $ref: '#/components/schemas/LongTextFieldAnswerValueIn'
-            - $ref: '#/components/schemas/EmailFieldAnswerValueIn'
-            - $ref: '#/components/schemas/NumberFieldAnswerValueIn'
-            - $ref: '#/components/schemas/DateFieldAnswerValueIn'
-            - $ref: '#/components/schemas/PhoneFieldAnswerValueIn'
-          - $ref: '#/components/schemas/MatchingAnswerValueIn'
+            - $ref: '#/components/schemas/ShortTextFieldAnswerValue'
+            - $ref: '#/components/schemas/LongTextFieldAnswerValue'
+            - $ref: '#/components/schemas/EmailFieldAnswerValue'
+            - $ref: '#/components/schemas/NumberFieldAnswerValue'
+            - $ref: '#/components/schemas/DateFieldAnswerValue'
+            - $ref: '#/components/schemas/PhoneFieldAnswerValue'
+          - $ref: '#/components/schemas/MatchingAnswerValue'
           - discriminator:
               mapping:
-                emoji: '#/components/schemas/EmojiRatingAnswerValueIn'
-                slider: '#/components/schemas/SliderRatingAnswerValueIn'
-                stars: '#/components/schemas/StarsRatingAnswerValueIn'
+                emoji: '#/components/schemas/EmojiRatingAnswerValue'
+                slider: '#/components/schemas/SliderRatingAnswerValue'
+                stars: '#/components/schemas/StarsRatingAnswerValue'
               propertyName: variant
             oneOf:
-            - $ref: '#/components/schemas/SliderRatingAnswerValueIn'
-            - $ref: '#/components/schemas/StarsRatingAnswerValueIn'
-            - $ref: '#/components/schemas/EmojiRatingAnswerValueIn'
+            - $ref: '#/components/schemas/SliderRatingAnswerValue'
+            - $ref: '#/components/schemas/StarsRatingAnswerValue'
+            - $ref: '#/components/schemas/EmojiRatingAnswerValue'
           - type: 'null'
           default: null
           title: Answer Value
@@ -4648,8 +4648,34 @@ components:
           title: Answer Family
         answer_value:
           anyOf:
-          - additionalProperties: true
-            type: object
+          - $ref: '#/components/schemas/ChoiceAnswerValue'
+          - discriminator:
+              mapping:
+                date: '#/components/schemas/DateFieldAnswerValue'
+                email: '#/components/schemas/EmailFieldAnswerValue'
+                long_text: '#/components/schemas/LongTextFieldAnswerValue'
+                number: '#/components/schemas/NumberFieldAnswerValue'
+                phone: '#/components/schemas/PhoneFieldAnswerValue'
+                short_text: '#/components/schemas/ShortTextFieldAnswerValue'
+              propertyName: field_type
+            oneOf:
+            - $ref: '#/components/schemas/ShortTextFieldAnswerValue'
+            - $ref: '#/components/schemas/LongTextFieldAnswerValue'
+            - $ref: '#/components/schemas/EmailFieldAnswerValue'
+            - $ref: '#/components/schemas/NumberFieldAnswerValue'
+            - $ref: '#/components/schemas/DateFieldAnswerValue'
+            - $ref: '#/components/schemas/PhoneFieldAnswerValue'
+          - $ref: '#/components/schemas/MatchingAnswerValue'
+          - discriminator:
+              mapping:
+                emoji: '#/components/schemas/EmojiRatingAnswerValue'
+                slider: '#/components/schemas/SliderRatingAnswerValue'
+                stars: '#/components/schemas/StarsRatingAnswerValue'
+              propertyName: variant
+            oneOf:
+            - $ref: '#/components/schemas/SliderRatingAnswerValue'
+            - $ref: '#/components/schemas/StarsRatingAnswerValue'
+            - $ref: '#/components/schemas/EmojiRatingAnswerValue'
           - type: 'null'
           default: null
           title: Answer Value

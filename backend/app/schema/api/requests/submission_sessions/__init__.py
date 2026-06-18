@@ -1,20 +1,5 @@
 from app.schema.api.requests.submission_sessions.answers import (
-    ChoiceAnswerValueIn,
-    DateFieldAnswerValueIn,
-    EmailFieldAnswerValueIn,
-    EmojiRatingAnswerValueIn,
-    FieldAnswerValueIn,
-    LongTextFieldAnswerValueIn,
-    MatchingAnswerPairIn,
-    MatchingAnswerValueIn,
-    NumberFieldAnswerValueIn,
-    PhoneFieldAnswerValueIn,
-    RatingAnswerValueIn,
     SaveSubmissionSessionAnswerRequest,
-    ShortTextFieldAnswerValueIn,
-    SliderRatingAnswerValueIn,
-    StarsRatingAnswerValueIn,
-    SubmissionAnswerValueIn,
 )
 from app.schema.api.requests.submission_sessions.events import SubmissionSessionEventRequest
 from app.schema.api.requests.submission_sessions.start import (
@@ -25,25 +10,10 @@ from app.schema.api.requests.submission_sessions.start import (
 )
 
 __all__ = [
-    "ChoiceAnswerValueIn",
-    "DateFieldAnswerValueIn",
-    "EmailFieldAnswerValueIn",
-    "EmojiRatingAnswerValueIn",
-    "FieldAnswerValueIn",
     "LinkTokenAccess",
-    "LongTextFieldAnswerValueIn",
-    "MatchingAnswerPairIn",
-    "MatchingAnswerValueIn",
-    "NumberFieldAnswerValueIn",
-    "PhoneFieldAnswerValueIn",
     "PublicSlugAccess",
-    "RatingAnswerValueIn",
     "SaveSubmissionSessionAnswerRequest",
     "SessionStartAccess",
-    "ShortTextFieldAnswerValueIn",
-    "SliderRatingAnswerValueIn",
-    "StarsRatingAnswerValueIn",
     "StartSubmissionSessionRequest",
-    "SubmissionAnswerValueIn",
     "SubmissionSessionEventRequest",
 ]

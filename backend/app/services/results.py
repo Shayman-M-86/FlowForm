@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from typing import Any, Literal
 from uuid import UUID
 
+from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
+from app.schema.enums import AnswerFamily
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.project_subject import ProjectSubject
 from app.schema.orm.core.survey import Survey, SurveyVersion
@@ -156,8 +158,9 @@ class DecryptedAnswerResult:
 
     question_node_id: str
     question_key: str | None
+    answer_family: AnswerFamily | None
     answer_state: str
-    answer_value: Any | None
+    answer_value: SubmissionAnswerValue | dict[str, Any] | None
     revision_number: int
     revision_id: str
 
