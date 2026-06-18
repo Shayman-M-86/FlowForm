@@ -24,7 +24,7 @@ notes. It is a routing aid, not a replacement for the pass reports.
    decrypt responses, exports, scoring, rules, and completion validation all use
    the same answer contract.
     Further context:
-   - `backend/app/schema/api/requests/submission_sessions.py`
+   - `backend/app/schema/api/requests/submission_sessions/`
    - `backend/app/crypto/payload.py`
    - `backend/app/services/public_submissions/core/answer_save.py`
    - `backend/app/services/public_submissions/core/admin_decrypt.py`
@@ -68,7 +68,7 @@ notes. It is a routing aid, not a replacement for the pass reports.
     Further context:
    - `backend/app/services/public_submissions/core/answer_save.py`
    - `.claude/workflows/session-encryption/working/pass-reports/06-answer-save-and-session-loader.md`
-   - `backend/app/schema/api/requests/submission_sessions.py`
+   - `backend/app/schema/api/requests/submission_sessions/`
    - `backend/app/schema/api/requests/content/questions_schemas.py`
 
 4. **Durable pending deletion**
@@ -113,10 +113,10 @@ notes. It is a routing aid, not a replacement for the pass reports.
    `load_current_session()`, delegate to `AnswerSaveService.save_answer()`, and
    return the real revision metadata.
     Further context:
-   - `backend/app/api/v1/public.py`
+   - `backend/app/api/v1/respondent/submission_sessions.py`
    - `backend/app/services/public_submissions/api/session_management.py`
    - `backend/app/services/public_submissions/core/answer_save.py`
-   - `backend/app/schema/api/requests/submission_sessions.py`
+   - `backend/app/schema/api/requests/submission_sessions/`
 
 6. **Public event route still placeholder**
    The public event endpoint parses the request and returns `204`, but it does
@@ -129,7 +129,7 @@ notes. It is a routing aid, not a replacement for the pass reports.
    the question when present, insert `submission_events`, and swallow/log
    secondary event-write failures.
     Further context:
-   - `backend/app/api/v1/public.py`
+   - `backend/app/api/v1/respondent/submission_sessions.py`
    - `backend/app/services/public_submissions/api/session_management.py`
    - `backend/app/repositories/core/submission_events.py`
    - `backend/app/services/public_submissions/core/answer_save.py`
@@ -145,8 +145,7 @@ notes. It is a routing aid, not a replacement for the pass reports.
    `decrypt_session_history()`, or `delete_session_responses()`, and maps the
    service results into the existing API response models.
     Further context:
-   - `backend/app/api/v1/projects/survey_responses.py`
-   - `backend/app/api/v1/projects/survey_responses_temp.py`
+   - `backend/app/api/v1/studio/surveys/responses.py`
    - `backend/app/services/public_submissions/core/admin_decrypt.py`
    - `backend/app/services/public_submissions/core/deletion.py`
    - `backend/app/services/results.py`
