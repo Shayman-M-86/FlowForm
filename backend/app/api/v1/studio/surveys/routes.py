@@ -1,7 +1,7 @@
 from flask import g, request
 
 from app.api.utils.validation import parse
-from app.api.v1.projects import projects_bp, survey_service, users_service
+from app.api.v1.studio.projects import studio_projects_bp, survey_service, users_service
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.domain.permissions import PERMISSIONS
@@ -12,7 +12,7 @@ from app.services.access.access_service import access_service, require_project_p
 
 
 @openapi_route(summary="List surveys", response_model=list[SurveyResponses], tags=["Surveys"])
-@projects_bp.route("/<bint:project_id>/surveys", methods=["GET"])
+@studio_projects_bp.route("/<bint:project_id>/surveys", methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.survey.view)
 def list_surveys(project_id: int):
@@ -27,7 +27,7 @@ def list_surveys(project_id: int):
     status_code=201,
     tags=["Surveys"],
 )
-@projects_bp.route("/<bint:project_id>/surveys", methods=["POST"])
+@studio_projects_bp.route("/<bint:project_id>/surveys", methods=["POST"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.survey.create)
 def create_survey(project_id: int):
@@ -37,7 +37,7 @@ def create_survey(project_id: int):
 
 
 @openapi_route(summary="Get survey", response_model=SurveyResponses, tags=["Surveys"])
-@projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>", methods=["GET"])
+@studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>", methods=["GET"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.view)
 def get_survey(project_id: int, survey_id: int):
@@ -51,7 +51,7 @@ def get_survey(project_id: int, survey_id: int):
     response_model=SurveyResponses,
     tags=["Surveys"],
 )
-@projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>", methods=["PATCH"])
+@studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.edit)
 def update_survey(project_id: int, survey_id: int):
@@ -63,7 +63,7 @@ def update_survey(project_id: int, survey_id: int):
 
 
 @openapi_route(summary="Delete survey", tags=["Surveys"], status_code=204)
-@projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>", methods=["DELETE"])
+@studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.delete)
 def delete_survey(project_id: int, survey_id: int):
@@ -72,7 +72,7 @@ def delete_survey(project_id: int, survey_id: int):
 
 
 @openapi_route(summary="Get my survey permissions", response_model=MySurveyPermissionsResponses, tags=["Surveys"])
-@projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/my-permissions", methods=["GET"])
+@studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/my-permissions", methods=["GET"])
 @auth.require_auth()
 def get_my_survey_permissions(project_id: int, survey_id: int):
     db = get_core_db()

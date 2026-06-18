@@ -7,8 +7,8 @@ from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionRespo
 from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
 
 
-class PublicLinkResponses(BaseModel):
-    """API response shape for a survey link."""
+class SurveyAccessLinkResponse(BaseModel):
+    """API response shape for a survey access link."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -25,15 +25,15 @@ class PublicLinkResponses(BaseModel):
     created_at: datetime
 
 
-class PublicLinkCreatedResponses(BaseModel):
-    """API response returned once when a survey link is created, including the plaintext token."""
+class SurveyAccessLinkCreatedResponse(BaseModel):
+    """API response returned once when a survey access link is created."""
 
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     survey_id: int
     name: str
-    token: str  # plaintext — returned once only, never stored
+    token: str
     token_prefix: str
     is_active: bool
     link_type: SurveyLinkType
@@ -44,25 +44,25 @@ class PublicLinkCreatedResponses(BaseModel):
     created_at: datetime
 
 
-class CreatePublicLinkResponses(BaseModel):
-    """API response shape for creating a public link."""
+class CreateSurveyAccessLinkResponse(BaseModel):
+    """API response shape for creating a survey access link."""
 
-    link: PublicLinkResponses
+    link: SurveyAccessLinkResponse
     token: str
     url: str
 
 
-class ResolveLinkResponses(BaseModel):
-    """API response shape for resolving a public link token."""
+class ResolveSurveyAccessLinkResponse(BaseModel):
+    """API response shape for resolving a respondent survey access link token."""
 
     model_config = ConfigDict(from_attributes=True)
-    link: PublicLinkResponses
+    link: SurveyAccessLinkResponse
     survey: SurveyResponses | None = None
     published_version: SurveyVersionResponses | None = None
 
 
-class ListPublicLinksResponses(BaseModel):
-    """API response shape for listing all public links for a survey."""
+class ListSurveyAccessLinksResponse(BaseModel):
+    """API response shape for listing survey access links for a survey."""
 
     model_config = ConfigDict(from_attributes=True)
-    links: list[PublicLinkResponses]
+    links: list[SurveyAccessLinkResponse]

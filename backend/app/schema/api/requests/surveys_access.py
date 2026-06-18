@@ -2,8 +2,8 @@ from pydantic import BaseModel, Field
 
 from app.domain.permissions import SurveyPermission
 from app.schema.api import limits
-from app.schema.api.requests.field_types import ProjectRoleDescription, ProjectRoleName
-from app.schema.api.requests.helpers import int_id_field, required_int_id_field
+from app.schema.api.common.fields import ProjectRoleDescription, ProjectRoleName
+from app.schema.api.common.validators import int_id_field, required_int_id_field
 
 
 class CreateSurveyRoleRequest(BaseModel):
@@ -11,9 +11,7 @@ class CreateSurveyRoleRequest(BaseModel):
 
     name: ProjectRoleName
     description: ProjectRoleDescription | None = None
-    permissions: set[SurveyPermission] = Field(
-        default_factory=set, max_length=limits.SURVEY_ROLE_PERMISSIONS_MAX
-    )
+    permissions: set[SurveyPermission] = Field(default_factory=set, max_length=limits.SURVEY_ROLE_PERMISSIONS_MAX)
 
 
 class UpdateSurveyRoleRequest(BaseModel):
@@ -21,9 +19,7 @@ class UpdateSurveyRoleRequest(BaseModel):
 
     name: ProjectRoleName | None = None
     description: ProjectRoleDescription | None = None
-    permissions: set[SurveyPermission] | None = Field(
-        default=None, max_length=limits.SURVEY_ROLE_PERMISSIONS_MAX
-    )
+    permissions: set[SurveyPermission] | None = Field(default=None, max_length=limits.SURVEY_ROLE_PERMISSIONS_MAX)
 
 
 class AssignSurveyMemberRoleRequest(BaseModel):

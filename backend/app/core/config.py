@@ -64,10 +64,7 @@ class DatabaseSettings(BaseModel):
 
         missing = [key for key, value in required_parts.items() if value is None]
         if missing:
-            raise ValueError(
-                "Provide either database.url or all database parts. "
-                f"Missing: {', '.join(missing)}"
-            )
+            raise ValueError(f"Provide either database.url or all database parts. Missing: {', '.join(missing)}")
 
         return self
 
@@ -83,7 +80,7 @@ class DatabaseSettings(BaseModel):
             f"{self.app_user}:{self.password.get_secret_value()}"  # type: ignore
             f"@{self.host}:{self.port}/{self.name}"
         )
-    
+
     @property
     def url(self) -> str:
         return str(self.dsn_url)
@@ -170,7 +167,7 @@ class RateLimitSettings(BaseModel):
     enabled: bool = True
     max_requests: int = 30
     window_seconds: int = 5
-    ignored_paths: list[str] = Field(default_factory=lambda: ["/api/v1/health"])
+    ignored_paths: list[str] = Field(default_factory=lambda: ["/api/v1/system/health"])
 
 
 class LoggingSettings(BaseModel):
@@ -185,6 +182,7 @@ class LoggingSettings(BaseModel):
     log_file_max_bytes: int = 5 * 1024 * 1024  # 5 MB
     requests: bool = True  # Whether to log HTTP requests
     duration: bool = False  # Whether to log request duration
+
 
 class FlowForm(BaseModel):
     """Top-level application settings loaded from environment variables."""
@@ -305,7 +303,6 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
         if isinstance(value, SecretStr):
             value = value.get_secret_value()
         app.config[key] = value
-
 
     app.extensions["settings"] = settings
 

@@ -6,6 +6,7 @@ ProjectSubject, applies merge and identity writes, issues or rotates the recogni
 token, creates the session row, creates the response envelope, and consumes
 single-use links — committing both databases before returning the resume token.
 """
+
 from __future__ import annotations
 
 import logging
@@ -25,7 +26,7 @@ from app.repositories.core import project_subjects as subjects
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_envelope_repo
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
-from app.schema.api.responses.submission_sessions import PublicSubmissionSessionResponses
+from app.schema.api.responses.submission_sessions import StartSubmissionSessionResponse
 from app.schema.orm.core.user import User
 from app.services.public_submissions.core.access_resolver import AccessResolver
 from app.services.public_submissions.core.subject_resolver import SubjectResolver
@@ -89,7 +90,7 @@ class SessionStarter:
         payload: StartSubmissionSessionRequest,
         actor: User | None,
         recognition_token: str | None = None,
-    ) -> tuple[PublicSubmissionSessionResponses, str, str | None]:
+    ) -> tuple[StartSubmissionSessionResponse, str, str | None]:
         """Run the full session-start sequence.
 
         Returns (session_response, raw_browser_session_token, raw_recognition_token).
@@ -101,9 +102,11 @@ class SessionStarter:
         access = self._access_resolver.resolve(db, payload=payload, actor=actor)
         response_store_id = survey_rules.ensure_has_response_store(survey=access.survey)
 
-        lookup = self._token_service.lookup(
-            db, project_id=access.project_id, raw_token=recognition_token
-        ) if recognition_token else None
+        lookup = (
+            self._token_service.lookup(db, project_id=access.project_id, raw_token=recognition_token)
+            if recognition_token
+            else None
+        )
 
         token_subject_id = lookup.token_subject_id if (lookup and lookup.token_valid) else None
         canonical_token_subject_id = lookup.canonical_token_subject_id if (lookup and lookup.token_valid) else None
@@ -121,9 +124,7 @@ class SessionStarter:
         final_subject_id = resolution.final_subject_id
 
         if resolution.merge_subject_id is not None and resolution.merge_into_subject_id is not None:
-            weaker = subjects.get_subject(
-                db, project_id=access.project_id, subject_id=resolution.merge_subject_id
-            )
+            weaker = subjects.get_subject(db, project_id=access.project_id, subject_id=resolution.merge_subject_id)
             stronger = subjects.get_subject(
                 db, project_id=access.project_id, subject_id=resolution.merge_into_subject_id
             )
@@ -165,9 +166,7 @@ class SessionStarter:
         # Core rows are flushed but NOT committed yet. If envelope creation
         # fails, _create_response_envelope rolls back core and raises
         # SessionStartError — no additional handling needed here.
-        session_locator, plaintext_dek = self._create_response_envelope(
-            db, response_db, session=session
-        )
+        session_locator, plaintext_dek = self._create_response_envelope(db, response_db, session=session)
 
         try:
             if access.link is not None and access.is_single_use:
@@ -182,7 +181,7 @@ class SessionStarter:
         if self._dek_cache is not None:
             self._dek_cache.put(session_locator, plaintext_dek)
 
-        response = PublicSubmissionSessionResponses(
+        response = StartSubmissionSessionResponse(
             status=session.session_status,
             started_at=session.started_at,
             expires_at=session.expires_at,

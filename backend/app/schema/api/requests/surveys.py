@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, model_validator
 
 from app.schema.api import limits
-from app.schema.api.requests.field_types import Slug, SurveyTitle
+from app.schema.api.common.fields import Slug, SurveyTitle
 from app.schema.enums import SurveyVisibility
 
 

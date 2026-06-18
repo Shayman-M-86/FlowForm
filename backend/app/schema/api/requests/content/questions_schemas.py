@@ -3,7 +3,7 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schema.api import limits
-from app.schema.api.requests.field_types import (
+from app.schema.api.common.fields import (
     ChoiceOptionLabel,
     MatchingItemLabel,
     QuestionLabel,
@@ -178,9 +178,7 @@ class RatingRangeIn(BaseModel):
             raise ValueError("max must be greater than min")
         range_diff = self.max - self.min
         if range_diff % self.step != 0:
-            raise ValueError(
-                f"step must be a divisor of the range difference ({range_diff})"
-            )
+            raise ValueError(f"step must be a divisor of the range difference ({range_diff})")
         return self
 
 

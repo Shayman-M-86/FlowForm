@@ -15,9 +15,9 @@ from app.schema.api.requests.projects import (
     SendInvitationRequest,
     UpdateMemberRequest,
 )
-from app.schema.api.requests.public_links import (
-    CreatePublicLinkRequest,
-    ResolveTokenRequest,
+from app.schema.api.requests.survey_access_links import (
+    CreateSurveyAccessLinkRequest,
+    ResolveSurveyAccessLinkTokenRequest,
 )
 from app.schema.api.requests.surveys import CreateSurveyRequest
 
@@ -62,11 +62,11 @@ def _too_long(limit: int) -> str:
             limits.SLUG_MAX,
         ),
         (
-            lambda value: CreatePublicLinkRequest(name=value),
+            lambda value: CreateSurveyAccessLinkRequest(name=value),
             limits.PUBLIC_LINK_NAME_MAX,
         ),
         (
-            lambda value: ResolveTokenRequest(token=value),
+            lambda value: ResolveSurveyAccessLinkTokenRequest(token=value),
             limits.TOKEN_MAX,
         ),
         (

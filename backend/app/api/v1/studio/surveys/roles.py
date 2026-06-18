@@ -1,7 +1,7 @@
 from flask import g, request
 
 from app.api.utils.validation import parse
-from app.api.v1.projects import projects_bp
+from app.api.v1.studio.projects import studio_projects_bp
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.domain.permissions import PERMISSIONS
@@ -13,7 +13,7 @@ from app.services.survey_roles import survey_roles_service
 
 
 @openapi_route(summary="List survey roles", response_model=list[SurveyRoleResponses], tags=["Survey Roles"])
-@projects_bp.route("/<bint:project_id>/survey-roles", methods=["GET"])
+@studio_projects_bp.route("/<bint:project_id>/survey-roles", methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
 def list_survey_roles(project_id: int):
@@ -28,7 +28,7 @@ def list_survey_roles(project_id: int):
     status_code=201,
     tags=["Survey Roles"],
 )
-@projects_bp.route("/<bint:project_id>/survey-roles", methods=["POST"])
+@studio_projects_bp.route("/<bint:project_id>/survey-roles", methods=["POST"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
 def create_survey_role(project_id: int):
@@ -43,7 +43,7 @@ def create_survey_role(project_id: int):
     response_model=SurveyRoleResponses,
     tags=["Survey Roles"],
 )
-@projects_bp.route("/<bint:project_id>/survey-roles/<bint:role_id>", methods=["PATCH"])
+@studio_projects_bp.route("/<bint:project_id>/survey-roles/<bint:role_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
 def update_survey_role(project_id: int, role_id: int):
@@ -55,7 +55,7 @@ def update_survey_role(project_id: int, role_id: int):
 
 
 @openapi_route(summary="Delete survey role", tags=["Survey Roles"])
-@projects_bp.route("/<bint:project_id>/survey-roles/<bint:role_id>", methods=["DELETE"])
+@studio_projects_bp.route("/<bint:project_id>/survey-roles/<bint:role_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
 def delete_survey_role(project_id: int, role_id: int):

@@ -6,9 +6,9 @@ from uuid import UUID
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
 from app.schema.api import limits
+from app.schema.api.common.fields import SchemaIdStr
 from app.schema.api.requests.content.questions_schemas import QuestionSchemaIn
 from app.schema.api.requests.content.rule_schemas import RuleSchemaIn
-from app.schema.api.requests.field_types import SchemaIdStr
 from app.schema.enums import SurveyNodeType
 
 _MAX_NODE_CONTENT_BYTES = limits.NODE_CONTENT_BYTES_MAX

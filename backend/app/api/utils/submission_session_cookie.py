@@ -3,13 +3,13 @@ from __future__ import annotations
 from flask import Response, after_this_request, request
 
 _SUBMISSION_SESSION_COOKIE = "flowform_submission_session"
-_SUBMISSION_SESSION_COOKIE_PATH_PREFIX = "/api/v1/public/submission-session"
+_SUBMISSION_SESSION_COOKIE_PATH_PREFIX = "/api/v1/respondent/submission-sessions"
 _SUBMISSION_SESSION_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
 
 # Recognition token: a returning-browser cookie scoped to the whole public area,
 # not just one submission session. Lives much longer than the session cookie.
 _RECOGNITION_COOKIE = "flowform_subject_recognition"
-_RECOGNITION_COOKIE_PATH = "/api/v1/public"
+_RECOGNITION_COOKIE_PATH = "/api/v1/respondent"
 _RECOGNITION_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365
 
 

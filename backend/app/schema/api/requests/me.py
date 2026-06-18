@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from app.schema.api.requests.field_types import AccountEmail, DisplayName, Nickname, PictureUrl, Username
+from app.schema.api.common.fields import AccountEmail, DisplayName, Nickname, PictureUrl, Username
 
 
 class UpdateProfileRequest(BaseModel):

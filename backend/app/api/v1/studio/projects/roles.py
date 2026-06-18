@@ -1,7 +1,7 @@
 from flask import g, request
 
 from app.api.utils.validation import parse
-from app.api.v1.projects import projects_bp, roles_service
+from app.api.v1.studio.projects import roles_service, studio_projects_bp
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.domain.permissions import PERMISSIONS
@@ -12,7 +12,7 @@ from app.services.access.access_service import require_project_permission
 
 
 @openapi_route(summary="List project roles", response_model=list[ProjectRoleResponses], tags=["Roles"])
-@projects_bp.route("/<bint:project_id>/roles", methods=["GET"])
+@studio_projects_bp.route("/<bint:project_id>/roles", methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
 def list_roles(project_id: int):
@@ -27,7 +27,7 @@ def list_roles(project_id: int):
     status_code=201,
     tags=["Roles"],
 )
-@projects_bp.route("/<bint:project_id>/roles", methods=["POST"])
+@studio_projects_bp.route("/<bint:project_id>/roles", methods=["POST"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
 def create_role(project_id: int):
@@ -42,7 +42,7 @@ def create_role(project_id: int):
     response_model=ProjectRoleResponses,
     tags=["Roles"],
 )
-@projects_bp.route("/<bint:project_id>/roles/<bint:role_id>", methods=["PATCH"])
+@studio_projects_bp.route("/<bint:project_id>/roles/<bint:role_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
 def update_role(project_id: int, role_id: int):
@@ -54,7 +54,7 @@ def update_role(project_id: int, role_id: int):
 
 
 @openapi_route(summary="Delete project role", tags=["Roles"])
-@projects_bp.route("/<bint:project_id>/roles/<bint:role_id>", methods=["DELETE"])
+@studio_projects_bp.route("/<bint:project_id>/roles/<bint:role_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
 def delete_role(project_id: int, role_id: int):

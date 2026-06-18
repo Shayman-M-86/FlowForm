@@ -1,6 +1,6 @@
 from flask import g
 
-from app.api.v1.projects import projects_bp, survey_service
+from app.api.v1.studio.projects import studio_projects_bp, survey_service
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.domain.permissions import PERMISSIONS
@@ -10,7 +10,7 @@ from app.services.access.access_service import require_survey_permission
 
 
 @openapi_route(summary="List survey versions", response_model=list[SurveyVersionResponses], tags=["Survey Versions"])
-@projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/versions", methods=["GET"])
+@studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/versions", methods=["GET"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.view)
 def list_versions(project_id: int, survey_id: int):
@@ -24,7 +24,7 @@ def list_versions(project_id: int, survey_id: int):
     status_code=201,
     tags=["Survey Versions"],
 )
-@projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/versions", methods=["POST"])
+@studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/versions", methods=["POST"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.create)
 def create_version(project_id: int, survey_id: int):
@@ -38,7 +38,7 @@ def create_version(project_id: int, survey_id: int):
     status_code=201,
     tags=["Survey Versions"],
 )
-@projects_bp.route(
+@studio_projects_bp.route(
     "/<bint:project_id>/surveys/<bint:survey_id>/versions/<bint:version_number>/copy-to-draft",
     methods=["POST"],
 )
@@ -56,7 +56,7 @@ def copy_version_to_draft(project_id: int, survey_id: int, version_number: int):
 
 
 @openapi_route(summary="Get survey version", response_model=SurveyVersionResponses, tags=["Survey Versions"])
-@projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/versions/<bint:version_number>", methods=["GET"])
+@studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/versions/<bint:version_number>", methods=["GET"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.view)
 def get_version(project_id: int, survey_id: int, version_number: int):
@@ -67,7 +67,7 @@ def get_version(project_id: int, survey_id: int, version_number: int):
 
 
 @openapi_route(summary="Publish survey version", response_model=SurveyVersionResponses, tags=["Survey Versions"])
-@projects_bp.route(
+@studio_projects_bp.route(
     "/<bint:project_id>/surveys/<bint:survey_id>/versions/<bint:version_number>/publish",
     methods=["POST"],
 )
@@ -81,7 +81,7 @@ def publish_version(project_id: int, survey_id: int, version_number: int):
 
 
 @openapi_route(summary="Archive survey version", response_model=SurveyVersionResponses, tags=["Survey Versions"])
-@projects_bp.route(
+@studio_projects_bp.route(
     "/<bint:project_id>/surveys/<bint:survey_id>/versions/<bint:version_number>/archive",
     methods=["POST"],
 )

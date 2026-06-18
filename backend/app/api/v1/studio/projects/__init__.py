@@ -14,7 +14,7 @@ from app.services.users import UserService
 
 logger = getLogger(__name__)
 
-projects_bp = Blueprint("projects_v1", __name__)
+studio_projects_bp = Blueprint("studio_projects_v1", __name__)
 
 users_service = UserService()
 content_svc = ContentService()
@@ -25,8 +25,11 @@ roles_service = RolesService()
 survey_link_service = SurveyLinkService()
 survey_service = SurveyService()
 
-# Import sub-modules to register their routes on projects_bp
-from app.api.v1.projects import (  # noqa: E402, I001
-    content, core, members, participants, public_links, roles, survey_responses,
-    survey_members, survey_roles, surveys, versions,
+from app.api.v1.studio.projects import (  # noqa: E402, I001
+    invitations,
+    members,
+    participants,
+    roles,
+    routes,
 )
+from app.api.v1.studio import surveys  # noqa: E402

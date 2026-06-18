@@ -5,7 +5,7 @@ from flask.testing import FlaskClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-import app.api.v1.public as public_routes
+import app.api.v1.respondent.submission_sessions as submission_session_routes
 from app.domain.errors import SessionStartError
 from app.schema.orm.core.project_subject import ProjectSubjectIdentity
 from app.schema.orm.core.submission_session import SubmissionSession
@@ -18,7 +18,7 @@ def test_start_submission_session_returns_json_tuple_and_sets_cookie(
     seed: SeedData,
 ) -> None:
     resp = authed_client.post(
-        "/api/v1/public/submission-session/start",
+        "/api/v1/respondent/submission-sessions",
         json={"access": {"type": "public_slug", "public_slug": seed.survey.public_slug}},
     )
 
@@ -39,13 +39,13 @@ def test_start_submission_session_returns_json_tuple_and_sets_cookie(
     assert "HttpOnly" in session_cookie
     assert "Secure" in session_cookie
     assert "SameSite=Lax" in session_cookie
-    assert "Path=/api/v1/public/submission-session" in session_cookie
+    assert "Path=/api/v1/respondent/submission-sessions" in session_cookie
 
     recognition_cookie = next(c for c in cookies if "flowform_subject_recognition=" in c)
     assert "HttpOnly" in recognition_cookie
     assert "Secure" in recognition_cookie
     assert "SameSite=Lax" in recognition_cookie
-    assert "Path=/api/v1/public" in recognition_cookie
+    assert "Path=/api/v1/respondent" in recognition_cookie
 
     saved = core_db_session.scalar(select(SubmissionSession).where(SubmissionSession.survey_id == seed.survey.id))
     assert saved is not None
@@ -53,9 +53,7 @@ def test_start_submission_session_returns_json_tuple_and_sets_cookie(
     # Authenticated public-slug path (row 3) must create an identity-linked subject,
     # not a new anonymous one. This distinguishes row 3 from row 1 (anonymous).
     identity = core_db_session.scalar(
-        select(ProjectSubjectIdentity).where(
-            ProjectSubjectIdentity.project_subject_id == saved.project_subject_id
-        )
+        select(ProjectSubjectIdentity).where(ProjectSubjectIdentity.project_subject_id == saved.project_subject_id)
     )
     assert identity is not None, "authenticated path must create an identity-linked subject"
 
@@ -69,13 +67,13 @@ def test_start_submission_session_failure_does_not_set_session_cookies(
         raise SessionStartError("Core commit failed after response envelope creation")
 
     monkeypatch.setattr(
-        public_routes.session_management_service,
+        submission_session_routes.session_management_service,
         "start_session",
         _fail_start_session,
     )
 
     resp = authed_client.post(
-        "/api/v1/public/submission-session/start",
+        "/api/v1/respondent/submission-sessions",
         json={"access": {"type": "public_slug", "public_slug": seed.survey.public_slug}},
     )
 

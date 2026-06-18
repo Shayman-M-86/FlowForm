@@ -62,8 +62,8 @@ class ListPublicSurveysResult:
 
 
 @dataclass(slots=True)
-class CreatePublicLinkResult:
-    """Result of creating a public link."""
+class CreateSurveyAccessLinkResult:
+    """Result of creating a survey access link."""
 
     link: SurveyLink
     token: str
@@ -71,7 +71,7 @@ class CreatePublicLinkResult:
 
 @dataclass(slots=True)
 class ResolveLinkResult:
-    """Result of resolving a public link token."""
+    """Result of resolving a respondent survey access link token."""
 
     link: SurveyLink
     survey: Survey

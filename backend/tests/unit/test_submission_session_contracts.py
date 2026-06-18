@@ -15,7 +15,7 @@ from app.schema.api.requests.submission_sessions import (
     SubmissionSessionEventRequest,
 )
 from app.schema.api.requests.survey_responses import ExportSurveyResponsesRequest, ListSurveyResponsesRequest
-from app.schema.api.responses.submission_sessions import PublicSubmissionSessionResponses
+from app.schema.api.responses.submission_sessions import StartSubmissionSessionResponse
 
 # Snapshot the global @openapi_route registry at import time, once the v1 route
 # decorators (loaded via ``import app.api.v1`` above) have populated it. Other
@@ -75,7 +75,7 @@ def test_start_submission_session_rejects_legacy_submission_fields() -> None:
 
 def test_submission_session_response_contains_only_acknowledgement_fields() -> None:
     current = datetime.now(UTC)
-    response = PublicSubmissionSessionResponses(
+    response = StartSubmissionSessionResponse(
         status="in_progress",
         started_at=current,
         expires_at=current,
@@ -97,14 +97,15 @@ def test_submission_session_response_contains_only_acknowledgement_fields() -> N
     assert "answers" not in dumped
 
 
-def test_save_answer_requires_body_question_identifier() -> None:
+def test_save_answer_rejects_body_question_identifier() -> None:
     with pytest.raises(ValidationError) as exc_info:
         SaveSubmissionSessionAnswerRequest.model_validate(
             {
+                "question_node_id": "771ab5a1-462c-4c98-8fe5-dbc2c1939539",
                 "client_mutation_id": "ce823b7d-5295-4ca6-bbb8-cfe367f28b31",
                 "state": "answered",
                 "answer_family": "rating",
-                "answer_value": {"value": 8},
+                "answer_value": {"variant": "slider", "number": 8},
             }
         )
 
@@ -115,7 +116,6 @@ def test_save_answer_requires_answer_payload_when_answered() -> None:
     with pytest.raises(ValidationError) as exc_info:
         SaveSubmissionSessionAnswerRequest.model_validate(
             {
-                "question_node_id": "771ab5a1-462c-4c98-8fe5-dbc2c1939539",
                 "client_mutation_id": "ce823b7d-5295-4ca6-bbb8-cfe367f28b31",
                 "state": "answered",
             }
@@ -128,11 +128,10 @@ def test_clear_answer_forbids_answer_payload() -> None:
     with pytest.raises(ValidationError) as exc_info:
         SaveSubmissionSessionAnswerRequest.model_validate(
             {
-                "question_node_id": "771ab5a1-462c-4c98-8fe5-dbc2c1939539",
                 "client_mutation_id": "b10063cb-9fb4-4ac2-b399-769f8781127f",
                 "state": "cleared",
                 "answer_family": "rating",
-                "answer_value": {"value": 8},
+                "answer_value": {"variant": "slider", "number": 8},
             }
         )
 
@@ -144,27 +143,25 @@ def test_submission_session_paths_are_in_openapi_spec(restored_openapi_registry:
     spec = build_spec(app)
     paths = spec["paths"]
 
-    assert sorted(paths["/api/v1/public/links/resolve"]) == ["post"]
-    assert "post" in paths["/api/v1/public/submission-session/start"]
-    assert "/api/v1/public/submission-sessions/current" not in paths
-    assert "put" in paths["/api/v1/public/submission-session/answer"]
-    assert "post" in paths["/api/v1/public/submission-session/event"]
-    assert "post" in paths["/api/v1/public/submission-session/complete"]
+    assert sorted(paths["/api/v1/respondent/links/resolve"]) == ["post"]
+    assert "post" in paths["/api/v1/respondent/submission-sessions"]
+    assert "/api/v1/respondent/submission-sessions/current" not in paths
+    assert "put" in paths["/api/v1/respondent/submission-sessions/current/answers/{question_node_id}"]
+    assert "post" in paths["/api/v1/respondent/submission-sessions/current/events"]
+    assert "post" in paths["/api/v1/respondent/submission-sessions/current/complete"]
 
 
 def test_save_answer_accepts_client_mutation_uuid() -> None:
     payload = SaveSubmissionSessionAnswerRequest.model_validate(
         {
-            "question_node_id": "771ab5a1-462c-4c98-8fe5-dbc2c1939539",
             "client_mutation_id": "ce823b7d-5295-4ca6-bbb8-cfe367f28b31",
             "state": "answered",
             "answer_family": "rating",
-            "answer_value": {"value": 8},
+            "answer_value": {"variant": "slider", "number": 8},
         }
     )
 
     assert payload.client_mutation_id == UUID("ce823b7d-5295-4ca6-bbb8-cfe367f28b31")
-    assert payload.question_node_id == UUID("771ab5a1-462c-4c98-8fe5-dbc2c1939539")
 
 
 def test_submission_session_event_accepts_question_viewed_event() -> None:
@@ -215,7 +212,7 @@ def test_admin_response_paths_are_in_openapi_spec(restored_openapi_registry: Non
     spec = build_spec(app)
     paths = spec["paths"]
 
-    base = "/api/v1/projects/{project_id}/surveys/{survey_id}/responses"
+    base = "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses"
     assert "get" in paths[base]
     assert "post" in paths[f"{base}/export"]
     assert "get" in paths[f"{base}/{{session_id}}"]

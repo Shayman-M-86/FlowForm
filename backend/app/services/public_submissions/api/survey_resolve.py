@@ -6,6 +6,7 @@ Delegates access-method logic to core/access_resolver.py.
 Docs: docs/Policies and Services/Flows/Public-slug-flow.md
       docs/Policies and Services/Flows/Authenticated-link-access-Flow.md
 """
+
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
@@ -22,7 +23,7 @@ from app.repositories import public_link_repo as plr
 from app.repositories import surveys_repo as sr
 from app.repositories.core import project_participants as ppr
 from app.repositories.core import project_subjects as subjects
-from app.schema.api.requests.public_links import ResolveTokenRequest
+from app.schema.api.requests.survey_access_links import ResolveSurveyAccessLinkTokenRequest
 from app.schema.orm.core.user import User
 from app.services.participants import ParticipantService
 from app.services.public_submissions.core.access_resolver import AccessResolver
@@ -75,7 +76,7 @@ class SurveyResolveService:
     def resolve_link(
         self,
         db: Session,
-        payload: ResolveTokenRequest,
+        payload: ResolveSurveyAccessLinkTokenRequest,
         actor: User | None,
     ) -> ResolveLinkResult:
         """Resolve a survey link token to its survey and published version.
@@ -96,7 +97,7 @@ class SurveyResolveService:
         self,
         db: Session,
         *,
-        payload: ResolveTokenRequest,
+        payload: ResolveSurveyAccessLinkTokenRequest,
         actor: User,
         recognition_token: str | None,
     ) -> AccountLinkingResult:
@@ -154,12 +155,8 @@ class SurveyResolveService:
 
         # Apply merge if token subject differs from assigned subject.
         if resolution.merge_subject_id is not None and resolution.merge_into_subject_id is not None:
-            weaker = subjects.get_subject(
-                db, project_id=link.project_id, subject_id=resolution.merge_subject_id
-            )
-            stronger = subjects.get_subject(
-                db, project_id=link.project_id, subject_id=resolution.merge_into_subject_id
-            )
+            weaker = subjects.get_subject(db, project_id=link.project_id, subject_id=resolution.merge_subject_id)
+            stronger = subjects.get_subject(db, project_id=link.project_id, subject_id=resolution.merge_into_subject_id)
             if weaker is not None and stronger is not None:
                 subjects.set_canonical_subject(db, subject=weaker, canonical=stronger)
 

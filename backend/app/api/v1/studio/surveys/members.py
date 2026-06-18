@@ -1,7 +1,7 @@
 from flask import g, request
 
 from app.api.utils.validation import parse
-from app.api.v1.projects import projects_bp
+from app.api.v1.studio.projects import studio_projects_bp
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.domain.permissions import PERMISSIONS
@@ -17,7 +17,7 @@ from app.services.survey_members import survey_members_service
     response_model=list[SurveyMemberRoleResponses],
     tags=["Survey Members"],
 )
-@projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/members", methods=["GET"])
+@studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/members", methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
 def list_survey_members(project_id: int, survey_id: int):
@@ -34,7 +34,7 @@ def list_survey_members(project_id: int, survey_id: int):
     status_code=201,
     tags=["Survey Members"],
 )
-@projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/members", methods=["POST"])
+@studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/members", methods=["POST"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
 def assign_survey_member_role(project_id: int, survey_id: int):
@@ -51,7 +51,7 @@ def assign_survey_member_role(project_id: int, survey_id: int):
     response_model=SurveyMemberRoleResponses,
     tags=["Survey Members"],
 )
-@projects_bp.route(
+@studio_projects_bp.route(
     "/<bint:project_id>/surveys/<bint:survey_id>/members/<bint:membership_id>",
     methods=["PATCH"],
 )
@@ -71,7 +71,7 @@ def update_survey_member_role(project_id: int, survey_id: int, membership_id: in
 
 
 @openapi_route(summary="Remove survey member role assignment", tags=["Survey Members"])
-@projects_bp.route(
+@studio_projects_bp.route(
     "/<bint:project_id>/surveys/<bint:survey_id>/members/<bint:membership_id>",
     methods=["DELETE"],
 )

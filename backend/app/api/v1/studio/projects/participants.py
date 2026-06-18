@@ -3,7 +3,7 @@ from uuid import UUID
 from flask import request
 
 from app.api.utils.validation import parse
-from app.api.v1.projects import participant_service, projects_bp
+from app.api.v1.studio.projects import participant_service, studio_projects_bp
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.domain.permissions import PERMISSIONS
@@ -16,7 +16,7 @@ _BASE = "/<bint:project_id>/participants"
 
 
 @openapi_route(summary="List participants", response_model=ListParticipantsResponses, tags=["Participants"])
-@projects_bp.route(_BASE, methods=["GET"])
+@studio_projects_bp.route(_BASE, methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
 def list_participants(project_id: int):
@@ -33,7 +33,7 @@ def list_participants(project_id: int):
     status_code=201,
     tags=["Participants"],
 )
-@projects_bp.route(_BASE, methods=["POST"])
+@studio_projects_bp.route(_BASE, methods=["POST"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
 def create_participant(project_id: int):
@@ -48,7 +48,7 @@ def create_participant(project_id: int):
     response_model=ParticipantResponses,
     tags=["Participants"],
 )
-@projects_bp.route(f"{_BASE}/<uuid:participant_id>", methods=["PATCH"])
+@studio_projects_bp.route(f"{_BASE}/<uuid:participant_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
 def update_participant(project_id: int, participant_id: UUID):
@@ -60,7 +60,7 @@ def update_participant(project_id: int, participant_id: UUID):
 
 
 @openapi_route(summary="Delete participant", tags=["Participants"], status_code=204)
-@projects_bp.route(f"{_BASE}/<uuid:participant_id>", methods=["DELETE"])
+@studio_projects_bp.route(f"{_BASE}/<uuid:participant_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
 def delete_participant(project_id: int, participant_id: UUID):

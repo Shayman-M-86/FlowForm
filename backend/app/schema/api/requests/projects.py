@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 
 from app.domain.permissions import ProjectPermission
 from app.schema.api import limits
-from app.schema.api.requests.field_types import (
+from app.schema.api.common.fields import (
     InviteMessage,
     NormalisedEmail,
     ProjectMemberStatus,
@@ -11,11 +11,12 @@ from app.schema.api.requests.field_types import (
     ProjectRoleName,
     Slug,
 )
-from app.schema.api.requests.helpers import int_id_field
+from app.schema.api.common.validators import int_id_field
 
 
 class CreateProjectRoleRequest(BaseModel):
     """Request body for creating a new project role."""
+
     name: ProjectRoleName
     description: ProjectRoleDescription | None = None
     permissions: set[ProjectPermission] = Field(
@@ -26,6 +27,7 @@ class CreateProjectRoleRequest(BaseModel):
 
 class UpdateProjectRoleRequest(BaseModel):
     """Request body for updating a project role."""
+
     name: ProjectRoleName | None = None
     description: ProjectRoleDescription | None = None
     permissions: set[ProjectPermission] | None = Field(

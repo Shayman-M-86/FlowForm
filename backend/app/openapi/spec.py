@@ -141,12 +141,12 @@ _COMPONENT_STRING_FIELD_MAX_LENGTHS = {
     "ProjectRoleResponses": {
         "description": limits.PROJECT_ROLE_DESCRIPTION_MAX,
     },
-    "PublicLinkCreatedResponses": {
+    "SurveyAccessLinkCreatedResponse": {
         "name": limits.PUBLIC_LINK_NAME_MAX,
         "token": limits.TOKEN_MAX,
         "token_prefix": limits.TOKEN_PREFIX_MAX,
     },
-    "PublicLinkResponses": {
+    "SurveyAccessLinkResponse": {
         "name": limits.PUBLIC_LINK_NAME_MAX,
         "token_prefix": limits.TOKEN_PREFIX_MAX,
     },

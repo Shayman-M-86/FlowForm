@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from app.schema.api.requests.field_types import IdToken
+from app.schema.api.common.fields import IdToken
 
 
 class BootstrapUserRequest(BaseModel):

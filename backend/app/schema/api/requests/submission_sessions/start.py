@@ -5,10 +5,10 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schema.api import limits
-from app.schema.api.requests.helpers import validate_slug
+from app.schema.api.common.validators import validate_slug
 
 
-class PublicSlugSessionAccess(BaseModel):
+class PublicSlugAccess(BaseModel):
     """Access descriptor for starting a respondent session from a public survey slug."""
 
     model_config = ConfigDict(extra="forbid")
@@ -22,7 +22,7 @@ class PublicSlugSessionAccess(BaseModel):
         return validate_slug(value, field_label="public_slug")
 
 
-class LinkTokenSessionAccess(BaseModel):
+class LinkTokenAccess(BaseModel):
     """Access descriptor for starting a respondent session from a private link token."""
 
     model_config = ConfigDict(extra="forbid")
@@ -38,9 +38,9 @@ class LinkTokenSessionAccess(BaseModel):
         return value
 
 
-SubmissionSessionAccess = Annotated[
-    PublicSlugSessionAccess | LinkTokenSessionAccess,
-    Field(discriminator="type", title="SubmissionSessionAccess"),
+SessionStartAccess = Annotated[
+    PublicSlugAccess | LinkTokenAccess,
+    Field(discriminator="type", title="SessionStartAccess"),
 ]
 
 
@@ -49,4 +49,4 @@ class StartSubmissionSessionRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    access: SubmissionSessionAccess
+    access: SessionStartAccess

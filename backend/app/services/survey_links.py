@@ -12,11 +12,11 @@ from app.domain.errors import (
 from app.domain.guards import ensure_present
 from app.repositories import public_link_repo as plr
 from app.repositories import surveys_repo as sr
-from app.schema.api.requests.public_links import CreatePublicLinkRequest, UpdatePublicLinkRequest
+from app.schema.api.requests.survey_access_links import CreateSurveyAccessLinkRequest, UpdateSurveyAccessLinkRequest
 from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
-from app.services.results import CreatePublicLinkResult
+from app.services.results import CreateSurveyAccessLinkResult
 
 
 class SurveyLinkService:
@@ -33,9 +33,9 @@ class SurveyLinkService:
         *,
         survey_id: int,
         project_id: int,
-        data: CreatePublicLinkRequest,
+        data: CreateSurveyAccessLinkRequest,
         actor: User,  # noqa: ARG002
-    ) -> CreatePublicLinkResult:
+    ) -> CreateSurveyAccessLinkResult:
         """Create a new link for a survey."""
         survey = self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
         self._ensure_link_allowed_by_visibility(
@@ -54,7 +54,7 @@ class SurveyLinkService:
             expires_at=data.expires_at,
         )
         commit_with_err_handle(db, contexts=[link])
-        return CreatePublicLinkResult(link=link, token=token)
+        return CreateSurveyAccessLinkResult(link=link, token=token)
 
     def update_link(
         self,
@@ -62,7 +62,7 @@ class SurveyLinkService:
         survey_id: int,
         project_id: int,
         link_id: UUID,
-        payload: UpdatePublicLinkRequest,
+        payload: UpdateSurveyAccessLinkRequest,
         actor: User,  # noqa: ARG002
     ) -> SurveyLink:
         """Update an existing survey link."""
@@ -86,21 +86,11 @@ class SurveyLinkService:
             is_active=payload.is_active,
             name=payload.name,
             link_type=payload.link_type if payload.link_type is not None else plr.UNSET,
-            assignment_source=(
-                payload.assignment_source
-                if payload.assignment_source is not None
-                else plr.UNSET
-            ),
+            assignment_source=(payload.assignment_source if payload.assignment_source is not None else plr.UNSET),
             assigned_participant_id=(
-                payload.assigned_participant_id
-                if "assigned_participant_id" in payload.model_fields_set
-                else plr.UNSET
+                payload.assigned_participant_id if "assigned_participant_id" in payload.model_fields_set else plr.UNSET
             ),
-            expires_at=(
-                payload.expires_at
-                if "expires_at" in payload.model_fields_set
-                else plr.UNSET
-            ),
+            expires_at=(payload.expires_at if "expires_at" in payload.model_fields_set else plr.UNSET),
         )
         commit_with_err_handle(db, contexts=[updated_link])
 

@@ -1,8 +1,8 @@
 """E2E flow matrix tests — API in, API out.
 
 Drives every row of the 19-row flow matrix through the real HTTP stack:
-  POST /api/v1/public/submission-session/start
-  POST /api/v1/public/links/verification/link  (account-linking, row 19)
+  POST /api/v1/respondent/submission-sessions
+  POST /api/v1/respondent/links/verification/link  (account-linking, row 19)
 
 All tests assert only what is visible from the HTTP response and Set-Cookie
 headers — no inspection of internal service calls.
@@ -55,8 +55,8 @@ from tests.integration.core.factories import make_participant_chain, make_token_
 _MEMBER_EMAIL = "member@example.com"
 _MEMBER_SUB = "auth0|e2e-member"
 
-_SESSION_START_URL = "/api/v1/public/submission-session/start"
-_ACCOUNT_LINK_URL = "/api/v1/public/links/verification/link"
+_SESSION_START_URL = "/api/v1/respondent/submission-sessions"
+_ACCOUNT_LINK_URL = "/api/v1/respondent/links/verification/link"
 _RECOGNITION_COOKIE = "flowform_subject_recognition"
 _SESSION_COOKIE = "flowform_submission_session"
 
@@ -172,9 +172,7 @@ def _has_cookie(resp: Any, name: str) -> bool:
 
 def _extract_recognition_cookie(resp: Any) -> str:
     return next(
-        c.split("=", 1)[1].split(";")[0]
-        for c in resp.headers.getlist("Set-Cookie")
-        if _RECOGNITION_COOKIE in c
+        c.split("=", 1)[1].split(";")[0] for c in resp.headers.getlist("Set-Cookie") if _RECOGNITION_COOKIE in c
     )
 
 
@@ -283,7 +281,7 @@ def test_row6_general_link_anon_no_token(
     seed.survey.public_slug = None
     core_db_session.flush()
 
-    link, raw_token = _make_link(core_db_session, seed=seed, link_type="general", name_suffix="-r6")
+    _link, raw_token = _make_link(core_db_session, seed=seed, link_type="general", name_suffix="-r6")
 
     resp = _start_link(anon_client, raw_token)
 
@@ -309,7 +307,7 @@ def test_row7_general_link_anon_valid_token(
     seed.survey.public_slug = None
     core_db_session.flush()
 
-    link, raw_token = _make_link(core_db_session, seed=seed, link_type="general", name_suffix="-r7")
+    _link, raw_token = _make_link(core_db_session, seed=seed, link_type="general", name_suffix="-r7")
     subject = _anon_subject(core_db_session, seed, "row7-anon")
     rec_token = _issue_recognition_token(core_db_session, seed=seed, subject=subject)
 
@@ -335,7 +333,7 @@ def test_row8_general_link_authed_no_token(
     seed.survey.public_slug = None
     core_db_session.flush()
 
-    link, raw_token = _make_link(core_db_session, seed=seed, link_type="general", name_suffix="-r8")
+    _link, raw_token = _make_link(core_db_session, seed=seed, link_type="general", name_suffix="-r8")
 
     resp = _start_link(authed_client, raw_token)
 
@@ -366,7 +364,7 @@ def test_row9_general_link_authed_same_canonical_token(
     rec_token = _extract_recognition_cookie(first)
 
     # Second link, same user, same-canonical recognition token.
-    link2, raw2 = _make_link(core_db_session, seed=seed, link_type="general", name_suffix="-r9b")
+    _link2, raw2 = _make_link(core_db_session, seed=seed, link_type="general", name_suffix="-r9b")
     resp = _start_link(authed_client, raw2, recognition=rec_token)
 
     assert resp.status_code == 201, resp.get_data(as_text=True)
@@ -388,7 +386,7 @@ def test_row10_general_link_authed_diff_canonical_token(
     seed.survey.public_slug = None
     core_db_session.flush()
 
-    link, raw_token = _make_link(core_db_session, seed=seed, link_type="general", name_suffix="-r10")
+    _link, raw_token = _make_link(core_db_session, seed=seed, link_type="general", name_suffix="-r10")
     stray = _anon_subject(core_db_session, seed, "row10-stray")
     stray_token = _issue_recognition_token(core_db_session, seed=seed, subject=stray)
 
@@ -417,8 +415,11 @@ def test_row11_private_link_no_token_consumed(
         normalized_email="row11@example.com",
     )
     link, raw_token = _make_link(
-        core_db_session, seed=seed, link_type="private",
-        assigned_participant_id=participant.id, name_suffix="-r11",
+        core_db_session,
+        seed=seed,
+        link_type="private",
+        assigned_participant_id=participant.id,
+        name_suffix="-r11",
     )
 
     resp = _start_link(anon_client, raw_token)
@@ -447,8 +448,11 @@ def test_row12_private_link_same_canonical_token_consumed(
         normalized_email="row12@example.com",
     )
     link, raw_token = _make_link(
-        core_db_session, seed=seed, link_type="private",
-        assigned_participant_id=participant.id, name_suffix="-r12",
+        core_db_session,
+        seed=seed,
+        link_type="private",
+        assigned_participant_id=participant.id,
+        name_suffix="-r12",
     )
     assigned_subject = core_db_session.get(ProjectSubject, participant.project_subject_id)
     assert assigned_subject is not None
@@ -479,8 +483,11 @@ def test_row13_private_link_diff_canonical_token_consumed(
         normalized_email="row13@example.com",
     )
     link, raw_token = _make_link(
-        core_db_session, seed=seed, link_type="private",
-        assigned_participant_id=participant.id, name_suffix="-r13",
+        core_db_session,
+        seed=seed,
+        link_type="private",
+        assigned_participant_id=participant.id,
+        name_suffix="-r13",
     )
     stray = _anon_subject(core_db_session, seed, "row13-stray")
     stray_token = _issue_recognition_token(core_db_session, seed=seed, subject=stray)
@@ -512,8 +519,11 @@ def test_row14_auth_link_unauthenticated_rejected(
         user_id=seed.user.id,
     )
     link, raw_token = _make_link(
-        core_db_session, seed=seed, link_type="authenticated",
-        assigned_participant_id=participant.id, name_suffix="-r14",
+        core_db_session,
+        seed=seed,
+        link_type="authenticated",
+        assigned_participant_id=participant.id,
+        name_suffix="-r14",
     )
 
     resp = _start_link(anon_client, raw_token)
@@ -540,8 +550,11 @@ def test_row15_auth_link_matching_no_token_consumed(
         user_id=seed.user.id,
     )
     link, raw_token = _make_link(
-        core_db_session, seed=seed, link_type="authenticated",
-        assigned_participant_id=participant.id, name_suffix="-r15",
+        core_db_session,
+        seed=seed,
+        link_type="authenticated",
+        assigned_participant_id=participant.id,
+        name_suffix="-r15",
     )
 
     resp = _start_link(authed_client, raw_token)
@@ -571,8 +584,11 @@ def test_row16_auth_link_matching_same_canonical_token_consumed(
         user_id=seed.user.id,
     )
     link, raw_token = _make_link(
-        core_db_session, seed=seed, link_type="authenticated",
-        assigned_participant_id=participant.id, name_suffix="-r16",
+        core_db_session,
+        seed=seed,
+        link_type="authenticated",
+        assigned_participant_id=participant.id,
+        name_suffix="-r16",
     )
     assigned_subject = core_db_session.get(ProjectSubject, participant.project_subject_id)
     assert assigned_subject is not None
@@ -604,8 +620,11 @@ def test_row17_auth_link_matching_diff_canonical_token_consumed(
         user_id=seed.user.id,
     )
     link, raw_token = _make_link(
-        core_db_session, seed=seed, link_type="authenticated",
-        assigned_participant_id=participant.id, name_suffix="-r17",
+        core_db_session,
+        seed=seed,
+        link_type="authenticated",
+        assigned_participant_id=participant.id,
+        name_suffix="-r17",
     )
     stray = _anon_subject(core_db_session, seed, "row17-stray")
     stray_token = _issue_recognition_token(core_db_session, seed=seed, subject=stray)
@@ -641,8 +660,11 @@ def test_row18_auth_link_identity_mismatch_rejected(
         user_id=other_user.id,
     )
     link, raw_token = _make_link(
-        core_db_session, seed=seed, link_type="authenticated",
-        assigned_participant_id=participant.id, name_suffix="-r18",
+        core_db_session,
+        seed=seed,
+        link_type="authenticated",
+        assigned_participant_id=participant.id,
+        name_suffix="-r18",
     )
 
     # authed_client authenticates as _MEMBER_EMAIL, not other_user
@@ -671,8 +693,11 @@ def test_row19_account_linking_email_match_merge_rotate(
         user_id=None,
     )
     link, raw_token = _make_link(
-        core_db_session, seed=seed, link_type="authenticated",
-        assigned_participant_id=participant.id, name_suffix="-r19",
+        core_db_session,
+        seed=seed,
+        link_type="authenticated",
+        assigned_participant_id=participant.id,
+        name_suffix="-r19",
     )
 
     stray = _anon_subject(core_db_session, seed, "row19-stray")

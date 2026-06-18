@@ -3,6 +3,7 @@
 Covers: SurveyResolveService.verify_authenticated_link_participant
 Docs: Authenticated-link-access-Flow.md §5
 """
+
 from __future__ import annotations
 
 import pytest
@@ -13,7 +14,7 @@ from app.domain.errors import (
     ParticipantIdentityEmailMismatchError,
 )
 from app.repositories.core import project_subject_tokens as sub_tok
-from app.schema.api.requests.public_links import ResolveTokenRequest
+from app.schema.api.requests.survey_access_links import ResolveSurveyAccessLinkTokenRequest
 from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
@@ -43,8 +44,8 @@ def _make_auth_link(
     return link, raw_token
 
 
-def _resolve_payload(raw_token: str) -> ResolveTokenRequest:
-    return ResolveTokenRequest.model_validate({"token": raw_token})
+def _resolve_payload(raw_token: str) -> ResolveSurveyAccessLinkTokenRequest:
+    return ResolveSurveyAccessLinkTokenRequest.model_validate({"token": raw_token})
 
 
 def test_non_authenticated_link_raises_on_account_linking_endpoint(
@@ -86,7 +87,7 @@ def test_email_mismatch_raises(
         subject_code="acct-link-subject",
         normalized_email="assigned@example.com",
     )
-    link, raw_token = _make_auth_link(db_session, survey=survey, assigned_participant_id=participant.id)
+    _link, raw_token = _make_auth_link(db_session, survey=survey, assigned_participant_id=participant.id)
 
     other_user = make_user(auth0_user_id="auth0|other", email="other@example.com")
     db_session.add(other_user)

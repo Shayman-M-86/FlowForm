@@ -3,10 +3,12 @@ from __future__ import annotations
 import pytest  # type: ignore[import]
 from flask import Flask
 
+import app.api.v1.account.auth as auth_api
 from app.api.utils.errors import register_error_handlers
-from app.api.v1 import auth as auth_api
+from app.api.v1.account import account_bp
 from app.core.errors import AuthError
 from app.core.extensions import auth
+from app.middleware.url_converters import register_url_converters
 from app.schema.orm.core.user import User
 from app.services.results import BootstrapCurrentUserResult
 
@@ -17,7 +19,8 @@ def app() -> Flask:
     flask_app = Flask(__name__)
     flask_app.config["TESTING"] = True
     register_error_handlers(flask_app)
-    flask_app.register_blueprint(auth_api.auth_bp, url_prefix="/api/v1/auth")
+    register_url_converters(flask_app)
+    flask_app.register_blueprint(account_bp, url_prefix="/api/v1/account")
     return flask_app
 
 
@@ -52,7 +55,7 @@ def test_bootstrap_user_returns_created_response(
     )
 
     response = client.post(
-        "/api/v1/auth/bootstrap-user",
+        "/api/v1/account/bootstrap-user",
         json={"id_token": "raw-id-token"},
         headers={"Authorization": "Bearer access-token"},
     )
@@ -91,7 +94,7 @@ def test_bootstrap_user_rejects_subject_mismatch(
     )
 
     response = client.post(
-        "/api/v1/auth/bootstrap-user",
+        "/api/v1/account/bootstrap-user",
         json={"id_token": "raw-id-token"},
         headers={"Authorization": "Bearer access-token"},
     )

@@ -1,6 +1,7 @@
-from flask import Blueprint, request
+from flask import request
 
 from app.api.utils.validation import parse
+from app.api.v1.account import account_bp
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.openapi import openapi_route
@@ -8,8 +9,6 @@ from app.schema.api.requests.auth import BootstrapUserRequest
 from app.schema.api.responses.auth import BootstrapUserResponses, CurrentUserResponses
 from app.schema.api.responses.projects import ProjectResponses
 from app.services.auth import AuthService
-
-auth_bp = Blueprint("auth_v1", __name__)
 
 auth_service = AuthService()
 
@@ -21,7 +20,7 @@ auth_service = AuthService()
     status_code=201,
     tags=["Auth"],
 )
-@auth_bp.route("/bootstrap-user", methods=["POST"])
+@account_bp.route("/bootstrap-user", methods=["POST"])
 @auth.require_auth()
 def bootstrap_user():
     """Create or confirm the current authenticated user in the local database."""

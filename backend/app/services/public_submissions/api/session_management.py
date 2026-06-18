@@ -4,6 +4,7 @@ API-facing entry point. Routes in api/v1/public.py call this service directly.
 Start delegates to core/session_starter.py. Complete delegates to
 core/completion.py. Answer/event are phase placeholders.
 """
+
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
@@ -13,7 +14,7 @@ from app.schema.api.requests.submission_sessions import (
     StartSubmissionSessionRequest,
     SubmissionSessionEventRequest,
 )
-from app.schema.api.responses.submission_sessions import PublicSubmissionSessionResponses
+from app.schema.api.responses.submission_sessions import StartSubmissionSessionResponse
 from app.schema.orm.core.user import User
 from app.services.public_submissions.core.completion import CompletionResult, CompletionService
 from app.services.public_submissions.core.session_loader import load_current_session
@@ -40,7 +41,7 @@ class SessionManagementService:
         payload: StartSubmissionSessionRequest,
         actor: User | None,
         recognition_token: str | None = None,
-    ) -> tuple[PublicSubmissionSessionResponses, str, str | None]:
+    ) -> tuple[StartSubmissionSessionResponse, str, str | None]:
         """Start a respondent submission session.
 
         Returns (session_response, raw_browser_session_token, raw_recognition_token).

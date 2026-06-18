@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from app.schema.api.requests.field_types import NormalisedEmail, SubjectCode
+from app.schema.api.common.fields import NormalisedEmail, SubjectCode
 
 
 class CreateParticipantRequest(BaseModel):

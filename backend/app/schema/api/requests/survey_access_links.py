@@ -2,7 +2,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from app.schema.api.requests.field_types import (
+from app.schema.api.common.fields import (
     FutureExpiresAt,
     PublicLinkName,
     PublicLinkToken,
@@ -10,8 +10,9 @@ from app.schema.api.requests.field_types import (
 from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
 
 
-class CreatePublicLinkRequest(BaseModel):
-    """Request body for creating a new public link."""
+class CreateSurveyAccessLinkRequest(BaseModel):
+    """Request body for creating a new survey access link."""
+
     name: PublicLinkName
     link_type: SurveyLinkType = "general"
     assignment_source: SurveyLinkAssignmentSource = "manual"
@@ -19,8 +20,9 @@ class CreatePublicLinkRequest(BaseModel):
     expires_at: FutureExpiresAt | None = None
 
 
-class UpdatePublicLinkRequest(BaseModel):
-    """Request body for updating a public link."""
+class UpdateSurveyAccessLinkRequest(BaseModel):
+    """Request body for updating a survey access link."""
+
     is_active: bool | None = None
     name: PublicLinkName | None = None
     link_type: SurveyLinkType | None = None
@@ -29,6 +31,7 @@ class UpdatePublicLinkRequest(BaseModel):
     expires_at: FutureExpiresAt | None = None
 
 
-class ResolveTokenRequest(BaseModel):
-    """Request body for resolving a public link token."""
+class ResolveSurveyAccessLinkTokenRequest(BaseModel):
+    """Request body for resolving a respondent survey access link token."""
+
     token: PublicLinkToken

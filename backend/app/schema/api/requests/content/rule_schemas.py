@@ -6,7 +6,7 @@ from typing import Annotated, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schema.api import limits
-from app.schema.api.requests.field_types import SchemaIdStr
+from app.schema.api.common.fields import SchemaIdStr
 from app.schema.enums import (
     ChoiceFamily,
     DateFieldOperator,
@@ -41,14 +41,9 @@ class ChoiceRequirementsIn(BaseModel):
         if not self.required and not self.forbidden and not self.any_of:
             raise ValueError("choice requirements must contain at least one of: required, forbidden, any_of")
 
-        conflicting = (
-            set(self.required) & set(self.forbidden)
-            | set(self.any_of) & set(self.forbidden)
-        )
+        conflicting = set(self.required) & set(self.forbidden) | set(self.any_of) & set(self.forbidden)
         if conflicting:
-            raise ValueError(
-                f"choice options cannot be both allowed and forbidden: {sorted(conflicting)}"
-            )
+            raise ValueError(f"choice options cannot be both allowed and forbidden: {sorted(conflicting)}")
 
         return self
 

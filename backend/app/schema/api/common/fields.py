@@ -10,7 +10,7 @@ from pydantic import (
 )
 
 from app.schema.api import limits
-from app.schema.api.requests.helpers import (
+from app.schema.api.common.validators import (
     normalise_email,
     validate_future_datetime_utc,
 )

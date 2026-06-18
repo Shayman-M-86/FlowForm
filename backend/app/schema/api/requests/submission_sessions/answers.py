@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.schema.api import limits
-from app.schema.api.requests.field_types import SchemaIdStr
+from app.schema.api.common.fields import SchemaIdStr
 from app.schema.enums import AnswerFamily, SubmissionAnswerState
 
 _STRICT = ConfigDict(extra="forbid", strict=True)
@@ -31,6 +31,8 @@ class ChoiceAnswerValueIn(BaseModel):
 
 
 class ShortTextFieldAnswerValueIn(BaseModel):
+    """Answer value for a short-text field question."""
+
     model_config = _STRICT
 
     field_type: Literal["short_text"]
@@ -38,6 +40,8 @@ class ShortTextFieldAnswerValueIn(BaseModel):
 
 
 class LongTextFieldAnswerValueIn(BaseModel):
+    """Answer value for a long-text field question."""
+
     model_config = _STRICT
 
     field_type: Literal["long_text"]
@@ -45,6 +49,8 @@ class LongTextFieldAnswerValueIn(BaseModel):
 
 
 class EmailFieldAnswerValueIn(BaseModel):
+    """Answer value for an email field question."""
+
     model_config = _STRICT
 
     field_type: Literal["email"]
@@ -52,6 +58,8 @@ class EmailFieldAnswerValueIn(BaseModel):
 
 
 class NumberFieldAnswerValueIn(BaseModel):
+    """Answer value for a numeric field question."""
+
     model_config = _STRICT
 
     field_type: Literal["number"]
@@ -59,6 +67,8 @@ class NumberFieldAnswerValueIn(BaseModel):
 
 
 class DateFieldAnswerValueIn(BaseModel):
+    """Answer value for a date field question."""
+
     model_config = _STRICT
 
     field_type: Literal["date"]
@@ -73,6 +83,8 @@ class DateFieldAnswerValueIn(BaseModel):
 
 
 class PhoneFieldAnswerValueIn(BaseModel):
+    """Answer value for a phone field question."""
+
     model_config = _STRICT
 
     field_type: Literal["phone"]
@@ -91,6 +103,8 @@ FieldAnswerValueIn = Annotated[
 
 
 class MatchingAnswerPairIn(BaseModel):
+    """One prompt-to-match pair in a matching answer."""
+
     model_config = _STRICT
 
     prompt_id: SchemaIdStr
@@ -120,6 +134,8 @@ class MatchingAnswerValueIn(BaseModel):
 
 
 class SliderRatingAnswerValueIn(BaseModel):
+    """Answer value for a slider rating question."""
+
     model_config = _STRICT
 
     variant: Literal["slider"]
@@ -127,6 +143,8 @@ class SliderRatingAnswerValueIn(BaseModel):
 
 
 class StarsRatingAnswerValueIn(BaseModel):
+    """Answer value for a star rating question."""
+
     model_config = _STRICT
 
     variant: Literal["stars"]
@@ -134,6 +152,8 @@ class StarsRatingAnswerValueIn(BaseModel):
 
 
 class EmojiRatingAnswerValueIn(BaseModel):
+    """Answer value for an emoji rating question."""
+
     model_config = _STRICT
 
     variant: Literal["emoji"]
@@ -145,9 +165,7 @@ RatingAnswerValueIn = Annotated[
     Field(discriminator="variant"),
 ]
 
-SubmissionAnswerValueIn = (
-    ChoiceAnswerValueIn | FieldAnswerValueIn | MatchingAnswerValueIn | RatingAnswerValueIn
-)
+SubmissionAnswerValueIn = ChoiceAnswerValueIn | FieldAnswerValueIn | MatchingAnswerValueIn | RatingAnswerValueIn
 
 
 class SaveSubmissionSessionAnswerRequest(BaseModel):
@@ -155,7 +173,6 @@ class SaveSubmissionSessionAnswerRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    question_node_id: UUID
     client_mutation_id: UUID
     state: SubmissionAnswerState
     answer_family: AnswerFamily | None = None

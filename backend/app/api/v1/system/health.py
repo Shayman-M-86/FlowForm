@@ -1,19 +1,18 @@
 from datetime import UTC, datetime
 from logging import getLogger
 
-from flask import Blueprint, jsonify
+from flask import jsonify
 from sqlalchemy import text
 
+from app.api.v1.system import system_bp
 from app.db.context import get_core_db, get_response_db
 from app.openapi import openapi_route
-
-health_bp = Blueprint("health_v1", __name__, url_prefix="/health")
 
 logger = getLogger(__name__)
 
 
 @openapi_route(summary="Health check", tags=["Health"], auth_required=False)
-@health_bp.route("", methods=["GET"])
+@system_bp.route("/health", methods=["GET"])
 def health_check():
     """Return a simple health check response with the current UTC timestamp.
 
@@ -27,7 +26,7 @@ def health_check():
 
 
 @openapi_route(summary="Readiness check", tags=["Health"], auth_required=False)
-@health_bp.route("/ready", methods=["GET"])
+@system_bp.route("/health/ready", methods=["GET"])
 def readiness_check():
     """Return a readiness check response indicating if the service is ready.
 
@@ -41,7 +40,6 @@ def readiness_check():
     ), status_code
 
 
-
 def db_check():
     try:
         db = get_core_db()
@@ -50,7 +48,7 @@ def db_check():
     except Exception as e:
         logger.error(f"Connection to core database failed: {e!s}")
         core_db = "Core DB connection failed."
-    
+
     try:
         db = get_response_db()
         db.execute(text("SELECT 1"))
@@ -58,7 +56,7 @@ def db_check():
     except Exception as e:
         logger.error(f"Connection to response database failed: {e!s}")
         response_db = "Response DB connection failed."
-    
+
     if core_db or response_db:
         return f"Database connectivity Failed: {core_db or ''} {response_db or ''}", 503
     return "Service is ready", 200
