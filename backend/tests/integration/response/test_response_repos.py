@@ -4,7 +4,6 @@ import os
 import uuid
 from typing import TYPE_CHECKING
 
-import pytest  # type: ignore[import]
 from sqlalchemy.orm import Session
 
 from app.repositories.response import (
@@ -211,7 +210,7 @@ class TestResponseAnswerRevisionRepo:
         assert found.client_mutation_id == mutation_id
 
     def test_get_by_mutation_id_returns_none(self, response_db_session: Session) -> None:
-        envelope, answer = self._setup_answer(response_db_session, 32, 42)
+        _, answer = self._setup_answer(response_db_session, 32, 42)
         result = response_answer_revision_repo.get_by_mutation_id(
             response_db_session, answer.id, uuid.uuid4()
         )

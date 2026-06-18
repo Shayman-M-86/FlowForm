@@ -1,8 +1,8 @@
-# Pass 09: Security Review and E2E
+# Pass 10: Security Review and E2E
 
-Read `.claude/workflows/session-encryption/working/targets/09-security-review-and-e2e/spec.md` in full before doing anything.
+Read `.claude/workflows/session-encryption/working/targets/10-security-review-and-e2e/spec.md` in full before doing anything.
 
-Dependency check: confirm `.claude/workflows/session-encryption/working/pass-reports/08-completion-admin-and-deletion.md` exists and is marked complete. If not, stop.
+Dependency check: confirm `.claude/workflows/session-encryption/working/pass-reports/09-session-start-reconciliation-repair.md` exists and is marked complete. If not, stop.
 
 This pass is review and validation only — no new feature code.
 

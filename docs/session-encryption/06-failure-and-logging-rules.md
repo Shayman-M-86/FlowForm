@@ -16,13 +16,17 @@ Session start must not expose a browser resume token until the required core ses
 
 Single-use link consumption and recognition-token side effects must not be committed if encrypted session initialization fails.
 
+The word `abandoned` is reserved for a committed core session that can no longer be safely resumed. Do not use it for an uncommitted session-start attempt that can still be rolled back.
+
 ### Session start partial states
 
-Two partial states are possible because core and response are separate databases:
+Three failure states matter because core and response are separate databases:
 
-**Response envelope creation fails before core commit.** The core session, single-use link consumption, and recognition-token side effects are still uncommitted. The service rolls back the core transaction. No data persists in either database.
+**Response envelope creation fails before core commit.** The core session, single-use link consumption, and recognition-token side effects are still uncommitted. The service rolls back the core transaction. No data persists in either database. Do not mark a session `abandoned` in this path because there is no durable core session to mark.
 
 **Response envelope committed, core commit fails.** The response envelope exists but no core session references it. The service must not return the browser resume token and must not cache the plaintext DEK. It attempts immediate compensating deletion of the orphan envelope by session locator. If cleanup fails, the orphan envelope is inert — it contains only a wrapped DEK and a session locator with no corresponding core session — and is routed to reconciliation for later removal.
+
+**Core session committed, response envelope missing.** The core session exists but cannot be used because encrypted response initialization did not complete. Reconciliation must mark the core session `abandoned` and leave it rejected by current-session loading. The repair path must not create a replacement envelope for the committed session unless a future migration can prove the original response-side write never partially succeeded.
 
 ## Cross-database failure rule
 
@@ -39,7 +43,7 @@ Services must explicitly decide:
 
 Reconciliation must detect these states and route each one to its remediation workflow:
 
-- core sessions without response envelopes;
+- core sessions without response envelopes, which must be marked `abandoned`;
 - response envelopes without core sessions (orphan envelopes from failed core commits);
 - response write success with missing analytics event;
 - pending deletions;

@@ -369,14 +369,13 @@ class TestCoreCommitFailureAfterEnvelopeCreation:
 
         assert len(dek_cache._store) == 0, "DEK must not be cached when core commit fails"
 
-    def test_core_commit_failure_leaves_orphan_for_reconciliation(
+    def test_core_commit_failure_cleans_up_orphan_envelope(
         self,
         db_sessions: DbSessions,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """When cleanup fails (e.g. no DELETE permission), the orphan envelope
-        persists as a reconciliation target. It is inert — no core session
-        references it."""
+        """When core commit fails, the compensating delete removes the orphan
+        envelope so no reconciliation is needed."""
         _seed_published_survey(db_sessions.core, "core-fail-cleanup-test")
         _patch_crypto(monkeypatch)
         self._patch_fail_core_commit(monkeypatch)
@@ -393,9 +392,8 @@ class TestCoreCommitFailureAfterEnvelopeCreation:
 
         db_sessions.response.rollback()
         envelope = db_sessions.response.scalar(select(ResponseEnvelope))
-        assert envelope is not None, (
-            "orphan envelope persists as reconciliation target when cleanup "
-            "cannot delete (response DB app user lacks DELETE permission)"
+        assert envelope is None, (
+            "orphan envelope must be cleaned up by compensating delete"
         )
 
     def test_core_commit_failure_invokes_compensation_with_envelope_locator(

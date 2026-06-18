@@ -22,8 +22,13 @@ After the agent runs the tests, the operator should:
 ### Session start
 
 - Successful start: core session + response envelope both created; resume cookie set
-- Envelope creation failure: core session abandoned; no resume cookie returned
+- Envelope creation failure before core commit: uncommitted core session rolled back; no resume cookie returned
 - Resumed session: loader finds existing session, returns correct frozen survey version
+
+Do not describe the normal pre-core-commit envelope failure path as an
+abandoned session. `abandoned` is reserved for a committed core session that
+cannot safely resume, such as a reconciliation-discovered core session without a
+response envelope.
 
 ### Answer save
 

@@ -711,3 +711,25 @@ class QuestionNotInVersionError(AppError):
             code="QUESTION_NOT_IN_VERSION",
             message="Question does not belong to this survey version.",
         )
+
+
+class CompletionValidationError(AppError):
+    """Raised when completion validation fails (missing required answers, etc.)."""
+
+    def __init__(self, message: str = "Completion validation failed.") -> None:
+        super().__init__(
+            status_code=400,
+            code="COMPLETION_VALIDATION_FAILED",
+            message=message,
+        )
+
+
+class DeletionPendingError(AppError):
+    """Raised when response deletion succeeded but core deletion failed."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=500,
+            code="DELETION_PENDING",
+            message="Response data deleted but core cleanup is pending.",
+        )

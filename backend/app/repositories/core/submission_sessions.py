@@ -69,7 +69,23 @@ def lock_for_update(db: Session, session_id: UUID) -> SubmissionSession | None:
     )
 
 
+def mark_completed(
+    db: Session,
+    *,
+    submission_session: SubmissionSession,
+    completed_at: datetime,
+) -> None:
+    submission_session.session_status = "completed"
+    submission_session.completed_at = completed_at
+    submission_session.last_activity_at = completed_at
+    flush_with_err_handle(db, contexts=[submission_session])
+
+
 def mark_abandoned(db: Session, *, submission_session: SubmissionSession) -> None:
-    """Mark a submission session as abandoned and flush."""
+    """Mark a committed core session abandoned during reconciliation or repair.
+
+    Do not use this for pre-core-commit session-start failures; those should
+    roll back instead because there is no durable session row to mark.
+    """
     submission_session.session_status = "abandoned"
     flush_with_err_handle(db, contexts=[submission_session])

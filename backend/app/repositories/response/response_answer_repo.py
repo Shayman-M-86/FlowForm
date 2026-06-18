@@ -59,6 +59,14 @@ def get_by_locator(
     )
 
 
+def get_all_by_envelope(db: Session, envelope_id: uuid.UUID) -> list[ResponseAnswer]:
+    return list(
+        db.scalars(
+            select(ResponseAnswer).where(ResponseAnswer.envelope_id == envelope_id)
+        ).all()
+    )
+
+
 def lock_for_update(db: Session, answer_id: uuid.UUID) -> ResponseAnswer | None:
     return db.scalar(
         select(ResponseAnswer)

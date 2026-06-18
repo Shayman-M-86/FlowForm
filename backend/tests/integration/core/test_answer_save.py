@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.crypto.dek_cache import DekCache
+from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import QuestionNotInVersionError, SessionInvalidError
 from app.repositories.response import (
     response_answer_repo,
@@ -305,3 +306,76 @@ class TestQuestionViewed:
             svc.record_question_viewed(
                 core_db, ctx=ctx, question_node_id=str(uuid.uuid4())
             )
+
+    def test_record_question_viewed_event_write_failure_swallowed(
+        self, db_sessions: DbSessions
+    ) -> None:
+        core_db = db_sessions.core
+        response_db = db_sessions.response
+        project, survey, version, question = _setup_core_fixtures(core_db)
+        session, _ = _create_session_row(core_db, project, survey, version)
+        ctx, _ = _create_envelope_and_context(
+            core_db, response_db, session, version
+        )
+
+        svc = AnswerSaveService()
+        with patch(
+            "app.services.public_submissions.core.answer_save.event_repo.create_event",
+            side_effect=Exception("DB write failure"),
+        ):
+            svc.record_question_viewed(
+                core_db, ctx=ctx, question_node_id=str(question.id)
+            )
+
+
+class TestAnalyticsCoreCommitFailure:
+    def test_core_commit_failure_does_not_block_save(
+        self, db_sessions: DbSessions
+    ) -> None:
+        """Step 12: if core commit fails after the analytics event insert,
+        the response write (step 10) is already committed and the revision
+        ID must still be returned."""
+        core_db = db_sessions.core
+        response_db = db_sessions.response
+        project, survey, version, question = _setup_core_fixtures(core_db)
+        session, _ = _create_session_row(core_db, project, survey, version)
+        ctx, plaintext_dek = _create_envelope_and_context(
+            core_db, response_db, session, version
+        )
+
+        dek_cache = DekCache()
+        dek_cache.put(ctx.session_locator, plaintext_dek)
+        svc = AnswerSaveService(dek_cache=dek_cache)
+
+        real_commit = commit_with_err_handle
+        call_count = 0
+
+        def commit_failing_on_core(db, *, contexts):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 2:
+                raise Exception("Core commit failure after event insert")
+            real_commit(db, contexts=contexts)
+
+        mutation_id = uuid.uuid4()
+        with patch(
+            "app.services.public_submissions.core.answer_save.get_linkage_secret",
+            return_value=b"\x01" * 32,
+        ), patch(
+            "app.services.public_submissions.core.answer_save.derive_answer_locator",
+            return_value=os.urandom(32),
+        ), patch(
+            "app.services.public_submissions.core.answer_save.commit_with_err_handle",
+            side_effect=commit_failing_on_core,
+        ):
+            revision_id = svc.save_answer(
+                core_db,
+                response_db,
+                ctx=ctx,
+                question_node_id=str(question.id),
+                answer_state="answered",
+                answer_value="hello",
+                client_mutation_id=mutation_id,
+            )
+
+        assert revision_id is not None

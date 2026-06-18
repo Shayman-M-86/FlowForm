@@ -35,12 +35,11 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class SessionContext:
-    """Safe service context returned by the session loader.
+    """Service-internal context returned by the session loader.
 
-    Exposes what internal callers (answer save, completion) need without
-    leaking sensitive material to the browser. The session locator and
-    envelope are available for service-layer crypto operations but must
-    never appear in respondent-facing outputs.
+    Available to internal callers (answer save, completion, admin decrypt)
+    for crypto operations. Fields like session_locator and envelope must
+    never appear in respondent-facing API responses.
     """
 
     session: SubmissionSession

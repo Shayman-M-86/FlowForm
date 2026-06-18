@@ -215,8 +215,6 @@ def record_submission_session_event():
     return "", 204
 
 
-# TODO(phase5): Rework this placeholder to complete the core session
-# idempotently and reject later answer edits.
 @openapi_route(
     summary="Complete submission session",
     response_model=CompleteSubmissionSessionResponses,
@@ -225,5 +223,13 @@ def record_submission_session_event():
 )
 @public_bp.route("/submission-session/complete", methods=["POST"])
 def complete_submission_session():
-    response = CompleteSubmissionSessionResponses(status="completed", completed_at=datetime.now(UTC))
+    raw_token = request.cookies.get("flowform_submission_session")
+    if not raw_token:
+        return {"code": "SESSION_NOT_FOUND", "message": "Session not found."}, 404
+
+    core_db = get_core_db()
+    response_db = get_response_db()
+
+    result = session_management_service.complete_session(core_db, response_db, raw_resume_token=raw_token)
+    response = CompleteSubmissionSessionResponses(status="completed", completed_at=result.completed_at)
     return response.model_dump(mode="json"), 200

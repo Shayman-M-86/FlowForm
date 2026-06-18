@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from app.schema.orm.core.project import Project
@@ -148,3 +148,38 @@ class BootstrapCurrentUserResult:
     user: User
     created: bool
     default_project: Project | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DecryptedAnswerResult:
+    """One decrypted answer for admin detail or export."""
+
+    question_node_id: str
+    question_key: str | None
+    answer_state: str
+    answer_value: Any | None
+    revision_number: int
+    revision_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class AdminSessionDetailResult:
+    """Decrypted session detail for admin views."""
+
+    session_id: str
+    survey_id: int
+    survey_version_id: int
+    session_status: str
+    started_at: Any
+    completed_at: Any | None
+    answers: list[DecryptedAnswerResult]
+
+
+@dataclass(frozen=True, slots=True)
+class DeletionResult:
+    """Outcome of a response deletion attempt."""
+
+    session_id: str
+    response_deleted: bool
+    core_deleted: bool
+    pending: bool

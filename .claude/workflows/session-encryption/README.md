@@ -8,10 +8,12 @@ Implement the encrypted session response service: answer collection, locator der
 2. response-repositories
 3. aws-wiring-and-crypto-smoke-test
 4. session-start
-5. answer-save-and-session-loader
-6. integration-tests-session-and-answers
-7. completion-admin-and-deletion
-8. security-review-and-e2e
+5. session-start-contract-and-reconciliation
+6. answer-save-and-session-loader
+7. integration-tests-session-and-answers
+8. completion-admin-and-deletion
+9. session-start-reconciliation-repair
+10. security-review-and-e2e
 
 ## Setup checklist
 
