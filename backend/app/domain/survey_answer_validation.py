@@ -94,14 +94,157 @@ def validate_answer_shape(family: str | None, answer_value: Any) -> None:
     Raises ``CompletionValidationError`` on shape mismatch, or silently
     returns if the family is unknown (graceful fallback).
     """
-    if family is None or family not in KNOWN_FAMILIES:
+    _parse_known_family_answer(family, answer_value)
+
+
+def validate_answer_against_question(
+    question_schema: dict[str, Any] | None, answer_value: Any
+) -> None:
+    """Validate an answer against the frozen question definition.
+
+    This first validates the canonical family payload shape, then checks that
+    the submitted value is valid for the concrete question definition stored
+    in the frozen survey version.
+    """
+    if not question_schema:
         return
+
+    family = question_schema.get("family")
+    parsed = _parse_known_family_answer(family, answer_value)
+    if parsed is None:
+        return
+
+    definition = question_schema.get("definition")
+    if not isinstance(definition, dict):
+        return
+
     try:
-        parse_answer_value(family, answer_value)  # type: ignore[arg-type]
+        if family == "choice":
+            _validate_choice_against_definition(parsed.model_dump(), definition)
+        elif family == "field":
+            _validate_field_against_definition(parsed.model_dump(), definition)
+        elif family == "matching":
+            _validate_matching_against_definition(parsed.model_dump(), definition)
+        elif family == "rating":
+            _validate_rating_against_definition(parsed.model_dump(), definition)
+    except CompletionValidationError:
+        raise
+    except Exception as exc:
+        raise CompletionValidationError(
+            "Answer value is not valid for this question definition."
+        ) from exc
+
+
+def _parse_known_family_answer(family: str | None, answer_value: Any) -> Any | None:
+    if family is None or family not in KNOWN_FAMILIES:
+        return None
+    try:
+        return parse_answer_value(family, answer_value)  # type: ignore[arg-type]
     except Exception as exc:
         raise CompletionValidationError(
             f"Answer value does not match the '{family}' schema: {exc}"
         ) from exc
+
+
+def _validate_choice_against_definition(
+    value: dict[str, Any], definition: dict[str, Any]
+) -> None:
+    selected = value.get("selected", [])
+    option_ids = {
+        option.get("id")
+        for option in definition.get("options", [])
+        if isinstance(option, dict)
+    }
+    if any(option_id not in option_ids for option_id in selected):
+        raise CompletionValidationError(
+            "Choice answer includes an option that is not in this question."
+        )
+    min_selected = definition.get("min")
+    max_selected = definition.get("max")
+    if min_selected is not None and len(selected) < min_selected:
+        raise CompletionValidationError(
+            "Choice answer selects too few options for this question."
+        )
+    if max_selected is not None and len(selected) > max_selected:
+        raise CompletionValidationError(
+            "Choice answer selects too many options for this question."
+        )
+
+
+def _validate_field_against_definition(
+    value: dict[str, Any], definition: dict[str, Any]
+) -> None:
+    expected_type = definition.get("field_type")
+    if expected_type is not None and value.get("field_type") != expected_type:
+        raise CompletionValidationError(
+            "Field answer type does not match this question."
+        )
+
+
+def _validate_matching_against_definition(
+    value: dict[str, Any], definition: dict[str, Any]
+) -> None:
+    prompt_ids = {
+        item.get("id")
+        for item in definition.get("prompts", [])
+        if isinstance(item, dict)
+    }
+    match_ids = {
+        item.get("id")
+        for item in definition.get("matches", [])
+        if isinstance(item, dict)
+    }
+    for pair in value.get("pairs", []):
+        if pair.get("prompt_id") not in prompt_ids:
+            raise CompletionValidationError(
+                "Matching answer includes a prompt that is not in this question."
+            )
+        if pair.get("match_id") not in match_ids:
+            raise CompletionValidationError(
+                "Matching answer includes a match that is not in this question."
+            )
+
+
+def _validate_rating_against_definition(
+    value: dict[str, Any], definition: dict[str, Any]
+) -> None:
+    variant = value.get("variant")
+    if definition.get("variant") is not None and variant != definition.get("variant"):
+        raise CompletionValidationError(
+            "Rating answer variant does not match this question."
+        )
+
+    number = value.get("number")
+    if variant == "slider":
+        rating_range = definition.get("range", {})
+        min_value = rating_range.get("min")
+        max_value = rating_range.get("max")
+        step = rating_range.get("step")
+        if min_value is not None and number < min_value:
+            raise CompletionValidationError(
+                "Rating answer is below this question's range."
+            )
+        if max_value is not None and number > max_value:
+            raise CompletionValidationError(
+                "Rating answer is above this question's range."
+            )
+        if step is not None and min_value is not None:
+            offset = (number - min_value) / step
+            if abs(offset - round(offset)) > 1e-9:
+                raise CompletionValidationError(
+                    "Rating answer does not align with this question's step."
+                )
+    elif variant == "stars":
+        stars = definition.get("stars")
+        if number < 1 or (stars is not None and number > stars):
+            raise CompletionValidationError(
+                "Star rating answer is outside this question's range."
+            )
+    elif variant == "emoji":
+        if number < 1 or number > 5:
+            raise CompletionValidationError(
+                "Emoji rating answer is outside this question's range."
+            )
 
 
 # ---------------------------------------------------------------------------

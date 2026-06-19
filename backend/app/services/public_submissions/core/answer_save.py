@@ -82,12 +82,13 @@ class AnswerSaveService:
         # Step 3: Validate the answer against the frozen survey version
         question = self._validate_question_in_version(db, ctx, question_node_id)
 
-        # Step 3b: Validate answer shape against question family
+        # Step 3b: Validate answer shape against the frozen question definition
         if answer_state != "cleared" and answer_value is not None:
-            from app.domain.survey_answer_validation import validate_answer_shape
+            from app.domain.survey_answer_validation import (
+                validate_answer_against_question,
+            )
 
-            family = (question.question_schema or {}).get("family")
-            validate_answer_shape(family, answer_value)
+            validate_answer_against_question(question.question_schema, answer_value)
 
         # Step 4: Derive session locator and answer locator (locator already derived)
         # Step 5: Load the response envelope (already in ctx)

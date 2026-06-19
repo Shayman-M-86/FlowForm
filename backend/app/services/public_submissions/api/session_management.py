@@ -60,10 +60,10 @@ class SessionManagementService:
     ) -> CompletionResult:
         """Complete a respondent session.
 
-        Loads the session from the browser resume token (allow_completed=True
-        for idempotency), then delegates to CompletionService.
+        Loads the session from the browser resume token, then delegates to
+        CompletionService for the completion state transition.
         """
-        ctx = load_current_session(db, response_db, raw_resume_token, allow_completed=True)
+        ctx = load_current_session(db, response_db, raw_resume_token)
         return self._completion_service.complete_session(db, response_db, ctx=ctx)
 
     # ------------------------------------------------------------------

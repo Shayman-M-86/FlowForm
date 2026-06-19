@@ -8,6 +8,7 @@ from app.domain.survey_answer_validation import (
     DecryptedAnswer,
     QuestionNode,
     RuleNode,
+    validate_answer_against_question,
     validate_answer_shape,
     validate_submission,
 )
@@ -272,6 +273,36 @@ class TestAnswerShapeValidation:
 
     def test_none_family_passes(self):
         validate_answer_shape(None, {"anything": True})
+
+    def test_answer_against_question_rejects_unknown_choice_option(self):
+        schema = {
+            "family": "choice",
+            "definition": {
+                "min": 1,
+                "max": 1,
+                "options": [{"id": "opt1", "label": "One"}],
+            },
+        }
+        with pytest.raises(CompletionValidationError, match="not in this question"):
+            validate_answer_against_question(schema, {"selected": ["missing"]})
+
+    def test_answer_against_question_rejects_wrong_field_type(self):
+        schema = {"family": "field", "definition": {"field_type": "email"}}
+        with pytest.raises(CompletionValidationError, match="type does not match"):
+            validate_answer_against_question(
+                schema, {"field_type": "short_text", "text": "hello"}
+            )
+
+    def test_answer_against_question_rejects_rating_outside_range(self):
+        schema = {
+            "family": "rating",
+            "definition": {
+                "variant": "slider",
+                "range": {"min": 0, "max": 10, "step": 1},
+            },
+        }
+        with pytest.raises(CompletionValidationError, match="above"):
+            validate_answer_against_question(schema, {"variant": "slider", "number": 11})
 
     def test_submission_rejects_bad_shape(self):
         q1 = _q("q1", family="choice")
