@@ -181,7 +181,12 @@ class SurveyService:
 
         compiled = {
             "nodes": [
-                {"type": n.node_type, "sort_key": n.sort_key, "content": n.question_schema}
+                {
+                    "node_id": str(n.id),
+                    "type": n.node_type,
+                    "sort_key": n.sort_key,
+                    "content": n.question_schema,
+                }
                 for n in all_nodes
             ],
             "scoring_rules": [

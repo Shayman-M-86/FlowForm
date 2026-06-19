@@ -1,9 +1,9 @@
-"""Integration tests for session completion with encryption.
+"""Integration tests for session completion.
 
 Verifies:
-- Completion decrypts all latest answers, validates, and marks session completed
-- Idempotent: repeated completion returns stored state, no duplicate DB writes
-- Missing required answers rejected
+- Completion marks an in-progress session completed without decrypting answers
+- Repeated completion is rejected once the session is completed
+- Missing required answers do not block completion
 - Session completion event inserted
 """
 from __future__ import annotations
@@ -27,7 +27,7 @@ from app.crypto import (
     encrypt_answer,
     generate_nonce,
 )
-from app.domain.errors import CompletionValidationError, SessionInvalidError
+from app.domain.errors import SessionInvalidError
 from app.repositories.core.submission_sessions import create_session
 from app.repositories.response import (
     response_answer_repo,
@@ -265,7 +265,7 @@ class TestCompletion:
         assert session.session_status == "completed"
         assert session.completed_at is not None
 
-    def test_completion_is_idempotent(self, db_sessions: DbSessions) -> None:
+    def test_repeated_completion_is_rejected(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
@@ -291,12 +291,12 @@ class TestCompletion:
             encryption_settings=_FAKE_ENC_SETTINGS,
         )
 
-        result2 = svc.complete_session(core_db, response_db, ctx=ctx2)
+        with pytest.raises(SessionInvalidError, match="completed"):
+            svc.complete_session(core_db, response_db, ctx=ctx2)
 
-        assert result1.status == result2.status == "completed"
-        assert result1.completed_at == result2.completed_at
+        assert result1.status == "completed"
 
-    def test_missing_required_answer_rejected(self, db_sessions: DbSessions) -> None:
+    def test_missing_required_answer_does_not_block_completion(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(
             core_db, required_questions=True
@@ -304,11 +304,12 @@ class TestCompletion:
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        # No answers saved — required question not answered
+        # No answers saved — completion is now only a state transition.
         svc = _make_service_with_cached_dek(ctx, plaintext_dek)
 
-        with pytest.raises(CompletionValidationError, match="Missing required"):
-            svc.complete_session(core_db, response_db, ctx=ctx)
+        result = svc.complete_session(core_db, response_db, ctx=ctx)
+
+        assert result.status == "completed"
 
     def test_completion_with_no_required_questions_succeeds(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
