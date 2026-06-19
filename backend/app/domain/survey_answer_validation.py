@@ -147,6 +147,10 @@ def _validate_rating_against_definition(
         )
 
     number = value.get("number")
+    if not isinstance(number, int | float):
+        raise CompletionValidationError(
+            "Rating answer number is missing or invalid for this question."
+        )
     if variant == "slider":
         _validate_slider_rating(number, definition)
     elif variant == "stars":

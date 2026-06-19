@@ -1,19 +1,16 @@
-"""Secrets Manager access for the linkage secret."""
+"""Secrets Manager access for linkage secrets."""
 
 from __future__ import annotations
 
-import base64
 import logging
 from typing import Any
 
 import boto3
 from pydantic import SecretStr
 
+from app.crypto.errors import LinkageKeyError, LinkageSecretError
+
 logger = logging.getLogger(__name__)
-
-
-class LinkageSecretError(Exception):
-    """Raised when fetching the linkage secret from Secrets Manager fails."""
 
 
 def _build_secretsmanager_client(
@@ -36,8 +33,12 @@ def get_linkage_secret(
     region: str,
     access_key_id: SecretStr,
     secret_access_key: SecretStr,
-) -> bytes:
-    """Fetch the linkage secret from Secrets Manager and return raw bytes."""
+) -> str:
+    """Fetch a secret string from Secrets Manager.
+
+    Returns the raw SecretString content. Raises ``LinkageSecretError`` on any
+    AWS failure and ``LinkageKeyError`` when the secret has no string value.
+    """
     client = _build_secretsmanager_client(region, access_key_id, secret_access_key)
     kwargs: dict[str, Any] = {"SecretId": secret_arn}
     if version_id is not None:
@@ -45,12 +46,10 @@ def get_linkage_secret(
     try:
         response = client.get_secret_value(**kwargs)
     except Exception as exc:
-        logger.error(
-            "Secrets Manager fetch failed for secret: %s",
-            type(exc).__name__,
-        )
+        logger.error("Secrets Manager fetch failed: %s", type(exc).__name__)
         raise LinkageSecretError("Failed to fetch linkage secret") from exc
+
     secret_string = response.get("SecretString")
-    if secret_string is not None:
-        return base64.b64decode(secret_string)
-    return response["SecretBinary"]
+    if secret_string is None:
+        raise LinkageKeyError("Secret does not contain a string value")
+    return secret_string

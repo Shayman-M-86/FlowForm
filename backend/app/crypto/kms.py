@@ -8,11 +8,9 @@ from typing import Any
 import boto3
 from pydantic import SecretStr
 
+from app.crypto.errors import KmsError
+
 logger = logging.getLogger(__name__)
-
-
-class KmsError(Exception):
-    """Raised when a KMS wrap or unwrap operation fails."""
 
 
 def _build_kms_client(

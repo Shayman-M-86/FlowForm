@@ -19,8 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings
 from app.crypto import DekCache
-from app.crypto.kms import KmsError
-from app.crypto.secrets import LinkageSecretError
+from app.crypto.errors import KmsError, LinkageSecretError
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import SessionStartError
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
