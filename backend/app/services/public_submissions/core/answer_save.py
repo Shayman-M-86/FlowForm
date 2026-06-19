@@ -9,6 +9,7 @@ import logging
 import uuid
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.crypto import (
@@ -26,6 +27,7 @@ from app.domain.errors import AnswerSaveError, QuestionNotInVersionError, Sessio
 from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_answer_repo, response_answer_revision_repo
+from app.schema.orm.core.survey_content import SurveyQuestion
 from app.services.public_submissions.core.session_loader import SessionContext
 
 logger = logging.getLogger(__name__)
@@ -77,14 +79,14 @@ class AnswerSaveService:
             if dup_revision is not None:
                 return dup_revision.id
 
-        # Step 3: Validate the answer against the frozen compiled survey schema
-        question_definition = self._get_question_definition(ctx, question_node_id)
+        # Step 3: Validate the answer against the frozen survey question node
+        question = self._get_question_in_version(db, ctx, question_node_id)
 
         # Step 3b: Validate answer shape against the frozen question definition
         if answer_state != "cleared" and answer_value is not None:
             from app.domain.survey_answer_validation import validate_answer
 
-            validate_answer(question_definition, answer_value)
+            validate_answer(question.question_schema, answer_value)
 
         # Step 4: Derive session locator and answer locator (locator already derived)
         # Step 5: Load the response envelope (already in ctx)
@@ -196,7 +198,7 @@ class AnswerSaveService:
         question_node_id: str,
     ) -> None:
         """Record a question-viewed analytics event. Failure does not block the respondent."""
-        self._get_question_definition(ctx, question_node_id)
+        self._get_question_in_version(db, ctx, question_node_id)
         try:
             event_repo.create_event(
                 db,
@@ -245,36 +247,19 @@ class AnswerSaveService:
 
         return plaintext_dek
 
-    def _get_question_definition(
+    def _get_question_in_version(
         self,
+        db: Session,
         ctx: SessionContext,
         question_node_id: str,
-    ) -> dict[str, Any]:
-        compiled_schema = ctx.survey_version.compiled_schema or {}
-        nodes = compiled_schema.get("nodes", [])
-        if not isinstance(nodes, list):
+    ) -> SurveyQuestion:
+        question = db.scalar(
+            select(SurveyQuestion).where(
+                SurveyQuestion.survey_version_id == ctx.survey_version.id,
+                SurveyQuestion.id == uuid.UUID(question_node_id),
+                SurveyQuestion.node_type == "question",
+            )
+        )
+        if question is None:
             raise QuestionNotInVersionError()
-
-        for node in nodes:
-            if not isinstance(node, dict):
-                continue
-            content = node.get("content")
-            if not isinstance(content, dict):
-                continue
-            if node.get("type") not in (None, "question") and content.get("family") is None:
-                continue
-
-            node_ids = {
-                str(candidate)
-                for candidate in (
-                    node.get("node_id"),
-                    node.get("question_node_id"),
-                    node.get("id"),
-                    content.get("node_id"),
-                )
-                if candidate is not None
-            }
-            if question_node_id in node_ids:
-                return content
-
-        raise QuestionNotInVersionError()
+        return question
