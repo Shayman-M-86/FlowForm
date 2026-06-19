@@ -49,7 +49,9 @@ class SubmissionSession(CoreBase):
         UUID(as_uuid=True), ForeignKey("project_subjects.id", ondelete="SET NULL"), nullable=True
     )
     browser_session_token_hash: Mapped[bytes] = mapped_column(LargeBinary, nullable=False, unique=True)
-    linkage_key_version: Mapped[int] = mapped_column(SmallInteger, server_default=text("1"), nullable=False)
+    linkage_key_version: Mapped[int] = mapped_column(
+        SmallInteger, ForeignKey("linkage_key_versions.version"), nullable=False
+    )
     session_status: Mapped[SubmissionSessionStatus] = mapped_column(
         Text, server_default=text("'in_progress'"), nullable=False
     )

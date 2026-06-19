@@ -154,8 +154,16 @@ class AppSettings(BaseModel):
 class EncryptionSettings(BaseModel):
     """AWS encryption settings for session response encryption."""
 
+    # KMS key used to wrap/unwrap per-session DEKs
     kms_key_arn: str
+
+    # Secrets Manager secret holding versioned linkage keys as JSON:
+    # {"version": N, "secret_b64": "..."}. AWSCURRENT stage = active key.
     linkage_secret_arn: str
+
+    # How long (seconds) to cache linkage keys in memory before re-fetching
+    linkage_key_cache_ttl_seconds: float = 1800.0
+
     aws_region: str
     aws_access_key_id: SecretStr
     aws_secret_access_key: SecretStr

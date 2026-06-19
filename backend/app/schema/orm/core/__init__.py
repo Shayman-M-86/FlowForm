@@ -1,5 +1,6 @@
 from app.schema.orm.core.audit_log import AuditLog
 from app.schema.orm.core.invitation import ProjectInvitation
+from app.schema.orm.core.linkage_key_version import LinkageKeyVersion
 from app.schema.orm.core.permission import Permission
 from app.schema.orm.core.project import Project, ProjectMembership, ProjectRole, project_role_permissions
 from app.schema.orm.core.project_participant import ProjectParticipant
@@ -24,6 +25,7 @@ from app.schema.orm.core.user import User
 
 __all__ = [
     "AuditLog",
+    "LinkageKeyVersion",
     "Permission",
     "Project",
     "ProjectInvitation",

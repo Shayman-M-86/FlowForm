@@ -857,6 +857,24 @@ CREATE TABLE survey_links (
         )
 );
 
+CREATE TABLE linkage_key_versions (
+    version SMALLINT PRIMARY KEY,
+    aws_secret_id TEXT NOT NULL,
+    aws_secret_version_id UUID NOT NULL,
+    is_current BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT ck_linkage_key_versions_version_valid
+        CHECK (version > 0),
+
+    CONSTRAINT uq_linkage_key_versions_aws_secret_version
+        UNIQUE (aws_secret_id, aws_secret_version_id)
+);
+
+CREATE UNIQUE INDEX uq_linkage_key_versions_current
+    ON linkage_key_versions (is_current)
+    WHERE is_current = TRUE;
+
 CREATE TABLE submission_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -866,7 +884,7 @@ CREATE TABLE submission_sessions (
     link_id UUID REFERENCES survey_links(id) ON DELETE SET NULL,
     project_subject_id UUID REFERENCES project_subjects(id) ON DELETE SET NULL,
     browser_session_token_hash BYTEA NOT NULL,
-    linkage_key_version SMALLINT NOT NULL DEFAULT 1,
+    linkage_key_version SMALLINT NOT NULL REFERENCES linkage_key_versions(version),
     session_status TEXT NOT NULL DEFAULT 'in_progress',
     started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     completed_at TIMESTAMPTZ,

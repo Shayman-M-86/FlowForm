@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 import boto3
@@ -11,6 +12,14 @@ from pydantic import SecretStr
 from app.crypto.errors import LinkageKeyError, LinkageSecretError
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class SecretValue:
+    """A secret string and its AWS-assigned version identifier."""
+
+    secret_string: str
+    version_id: str
 
 
 def _build_secretsmanager_client(
@@ -29,20 +38,24 @@ def _build_secretsmanager_client(
 def get_linkage_secret(
     secret_arn: str,
     version_id: str | None = None,
+    version_stage: str | None = None,
     *,
     region: str,
     access_key_id: SecretStr,
     secret_access_key: SecretStr,
-) -> str:
-    """Fetch a secret string from Secrets Manager.
+) -> SecretValue:
+    """Fetch a secret from Secrets Manager.
 
-    Returns the raw SecretString content. Raises ``LinkageSecretError`` on any
-    AWS failure and ``LinkageKeyError`` when the secret has no string value.
+    Returns the SecretString content and the AWS VersionId. Raises
+    ``LinkageSecretError`` on any AWS failure and ``LinkageKeyError``
+    when the secret has no string value.
     """
     client = _build_secretsmanager_client(region, access_key_id, secret_access_key)
     kwargs: dict[str, Any] = {"SecretId": secret_arn}
     if version_id is not None:
         kwargs["VersionId"] = version_id
+    if version_stage is not None:
+        kwargs["VersionStage"] = version_stage
     try:
         response = client.get_secret_value(**kwargs)
     except Exception as exc:
@@ -52,4 +65,7 @@ def get_linkage_secret(
     secret_string = response.get("SecretString")
     if secret_string is None:
         raise LinkageKeyError("Secret does not contain a string value")
-    return secret_string
+    return SecretValue(
+        secret_string=secret_string,
+        version_id=response["VersionId"],
+    )

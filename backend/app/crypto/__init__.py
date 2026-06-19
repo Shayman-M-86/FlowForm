@@ -12,11 +12,6 @@ from app.crypto.errors import (
     SessionDEKUnavailableError,
 )
 from app.crypto.kms import unwrap_dek, wrap_dek
-from app.crypto.linkage_key_service import (
-    LinkageKey,
-    LinkageKeyService,
-)
-from app.crypto.locator_service import LocatorService, NewSessionLocator
 from app.crypto.locators import derive_answer_locator, derive_session_locator
 from app.crypto.nonces import generate_nonce
 from app.crypto.payload import (
@@ -24,12 +19,25 @@ from app.crypto.payload import (
     build_plaintext_payload,
     parse_plaintext_payload,
 )
-from app.crypto.secrets import get_linkage_secret
-from app.crypto.session_dek_service import SessionDEKService
+from app.crypto.secrets import SecretValue, get_linkage_secret
+from app.crypto.services import (
+    AnswerCryptoService,
+    DecryptedAnswer,
+    EncryptedAnswer,
+    LinkageKey,
+    LinkageKeyService,
+    LocatorService,
+    NewSessionDEK,
+    NewSessionLocator,
+    SessionDEKService,
+)
 
 __all__ = [
+    "AnswerCryptoService",
+    "DecryptedAnswer",
     "DecryptionError",
     "DekCache",
+    "EncryptedAnswer",
     "KmsError",
     "LinkageKey",
     "LinkageKeyError",
@@ -38,8 +46,10 @@ __all__ = [
     "LinkageKeyVersionUnavailableError",
     "LinkageSecretError",
     "LocatorService",
+    "NewSessionDEK",
     "NewSessionLocator",
     "PayloadDecodeError",
+    "SecretValue",
     "SessionDEKService",
     "SessionDEKUnavailableError",
     "build_aad",

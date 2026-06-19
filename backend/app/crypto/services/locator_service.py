@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.crypto.linkage_key_service import LinkageKeyService
+from sqlalchemy.orm import Session
+
 from app.crypto.locators import derive_answer_locator, derive_session_locator
+from app.crypto.services.linkage_key_service import LinkageKeyService
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,9 +24,9 @@ class LocatorService:
     def __init__(self, linkage_key_service: LinkageKeyService) -> None:
         self._keys = linkage_key_service
 
-    def for_new_session(self, session_id: str) -> NewSessionLocator:
+    def for_new_session(self, session_id: str, db: Session) -> NewSessionLocator:
         """Derive a session locator using the current linkage key."""
-        key = self._keys.get_linkage_key()
+        key = self._keys.get_linkage_key(db)
         locator = derive_session_locator(session_id, key.secret)
         return NewSessionLocator(
             linkage_key_version=key.version,
@@ -32,10 +34,10 @@ class LocatorService:
         )
 
     def for_existing_session(
-        self, session_id: str, linkage_key_version: int
+        self, session_id: str, linkage_key_version: int, db: Session
     ) -> bytes:
         """Derive a session locator using a stored linkage key version."""
-        key = self._keys.get_linkage_key_by_version(linkage_key_version)
+        key = self._keys.get_linkage_key_by_version(linkage_key_version, db)
         return derive_session_locator(session_id, key.secret)
 
     def answer_locator(
@@ -43,9 +45,10 @@ class LocatorService:
         session_id: str,
         question_node_id: str,
         linkage_key_version: int,
+        db: Session,
     ) -> bytes:
         """Derive a single answer locator."""
-        key = self._keys.get_linkage_key_by_version(linkage_key_version)
+        key = self._keys.get_linkage_key_by_version(linkage_key_version, db)
         return derive_answer_locator(session_id, question_node_id, key.secret)
 
     def answer_locators(
@@ -53,9 +56,10 @@ class LocatorService:
         session_id: str,
         question_node_ids: list[str],
         linkage_key_version: int,
+        db: Session,
     ) -> dict[str, bytes]:
         """Derive answer locators for multiple questions in one call."""
-        key = self._keys.get_linkage_key_by_version(linkage_key_version)
+        key = self._keys.get_linkage_key_by_version(linkage_key_version, db)
         return {
             qid: derive_answer_locator(session_id, qid, key.secret)
             for qid in question_node_ids
