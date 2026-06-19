@@ -95,6 +95,18 @@ def _setup_core_fixtures(core_db: Session):
     core_db.add(question)
     core_db.flush()
 
+    version.compiled_schema = {
+        "nodes": [
+            {
+                "node_id": str(question.id),
+                "type": "question",
+                "sort_key": question.sort_key,
+                "content": question.question_schema,
+            }
+        ]
+    }
+    core_db.flush()
+
     return project, survey, version, question
 
 

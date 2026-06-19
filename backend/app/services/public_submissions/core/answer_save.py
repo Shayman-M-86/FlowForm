@@ -79,15 +79,14 @@ class AnswerSaveService:
             if dup_revision is not None:
                 return dup_revision.id
 
-        # Step 3: Validate the answer against the frozen survey version
-        question = self._validate_question_in_version(db, ctx, question_node_id)
+        # Step 3: Validate the answer against the frozen survey question node
+        question = self._get_question_in_version(db, ctx, question_node_id)
 
-        # Step 3b: Validate answer shape against question family
+        # Step 3b: Validate answer shape against the frozen question definition
         if answer_state != "cleared" and answer_value is not None:
-            from app.domain.survey_answer_validation import validate_answer_shape
+            from app.domain.survey_answer_validation import validate_answer
 
-            family = (question.question_schema or {}).get("family")
-            validate_answer_shape(family, answer_value)
+            validate_answer(question.question_schema, answer_value)
 
         # Step 4: Derive session locator and answer locator (locator already derived)
         # Step 5: Load the response envelope (already in ctx)
@@ -199,7 +198,7 @@ class AnswerSaveService:
         question_node_id: str,
     ) -> None:
         """Record a question-viewed analytics event. Failure does not block the respondent."""
-        self._validate_question_in_version(db, ctx, question_node_id)
+        self._get_question_in_version(db, ctx, question_node_id)
         try:
             event_repo.create_event(
                 db,
@@ -248,7 +247,7 @@ class AnswerSaveService:
 
         return plaintext_dek
 
-    def _validate_question_in_version(
+    def _get_question_in_version(
         self,
         db: Session,
         ctx: SessionContext,
@@ -258,6 +257,7 @@ class AnswerSaveService:
             select(SurveyQuestion).where(
                 SurveyQuestion.survey_version_id == ctx.survey_version.id,
                 SurveyQuestion.id == uuid.UUID(question_node_id),
+                SurveyQuestion.node_type == "question",
             )
         )
         if question is None:
