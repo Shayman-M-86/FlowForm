@@ -53,6 +53,8 @@ Use authenticated encryption.
 
 The target design is AES-256-GCM. It protects answer confidentiality, detects ciphertext tampering, and detects authenticated metadata tampering.
 
+Before encryption, answer save must validate the submitted answer against the matching frozen survey_questions node for the session’s survey_version_id.
+
 Every answer payload must be encrypted, including values that look harmless, such as choice IDs, dates, ratings, numbers, and cleared-answer states.
 
 ## Plaintext payload
