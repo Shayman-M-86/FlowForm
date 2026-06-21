@@ -14,14 +14,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings
-from app.crypto import (
-    build_aad,
-    decrypt_answer,
-    derive_session_locator,
-    get_linkage_secret,
-    parse_plaintext_payload,
-    unwrap_dek,
-)
+from app.crypto import build_aad
+from app.crypto.services import AnswerCryptoService, LocatorService, SessionDEKService
 from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.response import (
     response_answer_repo,
@@ -35,6 +29,7 @@ from app.schema.api.submission_sessions.answer_payload import (
 from app.schema.enums import AnswerFamily
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.core.survey_content import SurveyQuestion
+from app.services.public_submissions.core.crypto_provider import build_crypto_services
 from app.services.results import AdminSessionDetailResult, DecryptedAnswerResult
 
 logger = logging.getLogger(__name__)
@@ -44,12 +39,31 @@ _KMS_CONTEXT_VERSION = 1
 _VALID_FAMILIES: frozenset[str] = frozenset({"choice", "field", "matching", "rating"})
 
 
+def _get_crypto_services(
+    locator_service: LocatorService | None,
+    dek_service: SessionDEKService | None,
+    answer_crypto_service: AnswerCryptoService | None,
+    enc: EncryptionSettings,
+) -> tuple[LocatorService, SessionDEKService, AnswerCryptoService]:
+    if locator_service is not None and dek_service is not None and answer_crypto_service is not None:
+        return locator_service, dek_service, answer_crypto_service
+    crypto = build_crypto_services(enc)
+    return (
+        locator_service or crypto.locator_service,
+        dek_service or crypto.dek_service,
+        answer_crypto_service or crypto.answer_crypto_service,
+    )
+
+
 def decrypt_session_detail(
     db: Session,
     response_db: Session,
     *,
     session: SubmissionSession,
     encryption_settings: EncryptionSettings,
+    locator_service: LocatorService | None = None,
+    dek_service: SessionDEKService | None = None,
+    answer_crypto_service: AnswerCryptoService | None = None,
 ) -> AdminSessionDetailResult:
     """Decrypt latest answers for admin detail view.
 
@@ -61,8 +75,13 @@ def decrypt_session_detail(
     directly and touches response data immediately. Per doc 01 §1,
     the service layer is not responsible for access authorization.
     """
+    loc_svc, dek_svc, crypto_svc = _get_crypto_services(
+        locator_service, dek_service, answer_crypto_service, encryption_settings,
+    )
+
     envelope, plaintext_dek = _load_envelope_and_dek(
-        response_db, session=session, encryption_settings=encryption_settings
+        db, response_db, session=session,
+        locator_service=loc_svc, dek_service=dek_svc,
     )
 
     answers = response_answer_repo.get_all_by_envelope(response_db, envelope.id)
@@ -84,19 +103,20 @@ def decrypt_session_detail(
             answer_locator=answer.answer_locator,
             revision_id=latest_rev.id,
             revision_number=latest_rev.revision_number,
+            answer_crypto_service=crypto_svc,
         )
 
-        question_key, answer_family = question_meta_map.get(parsed["question_node_id"], (None, None))
+        question_key, answer_family = question_meta_map.get(parsed.question_node_id, (None, None))
         decrypted.append(
             DecryptedAnswerResult(
-                question_node_id=parsed["question_node_id"],
+                question_node_id=parsed.question_node_id,
                 question_key=question_key,
                 answer_family=answer_family,
-                answer_state=parsed["answer_state"],
+                answer_state=parsed.answer_state,
                 answer_value=_resolve_answer_value(
                     answer_family=answer_family,
-                    answer_state=parsed["answer_state"],
-                    raw_value=parsed["answer_value"],
+                    answer_state=parsed.answer_state,
+                    raw_value=parsed.answer_value,
                 ),
                 revision_number=latest_rev.revision_number,
                 revision_id=str(latest_rev.id),
@@ -120,10 +140,18 @@ def decrypt_session_history(
     *,
     session: SubmissionSession,
     encryption_settings: EncryptionSettings,
+    locator_service: LocatorService | None = None,
+    dek_service: SessionDEKService | None = None,
+    answer_crypto_service: AnswerCryptoService | None = None,
 ) -> AdminSessionDetailResult:
     """Decrypt full revision history for authorized history reads."""
+    loc_svc, dek_svc, crypto_svc = _get_crypto_services(
+        locator_service, dek_service, answer_crypto_service, encryption_settings,
+    )
+
     envelope, plaintext_dek = _load_envelope_and_dek(
-        response_db, session=session, encryption_settings=encryption_settings
+        db, response_db, session=session,
+        locator_service=loc_svc, dek_service=dek_svc,
     )
 
     answers = response_answer_repo.get_all_by_envelope(response_db, envelope.id)
@@ -143,19 +171,20 @@ def decrypt_session_history(
                 answer_locator=answer.answer_locator,
                 revision_id=rev.id,
                 revision_number=rev.revision_number,
+                answer_crypto_service=crypto_svc,
             )
 
-            question_key, answer_family = question_meta_map.get(parsed["question_node_id"], (None, None))
+            question_key, answer_family = question_meta_map.get(parsed.question_node_id, (None, None))
             decrypted.append(
                 DecryptedAnswerResult(
-                    question_node_id=parsed["question_node_id"],
+                    question_node_id=parsed.question_node_id,
                     question_key=question_key,
                     answer_family=answer_family,
-                    answer_state=parsed["answer_state"],
+                    answer_state=parsed.answer_state,
                     answer_value=_resolve_answer_value(
                         answer_family=answer_family,
-                        answer_state=parsed["answer_state"],
-                        raw_value=parsed["answer_value"],
+                        answer_state=parsed.answer_state,
+                        raw_value=parsed.answer_value,
                     ),
                     revision_number=rev.revision_number,
                     revision_id=str(rev.id),
@@ -174,19 +203,16 @@ def decrypt_session_history(
 
 
 def _load_envelope_and_dek(
+    db: Session,
     response_db: Session,
     *,
     session: SubmissionSession,
-    encryption_settings: EncryptionSettings,
+    locator_service: LocatorService,
+    dek_service: SessionDEKService,
 ) -> tuple[Any, bytes]:
-    enc = encryption_settings
-    linkage_secret = get_linkage_secret(
-        enc.linkage_secret_arn,
-        region=enc.aws_region,
-        access_key_id=enc.aws_access_key_id,
-        secret_access_key=enc.aws_secret_access_key,
+    session_locator = locator_service.for_existing_session(
+        str(session.id), session.linkage_key_version, db,
     )
-    session_locator = derive_session_locator(str(session.id), linkage_secret)
 
     envelope = response_envelope_repo.get_by_locator(response_db, session_locator)
     if envelope is None:
@@ -196,13 +222,12 @@ def _load_envelope_and_dek(
         "session_locator": session_locator.hex(),
         "kms_context_version": str(_KMS_CONTEXT_VERSION),
     }
-    plaintext_dek = unwrap_dek(
+    plaintext_dek = dek_service.get_for_session(
+        session.id,
         envelope.wrapped_dek,
         envelope.kms_key_arn,
-        kms_context,
-        region=enc.aws_region,
-        access_key_id=enc.aws_access_key_id,
-        secret_access_key=enc.aws_secret_access_key,
+        session.expires_at,
+        encryption_context=kms_context,
     )
 
     return envelope, plaintext_dek
@@ -219,7 +244,8 @@ def _decrypt_revision(
     answer_locator: bytes,
     revision_id: Any,
     revision_number: int,
-) -> dict[str, Any]:
+    answer_crypto_service: AnswerCryptoService,
+) -> Any:
     aad = build_aad(
         crypto_version=crypto_version,
         envelope_id=envelope_id,
@@ -228,8 +254,7 @@ def _decrypt_revision(
         revision_id=revision_id,
         revision_number=revision_number,
     )
-    plaintext_bytes = decrypt_answer(ciphertext, dek, nonce, aad)
-    return parse_plaintext_payload(plaintext_bytes)
+    return answer_crypto_service.decrypt(dek=dek, ciphertext=ciphertext, nonce=nonce, aad=aad)
 
 
 def _build_question_meta_map(

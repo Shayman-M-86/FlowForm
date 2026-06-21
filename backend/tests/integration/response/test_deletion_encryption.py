@@ -81,6 +81,7 @@ def _create_session_row(core_db: Session, project, survey, version):
         link_id=None,
         project_subject_id=None,
         raw_browser_session_token=raw_token,
+        linkage_key_version=1,
     )
     return session
 

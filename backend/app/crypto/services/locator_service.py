@@ -24,6 +24,11 @@ class LocatorService:
     def __init__(self, linkage_key_service: LinkageKeyService) -> None:
         self._keys = linkage_key_service
 
+    def get_current_linkage_key_version(self, db: Session) -> int:
+        """Return the current linkage key version without deriving a locator."""
+        key = self._keys.get_linkage_key(db)
+        return key.version
+
     def for_new_session(self, session_id: str, db: Session) -> NewSessionLocator:
         """Derive a session locator using the current linkage key."""
         key = self._keys.get_linkage_key(db)

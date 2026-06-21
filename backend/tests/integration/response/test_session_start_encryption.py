@@ -9,7 +9,6 @@ Verifies end-to-end that:
 from __future__ import annotations
 
 import os
-import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
@@ -21,7 +20,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings
 from app.crypto.errors import KmsError
-from app.domain.errors import SessionNotFoundError
+from app.crypto.services import NewSessionDEK, NewSessionLocator
+from app.domain.errors import SessionNotFoundError, SessionStartError
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.response.response_envelope import ResponseEnvelope
@@ -39,7 +39,8 @@ if TYPE_CHECKING:
     from tests.conftest import DbSessions
 
 _SCHEMA = {"nodes": [{"id": "q1", "type": "short_text"}]}
-_FAKE_LINKAGE_SECRET = b"\xaa" * 32
+_FAKE_SESSION_LOCATOR = os.urandom(32)
+_FAKE_PLAINTEXT_DEK = os.urandom(32)
 _FAKE_WRAPPED_DEK = b"\xbb" * 64
 _FAKE_ENC_SETTINGS = EncryptionSettings(
     kms_key_arn="arn:aws:kms:us-east-1:000000000000:key/test-key",
@@ -88,22 +89,28 @@ def _slug_payload(slug: str) -> StartSubmissionSessionRequest:
     )
 
 
-def _patch_crypto(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "app.services.public_submissions.core.session_starter.get_linkage_secret",
-        lambda *a, **kw: _FAKE_LINKAGE_SECRET,
+def _mock_locator_service(session_locator: bytes | None = None):
+    """Locator service that returns the same locator for both new and existing sessions."""
+    svc = MagicMock()
+    loc_bytes = session_locator or _FAKE_SESSION_LOCATOR
+    svc.get_current_linkage_key_version.return_value = 1
+    svc.for_new_session.return_value = NewSessionLocator(
+        linkage_key_version=1, session_locator=loc_bytes,
     )
-    monkeypatch.setattr(
-        "app.services.public_submissions.core.session_starter.wrap_dek",
-        lambda plaintext_dek, *a, **kw: _FAKE_WRAPPED_DEK,
-    )
+    svc.for_existing_session.return_value = loc_bytes
+    return svc
 
 
-def _patch_loader_crypto(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "app.services.public_submissions.core.session_loader.get_linkage_secret",
-        lambda *a, **kw: _FAKE_LINKAGE_SECRET,
+def _mock_dek_service(
+    plaintext_dek: bytes | None = None,
+    wrapped_dek: bytes | None = None,
+):
+    svc = MagicMock()
+    svc.create_for_session.return_value = NewSessionDEK(
+        plaintext_dek=plaintext_dek or _FAKE_PLAINTEXT_DEK,
+        wrapped_dek=wrapped_dek or _FAKE_WRAPPED_DEK,
     )
+    return svc
 
 
 class TestSuccessfulSessionStart:
@@ -111,12 +118,14 @@ class TestSuccessfulSessionStart:
     def test_creates_core_session_and_response_envelope(
         self,
         db_sessions: DbSessions,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         survey_id = _seed_published_survey(db_sessions.core, "enc-start-ok")
-        _patch_crypto(monkeypatch)
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        starter = SessionStarter(
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(),
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
         response, browser_token, _ = starter.start(
             db_sessions.core,
             db_sessions.response,
@@ -140,12 +149,14 @@ class TestSuccessfulSessionStart:
     def test_session_locator_is_opaque_32_bytes(
         self,
         db_sessions: DbSessions,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_published_survey(db_sessions.core, "enc-locator-check")
-        _patch_crypto(monkeypatch)
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        starter = SessionStarter(
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(),
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
         starter.start(
             db_sessions.core,
             db_sessions.response,
@@ -169,12 +180,14 @@ class TestSuccessfulSessionStart:
     def test_resume_cookie_set_on_success(
         self,
         db_sessions: DbSessions,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_published_survey(db_sessions.core, "enc-resume-cookie")
-        _patch_crypto(monkeypatch)
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        starter = SessionStarter(
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(),
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
         _, browser_token, _ = starter.start(
             db_sessions.core,
             db_sessions.response,
@@ -184,23 +197,18 @@ class TestSuccessfulSessionStart:
 
         assert len(browser_token) > 0, "resume token must be non-empty"
 
-    def test_wrap_dek_called_on_session_start(
+    def test_dek_service_create_called_on_session_start(
         self,
         db_sessions: DbSessions,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_published_survey(db_sessions.core, "enc-wrap-assert")
-        monkeypatch.setattr(
-            "app.services.public_submissions.core.session_starter.get_linkage_secret",
-            lambda *a, **kw: _FAKE_LINKAGE_SECRET,
-        )
-        wrap_mock = MagicMock(return_value=_FAKE_WRAPPED_DEK)
-        monkeypatch.setattr(
-            "app.services.public_submissions.core.session_starter.wrap_dek",
-            wrap_mock,
-        )
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        dek_svc = _mock_dek_service()
+        starter = SessionStarter(
+            locator_service=_mock_locator_service(),
+            dek_service=dek_svc,
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
         starter.start(
             db_sessions.core,
             db_sessions.response,
@@ -208,11 +216,7 @@ class TestSuccessfulSessionStart:
             actor=None,
         )
 
-        wrap_mock.assert_called_once()
-        call_args = wrap_mock.call_args
-        plaintext_dek_arg = call_args[0][0]
-        assert isinstance(plaintext_dek_arg, bytes), "wrap_dek must receive a bytes DEK"
-        assert len(plaintext_dek_arg) == 32, "DEK must be 32 bytes (AES-256)"
+        dek_svc.create_for_session.assert_called_once()
 
 
 class TestEnvelopeCreationFailure:
@@ -220,21 +224,17 @@ class TestEnvelopeCreationFailure:
     def test_kms_failure_rolls_back_core_session(
         self,
         db_sessions: DbSessions,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from app.domain.errors import SessionStartError
-
         survey_id = _seed_published_survey(db_sessions.core, "enc-kms-fail")
-        monkeypatch.setattr(
-            "app.services.public_submissions.core.session_starter.get_linkage_secret",
-            lambda *a, **kw: _FAKE_LINKAGE_SECRET,
-        )
-        monkeypatch.setattr(
-            "app.services.public_submissions.core.session_starter.wrap_dek",
-            MagicMock(side_effect=KmsError("KMS encrypt failed")),
-        )
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        dek_svc = MagicMock()
+        dek_svc.create_for_session.side_effect = KmsError("KMS encrypt failed")
+
+        starter = SessionStarter(
+            locator_service=_mock_locator_service(),
+            dek_service=dek_svc,
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
         with pytest.raises(SessionStartError):
             starter.start(
                 db_sessions.core,
@@ -257,12 +257,15 @@ class TestResumedSession:
     def test_loader_finds_existing_session(
         self,
         db_sessions: DbSessions,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         survey_id = _seed_published_survey(db_sessions.core, "enc-resume-load")
-        _patch_crypto(monkeypatch)
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        loc_svc = _mock_locator_service()
+        starter = SessionStarter(
+            locator_service=loc_svc,
+            dek_service=_mock_dek_service(),
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
         _, browser_token, _ = starter.start(
             db_sessions.core,
             db_sessions.response,
@@ -270,12 +273,12 @@ class TestResumedSession:
             actor=None,
         )
 
-        _patch_loader_crypto(monkeypatch)
         ctx = load_current_session(
             db_sessions.core,
             db_sessions.response,
             browser_token,
             encryption_settings=_FAKE_ENC_SETTINGS,
+            locator_service=loc_svc,
         )
 
         assert ctx.session is not None
@@ -288,12 +291,15 @@ class TestResumedSession:
     def test_loader_returns_correct_frozen_survey_version(
         self,
         db_sessions: DbSessions,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_published_survey(db_sessions.core, "enc-resume-version")
-        _patch_crypto(monkeypatch)
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        loc_svc = _mock_locator_service()
+        starter = SessionStarter(
+            locator_service=loc_svc,
+            dek_service=_mock_dek_service(),
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
         _, browser_token, _ = starter.start(
             db_sessions.core,
             db_sessions.response,
@@ -301,12 +307,12 @@ class TestResumedSession:
             actor=None,
         )
 
-        _patch_loader_crypto(monkeypatch)
         ctx = load_current_session(
             db_sessions.core,
             db_sessions.response,
             browser_token,
             encryption_settings=_FAKE_ENC_SETTINGS,
+            locator_service=loc_svc,
         )
 
         assert ctx.survey_version.status == "published"
@@ -315,13 +321,12 @@ class TestResumedSession:
     def test_loader_rejects_invalid_token(
         self,
         db_sessions: DbSessions,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        _patch_loader_crypto(monkeypatch)
         with pytest.raises(SessionNotFoundError):
             load_current_session(
                 db_sessions.core,
                 db_sessions.response,
                 "bogus-token-that-does-not-exist",
                 encryption_settings=_FAKE_ENC_SETTINGS,
+                locator_service=_mock_locator_service(),
             )

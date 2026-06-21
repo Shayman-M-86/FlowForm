@@ -32,9 +32,8 @@ from app.crypto import (
     derive_answer_locator,
     derive_session_locator,
     parse_plaintext_payload,
-    unwrap_dek,
 )
-from app.crypto.dek_cache import DekCache
+from app.crypto.services import AnswerCryptoService
 from app.domain.errors import SessionExpiredError, SessionInvalidError
 from app.repositories.core.submission_sessions import create_session
 from app.repositories.response import (
@@ -129,6 +128,7 @@ def _create_session_row(
         link_id=None,
         project_subject_id=None,
         raw_browser_session_token=raw_token,
+        linkage_key_version=1,
     )
     if expired:
         core_db.execute(
@@ -193,22 +193,31 @@ def _create_envelope_and_context(
     return ctx, plaintext_dek
 
 
-def _make_service_with_cached_dek(ctx: SessionContext, plaintext_dek: bytes) -> AnswerSaveService:
-    dek_cache = DekCache()
-    dek_cache.put(ctx.session_locator, plaintext_dek)
-    return AnswerSaveService(dek_cache=dek_cache)
+def _mock_locator_service(session_id: str, linkage_secret: bytes = _LINKAGE_SECRET):
+    """Create a mock LocatorService that derives real locators from the test secret."""
+    svc = MagicMock()
+    svc.answer_locator.side_effect = lambda sid, qid, version, db: derive_answer_locator(
+        sid, qid, linkage_secret
+    )
+    svc.for_existing_session.side_effect = lambda sid, version, db: derive_session_locator(
+        sid, linkage_secret
+    )
+    return svc
 
 
-def _patch_answer_save_crypto():
-    return (
-        patch(
-            "app.services.public_submissions.core.answer_save.get_linkage_secret",
-            return_value=_LINKAGE_SECRET,
-        ),
-        patch(
-            "app.services.public_submissions.core.answer_save.derive_answer_locator",
-            side_effect=lambda sid, qid, secret: derive_answer_locator(sid, qid, _LINKAGE_SECRET),
-        ),
+def _mock_dek_service(plaintext_dek: bytes):
+    """Create a mock SessionDEKService that returns the given plaintext DEK."""
+    svc = MagicMock()
+    svc.get_for_session.return_value = plaintext_dek
+    return svc
+
+
+def _make_service(ctx: SessionContext, plaintext_dek: bytes) -> AnswerSaveService:
+    """Build an AnswerSaveService with mock crypto services."""
+    return AnswerSaveService(
+        locator_service=_mock_locator_service(str(ctx.session.id)),
+        dek_service=_mock_dek_service(plaintext_dek),
+        answer_crypto_service=AnswerCryptoService(),
     )
 
 
@@ -220,19 +229,17 @@ class TestFirstSave:
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = _make_service(ctx, plaintext_dek)
         mutation_id = uuid.uuid4()
 
-        p1, p2 = _patch_answer_save_crypto()
-        with p1, p2:
-            revision_id = svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="hello",
-                client_mutation_id=mutation_id,
-            )
+        revision_id = svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="hello",
+            client_mutation_id=mutation_id,
+        )
 
         assert revision_id is not None
 
@@ -251,18 +258,16 @@ class TestFirstSave:
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = _make_service(ctx, plaintext_dek)
 
-        p1, p2 = _patch_answer_save_crypto()
-        with p1, p2:
-            svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="test",
-                client_mutation_id=uuid.uuid4(),
-            )
+        svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="test",
+            client_mutation_id=uuid.uuid4(),
+        )
 
         assert isinstance(ctx.envelope.session_locator, bytes)
         assert len(ctx.envelope.session_locator) == 32, (
@@ -290,18 +295,16 @@ class TestFirstSave:
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = _make_service(ctx, plaintext_dek)
 
-        p1, p2 = _patch_answer_save_crypto()
-        with p1, p2:
-            svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="round-trip me",
-                client_mutation_id=uuid.uuid4(),
-            )
+        svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="round-trip me",
+            client_mutation_id=uuid.uuid4(),
+        )
 
         answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
@@ -336,26 +339,24 @@ class TestChangedAnswer:
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = _make_service(ctx, plaintext_dek)
 
-        p1, p2 = _patch_answer_save_crypto()
-        with p1, p2:
-            rev1_id = svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="first",
-                client_mutation_id=uuid.uuid4(),
-            )
-            rev2_id = svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="second",
-                client_mutation_id=uuid.uuid4(),
-            )
+        rev1_id = svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="first",
+            client_mutation_id=uuid.uuid4(),
+        )
+        rev2_id = svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="second",
+            client_mutation_id=uuid.uuid4(),
+        )
 
         assert rev1_id != rev2_id
 
@@ -382,26 +383,24 @@ class TestClearedAnswer:
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = _make_service(ctx, plaintext_dek)
 
-        p1, p2 = _patch_answer_save_crypto()
-        with p1, p2:
-            svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="will be cleared",
-                client_mutation_id=uuid.uuid4(),
-            )
-            clear_rev_id = svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="cleared",
-                answer_value=None,
-                client_mutation_id=uuid.uuid4(),
-            )
+        svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="will be cleared",
+            client_mutation_id=uuid.uuid4(),
+        )
+        clear_rev_id = svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="cleared",
+            answer_value=None,
+            client_mutation_id=uuid.uuid4(),
+        )
 
         answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
@@ -420,26 +419,24 @@ class TestClearedAnswer:
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = _make_service(ctx, plaintext_dek)
 
-        p1, p2 = _patch_answer_save_crypto()
-        with p1, p2:
-            svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="will be cleared",
-                client_mutation_id=uuid.uuid4(),
-            )
-            svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="cleared",
-                answer_value=None,
-                client_mutation_id=uuid.uuid4(),
-            )
+        svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="will be cleared",
+            client_mutation_id=uuid.uuid4(),
+        )
+        svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="cleared",
+            answer_value=None,
+            client_mutation_id=uuid.uuid4(),
+        )
 
         answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
@@ -471,27 +468,25 @@ class TestDuplicateMutationId:
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = _make_service(ctx, plaintext_dek)
         mutation_id = uuid.uuid4()
 
-        p1, p2 = _patch_answer_save_crypto()
-        with p1, p2:
-            first_id = svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="hello",
-                client_mutation_id=mutation_id,
-            )
-            second_id = svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="hello",
-                client_mutation_id=mutation_id,
-            )
+        first_id = svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="hello",
+            client_mutation_id=mutation_id,
+        )
+        second_id = svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="hello",
+            client_mutation_id=mutation_id,
+        )
 
         assert first_id == second_id
 
@@ -512,18 +507,18 @@ class TestExpiredSession:
         )
         _create_envelope_and_context(core_db, response_db, session, version)
 
-        with (
-            patch(
-                "app.services.public_submissions.core.session_loader.get_linkage_secret",
-                return_value=_LINKAGE_SECRET,
-            ),
-            pytest.raises(SessionExpiredError),
-        ):
+        locator_service = MagicMock()
+        locator_service.for_existing_session.return_value = derive_session_locator(
+            str(session.id), _LINKAGE_SECRET
+        )
+
+        with pytest.raises(SessionExpiredError):
             load_current_session(
                 core_db,
                 response_db,
                 raw_token,
                 encryption_settings=_FAKE_ENC_SETTINGS,
+                locator_service=locator_service,
             )
 
 
@@ -537,18 +532,18 @@ class TestCompletedSession:
         )
         _create_envelope_and_context(core_db, response_db, session, version)
 
-        with (
-            patch(
-                "app.services.public_submissions.core.session_loader.get_linkage_secret",
-                return_value=_LINKAGE_SECRET,
-            ),
-            pytest.raises(SessionInvalidError, match="already completed"),
-        ):
+        locator_service = MagicMock()
+        locator_service.for_existing_session.return_value = derive_session_locator(
+            str(session.id), _LINKAGE_SECRET
+        )
+
+        with pytest.raises(SessionInvalidError, match="already completed"):
             load_current_session(
                 core_db,
                 response_db,
                 raw_token,
                 encryption_settings=_FAKE_ENC_SETTINGS,
+                locator_service=locator_service,
             )
 
 
@@ -562,15 +557,11 @@ class TestAnalyticsFailure:
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = _make_service(ctx, plaintext_dek)
 
-        p1, p2 = _patch_answer_save_crypto()
-        with (
-            p1, p2,
-            patch(
-                "app.services.public_submissions.core.answer_save.event_repo.create_event",
-                side_effect=Exception("DB error"),
-            ),
+        with patch(
+            "app.services.public_submissions.core.answer_save.event_repo.create_event",
+            side_effect=Exception("DB error"),
         ):
             revision_id = svc.save_answer(
                 core_db, response_db,
@@ -598,18 +589,16 @@ class TestCoreDbPrivacy:
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = _make_service(ctx, plaintext_dek)
 
-        p1, p2 = _patch_answer_save_crypto()
-        with p1, p2:
-            svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="secret answer text",
-                client_mutation_id=uuid.uuid4(),
-            )
+        svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="secret answer text",
+            client_mutation_id=uuid.uuid4(),
+        )
 
         core_session = core_db.get(SubmissionSession, session.id)
         assert core_session is not None
@@ -652,67 +641,61 @@ class TestCoreDbPrivacy:
 
 class TestCacheMissUnwrapDek:
 
-    def test_unwrap_dek_called_on_cache_miss(self, db_sessions: DbSessions) -> None:
+    def test_dek_service_get_called_on_save(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        unwrap_mock = MagicMock(return_value=plaintext_dek)
-        svc = AnswerSaveService(dek_cache=DekCache())
-
-        p1, p2 = _patch_answer_save_crypto()
-        with (
-            p1,
-            p2,
-            patch(
-                "app.services.public_submissions.core.answer_save.unwrap_dek",
-                unwrap_mock,
-            ),
-        ):
-            svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="cache miss test",
-                client_mutation_id=uuid.uuid4(),
-            )
-
-        unwrap_mock.assert_called_once()
-        call_args = unwrap_mock.call_args
-        assert call_args[0][0] == ctx.envelope.wrapped_dek, (
-            "unwrap_dek must receive the wrapped DEK from the envelope"
+        dek_svc = _mock_dek_service(plaintext_dek)
+        svc = AnswerSaveService(
+            locator_service=_mock_locator_service(str(session.id)),
+            dek_service=dek_svc,
+            answer_crypto_service=AnswerCryptoService(),
         )
 
-    def test_unwrap_dek_not_called_on_cache_hit(self, db_sessions: DbSessions) -> None:
+        svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="cache miss test",
+            client_mutation_id=uuid.uuid4(),
+        )
+
+        dek_svc.get_for_session.assert_called_once()
+        call_args = dek_svc.get_for_session.call_args
+        assert call_args[0][1] == ctx.envelope.wrapped_dek, (
+            "get_for_session must receive the wrapped DEK from the envelope"
+        )
+
+    def test_dek_service_receives_correct_session_id(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        unwrap_mock = MagicMock(return_value=plaintext_dek)
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        dek_svc = _mock_dek_service(plaintext_dek)
+        svc = AnswerSaveService(
+            locator_service=_mock_locator_service(str(session.id)),
+            dek_service=dek_svc,
+            answer_crypto_service=AnswerCryptoService(),
+        )
 
-        p1, p2 = _patch_answer_save_crypto()
-        with (
-            p1,
-            p2,
-            patch(
-                "app.services.public_submissions.core.answer_save.unwrap_dek",
-                unwrap_mock,
-            ),
-        ):
-            svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="cache hit test",
-                client_mutation_id=uuid.uuid4(),
-            )
+        svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="cache hit test",
+            client_mutation_id=uuid.uuid4(),
+        )
 
-        unwrap_mock.assert_not_called()
+        dek_svc.get_for_session.assert_called_once()
+        call_args = dek_svc.get_for_session.call_args
+        assert call_args[0][0] == session.id, (
+            "get_for_session must receive the session ID"
+        )
 
 
 class TestSequentialDuplicateSaves:
@@ -723,26 +706,24 @@ class TestSequentialDuplicateSaves:
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = _make_service(ctx, plaintext_dek)
 
-        p1, p2 = _patch_answer_save_crypto()
-        with p1, p2:
-            rev1_id = svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="first",
-                client_mutation_id=uuid.uuid4(),
-            )
-            rev2_id = svc.save_answer(
-                core_db, response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="concurrent second",
-                client_mutation_id=uuid.uuid4(),
-            )
+        rev1_id = svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="first",
+            client_mutation_id=uuid.uuid4(),
+        )
+        rev2_id = svc.save_answer(
+            core_db, response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="concurrent second",
+            client_mutation_id=uuid.uuid4(),
+        )
 
         assert rev1_id is not None
         assert rev2_id is not None

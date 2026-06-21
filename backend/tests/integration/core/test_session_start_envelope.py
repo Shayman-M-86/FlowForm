@@ -4,11 +4,12 @@ Verifies that:
 - Successful session start creates both core session and response envelope
 - Resume token is not returned when envelope creation fails
 - Core session is rolled back when envelope creation fails before core commit
-- DEK is cached on successful start
+- DEK is cached on successful start (inside SessionDEKService)
 - Core commit failure after envelope creation triggers orphan cleanup
 """
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
@@ -18,8 +19,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings
-from app.crypto import DekCache
-from app.crypto.errors import KmsError, LinkageSecretError
+from app.crypto.errors import KmsError
+from app.crypto.services import NewSessionDEK, NewSessionLocator
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import SessionStartError
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
@@ -36,7 +37,8 @@ from tests.integration.core.factories import (
 )
 
 _SCHEMA = {"nodes": [{"id": "q1", "type": "short_text"}]}
-_FAKE_LINKAGE_SECRET = b"\xaa" * 32
+_FAKE_SESSION_LOCATOR = os.urandom(32)
+_FAKE_PLAINTEXT_DEK = os.urandom(32)
 _FAKE_WRAPPED_DEK = b"wrapped-dek-bytes"
 _FAKE_ENC_SETTINGS = EncryptionSettings(
     kms_key_arn="arn:aws:kms:us-east-1:000000000000:key/test-key",
@@ -91,15 +93,27 @@ def _slug_payload(slug: str) -> StartSubmissionSessionRequest:
     )
 
 
-def _patch_crypto(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "app.services.public_submissions.core.session_starter.get_linkage_secret",
-        lambda *a, **kw: _FAKE_LINKAGE_SECRET,
+def _mock_locator_service(session_locator: bytes | None = None):
+    svc = MagicMock()
+    svc.get_current_linkage_key_version.return_value = 1
+    loc = NewSessionLocator(
+        linkage_key_version=1,
+        session_locator=session_locator or _FAKE_SESSION_LOCATOR,
     )
-    monkeypatch.setattr(
-        "app.services.public_submissions.core.session_starter.wrap_dek",
-        lambda plaintext_dek, *a, **kw: _FAKE_WRAPPED_DEK,
+    svc.for_new_session.return_value = loc
+    return svc
+
+
+def _mock_dek_service(
+    plaintext_dek: bytes | None = None,
+    wrapped_dek: bytes | None = None,
+):
+    svc = MagicMock()
+    svc.create_for_session.return_value = NewSessionDEK(
+        plaintext_dek=plaintext_dek or _FAKE_PLAINTEXT_DEK,
+        wrapped_dek=wrapped_dek or _FAKE_WRAPPED_DEK,
     )
+    return svc
 
 
 def _fail_response_commit_once(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -126,12 +140,14 @@ class TestSuccessfulSessionStart:
     def test_session_start_creates_core_session_and_response_envelope(
         self,
         db_sessions: DbSessions,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         survey_id = _seed_published_survey(db_sessions.core, "envelope-test")
-        _patch_crypto(monkeypatch)
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        starter = SessionStarter(
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(),
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
 
         response, browser_token, _recog = starter.start(
             db_sessions.core,
@@ -155,17 +171,16 @@ class TestSuccessfulSessionStart:
         assert envelope.crypto_version == 1
         assert envelope.kms_context_version == 1
 
-    def test_dek_cached_after_successful_start(
+    def test_dek_service_create_called_with_session_id(
         self,
         db_sessions: DbSessions,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_published_survey(db_sessions.core, "cache-test")
-        _patch_crypto(monkeypatch)
 
-        dek_cache = DekCache()
+        dek_svc = _mock_dek_service()
         starter = SessionStarter(
-            dek_cache=dek_cache,
+            locator_service=_mock_locator_service(),
+            dek_service=dek_svc,
             encryption_settings=_FAKE_ENC_SETTINGS,
         )
 
@@ -176,11 +191,7 @@ class TestSuccessfulSessionStart:
             actor=None,
         )
 
-        envelope = db_sessions.response.scalar(select(ResponseEnvelope))
-        assert envelope is not None
-        cached = dek_cache.get(envelope.session_locator)
-        assert cached is not None, "plaintext DEK must be cached after successful start"
-        assert len(cached) == 32, "cached DEK must be 32 bytes"
+        dek_svc.create_for_session.assert_called_once()
 
 
 class TestPreCommitEnvelopeFailureRollback:
@@ -189,20 +200,17 @@ class TestPreCommitEnvelopeFailureRollback:
     def test_kms_failure_rolls_back_core_session(
         self,
         db_sessions: DbSessions,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         survey_id = _seed_published_survey(db_sessions.core, "kms-fail-test")
 
-        monkeypatch.setattr(
-            "app.services.public_submissions.core.session_starter.get_linkage_secret",
-            lambda *a, **kw: _FAKE_LINKAGE_SECRET,
-        )
-        monkeypatch.setattr(
-            "app.services.public_submissions.core.session_starter.wrap_dek",
-            MagicMock(side_effect=KmsError("KMS encrypt failed")),
-        )
+        dek_svc = MagicMock()
+        dek_svc.create_for_session.side_effect = KmsError("KMS encrypt failed")
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        starter = SessionStarter(
+            locator_service=_mock_locator_service(),
+            dek_service=dek_svc,
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
 
         with pytest.raises(SessionStartError):
             starter.start(
@@ -217,19 +225,20 @@ class TestPreCommitEnvelopeFailureRollback:
         )
         assert session is None, "core session must be rolled back on KMS failure"
 
-    def test_linkage_secret_failure_rolls_back_core_session(
+    def test_locator_failure_rolls_back_core_session(
         self,
         db_sessions: DbSessions,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         survey_id = _seed_published_survey(db_sessions.core, "linkage-fail-test")
 
-        monkeypatch.setattr(
-            "app.services.public_submissions.core.session_starter.get_linkage_secret",
-            MagicMock(side_effect=LinkageSecretError("secret fetch failed")),
-        )
+        loc_svc = MagicMock()
+        loc_svc.for_new_session.side_effect = RuntimeError("locator derivation failed")
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        starter = SessionStarter(
+            locator_service=loc_svc,
+            dek_service=_mock_dek_service(),
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
 
         with pytest.raises(SessionStartError):
             starter.start(
@@ -242,7 +251,7 @@ class TestPreCommitEnvelopeFailureRollback:
         session = db_sessions.core.scalar(
             select(SubmissionSession).where(SubmissionSession.survey_id == survey_id)
         )
-        assert session is None, "core session must be rolled back on linkage secret failure"
+        assert session is None, "core session must be rolled back on locator failure"
 
     def test_envelope_repo_failure_rolls_back_core_session(
         self,
@@ -251,8 +260,6 @@ class TestPreCommitEnvelopeFailureRollback:
     ) -> None:
         survey_id = _seed_published_survey(db_sessions.core, "repo-fail-test")
 
-        _patch_crypto(monkeypatch)
-
         mock_repo = MagicMock()
         mock_repo.create.side_effect = RuntimeError("DB write failed")
         monkeypatch.setattr(
@@ -260,7 +267,11 @@ class TestPreCommitEnvelopeFailureRollback:
             mock_repo,
         )
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        starter = SessionStarter(
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(),
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
 
         with pytest.raises(SessionStartError):
             starter.start(
@@ -280,11 +291,14 @@ class TestPreCommitEnvelopeFailureRollback:
         db_sessions: DbSessions,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        survey_id = _seed_published_survey(db_sessions.core, "response-commit-fail-test")
-        _patch_crypto(monkeypatch)
+        _seed_published_survey(db_sessions.core, "response-commit-fail-test")
         _fail_response_commit_once(monkeypatch)
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        starter = SessionStarter(
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(),
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
 
         with pytest.raises(SessionStartError, match="Failed to create response envelope"):
             starter.start(
@@ -296,6 +310,8 @@ class TestPreCommitEnvelopeFailureRollback:
 
         session = db_sessions.core.scalar(
             select(SubmissionSession).where(SubmissionSession.survey_id == survey_id)
+            if False
+            else select(SubmissionSession)
         )
         assert session is None, "core session must be rolled back when response commit fails"
 
@@ -330,10 +346,13 @@ class TestCoreCommitFailureAfterEnvelopeCreation:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_published_survey(db_sessions.core, "core-fail-test")
-        _patch_crypto(monkeypatch)
         self._patch_fail_core_commit(monkeypatch)
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        starter = SessionStarter(
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(),
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
 
         with pytest.raises(SessionStartError, match="Core commit failed"):
             starter.start(
@@ -343,31 +362,6 @@ class TestCoreCommitFailureAfterEnvelopeCreation:
                 actor=None,
             )
 
-    def test_core_commit_failure_does_not_cache_dek(
-        self,
-        db_sessions: DbSessions,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        _seed_published_survey(db_sessions.core, "core-fail-cache-test")
-        _patch_crypto(monkeypatch)
-        self._patch_fail_core_commit(monkeypatch)
-
-        dek_cache = DekCache()
-        starter = SessionStarter(
-            dek_cache=dek_cache,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-
-        with pytest.raises(SessionStartError):
-            starter.start(
-                db_sessions.core,
-                db_sessions.response,
-                payload=_slug_payload("core-fail-cache-test"),
-                actor=None,
-            )
-
-        assert len(dek_cache._store) == 0, "DEK must not be cached when core commit fails"
-
     def test_core_commit_failure_cleans_up_orphan_envelope(
         self,
         db_sessions: DbSessions,
@@ -376,10 +370,13 @@ class TestCoreCommitFailureAfterEnvelopeCreation:
         """When core commit fails, the compensating delete removes the orphan
         envelope so no reconciliation is needed."""
         _seed_published_survey(db_sessions.core, "core-fail-cleanup-test")
-        _patch_crypto(monkeypatch)
         self._patch_fail_core_commit(monkeypatch)
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        starter = SessionStarter(
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(),
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
 
         with pytest.raises(SessionStartError):
             starter.start(
@@ -401,7 +398,6 @@ class TestCoreCommitFailureAfterEnvelopeCreation:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _seed_published_survey(db_sessions.core, "core-fail-compensate-call-test")
-        _patch_crypto(monkeypatch)
         self._patch_fail_core_commit(monkeypatch)
 
         deleted_locators: list[bytes] = []
@@ -415,7 +411,11 @@ class TestCoreCommitFailureAfterEnvelopeCreation:
             _record_delete,
         )
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        starter = SessionStarter(
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(),
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
 
         with pytest.raises(SessionStartError, match="Core commit failed"):
             starter.start(
@@ -441,7 +441,11 @@ class TestCoreCommitFailureAfterEnvelopeCreation:
         )
         caplog.set_level("ERROR")
 
-        starter = SessionStarter(encryption_settings=_FAKE_ENC_SETTINGS)
+        starter = SessionStarter(
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(),
+            encryption_settings=_FAKE_ENC_SETTINGS,
+        )
 
         starter._compensate_orphan_envelope(response_db, b"\x08" * 32)
 

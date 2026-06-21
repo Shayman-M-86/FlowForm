@@ -12,27 +12,19 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.crypto import (
-    build_aad,
-    build_plaintext_payload,
-    derive_answer_locator,
-    encrypt_answer,
-    generate_nonce,
-    get_linkage_secret,
-    unwrap_dek,
-)
-from app.crypto.dek_cache import DekCache
+from app.crypto import build_aad
+from app.crypto.services import AnswerCryptoService, LocatorService, SessionDEKService
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import AnswerSaveError, QuestionNotInVersionError, SessionInvalidError
 from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_answer_repo, response_answer_revision_repo
 from app.schema.orm.core.survey_content import SurveyQuestion
+from app.services.public_submissions.core.crypto_provider import build_crypto_services
 from app.services.public_submissions.core.session_loader import SessionContext
 
 logger = logging.getLogger(__name__)
 
-_PAYLOAD_VERSION = 1
 _KMS_CONTEXT_VERSION = 1
 
 
@@ -46,9 +38,31 @@ class AnswerSaveService:
     def __init__(
         self,
         *,
-        dek_cache: DekCache | None = None,
+        locator_service: LocatorService | None = None,
+        dek_service: SessionDEKService | None = None,
+        answer_crypto_service: AnswerCryptoService | None = None,
     ) -> None:
-        self._dek_cache = dek_cache
+        self._locator_service_override = locator_service
+        self._dek_service_override = dek_service
+        self._answer_crypto_override = answer_crypto_service
+        self._locator_service: LocatorService | None = locator_service
+        self._dek_service: SessionDEKService | None = dek_service
+        self._answer_crypto_service: AnswerCryptoService | None = answer_crypto_service
+
+    def _ensure_crypto(self) -> tuple[LocatorService, SessionDEKService, AnswerCryptoService]:
+        """Lazily build crypto services on first use (requires app context)."""
+        if (
+            self._locator_service is not None
+            and self._dek_service is not None
+            and self._answer_crypto_service is not None
+        ):
+            return self._locator_service, self._dek_service, self._answer_crypto_service
+
+        crypto = build_crypto_services()
+        self._locator_service = self._locator_service_override or crypto.locator_service
+        self._dek_service = self._dek_service_override or crypto.dek_service
+        self._answer_crypto_service = self._answer_crypto_override or crypto.answer_crypto_service
+        return self._locator_service, self._dek_service, self._answer_crypto_service
 
     def save_answer(
         self,
@@ -62,6 +76,8 @@ class AnswerSaveService:
         client_mutation_id: uuid.UUID,
     ) -> uuid.UUID:
         """Execute the 12-step answer save sequence. Returns the revision ID."""
+        locator_svc, dek_svc, crypto_svc = self._ensure_crypto()
+
         # Step 1: Validate and lock the current session
         locked_session = ssr.lock_for_update(db, ctx.session.id)
         if locked_session is None:
@@ -70,7 +86,12 @@ class AnswerSaveService:
             raise SessionInvalidError(f"Session is {locked_session.session_status}.")
 
         # Step 2: Check mutation ID — before any row lock on the logical answer
-        answer_locator = self._derive_answer_locator(ctx, question_node_id)
+        answer_locator = locator_svc.answer_locator(
+            str(ctx.session.id),
+            question_node_id,
+            ctx.session.linkage_key_version,
+            db,
+        )
         existing_answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         if existing_answer is not None:
             dup_revision = response_answer_revision_repo.get_by_mutation_id(
@@ -92,16 +113,16 @@ class AnswerSaveService:
         # Step 5: Load the response envelope (already in ctx)
 
         # Step 6: Load plaintext DEK from cache; on miss, unwrap with KMS
-        plaintext_dek = self._get_or_unwrap_dek(ctx)
-
-        # Step 7: Encrypt the answer payload. ``answer_value`` is the JSON form of
-        # a canonical SubmissionAnswerValue; the family is not stored (it is
-        # reconstructed from the survey definition at decrypt time).
-        plaintext = build_plaintext_payload(
-            payload_version=_PAYLOAD_VERSION,
-            question_node_id=question_node_id,
-            answer_state=answer_state,
-            answer_value=answer_value,
+        kms_context = {
+            "session_locator": ctx.session_locator.hex(),
+            "kms_context_version": str(_KMS_CONTEXT_VERSION),
+        }
+        plaintext_dek = dek_svc.get_for_session(
+            ctx.session.id,
+            ctx.envelope.wrapped_dek,
+            ctx.envelope.kms_key_arn,
+            ctx.session.expires_at,
+            encryption_context=kms_context,
         )
 
         # Steps 8-9: Insert revision and update latest pointer
@@ -144,7 +165,7 @@ class AnswerSaveService:
         else:
             answer_row = locked_answer  # type: ignore[assignment]
 
-        nonce = generate_nonce()
+        # Step 7: Encrypt the answer payload
         aad = build_aad(
             crypto_version=ctx.envelope.crypto_version,
             envelope_id=answer_row.envelope_id,
@@ -153,7 +174,13 @@ class AnswerSaveService:
             revision_id=revision_id,
             revision_number=next_revision_number,
         )
-        ciphertext = encrypt_answer(plaintext, plaintext_dek, nonce, aad)
+        encrypted = crypto_svc.encrypt(
+            dek=plaintext_dek,
+            question_node_id=question_node_id,
+            answer_state=answer_state,
+            answer_value=answer_value,
+            aad=aad,
+        )
 
         # Step 8: Insert a new immutable revision
         revision = response_answer_revision_repo.create(
@@ -161,8 +188,8 @@ class AnswerSaveService:
             answer_id=answer_row.id,
             envelope_id=ctx.envelope.id,
             revision_number=next_revision_number,
-            nonce=nonce,
-            ciphertext=ciphertext,
+            nonce=encrypted.nonce,
+            ciphertext=encrypted.ciphertext,
             client_mutation_id=client_mutation_id,
             revision_id=revision_id,
         )
@@ -211,41 +238,6 @@ class AnswerSaveService:
         except Exception:
             logger.warning("question_viewed.event_failed", exc_info=True)
             db.rollback()
-
-    def _derive_answer_locator(self, ctx: SessionContext, question_node_id: str) -> bytes:
-        enc = ctx.encryption_settings
-        linkage_secret = get_linkage_secret(
-            enc.linkage_secret_arn,
-            region=enc.aws_region,
-            access_key_id=enc.aws_access_key_id,
-            secret_access_key=enc.aws_secret_access_key,
-        )
-        return derive_answer_locator(str(ctx.session.id), question_node_id, linkage_secret)
-
-    def _get_or_unwrap_dek(self, ctx: SessionContext) -> bytes:
-        if self._dek_cache is not None:
-            cached = self._dek_cache.get(ctx.session_locator)
-            if cached is not None:
-                return cached
-
-        enc = ctx.encryption_settings
-        kms_context = {
-            "session_locator": ctx.session_locator.hex(),
-            "kms_context_version": str(_KMS_CONTEXT_VERSION),
-        }
-        plaintext_dek = unwrap_dek(
-            ctx.envelope.wrapped_dek,
-            ctx.envelope.kms_key_arn,
-            kms_context,
-            region=enc.aws_region,
-            access_key_id=enc.aws_access_key_id,
-            secret_access_key=enc.aws_secret_access_key,
-        )
-
-        if self._dek_cache is not None:
-            self._dek_cache.put(ctx.session_locator, plaintext_dek)
-
-        return plaintext_dek
 
     def _get_question_in_version(
         self,

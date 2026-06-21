@@ -117,18 +117,15 @@ class TestSessionLoaderRejection:
         version.id = 1
         envelope = MagicMock()
 
+        locator_service = MagicMock()
+        locator_service.for_existing_session.return_value = b"\x02" * 32
+
         with patch(
             "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
             return_value=b"\x00" * 32,
         ), patch(
             "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
             return_value=session,
-        ), patch(
-            "app.services.public_submissions.core.session_loader.get_linkage_secret",
-            return_value=b"\x01" * 32,
-        ), patch(
-            "app.services.public_submissions.core.session_loader.derive_session_locator",
-            return_value=b"\x02" * 32,
         ), patch(
             "app.services.public_submissions.core.session_loader.response_envelope_repo.get_by_locator",
             return_value=envelope,
@@ -138,6 +135,7 @@ class TestSessionLoaderRejection:
                 db, response_db, "some-token",
                 allow_completed=True,
                 encryption_settings=_fake_encryption_settings(),
+                locator_service=locator_service,
             )
             assert ctx.session is session
             assert ctx.envelope is envelope
@@ -149,18 +147,15 @@ class TestSessionLoaderRejection:
         version = MagicMock()
         version.id = 1
 
+        locator_service = MagicMock()
+        locator_service.for_existing_session.return_value = b"\x02" * 32
+
         with patch(
             "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
             return_value=b"\x00" * 32,
         ), patch(
             "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
             return_value=session,
-        ), patch(
-            "app.services.public_submissions.core.session_loader.get_linkage_secret",
-            return_value=b"\x01" * 32,
-        ), patch(
-            "app.services.public_submissions.core.session_loader.derive_session_locator",
-            return_value=b"\x02" * 32,
         ), patch(
             "app.services.public_submissions.core.session_loader.response_envelope_repo.get_by_locator",
             return_value=None,
@@ -170,4 +165,5 @@ class TestSessionLoaderRejection:
                 load_current_session(
                     db, response_db, "some-token",
                     encryption_settings=_fake_encryption_settings(),
+                    locator_service=locator_service,
                 )

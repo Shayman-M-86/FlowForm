@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings, current_settings
-from app.crypto import derive_session_locator, get_linkage_secret
+from app.crypto.services import LocatorService
 from app.domain.errors import (
     EnvelopeNotFoundError,
     SessionExpiredError,
@@ -25,6 +25,7 @@ from app.domain.errors import (
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_envelope_repo
 from app.schema.orm.core.survey import SurveyVersion
+from app.services.public_submissions.core.crypto_provider import build_crypto_services
 
 if TYPE_CHECKING:
     from app.schema.orm.core.submission_session import SubmissionSession
@@ -62,6 +63,15 @@ def _get_encryption_settings(enc: EncryptionSettings | None) -> EncryptionSettin
     return enc_cfg
 
 
+def _get_locator_service(
+    locator_service: LocatorService | None,
+    enc: EncryptionSettings,
+) -> LocatorService:
+    if locator_service is not None:
+        return locator_service
+    return build_crypto_services(enc).locator_service
+
+
 def load_current_session(
     db: Session,
     response_db: Session,
@@ -69,6 +79,7 @@ def load_current_session(
     *,
     allow_completed: bool = False,
     encryption_settings: EncryptionSettings | None = None,
+    locator_service: LocatorService | None = None,
 ) -> SessionContext:
     """Load and validate the current session from a browser resume token.
 
@@ -99,13 +110,10 @@ def load_current_session(
     if survey_version is None:
         raise SessionInvalidError("Frozen survey version not found.")
 
-    linkage_secret = get_linkage_secret(
-        enc.linkage_secret_arn,
-        region=enc.aws_region,
-        access_key_id=enc.aws_access_key_id,
-        secret_access_key=enc.aws_secret_access_key,
+    loc_svc = _get_locator_service(locator_service, enc)
+    session_locator = loc_svc.for_existing_session(
+        str(session.id), session.linkage_key_version, db
     )
-    session_locator = derive_session_locator(str(session.id), linkage_secret)
 
     envelope = response_envelope_repo.get_by_locator(response_db, session_locator)
     if envelope is None:

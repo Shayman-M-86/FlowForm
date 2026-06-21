@@ -108,14 +108,33 @@ class SeedData(NamedTuple):
 
 @pytest.fixture(autouse=True)
 def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Auto-mock envelope creation so e2e tests run without AWS."""
+    """Auto-mock crypto services so e2e tests run without AWS."""
+    from unittest.mock import MagicMock
+
+    from app.crypto.services import NewSessionDEK, NewSessionLocator
     from app.services.public_submissions.core.session_starter import SessionStarter
 
-    monkeypatch.setattr(
-        SessionStarter,
-        "_create_response_envelope",
-        lambda self, db, response_db, *, session: (b"\x00" * 32, b"\x01" * 32),
+    loc_svc = MagicMock()
+    loc_svc.get_current_linkage_key_version.return_value = 1
+    loc_svc.for_new_session.return_value = NewSessionLocator(
+        linkage_key_version=1, session_locator=b"\x00" * 32,
     )
+    loc_svc.for_existing_session.return_value = b"\x00" * 32
+
+    dek_svc = MagicMock()
+    dek_svc.create_for_session.return_value = NewSessionDEK(
+        plaintext_dek=b"\x01" * 32, wrapped_dek=b"\x02" * 64,
+    )
+    dek_svc.get_for_session.return_value = b"\x01" * 32
+
+    original_init = SessionStarter.__init__
+
+    def patched_init(self, **kwargs):
+        kwargs.setdefault("locator_service", loc_svc)
+        kwargs.setdefault("dek_service", dek_svc)
+        original_init(self, **kwargs)
+
+    monkeypatch.setattr(SessionStarter, "__init__", patched_init)
 
 
 @pytest.fixture

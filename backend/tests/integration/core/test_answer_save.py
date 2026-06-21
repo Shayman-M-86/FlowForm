@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.crypto.dek_cache import DekCache
+from app.crypto.services import AnswerCryptoService
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import QuestionNotInVersionError, SessionInvalidError
 from app.repositories.response import (
@@ -40,6 +40,18 @@ def _fake_encryption_settings() -> MagicMock:
     enc.aws_access_key_id = MagicMock()
     enc.aws_secret_access_key = MagicMock()
     return enc
+
+
+def _mock_locator_service(answer_locator: bytes | None = None):
+    svc = MagicMock()
+    svc.answer_locator.return_value = answer_locator or os.urandom(32)
+    return svc
+
+
+def _mock_dek_service(plaintext_dek: bytes):
+    svc = MagicMock()
+    svc.get_for_session.return_value = plaintext_dek
+    return svc
 
 
 def _setup_core_fixtures(core_db):
@@ -99,13 +111,12 @@ def _create_session_row(core_db, project, survey, version):
         link_id=None,
         project_subject_id=None,
         raw_browser_session_token=raw_token,
+        linkage_key_version=1,
     )
     return session, raw_token
 
 
-def _create_envelope_and_context(
-    core_db, response_db, session, version, *, dek_cache=None
-):
+def _create_envelope_and_context(core_db, response_db, session, version):
     """Create a response envelope and build a SessionContext."""
     session_locator = os.urandom(32)
     plaintext_dek = os.urandom(32)
@@ -133,6 +144,14 @@ def _create_envelope_and_context(
     return ctx, plaintext_dek
 
 
+def _make_answer_save_service(plaintext_dek: bytes, answer_locator: bytes | None = None):
+    return AnswerSaveService(
+        locator_service=_mock_locator_service(answer_locator),
+        dek_service=_mock_dek_service(plaintext_dek),
+        answer_crypto_service=AnswerCryptoService(),
+    )
+
+
 class TestAnswerSave:
     def test_save_answer_creates_revision(self, db_sessions: DbSessions) -> None:
         core_db = db_sessions.core
@@ -143,27 +162,17 @@ class TestAnswerSave:
             core_db, response_db, session, version
         )
 
-        dek_cache = DekCache()
-        dek_cache.put(ctx.session_locator, plaintext_dek)
-        svc = AnswerSaveService(dek_cache=dek_cache)
-
+        svc = _make_answer_save_service(plaintext_dek)
         mutation_id = uuid.uuid4()
-        with patch(
-            "app.services.public_submissions.core.answer_save.get_linkage_secret",
-            return_value=b"\x01" * 32,
-        ), patch(
-            "app.services.public_submissions.core.answer_save.derive_answer_locator",
-            return_value=os.urandom(32),
-        ):
-            revision_id = svc.save_answer(
-                core_db,
-                response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="hello",
-                client_mutation_id=mutation_id,
-            )
+        revision_id = svc.save_answer(
+            core_db,
+            response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="hello",
+            client_mutation_id=mutation_id,
+        )
 
         assert revision_id is not None
 
@@ -178,38 +187,28 @@ class TestAnswerSave:
             core_db, response_db, session, version
         )
 
-        dek_cache = DekCache()
-        dek_cache.put(ctx.session_locator, plaintext_dek)
-        svc = AnswerSaveService(dek_cache=dek_cache)
-
-        mutation_id = uuid.uuid4()
         answer_locator = os.urandom(32)
+        svc = _make_answer_save_service(plaintext_dek, answer_locator)
+        mutation_id = uuid.uuid4()
 
-        with patch(
-            "app.services.public_submissions.core.answer_save.get_linkage_secret",
-            return_value=b"\x01" * 32,
-        ), patch(
-            "app.services.public_submissions.core.answer_save.derive_answer_locator",
-            return_value=answer_locator,
-        ):
-            first_id = svc.save_answer(
-                core_db,
-                response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="hello",
-                client_mutation_id=mutation_id,
-            )
-            second_id = svc.save_answer(
-                core_db,
-                response_db,
-                ctx=ctx,
-                question_node_id=str(question.id),
-                answer_state="answered",
-                answer_value="hello",
-                client_mutation_id=mutation_id,
-            )
+        first_id = svc.save_answer(
+            core_db,
+            response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="hello",
+            client_mutation_id=mutation_id,
+        )
+        second_id = svc.save_answer(
+            core_db,
+            response_db,
+            ctx=ctx,
+            question_node_id=str(question.id),
+            answer_state="answered",
+            answer_value="hello",
+            client_mutation_id=mutation_id,
+        )
 
         assert first_id == second_id
 
@@ -224,18 +223,9 @@ class TestAnswerSave:
             core_db, response_db, session, version
         )
 
-        dek_cache = DekCache()
-        dek_cache.put(ctx.session_locator, plaintext_dek)
-        svc = AnswerSaveService(dek_cache=dek_cache)
-
+        svc = _make_answer_save_service(plaintext_dek)
         bogus_question_id = str(uuid.uuid4())
-        with patch(
-            "app.services.public_submissions.core.answer_save.get_linkage_secret",
-            return_value=b"\x01" * 32,
-        ), patch(
-            "app.services.public_submissions.core.answer_save.derive_answer_locator",
-            return_value=os.urandom(32),
-        ), pytest.raises(QuestionNotInVersionError):
+        with pytest.raises(QuestionNotInVersionError):
             svc.save_answer(
                 core_db,
                 response_db,
@@ -257,18 +247,9 @@ class TestAnswerSave:
             core_db, response_db, session, version
         )
 
-        dek_cache = DekCache()
-        dek_cache.put(ctx.session_locator, plaintext_dek)
-        svc = AnswerSaveService(dek_cache=dek_cache)
-
+        svc = _make_answer_save_service(plaintext_dek)
         mutation_id = uuid.uuid4()
         with patch(
-            "app.services.public_submissions.core.answer_save.get_linkage_secret",
-            return_value=b"\x01" * 32,
-        ), patch(
-            "app.services.public_submissions.core.answer_save.derive_answer_locator",
-            return_value=os.urandom(32),
-        ), patch(
             "app.services.public_submissions.core.answer_save.event_repo.create_event",
             side_effect=Exception("DB error"),
         ):
@@ -297,7 +278,11 @@ class TestQuestionViewed:
             core_db, response_db, session, version
         )
 
-        svc = AnswerSaveService()
+        svc = AnswerSaveService(
+            locator_service=MagicMock(),
+            dek_service=MagicMock(),
+            answer_crypto_service=AnswerCryptoService(),
+        )
         svc.record_question_viewed(
             core_db, ctx=ctx, question_node_id=str(question.id)
         )
@@ -313,7 +298,11 @@ class TestQuestionViewed:
             core_db, response_db, session, version
         )
 
-        svc = AnswerSaveService()
+        svc = AnswerSaveService(
+            locator_service=MagicMock(),
+            dek_service=MagicMock(),
+            answer_crypto_service=AnswerCryptoService(),
+        )
         with pytest.raises(QuestionNotInVersionError):
             svc.record_question_viewed(
                 core_db, ctx=ctx, question_node_id=str(uuid.uuid4())
@@ -330,7 +319,11 @@ class TestQuestionViewed:
             core_db, response_db, session, version
         )
 
-        svc = AnswerSaveService()
+        svc = AnswerSaveService(
+            locator_service=MagicMock(),
+            dek_service=MagicMock(),
+            answer_crypto_service=AnswerCryptoService(),
+        )
         with patch(
             "app.services.public_submissions.core.answer_save.event_repo.create_event",
             side_effect=Exception("DB write failure"),
@@ -355,9 +348,7 @@ class TestAnalyticsCoreCommitFailure:
             core_db, response_db, session, version
         )
 
-        dek_cache = DekCache()
-        dek_cache.put(ctx.session_locator, plaintext_dek)
-        svc = AnswerSaveService(dek_cache=dek_cache)
+        svc = _make_answer_save_service(plaintext_dek)
 
         real_commit = commit_with_err_handle
         call_count = 0
@@ -371,12 +362,6 @@ class TestAnalyticsCoreCommitFailure:
 
         mutation_id = uuid.uuid4()
         with patch(
-            "app.services.public_submissions.core.answer_save.get_linkage_secret",
-            return_value=b"\x01" * 32,
-        ), patch(
-            "app.services.public_submissions.core.answer_save.derive_answer_locator",
-            return_value=os.urandom(32),
-        ), patch(
             "app.services.public_submissions.core.answer_save.commit_with_err_handle",
             side_effect=commit_failing_on_core,
         ):

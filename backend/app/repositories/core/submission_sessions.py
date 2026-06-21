@@ -33,6 +33,7 @@ def create_session(
     link_id: UUID | None,
     project_subject_id: UUID | None,
     raw_browser_session_token: str,
+    linkage_key_version: int | None = None,
     now: datetime | None = None,
     ttl: timedelta = DEFAULT_SESSION_TTL,
 ) -> SubmissionSession:
@@ -45,6 +46,7 @@ def create_session(
         link_id=link_id,
         project_subject_id=project_subject_id,
         browser_session_token_hash=hash_browser_session_token(raw_browser_session_token),
+        linkage_key_version=linkage_key_version,
         expires_at=current + ttl,
         last_activity_at=current,
     )

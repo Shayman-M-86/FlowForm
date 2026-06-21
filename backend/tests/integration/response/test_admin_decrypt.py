@@ -4,13 +4,15 @@ Verifies:
 - Admin detail returns decrypted latest answers mapped to question keys
 - Admin history returns full revision history decrypted
 - Envelope not found raises error
+- Family reconstruction from survey definition
+- Graceful fallback for unknown or non-canonical values
 """
 from __future__ import annotations
 
 import os
 import uuid
 from typing import TYPE_CHECKING
-from unittest.mock import patch
+from unittest.mock import MagicMock
 
 import pytest
 from pydantic import SecretStr
@@ -25,6 +27,7 @@ from app.crypto import (
     encrypt_answer,
     generate_nonce,
 )
+from app.crypto.services import AnswerCryptoService
 from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.core.submission_sessions import create_session
 from app.repositories.response import (
@@ -57,6 +60,20 @@ _FAKE_ENC_SETTINGS = EncryptionSettings(
     aws_secret_access_key=SecretStr("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"),
 )
 _PAYLOAD_VERSION = 1
+
+
+def _mock_locator_service():
+    svc = MagicMock()
+    svc.for_existing_session.side_effect = lambda sid, version, db: derive_session_locator(
+        sid, _LINKAGE_SECRET
+    )
+    return svc
+
+
+def _mock_dek_service(plaintext_dek: bytes):
+    svc = MagicMock()
+    svc.get_for_session.return_value = plaintext_dek
+    return svc
 
 
 def _setup_core_fixtures(core_db: Session):
@@ -100,6 +117,7 @@ def _create_session_and_envelope(core_db: Session, response_db: Session, project
         link_id=None,
         project_subject_id=None,
         raw_browser_session_token=raw_token,
+        linkage_key_version=1,
     )
 
     session_locator = derive_session_locator(str(session.id), _LINKAGE_SECRET)
@@ -212,18 +230,6 @@ def _add_second_revision(
     response_answer_revision_repo.update_latest_pointer(response_db, answer_row.id, revision_id)
 
 
-def _patch_admin_crypto():
-    return (
-        patch(
-            "app.services.public_submissions.core.admin_decrypt.get_linkage_secret",
-            return_value=_LINKAGE_SECRET,
-        ),
-        patch(
-            "app.services.public_submissions.core.admin_decrypt.unwrap_dek",
-        ),
-    )
-
-
 class TestAdminDecryptDetail:
 
     def test_admin_detail_returns_decrypted_answers(self, db_sessions: DbSessions) -> None:
@@ -239,14 +245,14 @@ class TestAdminDecryptDetail:
             answer_value="test answer",
         )
 
-        p1, p2 = _patch_admin_crypto()
-        with p1, p2 as mock_unwrap:
-            mock_unwrap.return_value = plaintext_dek
-            result = decrypt_session_detail(
-                core_db, response_db,
-                session=session,
-                encryption_settings=_FAKE_ENC_SETTINGS,
-            )
+        result = decrypt_session_detail(
+            core_db, response_db,
+            session=session,
+            encryption_settings=_FAKE_ENC_SETTINGS,
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(plaintext_dek),
+            answer_crypto_service=AnswerCryptoService(),
+        )
 
         assert result.session_id == str(session.id)
         assert len(result.answers) == 1
@@ -269,14 +275,17 @@ class TestAdminDecryptDetail:
             link_id=None,
             project_subject_id=None,
             raw_browser_session_token=raw_token,
+            linkage_key_version=1,
         )
 
-        p1, _ = _patch_admin_crypto()
-        with p1, pytest.raises(EnvelopeNotFoundError):
+        with pytest.raises(EnvelopeNotFoundError):
             decrypt_session_detail(
                 core_db, response_db,
                 session=session,
                 encryption_settings=_FAKE_ENC_SETTINGS,
+                locator_service=_mock_locator_service(),
+                dek_service=_mock_dek_service(os.urandom(32)),
+                answer_crypto_service=AnswerCryptoService(),
             )
 
 
@@ -301,14 +310,14 @@ class TestAdminDecryptHistory:
             answer_value="second answer",
         )
 
-        p1, p2 = _patch_admin_crypto()
-        with p1, p2 as mock_unwrap:
-            mock_unwrap.return_value = plaintext_dek
-            result = decrypt_session_history(
-                core_db, response_db,
-                session=session,
-                encryption_settings=_FAKE_ENC_SETTINGS,
-            )
+        result = decrypt_session_history(
+            core_db, response_db,
+            session=session,
+            encryption_settings=_FAKE_ENC_SETTINGS,
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(plaintext_dek),
+            answer_crypto_service=AnswerCryptoService(),
+        )
 
         assert len(result.answers) == 2
         values = [a.answer_value for a in result.answers]
@@ -320,9 +329,6 @@ class TestAdminDecryptHistory:
 
 
 class TestAdminDecryptFamilyReconstruction:
-    """Admin decrypt reconstructs answer_family from the survey definition and
-    validates the decrypted value into the canonical model, with graceful
-    fallback for unknown questions or non-canonical stored values."""
 
     def test_family_reconstructed_and_value_typed(self, db_sessions: DbSessions) -> None:
         from app.schema.api.submission_sessions.answer_payload import ChoiceAnswerValue
@@ -360,12 +366,14 @@ class TestAdminDecryptFamilyReconstruction:
             answer_value={"selected": ["o1", "o2"]},
         )
 
-        p1, p2 = _patch_admin_crypto()
-        with p1, p2 as mock_unwrap:
-            mock_unwrap.return_value = plaintext_dek
-            result = decrypt_session_detail(
-                core_db, response_db, session=session, encryption_settings=_FAKE_ENC_SETTINGS,
-            )
+        result = decrypt_session_detail(
+            core_db, response_db,
+            session=session,
+            encryption_settings=_FAKE_ENC_SETTINGS,
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(plaintext_dek),
+            answer_crypto_service=AnswerCryptoService(),
+        )
 
         answer = result.answers[0]
         assert answer.answer_family == "choice"
@@ -378,7 +386,6 @@ class TestAdminDecryptFamilyReconstruction:
         session, envelope, plaintext_dek = _create_session_and_envelope(
             core_db, response_db, project, survey, version
         )
-        # Encrypt an answer for a question_node_id that is NOT in the version.
         orphan_node_id = str(uuid.uuid4())
         _save_encrypted_answer(
             response_db, session, envelope, plaintext_dek,
@@ -386,17 +393,18 @@ class TestAdminDecryptFamilyReconstruction:
             answer_value={"selected": ["o1"]},
         )
 
-        p1, p2 = _patch_admin_crypto()
-        with p1, p2 as mock_unwrap:
-            mock_unwrap.return_value = plaintext_dek
-            result = decrypt_session_detail(
-                core_db, response_db, session=session, encryption_settings=_FAKE_ENC_SETTINGS,
-            )
+        result = decrypt_session_detail(
+            core_db, response_db,
+            session=session,
+            encryption_settings=_FAKE_ENC_SETTINGS,
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(plaintext_dek),
+            answer_crypto_service=AnswerCryptoService(),
+        )
 
         answer = result.answers[0]
         assert answer.question_node_id == orphan_node_id
         assert answer.answer_family is None
-        # Raw dict preserved, never raises.
         assert answer.answer_value == {"selected": ["o1"]}
 
     def test_non_canonical_value_falls_back_keeping_family(self, db_sessions: DbSessions) -> None:
@@ -427,19 +435,20 @@ class TestAdminDecryptFamilyReconstruction:
         session, envelope, plaintext_dek = _create_session_and_envelope(
             core_db, response_db, project, survey, version
         )
-        # Stored value does not match the canonical choice shape.
         _save_encrypted_answer(
             response_db, session, envelope, plaintext_dek,
             question_node_id=str(question.id),
             answer_value={"garbage": True},
         )
 
-        p1, p2 = _patch_admin_crypto()
-        with p1, p2 as mock_unwrap:
-            mock_unwrap.return_value = plaintext_dek
-            result = decrypt_session_detail(
-                core_db, response_db, session=session, encryption_settings=_FAKE_ENC_SETTINGS,
-            )
+        result = decrypt_session_detail(
+            core_db, response_db,
+            session=session,
+            encryption_settings=_FAKE_ENC_SETTINGS,
+            locator_service=_mock_locator_service(),
+            dek_service=_mock_dek_service(plaintext_dek),
+            answer_crypto_service=AnswerCryptoService(),
+        )
 
         answer = result.answers[0]
         assert answer.answer_family == "choice"

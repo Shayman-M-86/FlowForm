@@ -96,6 +96,23 @@ def response_connection(app_ctx) -> Generator[Connection]:
         connection.close()
 
 
+def _seed_linkage_key_version(session: Session) -> None:
+    """Insert a default linkage_key_versions row so FK constraints pass."""
+    from app.schema.orm.core.linkage_key_version import LinkageKeyVersion
+
+    existing = session.get(LinkageKeyVersion, 1)
+    if existing is None:
+        import uuid
+
+        session.add(LinkageKeyVersion(
+            version=1,
+            aws_secret_id="arn:aws:secretsmanager:us-east-1:000:secret:test",
+            aws_secret_version_id=uuid.uuid4(),
+            is_current=True,
+        ))
+        session.flush()
+
+
 @pytest.fixture()
 def core_db_session(core_connection: Connection) -> Generator[Session]:
     """Return a core-only SQLAlchemy session for tests."""
@@ -108,6 +125,7 @@ def core_db_session(core_connection: Connection) -> Generator[Session]:
         class_=Session,
     )
     session = SessionLocal()
+    _seed_linkage_key_version(session)
 
     try:
         yield session

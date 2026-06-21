@@ -10,13 +10,12 @@ single-use links — committing both databases before returning the resume token
 from __future__ import annotations
 
 import logging
-import os
 from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings, current_settings
-from app.crypto import DekCache, derive_session_locator, get_linkage_secret, wrap_dek
+from app.crypto.services import LocatorService, SessionDEKService
 from app.db.error_handling import commit_with_err_handle
 from app.domain import survey_rules
 from app.domain.errors import SessionStartError
@@ -29,6 +28,7 @@ from app.schema.api.requests.submission_sessions import StartSubmissionSessionRe
 from app.schema.api.responses.submission_sessions import StartSubmissionSessionResponse
 from app.schema.orm.core.user import User
 from app.services.public_submissions.core.access_resolver import AccessResolver
+from app.services.public_submissions.core.crypto_provider import build_crypto_services
 from app.services.public_submissions.core.subject_resolver import SubjectResolver
 from app.services.public_submissions.core.subject_token import SubjectTokenService
 
@@ -37,7 +37,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_DEK_LENGTH = 32
 _CRYPTO_VERSION = 1
 _KMS_CONTEXT_VERSION = 1
 
@@ -64,14 +63,29 @@ class SessionStarter:
         access_resolver: AccessResolver | None = None,
         subject_resolver: SubjectResolver | None = None,
         token_service: SubjectTokenService | None = None,
-        dek_cache: DekCache | None = None,
+        locator_service: LocatorService | None = None,
+        dek_service: SessionDEKService | None = None,
         encryption_settings: EncryptionSettings | None = None,
     ) -> None:
         self._token_service = token_service or SubjectTokenService()
         self._access_resolver = access_resolver or AccessResolver()
         self._subject_resolver = subject_resolver or SubjectResolver(token_service=self._token_service)
-        self._dek_cache = dek_cache
         self._encryption_settings = encryption_settings
+        self._locator_service_override = locator_service
+        self._dek_service_override = dek_service
+        self._crypto_built = False
+        self._locator_service: LocatorService | None = locator_service
+        self._dek_service: SessionDEKService | None = dek_service
+
+    def _ensure_crypto(self) -> tuple[LocatorService, SessionDEKService]:
+        """Lazily build crypto services on first use (requires app context)."""
+        if self._locator_service is not None and self._dek_service is not None:
+            return self._locator_service, self._dek_service
+
+        crypto = build_crypto_services(self._encryption_settings)
+        self._locator_service = self._locator_service_override or crypto.locator_service
+        self._dek_service = self._dek_service_override or crypto.dek_service
+        return self._locator_service, self._dek_service
 
     def _get_encryption_settings(self) -> EncryptionSettings:
         if self._encryption_settings is not None:
@@ -147,6 +161,9 @@ class SessionStarter:
             existing_raw_token=recognition_token,
         )
 
+        locator_svc, _ = self._ensure_crypto()
+        linkage_key_version = locator_svc.get_current_linkage_key_version(db)
+
         raw_browser_session_token = ssr.generate_browser_session_token()
         session = ssr.create_session(
             db,
@@ -157,6 +174,7 @@ class SessionStarter:
             link_id=access.link_id,
             project_subject_id=final_subject_id,
             raw_browser_session_token=raw_browser_session_token,
+            linkage_key_version=linkage_key_version,
         )
 
         if access.link is not None and access.is_single_use:
@@ -166,7 +184,7 @@ class SessionStarter:
         # Core rows are flushed but NOT committed yet. If envelope creation
         # fails, _create_response_envelope rolls back core and raises
         # SessionStartError — no additional handling needed here.
-        session_locator, plaintext_dek = self._create_response_envelope(db, response_db, session=session)
+        session_locator, _ = self._create_response_envelope(db, response_db, session=session)
 
         try:
             if access.link is not None and access.is_single_use:
@@ -176,10 +194,6 @@ class SessionStarter:
         except Exception as err:
             self._compensate_orphan_envelope(response_db, session_locator)
             raise SessionStartError("Core commit failed after response envelope creation") from err
-
-        # Both DBs committed — safe to return tokens and cache.
-        if self._dek_cache is not None:
-            self._dek_cache.put(session_locator, plaintext_dek)
 
         response = StartSubmissionSessionResponse(
             status=session.session_status,
@@ -202,37 +216,27 @@ class SessionStarter:
         On failure: rolls back core so no side effects leak.
         """
         enc = self._get_encryption_settings()
-        core_session_id = str(session.id)
-        linkage_key_version = session.linkage_key_version
+        locator_svc, dek_svc = self._ensure_crypto()
 
         try:
-            linkage_secret = get_linkage_secret(
-                enc.linkage_secret_arn,
-                region=enc.aws_region,
-                access_key_id=enc.aws_access_key_id,
-                secret_access_key=enc.aws_secret_access_key,
-            )
-            session_locator = derive_session_locator(core_session_id, linkage_secret)
+            loc = locator_svc.for_new_session(str(session.id), db)
 
-            plaintext_dek = os.urandom(_DEK_LENGTH)
             kms_context = {
-                "session_locator": session_locator.hex(),
+                "session_locator": loc.session_locator.hex(),
                 "kms_context_version": str(_KMS_CONTEXT_VERSION),
             }
-            wrapped_dek = wrap_dek(
-                plaintext_dek,
+            new_dek = dek_svc.create_for_session(
+                session.id,
                 enc.kms_key_arn,
-                kms_context,
-                region=enc.aws_region,
-                access_key_id=enc.aws_access_key_id,
-                secret_access_key=enc.aws_secret_access_key,
+                session.expires_at,
+                encryption_context=kms_context,
             )
 
             response_envelope_repo.create(
                 response_db,
-                session_locator=session_locator,
-                linkage_key_version=linkage_key_version,
-                wrapped_dek=wrapped_dek,
+                session_locator=loc.session_locator,
+                linkage_key_version=loc.linkage_key_version,
+                wrapped_dek=new_dek.wrapped_dek,
                 kms_key_arn=enc.kms_key_arn,
                 kms_context_version=_KMS_CONTEXT_VERSION,
                 crypto_version=_CRYPTO_VERSION,
@@ -245,7 +249,7 @@ class SessionStarter:
             db.rollback()
             raise SessionStartError("Failed to create response envelope") from err
 
-        return session_locator, plaintext_dek
+        return loc.session_locator, new_dek.plaintext_dek
 
     def _compensate_orphan_envelope(
         self,
