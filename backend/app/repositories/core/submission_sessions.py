@@ -96,6 +96,17 @@ def delete_session(db: Session, *, submission_session: SubmissionSession) -> Non
     flush_with_err_handle(db, contexts=[submission_session])
 
 
+def get_in_progress_sessions(db: Session) -> list[SubmissionSession]:
+    """Return all committed in-progress sessions for reconciliation scanning."""
+    return list(
+        db.scalars(
+            select(SubmissionSession).where(
+                SubmissionSession.session_status == "in_progress",
+            )
+        ).all()
+    )
+
+
 def mark_abandoned(db: Session, *, submission_session: SubmissionSession) -> None:
     """Mark a committed core session abandoned during reconciliation or repair.
 
