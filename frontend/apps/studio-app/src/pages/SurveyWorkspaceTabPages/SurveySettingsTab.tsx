@@ -8,7 +8,7 @@ import { useRenderDebug } from '@/debug/useRenderDebug'
 
 export function SurveySettingsTab() {
   useRenderDebug('SurveySettingsTab')
-  const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/settings' })
+  const { slug, surveySlug } = useParams({ from: '/_studio/projects/$slug/surveys/$surveySlug/settings' })
   const navigate = useNavigate()
   const { data: project } = useProject(slug)
   const { data: survey } = useSurvey(slug, surveySlug)

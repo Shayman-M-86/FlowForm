@@ -140,7 +140,7 @@ function pickDefaultVersion(versions: SurveyVersionOut[]): SurveyVersionOut | un
 
 export function useSurveyBuilderController() {
   const queryClient = useQueryClient()
-  const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/builder' })
+  const { slug, surveySlug } = useParams({ from: '/_studio/projects/$slug/surveys/$surveySlug/builder' })
   const { data: project, isLoading: isProjectLoading, isError: isProjectError } = useProject(slug)
   const { data: survey, isLoading: isSurveyLoading, isError: isSurveyError } = useSurvey(slug, surveySlug)
   const projectId = project?.id ?? null

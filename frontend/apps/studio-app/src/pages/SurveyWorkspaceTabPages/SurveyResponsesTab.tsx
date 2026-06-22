@@ -9,7 +9,7 @@ import { useRenderDebug } from '@/debug/useRenderDebug'
 
 export function SurveyResponsesTab() {
   useRenderDebug('SurveyResponsesTab')
-  useParams({ from: '/projects/$slug/surveys/$surveySlug/responses' })
+  useParams({ from: '/_studio/projects/$slug/surveys/$surveySlug/responses' })
 
   return (
     <section className="grid gap-6">

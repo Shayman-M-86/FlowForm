@@ -1,0 +1,10 @@
+extends:
+  - recommended
+
+apis:
+  main:
+    root: backend/openapi.yaml
+
+rules:
+  tag-description: warn
+  struct: warn

@@ -29,7 +29,14 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, TypeAdapter, field_validator
 
 from app.schema.api import limits
-from app.schema.api.common.fields import SchemaIdStr
+from app.schema.api.common.fields import (
+    AnswerNumber,
+    EmojiRatingNumber,
+    PhoneNumber,
+    SchemaIdStr,
+    SliderRatingNumber,
+    StarsRatingNumber,
+)
 from app.schema.enums import AnswerFamily
 
 _STRICT = ConfigDict(extra="forbid", strict=True)
@@ -85,7 +92,7 @@ class NumberFieldAnswerValue(BaseModel):
     model_config = _STRICT
 
     field_type: Literal["number"]
-    number: int | float
+    number: AnswerNumber
 
 
 class DateFieldAnswerValue(BaseModel):
@@ -110,7 +117,7 @@ class PhoneFieldAnswerValue(BaseModel):
     model_config = _STRICT
 
     field_type: Literal["phone"]
-    phone: str = Field(min_length=1, max_length=64)
+    phone: PhoneNumber
 
 
 FieldAnswerValue = Annotated[
@@ -161,7 +168,7 @@ class SliderRatingAnswerValue(BaseModel):
     model_config = _STRICT
 
     variant: Literal["slider"]
-    number: int | float
+    number: SliderRatingNumber
 
 
 class StarsRatingAnswerValue(BaseModel):
@@ -170,7 +177,7 @@ class StarsRatingAnswerValue(BaseModel):
     model_config = _STRICT
 
     variant: Literal["stars"]
-    number: int
+    number: StarsRatingNumber
 
 
 class EmojiRatingAnswerValue(BaseModel):
@@ -179,7 +186,7 @@ class EmojiRatingAnswerValue(BaseModel):
     model_config = _STRICT
 
     variant: Literal["emoji"]
-    number: int
+    number: EmojiRatingNumber
 
 
 RatingAnswerValue = Annotated[

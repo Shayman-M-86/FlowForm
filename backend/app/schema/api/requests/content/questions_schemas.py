@@ -168,9 +168,9 @@ class RatingRangeIn(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    min: int | float = Field(ge=limits.RATING_RANGE_MIN, le=limits.RATING_RANGE_MAX)
-    max: int | float = Field(ge=limits.RATING_RANGE_MIN, le=limits.RATING_RANGE_MAX)
-    step: int | float = Field(gt=limits.RATING_STEP_MIN_EXCLUSIVE)
+    min: float = Field(ge=limits.RATING_RANGE_MIN, le=limits.RATING_RANGE_MAX)
+    max: float = Field(ge=limits.RATING_RANGE_MIN, le=limits.RATING_RANGE_MAX)
+    step: float = Field(gt=limits.RATING_STEP_MIN_EXCLUSIVE)
 
     @model_validator(mode="after")
     def validate_range_and_step(self) -> RatingRangeIn:

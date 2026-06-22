@@ -223,3 +223,32 @@ AccountEmail = Annotated[
         max_length=limits.EMAIL_MAX,
     ),
 ]
+
+SliderRatingNumber = Annotated[
+    float,
+    Field(ge=limits.RATING_RANGE_MIN, le=limits.RATING_RANGE_MAX),
+]
+
+StarsRatingNumber = Annotated[
+    int,
+    Field(ge=limits.RATING_STARS_MIN, le=limits.RATING_STARS_MAX),
+]
+
+EmojiRatingNumber = Annotated[
+    int,
+    Field(ge=limits.RATING_STARS_MIN, le=limits.RATING_STARS_MAX),
+]
+
+AnswerNumber = Annotated[
+    float,
+    Field(ge=limits.ANSWER_NUMBER_MIN, le=limits.ANSWER_NUMBER_MAX),
+]
+
+PhoneNumber = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=1,
+        max_length=limits.PHONE_MAX,
+    ),
+]

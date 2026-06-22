@@ -4400,6 +4400,8 @@ components:
           type: string
           maxLength: 5
         number:
+          maximum: 12
+          minimum: 1
           title: Number
           type: integer
       required:
@@ -4470,10 +4472,10 @@ components:
           type: string
           maxLength: 6
         number:
-          anyOf:
-          - type: integer
-          - type: number
+          maximum: 1000000
+          minimum: -1000000
           title: Number
+          type: number
       required:
       - field_type
       - number
@@ -4527,10 +4529,10 @@ components:
           type: string
           maxLength: 6
         number:
-          anyOf:
-          - type: integer
-          - type: number
+          maximum: 1000
+          minimum: -1000
           title: Number
+          type: number
       required:
       - variant
       - number
@@ -4546,6 +4548,8 @@ components:
           type: string
           maxLength: 5
         number:
+          maximum: 12
+          minimum: 1
           title: Number
           type: integer
       required:
@@ -5773,25 +5777,19 @@ components:
       description: Range block for a slider rating — min, max, and step in one object.
       properties:
         min:
-          anyOf:
-          - type: integer
-          - type: number
-          ge: -1000
-          le: 1000
+          maximum: 1000
+          minimum: -1000
           title: Min
+          type: number
         max:
-          anyOf:
-          - type: integer
-          - type: number
-          ge: -1000
-          le: 1000
+          maximum: 1000
+          minimum: -1000
           title: Max
+          type: number
         step:
-          anyOf:
-          - type: integer
-          - type: number
-          gt: 0
+          exclusiveMinimum: 0
           title: Step
+          type: number
       required:
       - min
       - max

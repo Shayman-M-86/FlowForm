@@ -306,7 +306,7 @@ function AccessSidebarSummary({
 // ── Links section ─────────────────────────────────────────────────────────────
 
 function linkUrl(link: SurveyAccessLinkOut): string {
-  return `${window.location.origin}/s/${link.token_prefix}`
+  return `${window.location.origin}/respond/${link.token_prefix}`
 }
 
 function LinkCard({
@@ -481,6 +481,7 @@ function LinksSection({
   const firstCreateLinkType = allowedCreateLinkTypes[0] ?? 'authenticated_assigned_link'
 
   const [createLinkOpen, setCreateLinkOpen] = useState(false)
+  const [createdTokenUrl, setCreatedTokenUrl] = useState<string | null>(null)
   const [linkError, setLinkError] = useState<string | null>(null)
   const [form, setForm] = useState<CreateLinkFormState>(() => createDefaultLinkForm(firstCreateLinkType))
 
@@ -501,7 +502,7 @@ function LinksSection({
     if (!canCreate) return
     setLinkError(null)
     try {
-      await createLink.mutateAsync({
+      const result = await createLink.mutateAsync({
         name: form.name.trim(),
         link_type: requiresAuth || form.requireAuthForGeneralLink ? 'authenticated' : form.type === 'private_invite_link' ? 'private' : 'general',
         assignment_source: 'manual',
@@ -509,6 +510,7 @@ function LinksSection({
         expires_at: form.expiresAt ? `${form.expiresAt}T00:00:00Z` : null,
       })
       setCreateLinkOpen(false)
+      setCreatedTokenUrl(`${window.location.origin}/respond/${result.token}`)
     } catch {
       setLinkError('Failed to create link. Please try again.')
     }
@@ -709,7 +711,38 @@ function LinksSection({
           />
         </div>
       </Modal>
+
+      <CreatedTokenModal url={createdTokenUrl} onClose={() => setCreatedTokenUrl(null)} />
     </div>
+  )
+}
+
+function CreatedTokenModal({ url, onClose }: { url: string | null; onClose: () => void }) {
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    if (!url) return
+    navigator.clipboard.writeText(url).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Modal open={url != null} onClose={onClose} title="Link created" width={560}
+      footer={<Button variant="primary" onClick={onClose}>Done</Button>}
+    >
+      <div className="grid gap-3">
+        <p className="text-sm text-muted-foreground">
+          Copy this link now — the full token will not be shown again.
+        </p>
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
+          <code className="min-w-0 flex-1 truncate text-sm">{url}</code>
+          <Button variant="ghost" size="sm" onClick={handleCopy}>
+            {copied ? 'Copied!' : 'Copy'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   )
 }
 
@@ -1140,7 +1173,7 @@ function SurveyRolesReferenceCard({ projectId, canEdit }: { projectId: number; c
 
 export function SurveyAccessTab() {
   useRenderDebug('SurveyAccessTab')
-  const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/access' })
+  const { slug, surveySlug } = useParams({ from: '/_studio/projects/$slug/surveys/$surveySlug/access' })
 
   const { data: project } = useProject(slug)
   const { data: survey } = useSurvey(slug, surveySlug)
