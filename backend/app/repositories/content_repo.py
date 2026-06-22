@@ -49,6 +49,16 @@ def get_node(db: Session, version_id: int, node_id: UUID) -> SurveyQuestion | No
     )
 
 
+def get_question_node(db: Session, version_id: int, node_id: UUID) -> SurveyQuestion | None:
+    return db.scalar(
+        select(SurveyQuestion).where(
+            SurveyQuestion.survey_version_id == version_id,
+            SurveyQuestion.id == node_id,
+            SurveyQuestion.node_type == "question",
+        )
+    )
+
+
 def create_node(
     db: Session, version: SurveyVersion, data: CreateQuestionNodeRequest | CreateRuleNodeRequest
 ) -> SurveyQuestion:

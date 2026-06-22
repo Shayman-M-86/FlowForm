@@ -170,7 +170,7 @@ class TestAnswerSave:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="hello",
+            answer_value={"field_type": "short_text", "text": "hello"},
             client_mutation_id=mutation_id,
         )
 
@@ -197,7 +197,7 @@ class TestAnswerSave:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="hello",
+            answer_value={"field_type": "short_text", "text": "hello"},
             client_mutation_id=mutation_id,
         )
         second_id = svc.save_answer(
@@ -206,7 +206,7 @@ class TestAnswerSave:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="hello",
+            answer_value={"field_type": "short_text", "text": "hello"},
             client_mutation_id=mutation_id,
         )
 
@@ -232,7 +232,7 @@ class TestAnswerSave:
                 ctx=ctx,
                 question_node_id=bogus_question_id,
                 answer_state="answered",
-                answer_value="hello",
+                answer_value={"field_type": "short_text", "text": "hello"},
                 client_mutation_id=uuid.uuid4(),
             )
 
@@ -259,7 +259,7 @@ class TestAnswerSave:
                 ctx=ctx,
                 question_node_id=str(question.id),
                 answer_state="answered",
-                answer_value="hello",
+                answer_value={"field_type": "short_text", "text": "hello"},
                 client_mutation_id=mutation_id,
             )
 
@@ -371,7 +371,7 @@ class TestAnalyticsCoreCommitFailure:
                 ctx=ctx,
                 question_node_id=str(question.id),
                 answer_state="answered",
-                answer_value="hello",
+                answer_value={"field_type": "short_text", "text": "hello"},
                 client_mutation_id=mutation_id,
             )
 

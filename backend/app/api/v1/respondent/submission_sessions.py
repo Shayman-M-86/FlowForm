@@ -5,6 +5,7 @@ from flask import request
 
 from app.api.utils.submission_session_cookie import (
     get_recognition_token,
+    get_submission_session_token,
     set_recognition_cookie,
     set_submission_session_cookie,
 )
@@ -54,8 +55,6 @@ def start_submission_session():
     return response.model_dump(mode="json"), 201
 
 
-# TODO(phase4): Rework this placeholder to validate against the frozen survey
-# version and create encrypted response answer revisions.
 @openapi_route(
     summary="Save submission session answer",
     request_model=SaveSubmissionSessionAnswerRequest,
@@ -66,20 +65,31 @@ def start_submission_session():
 @respondent_bp.route("/submission-sessions/current/answers/<uuid:question_node_id>", methods=["PUT"])
 def save_submission_session_answer(question_node_id: UUID):
     payload = parse(SaveSubmissionSessionAnswerRequest, request)
+    core_db = get_core_db()
+    response_db = get_response_db()
+
+    revision_number = session_management_service.save_answer(
+        core_db,
+        response_db,
+        raw_resume_token=get_submission_session_token(),
+        question_node_id=question_node_id,
+        answer_state=payload.state,
+        answer_value=payload.answer_value.model_dump() if payload.answer_value is not None else None,
+        client_mutation_id=payload.client_mutation_id,
+    )
+
     response = SubmissionSessionAnswerResponse(
         question_node_id=question_node_id,
         state=payload.state,
         answer_family=payload.answer_family,
         answer_value=payload.answer_value,
-        revision_number=1,
+        revision_number=revision_number,
         client_mutation_id=payload.client_mutation_id,
         saved_at=datetime.now(UTC),
     )
     return response.model_dump(mode="json"), 200
 
 
-# TODO(phase3): Rework this placeholder to persist core-side analytics events;
-# event write failures should stay secondary to the respondent flow.
 @openapi_route(
     summary="Record submission session event",
     request_model=SubmissionSessionEventRequest,
@@ -89,7 +99,16 @@ def save_submission_session_answer(question_node_id: UUID):
 )
 @respondent_bp.route("/submission-sessions/current/events", methods=["POST"])
 def record_submission_session_event():
-    parse(SubmissionSessionEventRequest, request)
+    payload = parse(SubmissionSessionEventRequest, request)
+    core_db = get_core_db()
+    response_db = get_response_db()
+
+    session_management_service.record_question_viewed(
+        core_db,
+        response_db,
+        raw_resume_token=get_submission_session_token(),
+        question_node_id=payload.question_node_id,
+    )
     return "", 204
 
 
@@ -101,13 +120,11 @@ def record_submission_session_event():
 )
 @respondent_bp.route("/submission-sessions/current/complete", methods=["POST"])
 def complete_submission_session():
-    raw_token = request.cookies.get("flowform_submission_session")
-    if not raw_token:
-        return {"code": "SESSION_NOT_FOUND", "message": "Session not found."}, 404
-
     core_db = get_core_db()
     response_db = get_response_db()
 
-    result = session_management_service.complete_session(core_db, response_db, raw_resume_token=raw_token)
+    result = session_management_service.complete_session(
+        core_db, response_db, raw_resume_token=get_submission_session_token(),
+    )
     response = CompleteSubmissionSessionResponse(status="completed", completed_at=result.completed_at)
     return response.model_dump(mode="json"), 200

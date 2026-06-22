@@ -9,17 +9,18 @@ import logging
 import uuid
 from typing import Any
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.crypto import build_aad
 from app.crypto.services import AnswerCryptoService, LocatorService, SessionDEKService
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import AnswerSaveError, QuestionNotInVersionError, SessionInvalidError
+from app.domain.survey_answer_validation import validate_answer
+from app.repositories import content_repo
 from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_answer_repo, response_answer_revision_repo
-from app.schema.orm.core.survey_content import SurveyQuestion
+from app.services.public_submissions.core.shared.crypto_provider import CryptoServices
 from app.services.public_submissions.core.shared.session_crypto import (
     build_session_kms_context,
     resolve_session_crypto_services,
@@ -46,28 +47,18 @@ class AnswerSaveService:
         self._locator_service_override = locator_service
         self._dek_service_override = dek_service
         self._answer_crypto_override = answer_crypto_service
-        self._locator_service: LocatorService | None = locator_service
-        self._dek_service: SessionDEKService | None = dek_service
-        self._answer_crypto_service: AnswerCryptoService | None = answer_crypto_service
+        self._crypto: CryptoServices | None = None
 
-    def _ensure_crypto(self) -> tuple[LocatorService, SessionDEKService, AnswerCryptoService]:
+    def _ensure_crypto(self) -> CryptoServices:
         """Lazily build crypto services on first use (requires app context)."""
-        if (
-            self._locator_service is not None
-            and self._dek_service is not None
-            and self._answer_crypto_service is not None
-        ):
-            return self._locator_service, self._dek_service, self._answer_crypto_service
-
-        crypto = resolve_session_crypto_services(
+        if self._crypto is not None:
+            return self._crypto
+        self._crypto = resolve_session_crypto_services(
             locator_service=self._locator_service_override,
             dek_service=self._dek_service_override,
             answer_crypto_service=self._answer_crypto_override,
         )
-        self._locator_service = crypto.locator_service
-        self._dek_service = crypto.dek_service
-        self._answer_crypto_service = crypto.answer_crypto_service
-        return self._locator_service, self._dek_service, self._answer_crypto_service
+        return self._crypto
 
     def save_answer(
         self,
@@ -79,9 +70,9 @@ class AnswerSaveService:
         answer_state: str,
         answer_value: Any | None,
         client_mutation_id: uuid.UUID,
-    ) -> uuid.UUID:
-        """Execute the 12-step answer save sequence. Returns the revision ID."""
-        locator_svc, dek_svc, crypto_svc = self._ensure_crypto()
+    ) -> int:
+        """Execute the 12-step answer save sequence. Returns the revision number."""
+        crypto = self._ensure_crypto()
 
         # Step 1: Validate and lock the current session
         locked_session = ssr.lock_for_update(db, ctx.session.id)
@@ -91,7 +82,7 @@ class AnswerSaveService:
             raise SessionInvalidError(f"Session is {locked_session.session_status}.")
 
         # Step 2: Check mutation ID — before any row lock on the logical answer
-        answer_locator = locator_svc.answer_locator(
+        answer_locator = crypto.locator_service.answer_locator(
             str(ctx.session.id),
             question_node_id,
             ctx.session.linkage_key_version,
@@ -103,22 +94,22 @@ class AnswerSaveService:
                 response_db, existing_answer.id, client_mutation_id
             )
             if dup_revision is not None:
-                return dup_revision.id
+                return dup_revision.revision_number
 
         # Step 3: Validate the answer against the frozen survey question node
-        question = self._get_question_in_version(db, ctx, question_node_id)
+        question = content_repo.get_question_node(db, ctx.survey_version.id, uuid.UUID(question_node_id))
+        if question is None:
+            raise QuestionNotInVersionError()
 
         # Step 3b: Validate answer shape against the frozen question definition
         if answer_state != "cleared" and answer_value is not None:
-            from app.domain.survey_answer_validation import validate_answer
-
             validate_answer(question.question_schema, answer_value)
 
         # Step 4: Derive session locator and answer locator (locator already derived)
         # Step 5: Load the response envelope (already in ctx)
 
         # Step 6: Load plaintext DEK from cache; on miss, unwrap with KMS
-        plaintext_dek = dek_svc.get_for_session(
+        plaintext_dek = crypto.dek_service.get_for_session(
             ctx.session.id,
             ctx.envelope.wrapped_dek,
             ctx.envelope.kms_key_arn,
@@ -156,7 +147,7 @@ class AnswerSaveService:
                     response_db, answer_row.id, client_mutation_id
                 )
                 if dup_revision is not None:
-                    return dup_revision.id
+                    return dup_revision.revision_number
                 locked_answer = response_answer_repo.lock_for_update(response_db, answer_row.id)
                 if locked_answer is None:
                     raise AnswerSaveError("Logical answer row disappeared after race.")
@@ -175,7 +166,7 @@ class AnswerSaveService:
             revision_id=revision_id,
             revision_number=next_revision_number,
         )
-        encrypted = crypto_svc.encrypt(
+        encrypted = crypto.answer_crypto_service.encrypt(
             dek=plaintext_dek,
             question_node_id=question_node_id,
             answer_state=answer_state,
@@ -201,22 +192,17 @@ class AnswerSaveService:
         # Step 10: Commit the response transaction
         commit_with_err_handle(response_db, contexts=[])
 
-        # Step 11: Insert core answer-saved analytics event
-        # Step 12: Commit core transaction — failure is non-fatal
-        try:
-            event_repo.create_event(
-                db,
-                session_id=ctx.session.id,
-                survey_version_id=ctx.survey_version.id,
-                event_type="answer_saved",
-                question_node_id=uuid.UUID(question_node_id),
-            )
-            commit_with_err_handle(db, contexts=[])
-        except Exception:
-            logger.warning("answer_save.analytics_event_failed", exc_info=True)
-            db.rollback()
+        # Step 11-12: Insert and commit core analytics event (non-fatal)
+        event_repo.record_event(
+            db,
+            session_id=ctx.session.id,
+            survey_version_id=ctx.survey_version.id,
+            event_type="answer_saved",
+            question_node_id=uuid.UUID(question_node_id),
+            log_label="answer_save.analytics",
+        )
 
-        return revision.id
+        return revision.revision_number
 
     def record_question_viewed(
         self,
@@ -226,33 +212,14 @@ class AnswerSaveService:
         question_node_id: str,
     ) -> None:
         """Record a question-viewed analytics event. Failure does not block the respondent."""
-        self._get_question_in_version(db, ctx, question_node_id)
-        try:
-            event_repo.create_event(
-                db,
-                session_id=ctx.session.id,
-                survey_version_id=ctx.survey_version.id,
-                event_type="question_viewed",
-                question_node_id=uuid.UUID(question_node_id),
-            )
-            commit_with_err_handle(db, contexts=[])
-        except Exception:
-            logger.warning("question_viewed.event_failed", exc_info=True)
-            db.rollback()
-
-    def _get_question_in_version(
-        self,
-        db: Session,
-        ctx: SessionContext,
-        question_node_id: str,
-    ) -> SurveyQuestion:
-        question = db.scalar(
-            select(SurveyQuestion).where(
-                SurveyQuestion.survey_version_id == ctx.survey_version.id,
-                SurveyQuestion.id == uuid.UUID(question_node_id),
-                SurveyQuestion.node_type == "question",
-            )
-        )
-        if question is None:
+        if content_repo.get_question_node(db, ctx.survey_version.id, uuid.UUID(question_node_id)) is None:
             raise QuestionNotInVersionError()
-        return question
+        event_repo.record_event(
+            db,
+            session_id=ctx.session.id,
+            survey_version_id=ctx.survey_version.id,
+            event_type="question_viewed",
+            question_node_id=uuid.UUID(question_node_id),
+            log_label="question_viewed",
+        )
+

@@ -11,7 +11,7 @@ transaction management, or action-specific orchestration.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
 
@@ -30,6 +30,7 @@ from app.services.public_submissions.core.shared.crypto_provider import (
 if TYPE_CHECKING:
     from app.core.config import EncryptionSettings
     from app.schema.orm.core.submission_session import SubmissionSession
+    from app.schema.orm.response.response_envelope import ResponseEnvelope
 
 SESSION_KMS_CONTEXT_VERSION = 1
 
@@ -74,7 +75,7 @@ def resolve_session_crypto_services(
 class SessionEnvelopeCryptoContext:
     """Context for decrypting a session's envelope-protected material."""
     session_locator: bytes
-    envelope: Any
+    envelope: ResponseEnvelope
     plaintext_dek: bytes
 
 

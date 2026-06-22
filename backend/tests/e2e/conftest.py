@@ -111,15 +111,29 @@ def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
     """Auto-mock crypto services so e2e tests run without AWS."""
     from unittest.mock import MagicMock
 
+    from app.api.v1.respondent import session_management_service
+    from app.crypto.locators import derive_session_locator
     from app.crypto.services import NewSessionDEK, NewSessionLocator
     from app.services.public_submissions.core.actions.session_starter import SessionStarter
 
+    linkage_secret = b"\xcc" * 32
+
     loc_svc = MagicMock()
     loc_svc.get_current_linkage_key_version.return_value = 1
-    loc_svc.for_new_session.return_value = NewSessionLocator(
-        linkage_key_version=1, session_locator=b"\x00" * 32,
+
+    def _new_session_locator(session_id: str, *_args, **_kwargs) -> NewSessionLocator:
+        return NewSessionLocator(
+            linkage_key_version=1,
+            session_locator=derive_session_locator(session_id, linkage_secret),
+        )
+
+    loc_svc.for_new_session.side_effect = _new_session_locator
+    loc_svc.for_existing_session.side_effect = (
+        lambda session_id, *_args, **_kwargs: derive_session_locator(
+            session_id,
+            linkage_secret,
+        )
     )
-    loc_svc.for_existing_session.return_value = b"\x00" * 32
 
     dek_svc = MagicMock()
     dek_svc.create_for_session.return_value = NewSessionDEK(
@@ -128,6 +142,16 @@ def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
     dek_svc.get_for_session.return_value = b"\x01" * 32
 
     original_init = SessionStarter.__init__
+    route_session_starter = SessionStarter(
+        locator_service=loc_svc,
+        dek_service=dek_svc,
+    )
+
+    monkeypatch.setattr(
+        session_management_service,
+        "_session_starter",
+        route_session_starter,
+    )
 
     def patched_init(self, **kwargs):
         kwargs.setdefault("locator_service", loc_svc)

@@ -47,6 +47,7 @@ def create_session(
         project_subject_id=project_subject_id,
         browser_session_token_hash=hash_browser_session_token(raw_browser_session_token),
         linkage_key_version=linkage_key_version,
+        started_at=current,
         expires_at=current + ttl,
         last_activity_at=current,
     )

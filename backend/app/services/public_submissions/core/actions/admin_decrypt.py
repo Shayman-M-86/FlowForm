@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from uuid import UUID
 
 from pydantic import ValidationError
 from sqlalchemy import select
@@ -16,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.core.config import EncryptionSettings
 from app.crypto import build_aad
 from app.crypto.services import AnswerCryptoService, LocatorService, SessionDEKService
+from app.crypto.services.answer_crypto_service import DecryptedAnswer
 from app.repositories.response import (
     response_answer_repo,
     response_answer_revision_repo,
@@ -197,13 +199,13 @@ def _decrypt_revision(
     nonce: bytes,
     dek: bytes,
     crypto_version: int,
-    envelope_id: Any,
-    answer_id: Any,
+    envelope_id: UUID,
+    answer_id: UUID,
     answer_locator: bytes,
-    revision_id: Any,
+    revision_id: UUID,
     revision_number: int,
     answer_crypto_service: AnswerCryptoService,
-) -> Any:
+) -> DecryptedAnswer:
     aad = build_aad(
         crypto_version=crypto_version,
         envelope_id=envelope_id,

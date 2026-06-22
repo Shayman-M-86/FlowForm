@@ -232,21 +232,20 @@ class TestFirstSave:
         svc = _make_service(ctx, plaintext_dek)
         mutation_id = uuid.uuid4()
 
-        revision_id = svc.save_answer(
+        revision_number = svc.save_answer(
             core_db, response_db,
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="hello",
+            answer_value={"field_type": "short_text", "text": "hello"},
             client_mutation_id=mutation_id,
         )
 
-        assert revision_id is not None
+        assert revision_number == 1
 
         answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         assert answer is not None, "logical answer row must exist"
-        assert answer.latest_revision_id == revision_id
 
         latest = response_answer_revision_repo.get_latest(response_db, answer.id)
         assert latest is not None
@@ -265,7 +264,7 @@ class TestFirstSave:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="test",
+            answer_value={"field_type": "short_text", "text": "test"},
             client_mutation_id=uuid.uuid4(),
         )
 
@@ -302,7 +301,7 @@ class TestFirstSave:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="round-trip me",
+            answer_value={"field_type": "short_text", "text": "round-trip me"},
             client_mutation_id=uuid.uuid4(),
         )
 
@@ -326,7 +325,7 @@ class TestFirstSave:
             payload_version=1,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="round-trip me",
+            answer_value={"field_type": "short_text", "text": "round-trip me"},
         )
         assert plaintext_bytes == expected
 
@@ -341,36 +340,34 @@ class TestChangedAnswer:
 
         svc = _make_service(ctx, plaintext_dek)
 
-        rev1_id = svc.save_answer(
+        rev1_num = svc.save_answer(
             core_db, response_db,
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="first",
+            answer_value={"field_type": "short_text", "text": "first"},
             client_mutation_id=uuid.uuid4(),
         )
-        rev2_id = svc.save_answer(
+        rev2_num = svc.save_answer(
             core_db, response_db,
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="second",
+            answer_value={"field_type": "short_text", "text": "second"},
             client_mutation_id=uuid.uuid4(),
         )
 
-        assert rev1_id != rev2_id
+        assert rev1_num == 1
+        assert rev2_num == 2
 
         answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         assert answer is not None
-        assert answer.latest_revision_id == rev2_id
 
         history = response_answer_revision_repo.get_history(response_db, answer.id)
         assert len(history) == 2
         assert history[0].revision_number == 1
-        assert history[0].id == rev1_id
         assert history[1].revision_number == 2
-        assert history[1].id == rev2_id
 
 
 class TestClearedAnswer:
@@ -390,10 +387,10 @@ class TestClearedAnswer:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="will be cleared",
+            answer_value={"field_type": "short_text", "text": "will be cleared"},
             client_mutation_id=uuid.uuid4(),
         )
-        clear_rev_id = svc.save_answer(
+        clear_rev_num = svc.save_answer(
             core_db, response_db,
             ctx=ctx,
             question_node_id=str(question.id),
@@ -401,11 +398,11 @@ class TestClearedAnswer:
             answer_value=None,
             client_mutation_id=uuid.uuid4(),
         )
+        assert clear_rev_num == 2
 
         answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         assert answer is not None
-        assert answer.latest_revision_id == clear_rev_id
 
         history = response_answer_revision_repo.get_history(response_db, answer.id)
         assert len(history) == 2
@@ -426,7 +423,7 @@ class TestClearedAnswer:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="will be cleared",
+            answer_value={"field_type": "short_text", "text": "will be cleared"},
             client_mutation_id=uuid.uuid4(),
         )
         svc.save_answer(
@@ -476,7 +473,7 @@ class TestDuplicateMutationId:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="hello",
+            answer_value={"field_type": "short_text", "text": "hello"},
             client_mutation_id=mutation_id,
         )
         second_id = svc.save_answer(
@@ -484,7 +481,7 @@ class TestDuplicateMutationId:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="hello",
+            answer_value={"field_type": "short_text", "text": "hello"},
             client_mutation_id=mutation_id,
         )
 
@@ -568,7 +565,7 @@ class TestAnalyticsFailure:
                 ctx=ctx,
                 question_node_id=str(question.id),
                 answer_state="answered",
-                answer_value="hello",
+                answer_value={"field_type": "short_text", "text": "hello"},
                 client_mutation_id=uuid.uuid4(),
             )
 
@@ -596,7 +593,7 @@ class TestCoreDbPrivacy:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="secret answer text",
+            answer_value={"field_type": "short_text", "text": "secret answer text"},
             client_mutation_id=uuid.uuid4(),
         )
 
@@ -659,7 +656,7 @@ class TestCacheMissUnwrapDek:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="cache miss test",
+            answer_value={"field_type": "short_text", "text": "cache miss test"},
             client_mutation_id=uuid.uuid4(),
         )
 
@@ -687,7 +684,7 @@ class TestCacheMissUnwrapDek:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="cache hit test",
+            answer_value={"field_type": "short_text", "text": "cache hit test"},
             client_mutation_id=uuid.uuid4(),
         )
 
@@ -713,7 +710,7 @@ class TestSequentialDuplicateSaves:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="first",
+            answer_value={"field_type": "short_text", "text": "first"},
             client_mutation_id=uuid.uuid4(),
         )
         rev2_id = svc.save_answer(
@@ -721,7 +718,7 @@ class TestSequentialDuplicateSaves:
             ctx=ctx,
             question_node_id=str(question.id),
             answer_state="answered",
-            answer_value="concurrent second",
+            answer_value={"field_type": "short_text", "text": "concurrent second"},
             client_mutation_id=uuid.uuid4(),
         )
 

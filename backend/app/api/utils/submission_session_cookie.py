@@ -30,6 +30,11 @@ def set_submission_session_cookie(raw_token: str) -> None:
         return response
 
 
+def get_submission_session_token() -> str | None:
+    """Read the submission session resume token from the incoming request cookie, if present."""
+    return request.cookies.get(_SUBMISSION_SESSION_COOKIE)
+
+
 def get_recognition_token() -> str | None:
     """Read the recognition token from the incoming request cookie, if present."""
     return request.cookies.get(_RECOGNITION_COOKIE)

@@ -1,21 +1,24 @@
 """Respondent submission-session lifecycle: start, answer, event, complete.
 
-API-facing entry point. Routes in api/v1/public.py call this service directly.
-Start delegates to core/session_starter.py. Complete delegates to
-core/completion.py. Answer/event are phase placeholders.
+API-facing entry point. Routes in api/v1/respondent/ call this service directly.
+Start delegates to core/session_starter.py. Answer delegates to
+core/answer_save.py. Complete delegates to core/completion.py.
 """
 
 from __future__ import annotations
 
+from typing import Any
+from uuid import UUID
+
 from sqlalchemy.orm import Session
 
+from app.domain.errors import SessionNotFoundError
 from app.schema.api.requests.submission_sessions import (
-    SaveSubmissionSessionAnswerRequest,
     StartSubmissionSessionRequest,
-    SubmissionSessionEventRequest,
 )
 from app.schema.api.responses.submission_sessions import StartSubmissionSessionResponse
 from app.schema.orm.core.user import User
+from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
 from app.services.public_submissions.core.actions.completion import (
     CompletionResult,
     CompletionService,
@@ -32,9 +35,11 @@ class SessionManagementService:
         *,
         session_starter: SessionStarter | None = None,
         completion_service: CompletionService | None = None,
+        answer_save_service: AnswerSaveService | None = None,
     ) -> None:
         self._session_starter = session_starter or SessionStarter()
         self._completion_service = completion_service or CompletionService()
+        self._answer_save_service = answer_save_service or AnswerSaveService()
 
     def start_session(
         self,
@@ -59,32 +64,57 @@ class SessionManagementService:
         db: Session,
         response_db: Session,
         *,
-        raw_resume_token: str,
+        raw_resume_token: str | None,
     ) -> CompletionResult:
         """Complete a respondent session.
 
         Loads the session from the browser resume token, then delegates to
         CompletionService for the completion state transition.
         """
+        if raw_resume_token is None:
+            raise SessionNotFoundError()
         ctx = load_current_session(db, response_db, raw_resume_token, allow_completed=True)
         return self._completion_service.complete_session(db, response_db, ctx=ctx)
 
-    # ------------------------------------------------------------------
-    # Phase placeholders — mirror current route stubs in public.py.
-    # ------------------------------------------------------------------
+    def save_answer(
+        self,
+        db: Session,
+        response_db: Session,
+        *,
+        raw_resume_token: str | None,
+        question_node_id: UUID,
+        answer_state: str,
+        answer_value: Any | None,
+        client_mutation_id: UUID,
+    ) -> int:
+        """Save a respondent answer. Returns the revision number."""
+        if raw_resume_token is None:
+            raise SessionNotFoundError()
+        ctx = load_current_session(db, response_db, raw_resume_token)
+        return self._answer_save_service.save_answer(
+            db,
+            response_db,
+            ctx=ctx,
+            question_node_id=str(question_node_id),
+            answer_state=answer_state,
+            answer_value=answer_value,
+            client_mutation_id=client_mutation_id,
+        )
 
-    def save_answer(self, db: Session, *, payload: SaveSubmissionSessionAnswerRequest) -> None:
-        """Save a respondent answer.
-
-        TODO(phase4): validate against the frozen survey version and create
-        encrypted response answer revisions.
-        """
-        raise NotImplementedError
-
-    def record_event(self, db: Session, *, payload: SubmissionSessionEventRequest) -> None:
-        """Record a respondent session event.
-
-        TODO(phase3): persist core-side analytics events; event write failures
-        stay secondary to the respondent flow.
-        """
-        raise NotImplementedError
+    def record_question_viewed(
+        self,
+        db: Session,
+        response_db: Session,
+        *,
+        raw_resume_token: str | None,
+        question_node_id: UUID,
+    ) -> None:
+        """Record a question-viewed analytics event."""
+        if raw_resume_token is None:
+            raise SessionNotFoundError()
+        ctx = load_current_session(db, response_db, raw_resume_token)
+        self._answer_save_service.record_question_viewed(
+            db,
+            ctx=ctx,
+            question_node_id=str(question_node_id),
+        )

@@ -232,6 +232,7 @@ class TestPreCommitEnvelopeFailureRollback:
         survey_id = _seed_published_survey(db_sessions.core, "linkage-fail-test")
 
         loc_svc = MagicMock()
+        loc_svc.get_current_linkage_key_version.return_value = 1
         loc_svc.for_new_session.side_effect = RuntimeError("locator derivation failed")
 
         starter = SessionStarter(

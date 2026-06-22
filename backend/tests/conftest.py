@@ -176,6 +176,7 @@ def db_session(
         class_=Session,
     )
     session = SessionLocal()
+    _seed_linkage_key_version(session)
 
     try:
         yield session

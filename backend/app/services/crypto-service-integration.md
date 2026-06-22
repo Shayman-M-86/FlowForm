@@ -2,7 +2,7 @@
 
 ## What was done
 
-### New file: `public_submissions/core/crypto_provider.py`
+### New file: `public_submissions/core/shared/crypto_provider.py`
 
 Factory function that builds the crypto service graph from `EncryptionSettings`.
 Centralises AWS credential wiring so orchestrators receive ready-to-use service
@@ -18,7 +18,7 @@ build_crypto_services(enc?) -> CryptoServices
 
 ---
 
-### Changed: `public_submissions/core/session_starter.py`
+### Changed: `public_submissions/core/actions/session_starter.py`
 
 | Before | After |
 |---|---|
@@ -34,7 +34,7 @@ instantiated at module level in `api/v1/respondent/__init__.py`.
 
 ---
 
-### Changed: `public_submissions/core/session_loader.py`
+### Changed: `public_submissions/core/shared/session_loader.py`
 
 | Before | After |
 |---|---|
@@ -46,7 +46,7 @@ as an optional kwarg — fully backward compatible.
 
 ---
 
-### Changed: `public_submissions/core/answer_save.py`
+### Changed: `public_submissions/core/actions/answer_save.py`
 
 | Before | After |
 |---|---|
@@ -62,7 +62,7 @@ services should not know about).
 
 ---
 
-### Changed: `public_submissions/core/admin_decrypt.py`
+### Changed: `public_submissions/core/actions/admin_decrypt.py`
 
 | Before | After |
 |---|---|
@@ -147,159 +147,134 @@ exists.
 
 ---
 
-## Deferred items
+## Current audit: 2026-06-22
 
-### `deletion.py` — not yet refactored
+Checked against the current checkout after the `core/actions`, `core/shared`,
+and `core/resolution` package split.
 
-`services/public_submissions/core/deletion.py` still calls `get_linkage_secret`
-and `derive_session_locator` inline. It needs `LocatorService` injection
-following the same pattern as the other files.
+### Done: `deletion.py`
 
-**What to do:** Add `locator_service: LocatorService | None = None` to
-`delete_session_responses()`, replace the two inline calls, and update
-`tests/integration/response/test_deletion_encryption.py`.
+`services/public_submissions/core/actions/deletion.py` is no longer a deferred
+item. It imports `LocatorService`, calls `loc_svc.for_existing_session(...)`,
+and resolves crypto services through
+`services/public_submissions/core/shared/session_crypto.py`.
 
-### `completion.py` — no crypto, no change needed
+### Done: `completion.py`
 
-`completion.py` does not use any crypto functions. It only imports
-`SessionContext` from the session loader. No changes needed.
+`completion.py` still has no crypto work. It only uses `SessionContext`; no
+service-graph work is needed.
 
----
+### Done: Category 3 answer-save validation
 
-## Remaining test failures
-
-### Category 1: E2E tests — module-level `SessionStarter` instance
-
-**Files:** `tests/e2e/test_submission_session_flows.py` (15 tests),
-`tests/e2e/test_submission_session_start.py` (1 test)
-
-**Root cause:** `api/v1/respondent/__init__.py` creates
-`session_management_service = SessionManagementService()` at module level,
-which creates `SessionStarter()` at import time. The e2e conftest
-monkeypatches `SessionStarter.__init__` but this runs after the module-level
-instance already exists. When the Flask test client makes a request, the
-existing instance's `_ensure_crypto()` tries to build real services from
-`current_settings()`, which connects to Secrets Manager with test credentials
-and fails with `"Linkage secret is not valid JSON"`.
-
-**Fix options:**
-1. Patch the existing module-level instance's `_locator_service` and
-   `_dek_service` attributes directly on the already-constructed object.
-2. Change `api/v1/respondent/__init__.py` to use a factory function or
-   `flask.g`-based lazy construction instead of module-level instantiation.
-3. Patch `build_crypto_services` at the module level in `crypto_provider` to
-   return mock services.
-
-Option 3 is simplest for the e2e conftest — it intercepts regardless of when
-the instance was created:
+The old Category 3 note is fixed. The current answer-save tests no longer pass
+plain strings such as `"hello"` for field-family questions. They use structured
+short-text payloads such as:
 
 ```python
-monkeypatch.setattr(
-    "app.services.public_submissions.core.crypto_provider.build_crypto_services",
-    lambda enc=None: CryptoServices(
-        linkage_key_service=MagicMock(),
-        locator_service=loc_svc,
-        dek_service=dek_svc,
-        answer_crypto_service=AnswerCryptoService(),
-    ),
-)
+answer_value={"field_type": "short_text", "text": "hello"}
 ```
 
----
-
-### Category 2: `integration/core/` flow matrix and response contract tests
-
-**Files:** `test_flow_matrix.py` (16 tests),
-`test_session_start_response_contract.py` (5 tests),
-`test_transaction_boundary.py` (2 tests)
-
-**Root cause:** Same as Category 1 — these tests go through `SessionStarter`
-via the autouse conftest fixture. The conftest patches `SessionStarter.__init__`
-which works for new instances, but the mock needs `get_current_linkage_key_version`
-to return an int (which it does). The remaining issue is likely the FK constraint:
-`linkage_key_versions` table needs a row with `version=1` before the session
-insert. The `_seed_linkage_key_version()` was added to `core_db_session` but
-may not be visible through the e2e/flow test's session setup.
-
-**Fix:** Verify that the `_seed_linkage_key_version` call in `conftest.py`
-runs before `create_session` in these tests. If the test uses a separate
-session object, the seed row may not be visible.
+The focused integration run confirmed the answer-save groups are no longer in
+the failure list.
 
 ---
 
-### Category 3: Answer save validation failures
+## Remaining test failures from the focused audit
 
-**Files:** `tests/integration/response/test_answer_save_encryption.py` (11 tests),
-`tests/integration/core/test_answer_save.py` (4 tests)
+Command used:
 
-**Root cause (pre-existing):** `validate_answer` was added to `answer_save.py`
-in commit `930d8d0` / `b63c5ec`. It validates that the `answer_value` matches
-the question's `family` schema. The test factory `make_survey_question` creates
-questions with `"family": "field"` and `"field_type": "short_text"` by default.
-The `field` family requires structured dict values like
-`{"type": "short_text", "value": "hello"}`, but the tests pass plain strings
-like `"hello"`. This was not caused by the crypto refactoring — it's a
-test-vs-validation incompatibility that already existed.
+```bash
+bash scripts/run-tests.sh --ai -q \
+  tests/integration/core/test_answer_save.py \
+  tests/integration/response/test_answer_save_encryption.py \
+  tests/integration/response/test_deletion_encryption.py \
+  tests/integration/response/test_completion_encryption.py \
+  tests/integration/response/test_admin_decrypt.py \
+  tests/integration/core/test_flow_matrix.py \
+  tests/integration/core/test_session_start_response_contract.py \
+  tests/integration/core/test_transaction_boundary.py \
+  tests/integration/core/test_session_start_envelope.py
+```
 
-**Fix:** Update test answer values to match the `field` family schema:
+Current result shape:
+
+- The answer-save, deletion, completion, and admin-decrypt groups pass in this
+  focused run.
+- Remaining failures are concentrated in session-start integration tests.
+
+### Category 1: `linkage_key_versions` seed is not visible to some tests
+
+**Files still failing:**
+
+- `tests/integration/core/test_flow_matrix.py`
+- `tests/integration/core/test_session_start_response_contract.py`
+- `tests/integration/core/test_transaction_boundary.py`
+
+**Current failure:**
+
+```text
+ForeignKeyViolation: insert or update on table "submission_sessions" violates
+foreign key constraint "submission_sessions_linkage_key_version_fkey"
+DETAIL: Key (linkage_key_version)=(1) is not present in table "linkage_key_versions".
+```
+
+`tests/conftest.py` seeds `linkage_key_versions(version=1)` in
+`core_db_session`, but these failing tests are not seeing that row at
+`create_session()` time.
+
+**What to do next:**
+
+Verify which fixture path those tests use (`db_session`, `core_db_session`, or
+`DbSessions`) and seed `linkage_key_versions(version=1)` on the same
+transaction/session that `SessionStarter.start()` uses.
+
+### Category 2: one session-start envelope mock misses linkage version
+
+**File:** `tests/integration/core/test_session_start_envelope.py`
+
+**Current failing test:**
+
+`TestPreCommitEnvelopeFailureRollback.test_locator_failure_rolls_back_core_session`
+
+**Current failure:**
+
+```text
+ProgrammingError: cannot adapt type 'MagicMock'
+...
+'linkage_key_version': <MagicMock name='mock.get_current_linkage_key_version()' ...>
+```
+
+The test creates a bare `MagicMock()` for `loc_svc` and sets
+`for_new_session.side_effect`, but does not set
+`get_current_linkage_key_version.return_value`. `SessionStarter` now reads that
+version before calling `for_new_session`, so the mock itself reaches SQLAlchemy.
+
+**What to do next:**
+
+In that test, set:
 
 ```python
-# Before
-answer_value="hello"
-
-# After
-answer_value={"type": "short_text", "value": "hello"}
+loc_svc.get_current_linkage_key_version.return_value = 1
 ```
 
-Or use `question_schema` without a `"family"` key to skip validation:
-
-```python
-make_survey_question(..., question_schema={"id": "q1", "label": "Q"})
-```
+before constructing `SessionStarter`.
 
 ---
 
-### Category 4: Session start envelope tests (locator failure)
+## Not rechecked in this focused audit
 
-**File:** `test_session_start_envelope.py::TestPreCommitEnvelopeFailureRollback::test_locator_failure_rolls_back_core_session`
+### E2E module-level `SessionStarter` instance
 
-**Root cause:** This test sets `locator_service.for_new_session.side_effect =
-RuntimeError(...)` to test failure rollback. But now `start()` also calls
-`locator_service.get_current_linkage_key_version(db)` before `create_session`
-and before `_create_response_envelope`. The `get_current_linkage_key_version`
-method is not explicitly configured to raise, so it returns a MagicMock. The
-test needs to either:
-- Also set `get_current_linkage_key_version.return_value = 1` (so
-  `create_session` succeeds, then `_create_response_envelope` fails at
-  `for_new_session` — which is the intended test path), or
-- Set the side effect on `get_current_linkage_key_version` instead (to test
-  failure before session creation).
+The previous e2e note was not part of the focused command above. The old path
+in that note is stale after the package split; if this still fails, patching
+must target the current modules under
+`app.services.public_submissions.core.actions` and
+`app.services.public_submissions.core.shared`.
 
-**Fix:** Add `loc_svc.get_current_linkage_key_version.return_value = 1` to the
-failing test so the session is created first, then the locator failure in
-`_create_response_envelope` triggers the rollback.
+### Auth bootstrap and real AWS smoke tests
 
----
+These remain outside this crypto-service integration checklist:
 
-### Category 5: `test_auth_bootstrap_service.py` and `test_crypto_smoke.py`
-
-**`test_auth_bootstrap_service.py`:** Likely unrelated — may fail due to the
-`_seed_linkage_key_version` change in conftest or a pre-existing issue.
-
-**`test_crypto_smoke.py`:** Skipped in CI when `FLOWFORM_ENCRYPTION_*` env
-vars are not set. If it runs, it's an end-to-end test against real AWS and
-would fail for different reasons (the test calls `get_linkage_secret` which now
-returns `SecretValue` instead of raw `bytes`).
-
----
-
-## Summary counts
-
-| Category | Tests | Status |
-|---|---|---|
-| E2E (module-level instance) | 16 | Needs conftest fix |
-| Flow matrix / response contract / transaction | 23 | Needs conftest + FK seed fix |
-| Answer save validation (pre-existing) | 15 | Needs test value fix |
-| Session start envelope (locator mock) | 1 | Needs mock attribute |
-| Auth bootstrap / crypto smoke | 2 | Likely unrelated |
-| **Passing** | **491+** | |
+- `test_auth_bootstrap_service.py` tracks auth/project membership schema drift.
+- `test_crypto_smoke.py` is expected to skip without real AWS encryption env
+  vars.
