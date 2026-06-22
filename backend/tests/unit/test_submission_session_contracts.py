@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import UUID
 
 import pytest
@@ -8,7 +9,7 @@ from pydantic import ValidationError
 import app.api.v1  # noqa: F401  (imported for @openapi_route registration side effect)
 import app.openapi.registry as openapi_registry
 from app.openapi.export import _build_minimal_spec_app
-from app.openapi.spec import build_spec
+from app.openapi.spec import _explicit_methods, _flask_path_to_openapi, build_spec
 from app.schema.api.requests.submission_sessions import (
     SaveSubmissionSessionAnswerRequest,
     StartSubmissionSessionRequest,
@@ -218,3 +219,34 @@ def test_admin_response_paths_are_in_openapi_spec(restored_openapi_registry: Non
     assert "get" in paths[f"{base}/{{session_id}}"]
     assert "delete" in paths[f"{base}/{{session_id}}"]
     assert "get" in paths[f"{base}/{{session_id}}/history"]
+
+
+def test_openapi_export_covers_loaded_backend_routes(restored_openapi_registry: None) -> None:
+    app = _build_minimal_spec_app()
+    spec = build_spec(app)
+
+    route_modules = {
+        ".".join(path.with_suffix("").relative_to(Path(__file__).resolve().parents[2]).parts)
+        for path in (Path(__file__).resolve().parents[2] / "app/api").rglob("*.py")
+        if ".route(" in path.read_text(encoding="utf-8")
+    }
+    handler_modules = {view.__module__ for endpoint, view in app.view_functions.items() if endpoint != "static"}
+    metadata_modules = {route.handler_qualname.rsplit(".", 1)[0] for route in openapi_registry.get_registered_routes()}
+
+    assert route_modules <= handler_modules
+    assert route_modules <= metadata_modules
+
+    expected_operations: set[tuple[str, str]] = set()
+    for rule in app.url_map.iter_rules():
+        if rule.endpoint == "static":
+            continue
+        openapi_path, _ = _flask_path_to_openapi(rule.rule)
+        expected_operations.update((method.lower(), openapi_path) for method in _explicit_methods(rule))
+
+    actual_operations = {
+        (method, path)
+        for path, path_item in spec["paths"].items()
+        for method in path_item
+    }
+
+    assert actual_operations == expected_operations

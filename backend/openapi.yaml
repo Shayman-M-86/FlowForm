@@ -6439,16 +6439,10 @@ components:
         revision_number:
           title: Revision Number
           type: integer
-        saved_at:
-          format: date-time
-          title: Saved At
-          type: string
-          maxLength: 35
       required:
       - question_node_id
       - state
       - revision_number
-      - saved_at
       title: SurveyResponseAnswerResponses
       type: object
     SurveyResponseDetailResponses:
@@ -6504,16 +6498,10 @@ components:
         revision_number:
           title: Revision Number
           type: integer
-        saved_at:
-          format: date-time
-          title: Saved At
-          type: string
-          maxLength: 35
       required:
       - question_node_id
       - state
       - revision_number
-      - saved_at
       title: SurveyResponseAnswerRevisionResponses
       type: object
     SurveyResponseHistoryResponses:
@@ -7801,19 +7789,19 @@ components:
               value:
                 code: ANSWER_SAVE_FAILED
                 message: Answer save failed.
-            deletion_pending:
-              summary: DeletionPendingError
-              value:
-                code: DELETION_PENDING
-                message: Response data deleted but core cleanup is pending.
             unhandled_db_integrity:
               summary: UnhandledDbIntegrityError
               value:
                 code: UNHANDLED_DB_INTEGRITY_ERROR
                 message: An unexpected database integrity error occurred.
                 details:
-                  constraint_name: null
-                  error_key: null
+                  constraint_name: <example>
+                  error_key: <example>
+            linkage_key:
+              summary: LinkageKeyError
+              value:
+                code: LINKAGE_KEY_ERROR
+                message: <example>
             ck_project_invitations_status_valid:
               summary: 'DB rule: INVITATION_STATE_INVALID'
               value:
