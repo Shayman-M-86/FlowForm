@@ -55,14 +55,14 @@ beforeEach(() => {
 
 describe('onRequest — cold cache', () => {
   it('lets the request through when no permission data is cached', () => {
-    const req = makeRequest('GET', `/api/v1/projects/${PROJECT_ID}/surveys`)
+    const req = makeRequest('GET', `/api/v1/studio/projects/${PROJECT_ID}/surveys`)
     const result = callOnRequest(middleware, req)
     expect(result).toBeUndefined()
   })
 
   it('lets the request through for unrecognised paths', () => {
     queryClient.setQueryData(permissionKeys.project(PROJECT_ID), ['survey:view'])
-    const req = makeRequest('GET', '/api/v1/me/profile')
+    const req = makeRequest('GET', '/api/v1/account/profile')
     const result = callOnRequest(middleware, req)
     expect(result).toBeUndefined()
   })
@@ -73,14 +73,14 @@ describe('onRequest — cold cache', () => {
 describe('onRequest — project-level permissions', () => {
   it('lets the request through when the permission is present', () => {
     queryClient.setQueryData(permissionKeys.project(PROJECT_ID), ['survey:view', 'survey:edit'])
-    const req = makeRequest('GET', `/api/v1/projects/${PROJECT_ID}/surveys`)
+    const req = makeRequest('GET', `/api/v1/studio/projects/${PROJECT_ID}/surveys`)
     const result = callOnRequest(middleware, req)
     expect(result).toBeUndefined()
   })
 
   it('throws PermissionDeniedError when the permission is absent', () => {
     queryClient.setQueryData(permissionKeys.project(PROJECT_ID), ['survey:view'])
-    const req = makeRequest('PATCH', `/api/v1/projects/${PROJECT_ID}/surveys/${SURVEY_ID}`)
+    const req = makeRequest('PATCH', `/api/v1/studio/projects/${PROJECT_ID}/surveys/${SURVEY_ID}`)
     const result = callOnRequest(middleware, req)
     expect(result).toBeInstanceOf(PermissionDeniedError)
     expect((result as PermissionDeniedError).permission).toBe('survey:edit')
@@ -89,7 +89,7 @@ describe('onRequest — project-level permissions', () => {
   it('invalidates the project permission cache when blocking a request', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
     queryClient.setQueryData(permissionKeys.project(PROJECT_ID), [])
-    const req = makeRequest('DELETE', `/api/v1/projects/${PROJECT_ID}`)
+    const req = makeRequest('DELETE', `/api/v1/studio/projects/${PROJECT_ID}`)
     callOnRequest(middleware, req)
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: permissionKeys.project(PROJECT_ID) }),
@@ -103,7 +103,7 @@ describe('onRequest — survey-level permissions', () => {
   it('uses survey-scoped cache when available and allows the request', () => {
     queryClient.setQueryData(permissionKeys.project(PROJECT_ID), [])
     queryClient.setQueryData(permissionKeys.survey(PROJECT_ID, SURVEY_ID), ['survey:view'])
-    const req = makeRequest('GET', `/api/v1/projects/${PROJECT_ID}/surveys/${SURVEY_ID}`)
+    const req = makeRequest('GET', `/api/v1/studio/projects/${PROJECT_ID}/surveys/${SURVEY_ID}`)
     const result = callOnRequest(middleware, req)
     expect(result).toBeUndefined()
   })
@@ -111,7 +111,7 @@ describe('onRequest — survey-level permissions', () => {
   it('blocks and throws using survey-scoped cache when permission is absent', () => {
     queryClient.setQueryData(permissionKeys.project(PROJECT_ID), ['survey:view'])
     queryClient.setQueryData(permissionKeys.survey(PROJECT_ID, SURVEY_ID), [])
-    const req = makeRequest('GET', `/api/v1/projects/${PROJECT_ID}/surveys/${SURVEY_ID}`)
+    const req = makeRequest('GET', `/api/v1/studio/projects/${PROJECT_ID}/surveys/${SURVEY_ID}`)
     const result = callOnRequest(middleware, req)
     expect(result).toBeInstanceOf(PermissionDeniedError)
   })
@@ -119,7 +119,7 @@ describe('onRequest — survey-level permissions', () => {
   it('falls back to project-level cache when survey cache is absent', () => {
     queryClient.setQueryData(permissionKeys.project(PROJECT_ID), ['survey:view'])
     // no survey-level cache set
-    const req = makeRequest('GET', `/api/v1/projects/${PROJECT_ID}/surveys/${SURVEY_ID}`)
+    const req = makeRequest('GET', `/api/v1/studio/projects/${PROJECT_ID}/surveys/${SURVEY_ID}`)
     const result = callOnRequest(middleware, req)
     expect(result).toBeUndefined()
   })
@@ -128,7 +128,7 @@ describe('onRequest — survey-level permissions', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
     queryClient.setQueryData(permissionKeys.project(PROJECT_ID), ['survey:edit'])
     queryClient.setQueryData(permissionKeys.survey(PROJECT_ID, SURVEY_ID), [])
-    const req = makeRequest('PATCH', `/api/v1/projects/${PROJECT_ID}/surveys/${SURVEY_ID}`)
+    const req = makeRequest('PATCH', `/api/v1/studio/projects/${PROJECT_ID}/surveys/${SURVEY_ID}`)
     callOnRequest(middleware, req)
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: permissionKeys.survey(PROJECT_ID, SURVEY_ID) }),
@@ -143,7 +143,7 @@ describe('onRequest — cooldown', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
     queryClient.setQueryData(permissionKeys.project(PROJECT_ID), [])
 
-    const req = makeRequest('DELETE', `/api/v1/projects/${PROJECT_ID}`)
+    const req = makeRequest('DELETE', `/api/v1/studio/projects/${PROJECT_ID}`)
     callOnRequest(middleware, req)
     callOnRequest(middleware, req)
     callOnRequest(middleware, req)
@@ -156,7 +156,7 @@ describe('onRequest — cooldown', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
     queryClient.setQueryData(permissionKeys.project(PROJECT_ID), [])
 
-    const req = makeRequest('DELETE', `/api/v1/projects/${PROJECT_ID}`)
+    const req = makeRequest('DELETE', `/api/v1/studio/projects/${PROJECT_ID}`)
     callOnRequest(middleware, req)
     expect(spy).toHaveBeenCalledTimes(1)
 
@@ -172,7 +172,7 @@ describe('onRequest — cooldown', () => {
 describe('onResponse — 403', () => {
   it('invalidates project permission cache on a 403 for a project-level route', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
-    const req = makeRequest('DELETE', `/api/v1/projects/${PROJECT_ID}`)
+    const req = makeRequest('DELETE', `/api/v1/studio/projects/${PROJECT_ID}`)
     callOnResponse(middleware, req, makeResponse(403))
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: permissionKeys.project(PROJECT_ID) }),
@@ -181,7 +181,7 @@ describe('onResponse — 403', () => {
 
   it('invalidates both survey and project caches on a 403 for a survey-level route', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
-    const req = makeRequest('PATCH', `/api/v1/projects/${PROJECT_ID}/surveys/${SURVEY_ID}`)
+    const req = makeRequest('PATCH', `/api/v1/studio/projects/${PROJECT_ID}/surveys/${SURVEY_ID}`)
     callOnResponse(middleware, req, makeResponse(403))
 
     const keys = spy.mock.calls.map((c) => JSON.stringify((c[0] as { queryKey: unknown }).queryKey))
@@ -190,7 +190,7 @@ describe('onResponse — 403', () => {
   })
 
   it('returns the 403 response unchanged', () => {
-    const req = makeRequest('DELETE', `/api/v1/projects/${PROJECT_ID}`)
+    const req = makeRequest('DELETE', `/api/v1/studio/projects/${PROJECT_ID}`)
     const res = makeResponse(403)
     const returned = callOnResponse(middleware, req, res)
     expect(returned).toBe(res)
@@ -198,14 +198,14 @@ describe('onResponse — 403', () => {
 
   it('does not invalidate on a 200 response', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
-    const req = makeRequest('GET', `/api/v1/projects/${PROJECT_ID}/surveys`)
+    const req = makeRequest('GET', `/api/v1/studio/projects/${PROJECT_ID}/surveys`)
     callOnResponse(middleware, req, makeResponse(200))
     expect(spy).not.toHaveBeenCalled()
   })
 
   it('does not invalidate again within the cooldown window on repeated 403s', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
-    const req = makeRequest('DELETE', `/api/v1/projects/${PROJECT_ID}`)
+    const req = makeRequest('DELETE', `/api/v1/studio/projects/${PROJECT_ID}`)
     callOnResponse(middleware, req, makeResponse(403))
     callOnResponse(middleware, req, makeResponse(403))
     callOnResponse(middleware, req, makeResponse(403))
@@ -218,9 +218,9 @@ describe('onResponse — 403', () => {
 
 describe('PermissionDeniedError', () => {
   it('carries the permission and url that were denied', () => {
-    const err = new PermissionDeniedError('survey:edit', '/api/v1/projects/5/surveys/10')
+    const err = new PermissionDeniedError('survey:edit', '/api/v1/studio/projects/5/surveys/10')
     expect(err.permission).toBe('survey:edit')
-    expect(err.url).toBe('/api/v1/projects/5/surveys/10')
+    expect(err.url).toBe('/api/v1/studio/projects/5/surveys/10')
     expect(err.name).toBe('PermissionDeniedError')
     expect(err).toBeInstanceOf(Error)
   })

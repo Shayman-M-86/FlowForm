@@ -49,7 +49,7 @@ import {
   useUpdateSurveyRole,
 } from '@/api/hooks/survey-roles'
 import type { CreateSurveyRoleRequest } from '@/api/hooks/survey-roles'
-import type { PublicLinkOut } from '@/api/hooks/links'
+import type { SurveyAccessLinkOut } from '@/api/hooks/links'
 import type { ProjectMemberOut } from '@/api/hooks/members'
 import {
   LinkStateBadge,
@@ -105,7 +105,7 @@ function createDefaultLinkForm(type: CreatableLinkType): CreateLinkFormState {
   return { type, name: '', assignedEmail: '', expiresAt: '', requireAuthForGeneralLink: false }
 }
 
-function publicLinkStatus(link: PublicLinkOut): 'active' | 'disabled' | 'expired' {
+function publicLinkStatus(link: SurveyAccessLinkOut): 'active' | 'disabled' | 'expired' {
   if (link.expires_at && new Date(link.expires_at).getTime() < Date.now()) return 'expired'
   return link.is_active ? 'active' : 'disabled'
 }
@@ -305,7 +305,7 @@ function AccessSidebarSummary({
 
 // ── Links section ─────────────────────────────────────────────────────────────
 
-function linkUrl(link: PublicLinkOut): string {
+function linkUrl(link: SurveyAccessLinkOut): string {
   return `${window.location.origin}/s/${link.token_prefix}`
 }
 
@@ -315,10 +315,10 @@ function LinkCard({
   onToggle,
   onDelete,
 }: {
-  link: PublicLinkOut
+  link: SurveyAccessLinkOut
   canEdit: boolean
-  onToggle: (linkId: number, isActive: boolean) => void
-  onDelete: (linkId: number) => void
+  onToggle: (linkId: string, isActive: boolean) => void
+  onDelete: (linkId: string) => void
 }) {
   const status = publicLinkStatus(link)
   const moreRef = useRef<HTMLSpanElement>(null)
@@ -338,7 +338,7 @@ function LinkCard({
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-wrap items-center gap-1.5">
             <LinkStateBadge state={status} />
-            {link.requires_auth && (
+            {link.link_type === 'authenticated' && (
               <Badge variant="muted" size="xs">Requires sign-in</Badge>
             )}
           </div>
@@ -352,10 +352,10 @@ function LinkCard({
           <div className="min-w-0 flex-1">
             <p className="min-w-3 text-sm font-medium text-foreground">{link.name}</p>
             <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-              {link.assigned_email && (
+              {link.assigned_participant_id && (
                 <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                   <MailCheck size={13} strokeWidth={2} aria-hidden="true" className="shrink-0 text-muted-foreground" />
-                  <span className="truncate">{link.assigned_email}</span>
+                  <span className="truncate">Assigned</span>
                 </div>
               )}
               <p className="min-w-[min(100%,16rem)] max-w-full truncate font-mono text-xs text-muted-foreground ml-auto text-right">
@@ -503,9 +503,10 @@ function LinksSection({
     try {
       await createLink.mutateAsync({
         name: form.name.trim(),
-        assigned_email: requiresAssignedEmail ? form.assignedEmail.trim() : null,
+        link_type: requiresAuth || form.requireAuthForGeneralLink ? 'authenticated' : form.type === 'private_invite_link' ? 'private' : 'general',
+        assignment_source: 'manual',
+        assigned_participant_id: null,
         expires_at: form.expiresAt ? `${form.expiresAt}T00:00:00Z` : null,
-        requires_auth: requiresAuth || form.requireAuthForGeneralLink,
       })
       setCreateLinkOpen(false)
     } catch {
@@ -513,11 +514,11 @@ function LinksSection({
     }
   }
 
-  function handleToggle(linkId: number, isActive: boolean) {
-    updateLink.mutate({ linkId, body: { is_active: isActive, name: null, assigned_email: null, requires_auth: null, expires_at: null } })
+  function handleToggle(linkId: string, isActive: boolean) {
+    updateLink.mutate({ linkId, body: { is_active: isActive, name: null, link_type: null, assignment_source: null, assigned_participant_id: null, expires_at: null } })
   }
 
-  function handleDelete(linkId: number) {
+  function handleDelete(linkId: string) {
     deleteLink.mutate(linkId)
   }
 

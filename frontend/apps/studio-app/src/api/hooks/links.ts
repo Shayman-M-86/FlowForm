@@ -4,7 +4,7 @@ import { usePolicyQuery } from '@/lib/query/usePolicyQuery'
 import { QUERY_POLICIES } from '@/lib/query/queryPolicy'
 import type { components } from '@/api/generated/schema'
 
-export type PublicLinkOut = components['schemas']['PublicLinkResponses']
+export type SurveyAccessLinkOut = components['schemas']['SurveyAccessLinkResponse']
 
 const linkKeys = {
   list: (projectId: number, surveyId: number) =>
@@ -30,7 +30,7 @@ export function usePublicLinks(projectId: number | null, surveyId: number | null
 export function useCreatePublicLink(projectId: number | null, surveyId: number | null) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (body: components['schemas']['CreatePublicLinkRequest']) => {
+    mutationFn: async (body: components['schemas']['CreateSurveyAccessLinkRequest']) => {
       if (projectId == null || surveyId == null) throw new Error('projectId and surveyId are required')
       const { data, error } = await apiClient.POST(
         '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/links',
@@ -50,7 +50,7 @@ export function useCreatePublicLink(projectId: number | null, surveyId: number |
 export function useUpdatePublicLink(projectId: number | null, surveyId: number | null) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ linkId, body }: { linkId: number; body: components['schemas']['UpdatePublicLinkRequest'] }) => {
+    mutationFn: async ({ linkId, body }: { linkId: string; body: components['schemas']['UpdateSurveyAccessLinkRequest'] }) => {
       if (projectId == null || surveyId == null) throw new Error('projectId and surveyId are required')
       const { data, error } = await apiClient.PATCH(
         '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/links/{link_id}',
@@ -70,7 +70,7 @@ export function useUpdatePublicLink(projectId: number | null, surveyId: number |
 export function useDeletePublicLink(projectId: number | null, surveyId: number | null) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (linkId: number) => {
+    mutationFn: async (linkId: string) => {
       if (projectId == null || surveyId == null) throw new Error('projectId and surveyId are required')
       const { error } = await apiClient.DELETE(
         '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/links/{link_id}',
