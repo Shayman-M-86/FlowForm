@@ -88,6 +88,7 @@ class SubmissionAccessGrant:
     project_id: int
     survey_id: int
     survey_version_id: int
+    response_store_id: int
     requires_auth: bool
     is_single_use: bool
     survey: Survey
@@ -185,4 +186,3 @@ class DeletionResult:
     session_id: str
     response_deleted: bool
     core_deleted: bool
-    pending: bool

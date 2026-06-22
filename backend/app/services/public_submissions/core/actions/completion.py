@@ -15,7 +15,7 @@ from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import SessionInvalidError
 from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
-from app.services.public_submissions.core.session_loader import SessionContext
+from app.services.public_submissions.core.shared.session_loader import SessionContext
 
 logger = logging.getLogger(__name__)
 

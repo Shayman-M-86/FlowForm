@@ -17,8 +17,8 @@ from app.repositories.response import (
     response_answer_revision_repo,
     response_envelope_repo,
 )
-from app.services.public_submissions.core.answer_save import AnswerSaveService
-from app.services.public_submissions.core.session_loader import SessionContext
+from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
+from app.services.public_submissions.core.shared.session_loader import SessionContext
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -250,7 +250,7 @@ class TestAnswerSave:
         svc = _make_answer_save_service(plaintext_dek)
         mutation_id = uuid.uuid4()
         with patch(
-            "app.services.public_submissions.core.answer_save.event_repo.create_event",
+            "app.services.public_submissions.core.actions.answer_save.event_repo.create_event",
             side_effect=Exception("DB error"),
         ):
             revision_id = svc.save_answer(
@@ -325,7 +325,7 @@ class TestQuestionViewed:
             answer_crypto_service=AnswerCryptoService(),
         )
         with patch(
-            "app.services.public_submissions.core.answer_save.event_repo.create_event",
+            "app.services.public_submissions.core.actions.answer_save.event_repo.create_event",
             side_effect=Exception("DB write failure"),
         ):
             svc.record_question_viewed(
@@ -362,7 +362,7 @@ class TestAnalyticsCoreCommitFailure:
 
         mutation_id = uuid.uuid4()
         with patch(
-            "app.services.public_submissions.core.answer_save.commit_with_err_handle",
+            "app.services.public_submissions.core.actions.answer_save.commit_with_err_handle",
             side_effect=commit_failing_on_core,
         ):
             revision_id = svc.save_answer(

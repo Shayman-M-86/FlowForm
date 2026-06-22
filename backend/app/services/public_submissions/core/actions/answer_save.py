@@ -20,12 +20,13 @@ from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_answer_repo, response_answer_revision_repo
 from app.schema.orm.core.survey_content import SurveyQuestion
-from app.services.public_submissions.core.crypto_provider import build_crypto_services
-from app.services.public_submissions.core.session_loader import SessionContext
+from app.services.public_submissions.core.shared.session_crypto import (
+    build_session_kms_context,
+    resolve_session_crypto_services,
+)
+from app.services.public_submissions.core.shared.session_loader import SessionContext
 
 logger = logging.getLogger(__name__)
-
-_KMS_CONTEXT_VERSION = 1
 
 
 class AnswerSaveService:
@@ -58,10 +59,14 @@ class AnswerSaveService:
         ):
             return self._locator_service, self._dek_service, self._answer_crypto_service
 
-        crypto = build_crypto_services()
-        self._locator_service = self._locator_service_override or crypto.locator_service
-        self._dek_service = self._dek_service_override or crypto.dek_service
-        self._answer_crypto_service = self._answer_crypto_override or crypto.answer_crypto_service
+        crypto = resolve_session_crypto_services(
+            locator_service=self._locator_service_override,
+            dek_service=self._dek_service_override,
+            answer_crypto_service=self._answer_crypto_override,
+        )
+        self._locator_service = crypto.locator_service
+        self._dek_service = crypto.dek_service
+        self._answer_crypto_service = crypto.answer_crypto_service
         return self._locator_service, self._dek_service, self._answer_crypto_service
 
     def save_answer(
@@ -113,16 +118,12 @@ class AnswerSaveService:
         # Step 5: Load the response envelope (already in ctx)
 
         # Step 6: Load plaintext DEK from cache; on miss, unwrap with KMS
-        kms_context = {
-            "session_locator": ctx.session_locator.hex(),
-            "kms_context_version": str(_KMS_CONTEXT_VERSION),
-        }
         plaintext_dek = dek_svc.get_for_session(
             ctx.session.id,
             ctx.envelope.wrapped_dek,
             ctx.envelope.kms_key_arn,
             ctx.session.expires_at,
-            encryption_context=kms_context,
+            encryption_context=build_session_kms_context(ctx.session_locator),
         )
 
         # Steps 8-9: Insert revision and update latest pointer

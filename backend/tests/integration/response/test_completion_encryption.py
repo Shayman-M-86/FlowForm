@@ -34,8 +34,8 @@ from app.repositories.response import (
     response_answer_revision_repo,
     response_envelope_repo,
 )
-from app.services.public_submissions.core.completion import CompletionService
-from app.services.public_submissions.core.session_loader import SessionContext
+from app.services.public_submissions.core.actions.completion import CompletionService
+from app.services.public_submissions.core.shared.session_loader import SessionContext
 from tests.integration.core.factories import (
     make_project,
     make_response_store,

@@ -36,7 +36,7 @@ from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
-from app.services.public_submissions.core.session_starter import SessionStarter
+from app.services.public_submissions.core.actions.session_starter import SessionStarter
 from tests.integration.core.factories import make_participant_chain, make_token_pair, make_user
 
 # ---------------------------------------------------------------------------

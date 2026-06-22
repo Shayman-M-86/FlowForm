@@ -25,8 +25,8 @@ from app.domain.errors import SessionNotFoundError, SessionStartError
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.response.response_envelope import ResponseEnvelope
-from app.services.public_submissions.core.session_loader import load_current_session
-from app.services.public_submissions.core.session_starter import SessionStarter
+from app.services.public_submissions.core.shared.session_loader import load_current_session
+from app.services.public_submissions.core.actions.session_starter import SessionStarter
 from tests.integration.core.factories import (
     make_project,
     make_response_store,

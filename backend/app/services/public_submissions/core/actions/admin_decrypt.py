@@ -16,11 +16,9 @@ from sqlalchemy.orm import Session
 from app.core.config import EncryptionSettings
 from app.crypto import build_aad
 from app.crypto.services import AnswerCryptoService, LocatorService, SessionDEKService
-from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.response import (
     response_answer_repo,
     response_answer_revision_repo,
-    response_envelope_repo,
 )
 from app.schema.api.submission_sessions.answer_payload import (
     SubmissionAnswerValue,
@@ -29,30 +27,15 @@ from app.schema.api.submission_sessions.answer_payload import (
 from app.schema.enums import AnswerFamily
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.core.survey_content import SurveyQuestion
-from app.services.public_submissions.core.crypto_provider import build_crypto_services
+from app.services.public_submissions.core.shared.session_crypto import (
+    load_session_envelope_crypto_context,
+    resolve_session_crypto_services,
+)
 from app.services.results import AdminSessionDetailResult, DecryptedAnswerResult
 
 logger = logging.getLogger(__name__)
 
-_KMS_CONTEXT_VERSION = 1
-
 _VALID_FAMILIES: frozenset[str] = frozenset({"choice", "field", "matching", "rating"})
-
-
-def _get_crypto_services(
-    locator_service: LocatorService | None,
-    dek_service: SessionDEKService | None,
-    answer_crypto_service: AnswerCryptoService | None,
-    enc: EncryptionSettings,
-) -> tuple[LocatorService, SessionDEKService, AnswerCryptoService]:
-    if locator_service is not None and dek_service is not None and answer_crypto_service is not None:
-        return locator_service, dek_service, answer_crypto_service
-    crypto = build_crypto_services(enc)
-    return (
-        locator_service or crypto.locator_service,
-        dek_service or crypto.dek_service,
-        answer_crypto_service or crypto.answer_crypto_service,
-    )
 
 
 def decrypt_session_detail(
@@ -75,16 +58,19 @@ def decrypt_session_detail(
     directly and touches response data immediately. Per doc 01 §1,
     the service layer is not responsible for access authorization.
     """
-    loc_svc, dek_svc, crypto_svc = _get_crypto_services(
-        locator_service, dek_service, answer_crypto_service, encryption_settings,
+    crypto = resolve_session_crypto_services(
+        encryption_settings,
+        locator_service=locator_service,
+        dek_service=dek_service,
+        answer_crypto_service=answer_crypto_service,
     )
 
-    envelope, plaintext_dek = _load_envelope_and_dek(
+    ectx = load_session_envelope_crypto_context(
         db, response_db, session=session,
-        locator_service=loc_svc, dek_service=dek_svc,
+        locator_service=crypto.locator_service, dek_service=crypto.dek_service,
     )
 
-    answers = response_answer_repo.get_all_by_envelope(response_db, envelope.id)
+    answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)
     question_meta_map = _build_question_meta_map(db, session.survey_version_id)
 
     decrypted: list[DecryptedAnswerResult] = []
@@ -96,14 +82,14 @@ def decrypt_session_detail(
         parsed = _decrypt_revision(
             ciphertext=latest_rev.ciphertext,
             nonce=latest_rev.nonce,
-            dek=plaintext_dek,
-            crypto_version=envelope.crypto_version,
+            dek=ectx.plaintext_dek,
+            crypto_version=ectx.envelope.crypto_version,
             envelope_id=answer.envelope_id,
             answer_id=answer.id,
             answer_locator=answer.answer_locator,
             revision_id=latest_rev.id,
             revision_number=latest_rev.revision_number,
-            answer_crypto_service=crypto_svc,
+            answer_crypto_service=crypto.answer_crypto_service,
         )
 
         question_key, answer_family = question_meta_map.get(parsed.question_node_id, (None, None))
@@ -145,16 +131,19 @@ def decrypt_session_history(
     answer_crypto_service: AnswerCryptoService | None = None,
 ) -> AdminSessionDetailResult:
     """Decrypt full revision history for authorized history reads."""
-    loc_svc, dek_svc, crypto_svc = _get_crypto_services(
-        locator_service, dek_service, answer_crypto_service, encryption_settings,
+    crypto = resolve_session_crypto_services(
+        encryption_settings,
+        locator_service=locator_service,
+        dek_service=dek_service,
+        answer_crypto_service=answer_crypto_service,
     )
 
-    envelope, plaintext_dek = _load_envelope_and_dek(
+    ectx = load_session_envelope_crypto_context(
         db, response_db, session=session,
-        locator_service=loc_svc, dek_service=dek_svc,
+        locator_service=crypto.locator_service, dek_service=crypto.dek_service,
     )
 
-    answers = response_answer_repo.get_all_by_envelope(response_db, envelope.id)
+    answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)
     question_meta_map = _build_question_meta_map(db, session.survey_version_id)
 
     decrypted: list[DecryptedAnswerResult] = []
@@ -164,14 +153,14 @@ def decrypt_session_history(
             parsed = _decrypt_revision(
                 ciphertext=rev.ciphertext,
                 nonce=rev.nonce,
-                dek=plaintext_dek,
-                crypto_version=envelope.crypto_version,
+                dek=ectx.plaintext_dek,
+                crypto_version=ectx.envelope.crypto_version,
                 envelope_id=answer.envelope_id,
                 answer_id=answer.id,
                 answer_locator=answer.answer_locator,
                 revision_id=rev.id,
                 revision_number=rev.revision_number,
-                answer_crypto_service=crypto_svc,
+                answer_crypto_service=crypto.answer_crypto_service,
             )
 
             question_key, answer_family = question_meta_map.get(parsed.question_node_id, (None, None))
@@ -200,37 +189,6 @@ def decrypt_session_history(
         completed_at=session.completed_at,
         answers=decrypted,
     )
-
-
-def _load_envelope_and_dek(
-    db: Session,
-    response_db: Session,
-    *,
-    session: SubmissionSession,
-    locator_service: LocatorService,
-    dek_service: SessionDEKService,
-) -> tuple[Any, bytes]:
-    session_locator = locator_service.for_existing_session(
-        str(session.id), session.linkage_key_version, db,
-    )
-
-    envelope = response_envelope_repo.get_by_locator(response_db, session_locator)
-    if envelope is None:
-        raise EnvelopeNotFoundError()
-
-    kms_context = {
-        "session_locator": session_locator.hex(),
-        "kms_context_version": str(_KMS_CONTEXT_VERSION),
-    }
-    plaintext_dek = dek_service.get_for_session(
-        session.id,
-        envelope.wrapped_dek,
-        envelope.kms_key_arn,
-        session.expires_at,
-        encryption_context=kms_context,
-    )
-
-    return envelope, plaintext_dek
 
 
 def _decrypt_revision(

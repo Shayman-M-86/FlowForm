@@ -112,7 +112,7 @@ def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
     from unittest.mock import MagicMock
 
     from app.crypto.services import NewSessionDEK, NewSessionLocator
-    from app.services.public_submissions.core.session_starter import SessionStarter
+    from app.services.public_submissions.core.actions.session_starter import SessionStarter
 
     loc_svc = MagicMock()
     loc_svc.get_current_linkage_key_version.return_value = 1

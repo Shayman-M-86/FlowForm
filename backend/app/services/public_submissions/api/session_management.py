@@ -16,9 +16,12 @@ from app.schema.api.requests.submission_sessions import (
 )
 from app.schema.api.responses.submission_sessions import StartSubmissionSessionResponse
 from app.schema.orm.core.user import User
-from app.services.public_submissions.core.completion import CompletionResult, CompletionService
-from app.services.public_submissions.core.session_loader import load_current_session
-from app.services.public_submissions.core.session_starter import SessionStarter
+from app.services.public_submissions.core.actions.completion import (
+    CompletionResult,
+    CompletionService,
+)
+from app.services.public_submissions.core.actions.session_starter import SessionStarter
+from app.services.public_submissions.core.shared.session_loader import load_current_session
 
 
 class SessionManagementService:

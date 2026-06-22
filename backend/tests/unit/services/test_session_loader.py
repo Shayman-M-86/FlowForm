@@ -13,7 +13,7 @@ from app.domain.errors import (
     SessionInvalidError,
     SessionNotFoundError,
 )
-from app.services.public_submissions.core.session_loader import load_current_session
+from app.services.public_submissions.core.shared.session_loader import load_current_session
 
 
 def _fake_encryption_settings() -> MagicMock:
@@ -50,10 +50,10 @@ class TestSessionLoaderRejection:
         db = MagicMock()
         response_db = MagicMock()
         with patch(
-            "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+            "app.services.public_submissions.core.shared.session_loader.ssr.hash_browser_session_token",
             return_value=b"\x00" * 32,
         ), patch(
-            "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+            "app.services.public_submissions.core.shared.session_loader.ssr.get_by_token_hash",
             return_value=None,
         ), pytest.raises(SessionNotFoundError):
             load_current_session(
@@ -66,10 +66,10 @@ class TestSessionLoaderRejection:
         response_db = MagicMock()
         session = _fake_session(expired=True)
         with patch(
-            "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+            "app.services.public_submissions.core.shared.session_loader.ssr.hash_browser_session_token",
             return_value=b"\x00" * 32,
         ), patch(
-            "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+            "app.services.public_submissions.core.shared.session_loader.ssr.get_by_token_hash",
             return_value=session,
         ), pytest.raises(SessionExpiredError):
             load_current_session(
@@ -82,10 +82,10 @@ class TestSessionLoaderRejection:
         response_db = MagicMock()
         session = _fake_session(status="abandoned")
         with patch(
-            "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+            "app.services.public_submissions.core.shared.session_loader.ssr.hash_browser_session_token",
             return_value=b"\x00" * 32,
         ), patch(
-            "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+            "app.services.public_submissions.core.shared.session_loader.ssr.get_by_token_hash",
             return_value=session,
         ), pytest.raises(SessionInvalidError, match="abandoned"):
             load_current_session(
@@ -98,10 +98,10 @@ class TestSessionLoaderRejection:
         response_db = MagicMock()
         session = _fake_session(status="completed")
         with patch(
-            "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+            "app.services.public_submissions.core.shared.session_loader.ssr.hash_browser_session_token",
             return_value=b"\x00" * 32,
         ), patch(
-            "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+            "app.services.public_submissions.core.shared.session_loader.ssr.get_by_token_hash",
             return_value=session,
         ), pytest.raises(SessionInvalidError, match="completed"):
             load_current_session(
@@ -121,13 +121,13 @@ class TestSessionLoaderRejection:
         locator_service.for_existing_session.return_value = b"\x02" * 32
 
         with patch(
-            "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+            "app.services.public_submissions.core.shared.session_loader.ssr.hash_browser_session_token",
             return_value=b"\x00" * 32,
         ), patch(
-            "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+            "app.services.public_submissions.core.shared.session_loader.ssr.get_by_token_hash",
             return_value=session,
         ), patch(
-            "app.services.public_submissions.core.session_loader.response_envelope_repo.get_by_locator",
+            "app.services.public_submissions.core.shared.session_loader.response_envelope_repo.get_by_locator",
             return_value=envelope,
         ):
             db.scalar.return_value = version
@@ -151,13 +151,13 @@ class TestSessionLoaderRejection:
         locator_service.for_existing_session.return_value = b"\x02" * 32
 
         with patch(
-            "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+            "app.services.public_submissions.core.shared.session_loader.ssr.hash_browser_session_token",
             return_value=b"\x00" * 32,
         ), patch(
-            "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+            "app.services.public_submissions.core.shared.session_loader.ssr.get_by_token_hash",
             return_value=session,
         ), patch(
-            "app.services.public_submissions.core.session_loader.response_envelope_repo.get_by_locator",
+            "app.services.public_submissions.core.shared.session_loader.response_envelope_repo.get_by_locator",
             return_value=None,
         ):
             db.scalar.return_value = version

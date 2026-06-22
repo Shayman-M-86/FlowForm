@@ -26,7 +26,7 @@ from app.domain.errors import SessionStartError
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.response.response_envelope import ResponseEnvelope
-from app.services.public_submissions.core.session_starter import SessionStarter
+from app.services.public_submissions.core.actions.session_starter import SessionStarter
 from tests.conftest import DbSessions
 from tests.integration.core.factories import (
     make_project,
@@ -130,7 +130,7 @@ def _fail_response_commit_once(monkeypatch: pytest.MonkeyPatch) -> None:
         return original(db, *args, **kwargs)
 
     monkeypatch.setattr(
-        "app.services.public_submissions.core.session_starter.commit_with_err_handle",
+        "app.services.public_submissions.core.actions.session_starter.commit_with_err_handle",
         _fail_first,
     )
 
@@ -263,7 +263,7 @@ class TestPreCommitEnvelopeFailureRollback:
         mock_repo = MagicMock()
         mock_repo.create.side_effect = RuntimeError("DB write failed")
         monkeypatch.setattr(
-            "app.services.public_submissions.core.session_starter.response_envelope_repo",
+            "app.services.public_submissions.core.actions.session_starter.response_envelope_repo",
             mock_repo,
         )
 
@@ -336,7 +336,7 @@ class TestCoreCommitFailureAfterEnvelopeCreation:
             return original(*args, **kwargs)
 
         monkeypatch.setattr(
-            "app.services.public_submissions.core.session_starter.commit_with_err_handle",
+            "app.services.public_submissions.core.actions.session_starter.commit_with_err_handle",
             _fail_second,
         )
 
@@ -407,7 +407,7 @@ class TestCoreCommitFailureAfterEnvelopeCreation:
             return True
 
         monkeypatch.setattr(
-            "app.services.public_submissions.core.session_starter.response_envelope_repo.delete_by_locator",
+            "app.services.public_submissions.core.actions.session_starter.response_envelope_repo.delete_by_locator",
             _record_delete,
         )
 
@@ -436,7 +436,7 @@ class TestCoreCommitFailureAfterEnvelopeCreation:
     ) -> None:
         response_db = MagicMock()
         monkeypatch.setattr(
-            "app.services.public_submissions.core.session_starter.response_envelope_repo.delete_by_locator",
+            "app.services.public_submissions.core.actions.session_starter.response_envelope_repo.delete_by_locator",
             MagicMock(side_effect=RuntimeError("DELETE denied")),
         )
         caplog.set_level("ERROR")

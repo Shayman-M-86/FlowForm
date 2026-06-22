@@ -35,7 +35,7 @@ from app.repositories.response import (
     response_answer_revision_repo,
     response_envelope_repo,
 )
-from app.services.public_submissions.core.admin_decrypt import (
+from app.services.public_submissions.core.actions.admin_decrypt import (
     decrypt_session_detail,
     decrypt_session_history,
 )

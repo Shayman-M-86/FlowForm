@@ -16,7 +16,7 @@ from app.schema.enums import SurveyVisibility
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
-from app.services.public_submissions.core.access_resolver import AccessResolver
+from app.services.public_submissions.core.resolution.access_resolver import AccessResolver
 from tests.integration.core.factories import make_participant_chain, make_token_pair
 
 

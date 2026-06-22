@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import cast
 from unittest.mock import MagicMock
 
 from app.crypto.services.linkage_key_service import LinkageKey, LinkageKeyService
@@ -120,4 +121,5 @@ class TestAnswerLocators:
         svc = _make_service()
         db = _db()
         svc.answer_locators("sess-1", ["q-1", "q-2", "q-3"], 2, db)
-        svc._keys.get_linkage_key_by_version.assert_called_once_with(2, db)
+        get_linkage_key_by_version = cast(MagicMock, svc._keys.get_linkage_key_by_version)
+        get_linkage_key_by_version.assert_called_once_with(2, db)

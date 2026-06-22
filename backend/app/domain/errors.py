@@ -724,12 +724,3 @@ class CompletionValidationError(AppError):
         )
 
 
-class DeletionPendingError(AppError):
-    """Raised when response deletion succeeded but core deletion failed."""
-
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=500,
-            code="DELETION_PENDING",
-            message="Response data deleted but core cleanup is pending.",
-        )

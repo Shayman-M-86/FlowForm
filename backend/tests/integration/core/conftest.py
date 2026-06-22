@@ -40,7 +40,7 @@ def _make_mock_dek_service():
 @pytest.fixture(autouse=True)
 def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
     """Auto-mock crypto services so existing core tests run without AWS."""
-    from app.services.public_submissions.core.session_starter import SessionStarter
+    from app.services.public_submissions.core.actions.session_starter import SessionStarter
 
     loc_svc = _make_mock_locator_service()
     dek_svc = _make_mock_dek_service()

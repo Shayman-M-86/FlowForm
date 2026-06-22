@@ -83,6 +83,12 @@ def mark_completed(
     flush_with_err_handle(db, contexts=[submission_session])
 
 
+def delete_session(db: Session, *, submission_session: SubmissionSession) -> None:
+    """Delete a core session row (flush only — caller owns the commit)."""
+    db.delete(submission_session)
+    flush_with_err_handle(db, contexts=[submission_session])
+
+
 def mark_abandoned(db: Session, *, submission_session: SubmissionSession) -> None:
     """Mark a committed core session abandoned during reconciliation or repair.
 

@@ -43,8 +43,8 @@ from app.repositories.response import (
 )
 from app.schema.orm.core.submission_session import SubmissionEvent, SubmissionSession
 from app.schema.orm.response.response_envelope import ResponseEnvelope
-from app.services.public_submissions.core.answer_save import AnswerSaveService
-from app.services.public_submissions.core.session_loader import SessionContext, load_current_session
+from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
+from app.services.public_submissions.core.shared.session_loader import SessionContext, load_current_session
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -560,7 +560,7 @@ class TestAnalyticsFailure:
         svc = _make_service(ctx, plaintext_dek)
 
         with patch(
-            "app.services.public_submissions.core.answer_save.event_repo.create_event",
+            "app.services.public_submissions.core.actions.answer_save.event_repo.create_event",
             side_effect=Exception("DB error"),
         ):
             revision_id = svc.save_answer(

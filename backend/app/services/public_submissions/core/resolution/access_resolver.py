@@ -31,8 +31,40 @@ class AccessResolver:
     """Resolve public-slug or link-token access into a validated SubmissionAccessGrant.
 
     Shared entry point for both survey resolve (preview) and session start.
-    Checks: link state, link type, survey visibility, published version.
     Does NOT resolve subject or token — that is SubjectResolver's job.
+
+    ``resolve()`` routes on ``access.type`` and guarantees every returned
+    ``SubmissionAccessGrant`` has passed **all** of the following checks:
+
+    Common (both paths):
+      1. Survey exists — raises SurveyNotFoundBySlugError / SurveyNotFoundError.
+      2. Survey has a published version with status="published"
+         — raises SurveyNotPublishedError.
+      3. Survey has a default response store configured
+         — raises SurveyNoResponseStoreError.
+
+    Public-slug path (``access.type == "public_slug"``):
+      3. Survey visibility is "public" — raises SurveyNotAccessibleError.
+
+    Link-token path (``access.type != "public_slug"``):
+      3. Link token resolves to a SurveyLink row — raises LinkNotFoundError.
+      4. Link is active (``is_active=True``) — raises LinkInactiveError.
+      5. Link is not expired (``expires_at`` is null or in the future)
+         — raises LinkExpiredError.
+      6. Authenticated links require a logged-in actor
+         — raises LinkAuthRequiredError.
+      7. Single-use links have not already been used (``used_at`` is null)
+         — raises LinkAlreadyUsedError.
+      8. General links cannot access private-visibility surveys
+         — raises PrivateSurveyAssignedEmailRequiredError.
+
+    Authenticated-link extras (actor is present and ``link_type == "authenticated"``):
+      9.  Link has an assigned participant — raises LinkAuthAssignmentRequiredError.
+      10. Participant exists in the project — raises LinkAuthAssignmentRequiredError.
+      11. Participant identity is type "authenticated_user" with a linked user_id
+          — raises LinkParticipantVerificationRequiredError.
+      12. Actor matches the participant identity's user_id
+          — raises LinkAssignmentMismatchError.
     """
 
     def resolve(
@@ -65,11 +97,13 @@ class AccessResolver:
             survey_id=survey.id,
             project_id=survey.project_id,
         )
+        response_store_id = survey_rules.ensure_has_response_store(survey=survey)
         return SubmissionAccessGrant(
             access_method="public_slug",
             project_id=survey.project_id,
             survey_id=survey.id,
             survey_version_id=published_version.id,
+            response_store_id=response_store_id,
             link_id=None,
             assigned_subject_id=None,
             requires_auth=False,
@@ -103,6 +137,7 @@ class AccessResolver:
             survey_id=survey.id,
             project_id=survey.project_id,
         )
+        response_store_id = survey_rules.ensure_has_response_store(survey=survey)
         assigned_subject_id = (
             link.assigned_participant.project_subject_id
             if link.assigned_participant is not None
@@ -113,6 +148,7 @@ class AccessResolver:
             project_id=survey.project_id,
             survey_id=survey.id,
             survey_version_id=published_version.id,
+            response_store_id=response_store_id,
             link_id=link.id,
             assigned_subject_id=assigned_subject_id,
             requires_auth=link.link_type == "authenticated",

@@ -25,7 +25,7 @@ from app.domain.errors import (
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_envelope_repo
 from app.schema.orm.core.survey import SurveyVersion
-from app.services.public_submissions.core.crypto_provider import build_crypto_services
+from app.services.public_submissions.core.shared.crypto_provider import build_crypto_services
 
 if TYPE_CHECKING:
     from app.schema.orm.core.submission_session import SubmissionSession

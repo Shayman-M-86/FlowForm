@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
-from app.services.public_submissions.core.session_starter import SessionStarter
+from app.services.public_submissions.core.actions.session_starter import SessionStarter
 from tests.integration.core.factories import make_participant_chain, make_token_pair
 
 _SCHEMA = {"nodes": [{"id": "q1", "type": "short_text"}]}

@@ -10,7 +10,7 @@ from app.repositories.core import project_subject_tokens as sub_tok
 from app.repositories.core.project_subjects import create_subject, set_canonical_subject
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.project_subject import ProjectSubject
-from app.services.public_submissions.core.subject_token import SubjectTokenService
+from app.services.public_submissions.core.resolution.subject_token import SubjectTokenService
 
 
 def _make_subject(db: Session, *, project: Project) -> ProjectSubject:

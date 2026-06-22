@@ -16,7 +16,7 @@ from app.repositories.core import project_subjects as sub_repo
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.project_subject import ProjectSubject, ProjectSubjectToken
 from app.schema.orm.core.user import User
-from app.services.public_submissions.core.subject_resolver import SubjectResolver
+from app.services.public_submissions.core.resolution.subject_resolver import SubjectResolver
 
 # ---------------------------------------------------------------------------
 # Helpers

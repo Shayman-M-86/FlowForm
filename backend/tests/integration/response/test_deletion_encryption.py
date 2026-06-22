@@ -3,7 +3,6 @@
 Verifies:
 - Full deletion removes response envelope then core session
 - Deletion ordering: response DB first, then core
-- Partial deletion (core fails) raises DeletionPendingError
 - Missing envelope raises EnvelopeNotFoundError
 """
 from __future__ import annotations
@@ -11,18 +10,16 @@ from __future__ import annotations
 import os
 import uuid
 from typing import TYPE_CHECKING
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-from pydantic import SecretStr
 from sqlalchemy.orm import Session
 
-from app.core.config import EncryptionSettings
 from app.crypto import derive_session_locator
-from app.domain.errors import DeletionPendingError, EnvelopeNotFoundError
+from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.core.submission_sessions import create_session
 from app.repositories.response import response_envelope_repo
-from app.services.public_submissions.core.deletion import delete_session_responses
+from app.services.public_submissions.core.actions.deletion import delete_session_responses
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -35,13 +32,14 @@ if TYPE_CHECKING:
     from tests.conftest import DbSessions
 
 _LINKAGE_SECRET = b"\xcc" * 32
-_FAKE_ENC_SETTINGS = EncryptionSettings(
-    kms_key_arn="arn:aws:kms:us-east-1:000000000000:key/test-key",
-    linkage_secret_arn="arn:aws:secretsmanager:us-east-1:000000000000:secret:test",
-    aws_region="us-east-1",
-    aws_access_key_id=SecretStr("AKIAIOSFODNN7EXAMPLE"),
-    aws_secret_access_key=SecretStr("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"),
-)
+
+
+def _mock_locator_service(session_locator: bytes | None = None) -> MagicMock:
+    """A LocatorService stub whose for_existing_session returns a fixed locator."""
+    svc = MagicMock()
+    if session_locator is not None:
+        svc.for_existing_session.return_value = session_locator
+    return svc
 
 
 def _setup_core_fixtures(core_db: Session):
@@ -86,13 +84,6 @@ def _create_session_row(core_db: Session, project, survey, version):
     return session
 
 
-def _patch_deletion_crypto():
-    return patch(
-        "app.services.public_submissions.core.deletion.get_linkage_secret",
-        return_value=_LINKAGE_SECRET,
-    )
-
-
 class TestDeletion:
 
     def test_deletion_calls_response_delete_first(self, db_sessions: DbSessions) -> None:
@@ -107,63 +98,35 @@ class TestDeletion:
             call_order.append("response_delete")
             return True
 
+        def mock_delete_session(db, *, submission_session):
+            call_order.append("core_delete")
+
         def mock_commit(db, contexts):
             call_order.append("commit")
 
         with (
-            _patch_deletion_crypto(),
             patch(
-                "app.services.public_submissions.core.deletion.response_envelope_repo.delete_by_locator",
+                "app.services.public_submissions.core.actions.deletion.response_envelope_repo.delete_by_locator",
                 side_effect=mock_delete_by_locator,
             ),
             patch(
-                "app.services.public_submissions.core.deletion.commit_with_err_handle",
+                "app.services.public_submissions.core.actions.deletion.ssr.delete_session",
+                side_effect=mock_delete_session,
+            ),
+            patch(
+                "app.services.public_submissions.core.actions.deletion.commit_with_err_handle",
                 side_effect=mock_commit,
             ),
         ):
-            # Mock db.delete to avoid actually deleting the session
-            with patch.object(core_db, "delete") as mock_core_delete:
-                mock_core_delete.side_effect = lambda s: call_order.append("core_delete")
-                result = delete_session_responses(
-                    core_db, response_db,
-                    session=session,
-                    encryption_settings=_FAKE_ENC_SETTINGS,
-                )
+            result = delete_session_responses(
+                core_db, response_db,
+                session=session,
+                locator_service=_mock_locator_service(_LINKAGE_SECRET),
+            )
 
         assert result.response_deleted is True
         assert result.core_deleted is True
-        assert result.pending is False
         assert call_order.index("response_delete") < call_order.index("core_delete")
-
-    def test_core_delete_failure_marks_pending(self, db_sessions: DbSessions) -> None:
-        core_db, response_db = db_sessions.core, db_sessions.response
-        project, survey, version = _setup_core_fixtures(core_db)
-        session = _create_session_row(core_db, project, survey, version)
-
-        commit_count = [0]
-
-        def mock_commit(db, contexts):
-            commit_count[0] += 1
-            if commit_count[0] == 2:
-                raise Exception("Core commit failed")
-
-        with (
-            _patch_deletion_crypto(),
-            patch(
-                "app.services.public_submissions.core.deletion.response_envelope_repo.delete_by_locator",
-                return_value=True,
-            ),
-            patch(
-                "app.services.public_submissions.core.deletion.commit_with_err_handle",
-                side_effect=mock_commit,
-            ),
-            pytest.raises(DeletionPendingError),
-        ):
-            delete_session_responses(
-                core_db, response_db,
-                session=session,
-                encryption_settings=_FAKE_ENC_SETTINGS,
-            )
 
     def test_full_deletion_removes_envelope(self, db_sessions: DbSessions) -> None:
         """End-to-end: real DELETE on response DB, verify envelope is gone."""
@@ -182,16 +145,14 @@ class TestDeletion:
             crypto_version=1,
         )
 
-        with _patch_deletion_crypto():
-            result = delete_session_responses(
-                core_db, response_db,
-                session=session,
-                encryption_settings=_FAKE_ENC_SETTINGS,
-            )
+        result = delete_session_responses(
+            core_db, response_db,
+            session=session,
+            locator_service=_mock_locator_service(session_locator),
+        )
 
         assert result.response_deleted is True
         assert result.core_deleted is True
-        assert result.pending is False
         assert response_envelope_repo.get_by_locator(response_db, session_locator) is None
 
     def test_missing_envelope_raises(self, db_sessions: DbSessions) -> None:
@@ -199,9 +160,9 @@ class TestDeletion:
         project, survey, version = _setup_core_fixtures(core_db)
         session = _create_session_row(core_db, project, survey, version)
 
-        with _patch_deletion_crypto(), pytest.raises(EnvelopeNotFoundError):
+        with pytest.raises(EnvelopeNotFoundError):
             delete_session_responses(
                 core_db, response_db,
                 session=session,
-                encryption_settings=_FAKE_ENC_SETTINGS,
+                locator_service=_mock_locator_service(_LINKAGE_SECRET),
             )

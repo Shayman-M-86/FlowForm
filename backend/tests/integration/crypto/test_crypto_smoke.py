@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import base64
+import json
 import os
 import uuid
+from typing import Any
 
 import pytest
 
@@ -26,6 +29,14 @@ skip_no_aws = pytest.mark.skipif(
 )
 
 
+def _decode_linkage_secret(secret_string: str) -> bytes:
+    data: Any = json.loads(secret_string)
+    assert isinstance(data, dict)
+    secret_b64 = data["secret_b64"]
+    assert isinstance(secret_b64, str)
+    return base64.b64decode(secret_b64)
+
+
 @skip_no_aws
 class TestCryptoSmoke:
     """End-to-end crypto round-trip against real KMS and Secrets Manager."""
@@ -45,11 +56,12 @@ class TestCryptoSmoke:
             access_key_id=access_key_id,
             secret_access_key=secret_access_key,
         )
-        assert len(linkage_secret) == 32
+        linkage_secret_bytes = _decode_linkage_secret(linkage_secret.secret_string)
+        assert len(linkage_secret_bytes) == 32
 
         # 2. Derive a session locator
         core_session_id = str(uuid.uuid4())
-        session_locator = derive_session_locator(core_session_id, linkage_secret)
+        session_locator = derive_session_locator(core_session_id, linkage_secret_bytes)
         assert len(session_locator) == 32
 
         # 3. Generate a DEK (32 bytes for AES-256)
