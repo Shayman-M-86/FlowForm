@@ -74,7 +74,7 @@ def save_submission_session_answer(question_node_id: UUID):
         raw_resume_token=get_submission_session_token(),
         question_node_id=question_node_id,
         answer_state=payload.state,
-        answer_value=payload.answer_value.model_dump() if payload.answer_value is not None else None,
+        answer_value=payload.answer_value,
         client_mutation_id=payload.client_mutation_id,
     )
 

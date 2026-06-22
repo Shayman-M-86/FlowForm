@@ -10,7 +10,23 @@ external context and so never parses ``answer_value`` beyond plain JSON.
 """
 
 import json
-from typing import Any
+from typing import Any, TypedDict, get_args
+
+from app.schema.enums import SubmissionAnswerState
+
+PlaintextAnswerValue = dict[str, Any] | list[Any] | str | int | float | bool | None
+
+
+class ParsedPlaintextPayload(TypedDict):
+    """Typed structure decoded from one plaintext answer payload."""
+
+    payload_version: int
+    question_node_id: str
+    answer_state: SubmissionAnswerState
+    answer_value: PlaintextAnswerValue
+
+
+_ANSWER_STATES: frozenset[str] = frozenset(get_args(SubmissionAnswerState))
 
 
 class PayloadDecodeError(Exception):
@@ -20,8 +36,8 @@ class PayloadDecodeError(Exception):
 def build_plaintext_payload(
     payload_version: int,
     question_node_id: str,
-    answer_state: str,
-    answer_value: Any | None,
+    answer_state: SubmissionAnswerState,
+    answer_value: PlaintextAnswerValue,
 ) -> bytes:
     """Encode a versioned plaintext payload for encryption."""
     payload = {
@@ -33,21 +49,28 @@ def build_plaintext_payload(
     return json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
 
 
-def parse_plaintext_payload(raw: bytes) -> dict[str, Any]:
+def parse_plaintext_payload(raw: bytes) -> ParsedPlaintextPayload:
     """Decode a versioned plaintext payload after decryption."""
     try:
         data = json.loads(raw)
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         raise PayloadDecodeError("Invalid payload bytes") from exc
 
+    if not isinstance(data, dict):
+        raise PayloadDecodeError("Payload must be a JSON object")
+
     required_keys = {"v", "question_node_id", "answer_state", "answer_value"}
     missing = required_keys - set(data.keys())
     if missing:
         raise PayloadDecodeError(f"Missing payload fields: {sorted(missing)}")
 
+    answer_state = data["answer_state"]
+    if answer_state not in _ANSWER_STATES:
+        raise PayloadDecodeError(f"Invalid answer_state: {answer_state!r}")
+
     return {
         "payload_version": data["v"],
         "question_node_id": data["question_node_id"],
-        "answer_state": data["answer_state"],
+        "answer_state": answer_state,
         "answer_value": data["answer_value"],
     }

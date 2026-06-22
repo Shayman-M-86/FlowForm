@@ -7,8 +7,9 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Any
+from typing import Any, cast
 
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.crypto import build_aad
@@ -20,6 +21,8 @@ from app.repositories import content_repo
 from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_answer_repo, response_answer_revision_repo
+from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
+from app.schema.enums import SubmissionAnswerState
 from app.services.public_submissions.core.shared.crypto_provider import CryptoServices
 from app.services.public_submissions.core.shared.session_crypto import (
     build_session_kms_context,
@@ -28,6 +31,16 @@ from app.services.public_submissions.core.shared.session_crypto import (
 from app.services.public_submissions.core.shared.session_loader import SessionContext
 
 logger = logging.getLogger(__name__)
+
+AnswerValueInput = SubmissionAnswerValue | dict[str, Any] | None
+
+
+def _answer_value_to_json(answer_value: AnswerValueInput) -> dict[str, Any] | None:
+    if answer_value is None:
+        return None
+    if isinstance(answer_value, BaseModel):
+        return cast(dict[str, Any], answer_value.model_dump(mode="json"))
+    return answer_value
 
 
 class AnswerSaveService:
@@ -67,8 +80,8 @@ class AnswerSaveService:
         *,
         ctx: SessionContext,
         question_node_id: str,
-        answer_state: str,
-        answer_value: Any | None,
+        answer_state: SubmissionAnswerState,
+        answer_value: AnswerValueInput,
         client_mutation_id: uuid.UUID,
     ) -> int:
         """Execute the 12-step answer save sequence. Returns the revision number."""
@@ -102,8 +115,9 @@ class AnswerSaveService:
             raise QuestionNotInVersionError()
 
         # Step 3b: Validate answer shape against the frozen question definition
-        if answer_state != "cleared" and answer_value is not None:
-            validate_answer(question.question_schema, answer_value)
+        json_answer_value = _answer_value_to_json(answer_value)
+        if answer_state != "cleared" and json_answer_value is not None:
+            validate_answer(question.question_schema, json_answer_value)
 
         # Step 4: Derive session locator and answer locator (locator already derived)
         # Step 5: Load the response envelope (already in ctx)
@@ -222,4 +236,3 @@ class AnswerSaveService:
             question_node_id=uuid.UUID(question_node_id),
             log_label="question_viewed",
         )
-

@@ -29,6 +29,20 @@ def list_nodes(db: Session, version_id: int) -> list[SurveyQuestion]:
     )
 
 
+def list_question_nodes(db: Session, version_id: int) -> list[SurveyQuestion]:
+    """Return only question-type nodes."""
+    return list(
+        db.scalars(
+            select(SurveyQuestion)
+            .where(
+                SurveyQuestion.survey_version_id == version_id,
+                SurveyQuestion.node_type == "question",
+            )
+            .order_by(SurveyQuestion.sort_key)
+        ).all()
+    )
+
+
 def list_rules(db: Session, version_id: int) -> list[SurveyQuestion]:
     """Return only rule-type nodes. Used by version cloning."""
     return list(

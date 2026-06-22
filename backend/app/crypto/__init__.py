@@ -23,7 +23,9 @@ from app.crypto.secrets import SecretValue, get_linkage_secret
 from app.crypto.services import (
     AnswerCryptoService,
     DecryptedAnswer,
+    DecryptedAnswerPayload,
     EncryptedAnswer,
+    EncryptedAnswerPayload,
     LinkageKey,
     LinkageKeyService,
     LocatorService,
@@ -35,9 +37,11 @@ from app.crypto.services import (
 __all__ = [
     "AnswerCryptoService",
     "DecryptedAnswer",
+    "DecryptedAnswerPayload",
     "DecryptionError",
     "DekCache",
     "EncryptedAnswer",
+    "EncryptedAnswerPayload",
     "KmsError",
     "LinkageKey",
     "LinkageKeyError",

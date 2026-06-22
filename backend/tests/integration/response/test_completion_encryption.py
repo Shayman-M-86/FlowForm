@@ -34,6 +34,7 @@ from app.repositories.response import (
     response_answer_revision_repo,
     response_envelope_repo,
 )
+from app.schema.enums import SubmissionAnswerState
 from app.services.public_submissions.core.actions.completion import CompletionService
 from app.services.public_submissions.core.shared.session_loader import SessionContext
 from tests.integration.core.factories import (
@@ -188,7 +189,7 @@ def _save_encrypted_answer(
     ctx: SessionContext,
     plaintext_dek: bytes,
     question_node_id: str,
-    answer_state: str = "answered",
+    answer_state: SubmissionAnswerState = "answered",
     answer_value=None,
 ):
     """Helper to create an encrypted answer directly in the response DB."""

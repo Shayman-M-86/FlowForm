@@ -17,6 +17,8 @@ from app.schema.api.requests.submission_sessions import (
     StartSubmissionSessionRequest,
 )
 from app.schema.api.responses.submission_sessions import StartSubmissionSessionResponse
+from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
+from app.schema.enums import SubmissionAnswerState
 from app.schema.orm.core.user import User
 from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
 from app.services.public_submissions.core.actions.completion import (
@@ -83,8 +85,8 @@ class SessionManagementService:
         *,
         raw_resume_token: str | None,
         question_node_id: UUID,
-        answer_state: str,
-        answer_value: Any | None,
+        answer_state: SubmissionAnswerState,
+        answer_value: SubmissionAnswerValue | dict[str, Any] | None,
         client_mutation_id: UUID,
     ) -> int:
         """Save a respondent answer. Returns the revision number."""

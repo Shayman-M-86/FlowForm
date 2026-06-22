@@ -10,14 +10,14 @@ Encrypt path:
     2. Generate a fresh 12-byte random nonce (unique per DEK usage).
     3. Encrypt with AES-256-GCM using the caller-supplied session DEK and
        AAD (additional authenticated data).
-    4. Return ``EncryptedAnswer(ciphertext, nonce)`` for storage.
+    4. Return ``EncryptedAnswerPayload(ciphertext, nonce)`` for storage.
 
 Decrypt path:
     1. Decrypt the stored ciphertext with the same DEK, nonce, and AAD.
        AES-GCM verifies integrity — any tampering or AAD mismatch raises
        ``DecryptionError``.
     2. Parse the plaintext back into structured fields.
-    3. Return ``DecryptedAnswer(question_node_id, answer_state, answer_value)``.
+    3. Return ``DecryptedAnswerPayload(question_node_id, answer_state, answer_value)``.
 
 AAD is treated as opaque bytes. The caller (typically a higher-level service)
 is responsible for constructing it via ``build_aad``, which binds the
@@ -32,30 +32,45 @@ validate survey answer rules.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
+
+from pydantic import BaseModel
 
 from app.crypto.aes_gcm import decrypt_answer, encrypt_answer
 from app.crypto.nonces import generate_nonce
-from app.crypto.payload import build_plaintext_payload, parse_plaintext_payload
+from app.crypto.payload import (
+    PlaintextAnswerValue,
+    build_plaintext_payload,
+    parse_plaintext_payload,
+)
+from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
+from app.schema.enums import SubmissionAnswerState
 
 _PAYLOAD_VERSION = 1
 
+AnswerValueInput = SubmissionAnswerValue | dict[str, Any] | None
+DecryptedAnswerValue = PlaintextAnswerValue
+
 
 @dataclass(frozen=True, slots=True)
-class EncryptedAnswer:
-    """The encrypted form of an answer payload."""
+class EncryptedAnswerPayload:
+    """Ciphertext and nonce for one encrypted answer plaintext payload."""
 
     ciphertext: bytes
     nonce: bytes
 
 
 @dataclass(frozen=True, slots=True)
-class DecryptedAnswer:
-    """The decrypted and parsed answer payload."""
+class DecryptedAnswerPayload:
+    """Parsed plaintext fields recovered from one decrypted answer payload."""
 
     question_node_id: str
-    answer_state: str
-    answer_value: Any
+    answer_state: SubmissionAnswerState
+    answer_value: DecryptedAnswerValue
+
+
+EncryptedAnswer = EncryptedAnswerPayload
+DecryptedAnswer = DecryptedAnswerPayload
 
 
 class AnswerCryptoService:
@@ -70,17 +85,20 @@ class AnswerCryptoService:
         self,
         dek: bytes,
         question_node_id: str,
-        answer_state: str,
-        answer_value: Any,
+        answer_state: SubmissionAnswerState,
+        answer_value: AnswerValueInput,
         aad: bytes,
-    ) -> EncryptedAnswer:
+    ) -> EncryptedAnswerPayload:
         """Encrypt one answer payload. Generates a fresh nonce."""
         plaintext = build_plaintext_payload(
-            _PAYLOAD_VERSION, question_node_id, answer_state, answer_value
+            _PAYLOAD_VERSION,
+            question_node_id,
+            answer_state,
+            _answer_value_to_json(answer_value),
         )
         nonce = generate_nonce()
         ciphertext = encrypt_answer(plaintext, dek, nonce, aad)
-        return EncryptedAnswer(ciphertext=ciphertext, nonce=nonce)
+        return EncryptedAnswerPayload(ciphertext=ciphertext, nonce=nonce)
 
     def decrypt(
         self,
@@ -88,12 +106,20 @@ class AnswerCryptoService:
         ciphertext: bytes,
         nonce: bytes,
         aad: bytes,
-    ) -> DecryptedAnswer:
+    ) -> DecryptedAnswerPayload:
         """Decrypt one stored answer payload."""
         raw = decrypt_answer(ciphertext, dek, nonce, aad)
         parsed = parse_plaintext_payload(raw)
-        return DecryptedAnswer(
+        return DecryptedAnswerPayload(
             question_node_id=parsed["question_node_id"],
             answer_state=parsed["answer_state"],
             answer_value=parsed["answer_value"],
         )
+
+
+def _answer_value_to_json(answer_value: AnswerValueInput) -> dict[str, Any] | None:
+    if answer_value is None:
+        return None
+    if isinstance(answer_value, BaseModel):
+        return cast(dict[str, Any], answer_value.model_dump(mode="json"))
+    return answer_value

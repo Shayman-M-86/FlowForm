@@ -7,17 +7,17 @@ through locator derivation and the decrypt service — never bypassing them.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, cast, get_args
 from uuid import UUID
 
 from pydantic import ValidationError
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings
 from app.crypto import build_aad
 from app.crypto.services import AnswerCryptoService, LocatorService, SessionDEKService
-from app.crypto.services.answer_crypto_service import DecryptedAnswer
+from app.crypto.services.answer_crypto_service import DecryptedAnswerPayload
+from app.repositories import content_repo as cr
 from app.repositories.response import (
     response_answer_repo,
     response_answer_revision_repo,
@@ -26,9 +26,8 @@ from app.schema.api.submission_sessions.answer_payload import (
     SubmissionAnswerValue,
     parse_answer_value,
 )
-from app.schema.enums import AnswerFamily
+from app.schema.enums import AnswerFamily, QuestionFamily, SubmissionAnswerState
 from app.schema.orm.core.submission_session import SubmissionSession
-from app.schema.orm.core.survey_content import SurveyQuestion
 from app.services.public_submissions.core.shared.session_crypto import (
     load_session_envelope_crypto_context,
     resolve_session_crypto_services,
@@ -37,7 +36,7 @@ from app.services.results import AdminSessionDetailResult, DecryptedAnswerResult
 
 logger = logging.getLogger(__name__)
 
-_VALID_FAMILIES: frozenset[str] = frozenset({"choice", "field", "matching", "rating"})
+_QUESTION_FAMILIES: frozenset[str] = frozenset(get_args(QuestionFamily))
 
 
 def decrypt_session_detail(
@@ -205,7 +204,7 @@ def _decrypt_revision(
     revision_id: UUID,
     revision_number: int,
     answer_crypto_service: AnswerCryptoService,
-) -> DecryptedAnswer:
+) -> DecryptedAnswerPayload:
     aad = build_aad(
         crypto_version=crypto_version,
         envelope_id=envelope_id,
@@ -228,23 +227,31 @@ def _build_question_meta_map(
     storing it in the encrypted payload. Returns ``None`` for the family when
     the schema lacks a recognizable family value.
     """
-    questions = db.scalars(
-        select(SurveyQuestion).where(
-            SurveyQuestion.survey_version_id == survey_version_id,
+    return {
+        str(question.id): (
+            question.question_key,
+            _answer_family_from_schema(question.question_schema),
         )
-    ).all()
-    meta: dict[str, tuple[str, AnswerFamily | None]] = {}
-    for q in questions:
-        raw_family = q.question_schema.get("family") if isinstance(q.question_schema, dict) else None
-        family: AnswerFamily | None = raw_family if raw_family in _VALID_FAMILIES else None
-        meta[str(q.id)] = (q.question_key, family)
-    return meta
+        for question in cr.list_question_nodes(db, survey_version_id)
+    }
+
+
+def _answer_family_from_schema(question_schema: object) -> AnswerFamily | None:
+    """Read the top-level family discriminator from persisted question content."""
+    if not isinstance(question_schema, dict):
+        return None
+
+    raw_family = question_schema.get("family")
+    if raw_family not in _QUESTION_FAMILIES:
+        return None
+
+    return cast(AnswerFamily, raw_family)
 
 
 def _resolve_answer_value(
     *,
     answer_family: AnswerFamily | None,
-    answer_state: str,
+    answer_state: SubmissionAnswerState,
     raw_value: Any,
 ) -> SubmissionAnswerValue | dict[str, Any] | None:
     """Validate a decrypted raw value into a canonical model when possible.

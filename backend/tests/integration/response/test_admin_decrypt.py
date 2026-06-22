@@ -35,6 +35,7 @@ from app.repositories.response import (
     response_answer_revision_repo,
     response_envelope_repo,
 )
+from app.schema.enums import SubmissionAnswerState
 from app.services.public_submissions.core.actions.admin_decrypt import (
     decrypt_session_detail,
     decrypt_session_history,
@@ -144,7 +145,7 @@ def _save_encrypted_answer(
     plaintext_dek: bytes,
     question_node_id: str,
     answer_value=None,
-    answer_state: str = "answered",
+    answer_state: SubmissionAnswerState = "answered",
 ):
     answer_locator = derive_answer_locator(str(session.id), question_node_id, _LINKAGE_SECRET)
     revision_id = uuid.uuid4()
