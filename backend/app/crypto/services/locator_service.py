@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -29,7 +30,7 @@ class LocatorService:
         key = self._keys.get_linkage_key(db)
         return key.version
 
-    def for_new_session(self, session_id: str, db: Session) -> NewSessionLocator:
+    def for_new_session(self, session_id: UUID, db: Session) -> NewSessionLocator:
         """Derive a session locator using the current linkage key."""
         key = self._keys.get_linkage_key(db)
         locator = derive_session_locator(session_id, key.secret)
@@ -38,17 +39,15 @@ class LocatorService:
             session_locator=locator,
         )
 
-    def for_existing_session(
-        self, session_id: str, linkage_key_version: int, db: Session
-    ) -> bytes:
+    def for_existing_session(self, session_id: UUID, linkage_key_version: int, db: Session) -> bytes:
         """Derive a session locator using a stored linkage key version."""
         key = self._keys.get_linkage_key_by_version(linkage_key_version, db)
         return derive_session_locator(session_id, key.secret)
 
     def answer_locator(
         self,
-        session_id: str,
-        question_node_id: str,
+        session_id: UUID,
+        question_node_id: UUID,
         linkage_key_version: int,
         db: Session,
     ) -> bytes:
@@ -58,14 +57,11 @@ class LocatorService:
 
     def answer_locators(
         self,
-        session_id: str,
-        question_node_ids: list[str],
+        session_id: UUID,
+        question_node_ids: list[UUID],
         linkage_key_version: int,
         db: Session,
-    ) -> dict[str, bytes]:
+    ) -> dict[UUID, bytes]:
         """Derive answer locators for multiple questions in one call."""
         key = self._keys.get_linkage_key_by_version(linkage_key_version, db)
-        return {
-            qid: derive_answer_locator(session_id, qid, key.secret)
-            for qid in question_node_ids
-        }
+        return {qid: derive_answer_locator(session_id, qid, key.secret) for qid in question_node_ids}

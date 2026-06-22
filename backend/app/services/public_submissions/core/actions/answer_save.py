@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import uuid
 from typing import Any, cast
+from uuid import UUID
 
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -79,7 +80,7 @@ class AnswerSaveService:
         response_db: Session,
         *,
         ctx: SessionContext,
-        question_node_id: str,
+        question_node_id: UUID,
         answer_state: SubmissionAnswerState,
         answer_value: AnswerValueInput,
         client_mutation_id: uuid.UUID,
@@ -96,7 +97,7 @@ class AnswerSaveService:
 
         # Step 2: Check mutation ID — before any row lock on the logical answer
         answer_locator = crypto.locator_service.answer_locator(
-            str(ctx.session.id),
+            ctx.session.id,
             question_node_id,
             ctx.session.linkage_key_version,
             db,
@@ -110,7 +111,7 @@ class AnswerSaveService:
                 return dup_revision.revision_number
 
         # Step 3: Validate the answer against the frozen survey question node
-        question = content_repo.get_question_node(db, ctx.survey_version.id, uuid.UUID(question_node_id))
+        question = content_repo.get_question_node(db, ctx.survey_version.id, question_node_id)
         if question is None:
             raise QuestionNotInVersionError()
 
@@ -212,7 +213,7 @@ class AnswerSaveService:
             session_id=ctx.session.id,
             survey_version_id=ctx.survey_version.id,
             event_type="answer_saved",
-            question_node_id=uuid.UUID(question_node_id),
+            question_node_id=question_node_id,
             log_label="answer_save.analytics",
         )
 
@@ -223,16 +224,16 @@ class AnswerSaveService:
         db: Session,
         *,
         ctx: SessionContext,
-        question_node_id: str,
+        question_node_id: UUID,
     ) -> None:
         """Record a question-viewed analytics event. Failure does not block the respondent."""
-        if content_repo.get_question_node(db, ctx.survey_version.id, uuid.UUID(question_node_id)) is None:
+        if content_repo.get_question_node(db, ctx.survey_version.id, question_node_id) is None:
             raise QuestionNotInVersionError()
         event_repo.record_event(
             db,
             session_id=ctx.session.id,
             survey_version_id=ctx.survey_version.id,
             event_type="question_viewed",
-            question_node_id=uuid.UUID(question_node_id),
+            question_node_id=question_node_id,
             log_label="question_viewed",
         )

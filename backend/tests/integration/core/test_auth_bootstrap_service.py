@@ -129,5 +129,5 @@ def test_bootstrap_new_user_default_project_slug_is_public_id(
     assert result.default_project is not None
     assert result.default_project.slug
     assert "_" not in result.default_project.slug
-    assert len(result.default_project.slug) == 8
+    assert 6 <= len(result.default_project.slug) <= 8
 

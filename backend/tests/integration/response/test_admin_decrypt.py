@@ -7,18 +7,18 @@ Verifies:
 - Family reconstruction from survey definition
 - Graceful fallback for unknown or non-canonical values
 """
+
 from __future__ import annotations
 
 import os
 import uuid
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
+from uuid import UUID
 
 import pytest
-from pydantic import SecretStr
 from sqlalchemy.orm import Session
 
-from app.core.config import EncryptionSettings
 from app.crypto import (
     build_aad,
     build_plaintext_payload,
@@ -27,7 +27,7 @@ from app.crypto import (
     encrypt_answer,
     generate_nonce,
 )
-from app.crypto.services import AnswerCryptoService
+from app.crypto.services import AnswerCryptoService, LinkageKeyService
 from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.core.submission_sessions import create_session
 from app.repositories.response import (
@@ -36,10 +36,8 @@ from app.repositories.response import (
     response_envelope_repo,
 )
 from app.schema.enums import SubmissionAnswerState
-from app.services.public_submissions.core.actions.admin_decrypt import (
-    decrypt_session_detail,
-    decrypt_session_history,
-)
+from app.services.admin_responses.service import AdminResponseService
+from app.services.public_submissions.core.shared.crypto_provider import CryptoServices
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -53,21 +51,12 @@ if TYPE_CHECKING:
     from tests.conftest import DbSessions
 
 _LINKAGE_SECRET = b"\xcc" * 32
-_FAKE_ENC_SETTINGS = EncryptionSettings(
-    kms_key_arn="arn:aws:kms:us-east-1:000000000000:key/test-key",
-    linkage_secret_arn="arn:aws:secretsmanager:us-east-1:000000000000:secret:test",
-    aws_region="us-east-1",
-    aws_access_key_id=SecretStr("AKIAIOSFODNN7EXAMPLE"),
-    aws_secret_access_key=SecretStr("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"),
-)
 _PAYLOAD_VERSION = 1
 
 
 def _mock_locator_service():
     svc = MagicMock()
-    svc.for_existing_session.side_effect = lambda sid, version, db: derive_session_locator(
-        sid, _LINKAGE_SECRET
-    )
+    svc.for_existing_session.side_effect = lambda sid, _version, _db: derive_session_locator(sid, _LINKAGE_SECRET)
     return svc
 
 
@@ -75,6 +64,16 @@ def _mock_dek_service(plaintext_dek: bytes):
     svc = MagicMock()
     svc.get_for_session.return_value = plaintext_dek
     return svc
+
+
+def _build_admin_service(plaintext_dek: bytes) -> AdminResponseService:
+    crypto = CryptoServices(
+        linkage_key_service=MagicMock(spec=LinkageKeyService),
+        locator_service=_mock_locator_service(),
+        dek_service=_mock_dek_service(plaintext_dek),
+        answer_crypto_service=AnswerCryptoService(),
+    )
+    return AdminResponseService(crypto)
 
 
 def _setup_core_fixtures(core_db: Session):
@@ -90,9 +89,7 @@ def _setup_core_fixtures(core_db: Session):
     core_db.add(store)
     core_db.flush()
 
-    survey = make_survey(
-        project_id=project.id, response_store_id=store.id, user_id=user.id
-    )
+    survey = make_survey(project_id=project.id, response_store_id=store.id, user_id=user.id)
     core_db.add(survey)
     core_db.flush()
 
@@ -121,7 +118,7 @@ def _create_session_and_envelope(core_db: Session, response_db: Session, project
         linkage_key_version=1,
     )
 
-    session_locator = derive_session_locator(str(session.id), _LINKAGE_SECRET)
+    session_locator = derive_session_locator(session.id, _LINKAGE_SECRET)
     plaintext_dek = os.urandom(32)
     wrapped_dek = os.urandom(64)
 
@@ -143,11 +140,11 @@ def _save_encrypted_answer(
     session,
     envelope,
     plaintext_dek: bytes,
-    question_node_id: str,
+    question_node_id: UUID,
     answer_value=None,
     answer_state: SubmissionAnswerState = "answered",
 ):
-    answer_locator = derive_answer_locator(str(session.id), question_node_id, _LINKAGE_SECRET)
+    answer_locator = derive_answer_locator(session.id, question_node_id, _LINKAGE_SECRET)
     revision_id = uuid.uuid4()
 
     answer_row, _ = response_answer_repo.get_or_create(
@@ -194,10 +191,10 @@ def _add_second_revision(
     envelope,
     answer_row,
     plaintext_dek: bytes,
-    question_node_id: str,
+    question_node_id: UUID,
     answer_value=None,
 ):
-    answer_locator = derive_answer_locator(str(session.id), question_node_id, _LINKAGE_SECRET)
+    answer_locator = derive_answer_locator(session.id, question_node_id, _LINKAGE_SECRET)
     revision_id = uuid.uuid4()
 
     plaintext = build_plaintext_payload(
@@ -232,32 +229,26 @@ def _add_second_revision(
 
 
 class TestAdminDecryptDetail:
-
     def test_admin_detail_returns_decrypted_answers(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
-        session, envelope, plaintext_dek = _create_session_and_envelope(
-            core_db, response_db, project, survey, version
-        )
+        session, envelope, plaintext_dek = _create_session_and_envelope(core_db, response_db, project, survey, version)
 
         _save_encrypted_answer(
-            response_db, session, envelope, plaintext_dek,
-            question_node_id=str(question.id),
+            response_db,
+            session,
+            envelope,
+            plaintext_dek,
+            question_node_id=question.id,
             answer_value="test answer",
         )
 
-        result = decrypt_session_detail(
-            core_db, response_db,
-            session=session,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-            locator_service=_mock_locator_service(),
-            dek_service=_mock_dek_service(plaintext_dek),
-            answer_crypto_service=AnswerCryptoService(),
-        )
+        service = _build_admin_service(plaintext_dek)
+        result = service.get_session_detail(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
 
-        assert result.session_id == str(session.id)
+        assert result.session.id == session.id
         assert len(result.answers) == 1
-        assert result.answers[0].question_node_id == str(question.id)
+        assert result.answers[0].question_node_id == question.id
         assert result.answers[0].question_key == "q1"
         assert result.answers[0].answer_value == "test answer"
         assert result.answers[0].answer_state == "answered"
@@ -279,58 +270,49 @@ class TestAdminDecryptDetail:
             linkage_key_version=1,
         )
 
+        service = _build_admin_service(os.urandom(32))
         with pytest.raises(EnvelopeNotFoundError):
-            decrypt_session_detail(
-                core_db, response_db,
-                session=session,
-                encryption_settings=_FAKE_ENC_SETTINGS,
-                locator_service=_mock_locator_service(),
-                dek_service=_mock_dek_service(os.urandom(32)),
-                answer_crypto_service=AnswerCryptoService(),
-            )
+            service.get_session_detail(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
 
 
 class TestAdminDecryptHistory:
-
     def test_admin_history_returns_all_revisions(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
-        session, envelope, plaintext_dek = _create_session_and_envelope(
-            core_db, response_db, project, survey, version
-        )
+        session, envelope, plaintext_dek = _create_session_and_envelope(core_db, response_db, project, survey, version)
 
         answer_row = _save_encrypted_answer(
-            response_db, session, envelope, plaintext_dek,
-            question_node_id=str(question.id),
+            response_db,
+            session,
+            envelope,
+            plaintext_dek,
+            question_node_id=question.id,
             answer_value="first answer",
         )
 
         _add_second_revision(
-            response_db, session, envelope, answer_row, plaintext_dek,
-            question_node_id=str(question.id),
+            response_db,
+            session,
+            envelope,
+            answer_row,
+            plaintext_dek,
+            question_node_id=question.id,
             answer_value="second answer",
         )
 
-        result = decrypt_session_history(
-            core_db, response_db,
-            session=session,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-            locator_service=_mock_locator_service(),
-            dek_service=_mock_dek_service(plaintext_dek),
-            answer_crypto_service=AnswerCryptoService(),
-        )
+        service = _build_admin_service(plaintext_dek)
+        result = service.get_session_history(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
 
-        assert len(result.answers) == 2
-        values = [a.answer_value for a in result.answers]
+        assert len(result.revisions) == 2
+        values = [a.answer_value for a in result.revisions]
         assert "first answer" in values
         assert "second answer" in values
-        revisions = [a.revision_number for a in result.answers]
+        revisions = [a.revision_number for a in result.revisions]
         assert 1 in revisions
         assert 2 in revisions
 
 
 class TestAdminDecryptFamilyReconstruction:
-
     def test_family_reconstructed_and_value_typed(self, db_sessions: DbSessions) -> None:
         from app.schema.api.submission_sessions.answer_payload import ChoiceAnswerValue
 
@@ -358,23 +340,18 @@ class TestAdminDecryptFamilyReconstruction:
         core_db.add(question)
         core_db.flush()
 
-        session, envelope, plaintext_dek = _create_session_and_envelope(
-            core_db, response_db, project, survey, version
-        )
+        session, envelope, plaintext_dek = _create_session_and_envelope(core_db, response_db, project, survey, version)
         _save_encrypted_answer(
-            response_db, session, envelope, plaintext_dek,
-            question_node_id=str(question.id),
+            response_db,
+            session,
+            envelope,
+            plaintext_dek,
+            question_node_id=question.id,
             answer_value={"selected": ["o1", "o2"]},
         )
 
-        result = decrypt_session_detail(
-            core_db, response_db,
-            session=session,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-            locator_service=_mock_locator_service(),
-            dek_service=_mock_dek_service(plaintext_dek),
-            answer_crypto_service=AnswerCryptoService(),
-        )
+        service = _build_admin_service(plaintext_dek)
+        result = service.get_session_detail(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
 
         answer = result.answers[0]
         assert answer.answer_family == "choice"
@@ -384,24 +361,19 @@ class TestAdminDecryptFamilyReconstruction:
     def test_unknown_question_node_falls_back(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, _ = _setup_core_fixtures(core_db)
-        session, envelope, plaintext_dek = _create_session_and_envelope(
-            core_db, response_db, project, survey, version
-        )
-        orphan_node_id = str(uuid.uuid4())
+        session, envelope, plaintext_dek = _create_session_and_envelope(core_db, response_db, project, survey, version)
+        orphan_node_id = uuid.uuid4()
         _save_encrypted_answer(
-            response_db, session, envelope, plaintext_dek,
+            response_db,
+            session,
+            envelope,
+            plaintext_dek,
             question_node_id=orphan_node_id,
             answer_value={"selected": ["o1"]},
         )
 
-        result = decrypt_session_detail(
-            core_db, response_db,
-            session=session,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-            locator_service=_mock_locator_service(),
-            dek_service=_mock_dek_service(plaintext_dek),
-            answer_crypto_service=AnswerCryptoService(),
-        )
+        service = _build_admin_service(plaintext_dek)
+        result = service.get_session_detail(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
 
         answer = result.answers[0]
         assert answer.question_node_id == orphan_node_id
@@ -433,23 +405,18 @@ class TestAdminDecryptFamilyReconstruction:
         core_db.add(question)
         core_db.flush()
 
-        session, envelope, plaintext_dek = _create_session_and_envelope(
-            core_db, response_db, project, survey, version
-        )
+        session, envelope, plaintext_dek = _create_session_and_envelope(core_db, response_db, project, survey, version)
         _save_encrypted_answer(
-            response_db, session, envelope, plaintext_dek,
-            question_node_id=str(question.id),
+            response_db,
+            session,
+            envelope,
+            plaintext_dek,
+            question_node_id=question.id,
             answer_value={"garbage": True},
         )
 
-        result = decrypt_session_detail(
-            core_db, response_db,
-            session=session,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-            locator_service=_mock_locator_service(),
-            dek_service=_mock_dek_service(plaintext_dek),
-            answer_crypto_service=AnswerCryptoService(),
-        )
+        service = _build_admin_service(plaintext_dek)
+        result = service.get_session_detail(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
 
         answer = result.answers[0]
         assert answer.answer_family == "choice"

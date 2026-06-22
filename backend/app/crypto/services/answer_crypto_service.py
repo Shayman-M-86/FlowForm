@@ -33,6 +33,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, cast
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -64,7 +65,7 @@ class EncryptedAnswerPayload:
 class DecryptedAnswerPayload:
     """Parsed plaintext fields recovered from one decrypted answer payload."""
 
-    question_node_id: str
+    question_node_id: UUID
     answer_state: SubmissionAnswerState
     answer_value: DecryptedAnswerValue
 
@@ -84,7 +85,7 @@ class AnswerCryptoService:
     def encrypt(
         self,
         dek: bytes,
-        question_node_id: str,
+        question_node_id: UUID,
         answer_state: SubmissionAnswerState,
         answer_value: AnswerValueInput,
         aad: bytes,

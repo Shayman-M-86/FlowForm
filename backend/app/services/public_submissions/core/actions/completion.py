@@ -3,11 +3,13 @@
 Marks an in-progress session as completed. Completion is a state transition;
 answers are validated when saved, before encryption and persistence.
 """
+
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -24,7 +26,7 @@ logger = logging.getLogger(__name__)
 class CompletionResult:
     """Outcome returned to the caller on successful completion."""
 
-    session_id: str
+    session_id: UUID
     status: str
     completed_at: datetime
 
@@ -70,7 +72,7 @@ class CompletionService:
         commit_with_err_handle(db, contexts=[])
 
         return CompletionResult(
-            session_id=str(ctx.session.id),
+            session_id=ctx.session.id,
             status="completed",
             completed_at=now,
         )

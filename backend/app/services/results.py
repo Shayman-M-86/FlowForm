@@ -8,6 +8,7 @@ from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerVa
 from app.schema.enums import AnswerFamily, SubmissionAnswerState
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.project_subject import ProjectSubject
+from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
@@ -157,32 +158,35 @@ class BootstrapCurrentUserResult:
 class DecryptedAnswerResult:
     """One decrypted answer for admin detail or export."""
 
-    question_node_id: str
+    question_node_id: UUID
     question_key: str | None
     answer_family: AnswerFamily | None
     answer_state: SubmissionAnswerState
     answer_value: SubmissionAnswerValue | dict[str, Any] | None
     revision_number: int
-    revision_id: str
+    revision_id: UUID
 
 
 @dataclass(frozen=True, slots=True)
 class AdminSessionDetailResult:
     """Decrypted session detail for admin views."""
 
-    session_id: str
-    survey_id: int
-    survey_version_id: int
-    session_status: str
-    started_at: Any
-    completed_at: Any | None
+    session: SubmissionSession
     answers: list[DecryptedAnswerResult]
+
+
+@dataclass(frozen=True, slots=True)
+class AdminSessionHistoryResult:
+    """Decrypted full revision history for admin views."""
+
+    session: SubmissionSession
+    revisions: list[DecryptedAnswerResult]
 
 
 @dataclass(frozen=True, slots=True)
 class DeletionResult:
     """Outcome of a response deletion attempt."""
 
-    session_id: str
+    session_id: UUID
     response_deleted: bool
     core_deleted: bool

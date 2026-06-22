@@ -6,12 +6,14 @@ Verifies:
 - Missing required answers do not block completion
 - Session completion event inserted
 """
+
 from __future__ import annotations
 
 import os
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 import pytest
 from pydantic import SecretStr
@@ -74,9 +76,7 @@ def _setup_core_fixtures(core_db: Session, *, required_questions: bool = False):
     core_db.add(store)
     core_db.flush()
 
-    survey = make_survey(
-        project_id=project.id, response_store_id=store.id, user_id=user.id
-    )
+    survey = make_survey(project_id=project.id, response_store_id=store.id, user_id=user.id)
     core_db.add(survey)
     core_db.flush()
 
@@ -160,7 +160,7 @@ def _create_session_row(core_db: Session, project, survey, version, *, status: s
 
 
 def _create_envelope_and_context(core_db: Session, response_db: Session, session, version):
-    session_locator = derive_session_locator(str(session.id), _LINKAGE_SECRET)
+    session_locator = derive_session_locator(session.id, _LINKAGE_SECRET)
     plaintext_dek = os.urandom(32)
     wrapped_dek = os.urandom(64)
 
@@ -188,12 +188,12 @@ def _save_encrypted_answer(
     response_db: Session,
     ctx: SessionContext,
     plaintext_dek: bytes,
-    question_node_id: str,
+    question_node_id: UUID,
     answer_state: SubmissionAnswerState = "answered",
     answer_value=None,
 ):
     """Helper to create an encrypted answer directly in the response DB."""
-    answer_locator = derive_answer_locator(str(ctx.session.id), question_node_id, _LINKAGE_SECRET)
+    answer_locator = derive_answer_locator(ctx.session.id, question_node_id, _LINKAGE_SECRET)
 
     revision_id = uuid.uuid4()
 
@@ -237,13 +237,13 @@ def _save_encrypted_answer(
 
 def _make_service_with_cached_dek(ctx, plaintext_dek):
     from app.crypto.dek_cache import DekCache
+
     dek_cache = DekCache()
     dek_cache.put(ctx.session_locator, plaintext_dek)
     return CompletionService(dek_cache=dek_cache)
 
 
 class TestCompletion:
-
     def test_completion_marks_session_completed(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
@@ -251,8 +251,10 @@ class TestCompletion:
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
         _save_encrypted_answer(
-            response_db, ctx, plaintext_dek,
-            question_node_id=str(question.id),
+            response_db,
+            ctx,
+            plaintext_dek,
+            question_node_id=question.id,
             answer_value={"field_type": "short_text", "text": "my answer"},
         )
 
@@ -274,8 +276,10 @@ class TestCompletion:
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
         _save_encrypted_answer(
-            response_db, ctx, plaintext_dek,
-            question_node_id=str(question.id),
+            response_db,
+            ctx,
+            plaintext_dek,
+            question_node_id=question.id,
             answer_value={"field_type": "short_text", "text": "my answer"},
         )
 
@@ -300,9 +304,7 @@ class TestCompletion:
 
     def test_missing_required_answer_does_not_block_completion(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
-        project, survey, version, question = _setup_core_fixtures(
-            core_db, required_questions=True
-        )
+        project, survey, version, question = _setup_core_fixtures(core_db, required_questions=True)
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 

@@ -325,7 +325,7 @@ class SessionStarter:
         locator_svc, dek_svc = self._ensure_crypto()
 
         try:
-            loc = locator_svc.for_new_session(str(session.id), db)
+            loc = locator_svc.for_new_session(session.id, db)
 
             new_dek = dek_svc.create_for_session(
                 session.id,
@@ -421,7 +421,6 @@ class SessionStarter:
             raise SessionStartError("Encryption settings not configured")
 
         return enc
-
 
     @staticmethod
     def _build_response(

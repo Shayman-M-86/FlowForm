@@ -97,7 +97,7 @@ class SessionManagementService:
             db,
             response_db,
             ctx=ctx,
-            question_node_id=str(question_node_id),
+            question_node_id=question_node_id,
             answer_state=answer_state,
             answer_value=answer_value,
             client_mutation_id=client_mutation_id,
@@ -118,5 +118,5 @@ class SessionManagementService:
         self._answer_save_service.record_question_viewed(
             db,
             ctx=ctx,
-            question_node_id=str(question_node_id),
+            question_node_id=question_node_id,
         )

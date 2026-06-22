@@ -19,10 +19,10 @@ class SurveyResponseSummaryResponses(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    session_id: UUID
+    session_id: UUID = Field(validation_alias="id")
     survey_id: int
     survey_version_id: int
-    status: SubmissionSessionStatus
+    status: SubmissionSessionStatus = Field(validation_alias="session_status")
     started_at: datetime
     completed_at: datetime | None = None
     last_activity_at: datetime
@@ -40,16 +40,19 @@ class PaginatedSurveyResponsesResponses(BaseModel):
 class SurveyResponseAnswerResponses(BaseModel):
     """One decrypted canonical answer in an admin survey-response detail view."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     question_node_id: UUID
-    state: SubmissionAnswerState
+    state: SubmissionAnswerState = Field(validation_alias="answer_state")
     answer_family: AnswerFamily | None = None
     answer_value: dict[str, Any] | None = None
     revision_number: int
-    saved_at: datetime
 
 
 class SurveyResponseDetailResponses(BaseModel):
     """Admin survey-response detail: session metadata plus canonical decrypted answers."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     session: SurveyResponseSummaryResponses
     answers: list[SurveyResponseAnswerResponses] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
@@ -58,16 +61,19 @@ class SurveyResponseDetailResponses(BaseModel):
 class SurveyResponseAnswerRevisionResponses(BaseModel):
     """One historical decrypted answer revision for the answer-history view."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     question_node_id: UUID
-    state: SubmissionAnswerState
+    state: SubmissionAnswerState = Field(validation_alias="answer_state")
     answer_family: AnswerFamily | None = None
     answer_value: dict[str, Any] | None = None
     revision_number: int
-    saved_at: datetime
 
 
 class SurveyResponseHistoryResponses(BaseModel):
     """Admin answer-history view: every decrypted revision for a session."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     session: SurveyResponseSummaryResponses
     revisions: list[SurveyResponseAnswerRevisionResponses] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)

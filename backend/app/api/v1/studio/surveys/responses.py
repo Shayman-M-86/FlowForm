@@ -1,4 +1,3 @@
-from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from flask import request
@@ -6,6 +5,7 @@ from flask import request
 from app.api.utils.validation import parse, parse_query
 from app.api.v1.studio.projects import studio_projects_bp
 from app.core.extensions import auth
+from app.db.context import get_core_db, get_response_db
 from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
 from app.schema.api.requests.survey_responses import ExportSurveyResponsesRequest, ListSurveyResponsesRequest
@@ -14,62 +14,14 @@ from app.schema.api.responses.survey_responses import (
     SurveyResponseDetailResponses,
     SurveyResponseExportResponses,
     SurveyResponseHistoryResponses,
-    SurveyResponseSummaryResponses,
 )
 from app.services.access.access_service import require_survey_permission
-
-# TODO(phase7): Replace these contract stubs with the real admin-read service.
-# Every handler must authorise survey access, derive the session locator from
-# core metadata, load the response envelope, and decrypt canonical revisions
-# through the service path — never bypassing the decrypt/authorisation flow.
+from app.services.admin_responses.service import AdminResponseService
+from app.services.public_submissions.core.shared.crypto_provider import build_crypto_services
 
 
-def _placeholder_summary(
-    survey_id: int, session_id: UUID, *, now: datetime | None = None
-) -> SurveyResponseSummaryResponses:
-    current = now or datetime.now(UTC)
-    return SurveyResponseSummaryResponses(
-        session_id=session_id,
-        survey_id=survey_id,
-        survey_version_id=1,
-        status="completed",
-        started_at=current - timedelta(minutes=5),
-        completed_at=current,
-        last_activity_at=current,
-    )
-
-
-def build_placeholder_response_list(*, page: int, page_size: int) -> PaginatedSurveyResponsesResponses:
-    """Phase 2 admin survey-response list stub."""
-    return PaginatedSurveyResponsesResponses(items=[], total=0, page=page, page_size=page_size)
-
-
-def build_placeholder_response_detail(survey_id: int, session_id: UUID) -> SurveyResponseDetailResponses:
-    """Phase 2 admin survey-response detail stub with no decrypted answers yet."""
-    return SurveyResponseDetailResponses(
-        session=_placeholder_summary(survey_id, session_id),
-        answers=[],
-    )
-
-
-def build_placeholder_response_history(survey_id: int, session_id: UUID) -> SurveyResponseHistoryResponses:
-    """Phase 2 admin answer-history stub with no decrypted revisions yet."""
-    return SurveyResponseHistoryResponses(
-        session=_placeholder_summary(survey_id, session_id),
-        revisions=[],
-    )
-
-
-def build_placeholder_response_export(
-    *, export_format: str, include_history: bool, session_count: int
-) -> SurveyResponseExportResponses:
-    """Phase 2 admin export stub; no file is produced until Phase 7."""
-    return SurveyResponseExportResponses(
-        format="json" if export_format == "json" else "csv",
-        include_history=include_history,
-        session_count=session_count,
-        download_url=None,
-    )
+def _build_service() -> AdminResponseService:
+    return AdminResponseService(build_crypto_services())
 
 
 @openapi_route(
@@ -84,7 +36,7 @@ def build_placeholder_response_export(
 def list_responses(project_id: int, survey_id: int):
     _ = project_id, survey_id
     params = parse_query(ListSurveyResponsesRequest, request)
-    response = build_placeholder_response_list(page=params.page, page_size=params.page_size)
+    response = PaginatedSurveyResponsesResponses(items=[], total=0, page=params.page, page_size=params.page_size)
     return response.model_dump(mode="json"), 200
 
 
@@ -98,8 +50,10 @@ def list_responses(project_id: int, survey_id: int):
 @require_survey_permission(PERMISSIONS.submission.view)
 def get_response_detail(project_id: int, survey_id: int, session_id: UUID):
     _ = project_id
-    response = build_placeholder_response_detail(survey_id, session_id)
-    return response.model_dump(mode="json"), 200
+    result = _build_service().get_session_detail(
+        get_core_db(), get_response_db(), survey_id=survey_id, session_id=session_id,
+    )
+    return SurveyResponseDetailResponses.model_validate(result, from_attributes=True).model_dump(mode="json"), 200
 
 
 @openapi_route(
@@ -114,8 +68,10 @@ def get_response_detail(project_id: int, survey_id: int, session_id: UUID):
 @require_survey_permission(PERMISSIONS.submission.view)
 def get_response_history(project_id: int, survey_id: int, session_id: UUID):
     _ = project_id
-    response = build_placeholder_response_history(survey_id, session_id)
-    return response.model_dump(mode="json"), 200
+    result = _build_service().get_session_history(
+        get_core_db(), get_response_db(), survey_id=survey_id, session_id=session_id,
+    )
+    return SurveyResponseHistoryResponses.model_validate(result, from_attributes=True).model_dump(mode="json"), 200
 
 
 @openapi_route(
@@ -132,10 +88,11 @@ def export_responses(project_id: int, survey_id: int):
     _ = project_id, survey_id
     payload = parse(ExportSurveyResponsesRequest, request)
     session_count = len(payload.session_ids) if payload.session_ids is not None else 0
-    response = build_placeholder_response_export(
-        export_format=payload.format,
+    response = SurveyResponseExportResponses(
+        format="json" if payload.format == "json" else "csv",
         include_history=payload.include_history,
         session_count=session_count,
+        download_url=None,
     )
     return response.model_dump(mode="json"), 202
 
@@ -149,5 +106,8 @@ def export_responses(project_id: int, survey_id: int):
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.submission.view)
 def delete_response(project_id: int, survey_id: int, session_id: UUID):
-    _ = project_id, survey_id, session_id
+    _ = project_id
+    _build_service().delete_session(
+        get_core_db(), get_response_db(), survey_id=survey_id, session_id=session_id,
+    )
     return "", 204

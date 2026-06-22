@@ -6,6 +6,7 @@ Verifies end-to-end that:
 - Resumed session: loader finds existing session, returns correct frozen survey version
 - Response DB locators are opaque 32-byte HMAC digests, not UUIDs or plaintext
 """
+
 from __future__ import annotations
 
 import os
@@ -25,8 +26,8 @@ from app.domain.errors import SessionNotFoundError, SessionStartError
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.response.response_envelope import ResponseEnvelope
-from app.services.public_submissions.core.shared.session_loader import load_current_session
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
+from app.services.public_submissions.core.shared.session_loader import load_current_session
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -84,9 +85,7 @@ def _seed_published_survey(db: Session, slug: str) -> int:
 
 
 def _slug_payload(slug: str) -> StartSubmissionSessionRequest:
-    return StartSubmissionSessionRequest.model_validate(
-        {"access": {"type": "public_slug", "public_slug": slug}}
-    )
+    return StartSubmissionSessionRequest.model_validate({"access": {"type": "public_slug", "public_slug": slug}})
 
 
 def _mock_locator_service(session_locator: bytes | None = None):
@@ -95,7 +94,8 @@ def _mock_locator_service(session_locator: bytes | None = None):
     loc_bytes = session_locator or _FAKE_SESSION_LOCATOR
     svc.get_current_linkage_key_version.return_value = 1
     svc.for_new_session.return_value = NewSessionLocator(
-        linkage_key_version=1, session_locator=loc_bytes,
+        linkage_key_version=1,
+        session_locator=loc_bytes,
     )
     svc.for_existing_session.return_value = loc_bytes
     return svc
@@ -114,7 +114,6 @@ def _mock_dek_service(
 
 
 class TestSuccessfulSessionStart:
-
     def test_creates_core_session_and_response_envelope(
         self,
         db_sessions: DbSessions,
@@ -136,9 +135,7 @@ class TestSuccessfulSessionStart:
         assert browser_token, "browser token must be returned on success"
         assert response.status == "in_progress"
 
-        session = db_sessions.core.scalar(
-            select(SubmissionSession).where(SubmissionSession.survey_id == survey_id)
-        )
+        session = db_sessions.core.scalar(select(SubmissionSession).where(SubmissionSession.survey_id == survey_id))
         assert session is not None, "core session must exist"
 
         envelope = db_sessions.response.scalar(select(ResponseEnvelope))
@@ -172,10 +169,8 @@ class TestSuccessfulSessionStart:
 
         session = db_sessions.core.scalar(select(SubmissionSession))
         assert session is not None
-        core_id_bytes = str(session.id).encode("utf-8")
-        assert locator != core_id_bytes, (
-            "session_locator must not be the raw core session UUID"
-        )
+        core_id_bytes = session.id.bytes
+        assert locator != core_id_bytes, "session_locator must not be the raw core session UUID"
 
     def test_resume_cookie_set_on_success(
         self,
@@ -220,7 +215,6 @@ class TestSuccessfulSessionStart:
 
 
 class TestEnvelopeCreationFailure:
-
     def test_kms_failure_rolls_back_core_session(
         self,
         db_sessions: DbSessions,
@@ -243,9 +237,7 @@ class TestEnvelopeCreationFailure:
                 actor=None,
             )
 
-        session = db_sessions.core.scalar(
-            select(SubmissionSession).where(SubmissionSession.survey_id == survey_id)
-        )
+        session = db_sessions.core.scalar(select(SubmissionSession).where(SubmissionSession.survey_id == survey_id))
         assert session is None, "core session must be rolled back on KMS failure"
 
         envelope = db_sessions.response.scalar(select(ResponseEnvelope))
@@ -253,7 +245,6 @@ class TestEnvelopeCreationFailure:
 
 
 class TestResumedSession:
-
     def test_loader_finds_existing_session(
         self,
         db_sessions: DbSessions,

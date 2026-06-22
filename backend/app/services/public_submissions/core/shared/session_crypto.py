@@ -49,11 +49,7 @@ def resolve_session_crypto_services(
     dek_service: SessionDEKService | None = None,
     answer_crypto_service: AnswerCryptoService | None = None,
 ) -> CryptoServices:
-    if (
-        locator_service is not None
-        and dek_service is not None
-        and answer_crypto_service is not None
-    ):
+    if locator_service is not None and dek_service is not None and answer_crypto_service is not None:
         crypto = build_crypto_services(encryption_settings)
         return CryptoServices(
             linkage_key_service=crypto.linkage_key_service,
@@ -74,6 +70,7 @@ def resolve_session_crypto_services(
 @dataclass(frozen=True, slots=True)
 class SessionEnvelopeCryptoContext:
     """Context for decrypting a session's envelope-protected material."""
+
     session_locator: bytes
     envelope: ResponseEnvelope
     plaintext_dek: bytes
@@ -88,7 +85,9 @@ def load_session_envelope_crypto_context(
     dek_service: SessionDEKService,
 ) -> SessionEnvelopeCryptoContext:
     session_locator = locator_service.for_existing_session(
-        str(session.id), session.linkage_key_version, db,
+        session.id,
+        session.linkage_key_version,
+        db,
     )
 
     envelope = response_envelope_repo.get_by_locator(response_db, session_locator)

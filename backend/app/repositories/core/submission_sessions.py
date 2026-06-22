@@ -56,6 +56,12 @@ def create_session(
     return session
 
 
+def get_by_id(db: Session, session_id: UUID) -> SubmissionSession | None:
+    return db.scalar(
+        select(SubmissionSession).where(SubmissionSession.id == session_id)
+    )
+
+
 def get_by_token_hash(db: Session, token_hash: bytes) -> SubmissionSession | None:
     return db.scalar(
         select(SubmissionSession).where(

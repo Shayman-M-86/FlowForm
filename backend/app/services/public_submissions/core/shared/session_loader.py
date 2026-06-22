@@ -4,6 +4,7 @@ Reads the browser resume token, loads the core session and frozen survey
 version, rejects forbidden edit states, derives the session locator, and
 loads the response envelope — returning a safe service context.
 """
+
 from __future__ import annotations
 
 import logging
@@ -104,16 +105,12 @@ def load_current_session(
     if session.session_status == "completed" and not allow_completed:
         raise SessionInvalidError("Session is already completed.")
 
-    survey_version = db.scalar(
-        select(SurveyVersion).where(SurveyVersion.id == session.survey_version_id)
-    )
+    survey_version = db.scalar(select(SurveyVersion).where(SurveyVersion.id == session.survey_version_id))
     if survey_version is None:
         raise SessionInvalidError("Frozen survey version not found.")
 
     loc_svc = _get_locator_service(locator_service, enc)
-    session_locator = loc_svc.for_existing_session(
-        str(session.id), session.linkage_key_version, db
-    )
+    session_locator = loc_svc.for_existing_session(session.id, session.linkage_key_version, db)
 
     envelope = response_envelope_repo.get_by_locator(response_db, session_locator)
     if envelope is None:

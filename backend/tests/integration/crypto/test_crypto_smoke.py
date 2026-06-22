@@ -60,7 +60,7 @@ class TestCryptoSmoke:
         assert len(linkage_secret_bytes) == 32
 
         # 2. Derive a session locator
-        core_session_id = str(uuid.uuid4())
+        core_session_id = uuid.uuid4()
         session_locator = derive_session_locator(core_session_id, linkage_secret_bytes)
         assert len(session_locator) == 32
 
@@ -91,7 +91,7 @@ class TestCryptoSmoke:
         assert unwrapped == plaintext_dek
 
         # 6. Build a plaintext payload and encrypt
-        question_node_id = str(uuid.uuid4())
+        question_node_id = uuid.uuid4()
         payload_bytes = build_plaintext_payload(
             payload_version=1,
             question_node_id=question_node_id,

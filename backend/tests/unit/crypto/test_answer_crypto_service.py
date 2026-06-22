@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import os
+from uuid import UUID
 
 import pytest
 
 from app.crypto.aes_gcm import DecryptionError
-from app.crypto.payload import PayloadDecodeError
 from app.crypto.services.answer_crypto_service import (
     AnswerCryptoService,
     DecryptedAnswer,
     EncryptedAnswer,
 )
+
+Q1 = UUID("00000000-0000-0000-0000-000000000001")
+Q5 = UUID("00000000-0000-0000-0000-000000000005")
 
 
 def _dek() -> bytes:
@@ -26,7 +29,7 @@ def _aad() -> bytes:
 class TestEncrypt:
     def test_returns_encrypted_answer(self) -> None:
         svc = AnswerCryptoService()
-        result = svc.encrypt(_dek(), "q-1", "answered", {"value": "yes"}, _aad())
+        result = svc.encrypt(_dek(), Q1, "answered", {"value": "yes"}, _aad())
         assert isinstance(result, EncryptedAnswer)
         assert isinstance(result.ciphertext, bytes)
         assert len(result.ciphertext) > 0
@@ -37,21 +40,21 @@ class TestEncrypt:
         svc = AnswerCryptoService()
         dek = _dek()
         aad = _aad()
-        a = svc.encrypt(dek, "q-1", "answered", {"value": "yes"}, aad)
-        b = svc.encrypt(dek, "q-1", "answered", {"value": "yes"}, aad)
+        a = svc.encrypt(dek, Q1, "answered", {"value": "yes"}, aad)
+        b = svc.encrypt(dek, Q1, "answered", {"value": "yes"}, aad)
         assert a.nonce != b.nonce
 
     def test_different_calls_produce_different_ciphertext(self) -> None:
         svc = AnswerCryptoService()
         dek = _dek()
         aad = _aad()
-        a = svc.encrypt(dek, "q-1", "answered", {"value": "yes"}, aad)
-        b = svc.encrypt(dek, "q-1", "answered", {"value": "yes"}, aad)
+        a = svc.encrypt(dek, Q1, "answered", {"value": "yes"}, aad)
+        b = svc.encrypt(dek, Q1, "answered", {"value": "yes"}, aad)
         assert a.ciphertext != b.ciphertext
 
     def test_none_answer_value(self) -> None:
         svc = AnswerCryptoService()
-        result = svc.encrypt(_dek(), "q-1", "cleared", None, _aad())
+        result = svc.encrypt(_dek(), Q1, "cleared", None, _aad())
         assert isinstance(result, EncryptedAnswer)
 
 
@@ -60,10 +63,10 @@ class TestDecrypt:
         svc = AnswerCryptoService()
         dek = _dek()
         aad = _aad()
-        encrypted = svc.encrypt(dek, "q-1", "answered", {"value": "yes"}, aad)
+        encrypted = svc.encrypt(dek, Q1, "answered", {"value": "yes"}, aad)
         decrypted = svc.decrypt(dek, encrypted.ciphertext, encrypted.nonce, aad)
         assert isinstance(decrypted, DecryptedAnswer)
-        assert decrypted.question_node_id == "q-1"
+        assert decrypted.question_node_id == Q1
         assert decrypted.answer_state == "answered"
         assert decrypted.answer_value == {"value": "yes"}
 
@@ -72,7 +75,7 @@ class TestDecrypt:
         dek = _dek()
         aad = _aad()
         value = {"selected": [1, 2, 3], "other": "text"}
-        encrypted = svc.encrypt(dek, "q-5", "answered", value, aad)
+        encrypted = svc.encrypt(dek, Q5, "answered", value, aad)
         decrypted = svc.decrypt(dek, encrypted.ciphertext, encrypted.nonce, aad)
         assert decrypted.answer_value == value
 
@@ -80,7 +83,7 @@ class TestDecrypt:
         svc = AnswerCryptoService()
         dek = _dek()
         aad = _aad()
-        encrypted = svc.encrypt(dek, "q-1", "cleared", None, aad)
+        encrypted = svc.encrypt(dek, Q1, "cleared", None, aad)
         decrypted = svc.decrypt(dek, encrypted.ciphertext, encrypted.nonce, aad)
         assert decrypted.answer_value is None
         assert decrypted.answer_state == "cleared"
@@ -88,14 +91,14 @@ class TestDecrypt:
     def test_wrong_dek_raises(self) -> None:
         svc = AnswerCryptoService()
         aad = _aad()
-        encrypted = svc.encrypt(_dek(), "q-1", "answered", {"value": "yes"}, aad)
+        encrypted = svc.encrypt(_dek(), Q1, "answered", {"value": "yes"}, aad)
         with pytest.raises(DecryptionError):
             svc.decrypt(_dek(), encrypted.ciphertext, encrypted.nonce, aad)
 
     def test_wrong_aad_raises(self) -> None:
         svc = AnswerCryptoService()
         dek = _dek()
-        encrypted = svc.encrypt(dek, "q-1", "answered", {"value": "yes"}, _aad())
+        encrypted = svc.encrypt(dek, Q1, "answered", {"value": "yes"}, _aad())
         with pytest.raises(DecryptionError):
             svc.decrypt(dek, encrypted.ciphertext, encrypted.nonce, _aad())
 
@@ -103,7 +106,7 @@ class TestDecrypt:
         svc = AnswerCryptoService()
         dek = _dek()
         aad = _aad()
-        encrypted = svc.encrypt(dek, "q-1", "answered", {"value": "yes"}, aad)
+        encrypted = svc.encrypt(dek, Q1, "answered", {"value": "yes"}, aad)
         tampered = bytes([b ^ 0xFF for b in encrypted.ciphertext])
         with pytest.raises(DecryptionError):
             svc.decrypt(dek, tampered, encrypted.nonce, aad)

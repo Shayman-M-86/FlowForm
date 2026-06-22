@@ -5,6 +5,7 @@ Verifies:
 - Deletion ordering: response DB first, then core
 - Missing envelope raises EnvelopeNotFoundError
 """
+
 from __future__ import annotations
 
 import os
@@ -16,10 +17,13 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.crypto import derive_session_locator
+from app.crypto.services import LinkageKeyService, SessionDEKService
+from app.crypto.services.answer_crypto_service import AnswerCryptoService
 from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.core.submission_sessions import create_session
 from app.repositories.response import response_envelope_repo
-from app.services.public_submissions.core.actions.deletion import delete_session_responses
+from app.services.admin_responses.service import AdminResponseService
+from app.services.public_submissions.core.shared.crypto_provider import CryptoServices
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -42,6 +46,16 @@ def _mock_locator_service(session_locator: bytes | None = None) -> MagicMock:
     return svc
 
 
+def _build_admin_service(session_locator: bytes | None = None) -> AdminResponseService:
+    crypto = CryptoServices(
+        linkage_key_service=MagicMock(spec=LinkageKeyService),
+        locator_service=_mock_locator_service(session_locator),
+        dek_service=MagicMock(spec=SessionDEKService),
+        answer_crypto_service=AnswerCryptoService(),
+    )
+    return AdminResponseService(crypto)
+
+
 def _setup_core_fixtures(core_db: Session):
     user = make_user()
     core_db.add(user)
@@ -55,9 +69,7 @@ def _setup_core_fixtures(core_db: Session):
     core_db.add(store)
     core_db.flush()
 
-    survey = make_survey(
-        project_id=project.id, response_store_id=store.id, user_id=user.id
-    )
+    survey = make_survey(project_id=project.id, response_store_id=store.id, user_id=user.id)
     core_db.add(survey)
     core_db.flush()
 
@@ -85,7 +97,6 @@ def _create_session_row(core_db: Session, project, survey, version):
 
 
 class TestDeletion:
-
     def test_deletion_calls_response_delete_first(self, db_sessions: DbSessions) -> None:
         """Verify response-first ordering: delete_by_locator called before core delete."""
         core_db, response_db = db_sessions.core, db_sessions.response
@@ -106,23 +117,20 @@ class TestDeletion:
 
         with (
             patch(
-                "app.services.public_submissions.core.actions.deletion.response_envelope_repo.delete_by_locator",
+                "app.services.admin_responses.service.response_envelope_repo.delete_by_locator",
                 side_effect=mock_delete_by_locator,
             ),
             patch(
-                "app.services.public_submissions.core.actions.deletion.ssr.delete_session",
+                "app.services.admin_responses.service.ssr.delete_session",
                 side_effect=mock_delete_session,
             ),
             patch(
-                "app.services.public_submissions.core.actions.deletion.commit_with_err_handle",
+                "app.services.admin_responses.service.commit_with_err_handle",
                 side_effect=mock_commit,
             ),
         ):
-            result = delete_session_responses(
-                core_db, response_db,
-                session=session,
-                locator_service=_mock_locator_service(_LINKAGE_SECRET),
-            )
+            service = _build_admin_service(_LINKAGE_SECRET)
+            result = service.delete_session(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
 
         assert result.response_deleted is True
         assert result.core_deleted is True
@@ -134,7 +142,7 @@ class TestDeletion:
         project, survey, version = _setup_core_fixtures(core_db)
         session = _create_session_row(core_db, project, survey, version)
 
-        session_locator = derive_session_locator(str(session.id), _LINKAGE_SECRET)
+        session_locator = derive_session_locator(session.id, _LINKAGE_SECRET)
         response_envelope_repo.create(
             response_db,
             session_locator=session_locator,
@@ -145,11 +153,8 @@ class TestDeletion:
             crypto_version=1,
         )
 
-        result = delete_session_responses(
-            core_db, response_db,
-            session=session,
-            locator_service=_mock_locator_service(session_locator),
-        )
+        service = _build_admin_service(session_locator)
+        result = service.delete_session(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
 
         assert result.response_deleted is True
         assert result.core_deleted is True
@@ -160,9 +165,6 @@ class TestDeletion:
         project, survey, version = _setup_core_fixtures(core_db)
         session = _create_session_row(core_db, project, survey, version)
 
+        service = _build_admin_service(_LINKAGE_SECRET)
         with pytest.raises(EnvelopeNotFoundError):
-            delete_session_responses(
-                core_db, response_db,
-                session=session,
-                locator_service=_mock_locator_service(_LINKAGE_SECRET),
-            )
+            service.delete_session(core_db, response_db, survey_id=session.survey_id, session_id=session.id)

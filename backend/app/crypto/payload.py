@@ -11,6 +11,7 @@ external context and so never parses ``answer_value`` beyond plain JSON.
 
 import json
 from typing import Any, TypedDict, get_args
+from uuid import UUID
 
 from app.schema.enums import SubmissionAnswerState
 
@@ -21,7 +22,7 @@ class ParsedPlaintextPayload(TypedDict):
     """Typed structure decoded from one plaintext answer payload."""
 
     payload_version: int
-    question_node_id: str
+    question_node_id: UUID
     answer_state: SubmissionAnswerState
     answer_value: PlaintextAnswerValue
 
@@ -35,14 +36,14 @@ class PayloadDecodeError(Exception):
 
 def build_plaintext_payload(
     payload_version: int,
-    question_node_id: str,
+    question_node_id: UUID,
     answer_state: SubmissionAnswerState,
     answer_value: PlaintextAnswerValue,
 ) -> bytes:
     """Encode a versioned plaintext payload for encryption."""
     payload = {
         "v": payload_version,
-        "question_node_id": question_node_id,
+        "question_node_id": str(question_node_id),
         "answer_state": answer_state,
         "answer_value": answer_value,
     }
@@ -70,7 +71,7 @@ def parse_plaintext_payload(raw: bytes) -> ParsedPlaintextPayload:
 
     return {
         "payload_version": data["v"],
-        "question_node_id": data["question_node_id"],
+        "question_node_id": UUID(data["question_node_id"]),
         "answer_state": answer_state,
         "answer_value": data["answer_value"],
     }

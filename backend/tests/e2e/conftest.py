@@ -36,6 +36,7 @@ from __future__ import annotations
 from collections.abc import Generator
 from datetime import UTC, datetime
 from typing import Any, NamedTuple
+from uuid import UUID
 
 import pytest  # type: ignore[import]
 from flask import Flask
@@ -121,23 +122,22 @@ def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
     loc_svc = MagicMock()
     loc_svc.get_current_linkage_key_version.return_value = 1
 
-    def _new_session_locator(session_id: str, *_args, **_kwargs) -> NewSessionLocator:
+    def _new_session_locator(session_id: UUID, *_args, **_kwargs) -> NewSessionLocator:
         return NewSessionLocator(
             linkage_key_version=1,
             session_locator=derive_session_locator(session_id, linkage_secret),
         )
 
     loc_svc.for_new_session.side_effect = _new_session_locator
-    loc_svc.for_existing_session.side_effect = (
-        lambda session_id, *_args, **_kwargs: derive_session_locator(
-            session_id,
-            linkage_secret,
-        )
+    loc_svc.for_existing_session.side_effect = lambda session_id, *_args, **_kwargs: derive_session_locator(
+        session_id,
+        linkage_secret,
     )
 
     dek_svc = MagicMock()
     dek_svc.create_for_session.return_value = NewSessionDEK(
-        plaintext_dek=b"\x01" * 32, wrapped_dek=b"\x02" * 64,
+        plaintext_dek=b"\x01" * 32,
+        wrapped_dek=b"\x02" * 64,
     )
     dek_svc.get_for_session.return_value = b"\x01" * 32
 

@@ -11,6 +11,7 @@ Verifies end-to-end that:
 - Simultaneous first saves for same question handled by unique constraint
 - Response DB locator columns contain opaque 32-byte HMAC digests
 """
+
 from __future__ import annotations
 
 import os
@@ -80,9 +81,7 @@ def _setup_core_fixtures(core_db: Session):
     core_db.add(store)
     core_db.flush()
 
-    survey = make_survey(
-        project_id=project.id, response_store_id=store.id, user_id=user.id
-    )
+    survey = make_survey(project_id=project.id, response_store_id=store.id, user_id=user.id)
     core_db.add(survey)
     core_db.flush()
 
@@ -169,7 +168,7 @@ def _create_envelope_and_context(
     session,
     version,
 ):
-    session_locator = derive_session_locator(str(session.id), _LINKAGE_SECRET)
+    session_locator = derive_session_locator(session.id, _LINKAGE_SECRET)
     plaintext_dek = os.urandom(32)
     wrapped_dek = os.urandom(64)
 
@@ -193,15 +192,11 @@ def _create_envelope_and_context(
     return ctx, plaintext_dek
 
 
-def _mock_locator_service(session_id: str, linkage_secret: bytes = _LINKAGE_SECRET):
+def _mock_locator_service(session_id: uuid.UUID, linkage_secret: bytes = _LINKAGE_SECRET):
     """Create a mock LocatorService that derives real locators from the test secret."""
     svc = MagicMock()
-    svc.answer_locator.side_effect = lambda sid, qid, version, db: derive_answer_locator(
-        sid, qid, linkage_secret
-    )
-    svc.for_existing_session.side_effect = lambda sid, version, db: derive_session_locator(
-        sid, linkage_secret
-    )
+    svc.answer_locator.side_effect = lambda sid, qid, version, db: derive_answer_locator(sid, qid, linkage_secret)
+    svc.for_existing_session.side_effect = lambda sid, version, db: derive_session_locator(sid, linkage_secret)
     return svc
 
 
@@ -215,14 +210,13 @@ def _mock_dek_service(plaintext_dek: bytes):
 def _make_service(ctx: SessionContext, plaintext_dek: bytes) -> AnswerSaveService:
     """Build an AnswerSaveService with mock crypto services."""
     return AnswerSaveService(
-        locator_service=_mock_locator_service(str(ctx.session.id)),
+        locator_service=_mock_locator_service(ctx.session.id),
         dek_service=_mock_dek_service(plaintext_dek),
         answer_crypto_service=AnswerCryptoService(),
     )
 
 
 class TestFirstSave:
-
     def test_first_save_creates_revision_1(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
@@ -233,9 +227,10 @@ class TestFirstSave:
         mutation_id = uuid.uuid4()
 
         revision_number = svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "hello"},
             client_mutation_id=mutation_id,
@@ -243,7 +238,7 @@ class TestFirstSave:
 
         assert revision_number == 1
 
-        answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
+        answer_locator = derive_answer_locator(session.id, question.id, _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         assert answer is not None, "logical answer row must exist"
 
@@ -260,33 +255,26 @@ class TestFirstSave:
         svc = _make_service(ctx, plaintext_dek)
 
         svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "test"},
             client_mutation_id=uuid.uuid4(),
         )
 
         assert isinstance(ctx.envelope.session_locator, bytes)
-        assert len(ctx.envelope.session_locator) == 32, (
-            "session_locator must be a 32-byte HMAC-SHA256 digest"
-        )
+        assert len(ctx.envelope.session_locator) == 32, "session_locator must be a 32-byte HMAC-SHA256 digest"
 
-        answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
+        answer_locator = derive_answer_locator(session.id, question.id, _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         assert answer is not None
         assert isinstance(answer.answer_locator, bytes)
-        assert len(answer.answer_locator) == 32, (
-            "answer_locator must be a 32-byte HMAC-SHA256 digest"
-        )
+        assert len(answer.answer_locator) == 32, "answer_locator must be a 32-byte HMAC-SHA256 digest"
 
-        assert ctx.envelope.session_locator != str(session.id).encode(), (
-            "session_locator must not be a readable UUID"
-        )
-        assert answer.answer_locator != str(question.id).encode(), (
-            "answer_locator must not be a readable question ID"
-        )
+        assert ctx.envelope.session_locator != session.id.bytes, "session_locator must not be a readable UUID"
+        assert answer.answer_locator != question.id.bytes, "answer_locator must not be a readable question ID"
 
     def test_saved_ciphertext_round_trips_to_original_answer(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
@@ -297,15 +285,16 @@ class TestFirstSave:
         svc = _make_service(ctx, plaintext_dek)
 
         svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "round-trip me"},
             client_mutation_id=uuid.uuid4(),
         )
 
-        answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
+        answer_locator = derive_answer_locator(session.id, question.id, _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         assert answer is not None
 
@@ -323,7 +312,7 @@ class TestFirstSave:
         plaintext_bytes = decrypt_answer(latest.ciphertext, plaintext_dek, latest.nonce, aad)
         expected = build_plaintext_payload(
             payload_version=1,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "round-trip me"},
         )
@@ -331,7 +320,6 @@ class TestFirstSave:
 
 
 class TestChangedAnswer:
-
     def test_changed_answer_creates_revision_2(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
@@ -341,17 +329,19 @@ class TestChangedAnswer:
         svc = _make_service(ctx, plaintext_dek)
 
         rev1_num = svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "first"},
             client_mutation_id=uuid.uuid4(),
         )
         rev2_num = svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "second"},
             client_mutation_id=uuid.uuid4(),
@@ -360,7 +350,7 @@ class TestChangedAnswer:
         assert rev1_num == 1
         assert rev2_num == 2
 
-        answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
+        answer_locator = derive_answer_locator(session.id, question.id, _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         assert answer is not None
 
@@ -371,10 +361,7 @@ class TestChangedAnswer:
 
 
 class TestClearedAnswer:
-
-    def test_cleared_answer_creates_revision_with_null_value(
-        self, db_sessions: DbSessions
-    ) -> None:
+    def test_cleared_answer_creates_revision_with_null_value(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
@@ -383,24 +370,26 @@ class TestClearedAnswer:
         svc = _make_service(ctx, plaintext_dek)
 
         svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "will be cleared"},
             client_mutation_id=uuid.uuid4(),
         )
         clear_rev_num = svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="cleared",
             answer_value=None,
             client_mutation_id=uuid.uuid4(),
         )
         assert clear_rev_num == 2
 
-        answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
+        answer_locator = derive_answer_locator(session.id, question.id, _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         assert answer is not None
 
@@ -408,9 +397,7 @@ class TestClearedAnswer:
         assert len(history) == 2
         assert history[1].revision_number == 2
 
-    def test_cleared_revision_decrypts_to_cleared_state(
-        self, db_sessions: DbSessions
-    ) -> None:
+    def test_cleared_revision_decrypts_to_cleared_state(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
@@ -419,23 +406,25 @@ class TestClearedAnswer:
         svc = _make_service(ctx, plaintext_dek)
 
         svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "will be cleared"},
             client_mutation_id=uuid.uuid4(),
         )
         svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="cleared",
             answer_value=None,
             client_mutation_id=uuid.uuid4(),
         )
 
-        answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
+        answer_locator = derive_answer_locator(session.id, question.id, _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         assert answer is not None
 
@@ -458,7 +447,6 @@ class TestClearedAnswer:
 
 
 class TestDuplicateMutationId:
-
     def test_duplicate_mutation_id_returns_existing(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
@@ -469,17 +457,19 @@ class TestDuplicateMutationId:
         mutation_id = uuid.uuid4()
 
         first_id = svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "hello"},
             client_mutation_id=mutation_id,
         )
         second_id = svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "hello"},
             client_mutation_id=mutation_id,
@@ -487,7 +477,7 @@ class TestDuplicateMutationId:
 
         assert first_id == second_id
 
-        answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
+        answer_locator = derive_answer_locator(session.id, question.id, _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         assert answer is not None
         history = response_answer_revision_repo.get_history(response_db, answer.id)
@@ -495,19 +485,14 @@ class TestDuplicateMutationId:
 
 
 class TestExpiredSession:
-
     def test_expired_session_rejected(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, _ = _setup_core_fixtures(core_db)
-        session, raw_token = _create_session_row(
-            core_db, project, survey, version, expired=True
-        )
+        session, raw_token = _create_session_row(core_db, project, survey, version, expired=True)
         _create_envelope_and_context(core_db, response_db, session, version)
 
         locator_service = MagicMock()
-        locator_service.for_existing_session.return_value = derive_session_locator(
-            str(session.id), _LINKAGE_SECRET
-        )
+        locator_service.for_existing_session.return_value = derive_session_locator(session.id, _LINKAGE_SECRET)
 
         with pytest.raises(SessionExpiredError):
             load_current_session(
@@ -520,19 +505,14 @@ class TestExpiredSession:
 
 
 class TestCompletedSession:
-
     def test_completed_session_rejected(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, _ = _setup_core_fixtures(core_db)
-        session, raw_token = _create_session_row(
-            core_db, project, survey, version, status="completed"
-        )
+        session, raw_token = _create_session_row(core_db, project, survey, version, status="completed")
         _create_envelope_and_context(core_db, response_db, session, version)
 
         locator_service = MagicMock()
-        locator_service.for_existing_session.return_value = derive_session_locator(
-            str(session.id), _LINKAGE_SECRET
-        )
+        locator_service.for_existing_session.return_value = derive_session_locator(session.id, _LINKAGE_SECRET)
 
         with pytest.raises(SessionInvalidError, match="already completed"):
             load_current_session(
@@ -545,10 +525,7 @@ class TestCompletedSession:
 
 
 class TestAnalyticsFailure:
-
-    def test_analytics_event_failure_does_not_block_save(
-        self, db_sessions: DbSessions
-    ) -> None:
+    def test_analytics_event_failure_does_not_block_save(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
@@ -561,9 +538,10 @@ class TestAnalyticsFailure:
             side_effect=Exception("DB error"),
         ):
             revision_id = svc.save_answer(
-                core_db, response_db,
+                core_db,
+                response_db,
                 ctx=ctx,
-                question_node_id=str(question.id),
+                question_node_id=question.id,
                 answer_state="answered",
                 answer_value={"field_type": "short_text", "text": "hello"},
                 client_mutation_id=uuid.uuid4(),
@@ -571,16 +549,13 @@ class TestAnalyticsFailure:
 
         assert revision_id is not None
 
-        answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
+        answer_locator = derive_answer_locator(session.id, question.id, _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         assert answer is not None, "answer must be saved despite analytics failure"
 
 
 class TestCoreDbPrivacy:
-
-    def test_core_db_has_no_plaintext_answers_or_response_ids(
-        self, db_sessions: DbSessions
-    ) -> None:
+    def test_core_db_has_no_plaintext_answers_or_response_ids(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
@@ -589,9 +564,10 @@ class TestCoreDbPrivacy:
         svc = _make_service(ctx, plaintext_dek)
 
         svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "secret answer text"},
             client_mutation_id=uuid.uuid4(),
@@ -615,13 +591,9 @@ class TestCoreDbPrivacy:
             if col_value is None or isinstance(col_value, (int, bool, datetime)):
                 continue
             str_val = str(col_value)
-            assert str(envelope.id) not in str_val, (
-                f"core session column '{col_name}' contains response envelope ID"
-            )
+            assert str(envelope.id) not in str_val, f"core session column '{col_name}' contains response envelope ID"
 
-        events = core_db.scalars(
-            select(SubmissionEvent).where(SubmissionEvent.session_id == session.id)
-        ).all()
+        events = core_db.scalars(select(SubmissionEvent).where(SubmissionEvent.session_id == session.id)).all()
         for event in events:
             event_columns = {c.name: getattr(event, c.name) for c in event.__table__.columns}
             for col_name, col_value in event_columns.items():
@@ -631,13 +603,10 @@ class TestCoreDbPrivacy:
                 assert "secret answer text" not in str_val, (
                     f"core event column '{col_name}' contains plaintext answer value"
                 )
-                assert str(envelope.id) not in str_val, (
-                    f"core event column '{col_name}' contains response envelope ID"
-                )
+                assert str(envelope.id) not in str_val, f"core event column '{col_name}' contains response envelope ID"
 
 
 class TestCacheMissUnwrapDek:
-
     def test_dek_service_get_called_on_save(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
@@ -646,15 +615,16 @@ class TestCacheMissUnwrapDek:
 
         dek_svc = _mock_dek_service(plaintext_dek)
         svc = AnswerSaveService(
-            locator_service=_mock_locator_service(str(session.id)),
+            locator_service=_mock_locator_service(session.id),
             dek_service=dek_svc,
             answer_crypto_service=AnswerCryptoService(),
         )
 
         svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "cache miss test"},
             client_mutation_id=uuid.uuid4(),
@@ -674,15 +644,16 @@ class TestCacheMissUnwrapDek:
 
         dek_svc = _mock_dek_service(plaintext_dek)
         svc = AnswerSaveService(
-            locator_service=_mock_locator_service(str(session.id)),
+            locator_service=_mock_locator_service(session.id),
             dek_service=dek_svc,
             answer_crypto_service=AnswerCryptoService(),
         )
 
         svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "cache hit test"},
             client_mutation_id=uuid.uuid4(),
@@ -690,13 +661,10 @@ class TestCacheMissUnwrapDek:
 
         dek_svc.get_for_session.assert_called_once()
         call_args = dek_svc.get_for_session.call_args
-        assert call_args[0][0] == session.id, (
-            "get_for_session must receive the session ID"
-        )
+        assert call_args[0][0] == session.id, "get_for_session must receive the session ID"
 
 
 class TestSequentialDuplicateSaves:
-
     def test_sequential_duplicate_saves_handled(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
@@ -706,17 +674,19 @@ class TestSequentialDuplicateSaves:
         svc = _make_service(ctx, plaintext_dek)
 
         rev1_id = svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "first"},
             client_mutation_id=uuid.uuid4(),
         )
         rev2_id = svc.save_answer(
-            core_db, response_db,
+            core_db,
+            response_db,
             ctx=ctx,
-            question_node_id=str(question.id),
+            question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "concurrent second"},
             client_mutation_id=uuid.uuid4(),
@@ -726,7 +696,7 @@ class TestSequentialDuplicateSaves:
         assert rev2_id is not None
         assert rev1_id != rev2_id
 
-        answer_locator = derive_answer_locator(str(session.id), str(question.id), _LINKAGE_SECRET)
+        answer_locator = derive_answer_locator(session.id, question.id, _LINKAGE_SECRET)
         answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         assert answer is not None
         history = response_answer_revision_repo.get_history(response_db, answer.id)
