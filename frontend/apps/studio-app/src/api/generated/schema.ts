@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/api/v1/auth/bootstrap-user": {
+    "/api/v1/account/bootstrap-user": {
         parameters: {
             query?: never;
             header?: never;
@@ -24,7 +24,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/health": {
+    "/api/v1/account/invitations": {
         parameters: {
             query?: never;
             header?: never;
@@ -32,10 +32,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Health check
-         * @description Health check
+         * Get my invitations
+         * @description Get my invitations
          */
-        get: operations["healthCheck"];
+        get: operations["getMyInvitations"];
         put?: never;
         post?: never;
         delete?: never;
@@ -44,27 +44,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/health/ready": {
+    "/api/v1/account/invitations/{invitation_id}/accept": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Readiness check
-         * @description Readiness check
-         */
-        get: operations["readinessCheck"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Accept invitation
+         * @description Accept invitation
+         */
+        post: operations["acceptInvitation"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/profile": {
+    "/api/v1/account/invitations/{invitation_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline invitation
+         * @description Decline invitation
+         */
+        post: operations["declineInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account/profile": {
         parameters: {
             query?: never;
             header?: never;
@@ -88,7 +108,7 @@ export interface paths {
         patch: operations["updateMyProfile"];
         trace?: never;
     };
-    "/api/v1/me/change-email": {
+    "/api/v1/account/change-email": {
         parameters: {
             query?: never;
             header?: never;
@@ -108,7 +128,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/change-username": {
+    "/api/v1/account/change-username": {
         parameters: {
             query?: never;
             header?: never;
@@ -128,7 +148,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/change-password": {
+    "/api/v1/account/change-password": {
         parameters: {
             query?: never;
             header?: never;
@@ -148,7 +168,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/clear-mfa": {
+    "/api/v1/account/clear-mfa": {
         parameters: {
             query?: never;
             header?: never;
@@ -168,7 +188,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/resend-verification": {
+    "/api/v1/account/resend-verification": {
         parameters: {
             query?: never;
             header?: never;
@@ -188,7 +208,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me": {
+    "/api/v1/account": {
         parameters: {
             query?: never;
             header?: never;
@@ -208,27 +228,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/invitations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get my invitations
-         * @description Get my invitations
-         */
-        get: operations["getMyInvitations"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/me/invitations/{invitation_id}/accept": {
+    "/api/v1/respondent/links/resolve": {
         parameters: {
             query?: never;
             header?: never;
@@ -238,17 +238,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Accept invitation
-         * @description Accept invitation
+         * Resolve survey access link
+         * @description Anonymous access is allowed for links that do not require authentication. If the resolved link requires authentication, a bearer token must be supplied.
          */
-        post: operations["acceptInvitation"];
+        post: operations["resolveLink"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/invitations/{invitation_id}/decline": {
+    "/api/v1/respondent/links/verification/link": {
         parameters: {
             query?: never;
             header?: never;
@@ -258,17 +258,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Decline invitation
-         * @description Decline invitation
+         * Verify authenticated survey link participant
+         * @description Verify the authenticated account against the participant assigned to an authenticated survey link. The account email must match the participant identity email before the participant is linked to the user.
          */
-        post: operations["declineInvitation"];
+        post: operations["verifyAuthenticatedLinkParticipant"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes": {
+    "/api/v1/respondent/surveys": {
         parameters: {
             query?: never;
             header?: never;
@@ -276,51 +276,19 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List survey content nodes
-         * @description List survey content nodes
+         * List public surveys
+         * @description List public surveys
          */
-        get: operations["listNodes"];
-        put?: never;
-        /**
-         * Create survey content node
-         * @description Create survey content node
-         */
-        post: operations["createNode"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get survey content node
-         * @description Get survey content node
-         */
-        get: operations["getNode"];
+        get: operations["listPublicSurveys"];
         put?: never;
         post?: never;
-        /**
-         * Delete survey content node
-         * @description Delete survey content node
-         */
-        delete: operations["deleteNode"];
+        delete?: never;
         options?: never;
         head?: never;
-        /**
-         * Update survey content node
-         * @description Update survey content node
-         */
-        patch: operations["updateNode"];
+        patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules": {
+    "/api/v1/respondent/surveys/{public_slug}": {
         parameters: {
             query?: never;
             header?: never;
@@ -328,23 +296,123 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List scoring rules
-         * @description List scoring rules
+         * Get public survey
+         * @description Get public survey
          */
-        get: operations["listScoringRules"];
+        get: operations["getPublicSurvey"];
         put?: never;
-        /**
-         * Create scoring rule
-         * @description Create scoring rule
-         */
-        post: operations["createScoringRule"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules/{scoring_rule_id}": {
+    "/api/v1/respondent/submission-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start submission session
+         * @description Start submission session
+         */
+        post: operations["startSubmissionSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/respondent/submission-sessions/current/answers/{question_node_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save submission session answer
+         * @description Save submission session answer
+         */
+        put: operations["saveSubmissionSessionAnswer"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/respondent/submission-sessions/current/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record submission session event
+         * @description Record submission session event
+         */
+        post: operations["recordSubmissionSessionEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/respondent/submission-sessions/current/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete submission session
+         * @description Complete submission session
+         */
+        post: operations["completeSubmissionSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project invitations
+         * @description List project invitations
+         */
+        get: operations["listInvitations"];
+        put?: never;
+        /**
+         * Invite project member
+         * @description Invite project member
+         */
+        post: operations["sendInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/invitations/{invitation_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -355,20 +423,156 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Delete scoring rule
-         * @description Delete scoring rule
+         * Revoke project invitation
+         * @description Revoke project invitation
          */
-        delete: operations["deleteScoringRule"];
+        delete: operations["revokeInvitation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project members
+         * @description List project members
+         */
+        get: operations["listMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/members/{membership_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove project member
+         * @description Remove project member
+         */
+        delete: operations["removeMember"];
         options?: never;
         head?: never;
         /**
-         * Update scoring rule
-         * @description Update scoring rule
+         * Update project member
+         * @description Update project member
          */
-        patch: operations["updateScoringRule"];
+        patch: operations["updateMember"];
         trace?: never;
     };
-    "/api/v1/projects": {
+    "/api/v1/studio/projects/{project_id}/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List participants
+         * @description List participants
+         */
+        get: operations["listParticipants"];
+        put?: never;
+        /**
+         * Create participant
+         * @description Create participant
+         */
+        post: operations["createParticipant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/participants/{participant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete participant
+         * @description Delete participant
+         */
+        delete: operations["deleteParticipant"];
+        options?: never;
+        head?: never;
+        /**
+         * Update participant
+         * @description Update participant
+         */
+        patch: operations["updateParticipant"];
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project roles
+         * @description List project roles
+         */
+        get: operations["listRoles"];
+        put?: never;
+        /**
+         * Create project role
+         * @description Create project role
+         */
+        post: operations["createRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/roles/{role_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete project role
+         * @description Delete project role
+         */
+        delete: operations["deleteRole"];
+        options?: never;
+        head?: never;
+        /**
+         * Update project role
+         * @description Update project role
+         */
+        patch: operations["updateRole"];
+        trace?: never;
+    };
+    "/api/v1/studio/projects": {
         parameters: {
             query?: never;
             header?: never;
@@ -392,7 +596,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}": {
+    "/api/v1/studio/projects/{project_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -420,7 +624,7 @@ export interface paths {
         patch: operations["updateProject"];
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/my-permissions": {
+    "/api/v1/studio/projects/{project_id}/my-permissions": {
         parameters: {
             query?: never;
             header?: never;
@@ -440,7 +644,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/members": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/links": {
         parameters: {
             query?: never;
             header?: never;
@@ -448,43 +652,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List project members
-         * @description List project members
+         * List survey access links
+         * @description List survey access links
          */
-        get: operations["listMembers"];
+        get: operations["listSurveyAccessLinks"];
         put?: never;
-        post?: never;
+        /**
+         * Create survey access link
+         * @description Create survey access link
+         */
+        post: operations["createSurveyAccessLink"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/invitations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List project invitations
-         * @description List project invitations
-         */
-        get: operations["listInvitations"];
-        put?: never;
-        /**
-         * Invite member
-         * @description Invite member
-         */
-        post: operations["sendInvitation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/invitations/{invitation_id}": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/links/{link_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -495,40 +679,20 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Revoke invitation
-         * @description Revoke invitation
+         * Delete survey access link
+         * @description Delete survey access link
          */
-        delete: operations["revokeInvitation"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/members/{membership_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Remove member
-         * @description Remove member
-         */
-        delete: operations["removeMember"];
+        delete: operations["deleteSurveyAccessLink"];
         options?: never;
         head?: never;
         /**
-         * Update member
-         * @description Update member
+         * Update survey access link
+         * @description Update survey access link
          */
-        patch: operations["updateMember"];
+        patch: operations["updateSurveyAccessLink"];
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/participants": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes": {
         parameters: {
             query?: never;
             header?: never;
@@ -536,227 +700,51 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List participants
-         * @description List participants
+         * List survey builder nodes
+         * @description List survey builder nodes
          */
-        get: operations["listParticipants"];
+        get: operations["listNodes"];
         put?: never;
         /**
-         * Create participant
-         * @description Create participant
+         * Create survey builder node
+         * @description Create survey builder node
          */
-        post: operations["createParticipant"];
+        post: operations["createNode"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/participants/{participant_id}": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get survey builder node
+         * @description Get survey builder node
+         */
+        get: operations["getNode"];
         put?: never;
         post?: never;
         /**
-         * Delete participant
-         * @description Delete participant
+         * Delete survey builder node
+         * @description Delete survey builder node
          */
-        delete: operations["deleteParticipant"];
+        delete: operations["deleteNode"];
         options?: never;
         head?: never;
         /**
-         * Update participant
-         * @description Update participant
+         * Update survey builder node
+         * @description Update survey builder node
          */
-        patch: operations["updateParticipant"];
+        patch: operations["updateNode"];
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/links": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List survey links
-         * @description List survey links
-         */
-        get: operations["listPublicLinks"];
-        put?: never;
-        /**
-         * Create survey link
-         * @description Create survey link
-         */
-        post: operations["createPublicLink"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/links/{link_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete survey link
-         * @description Delete survey link
-         */
-        delete: operations["deletePublicLink"];
-        options?: never;
-        head?: never;
-        /**
-         * Update survey link
-         * @description Update survey link
-         */
-        patch: operations["updatePublicLink"];
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/roles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List project roles
-         * @description List project roles
-         */
-        get: operations["listRoles"];
-        put?: never;
-        /**
-         * Create project role
-         * @description Create project role
-         */
-        post: operations["createRole"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/roles/{role_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete project role
-         * @description Delete project role
-         */
-        delete: operations["deleteRole"];
-        options?: never;
-        head?: never;
-        /**
-         * Update project role
-         * @description Update project role
-         */
-        patch: operations["updateRole"];
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/responses": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List survey responses
-         * @description List survey responses
-         */
-        get: operations["listResponses"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/responses/{session_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get survey response detail
-         * @description Get survey response detail
-         */
-        get: operations["getResponseDetail"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete survey response
-         * @description Delete survey response
-         */
-        delete: operations["deleteResponse"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/responses/{session_id}/history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get survey response history
-         * @description Get survey response history
-         */
-        get: operations["getResponseHistory"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/responses/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Export survey responses
-         * @description Export survey responses
-         */
-        post: operations["exportResponses"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/members": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/members": {
         parameters: {
             query?: never;
             header?: never;
@@ -780,7 +768,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/members/{membership_id}": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/members/{membership_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -804,7 +792,91 @@ export interface paths {
         patch: operations["updateSurveyMemberRole"];
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/survey-roles": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List survey responses
+         * @description List survey responses
+         */
+        get: operations["listResponses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get survey response detail
+         * @description Get survey response detail
+         */
+        get: operations["getResponseDetail"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete survey response
+         * @description Delete survey response
+         */
+        delete: operations["deleteResponse"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses/{session_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get survey response history
+         * @description Get survey response history
+         */
+        get: operations["getResponseHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export survey responses
+         * @description Export survey responses
+         */
+        post: operations["exportResponses"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/survey-roles": {
         parameters: {
             query?: never;
             header?: never;
@@ -828,7 +900,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/survey-roles/{role_id}": {
+    "/api/v1/studio/projects/{project_id}/survey-roles/{role_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -852,7 +924,7 @@ export interface paths {
         patch: operations["updateSurveyRole"];
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys": {
+    "/api/v1/studio/projects/{project_id}/surveys": {
         parameters: {
             query?: never;
             header?: never;
@@ -876,7 +948,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -904,7 +976,7 @@ export interface paths {
         patch: operations["updateSurvey"];
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/my-permissions": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/my-permissions": {
         parameters: {
             query?: never;
             header?: never;
@@ -924,7 +996,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List scoring rules
+         * @description List scoring rules
+         */
+        get: operations["listScoringRules"];
+        put?: never;
+        /**
+         * Create scoring rule
+         * @description Create scoring rule
+         */
+        post: operations["createScoringRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules/{scoring_rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete scoring rule
+         * @description Delete scoring rule
+         */
+        delete: operations["deleteScoringRule"];
+        options?: never;
+        head?: never;
+        /**
+         * Update scoring rule
+         * @description Update scoring rule
+         */
+        patch: operations["updateScoringRule"];
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions": {
         parameters: {
             query?: never;
             header?: never;
@@ -948,7 +1068,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/copy-to-draft": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/copy-to-draft": {
         parameters: {
             query?: never;
             header?: never;
@@ -968,7 +1088,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}": {
         parameters: {
             query?: never;
             header?: never;
@@ -988,7 +1108,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/publish": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/publish": {
         parameters: {
             query?: never;
             header?: never;
@@ -1008,7 +1128,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/archive": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/archive": {
         parameters: {
             query?: never;
             header?: never;
@@ -1028,7 +1148,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/public/surveys": {
+    "/api/v1/system/health": {
         parameters: {
             query?: never;
             header?: never;
@@ -1036,10 +1156,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List public surveys
-         * @description List public surveys
+         * Health check
+         * @description Health check
          */
-        get: operations["listPublicSurveys"];
+        get: operations["healthCheck"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1048,7 +1168,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/public/surveys/{public_slug}": {
+    "/api/v1/system/health/ready": {
         parameters: {
             query?: never;
             header?: never;
@@ -1056,132 +1176,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get public survey
-         * @description Get public survey
+         * Readiness check
+         * @description Readiness check
          */
-        get: operations["getPublicSurvey"];
+        get: operations["readinessCheck"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/links/resolve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Resolve survey link
-         * @description Anonymous access is allowed for links that do not require authentication. If the resolved link requires authentication, a bearer token must be supplied.
-         */
-        post: operations["resolveLink"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/links/verification/link": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify authenticated survey link participant
-         * @description Verify the authenticated account against the participant assigned to an authenticated survey link. The account email must match the participant identity email before the participant is linked to the user.
-         */
-        post: operations["verifyAuthenticatedLinkParticipant"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/submission-session/start": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Start submission session
-         * @description Start submission session
-         */
-        post: operations["startSubmissionSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/submission-session/answer": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Save submission session answer
-         * @description Save submission session answer
-         */
-        put: operations["saveSubmissionSessionAnswer"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/submission-session/event": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Record submission session event
-         * @description Record submission session event
-         */
-        post: operations["recordSubmissionSessionEvent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/submission-session/complete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Complete submission session
-         * @description Complete submission session
-         */
-        post: operations["completeSubmissionSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1253,67 +1253,6 @@ export interface components {
             user: components["schemas"]["CurrentUserResponses"];
             /** @default null */
             default_project: components["schemas"]["ProjectResponses"] | null;
-        };
-        /**
-         * CurrentUserProfileResponses
-         * @description API response shape for the current user's profile.
-         */
-        CurrentUserProfileResponses: {
-            /** Id */
-            id: number;
-            /** Auth0 User Id */
-            auth0_user_id: string;
-            /** Email */
-            email: string;
-            /** Display Name */
-            display_name: string | null;
-            /** Email Verified */
-            email_verified: boolean;
-        };
-        /**
-         * UpdateProfileRequest
-         * @description Update display name, nickname, and/or profile picture.
-         */
-        UpdateProfileRequest: {
-            /**
-             * Display Name
-             * @default null
-             */
-            display_name: string | null;
-            /**
-             * Nickname
-             * @default null
-             */
-            nickname: string | null;
-            /**
-             * Picture
-             * @default null
-             */
-            picture: string | null;
-        };
-        /**
-         * ChangeEmailRequest
-         * @description Request body for changing the account email address.
-         */
-        ChangeEmailRequest: {
-            /** Email */
-            email: string;
-        };
-        /**
-         * ChangeUsernameRequest
-         * @description Request body for changing the Auth0 username.
-         */
-        ChangeUsernameRequest: {
-            /** Username */
-            username: string;
-        };
-        /**
-         * PasswordChangeTicketResponses
-         * @description Hosted Auth0 password-change ticket URL.
-         */
-        PasswordChangeTicketResponses: {
-            /** Ticket Url */
-            ticket_url: string;
         };
         /**
          * ProjectInvitationResponses
@@ -1396,6 +1335,798 @@ export interface components {
              */
             created_at: string;
             user: components["schemas"]["MemberUserResponses"];
+        };
+        /**
+         * CurrentUserProfileResponses
+         * @description API response shape for the current user's profile.
+         */
+        CurrentUserProfileResponses: {
+            /** Id */
+            id: number;
+            /** Auth0 User Id */
+            auth0_user_id: string;
+            /** Email */
+            email: string;
+            /** Display Name */
+            display_name: string | null;
+            /** Email Verified */
+            email_verified: boolean;
+        };
+        /**
+         * UpdateProfileRequest
+         * @description Update display name, nickname, and/or profile picture.
+         */
+        UpdateProfileRequest: {
+            /**
+             * Display Name
+             * @default null
+             */
+            display_name: string | null;
+            /**
+             * Nickname
+             * @default null
+             */
+            nickname: string | null;
+            /**
+             * Picture
+             * @default null
+             */
+            picture: string | null;
+        };
+        /**
+         * ChangeEmailRequest
+         * @description Request body for changing the account email address.
+         */
+        ChangeEmailRequest: {
+            /** Email */
+            email: string;
+        };
+        /**
+         * ChangeUsernameRequest
+         * @description Request body for changing the Auth0 username.
+         */
+        ChangeUsernameRequest: {
+            /** Username */
+            username: string;
+        };
+        /**
+         * PasswordChangeTicketResponses
+         * @description Hosted Auth0 password-change ticket URL.
+         */
+        PasswordChangeTicketResponses: {
+            /** Ticket Url */
+            ticket_url: string;
+        };
+        /**
+         * ResolveSurveyAccessLinkTokenRequest
+         * @description Request body for resolving a respondent survey access link token.
+         */
+        ResolveSurveyAccessLinkTokenRequest: {
+            /** Token */
+            token: string;
+        };
+        /**
+         * SurveyAccessLinkResponse
+         * @description API response shape for a survey access link.
+         */
+        SurveyAccessLinkResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Survey Id */
+            survey_id: number;
+            /** Name */
+            name: string;
+            /** Token Prefix */
+            token_prefix: string;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Link Type
+             * @enum {string}
+             */
+            link_type: "general" | "private" | "authenticated";
+            /**
+             * Assignment Source
+             * @enum {string}
+             */
+            assignment_source: "manual" | "automated";
+            /** Assigned Participant Id */
+            assigned_participant_id: string | null;
+            /** Expires At */
+            expires_at: string | null;
+            /** Used At */
+            used_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * SurveyResponses
+         * @description API response shape for a survey.
+         */
+        SurveyResponses: {
+            /** Id */
+            id: number;
+            /** Project Id */
+            project_id: number;
+            /** Title */
+            title: string;
+            /**
+             * Visibility
+             * @enum {string}
+             */
+            visibility: "private" | "link_only" | "public";
+            /** Public Slug */
+            public_slug: string | null;
+            /** Default Response Store Id */
+            default_response_store_id: number | null;
+            /** Published Version Id */
+            published_version_id: number | null;
+            /** Created By User Id */
+            created_by_user_id: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * SurveyVersionResponses
+         * @description API response shape for a survey version.
+         */
+        SurveyVersionResponses: {
+            /** Id */
+            id: number;
+            /** Survey Id */
+            survey_id: number;
+            /** Version Number */
+            version_number: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "published" | "archived";
+            /** Compiled Schema */
+            compiled_schema: {
+                [key: string]: unknown;
+            } | null;
+            /** Published At */
+            published_at: string | null;
+            /** Created By User Id */
+            created_by_user_id: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * ResolveSurveyAccessLinkResponse
+         * @description API response shape for resolving a respondent survey access link token.
+         */
+        ResolveSurveyAccessLinkResponse: {
+            link: components["schemas"]["SurveyAccessLinkResponse"];
+            /** @default null */
+            survey: components["schemas"]["SurveyResponses"] | null;
+            /** @default null */
+            published_version: components["schemas"]["SurveyVersionResponses"] | null;
+        };
+        /**
+         * PaginatedPublicSurveysResponses
+         * @description API response shape for a paginated list of public surveys.
+         */
+        PaginatedPublicSurveysResponses: {
+            /** Items */
+            items: components["schemas"]["SurveyResponses"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * PublicSurveyResponses
+         * @description API response shape for a publicly accessible survey with its published version.
+         */
+        PublicSurveyResponses: {
+            survey: components["schemas"]["SurveyResponses"];
+            /** @default null */
+            published_version: components["schemas"]["SurveyVersionResponses"] | null;
+        };
+        /**
+         * LinkTokenAccess
+         * @description Access descriptor for starting a respondent session from a private link token.
+         */
+        LinkTokenAccess: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "link_token";
+            /** Token */
+            token: string;
+        };
+        /**
+         * PublicSlugAccess
+         * @description Access descriptor for starting a respondent session from a public survey slug.
+         */
+        PublicSlugAccess: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "public_slug";
+            /** Public Slug */
+            public_slug: string;
+        };
+        /**
+         * StartSubmissionSessionRequest
+         * @description Request body for starting or resuming a respondent submission session.
+         */
+        StartSubmissionSessionRequest: {
+            /** SessionStartAccess */
+            access: components["schemas"]["PublicSlugAccess"] | components["schemas"]["LinkTokenAccess"];
+        };
+        /**
+         * StartSubmissionSessionResponse
+         * @description Session start acknowledgement.
+         *
+         *     Survey schema delivery belongs to discovery and link-resolution flows,
+         *     not to session start.
+         */
+        StartSubmissionSessionResponse: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "in_progress" | "completed" | "abandoned";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Survey Version Id */
+            survey_version_id: number;
+        };
+        /**
+         * ChoiceAnswerValue
+         * @description Answer value for a choice question.
+         */
+        ChoiceAnswerValue: {
+            /** Selected */
+            selected: string[];
+        };
+        /**
+         * DateFieldAnswerValue
+         * @description Answer value for a date field question.
+         */
+        DateFieldAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            field_type: "date";
+            /** Date */
+            date: string;
+        };
+        /**
+         * EmailFieldAnswerValue
+         * @description Answer value for an email field question.
+         */
+        EmailFieldAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            field_type: "email";
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+        };
+        /**
+         * EmojiRatingAnswerValue
+         * @description Answer value for an emoji rating question.
+         */
+        EmojiRatingAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            variant: "emoji";
+            /** Number */
+            number: number;
+        };
+        /**
+         * LongTextFieldAnswerValue
+         * @description Answer value for a long-text field question.
+         */
+        LongTextFieldAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            field_type: "long_text";
+            /** Text */
+            text: string;
+        };
+        /**
+         * MatchingAnswerPair
+         * @description One prompt-to-match pair in a matching answer.
+         */
+        MatchingAnswerPair: {
+            /** Prompt Id */
+            prompt_id: string;
+            /** Match Id */
+            match_id: string;
+        };
+        /**
+         * MatchingAnswerValue
+         * @description Answer value for a matching question.
+         */
+        MatchingAnswerValue: {
+            /** Pairs */
+            pairs: components["schemas"]["MatchingAnswerPair"][];
+        };
+        /**
+         * NumberFieldAnswerValue
+         * @description Answer value for a numeric field question.
+         */
+        NumberFieldAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            field_type: "number";
+            /** Number */
+            number: number;
+        };
+        /**
+         * PhoneFieldAnswerValue
+         * @description Answer value for a phone field question.
+         */
+        PhoneFieldAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            field_type: "phone";
+            /** Phone */
+            phone: string;
+        };
+        /**
+         * ShortTextFieldAnswerValue
+         * @description Answer value for a short-text field question.
+         */
+        ShortTextFieldAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            field_type: "short_text";
+            /** Text */
+            text: string;
+        };
+        /**
+         * SliderRatingAnswerValue
+         * @description Answer value for a slider rating question.
+         */
+        SliderRatingAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            variant: "slider";
+            /** Number */
+            number: number;
+        };
+        /**
+         * StarsRatingAnswerValue
+         * @description Answer value for a star rating question.
+         */
+        StarsRatingAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            variant: "stars";
+            /** Number */
+            number: number;
+        };
+        /**
+         * SaveSubmissionSessionAnswerRequest
+         * @description Request body for saving or clearing one respondent answer revision.
+         */
+        SaveSubmissionSessionAnswerRequest: {
+            /**
+             * Client Mutation Id
+             * Format: uuid
+             */
+            client_mutation_id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "answered" | "cleared";
+            /**
+             * Answer Family
+             * @default null
+             */
+            answer_family: ("choice" | "field" | "matching" | "rating") | null;
+            /**
+             * Answer Value
+             * @default null
+             */
+            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | null;
+        };
+        /**
+         * SubmissionSessionAnswerResponse
+         * @description Canonical latest answer state returned to a respondent.
+         */
+        SubmissionSessionAnswerResponse: {
+            /**
+             * Question Node Id
+             * Format: uuid
+             */
+            question_node_id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "answered" | "cleared";
+            /**
+             * Answer Family
+             * @default null
+             */
+            answer_family: ("choice" | "field" | "matching" | "rating") | null;
+            /**
+             * Answer Value
+             * @default null
+             */
+            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | null;
+            /** Revision Number */
+            revision_number: number;
+            /**
+             * Client Mutation Id
+             * Format: uuid
+             */
+            client_mutation_id: string;
+            /**
+             * Saved At
+             * Format: date-time
+             */
+            saved_at: string;
+        };
+        /**
+         * SubmissionSessionEventRequest
+         * @description Request body for recording a respondent session event.
+         */
+        SubmissionSessionEventRequest: {
+            /**
+             * Event Type
+             * @constant
+             */
+            event_type: "question_viewed";
+            /**
+             * Question Node Id
+             * Format: uuid
+             */
+            question_node_id: string;
+        };
+        /**
+         * CompleteSubmissionSessionResponse
+         * @description Response body for an idempotent respondent session completion.
+         */
+        CompleteSubmissionSessionResponse: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "completed";
+            /**
+             * Completed At
+             * Format: date-time
+             */
+            completed_at: string;
+        };
+        /**
+         * SendInvitationRequest
+         * @description Request body for inviting a user to a project by email.
+         */
+        SendInvitationRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /**
+             * Role Id
+             * @default null
+             */
+            role_id: number | null;
+            /**
+             * Invite Message
+             * @default null
+             */
+            invite_message: string | null;
+        };
+        /**
+         * UpdateMemberRequest
+         * @description Request body for updating a project membership role and/or status.
+         *
+         *     Omit a field to leave it unchanged. Pass role_id: null to clear the role.
+         */
+        UpdateMemberRequest: {
+            /**
+             * Role Id
+             * @default null
+             */
+            role_id: number | null;
+            /**
+             * Status
+             * @default null
+             */
+            status: ("active" | "suspended") | null;
+        };
+        /**
+         * ParticipantResponses
+         * @description API response shape for a project participant.
+         */
+        ParticipantResponses: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Subject Code */
+            subject_code: string;
+            /** Email */
+            email: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ListParticipantsResponses
+         * @description API response shape for listing a project's participants.
+         */
+        ListParticipantsResponses: {
+            /** Participants */
+            participants: components["schemas"]["ParticipantResponses"][];
+        };
+        /**
+         * CreateParticipantRequest
+         * @description Request body for creating a participant (subject + email identity + participant).
+         */
+        CreateParticipantRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /**
+             * Subject Code
+             * @default null
+             */
+            subject_code: string | null;
+        };
+        /**
+         * UpdateParticipantRequest
+         * @description Request body for updating a participant's assigned email and/or subject code.
+         */
+        UpdateParticipantRequest: {
+            /**
+             * Email
+             * @default null
+             */
+            email: string | null;
+            /**
+             * Subject Code
+             * @default null
+             */
+            subject_code: string | null;
+        };
+        /**
+         * ProjectRoleResponses
+         * @description API response shape for a project role.
+         */
+        ProjectRoleResponses: {
+            /** Id */
+            id: number;
+            /** Project Id */
+            project_id: number;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string | null;
+            /** Is System Role */
+            is_system_role: boolean;
+            /** Permissions */
+            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * CreateProjectRoleRequest
+         * @description Request body for creating a new project role.
+         */
+        CreateProjectRoleRequest: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
+            /** Permissions */
+            permissions?: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+        };
+        /**
+         * UpdateProjectRoleRequest
+         * @description Request body for updating a project role.
+         */
+        UpdateProjectRoleRequest: {
+            /**
+             * Name
+             * @default null
+             */
+            name: string | null;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
+            /**
+             * Permissions
+             * @default null
+             */
+            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
+        };
+        /**
+         * CreateProjectRequest
+         * @description Request body for creating a new project.
+         */
+        CreateProjectRequest: {
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+        };
+        /**
+         * MyProjectPermissionsResponses
+         * @description API response shape for the current user's effective permissions in a project.
+         */
+        MyProjectPermissionsResponses: {
+            /** Permissions */
+            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+        };
+        /**
+         * UpdateProjectRequest
+         * @description Request body for partially updating a project.
+         */
+        UpdateProjectRequest: {
+            /**
+             * Name
+             * @default null
+             */
+            name: string | null;
+            /**
+             * Slug
+             * @default null
+             */
+            slug: string | null;
+        };
+        /**
+         * ListSurveyAccessLinksResponse
+         * @description API response shape for listing survey access links for a survey.
+         */
+        ListSurveyAccessLinksResponse: {
+            /** Links */
+            links: components["schemas"]["SurveyAccessLinkResponse"][];
+        };
+        /**
+         * CreateSurveyAccessLinkRequest
+         * @description Request body for creating a new survey access link.
+         */
+        CreateSurveyAccessLinkRequest: {
+            /** Name */
+            name: string;
+            /**
+             * Link Type
+             * @default general
+             * @enum {string}
+             */
+            link_type: "general" | "private" | "authenticated";
+            /**
+             * Assignment Source
+             * @default manual
+             * @enum {string}
+             */
+            assignment_source: "manual" | "automated";
+            /**
+             * Assigned Participant Id
+             * @default null
+             */
+            assigned_participant_id: string | null;
+            /**
+             * Expires At
+             * @default null
+             */
+            expires_at: string | null;
+        };
+        /**
+         * CreateSurveyAccessLinkResponse
+         * @description API response shape for creating a survey access link.
+         */
+        CreateSurveyAccessLinkResponse: {
+            link: components["schemas"]["SurveyAccessLinkResponse"];
+            /** Token */
+            token: string;
+            /** Url */
+            url: string;
+        };
+        /**
+         * UpdateSurveyAccessLinkRequest
+         * @description Request body for updating a survey access link.
+         */
+        UpdateSurveyAccessLinkRequest: {
+            /**
+             * Is Active
+             * @default null
+             */
+            is_active: boolean | null;
+            /**
+             * Name
+             * @default null
+             */
+            name: string | null;
+            /**
+             * Link Type
+             * @default null
+             */
+            link_type: ("general" | "private" | "authenticated") | null;
+            /**
+             * Assignment Source
+             * @default null
+             */
+            assignment_source: ("manual" | "automated") | null;
+            /**
+             * Assigned Participant Id
+             * @default null
+             */
+            assigned_participant_id: string | null;
+            /**
+             * Expires At
+             * @default null
+             */
+            expires_at: string | null;
         };
         /**
          * ChoiceConditionIn
@@ -1958,6 +2689,340 @@ export interface components {
             content: (components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"]) | components["schemas"]["RuleSchemaIn"] | null;
         };
         /**
+         * SurveyMemberResponses
+         * @description Embedded user details on a survey member row.
+         */
+        SurveyMemberResponses: {
+            /** Id */
+            id: number;
+            /** User Id */
+            user_id: number;
+            /** Project Id */
+            project_id: number;
+            /** Role Id */
+            role_id: number | null;
+            /** Status */
+            status: string;
+        };
+        /**
+         * SurveyRoleResponses
+         * @description API response shape for a survey role.
+         */
+        SurveyRoleResponses: {
+            /** Id */
+            id: number;
+            /** Project Id */
+            project_id: number;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string | null;
+            /** Permissions */
+            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * SurveyMemberRoleResponses
+         * @description API response shape for a survey membership role assignment.
+         */
+        SurveyMemberRoleResponses: {
+            /** Project Id */
+            project_id: number;
+            /** Survey Id */
+            survey_id: number;
+            /** Membership Id */
+            membership_id: number;
+            /** Role Id */
+            role_id: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** @default null */
+            member: components["schemas"]["SurveyMemberResponses"] | null;
+            /** @default null */
+            role: components["schemas"]["SurveyRoleResponses"] | null;
+        };
+        /**
+         * AssignSurveyMemberRoleRequest
+         * @description Request body for assigning a survey role to a project member for a survey.
+         */
+        AssignSurveyMemberRoleRequest: {
+            /** Membership Id */
+            membership_id: number;
+            /** Role Id */
+            role_id: number;
+        };
+        /**
+         * UpdateSurveyMemberRoleRequest
+         * @description Request body for updating a survey member role assignment.
+         */
+        UpdateSurveyMemberRoleRequest: {
+            /** Role Id */
+            role_id: number;
+        };
+        /**
+         * SurveyResponseSummaryResponses
+         * @description Admin-facing summary of one respondent submission session.
+         *
+         *     Sourced from core session metadata only; carries no decrypted answer
+         *     payloads and no response-database locators or crypto material.
+         */
+        SurveyResponseSummaryResponses: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Survey Id */
+            survey_id: number;
+            /** Survey Version Id */
+            survey_version_id: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "in_progress" | "completed" | "abandoned";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Completed At
+             * @default null
+             */
+            completed_at: string | null;
+            /**
+             * Last Activity At
+             * Format: date-time
+             */
+            last_activity_at: string;
+        };
+        /**
+         * PaginatedSurveyResponsesResponses
+         * @description Paginated list of admin survey-response summaries.
+         */
+        PaginatedSurveyResponsesResponses: {
+            /** Items */
+            items: components["schemas"]["SurveyResponseSummaryResponses"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * SurveyResponseAnswerResponses
+         * @description One decrypted canonical answer in an admin survey-response detail view.
+         */
+        SurveyResponseAnswerResponses: {
+            /**
+             * Question Node Id
+             * Format: uuid
+             */
+            question_node_id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "answered" | "cleared";
+            /**
+             * Answer Family
+             * @default null
+             */
+            answer_family: ("choice" | "field" | "matching" | "rating") | null;
+            /**
+             * Answer Value
+             * @default null
+             */
+            answer_value: {
+                [key: string]: unknown;
+            } | null;
+            /** Revision Number */
+            revision_number: number;
+        };
+        /**
+         * SurveyResponseDetailResponses
+         * @description Admin survey-response detail: session metadata plus canonical decrypted answers.
+         */
+        SurveyResponseDetailResponses: {
+            session: components["schemas"]["SurveyResponseSummaryResponses"];
+            /** Answers */
+            answers: components["schemas"]["SurveyResponseAnswerResponses"][];
+        };
+        /**
+         * SurveyResponseAnswerRevisionResponses
+         * @description One historical decrypted answer revision for the answer-history view.
+         */
+        SurveyResponseAnswerRevisionResponses: {
+            /**
+             * Question Node Id
+             * Format: uuid
+             */
+            question_node_id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "answered" | "cleared";
+            /**
+             * Answer Family
+             * @default null
+             */
+            answer_family: ("choice" | "field" | "matching" | "rating") | null;
+            /**
+             * Answer Value
+             * @default null
+             */
+            answer_value: {
+                [key: string]: unknown;
+            } | null;
+            /** Revision Number */
+            revision_number: number;
+        };
+        /**
+         * SurveyResponseHistoryResponses
+         * @description Admin answer-history view: every decrypted revision for a session.
+         */
+        SurveyResponseHistoryResponses: {
+            session: components["schemas"]["SurveyResponseSummaryResponses"];
+            /** Revisions */
+            revisions: components["schemas"]["SurveyResponseAnswerRevisionResponses"][];
+        };
+        /**
+         * ExportSurveyResponsesRequest
+         * @description Request body for exporting a survey's responses.
+         */
+        ExportSurveyResponsesRequest: {
+            /**
+             * Format
+             * @default csv
+             * @enum {string}
+             */
+            format: "csv" | "json";
+            /**
+             * Include History
+             * @default false
+             */
+            include_history: boolean;
+            /**
+             * Session Ids
+             * @default null
+             */
+            session_ids: string[] | null;
+        };
+        /**
+         * SurveyResponseExportResponses
+         * @description Result envelope for a survey-response export request.
+         */
+        SurveyResponseExportResponses: {
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "csv" | "json";
+            /** Include History */
+            include_history: boolean;
+            /** Session Count */
+            session_count: number;
+            /**
+             * Download Url
+             * @default null
+             */
+            download_url: string | null;
+        };
+        /**
+         * CreateSurveyRoleRequest
+         * @description Request body for creating a survey role.
+         */
+        CreateSurveyRoleRequest: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
+            /** Permissions */
+            permissions?: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+        };
+        /**
+         * UpdateSurveyRoleRequest
+         * @description Request body for partially updating a survey role.
+         */
+        UpdateSurveyRoleRequest: {
+            /**
+             * Name
+             * @default null
+             */
+            name: string | null;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
+            /**
+             * Permissions
+             * @default null
+             */
+            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
+        };
+        /**
+         * CreateSurveyRequest
+         * @description Request body for creating a new survey.
+         */
+        CreateSurveyRequest: {
+            /** Title */
+            title: string;
+            /**
+             * Visibility
+             * @default private
+             * @enum {string}
+             */
+            visibility: "private" | "link_only" | "public";
+            /**
+             * Public Slug
+             * @default null
+             */
+            public_slug: string | null;
+        };
+        /**
+         * UpdateSurveyRequest
+         * @description Request body for partially updating a survey.
+         */
+        UpdateSurveyRequest: {
+            /**
+             * Title
+             * @default null
+             */
+            title: string | null;
+            /**
+             * Visibility
+             * @default null
+             */
+            visibility: ("private" | "link_only" | "public") | null;
+            /**
+             * Public Slug
+             * @default null
+             */
+            public_slug: string | null;
+        };
+        /**
+         * MySurveyPermissionsResponses
+         * @description API response shape for the current user's effective permissions on a survey.
+         */
+        MySurveyPermissionsResponses: {
+            /** Permissions */
+            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+        };
+        /**
          * ScoringRuleResponses
          * @description API response shape for a scoring rule.
          */
@@ -2196,952 +3261,6 @@ export interface components {
              */
             scoring_schema: (components["schemas"]["ChoiceOptionMapScoringSchemaIn"] | components["schemas"]["MatchingAnswerKeyScoringSchemaIn"] | components["schemas"]["RatingDirectScoringSchemaIn"] | components["schemas"]["FieldNumericRangesScoringSchemaIn"]) | null;
         };
-        /**
-         * CreateProjectRequest
-         * @description Request body for creating a new project.
-         */
-        CreateProjectRequest: {
-            /** Name */
-            name: string;
-            /** Slug */
-            slug: string;
-        };
-        /**
-         * MyProjectPermissionsResponses
-         * @description API response shape for the current user's effective permissions in a project.
-         */
-        MyProjectPermissionsResponses: {
-            /** Permissions */
-            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
-        };
-        /**
-         * UpdateProjectRequest
-         * @description Request body for partially updating a project.
-         */
-        UpdateProjectRequest: {
-            /**
-             * Name
-             * @default null
-             */
-            name: string | null;
-            /**
-             * Slug
-             * @default null
-             */
-            slug: string | null;
-        };
-        /**
-         * SendInvitationRequest
-         * @description Request body for inviting a user to a project by email.
-         */
-        SendInvitationRequest: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /**
-             * Role Id
-             * @default null
-             */
-            role_id: number | null;
-            /**
-             * Invite Message
-             * @default null
-             */
-            invite_message: string | null;
-        };
-        /**
-         * UpdateMemberRequest
-         * @description Request body for updating a project membership role and/or status.
-         *
-         *     Omit a field to leave it unchanged. Pass role_id: null to clear the role.
-         */
-        UpdateMemberRequest: {
-            /**
-             * Role Id
-             * @default null
-             */
-            role_id: number | null;
-            /**
-             * Status
-             * @default null
-             */
-            status: ("active" | "suspended") | null;
-        };
-        /**
-         * ParticipantResponses
-         * @description API response shape for a project participant.
-         */
-        ParticipantResponses: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Subject Code */
-            subject_code: string;
-            /** Email */
-            email: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /**
-         * ListParticipantsResponses
-         * @description API response shape for listing a project's participants.
-         */
-        ListParticipantsResponses: {
-            /** Participants */
-            participants: components["schemas"]["ParticipantResponses"][];
-        };
-        /**
-         * CreateParticipantRequest
-         * @description Request body for creating a participant (subject + email identity + participant).
-         */
-        CreateParticipantRequest: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /**
-             * Subject Code
-             * @default null
-             */
-            subject_code: string | null;
-        };
-        /**
-         * UpdateParticipantRequest
-         * @description Request body for updating a participant's assigned email and/or subject code.
-         */
-        UpdateParticipantRequest: {
-            /**
-             * Email
-             * @default null
-             */
-            email: string | null;
-            /**
-             * Subject Code
-             * @default null
-             */
-            subject_code: string | null;
-        };
-        /**
-         * PublicLinkResponses
-         * @description API response shape for a survey link.
-         */
-        PublicLinkResponses: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Survey Id */
-            survey_id: number;
-            /** Name */
-            name: string;
-            /** Token Prefix */
-            token_prefix: string;
-            /** Is Active */
-            is_active: boolean;
-            /**
-             * Link Type
-             * @enum {string}
-             */
-            link_type: "general" | "private" | "authenticated";
-            /**
-             * Assignment Source
-             * @enum {string}
-             */
-            assignment_source: "manual" | "automated";
-            /** Assigned Participant Id */
-            assigned_participant_id: string | null;
-            /** Expires At */
-            expires_at: string | null;
-            /** Used At */
-            used_at: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /**
-         * ListPublicLinksResponses
-         * @description API response shape for listing all public links for a survey.
-         */
-        ListPublicLinksResponses: {
-            /** Links */
-            links: components["schemas"]["PublicLinkResponses"][];
-        };
-        /**
-         * CreatePublicLinkRequest
-         * @description Request body for creating a new public link.
-         */
-        CreatePublicLinkRequest: {
-            /** Name */
-            name: string;
-            /**
-             * Link Type
-             * @default general
-             * @enum {string}
-             */
-            link_type: "general" | "private" | "authenticated";
-            /**
-             * Assignment Source
-             * @default manual
-             * @enum {string}
-             */
-            assignment_source: "manual" | "automated";
-            /**
-             * Assigned Participant Id
-             * @default null
-             */
-            assigned_participant_id: string | null;
-            /**
-             * Expires At
-             * @default null
-             */
-            expires_at: string | null;
-        };
-        /**
-         * CreatePublicLinkResponses
-         * @description API response shape for creating a public link.
-         */
-        CreatePublicLinkResponses: {
-            link: components["schemas"]["PublicLinkResponses"];
-            /** Token */
-            token: string;
-            /** Url */
-            url: string;
-        };
-        /**
-         * UpdatePublicLinkRequest
-         * @description Request body for updating a public link.
-         */
-        UpdatePublicLinkRequest: {
-            /**
-             * Is Active
-             * @default null
-             */
-            is_active: boolean | null;
-            /**
-             * Name
-             * @default null
-             */
-            name: string | null;
-            /**
-             * Link Type
-             * @default null
-             */
-            link_type: ("general" | "private" | "authenticated") | null;
-            /**
-             * Assignment Source
-             * @default null
-             */
-            assignment_source: ("manual" | "automated") | null;
-            /**
-             * Assigned Participant Id
-             * @default null
-             */
-            assigned_participant_id: string | null;
-            /**
-             * Expires At
-             * @default null
-             */
-            expires_at: string | null;
-        };
-        /**
-         * ProjectRoleResponses
-         * @description API response shape for a project role.
-         */
-        ProjectRoleResponses: {
-            /** Id */
-            id: number;
-            /** Project Id */
-            project_id: number;
-            /** Name */
-            name: string;
-            /** Description */
-            description: string | null;
-            /** Is System Role */
-            is_system_role: boolean;
-            /** Permissions */
-            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /**
-         * CreateProjectRoleRequest
-         * @description Request body for creating a new project role.
-         */
-        CreateProjectRoleRequest: {
-            /** Name */
-            name: string;
-            /**
-             * Description
-             * @default null
-             */
-            description: string | null;
-            /** Permissions */
-            permissions?: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
-        };
-        /**
-         * UpdateProjectRoleRequest
-         * @description Request body for updating a project role.
-         */
-        UpdateProjectRoleRequest: {
-            /**
-             * Name
-             * @default null
-             */
-            name: string | null;
-            /**
-             * Description
-             * @default null
-             */
-            description: string | null;
-            /**
-             * Permissions
-             * @default null
-             */
-            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
-        };
-        /**
-         * SurveyResponseSummaryResponses
-         * @description Admin-facing summary of one respondent submission session.
-         *
-         *     Sourced from core session metadata only; carries no decrypted answer
-         *     payloads and no response-database locators or crypto material.
-         */
-        SurveyResponseSummaryResponses: {
-            /**
-             * Session Id
-             * Format: uuid
-             */
-            session_id: string;
-            /** Survey Id */
-            survey_id: number;
-            /** Survey Version Id */
-            survey_version_id: number;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "in_progress" | "completed" | "abandoned";
-            /**
-             * Started At
-             * Format: date-time
-             */
-            started_at: string;
-            /**
-             * Completed At
-             * @default null
-             */
-            completed_at: string | null;
-            /**
-             * Last Activity At
-             * Format: date-time
-             */
-            last_activity_at: string;
-        };
-        /**
-         * PaginatedSurveyResponsesResponses
-         * @description Paginated list of admin survey-response summaries.
-         */
-        PaginatedSurveyResponsesResponses: {
-            /** Items */
-            items: components["schemas"]["SurveyResponseSummaryResponses"][];
-            /** Total */
-            total: number;
-            /** Page */
-            page: number;
-            /** Page Size */
-            page_size: number;
-        };
-        /**
-         * SurveyResponseAnswerResponses
-         * @description One decrypted canonical answer in an admin survey-response detail view.
-         */
-        SurveyResponseAnswerResponses: {
-            /**
-             * Question Node Id
-             * Format: uuid
-             */
-            question_node_id: string;
-            /**
-             * State
-             * @enum {string}
-             */
-            state: "answered" | "cleared";
-            /**
-             * Answer Family
-             * @default null
-             */
-            answer_family: ("choice" | "field" | "matching" | "rating") | null;
-            /**
-             * Answer Value
-             * @default null
-             */
-            answer_value: {
-                [key: string]: unknown;
-            } | null;
-            /** Revision Number */
-            revision_number: number;
-            /**
-             * Saved At
-             * Format: date-time
-             */
-            saved_at: string;
-        };
-        /**
-         * SurveyResponseDetailResponses
-         * @description Admin survey-response detail: session metadata plus canonical decrypted answers.
-         */
-        SurveyResponseDetailResponses: {
-            session: components["schemas"]["SurveyResponseSummaryResponses"];
-            /** Answers */
-            answers: components["schemas"]["SurveyResponseAnswerResponses"][];
-        };
-        /**
-         * SurveyResponseAnswerRevisionResponses
-         * @description One historical decrypted answer revision for the answer-history view.
-         */
-        SurveyResponseAnswerRevisionResponses: {
-            /**
-             * Question Node Id
-             * Format: uuid
-             */
-            question_node_id: string;
-            /**
-             * State
-             * @enum {string}
-             */
-            state: "answered" | "cleared";
-            /**
-             * Answer Family
-             * @default null
-             */
-            answer_family: ("choice" | "field" | "matching" | "rating") | null;
-            /**
-             * Answer Value
-             * @default null
-             */
-            answer_value: {
-                [key: string]: unknown;
-            } | null;
-            /** Revision Number */
-            revision_number: number;
-            /**
-             * Saved At
-             * Format: date-time
-             */
-            saved_at: string;
-        };
-        /**
-         * SurveyResponseHistoryResponses
-         * @description Admin answer-history view: every decrypted revision for a session.
-         */
-        SurveyResponseHistoryResponses: {
-            session: components["schemas"]["SurveyResponseSummaryResponses"];
-            /** Revisions */
-            revisions: components["schemas"]["SurveyResponseAnswerRevisionResponses"][];
-        };
-        /**
-         * ExportSurveyResponsesRequest
-         * @description Request body for exporting a survey's responses.
-         */
-        ExportSurveyResponsesRequest: {
-            /**
-             * Format
-             * @default csv
-             * @enum {string}
-             */
-            format: "csv" | "json";
-            /**
-             * Include History
-             * @default false
-             */
-            include_history: boolean;
-            /**
-             * Session Ids
-             * @default null
-             */
-            session_ids: string[] | null;
-        };
-        /**
-         * SurveyResponseExportResponses
-         * @description Result envelope for a survey-response export request.
-         */
-        SurveyResponseExportResponses: {
-            /**
-             * Format
-             * @enum {string}
-             */
-            format: "csv" | "json";
-            /** Include History */
-            include_history: boolean;
-            /** Session Count */
-            session_count: number;
-            /**
-             * Download Url
-             * @default null
-             */
-            download_url: string | null;
-        };
-        /**
-         * SurveyMemberResponses
-         * @description Embedded user details on a survey member row.
-         */
-        SurveyMemberResponses: {
-            /** Id */
-            id: number;
-            /** User Id */
-            user_id: number;
-            /** Project Id */
-            project_id: number;
-            /** Role Id */
-            role_id: number | null;
-            /** Status */
-            status: string;
-        };
-        /**
-         * SurveyRoleResponses
-         * @description API response shape for a survey role.
-         */
-        SurveyRoleResponses: {
-            /** Id */
-            id: number;
-            /** Project Id */
-            project_id: number;
-            /** Name */
-            name: string;
-            /** Description */
-            description: string | null;
-            /** Permissions */
-            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /**
-         * SurveyMemberRoleResponses
-         * @description API response shape for a survey membership role assignment.
-         */
-        SurveyMemberRoleResponses: {
-            /** Project Id */
-            project_id: number;
-            /** Survey Id */
-            survey_id: number;
-            /** Membership Id */
-            membership_id: number;
-            /** Role Id */
-            role_id: number;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** @default null */
-            member: components["schemas"]["SurveyMemberResponses"] | null;
-            /** @default null */
-            role: components["schemas"]["SurveyRoleResponses"] | null;
-        };
-        /**
-         * AssignSurveyMemberRoleRequest
-         * @description Request body for assigning a survey role to a project member for a survey.
-         */
-        AssignSurveyMemberRoleRequest: {
-            /** Membership Id */
-            membership_id: number;
-            /** Role Id */
-            role_id: number;
-        };
-        /**
-         * UpdateSurveyMemberRoleRequest
-         * @description Request body for updating a survey member role assignment.
-         */
-        UpdateSurveyMemberRoleRequest: {
-            /** Role Id */
-            role_id: number;
-        };
-        /**
-         * CreateSurveyRoleRequest
-         * @description Request body for creating a survey role.
-         */
-        CreateSurveyRoleRequest: {
-            /** Name */
-            name: string;
-            /**
-             * Description
-             * @default null
-             */
-            description: string | null;
-            /** Permissions */
-            permissions?: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
-        };
-        /**
-         * UpdateSurveyRoleRequest
-         * @description Request body for partially updating a survey role.
-         */
-        UpdateSurveyRoleRequest: {
-            /**
-             * Name
-             * @default null
-             */
-            name: string | null;
-            /**
-             * Description
-             * @default null
-             */
-            description: string | null;
-            /**
-             * Permissions
-             * @default null
-             */
-            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
-        };
-        /**
-         * SurveyResponses
-         * @description API response shape for a survey.
-         */
-        SurveyResponses: {
-            /** Id */
-            id: number;
-            /** Project Id */
-            project_id: number;
-            /** Title */
-            title: string;
-            /**
-             * Visibility
-             * @enum {string}
-             */
-            visibility: "private" | "link_only" | "public";
-            /** Public Slug */
-            public_slug: string | null;
-            /** Default Response Store Id */
-            default_response_store_id: number | null;
-            /** Published Version Id */
-            published_version_id: number | null;
-            /** Created By User Id */
-            created_by_user_id: number | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
-        /**
-         * CreateSurveyRequest
-         * @description Request body for creating a new survey.
-         */
-        CreateSurveyRequest: {
-            /** Title */
-            title: string;
-            /**
-             * Visibility
-             * @default private
-             * @enum {string}
-             */
-            visibility: "private" | "link_only" | "public";
-            /**
-             * Public Slug
-             * @default null
-             */
-            public_slug: string | null;
-        };
-        /**
-         * UpdateSurveyRequest
-         * @description Request body for partially updating a survey.
-         */
-        UpdateSurveyRequest: {
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
-            /**
-             * Visibility
-             * @default null
-             */
-            visibility: ("private" | "link_only" | "public") | null;
-            /**
-             * Public Slug
-             * @default null
-             */
-            public_slug: string | null;
-        };
-        /**
-         * MySurveyPermissionsResponses
-         * @description API response shape for the current user's effective permissions on a survey.
-         */
-        MySurveyPermissionsResponses: {
-            /** Permissions */
-            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
-        };
-        /**
-         * SurveyVersionResponses
-         * @description API response shape for a survey version.
-         */
-        SurveyVersionResponses: {
-            /** Id */
-            id: number;
-            /** Survey Id */
-            survey_id: number;
-            /** Version Number */
-            version_number: number;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "draft" | "published" | "archived";
-            /** Compiled Schema */
-            compiled_schema: {
-                [key: string]: unknown;
-            } | null;
-            /** Published At */
-            published_at: string | null;
-            /** Created By User Id */
-            created_by_user_id: number | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
-        /**
-         * PaginatedPublicSurveysResponses
-         * @description API response shape for a paginated list of public surveys.
-         */
-        PaginatedPublicSurveysResponses: {
-            /** Items */
-            items: components["schemas"]["SurveyResponses"][];
-            /** Total */
-            total: number;
-            /** Page */
-            page: number;
-            /** Page Size */
-            page_size: number;
-        };
-        /**
-         * PublicSurveyResponses
-         * @description API response shape for a publicly accessible survey with its published version.
-         */
-        PublicSurveyResponses: {
-            survey: components["schemas"]["SurveyResponses"];
-            /** @default null */
-            published_version: components["schemas"]["SurveyVersionResponses"] | null;
-        };
-        /**
-         * ResolveTokenRequest
-         * @description Request body for resolving a public link token.
-         */
-        ResolveTokenRequest: {
-            /** Token */
-            token: string;
-        };
-        /**
-         * ResolveLinkResponses
-         * @description API response shape for resolving a public link token.
-         */
-        ResolveLinkResponses: {
-            link: components["schemas"]["PublicLinkResponses"];
-            /** @default null */
-            survey: components["schemas"]["SurveyResponses"] | null;
-            /** @default null */
-            published_version: components["schemas"]["SurveyVersionResponses"] | null;
-        };
-        /**
-         * LinkTokenSessionAccess
-         * @description Access descriptor for starting a respondent session from a private link token.
-         */
-        LinkTokenSessionAccess: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "link_token";
-            /** Token */
-            token: string;
-        };
-        /**
-         * PublicSlugSessionAccess
-         * @description Access descriptor for starting a respondent session from a public survey slug.
-         */
-        PublicSlugSessionAccess: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "public_slug";
-            /** Public Slug */
-            public_slug: string;
-        };
-        /**
-         * StartSubmissionSessionRequest
-         * @description Request body for starting or resuming a respondent submission session.
-         */
-        StartSubmissionSessionRequest: {
-            /** SubmissionSessionAccess */
-            access: components["schemas"]["PublicSlugSessionAccess"] | components["schemas"]["LinkTokenSessionAccess"];
-        };
-        /**
-         * PublicSubmissionSessionResponses
-         * @description Session start acknowledgement.
-         *
-         *     survey_schema is included only for public_slug access, where the schema is
-         *     returned with the session start response. Link-based paths return the schema
-         *     at pre-session link resolve time, so survey_schema is None there.
-         */
-        PublicSubmissionSessionResponses: {
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "in_progress" | "completed" | "abandoned";
-            /**
-             * Started At
-             * Format: date-time
-             */
-            started_at: string;
-            /**
-             * Expires At
-             * Format: date-time
-             */
-            expires_at: string;
-            /** Survey Version Id */
-            survey_version_id: number;
-            /**
-             * Survey Schema
-             * @default null
-             */
-            survey_schema: {
-                [key: string]: unknown;
-            } | null;
-        };
-        /**
-         * SaveSubmissionSessionAnswerRequest
-         * @description Request body for saving or clearing one respondent answer revision.
-         */
-        SaveSubmissionSessionAnswerRequest: {
-            /**
-             * Question Node Id
-             * Format: uuid
-             */
-            question_node_id: string;
-            /**
-             * Client Mutation Id
-             * Format: uuid
-             */
-            client_mutation_id: string;
-            /**
-             * State
-             * @enum {string}
-             */
-            state: "answered" | "cleared";
-            /**
-             * Answer Family
-             * @default null
-             */
-            answer_family: ("choice" | "field" | "matching" | "rating") | null;
-            /**
-             * Answer Value
-             * @default null
-             */
-            answer_value: {
-                [key: string]: unknown;
-            } | null;
-        };
-        /**
-         * SubmissionSessionAnswerResponses
-         * @description Canonical latest answer state returned to a respondent.
-         */
-        SubmissionSessionAnswerResponses: {
-            /**
-             * Question Node Id
-             * Format: uuid
-             */
-            question_node_id: string;
-            /**
-             * State
-             * @enum {string}
-             */
-            state: "answered" | "cleared";
-            /**
-             * Answer Family
-             * @default null
-             */
-            answer_family: ("choice" | "field" | "matching" | "rating") | null;
-            /**
-             * Answer Value
-             * @default null
-             */
-            answer_value: {
-                [key: string]: unknown;
-            } | null;
-            /** Revision Number */
-            revision_number: number;
-            /**
-             * Client Mutation Id
-             * Format: uuid
-             */
-            client_mutation_id: string;
-            /**
-             * Saved At
-             * Format: date-time
-             */
-            saved_at: string;
-        };
-        /**
-         * SubmissionSessionEventRequest
-         * @description Request body for recording a respondent session event.
-         */
-        SubmissionSessionEventRequest: {
-            /**
-             * Event Type
-             * @constant
-             */
-            event_type: "question_viewed";
-            /**
-             * Question Node Id
-             * Format: uuid
-             */
-            question_node_id: string;
-        };
-        /**
-         * CompleteSubmissionSessionResponses
-         * @description Response body for an idempotent respondent session completion.
-         */
-        CompleteSubmissionSessionResponses: {
-            /**
-             * Status
-             * @constant
-             */
-            status: "completed";
-            /**
-             * Completed At
-             * Format: date-time
-             */
-            completed_at: string;
-        };
     };
     responses: {
         /** @description Bad request. */
@@ -3227,14 +3346,57 @@ export type BootstrapUserRequest = components['schemas']['BootstrapUserRequest']
 export type CurrentUserResponses = components['schemas']['CurrentUserResponses'];
 export type ProjectResponses = components['schemas']['ProjectResponses'];
 export type BootstrapUserResponses = components['schemas']['BootstrapUserResponses'];
+export type ProjectInvitationResponses = components['schemas']['ProjectInvitationResponses'];
+export type MemberUserResponses = components['schemas']['MemberUserResponses'];
+export type ProjectMemberResponses = components['schemas']['ProjectMemberResponses'];
 export type CurrentUserProfileResponses = components['schemas']['CurrentUserProfileResponses'];
 export type UpdateProfileRequest = components['schemas']['UpdateProfileRequest'];
 export type ChangeEmailRequest = components['schemas']['ChangeEmailRequest'];
 export type ChangeUsernameRequest = components['schemas']['ChangeUsernameRequest'];
 export type PasswordChangeTicketResponses = components['schemas']['PasswordChangeTicketResponses'];
-export type ProjectInvitationResponses = components['schemas']['ProjectInvitationResponses'];
-export type MemberUserResponses = components['schemas']['MemberUserResponses'];
-export type ProjectMemberResponses = components['schemas']['ProjectMemberResponses'];
+export type ResolveSurveyAccessLinkTokenRequest = components['schemas']['ResolveSurveyAccessLinkTokenRequest'];
+export type SurveyAccessLinkResponse = components['schemas']['SurveyAccessLinkResponse'];
+export type SurveyResponses = components['schemas']['SurveyResponses'];
+export type SurveyVersionResponses = components['schemas']['SurveyVersionResponses'];
+export type ResolveSurveyAccessLinkResponse = components['schemas']['ResolveSurveyAccessLinkResponse'];
+export type PaginatedPublicSurveysResponses = components['schemas']['PaginatedPublicSurveysResponses'];
+export type PublicSurveyResponses = components['schemas']['PublicSurveyResponses'];
+export type LinkTokenAccess = components['schemas']['LinkTokenAccess'];
+export type PublicSlugAccess = components['schemas']['PublicSlugAccess'];
+export type StartSubmissionSessionRequest = components['schemas']['StartSubmissionSessionRequest'];
+export type StartSubmissionSessionResponse = components['schemas']['StartSubmissionSessionResponse'];
+export type ChoiceAnswerValue = components['schemas']['ChoiceAnswerValue'];
+export type DateFieldAnswerValue = components['schemas']['DateFieldAnswerValue'];
+export type EmailFieldAnswerValue = components['schemas']['EmailFieldAnswerValue'];
+export type EmojiRatingAnswerValue = components['schemas']['EmojiRatingAnswerValue'];
+export type LongTextFieldAnswerValue = components['schemas']['LongTextFieldAnswerValue'];
+export type MatchingAnswerPair = components['schemas']['MatchingAnswerPair'];
+export type MatchingAnswerValue = components['schemas']['MatchingAnswerValue'];
+export type NumberFieldAnswerValue = components['schemas']['NumberFieldAnswerValue'];
+export type PhoneFieldAnswerValue = components['schemas']['PhoneFieldAnswerValue'];
+export type ShortTextFieldAnswerValue = components['schemas']['ShortTextFieldAnswerValue'];
+export type SliderRatingAnswerValue = components['schemas']['SliderRatingAnswerValue'];
+export type StarsRatingAnswerValue = components['schemas']['StarsRatingAnswerValue'];
+export type SaveSubmissionSessionAnswerRequest = components['schemas']['SaveSubmissionSessionAnswerRequest'];
+export type SubmissionSessionAnswerResponse = components['schemas']['SubmissionSessionAnswerResponse'];
+export type SubmissionSessionEventRequest = components['schemas']['SubmissionSessionEventRequest'];
+export type CompleteSubmissionSessionResponse = components['schemas']['CompleteSubmissionSessionResponse'];
+export type SendInvitationRequest = components['schemas']['SendInvitationRequest'];
+export type UpdateMemberRequest = components['schemas']['UpdateMemberRequest'];
+export type ParticipantResponses = components['schemas']['ParticipantResponses'];
+export type ListParticipantsResponses = components['schemas']['ListParticipantsResponses'];
+export type CreateParticipantRequest = components['schemas']['CreateParticipantRequest'];
+export type UpdateParticipantRequest = components['schemas']['UpdateParticipantRequest'];
+export type ProjectRoleResponses = components['schemas']['ProjectRoleResponses'];
+export type CreateProjectRoleRequest = components['schemas']['CreateProjectRoleRequest'];
+export type UpdateProjectRoleRequest = components['schemas']['UpdateProjectRoleRequest'];
+export type CreateProjectRequest = components['schemas']['CreateProjectRequest'];
+export type MyProjectPermissionsResponses = components['schemas']['MyProjectPermissionsResponses'];
+export type UpdateProjectRequest = components['schemas']['UpdateProjectRequest'];
+export type ListSurveyAccessLinksResponse = components['schemas']['ListSurveyAccessLinksResponse'];
+export type CreateSurveyAccessLinkRequest = components['schemas']['CreateSurveyAccessLinkRequest'];
+export type CreateSurveyAccessLinkResponse = components['schemas']['CreateSurveyAccessLinkResponse'];
+export type UpdateSurveyAccessLinkRequest = components['schemas']['UpdateSurveyAccessLinkRequest'];
 export type ChoiceConditionIn = components['schemas']['ChoiceConditionIn'];
 export type ChoiceDefinitionIn = components['schemas']['ChoiceDefinitionIn'];
 export type ChoiceOptionIn = components['schemas']['ChoiceOptionIn'];
@@ -3274,6 +3436,24 @@ export type CreateQuestionNodeRequest = components['schemas']['CreateQuestionNod
 export type CreateRuleNodeRequest = components['schemas']['CreateRuleNodeRequest'];
 export type CreateNodeRequest = components['schemas']['CreateNodeRequest'];
 export type UpdateNodeRequest = components['schemas']['UpdateNodeRequest'];
+export type SurveyMemberResponses = components['schemas']['SurveyMemberResponses'];
+export type SurveyRoleResponses = components['schemas']['SurveyRoleResponses'];
+export type SurveyMemberRoleResponses = components['schemas']['SurveyMemberRoleResponses'];
+export type AssignSurveyMemberRoleRequest = components['schemas']['AssignSurveyMemberRoleRequest'];
+export type UpdateSurveyMemberRoleRequest = components['schemas']['UpdateSurveyMemberRoleRequest'];
+export type SurveyResponseSummaryResponses = components['schemas']['SurveyResponseSummaryResponses'];
+export type PaginatedSurveyResponsesResponses = components['schemas']['PaginatedSurveyResponsesResponses'];
+export type SurveyResponseAnswerResponses = components['schemas']['SurveyResponseAnswerResponses'];
+export type SurveyResponseDetailResponses = components['schemas']['SurveyResponseDetailResponses'];
+export type SurveyResponseAnswerRevisionResponses = components['schemas']['SurveyResponseAnswerRevisionResponses'];
+export type SurveyResponseHistoryResponses = components['schemas']['SurveyResponseHistoryResponses'];
+export type ExportSurveyResponsesRequest = components['schemas']['ExportSurveyResponsesRequest'];
+export type SurveyResponseExportResponses = components['schemas']['SurveyResponseExportResponses'];
+export type CreateSurveyRoleRequest = components['schemas']['CreateSurveyRoleRequest'];
+export type UpdateSurveyRoleRequest = components['schemas']['UpdateSurveyRoleRequest'];
+export type CreateSurveyRequest = components['schemas']['CreateSurveyRequest'];
+export type UpdateSurveyRequest = components['schemas']['UpdateSurveyRequest'];
+export type MySurveyPermissionsResponses = components['schemas']['MySurveyPermissionsResponses'];
 export type ScoringRuleResponses = components['schemas']['ScoringRuleResponses'];
 export type ChoiceOptionMapConfig = components['schemas']['ChoiceOptionMapConfig'];
 export type ChoiceOptionMapScoringSchemaIn = components['schemas']['ChoiceOptionMapScoringSchemaIn'];
@@ -3286,55 +3466,6 @@ export type RatingDirectConfig = components['schemas']['RatingDirectConfig'];
 export type RatingDirectScoringSchemaIn = components['schemas']['RatingDirectScoringSchemaIn'];
 export type CreateScoringRuleRequest = components['schemas']['CreateScoringRuleRequest'];
 export type UpdateScoringRuleRequest = components['schemas']['UpdateScoringRuleRequest'];
-export type CreateProjectRequest = components['schemas']['CreateProjectRequest'];
-export type MyProjectPermissionsResponses = components['schemas']['MyProjectPermissionsResponses'];
-export type UpdateProjectRequest = components['schemas']['UpdateProjectRequest'];
-export type SendInvitationRequest = components['schemas']['SendInvitationRequest'];
-export type UpdateMemberRequest = components['schemas']['UpdateMemberRequest'];
-export type ParticipantResponses = components['schemas']['ParticipantResponses'];
-export type ListParticipantsResponses = components['schemas']['ListParticipantsResponses'];
-export type CreateParticipantRequest = components['schemas']['CreateParticipantRequest'];
-export type UpdateParticipantRequest = components['schemas']['UpdateParticipantRequest'];
-export type PublicLinkResponses = components['schemas']['PublicLinkResponses'];
-export type ListPublicLinksResponses = components['schemas']['ListPublicLinksResponses'];
-export type CreatePublicLinkRequest = components['schemas']['CreatePublicLinkRequest'];
-export type CreatePublicLinkResponses = components['schemas']['CreatePublicLinkResponses'];
-export type UpdatePublicLinkRequest = components['schemas']['UpdatePublicLinkRequest'];
-export type ProjectRoleResponses = components['schemas']['ProjectRoleResponses'];
-export type CreateProjectRoleRequest = components['schemas']['CreateProjectRoleRequest'];
-export type UpdateProjectRoleRequest = components['schemas']['UpdateProjectRoleRequest'];
-export type SurveyResponseSummaryResponses = components['schemas']['SurveyResponseSummaryResponses'];
-export type PaginatedSurveyResponsesResponses = components['schemas']['PaginatedSurveyResponsesResponses'];
-export type SurveyResponseAnswerResponses = components['schemas']['SurveyResponseAnswerResponses'];
-export type SurveyResponseDetailResponses = components['schemas']['SurveyResponseDetailResponses'];
-export type SurveyResponseAnswerRevisionResponses = components['schemas']['SurveyResponseAnswerRevisionResponses'];
-export type SurveyResponseHistoryResponses = components['schemas']['SurveyResponseHistoryResponses'];
-export type ExportSurveyResponsesRequest = components['schemas']['ExportSurveyResponsesRequest'];
-export type SurveyResponseExportResponses = components['schemas']['SurveyResponseExportResponses'];
-export type SurveyMemberResponses = components['schemas']['SurveyMemberResponses'];
-export type SurveyRoleResponses = components['schemas']['SurveyRoleResponses'];
-export type SurveyMemberRoleResponses = components['schemas']['SurveyMemberRoleResponses'];
-export type AssignSurveyMemberRoleRequest = components['schemas']['AssignSurveyMemberRoleRequest'];
-export type UpdateSurveyMemberRoleRequest = components['schemas']['UpdateSurveyMemberRoleRequest'];
-export type CreateSurveyRoleRequest = components['schemas']['CreateSurveyRoleRequest'];
-export type UpdateSurveyRoleRequest = components['schemas']['UpdateSurveyRoleRequest'];
-export type SurveyResponses = components['schemas']['SurveyResponses'];
-export type CreateSurveyRequest = components['schemas']['CreateSurveyRequest'];
-export type UpdateSurveyRequest = components['schemas']['UpdateSurveyRequest'];
-export type MySurveyPermissionsResponses = components['schemas']['MySurveyPermissionsResponses'];
-export type SurveyVersionResponses = components['schemas']['SurveyVersionResponses'];
-export type PaginatedPublicSurveysResponses = components['schemas']['PaginatedPublicSurveysResponses'];
-export type PublicSurveyResponses = components['schemas']['PublicSurveyResponses'];
-export type ResolveTokenRequest = components['schemas']['ResolveTokenRequest'];
-export type ResolveLinkResponses = components['schemas']['ResolveLinkResponses'];
-export type LinkTokenSessionAccess = components['schemas']['LinkTokenSessionAccess'];
-export type PublicSlugSessionAccess = components['schemas']['PublicSlugSessionAccess'];
-export type StartSubmissionSessionRequest = components['schemas']['StartSubmissionSessionRequest'];
-export type PublicSubmissionSessionResponses = components['schemas']['PublicSubmissionSessionResponses'];
-export type SaveSubmissionSessionAnswerRequest = components['schemas']['SaveSubmissionSessionAnswerRequest'];
-export type SubmissionSessionAnswerResponses = components['schemas']['SubmissionSessionAnswerResponses'];
-export type SubmissionSessionEventRequest = components['schemas']['SubmissionSessionEventRequest'];
-export type CompleteSubmissionSessionResponses = components['schemas']['CompleteSubmissionSessionResponses'];
 export type ResponseBadRequestError = components['responses']['BadRequestError'];
 export type ResponseUnauthorizedError = components['responses']['UnauthorizedError'];
 export type ResponseForbiddenError = components['responses']['ForbiddenError'];
@@ -3377,7 +3508,7 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    healthCheck: {
+    getMyInvitations: {
         parameters: {
             query?: never;
             header?: never;
@@ -3391,7 +3522,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProjectInvitationResponses"][];
+                };
             };
             400: components["responses"]["BadRequestError"];
             401: components["responses"]["UnauthorizedError"];
@@ -3403,11 +3536,43 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    readinessCheck: {
+    acceptInvitation: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                invitation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    declineInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitation_id: number;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -3655,9 +3820,76 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    getMyInvitations: {
+    resolveLink: {
         parameters: {
             query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveSurveyAccessLinkTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolveSurveyAccessLinkResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    verifyAuthenticatedLinkParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveSurveyAccessLinkTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyAccessLinkResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listPublicSurveys: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3670,7 +3902,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectInvitationResponses"][];
+                    "application/json": components["schemas"]["PaginatedPublicSurveysResponses"];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -3683,12 +3915,12 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    acceptInvitation: {
+    getPublicSurvey: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                invitation_id: number;
+                public_slug: string;
             };
             cookie?: never;
         };
@@ -3700,7 +3932,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectMemberResponses"];
+                    "application/json": components["schemas"]["PublicSurveyResponses"];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -3713,80 +3945,16 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    declineInvitation: {
+    startSubmissionSession: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                invitation_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listNodes: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeResponses"][];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createNode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateNodeRequest"];
+                "application/json": components["schemas"]["StartSubmissionSessionRequest"];
             };
         };
         responses: {
@@ -3796,7 +3964,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NodeResponses"];
+                    "application/json": components["schemas"]["StartSubmissionSessionResponse"];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -3809,19 +3977,20 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    getNode: {
+    saveSubmissionSessionAnswer: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                node_id: string;
+                question_node_id: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveSubmissionSessionAnswerRequest"];
+            };
+        };
         responses: {
             /** @description Successful response. */
             200: {
@@ -3829,7 +3998,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NodeResponses"];
+                    "application/json": components["schemas"]["SubmissionSessionAnswerResponse"];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -3842,19 +4011,18 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    deleteNode: {
+    recordSubmissionSessionEvent: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                node_id: string;
-            };
+            path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmissionSessionEventRequest"];
+            };
+        };
         responses: {
             /** @description No content. */
             204: {
@@ -3873,180 +4041,7 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    updateNode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                node_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateNodeRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listScoringRules: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScoringRuleResponses"][];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createScoringRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateScoringRuleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScoringRuleResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    deleteScoringRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                scoring_rule_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No content. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updateScoringRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                scoring_rule_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateScoringRuleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScoringRuleResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listProjects: {
+    completeSubmissionSession: {
         parameters: {
             query?: never;
             header?: never;
@@ -4061,191 +4056,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectResponses"][];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createProject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateProjectRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    getProject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    deleteProject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No content. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updateProject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateProjectRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    getMyProjectPermissions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MyProjectPermissionsResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listMembers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectMemberResponses"][];
+                    "application/json": components["schemas"]["CompleteSubmissionSessionResponse"];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -4340,6 +4151,36 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberResponses"][];
+                };
             };
             400: components["responses"]["BadRequestError"];
             401: components["responses"]["UnauthorizedError"];
@@ -4543,138 +4384,6 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    listPublicLinks: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListPublicLinksResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createPublicLink: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreatePublicLinkRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CreatePublicLinkResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    deletePublicLink: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                link_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No content. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updatePublicLink: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                link_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdatePublicLinkRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PublicLinkResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
     listRoles: {
         parameters: {
             query?: never;
@@ -4791,6 +4500,621 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectRoleResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listProjects: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponses"][];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProjectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProjectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getMyProjectPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyProjectPermissionsResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listSurveyAccessLinks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListSurveyAccessLinksResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createSurveyAccessLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSurveyAccessLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateSurveyAccessLinkResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteSurveyAccessLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateSurveyAccessLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSurveyAccessLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyAccessLinkResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listNodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                version_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeResponses"][];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                version_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateNodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                version_number: number;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                version_number: number;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                version_number: number;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateNodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listSurveyMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyMemberRoleResponses"][];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    assignSurveyMemberRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignSurveyMemberRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyMemberRoleResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    removeSurveyMemberRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateSurveyMemberRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSurveyMemberRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyMemberRoleResponses"];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -4955,138 +5279,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SurveyResponseExportResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listSurveyMembers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyMemberRoleResponses"][];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    assignSurveyMemberRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AssignSurveyMemberRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyMemberRoleResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    removeSurveyMemberRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                membership_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updateSurveyMemberRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                membership_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateSurveyMemberRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyMemberRoleResponses"];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -5417,6 +5609,142 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
+    listScoringRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                version_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoringRuleResponses"][];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createScoringRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                version_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateScoringRuleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoringRuleResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteScoringRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                version_number: number;
+                scoring_rule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateScoringRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                version_number: number;
+                scoring_rule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateScoringRuleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoringRuleResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
     listVersions: {
         parameters: {
             query?: never;
@@ -5607,12 +5935,9 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    listPublicSurveys: {
+    healthCheck: {
         parameters: {
-            query?: {
-                page?: number;
-                page_size?: number;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -5621,196 +5946,6 @@ export interface operations {
         responses: {
             /** @description Successful response. */
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedPublicSurveysResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    getPublicSurvey: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                public_slug: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PublicSurveyResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    resolveLink: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResolveTokenRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResolveLinkResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    verifyAuthenticatedLinkParticipant: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResolveTokenRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PublicLinkResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    startSubmissionSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StartSubmissionSessionRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PublicSubmissionSessionResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    saveSubmissionSessionAnswer: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SaveSubmissionSessionAnswerRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SubmissionSessionAnswerResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    recordSubmissionSessionEvent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SubmissionSessionEventRequest"];
-            };
-        };
-        responses: {
-            /** @description No content. */
-            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5826,7 +5961,7 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    completeSubmissionSession: {
+    readinessCheck: {
         parameters: {
             query?: never;
             header?: never;
@@ -5840,9 +5975,7 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["CompleteSubmissionSessionResponses"];
-                };
+                content?: never;
             };
             400: components["responses"]["BadRequestError"];
             401: components["responses"]["UnauthorizedError"];

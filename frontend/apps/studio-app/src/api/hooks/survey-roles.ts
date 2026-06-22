@@ -17,7 +17,7 @@ export function useSurveyRoles(projectId: number | null) {
     queryKey: surveyRoleKeys.list(projectId ?? 0),
     enabled: projectId != null && projectId > 0,
     queryFn: async () => {
-      const { data, error } = await apiClient.GET('/api/v1/projects/{project_id}/survey-roles', {
+      const { data, error } = await apiClient.GET('/api/v1/studio/projects/{project_id}/survey-roles', {
         params: { path: { project_id: projectId! } },
       })
       if (error) throw error
@@ -32,7 +32,7 @@ export function useCreateSurveyRole(projectId: number | null) {
   return useMutation({
     mutationFn: async (body: components['schemas']['CreateSurveyRoleRequest']) => {
       if (projectId == null) throw new Error('projectId is required')
-      const { data, error } = await apiClient.POST('/api/v1/projects/{project_id}/survey-roles', {
+      const { data, error } = await apiClient.POST('/api/v1/studio/projects/{project_id}/survey-roles', {
         params: { path: { project_id: projectId } },
         body,
       })
@@ -53,7 +53,7 @@ export function useUpdateSurveyRole(projectId: number | null) {
     mutationFn: async ({ roleId, body }: { roleId: number; body: components['schemas']['UpdateSurveyRoleRequest'] }) => {
       if (projectId == null) throw new Error('projectId is required')
       const { data, error } = await apiClient.PATCH(
-        '/api/v1/projects/{project_id}/survey-roles/{role_id}',
+        '/api/v1/studio/projects/{project_id}/survey-roles/{role_id}',
         { params: { path: { project_id: projectId, role_id: roleId } }, body },
       )
       if (error) throw error
@@ -73,7 +73,7 @@ export function useDeleteSurveyRole(projectId: number | null) {
     mutationFn: async (roleId: number) => {
       if (projectId == null) throw new Error('projectId is required')
       const { error } = await apiClient.DELETE(
-        '/api/v1/projects/{project_id}/survey-roles/{role_id}',
+        '/api/v1/studio/projects/{project_id}/survey-roles/{role_id}',
         { params: { path: { project_id: projectId, role_id: roleId } } },
       )
       if (error) throw error

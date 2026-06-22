@@ -14,7 +14,7 @@ export function useProjects() {
   return usePolicyQuery({
     queryKey: projectKeys.all(),
     queryFn: async () => {
-      const { data, error } = await apiClient.GET('/api/v1/projects')
+      const { data, error } = await apiClient.GET('/api/v1/studio/projects')
       if (error) throw error
       return data
     },
@@ -38,7 +38,7 @@ export function useCreateProject() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (body: components['schemas']['CreateProjectRequest']) => {
-      const { data, error } = await apiClient.POST('/api/v1/projects', { body })
+      const { data, error } = await apiClient.POST('/api/v1/studio/projects', { body })
       if (error) throw error
       return data
     },
@@ -52,7 +52,7 @@ export function useUpdateProject(projectId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (body: components['schemas']['UpdateProjectRequest']) => {
-      const { data, error } = await apiClient.PATCH('/api/v1/projects/{project_id}', {
+      const { data, error } = await apiClient.PATCH('/api/v1/studio/projects/{project_id}', {
         params: { path: { project_id: projectId } },
         body,
       })
@@ -69,7 +69,7 @@ export function useDeleteProject() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (projectId: number) => {
-      const { error } = await apiClient.DELETE('/api/v1/projects/{project_id}', {
+      const { error } = await apiClient.DELETE('/api/v1/studio/projects/{project_id}', {
         params: { path: { project_id: projectId } },
       })
       if (error) throw error

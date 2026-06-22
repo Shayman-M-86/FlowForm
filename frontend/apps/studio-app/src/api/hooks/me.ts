@@ -13,7 +13,7 @@ export function useMyProfile() {
   return usePolicyQuery({
     queryKey: meKeys.profile(),
     queryFn: async () => {
-      const { data, error } = await apiClient.GET('/api/v1/me/profile')
+      const { data, error } = await apiClient.GET('/api/v1/account/profile')
       if (error) throw error
       return data
     },
@@ -25,7 +25,7 @@ export function useUpdateProfile() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (body: components['schemas']['UpdateProfileRequest']) => {
-      const { data, error } = await apiClient.PATCH('/api/v1/me/profile', { body })
+      const { data, error } = await apiClient.PATCH('/api/v1/account/profile', { body })
       if (error) throw error
       return data
     },
@@ -38,7 +38,7 @@ export function useUpdateProfile() {
 export function useChangePassword() {
   return useMutation({
     mutationFn: async () => {
-      const { data, error } = await apiClient.POST('/api/v1/me/change-password')
+      const { data, error } = await apiClient.POST('/api/v1/account/change-password')
       if (error) throw error
       return data
     },
@@ -48,7 +48,7 @@ export function useChangePassword() {
 export function useResendVerification() {
   return useMutation({
     mutationFn: async () => {
-      const { error } = await apiClient.POST('/api/v1/me/resend-verification')
+      const { error } = await apiClient.POST('/api/v1/account/resend-verification')
       if (error) throw error
     },
   })
@@ -58,7 +58,7 @@ export function useDeleteAccount() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async () => {
-      const { error } = await apiClient.DELETE('/api/v1/me')
+      const { error } = await apiClient.DELETE('/api/v1/account')
       if (error) throw error
     },
     onSuccess: () => {

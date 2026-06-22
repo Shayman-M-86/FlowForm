@@ -17,7 +17,7 @@ export function useSurveys(projectId: number) {
     queryKey: surveyKeys.list(projectId),
     enabled: projectId > 0,
     queryFn: async () => {
-      const { data, error } = await apiClient.GET('/api/v1/projects/{project_id}/surveys', {
+      const { data, error } = await apiClient.GET('/api/v1/studio/projects/{project_id}/surveys', {
         params: { path: { project_id: projectId } },
       })
       if (error) throw error
@@ -41,7 +41,7 @@ export function useSurvey(projectSlug: string | null, surveySlug: string | null)
     enabled,
     queryFn: async () => {
       const { data, error } = await apiClient.GET(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}',
         { params: { path: { project_id: projectId!, survey_id: surveyId } } },
       )
       if (error) throw error
@@ -61,7 +61,7 @@ export function useUpdateSurvey(projectId: number | null, surveySlug: string | n
         throw new Error('projectId and surveyId are required')
       }
       const { data, error } = await apiClient.PATCH(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}',
         { params: { path: { project_id: projectId, survey_id: surveyId } }, body },
       )
       if (error) throw error
@@ -80,7 +80,7 @@ export function useCreateSurvey(projectId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (body: components['schemas']['CreateSurveyRequest']) => {
-      const { data, error } = await apiClient.POST('/api/v1/projects/{project_id}/surveys', {
+      const { data, error } = await apiClient.POST('/api/v1/studio/projects/{project_id}/surveys', {
         params: { path: { project_id: projectId } },
         body,
       })
@@ -98,7 +98,7 @@ export function useDeleteSurvey(projectId: number | null) {
   return useMutation({
     mutationFn: async (surveyId: number) => {
       if (projectId == null) throw new Error('projectId is required')
-      const { error } = await apiClient.DELETE('/api/v1/projects/{project_id}/surveys/{survey_id}', {
+      const { error } = await apiClient.DELETE('/api/v1/studio/projects/{project_id}/surveys/{survey_id}', {
         params: { path: { project_id: projectId, survey_id: surveyId } },
       })
       if (error) throw error

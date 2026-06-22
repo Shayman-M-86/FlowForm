@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "openapi:export": "cd ../../../backend && uv run python -m app.openapi.export",
+    "openapi:export": "bash ../../../backend/scripts/export-openapi.sh",
     "openapi:types": "openapi-typescript ../../../backend/openapi.yaml -o src/api/generated/schema.ts --root-types --root-types-no-schema-prefix",
     "openapi:generate": "pnpm run openapi:export && pnpm run openapi:types && pnpm --dir ../.. run generate:types",
     "openapi:check": "pnpm run openapi:export -- --check && openapi-typescript ../../../backend/openapi.yaml -o src/api/generated/schema.ts --root-types --root-types-no-schema-prefix --check",

@@ -20,7 +20,7 @@ export function useProjectMembers(projectId: number | null) {
     queryKey: memberKeys.list(projectId ?? 0),
     enabled: projectId != null && projectId > 0,
     queryFn: async () => {
-      const { data, error } = await apiClient.GET('/api/v1/projects/{project_id}/members', {
+      const { data, error } = await apiClient.GET('/api/v1/studio/projects/{project_id}/members', {
         params: { path: { project_id: projectId! } },
       })
       if (error) throw error
@@ -35,7 +35,7 @@ export function useUpdateProjectMember(projectId: number) {
   return useMutation({
     mutationFn: async ({ membershipId, body }: { membershipId: number; body: components['schemas']['UpdateMemberRequest'] }) => {
       const { data, error } = await apiClient.PATCH(
-        '/api/v1/projects/{project_id}/members/{membership_id}',
+        '/api/v1/studio/projects/{project_id}/members/{membership_id}',
         { params: { path: { project_id: projectId, membership_id: membershipId } }, body },
       )
       if (error) throw error
@@ -52,7 +52,7 @@ export function useDeleteProjectMember(projectId: number) {
   return useMutation({
     mutationFn: async (membershipId: number) => {
       const { error } = await apiClient.DELETE(
-        '/api/v1/projects/{project_id}/members/{membership_id}',
+        '/api/v1/studio/projects/{project_id}/members/{membership_id}',
         { params: { path: { project_id: projectId, membership_id: membershipId } } },
       )
       if (error) throw error
@@ -70,7 +70,7 @@ export function useProjectInvitations(projectId: number | null) {
     queryKey: memberKeys.invitations(projectId ?? 0),
     enabled: projectId != null && projectId > 0,
     queryFn: async () => {
-      const { data, error } = await apiClient.GET('/api/v1/projects/{project_id}/invitations', {
+      const { data, error } = await apiClient.GET('/api/v1/studio/projects/{project_id}/invitations', {
         params: { path: { project_id: projectId! } },
       })
       if (error) throw error
@@ -84,7 +84,7 @@ export function useSendInvitation(projectId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (body: components['schemas']['SendInvitationRequest']) => {
-      const { data, error } = await apiClient.POST('/api/v1/projects/{project_id}/invitations', {
+      const { data, error } = await apiClient.POST('/api/v1/studio/projects/{project_id}/invitations', {
         params: { path: { project_id: projectId } },
         body,
       })
@@ -102,7 +102,7 @@ export function useRevokeInvitation(projectId: number) {
   return useMutation({
     mutationFn: async (invitationId: number) => {
       const { error } = await apiClient.DELETE(
-        '/api/v1/projects/{project_id}/invitations/{invitation_id}',
+        '/api/v1/studio/projects/{project_id}/invitations/{invitation_id}',
         { params: { path: { project_id: projectId, invitation_id: invitationId } } },
       )
       if (error) throw error
@@ -119,7 +119,7 @@ export function useMyInvitations() {
   return usePolicyQuery({
     queryKey: memberKeys.myInvitations(),
     queryFn: async () => {
-      const { data, error } = await apiClient.GET('/api/v1/me/invitations')
+      const { data, error } = await apiClient.GET('/api/v1/account/invitations')
       if (error) throw error
       return data
     },
@@ -132,7 +132,7 @@ export function useAcceptInvitation() {
   return useMutation({
     mutationFn: async (invitationId: number) => {
       const { data, error } = await apiClient.POST(
-        '/api/v1/me/invitations/{invitation_id}/accept',
+        '/api/v1/account/invitations/{invitation_id}/accept',
         { params: { path: { invitation_id: invitationId } } },
       )
       if (error) throw error
@@ -150,7 +150,7 @@ export function useDeclineInvitation() {
   return useMutation({
     mutationFn: async (invitationId: number) => {
       const { error } = await apiClient.POST(
-        '/api/v1/me/invitations/{invitation_id}/decline',
+        '/api/v1/account/invitations/{invitation_id}/decline',
         { params: { path: { invitation_id: invitationId } } },
       )
       if (error) throw error

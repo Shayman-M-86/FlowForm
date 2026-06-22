@@ -15,7 +15,7 @@ export function useProjectRoles(projectId: number | null) {
     queryKey: roleKeys.list(projectId ?? 0),
     enabled: projectId != null && projectId > 0,
     queryFn: async () => {
-      const { data, error } = await apiClient.GET('/api/v1/projects/{project_id}/roles', {
+      const { data, error } = await apiClient.GET('/api/v1/studio/projects/{project_id}/roles', {
         params: { path: { project_id: projectId! } },
       })
       if (error) throw error
@@ -29,7 +29,7 @@ export function useCreateProjectRole(projectId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (body: components['schemas']['CreateProjectRoleRequest']) => {
-      const { data, error } = await apiClient.POST('/api/v1/projects/{project_id}/roles', {
+      const { data, error } = await apiClient.POST('/api/v1/studio/projects/{project_id}/roles', {
         params: { path: { project_id: projectId } },
         body,
       })
@@ -46,7 +46,7 @@ export function useUpdateProjectRole(projectId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ roleId, body }: { roleId: number; body: components['schemas']['UpdateProjectRoleRequest'] }) => {
-      const { data, error } = await apiClient.PATCH('/api/v1/projects/{project_id}/roles/{role_id}', {
+      const { data, error } = await apiClient.PATCH('/api/v1/studio/projects/{project_id}/roles/{role_id}', {
         params: { path: { project_id: projectId, role_id: roleId } },
         body,
       })
@@ -63,7 +63,7 @@ export function useDeleteProjectRole(projectId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (roleId: number) => {
-      const { error } = await apiClient.DELETE('/api/v1/projects/{project_id}/roles/{role_id}', {
+      const { error } = await apiClient.DELETE('/api/v1/studio/projects/{project_id}/roles/{role_id}', {
         params: { path: { project_id: projectId, role_id: roleId } },
       })
       if (error) throw error

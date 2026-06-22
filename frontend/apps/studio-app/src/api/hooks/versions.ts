@@ -17,7 +17,7 @@ export function useSurveyVersions(projectId: number, surveyId: number) {
     enabled: projectId > 0 && surveyId > 0,
     queryFn: async () => {
       const { data, error } = await apiClient.GET(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/versions',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions',
         { params: { path: { project_id: projectId, survey_id: surveyId } } },
       )
       if (error) throw error
@@ -32,7 +32,7 @@ export function useCreateSurveyVersion(projectId: number, surveyId: number) {
   return useMutation({
     mutationFn: async () => {
       const { data, error } = await apiClient.POST(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/versions',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions',
         { params: { path: { project_id: projectId, survey_id: surveyId } } },
       )
       if (error) throw error
@@ -52,7 +52,7 @@ export function usePublishSurveyVersion(projectId: number, surveyId: number) {
   return useMutation({
     mutationFn: async (versionNumber: number) => {
       const { data, error } = await apiClient.POST(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/publish',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/publish',
         { params: { path: { project_id: projectId, survey_id: surveyId, version_number: versionNumber } } },
       )
       if (error) throw error
@@ -69,7 +69,7 @@ export function useArchiveSurveyVersion(projectId: number, surveyId: number) {
   return useMutation({
     mutationFn: async (versionNumber: number) => {
       const { data, error } = await apiClient.POST(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/archive',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/archive',
         { params: { path: { project_id: projectId, survey_id: surveyId, version_number: versionNumber } } },
       )
       if (error) throw error
@@ -86,7 +86,7 @@ export function useCopyVersionToDraft(projectId: number, surveyId: number) {
   return useMutation({
     mutationFn: async (versionNumber: number) => {
       const { data, error } = await apiClient.POST(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/copy-to-draft',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/copy-to-draft',
         { params: { path: { project_id: projectId, survey_id: surveyId, version_number: versionNumber } } },
       )
       if (error) throw error

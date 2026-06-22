@@ -17,7 +17,7 @@ export function useSurveyMembers(projectId: number | null, surveyId: number | nu
     enabled: projectId != null && projectId > 0 && surveyId != null && surveyId > 0,
     queryFn: async () => {
       const { data, error } = await apiClient.GET(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/members',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/members',
         { params: { path: { project_id: projectId!, survey_id: surveyId! } } },
       )
       if (error) throw error
@@ -33,7 +33,7 @@ export function useAssignSurveyMemberRole(projectId: number | null, surveyId: nu
     mutationFn: async (body: components['schemas']['AssignSurveyMemberRoleRequest']) => {
       if (projectId == null || surveyId == null) throw new Error('projectId and surveyId are required')
       const { data, error } = await apiClient.POST(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/members',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/members',
         { params: { path: { project_id: projectId, survey_id: surveyId } }, body },
       )
       if (error) throw error
@@ -59,7 +59,7 @@ export function useUpdateSurveyMemberRole(projectId: number | null, surveyId: nu
     }) => {
       if (projectId == null || surveyId == null) throw new Error('projectId and surveyId are required')
       const { data, error } = await apiClient.PATCH(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/members/{membership_id}',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/members/{membership_id}',
         { params: { path: { project_id: projectId, survey_id: surveyId, membership_id: membershipId } }, body },
       )
       if (error) throw error
@@ -79,7 +79,7 @@ export function useRemoveSurveyMemberRole(projectId: number | null, surveyId: nu
     mutationFn: async (membershipId: number) => {
       if (projectId == null || surveyId == null) throw new Error('projectId and surveyId are required')
       const { error } = await apiClient.DELETE(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/members/{membership_id}',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/members/{membership_id}',
         { params: { path: { project_id: projectId, survey_id: surveyId, membership_id: membershipId } } },
       )
       if (error) throw error

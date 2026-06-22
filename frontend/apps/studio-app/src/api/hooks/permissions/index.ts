@@ -23,7 +23,7 @@ export function useProjectPermissions(projectId: number | null) {
     enabled: projectId != null && projectId > 0,
     queryFn: async () => {
       const { data, error } = await apiClient.GET(
-        '/api/v1/projects/{project_id}/my-permissions',
+        '/api/v1/studio/projects/{project_id}/my-permissions',
         { params: { path: { project_id: projectId! } } },
       )
       if (error) throw error
@@ -44,7 +44,7 @@ export function useSurveyPermissions(projectId: number | null, surveyId: number 
     enabled: projectId != null && projectId > 0 && surveyId != null && surveyId > 0,
     queryFn: async () => {
       const { data, error } = await apiClient.GET(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/my-permissions',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/my-permissions',
         { params: { path: { project_id: projectId!, survey_id: surveyId! } } },
       )
       if (error) throw error

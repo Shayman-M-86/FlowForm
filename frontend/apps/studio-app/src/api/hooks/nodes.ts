@@ -21,7 +21,7 @@ export function useSurveyNodes(
     enabled: projectId != null && projectId > 0 && surveyId != null && surveyId > 0 && versionNumber != null && versionNumber > 0,
     queryFn: async () => {
       const { data, error } = await apiClient.GET(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes',
         { params: { path: { project_id: projectId!, survey_id: surveyId!, version_number: versionNumber! } } },
       )
       if (error) throw error
@@ -42,7 +42,7 @@ export function useCreateNode(
         throw new Error('projectId, surveyId and versionNumber are required')
       }
       const { data, error } = await apiClient.POST(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes',
         { params: { path: { project_id: projectId, survey_id: surveyId, version_number: versionNumber } }, body },
       )
       if (error) throw error
@@ -62,7 +62,7 @@ export function useUpdateNode(
         throw new Error('projectId, surveyId and versionNumber are required')
       }
       const { data, error } = await apiClient.PATCH(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}',
         { params: { path: { project_id: projectId, survey_id: surveyId, version_number: versionNumber, node_id: nodeId } }, body },
       )
       if (error) throw error
@@ -82,7 +82,7 @@ export function useDeleteNode(
         throw new Error('projectId, surveyId and versionNumber are required')
       }
       const { error } = await apiClient.DELETE(
-        '/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}',
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}',
         { params: { path: { project_id: projectId, survey_id: surveyId, version_number: versionNumber, node_id: nodeId } } },
       )
       if (error) throw error

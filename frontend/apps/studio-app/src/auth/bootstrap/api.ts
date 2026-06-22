@@ -33,7 +33,7 @@ export async function bootstrapCurrentUser(
   accessToken: string,
 ): Promise<BootstrapUserResponses> {
   try {
-    const { data, error } = await apiClient.POST('/api/v1/auth/bootstrap-user', {
+    const { data, error } = await apiClient.POST('/api/v1/account/bootstrap-user', {
       body: { id_token: idToken },
       headers: { Authorization: `Bearer ${accessToken}` },
     })

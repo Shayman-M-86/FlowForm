@@ -14,4 +14,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 cd "${BACKEND_DIR}"
+
+# Strip a leading "--" so `pnpm run openapi:export -- --check` works.
+if [[ "${1:-}" == "--" ]]; then shift; fi
+
 exec uv run --extra dev python -m app.openapi.export "$@"
