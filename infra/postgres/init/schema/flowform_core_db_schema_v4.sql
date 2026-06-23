@@ -760,7 +760,6 @@ CREATE TABLE project_participants (
 -- =========================================
 -- PUBLIC LINKS
 -- =========================================
--- Bearer links store token hashes only.
 
 CREATE TABLE survey_links (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -768,8 +767,7 @@ CREATE TABLE survey_links (
     project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     survey_id BIGINT NOT NULL,
     name TEXT NOT NULL,
-    token_prefix TEXT NOT NULL,
-    token_hash TEXT NOT NULL,
+    token TEXT NOT NULL,
 
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
 
@@ -795,17 +793,14 @@ CREATE TABLE survey_links (
     used_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT uq_survey_links_token_hash
-        UNIQUE (token_hash),
+    CONSTRAINT uq_survey_links_token
+        UNIQUE (token),
 
     CONSTRAINT uq_survey_links_survey_id_id
         UNIQUE (survey_id, id),
 
     CONSTRAINT uq_survey_links_project_id_id
         UNIQUE (project_id, id),
-
-    CONSTRAINT uq_survey_links_survey_id_token_prefix
-        UNIQUE (survey_id, token_prefix),
 
     CONSTRAINT fk_survey_links_survey_same_project
         FOREIGN KEY (project_id, survey_id)
@@ -819,11 +814,8 @@ CREATE TABLE survey_links (
         REFERENCES project_participants(project_id, id)
         ON DELETE RESTRICT,
 
-    CONSTRAINT ck_survey_links_token_prefix_len
-        CHECK (char_length(token_prefix) BETWEEN 8 AND 32),
-
-    CONSTRAINT ck_survey_links_token_hash_format
-        CHECK (token_hash ~ '^[0-9a-f]{64}$'),
+    CONSTRAINT ck_survey_links_token_len
+        CHECK (char_length(token) BETWEEN 1 AND 256),
 
     CONSTRAINT ck_survey_links_name_len
         CHECK (char_length(btrim(name)) BETWEEN 1 AND 120),
@@ -1121,7 +1113,7 @@ CREATE INDEX ix_survey_membership_roles_role ON survey_membership_roles(role_id)
 
 CREATE INDEX ix_survey_links_survey ON survey_links(survey_id);
 CREATE INDEX ix_survey_links_project ON survey_links(project_id);
-CREATE INDEX ix_survey_links_prefix ON survey_links(token_prefix);
+CREATE INDEX ix_survey_links_token ON survey_links(token);
 CREATE INDEX ix_survey_links_assigned_participant ON survey_links(assigned_participant_id)
     WHERE assigned_participant_id IS NOT NULL;
 CREATE INDEX ix_survey_links_active_expiry ON survey_links(expires_at)

@@ -124,7 +124,6 @@ _STRING_FIELD_MAX_LENGTHS = {
     "style": limits.SCHEMA_ID_MAX,
     "title": limits.SURVEY_TITLE_MAX,
     "token": limits.TOKEN_MAX,
-    "token_prefix": limits.TOKEN_PREFIX_MAX,
     "type": limits.SCHEMA_ID_MAX,
     "url": limits.URL_MAX,
 }
@@ -141,14 +140,9 @@ _COMPONENT_STRING_FIELD_MAX_LENGTHS = {
     "ProjectRoleResponses": {
         "description": limits.PROJECT_ROLE_DESCRIPTION_MAX,
     },
-    "SurveyAccessLinkCreatedResponse": {
-        "name": limits.PUBLIC_LINK_NAME_MAX,
-        "token": limits.TOKEN_MAX,
-        "token_prefix": limits.TOKEN_PREFIX_MAX,
-    },
     "SurveyAccessLinkResponse": {
         "name": limits.PUBLIC_LINK_NAME_MAX,
-        "token_prefix": limits.TOKEN_PREFIX_MAX,
+        "token": limits.TOKEN_MAX,
     },
     "SurveyResponses": {
         "public_slug": limits.SLUG_MAX,

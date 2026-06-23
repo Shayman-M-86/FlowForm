@@ -17,7 +17,7 @@ from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
 from app.services.public_submissions.core.resolution.access_resolver import AccessResolver
-from tests.integration.core.factories import make_participant_chain, make_token_pair
+from tests.integration.core.factories import make_participant_chain, make_token
 
 
 def _publish_survey(
@@ -58,13 +58,12 @@ def _make_link(
     link_type: str = "general",
     assigned_participant_id=None,
 ) -> tuple[SurveyLink, str]:
-    raw_token, token_prefix, token_hash = make_token_pair()
+    raw_token = make_token()
     link = SurveyLink(
         project_id=survey.project_id,
         survey_id=survey.id,
         name=name,
-        token_prefix=token_prefix,
-        token_hash=token_hash,
+        token=raw_token,
         link_type=link_type,
         assignment_source="manual",
         assigned_participant_id=assigned_participant_id,
@@ -220,13 +219,12 @@ def test_resolve_link_token_inactive_link_raises(
     survey_version: SurveyVersion,
 ) -> None:
     _publish_survey(db_session, survey=survey, survey_version=survey_version)
-    raw_token, token_prefix, token_hash = make_token_pair()
+    raw_token = make_token()
     link = SurveyLink(
         project_id=survey.project_id,
         survey_id=survey.id,
         name="Inactive link",
-        token_prefix=token_prefix,
-        token_hash=token_hash,
+        token=raw_token,
         assignment_source="manual",
         is_active=False,
     )

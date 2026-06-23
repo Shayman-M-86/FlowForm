@@ -501,20 +501,11 @@ SURVEY_VERSION_RULES: tuple[DbErrorRule, ...] = (
 
 SURVEY_LINK_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
-        "uq_survey_links_token_hash",
+        "uq_survey_links_token",
         lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "LINK_TOKEN_CONFLICT",
             "This survey link token is already in use.",
-        ),
-        extractor=_survey_link_ctx,
-    ),
-    unique_rule(
-        "uq_survey_links_survey_id_token_prefix",
-        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
-            409,
-            "LINK_PREFIX_CONFLICT",
-            "This survey already has a link with this token prefix.",
         ),
         extractor=_survey_link_ctx,
     ),

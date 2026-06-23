@@ -15,26 +15,7 @@ class SurveyAccessLinkResponse(BaseModel):
     id: UUID
     survey_id: int
     name: str
-    token_prefix: str
-    is_active: bool
-    link_type: SurveyLinkType
-    assignment_source: SurveyLinkAssignmentSource
-    assigned_participant_id: UUID | None
-    expires_at: datetime | None
-    used_at: datetime | None
-    created_at: datetime
-
-
-class SurveyAccessLinkCreatedResponse(BaseModel):
-    """API response returned once when a survey access link is created."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID
-    survey_id: int
-    name: str
     token: str
-    token_prefix: str
     is_active: bool
     link_type: SurveyLinkType
     assignment_source: SurveyLinkAssignmentSource
@@ -48,7 +29,6 @@ class CreateSurveyAccessLinkResponse(BaseModel):
     """API response shape for creating a survey access link."""
 
     link: SurveyAccessLinkResponse
-    token: str
     url: str
 
 

@@ -47,17 +47,16 @@ def list_survey_access_links(project_id: int, survey_id: int):
 @require_survey_permission(PERMISSIONS.survey.edit)
 def create_survey_access_link(project_id: int, survey_id: int):
     payload = parse(CreateSurveyAccessLinkRequest, request)
-    result = survey_link_service.create_link(
+    link = survey_link_service.create_link(
         db=get_core_db(),
         survey_id=survey_id,
         project_id=project_id,
         data=payload,
         actor=g.actor,
     )
-    public_url = f"http://localhost:5173/quiz/resolve?token={result.token}"  # todo: construct URL based on config
+    public_url = f"http://localhost:5173/quiz/resolve?token={link.token}"  # todo: construct URL based on config
     response = CreateSurveyAccessLinkResponse(
-        link=SurveyAccessLinkResponse.model_validate(result.link),
-        token=result.token,
+        link=SurveyAccessLinkResponse.model_validate(link),
         url=public_url,
     )
     return response.model_dump(mode="json"), 201

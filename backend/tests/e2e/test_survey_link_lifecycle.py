@@ -34,7 +34,7 @@ def test_create_link_populates_project_id(authed_client: FlaskClient, seed: Seed
     body = resp.get_json()
     assert body["link"]["survey_id"] == seed.survey.id
     assert body["link"]["name"] == "launch link"
-    assert body["token"], "expected a token in the create response"
+    assert body["link"]["token"], "expected a token on the link in the create response"
     assert body["url"], "expected a public url in the create response"
 
     # project_id is not in the response shape; verify it persisted on the row.
@@ -52,7 +52,7 @@ def test_link_lifecycle_create_list_resolve_update_delete(authed_client: FlaskCl
     assert create.status_code == 201, create.get_data(as_text=True)
     created = create.get_json()
     link_id = created["link"]["id"]
-    token = created["token"]
+    token = created["link"]["token"]
 
     # --- list: the new link shows up ---
     listed = authed_client.get(links_url)

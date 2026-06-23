@@ -49,7 +49,7 @@ from app.repositories.core import project_subject_tokens as sub_tok
 from app.schema.orm.core.project_subject import ProjectSubject
 from app.schema.orm.core.survey_access import SurveyLink
 from tests.e2e.conftest import SeedData
-from tests.integration.core.factories import make_participant_chain, make_token_pair, make_user
+from tests.integration.core.factories import make_participant_chain, make_token, make_user
 
 # The seeded member's email — must match conftest.py seed fixture.
 _MEMBER_EMAIL = "member@example.com"
@@ -126,13 +126,12 @@ def _make_link(
     assigned_participant_id: object | None = None,
     name_suffix: str = "",
 ) -> tuple[SurveyLink, str]:
-    raw, prefix, token_hash = make_token_pair()
+    raw = make_token()
     link = SurveyLink(
         project_id=seed.project.id,
         survey_id=seed.survey.id,
         name=f"{link_type}-link{name_suffix}",
-        token_prefix=prefix,
-        token_hash=token_hash,
+        token=raw,
         link_type=link_type,
         assignment_source="manual",
         assigned_participant_id=assigned_participant_id,

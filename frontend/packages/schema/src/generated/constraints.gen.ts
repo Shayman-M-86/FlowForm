@@ -7,7 +7,7 @@
 export const SurveyAccessLinkResponseConstraints = {
   id: { maxLength: 36 },
   name: { maxLength: 120 },
-  token_prefix: { maxLength: 32 },
+  token: { maxLength: 256 },
   link_type: { maxLength: 13 },
   assignment_source: { maxLength: 9 },
   assigned_participant_id: { maxLength: 36 },

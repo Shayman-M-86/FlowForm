@@ -37,7 +37,7 @@ from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
-from tests.integration.core.factories import make_participant_chain, make_token_pair, make_user
+from tests.integration.core.factories import make_participant_chain, make_token, make_user
 
 # ---------------------------------------------------------------------------
 # Setup helpers
@@ -72,13 +72,12 @@ def _make_link(
     assigned_participant_id: object | None = None,
     slug_suffix: str = "",
 ) -> tuple[SurveyLink, str]:
-    raw_token, token_prefix, token_hash = make_token_pair()
+    raw_token = make_token()
     link = SurveyLink(
         project_id=survey.project_id,
         survey_id=survey.id,
         name=f"{link_type}-link{slug_suffix}",
-        token_prefix=token_prefix,
-        token_hash=token_hash,
+        token=raw_token,
         link_type=link_type,
         assignment_source="manual",
         assigned_participant_id=assigned_participant_id,

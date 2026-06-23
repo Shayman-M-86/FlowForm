@@ -1419,8 +1419,8 @@ export interface components {
             survey_id: number;
             /** Name */
             name: string;
-            /** Token Prefix */
-            token_prefix: string;
+            /** Token */
+            token: string;
             /** Is Active */
             is_active: boolean;
             /**
@@ -2087,8 +2087,6 @@ export interface components {
          */
         CreateSurveyAccessLinkResponse: {
             link: components["schemas"]["SurveyAccessLinkResponse"];
-            /** Token */
-            token: string;
             /** Url */
             url: string;
         };

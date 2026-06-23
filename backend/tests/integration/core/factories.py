@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import secrets
 from datetime import UTC, datetime
 from typing import Literal
@@ -18,11 +17,8 @@ from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from app.schema.orm.core.user import User
 
 
-def make_token_pair() -> tuple[str, str, str]:
-    token = secrets.token_urlsafe(32)
-    token_prefix = token[:8]
-    token_hash = hashlib.sha256(token.encode()).hexdigest()
-    return token, token_prefix, token_hash
+def make_token() -> str:
+    return secrets.token_urlsafe(32)
 
 
 def make_user(
@@ -96,13 +92,11 @@ def make_survey_version(
 
 
 def make_survey_public_link(project_id: int, survey_id: int, name: str = "test link") -> SurveyPublicLink:
-    _, prefix, token_hash = make_token_pair()
     link = SurveyPublicLink()
     link.project_id = project_id
     link.survey_id = survey_id
     link.name = name
-    link.token_prefix = prefix
-    link.token_hash = token_hash
+    link.token = make_token()
     link.assignment_source = "manual"
     return link
 

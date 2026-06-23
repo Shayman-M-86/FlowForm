@@ -227,9 +227,9 @@ INSERT INTO project_participants (id, project_id, project_subject_id, identity_i
 -- (manual | automated). The assigned email is derived by joining through the
 -- participant's identity; it is not stored on survey_links.
 
-INSERT INTO survey_links (id, project_id, survey_id, name, token_prefix, token_hash, is_active, link_type, assignment_source, assigned_participant_id, expires_at, created_at) VALUES
-    ('dddddddd-0000-0000-0000-000000000001', 1, 1, 'Acme pulse invite', 'acmepuls01', repeat('a', 64), TRUE, 'authenticated', 'manual', 'cccccccc-0000-0000-0000-000000000001', NOW() + INTERVAL '30 days', NOW() - INTERVAL '5 days'),
-    ('dddddddd-0000-0000-0000-000000000002', 2, 3, 'Beta signup invite', 'betasign02', repeat('b', 64), TRUE, 'authenticated', 'automated', 'cccccccc-0000-0000-0000-000000000002', NOW() + INTERVAL '14 days', NOW() - INTERVAL '2 days');
+INSERT INTO survey_links (id, project_id, survey_id, name, token, is_active, link_type, assignment_source, assigned_participant_id, expires_at, created_at) VALUES
+    ('dddddddd-0000-0000-0000-000000000001', 1, 1, 'Acme pulse invite', 'acmepuls01-mock-token-0001', TRUE, 'authenticated', 'manual', 'cccccccc-0000-0000-0000-000000000001', NOW() + INTERVAL '30 days', NOW() - INTERVAL '5 days'),
+    ('dddddddd-0000-0000-0000-000000000002', 2, 3, 'Beta signup invite', 'betasign02-mock-token-0002', TRUE, 'authenticated', 'automated', 'cccccccc-0000-0000-0000-000000000002', NOW() + INTERVAL '14 days', NOW() - INTERVAL '2 days');
 
 -- =========================================
 -- SUBMISSION SESSIONS

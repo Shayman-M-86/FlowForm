@@ -19,7 +19,7 @@ from app.schema.api.requests.submission_sessions import StartSubmissionSessionRe
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
-from tests.integration.core.factories import make_participant_chain, make_token_pair
+from tests.integration.core.factories import make_participant_chain, make_token
 
 _SCHEMA = {"nodes": [{"id": "q1", "type": "short_text"}]}
 
@@ -45,13 +45,12 @@ def _publish_survey(
 
 
 def _make_general_link(db: Session, *, survey: Survey) -> tuple[SurveyLink, str]:
-    raw_token, token_prefix, token_hash = make_token_pair()
+    raw_token = make_token()
     link = SurveyLink(
         project_id=survey.project_id,
         survey_id=survey.id,
         name="General link",
-        token_prefix=token_prefix,
-        token_hash=token_hash,
+        token=raw_token,
         link_type="general",
         assignment_source="manual",
         assigned_participant_id=None,
@@ -64,13 +63,12 @@ def _make_general_link(db: Session, *, survey: Survey) -> tuple[SurveyLink, str]
 def _make_private_link(
     db: Session, *, survey: Survey, assigned_participant_id: object
 ) -> tuple[SurveyLink, str]:
-    raw_token, token_prefix, token_hash = make_token_pair()
+    raw_token = make_token()
     link = SurveyLink(
         project_id=survey.project_id,
         survey_id=survey.id,
         name="Private link",
-        token_prefix=token_prefix,
-        token_hash=token_hash,
+        token=raw_token,
         link_type="private",
         assignment_source="manual",
         assigned_participant_id=assigned_participant_id,

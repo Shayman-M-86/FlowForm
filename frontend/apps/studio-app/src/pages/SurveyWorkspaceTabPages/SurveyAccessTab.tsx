@@ -306,7 +306,7 @@ function AccessSidebarSummary({
 // ── Links section ─────────────────────────────────────────────────────────────
 
 function linkUrl(link: SurveyAccessLinkOut): string {
-  return `${window.location.origin}/respond/${link.token_prefix}`
+  return `${window.location.origin}/respond/${link.token}`
 }
 
 function LinkCard({

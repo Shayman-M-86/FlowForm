@@ -16,7 +16,6 @@ from app.schema.api.requests.survey_access_links import CreateSurveyAccessLinkRe
 from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
-from app.services.results import CreateSurveyAccessLinkResult
 
 
 class SurveyLinkService:
@@ -35,7 +34,7 @@ class SurveyLinkService:
         project_id: int,
         data: CreateSurveyAccessLinkRequest,
         actor: User,  # noqa: ARG002
-    ) -> CreateSurveyAccessLinkResult:
+    ) -> SurveyLink:
         """Create a new link for a survey."""
         survey = self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
         self._ensure_link_allowed_by_visibility(
@@ -43,7 +42,7 @@ class SurveyLinkService:
             link_type=data.link_type,
             assigned_participant_id=data.assigned_participant_id,
         )
-        link, token = plr.create_link(
+        link = plr.create_link(
             db,
             project_id=project_id,
             survey_id=survey_id,
@@ -54,7 +53,7 @@ class SurveyLinkService:
             expires_at=data.expires_at,
         )
         commit_with_err_handle(db, contexts=[link])
-        return CreateSurveyAccessLinkResult(link=link, token=token)
+        return link
 
     def update_link(
         self,

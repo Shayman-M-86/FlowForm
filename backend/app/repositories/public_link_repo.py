@@ -1,4 +1,3 @@
-import hashlib
 import secrets
 import uuid
 from datetime import UTC, datetime
@@ -20,11 +19,8 @@ class _UnsetType:
 _UNSET = _UnsetType()
 
 
-def _make_token() -> tuple[str, str, str]:
-    token = secrets.token_urlsafe(_TOKEN_BYTES)
-    prefix = token[:8]
-    token_hash = hashlib.sha256(token.encode()).hexdigest()
-    return token, prefix, token_hash
+def _make_token() -> str:
+    return secrets.token_urlsafe(_TOKEN_BYTES)
 
 
 def list_links(db: Session, survey_id: int) -> list[SurveyLink]:
@@ -50,15 +46,14 @@ def create_link(
     assignment_source: SurveyLinkAssignmentSource,
     assigned_participant_id: uuid.UUID | None,
     expires_at: datetime | None,
-) -> tuple[SurveyLink, str]:
-    token, prefix, token_hash = _make_token()
+) -> SurveyLink:
+    token = _make_token()
 
     link = SurveyLink(
         project_id=project_id,
         survey_id=survey_id,
         name=name,
-        token_prefix=prefix,
-        token_hash=token_hash,
+        token=token,
         link_type=link_type,
         assignment_source=assignment_source,
         assigned_participant_id=assigned_participant_id,
@@ -66,7 +61,7 @@ def create_link(
     )
     db.add(link)
     flush_with_err_handle(db, contexts=[link])
-    return link, token
+    return link
 
 
 def update_link(
@@ -116,17 +111,11 @@ def delete_link(db: Session, link: SurveyLink) -> None:
 
 
 def resolve_token(db: Session, token: str) -> SurveyLink | None:
-    if len(token) < 8:
+    if not token:
         return None
 
-    prefix = token[:8]
-    token_hash = hashlib.sha256(token.encode()).hexdigest()
-
     return db.scalar(
-        select(SurveyLink).where(
-            SurveyLink.token_prefix == prefix,
-            SurveyLink.token_hash == token_hash,
-        )
+        select(SurveyLink).where(SurveyLink.token == token)
     )
 
 

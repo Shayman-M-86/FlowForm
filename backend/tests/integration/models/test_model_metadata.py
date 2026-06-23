@@ -229,7 +229,7 @@ def test_survey_role_unique_constraints() -> None:
 
 def test_survey_link_unique_constraints() -> None:
     names = unique_constraint_names(SurveyLink)
-    assert "uq_survey_links_token_hash" in names
+    assert "uq_survey_links_token" in names
     assert "uq_survey_links_survey_id_id" in names
 
 

@@ -124,9 +124,9 @@ class SurveyLink(CoreBase):
     """Bearer-token link granting survey access.
 
     project_id is stored directly so the database can prove the link, its survey,
-    and its assigned participant all belong to the same project. token_hash is a
-    lowercase hex SHA-256 digest. A link's assigned subject and email are not
-    stored here — they are reached by joining through the assigned participant.
+    and its assigned participant all belong to the same project. A link's assigned
+    subject and email are not stored here — they are reached by joining through
+    the assigned participant.
     """
 
     __tablename__ = "survey_links"
@@ -137,8 +137,7 @@ class SurveyLink(CoreBase):
     project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     survey_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
-    token_prefix: Mapped[str] = mapped_column(Text, nullable=False)
-    token_hash: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    token: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=text("true"), nullable=False)
     link_type: Mapped[SurveyLinkType] = mapped_column(Text, server_default=text("'general'"), nullable=False)
     # How the assignment was created ('manual' | 'automated'). Informational only.

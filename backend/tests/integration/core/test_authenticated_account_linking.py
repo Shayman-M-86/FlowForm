@@ -19,7 +19,7 @@ from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
 from app.services.public_submissions.api.survey_resolve import SurveyResolveService
-from tests.integration.core.factories import make_participant_chain, make_token_pair, make_user
+from tests.integration.core.factories import make_participant_chain, make_token, make_user
 
 
 def _make_auth_link(
@@ -28,13 +28,12 @@ def _make_auth_link(
     survey: Survey,
     assigned_participant_id: object,
 ) -> tuple[SurveyLink, str]:
-    raw_token, token_prefix, token_hash = make_token_pair()
+    raw_token = make_token()
     link = SurveyLink(
         project_id=survey.project_id,
         survey_id=survey.id,
         name="Auth link",
-        token_prefix=token_prefix,
-        token_hash=token_hash,
+        token=raw_token,
         link_type="authenticated",
         assignment_source="manual",
         assigned_participant_id=assigned_participant_id,
@@ -54,13 +53,12 @@ def test_non_authenticated_link_raises_on_account_linking_endpoint(
     user: User,
 ) -> None:
     """A general or private link token sent to the account-linking endpoint is rejected."""
-    raw_token, token_prefix, token_hash = make_token_pair()
+    raw_token = make_token()
     link = SurveyLink(
         project_id=survey.project_id,
         survey_id=survey.id,
         name="General link",
-        token_prefix=token_prefix,
-        token_hash=token_hash,
+        token=raw_token,
         link_type="general",
         assignment_source="manual",
     )
