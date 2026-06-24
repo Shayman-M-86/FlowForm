@@ -14,7 +14,12 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.crypto import build_aad
-from app.crypto.services import AnswerCryptoService, LocatorService, SessionDEKService
+from app.crypto.services import (
+    AnswerCryptoService,
+    LocatorService,
+    SessionDEKService,
+    SurveyBranchKeyService,
+)
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import AnswerSaveError, QuestionNotInVersionError, SessionInvalidError
 from app.domain.survey_answer_validation import validate_answer
@@ -26,7 +31,7 @@ from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerVa
 from app.schema.enums import SubmissionAnswerState
 from app.services.public_submissions.core.shared.crypto_provider import CryptoServices
 from app.services.public_submissions.core.shared.session_crypto import (
-    build_session_kms_context,
+    load_plaintext_session_dek,
     resolve_session_crypto_services,
 )
 from app.services.public_submissions.core.shared.session_loader import SessionContext
@@ -57,10 +62,12 @@ class AnswerSaveService:
         locator_service: LocatorService | None = None,
         dek_service: SessionDEKService | None = None,
         answer_crypto_service: AnswerCryptoService | None = None,
+        survey_branch_key_service: SurveyBranchKeyService | None = None,
     ) -> None:
         self._locator_service_override = locator_service
         self._dek_service_override = dek_service
         self._answer_crypto_override = answer_crypto_service
+        self._survey_branch_key_override = survey_branch_key_service
         self._crypto: CryptoServices | None = None
 
     def _ensure_crypto(self) -> CryptoServices:
@@ -71,6 +78,7 @@ class AnswerSaveService:
             locator_service=self._locator_service_override,
             dek_service=self._dek_service_override,
             answer_crypto_service=self._answer_crypto_override,
+            survey_branch_key_service=self._survey_branch_key_override,
         )
         return self._crypto
 
@@ -123,13 +131,14 @@ class AnswerSaveService:
         # Step 4: Derive session locator and answer locator (locator already derived)
         # Step 5: Load the response envelope (already in ctx)
 
-        # Step 6: Load plaintext DEK from cache; on miss, unwrap with KMS
-        plaintext_dek = crypto.dek_service.get_for_session(
-            ctx.session.id,
-            ctx.envelope.wrapped_dek,
-            ctx.envelope.kms_key_arn,
-            ctx.session.expires_at,
-            encryption_context=build_session_kms_context(ctx.session_locator),
+        # Step 6: Load plaintext DEK from cache; on miss, unwrap locally through the survey branch key.
+        plaintext_dek = load_plaintext_session_dek(
+            db,
+            session=locked_session,
+            session_locator=ctx.session_locator,
+            envelope=ctx.envelope,
+            dek_service=crypto.dek_service,
+            survey_branch_key_service=crypto.survey_branch_key_service,
         )
 
         # Steps 8-9: Insert revision and update latest pointer

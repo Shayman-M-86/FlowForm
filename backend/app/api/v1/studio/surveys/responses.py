@@ -19,9 +19,14 @@ from app.services.access.access_service import require_survey_permission
 from app.services.admin_responses.service import AdminResponseService
 from app.services.public_submissions.core.shared.crypto_provider import build_crypto_services
 
+_admin_response_service: AdminResponseService | None = None
+
 
 def _build_service() -> AdminResponseService:
-    return AdminResponseService(build_crypto_services())
+    global _admin_response_service
+    if _admin_response_service is None:
+        _admin_response_service = AdminResponseService(build_crypto_services())
+    return _admin_response_service
 
 
 @openapi_route(

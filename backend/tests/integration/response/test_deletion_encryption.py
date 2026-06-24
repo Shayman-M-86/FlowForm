@@ -143,13 +143,13 @@ class TestDeletion:
         session = _create_session_row(core_db, project, survey, version)
 
         session_locator = derive_session_locator(session.id, _LINKAGE_SECRET)
+        wrapped_session_dek = os.urandom(64)
+
         response_envelope_repo.create(
             response_db,
             session_locator=session_locator,
             linkage_key_version=1,
-            wrapped_dek=os.urandom(64),
-            kms_key_arn="arn:aws:kms:us-east-1:000000000000:key/test-key",
-            kms_context_version=1,
+            wrapped_session_dek=wrapped_session_dek,
             crypto_version=1,
         )
 

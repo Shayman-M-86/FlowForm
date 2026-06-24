@@ -12,17 +12,13 @@ def create(
     *,
     session_locator: bytes,
     linkage_key_version: int,
-    wrapped_dek: bytes,
-    kms_key_arn: str,
-    kms_context_version: int,
+    wrapped_session_dek: bytes,
     crypto_version: int,
 ) -> ResponseEnvelope:
     envelope = ResponseEnvelope(
         session_locator=session_locator,
         linkage_key_version=linkage_key_version,
-        wrapped_dek=wrapped_dek,
-        kms_key_arn=kms_key_arn,
-        kms_context_version=kms_context_version,
+        wrapped_session_dek=wrapped_session_dek,
         crypto_version=crypto_version,
     )
     db.add(envelope)

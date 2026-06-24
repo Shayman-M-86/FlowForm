@@ -15,6 +15,7 @@ from app.crypto.services import (
     LinkageKeyService,
     LocatorService,
     SessionDEKService,
+    SurveyBranchKeyService,
 )
 from app.domain.errors import SessionInvalidError
 
@@ -27,6 +28,7 @@ class CryptoServices:
     locator_service: LocatorService
     dek_service: SessionDEKService
     answer_crypto_service: AnswerCryptoService
+    survey_branch_key_service: SurveyBranchKeyService | None = None
 
 
 def _resolve_encryption_settings(enc: EncryptionSettings | None) -> EncryptionSettings:
@@ -57,7 +59,10 @@ def build_crypto_services(enc: EncryptionSettings | None = None) -> CryptoServic
 
     locator_service = LocatorService(linkage_key_service=linkage_key_service)
 
-    dek_service = SessionDEKService(
+    dek_service = SessionDEKService()
+
+    survey_branch_key_service = SurveyBranchKeyService(
+        kms_key_arn=resolved.kms_key_arn,
         region=resolved.aws_region,
         access_key_id=resolved.aws_access_key_id,
         secret_access_key=resolved.aws_secret_access_key,
@@ -70,4 +75,5 @@ def build_crypto_services(enc: EncryptionSettings | None = None) -> CryptoServic
         locator_service=locator_service,
         dek_service=dek_service,
         answer_crypto_service=answer_crypto_service,
+        survey_branch_key_service=survey_branch_key_service,
     )

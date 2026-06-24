@@ -31,9 +31,16 @@ def _make_mock_locator_service():
 def _make_mock_dek_service():
     svc = MagicMock()
     svc.create_for_session.return_value = NewSessionDEK(
-        plaintext_dek=b"\x01" * 32, wrapped_dek=b"\x02" * 64,
+        plaintext_dek=b"\x01" * 32, wrapped_session_dek=b"\x02" * 64,
     )
     svc.get_for_session.return_value = b"\x01" * 32
+    return svc
+
+
+def _make_mock_branch_key_service():
+    svc = MagicMock()
+    svc.get_plaintext_key.return_value = b"\x03" * 32
+    svc.ensure_for_survey.return_value = MagicMock()
     return svc
 
 
@@ -44,12 +51,24 @@ def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
 
     loc_svc = _make_mock_locator_service()
     dek_svc = _make_mock_dek_service()
+    branch_key_svc = _make_mock_branch_key_service()
+
+    fake_survey_key = MagicMock()
+    monkeypatch.setattr(
+        "app.services.public_submissions.core.actions.session_starter.load_survey_encryption_key",
+        lambda *_args, **_kwargs: fake_survey_key,
+    )
+    monkeypatch.setattr(
+        "app.services.public_submissions.core.shared.session_crypto.load_survey_encryption_key",
+        lambda *_args, **_kwargs: fake_survey_key,
+    )
 
     original_init = SessionStarter.__init__
 
     def patched_init(self, **kwargs):
         kwargs.setdefault("locator_service", loc_svc)
         kwargs.setdefault("dek_service", dek_svc)
+        kwargs.setdefault("survey_branch_key_service", branch_key_svc)
         original_init(self, **kwargs)
 
     monkeypatch.setattr(SessionStarter, "__init__", patched_init)

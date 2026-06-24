@@ -170,15 +170,13 @@ def _create_envelope_and_context(
 ):
     session_locator = derive_session_locator(session.id, _LINKAGE_SECRET)
     plaintext_dek = os.urandom(32)
-    wrapped_dek = os.urandom(64)
+    wrapped_session_dek = os.urandom(64)
 
     envelope = response_envelope_repo.create(
         response_db,
         session_locator=session_locator,
         linkage_key_version=1,
-        wrapped_dek=wrapped_dek,
-        kms_key_arn="arn:aws:kms:us-east-1:000000000000:key/test-key",
-        kms_context_version=1,
+        wrapped_session_dek=wrapped_session_dek,
         crypto_version=1,
     )
 
@@ -632,7 +630,7 @@ class TestCacheMissUnwrapDek:
 
         dek_svc.get_for_session.assert_called_once()
         call_args = dek_svc.get_for_session.call_args
-        assert call_args[0][1] == ctx.envelope.wrapped_dek, (
+        assert call_args[0][1] == ctx.envelope.wrapped_session_dek, (
             "get_for_session must receive the wrapped DEK from the envelope"
         )
 

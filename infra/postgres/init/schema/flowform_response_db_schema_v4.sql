@@ -40,14 +40,8 @@ CREATE TABLE response_envelopes (
     linkage_key_version SMALLINT NOT NULL,
 
     -- Encrypted copy of the session-specific Data Encryption Key.
-    -- One DEK protects all revisions belonging to this envelope.
-    wrapped_dek BYTEA NOT NULL,
-
-    -- Immutable ARN of the KMS-managed Key Encryption Key used to wrap the DEK.
-    kms_key_arn TEXT NOT NULL,
-
-    -- Identifies the KMS encryption context version used when wrapping the DEK.
-    kms_context_version SMALLINT NOT NULL,
+    -- This DEK is wrapped locally by the survey branch key, not directly by KMS.
+    wrapped_session_dek BYTEA NOT NULL,
 
     -- Identifies the local authenticated-encryption format and algorithm.
     crypto_version SMALLINT NOT NULL,
@@ -61,17 +55,11 @@ CREATE TABLE response_envelopes (
     CONSTRAINT ck_response_envelopes_linkage_key_version_valid
         CHECK (linkage_key_version > 0),
 
-    CONSTRAINT ck_response_envelopes_wrapped_dek_len
-        CHECK (octet_length(wrapped_dek) > 0),
-
-    CONSTRAINT ck_response_envelopes_kms_key_arn_len
-        CHECK (char_length(btrim(kms_key_arn)) BETWEEN 1 AND 2048),
+    CONSTRAINT ck_response_envelopes_wrapped_session_dek_len
+        CHECK (octet_length(wrapped_session_dek) > 0),
 
     CONSTRAINT ck_response_envelopes_crypto_version_valid
-        CHECK (crypto_version > 0),
-
-    CONSTRAINT ck_response_envelopes_kms_context_version_valid
-        CHECK (kms_context_version > 0)
+        CHECK (crypto_version > 0)
 );
 
 -- =========================================

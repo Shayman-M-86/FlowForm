@@ -37,9 +37,7 @@ def _create_envelope(db: Session, seed: int = 0) -> ResponseEnvelope:
         db,
         session_locator=_locator(seed),
         linkage_key_version=1,
-        wrapped_dek=_wrapped_dek(),
-        kms_key_arn="arn:aws:kms:us-east-1:000000000000:key/test-key",
-        kms_context_version=1,
+        wrapped_session_dek=_wrapped_dek(),
         crypto_version=1,
     )
 
@@ -54,9 +52,7 @@ class TestResponseEnvelopeRepo:
             response_db_session,
             session_locator=locator,
             linkage_key_version=1,
-            wrapped_dek=_wrapped_dek(),
-            kms_key_arn="arn:aws:kms:us-east-1:000000000000:key/test-key",
-            kms_context_version=1,
+            wrapped_session_dek=_wrapped_dek(),
             crypto_version=1,
         )
         assert envelope.id is not None

@@ -113,7 +113,7 @@ def _mock_dek_service(
     svc = MagicMock()
     svc.create_for_session.return_value = NewSessionDEK(
         plaintext_dek=plaintext_dek or _FAKE_PLAINTEXT_DEK,
-        wrapped_dek=wrapped_dek or _FAKE_WRAPPED_DEK,
+        wrapped_session_dek=wrapped_dek or _FAKE_WRAPPED_DEK,
     )
     return svc
 

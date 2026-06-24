@@ -54,9 +54,12 @@ class AdminResponseService:
         """Decrypt latest answers for admin detail view."""
         session = _load_session(db, survey_id=survey_id, session_id=session_id)
         ectx = load_session_envelope_crypto_context(
-            db, response_db, session=session,
+            db,
+            response_db,
+            session=session,
             locator_service=self._crypto.locator_service,
             dek_service=self._crypto.dek_service,
+            survey_branch_key_service=self._crypto.survey_branch_key_service,
         )
 
         answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)
@@ -104,9 +107,12 @@ class AdminResponseService:
         """Decrypt full revision history for authorized history reads."""
         session = _load_session(db, survey_id=survey_id, session_id=session_id)
         ectx = load_session_envelope_crypto_context(
-            db, response_db, session=session,
+            db,
+            response_db,
+            session=session,
             locator_service=self._crypto.locator_service,
             dek_service=self._crypto.dek_service,
+            survey_branch_key_service=self._crypto.survey_branch_key_service,
         )
 
         answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)

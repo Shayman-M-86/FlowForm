@@ -13,7 +13,8 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings, current_settings
-from app.crypto.services import LocatorService, SessionDEKService
+from app.crypto.errors import SurveyBranchKeyUnavailableError
+from app.crypto.services import LocatorService, SessionDEKService, SurveyBranchKeyService
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import SessionStartError
 from app.repositories import public_link_repo as plr
@@ -27,9 +28,10 @@ from app.schema.orm.core.user import User
 from app.services.public_submissions.core.resolution.access_resolver import AccessResolver
 from app.services.public_submissions.core.resolution.subject_resolver import SubjectResolver
 from app.services.public_submissions.core.resolution.subject_token import SubjectTokenService
+from app.services.public_submissions.core.shared.crypto_provider import CryptoServices
 from app.services.public_submissions.core.shared.session_crypto import (
-    SESSION_KMS_CONTEXT_VERSION,
-    build_session_kms_context,
+    build_session_dek_wrap_aad,
+    load_survey_encryption_key,
     resolve_session_crypto_services,
 )
 from app.services.results import SubjectResolutionResult, SubmissionAccessGrant
@@ -65,6 +67,7 @@ class SessionStarter:
         token_service: SubjectTokenService | None = None,
         locator_service: LocatorService | None = None,
         dek_service: SessionDEKService | None = None,
+        survey_branch_key_service: SurveyBranchKeyService | None = None,
         encryption_settings: EncryptionSettings | None = None,
     ) -> None:
         self._token_service = token_service or SubjectTokenService()
@@ -76,9 +79,9 @@ class SessionStarter:
         self._encryption_settings = encryption_settings
         self._locator_service_override = locator_service
         self._dek_service_override = dek_service
+        self._survey_branch_key_service_override = survey_branch_key_service
 
-        self._locator_service: LocatorService | None = locator_service
-        self._dek_service: SessionDEKService | None = dek_service
+        self._crypto: CryptoServices | None = None
 
     def start(
         self,
@@ -130,7 +133,7 @@ class SessionStarter:
 
         self._consume_single_use_link_if_needed(db, access)
 
-        session_locator, _ = self._create_response_envelope(
+        session_locator = self._create_response_envelope(
             db,
             response_db,
             session=session,
@@ -315,32 +318,42 @@ class SessionStarter:
         response_db: Session,
         *,
         session: SubmissionSession,
-    ) -> tuple[bytes, bytes]:
+    ) -> bytes:
         """Create and commit the response envelope.
 
         Core rows are flushed, but not committed yet. If response envelope
         creation fails, the core transaction is rolled back.
         """
-        enc = self._get_encryption_settings()
-        locator_svc, dek_svc = self._ensure_crypto()
+        crypto = self._ensure_crypto()
 
         try:
-            loc = locator_svc.for_new_session(session.id, db)
+            branch_key_service = crypto.survey_branch_key_service
+            if branch_key_service is None:
+                raise SurveyBranchKeyUnavailableError()
 
-            new_dek = dek_svc.create_for_session(
+            loc = crypto.locator_service.for_new_session(session.id, db)
+            survey_key = load_survey_encryption_key(db, session=session)
+            plaintext_branch_key = branch_key_service.get_plaintext_key(survey_key)
+            wrap_aad = build_session_dek_wrap_aad(
+                crypto_version=_CRYPTO_VERSION,
+                project_id=session.project_id,
+                survey_id=session.survey_id,
+                session_id=session.id,
+                session_locator=loc.session_locator,
+            )
+
+            new_dek = crypto.dek_service.create_for_session(
                 session.id,
-                enc.kms_key_arn,
+                plaintext_branch_key,
                 session.expires_at,
-                encryption_context=build_session_kms_context(loc.session_locator),
+                wrap_aad=wrap_aad,
             )
 
             response_envelope_repo.create(
                 response_db,
                 session_locator=loc.session_locator,
                 linkage_key_version=loc.linkage_key_version,
-                wrapped_dek=new_dek.wrapped_dek,
-                kms_key_arn=enc.kms_key_arn,
-                kms_context_version=SESSION_KMS_CONTEXT_VERSION,
+                wrapped_session_dek=new_dek.wrapped_session_dek,
                 crypto_version=_CRYPTO_VERSION,
             )
 
@@ -351,7 +364,7 @@ class SessionStarter:
             db.rollback()
             raise SessionStartError("Failed to create response envelope") from err
 
-        return loc.session_locator, new_dek.plaintext_dek
+        return loc.session_locator
 
     def _commit_core_or_cleanup_envelope(
         self,
@@ -392,24 +405,21 @@ class SessionStarter:
             )
 
     def _current_linkage_key_version(self, db: Session) -> int:
-        locator_svc, _ = self._ensure_crypto()
-        return locator_svc.get_current_linkage_key_version(db)
+        crypto = self._ensure_crypto()
+        return crypto.locator_service.get_current_linkage_key_version(db)
 
-    def _ensure_crypto(self) -> tuple[LocatorService, SessionDEKService]:
+    def _ensure_crypto(self) -> CryptoServices:
         """Lazily build crypto services on first use."""
-        if self._locator_service is not None and self._dek_service is not None:
-            return self._locator_service, self._dek_service
+        if self._crypto is not None:
+            return self._crypto
 
-        crypto = resolve_session_crypto_services(
-            self._encryption_settings,
+        self._crypto = resolve_session_crypto_services(
+            self._get_encryption_settings(),
             locator_service=self._locator_service_override,
             dek_service=self._dek_service_override,
+            survey_branch_key_service=self._survey_branch_key_service_override,
         )
-
-        self._locator_service = crypto.locator_service
-        self._dek_service = crypto.dek_service
-
-        return self._locator_service, self._dek_service
+        return self._crypto
 
     def _get_encryption_settings(self) -> EncryptionSettings:
         if self._encryption_settings is not None:
@@ -420,6 +430,7 @@ class SessionStarter:
         if enc is None:
             raise SessionStartError("Encryption settings not configured")
 
+        self._encryption_settings = enc
         return enc
 
     @staticmethod

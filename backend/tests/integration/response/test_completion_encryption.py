@@ -162,15 +162,13 @@ def _create_session_row(core_db: Session, project, survey, version, *, status: s
 def _create_envelope_and_context(core_db: Session, response_db: Session, session, version):
     session_locator = derive_session_locator(session.id, _LINKAGE_SECRET)
     plaintext_dek = os.urandom(32)
-    wrapped_dek = os.urandom(64)
+    wrapped_session_dek = os.urandom(64)
 
     envelope = response_envelope_repo.create(
         response_db,
         session_locator=session_locator,
         linkage_key_version=1,
-        wrapped_dek=wrapped_dek,
-        kms_key_arn="arn:aws:kms:us-east-1:000000000000:key/test-key",
-        kms_context_version=1,
+        wrapped_session_dek=wrapped_session_dek,
         crypto_version=1,
     )
 

@@ -10,6 +10,7 @@ from app.crypto.errors import (
     LinkageKeyVersionUnavailableError,
     LinkageSecretError,
     SessionDEKUnavailableError,
+    SurveyBranchKeyUnavailableError,
 )
 from app.crypto.kms import unwrap_dek, wrap_dek
 from app.crypto.locators import derive_answer_locator, derive_session_locator
@@ -21,6 +22,7 @@ from app.crypto.payload import (
 )
 from app.crypto.secrets import SecretValue, get_linkage_secret
 from app.crypto.services import (
+    SURVEY_KMS_CONTEXT_VERSION,
     AnswerCryptoService,
     DecryptedAnswer,
     DecryptedAnswerPayload,
@@ -32,9 +34,12 @@ from app.crypto.services import (
     NewSessionDEK,
     NewSessionLocator,
     SessionDEKService,
+    SurveyBranchKeyService,
+    build_survey_kms_context,
 )
 
 __all__ = [
+    "SURVEY_KMS_CONTEXT_VERSION",
     "AnswerCryptoService",
     "DecryptedAnswer",
     "DecryptedAnswerPayload",
@@ -56,8 +61,11 @@ __all__ = [
     "SecretValue",
     "SessionDEKService",
     "SessionDEKUnavailableError",
+    "SurveyBranchKeyService",
+    "SurveyBranchKeyUnavailableError",
     "build_aad",
     "build_plaintext_payload",
+    "build_survey_kms_context",
     "decrypt_answer",
     "derive_answer_locator",
     "derive_session_locator",

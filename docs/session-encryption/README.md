@@ -47,7 +47,7 @@ Those policies are upstream. This service starts after access and subject resolu
 - `02-storage-and-locators.md` — core/response database split and opaque locator model.
 - `03-session-envelope-lifecycle.md` — conceptual lifecycle from session start to completion.
 - `04-answer-revisions.md` — answer slots, immutable revisions, clearing, idempotency, and concurrency.
-- `05-crypto-key-model.md` — linkage secrets, DEKs, KEKs, AES-GCM, AAD, caching, and rotation.
+- `05-crypto-key-model.md` — key hierarchy (KMS → survey branch key → session DEK), AES-GCM, AAD, caching, and rotation.
 - `06-failure-and-logging-rules.md` — cross-database ordering, failure handling, observability, and privacy rules.
 
 ## Agent rule

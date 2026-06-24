@@ -11,8 +11,9 @@ Do not mix these values:
 - access-link token: grants pre-session survey access;
 - browser resume token: lets a browser continue an in-progress session;
 - linkage secret: derives response-side locators;
-- KEK: KMS-managed key-encryption key;
-- DEK: per-session data-encryption key for answer payloads.
+- KMS key: protects survey branch keys;
+- survey branch key: per-survey key that wraps session DEKs locally;
+- session DEK: per-session data-encryption key for answer payloads.
 
 Each has a different job and a different storage rule.
 
@@ -30,22 +31,35 @@ It must not live in a Postgres database. The backend retrieves the appropriate v
 
 The linkage secret needs versioning because old sessions must remain readable after rotation.
 
-## KEK and DEK
+## Key hierarchy
 
-Each response envelope gets its own DEK.
+The encryption hierarchy has three levels:
 
-The DEK encrypts answer revisions for that session. The plaintext DEK exists only temporarily in backend memory.
+```text
+AWS KMS key
+-> survey branch key (one per survey, stored in Core DB)
+-> session DEK (one per session, stored in Response DB)
+-> encrypted answer revisions
+```
 
-The KEK lives in KMS and wraps the DEK. The response database stores the wrapped DEK, not the plaintext DEK.
+KMS protects the survey branch key. The survey branch key locally wraps session DEKs using AES-256-GCM. Each session DEK encrypts answer revisions for one respondent session.
+
+The survey branch key is created lazily at survey publish time. It is stored KMS-wrapped in the `survey_encryption_keys` table in Core DB with the KMS key ARN and KMS context version.
+
+The session DEK is created at session start. It is wrapped locally with the survey branch key and stored as `wrapped_session_dek` in the response envelope. The Response DB never sees KMS metadata.
+
+Plaintext key material (survey branch keys and session DEKs) exists only temporarily in backend worker memory caches.
 
 ## Envelope creation
 
 When a response envelope is created:
 
-- obtain a fresh per-session DEK;
-- store only the wrapped DEK in the response envelope;
-- store the crypto version and KMS context version;
-- keep the plaintext DEK only as long as needed for active encryption work.
+- load the survey encryption key row from Core DB;
+- unwrap the survey branch key (from worker cache, or via KMS on cache miss);
+- generate a fresh 32-byte session DEK;
+- wrap the session DEK locally with AES-256-GCM using the survey branch key;
+- store the wrapped session DEK and crypto version in the response envelope;
+- cache the plaintext session DEK for the active session window.
 
 ## Answer encryption
 
@@ -76,35 +90,46 @@ Nonce reuse with the same DEK must be treated as a serious bug. The database mus
 
 ## AAD
 
-Additional Authenticated Data must bind the encrypted revision to its database context.
+Additional Authenticated Data is not secret, but it is integrity-protected.
 
-AAD is not secret, but it is integrity-protected. It must include stable values such as crypto version, envelope ID, answer ID, answer locator, revision ID, and revision number.
+There are two AAD contexts:
+
+**Session DEK wrap AAD** binds the locally wrapped session DEK to its session context. It includes crypto version, project ID, survey ID, session ID, and session locator.
+
+**Answer revision AAD** binds each encrypted revision to its database row. It includes stable values such as crypto version, envelope ID, answer ID, answer locator, revision ID, and revision number.
+
+**KMS encryption context** binds the survey branch key to its survey. It includes purpose (`survey_branch_key`), project ID, survey ID, and KMS context version.
 
 The decrypt path must fail for every row swap and every metadata change.
 
-## Plaintext DEK cache policy
+## Cache policy
 
-The backend keeps the plaintext session DEK only in a local worker memory cache while the submission session is active.
+There are two worker-local caches. Neither is the source of truth.
 
-The cache is an optimisation only. It is not the source of truth.
+### Survey branch key cache
 
-Rules:
+- cache key: survey encryption key row ID;
+- cache value: plaintext survey branch key;
+- TTL: 1 hour;
+- evict on worker restart.
 
-- cache key: session locator (derive it from the resume token before any database query; the envelope ID is not known until after the response database lookup, so it cannot serve as a consistent cache key);
-- cache value: plaintext DEK;
+### Session DEK cache
+
+- cache key: session ID;
+- cache value: plaintext session DEK;
 - TTL: no longer than session expiry;
 - evict when the session completes, expires, is abandoned, and when the worker restarts.
 
 On answer save:
 
 1. Load the response envelope.
-2. Check the local worker DEK cache.
-3. If present, use the cached plaintext DEK.
-4. If missing, call KMS `Decrypt` using `wrapped_dek`, then cache the plaintext DEK briefly.
+2. Check the session DEK cache.
+3. If present, use the cached plaintext session DEK.
+4. If missing, load the survey encryption key from Core, unwrap the survey branch key (from cache or KMS), locally unwrap the session DEK using the survey branch key, then cache the plaintext session DEK.
 
-The real source of truth is still `wrapped_dek` in the response database plus KMS decrypt when the cache misses.
+The source of truth is the KMS-wrapped survey branch key in Core DB and the locally wrapped session DEK in Response DB.
 
-Active sessions permit worker-local DEK caching. Session completion, expiry, abandonment, and worker restart evict the cached DEK.
+On a warm worker, the answer save path typically uses cached key material and avoids KMS entirely.
 
 Linkage secrets can have their own cache because they are used for deterministic locator derivation and change only through intentional rotation.
 
@@ -112,11 +137,13 @@ Linkage secrets can have their own cache because they are used for deterministic
 
 Different things rotate differently.
 
-- New response envelopes use the active KEK.
-- Existing envelopes keep their stored KMS key reference until rewrapped.
+- KMS key rotation uses AWS built-in rotation; KMS handles multi-version decrypt automatically for existing survey branch keys.
+- New surveys get branch keys wrapped with the current KMS key.
+- Existing survey branch keys remain on their original KMS key version.
+- Session DEKs are locally wrapped and do not reference KMS directly, so KMS rotation does not affect them.
 - New sessions use the active linkage-secret version.
 - Existing sessions use their stored linkage key version.
 - Crypto format changes use `crypto_version`.
-- KMS context changes use `kms_context_version`.
+- KMS context changes use `kms_context_version` on the survey encryption key row.
 
 Do not rotate any deterministic locator secret without keeping old versions readable.

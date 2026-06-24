@@ -305,6 +305,42 @@ CREATE TABLE surveys (
 );
 
 -- =========================================
+-- SURVEY ENCRYPTION KEYS
+-- =========================================
+-- One survey-level branch key per survey. AWS KMS wraps this branch key;
+-- the branch key locally wraps session DEKs stored in the response database.
+
+CREATE TABLE survey_encryption_keys (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id BIGINT NOT NULL,
+    survey_id BIGINT NOT NULL,
+    wrapped_survey_branch_key BYTEA NOT NULL,
+    kms_key_arn TEXT NOT NULL,
+    kms_context_version SMALLINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT uq_survey_encryption_keys_survey
+        UNIQUE (survey_id),
+
+    CONSTRAINT uq_survey_encryption_keys_project_survey
+        UNIQUE (project_id, survey_id),
+
+    CONSTRAINT fk_survey_encryption_keys_survey_same_project
+        FOREIGN KEY (project_id, survey_id)
+        REFERENCES surveys(project_id, id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT ck_survey_encryption_keys_wrapped_key_len
+        CHECK (octet_length(wrapped_survey_branch_key) > 0),
+
+    CONSTRAINT ck_survey_encryption_keys_kms_key_arn_len
+        CHECK (char_length(btrim(kms_key_arn)) BETWEEN 1 AND 2048),
+
+    CONSTRAINT ck_survey_encryption_keys_kms_context_version_valid
+        CHECK (kms_context_version > 0)
+);
+
+-- =========================================
 -- SURVEY VERSIONS
 -- =========================================
 -- Published compiled_schema snapshots are soft-deleted.
@@ -1101,6 +1137,9 @@ CREATE INDEX ix_surveys_project ON surveys(project_id);
 CREATE INDEX ix_surveys_slug ON surveys(public_slug);
 CREATE INDEX ix_surveys_default_response_store ON surveys(default_response_store_id);
 CREATE INDEX ix_surveys_published_version ON surveys(published_version_id);
+
+CREATE INDEX ix_survey_encryption_keys_project_survey
+    ON survey_encryption_keys(project_id, survey_id);
 
 CREATE INDEX ix_survey_versions_survey ON survey_versions(survey_id);
 CREATE INDEX ix_survey_versions_status ON survey_versions(status);

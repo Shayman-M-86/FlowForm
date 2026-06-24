@@ -1,5 +1,8 @@
 from sqlalchemy.orm import Session  # noqa: I001
 
+from app.core.config import EncryptionSettings
+from app.crypto.errors import SurveyBranchKeyUnavailableError
+from app.crypto.services import SurveyBranchKeyService
 from app.db.error_handling import commit_with_err_handle
 from app.domain import survey_rules, version_rules
 from app.domain.errors import SurveyNotFoundError, VersionNotFoundError
@@ -12,10 +15,20 @@ from app.repositories import (
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.user import User
+from app.services.public_submissions.core.shared.crypto_provider import build_crypto_services
 
 
 class SurveyService:
     """Service for survey and survey version operations."""
+
+    def __init__(
+        self,
+        *,
+        survey_branch_key_service: SurveyBranchKeyService | None = None,
+        encryption_settings: EncryptionSettings | None = None,
+    ) -> None:
+        self._survey_branch_key_service = survey_branch_key_service
+        self._encryption_settings = encryption_settings
 
     def _ensure_project_default_response_store_id(
         self,
@@ -198,10 +211,39 @@ class SurveyService:
             survey=survey,
             created_by_user_id=actor.id,
         )
+        self._ensure_survey_encryption_key(
+            db,
+            project_id=survey.project_id,
+            survey_id=survey.id,
+        )
 
         result = sr.publish_version(db, survey, version, compiled)
         commit_with_err_handle(db, contexts=[result, survey, version])
         return result
+
+    def _ensure_survey_encryption_key(
+        self,
+        db: Session,
+        *,
+        project_id: int,
+        survey_id: int,
+    ) -> None:
+        self._get_survey_branch_key_service().ensure_for_survey(
+            db,
+            project_id=project_id,
+            survey_id=survey_id,
+        )
+
+    def _get_survey_branch_key_service(self) -> SurveyBranchKeyService:
+        if self._survey_branch_key_service is None:
+            service = build_crypto_services(
+                self._encryption_settings
+            ).survey_branch_key_service
+            if service is None:
+                raise SurveyBranchKeyUnavailableError()
+            self._survey_branch_key_service = service
+
+        return self._survey_branch_key_service
 
     def archive_version(
         self,

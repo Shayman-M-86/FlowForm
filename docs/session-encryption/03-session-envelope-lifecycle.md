@@ -64,32 +64,47 @@ The flow is:
    * `linkage_key_version`;
    * `session_locator`.
 
-6. Generate a plaintext session DEK.
+6. Load the survey encryption key from Core DB.
 
-   This DEK is used to encrypt answer payloads for this session.
+   The survey encryption key row stores the KMS-wrapped survey branch key.
+   This row is created lazily at survey publish time.
 
-7. Wrap the DEK using KMS.
+7. Unwrap the survey branch key.
 
-   The wrapped DEK is stored in the Response DB.
+   On cache hit, use the cached plaintext survey branch key.
+
+   On cache miss, call KMS `Decrypt` to unwrap the survey branch key,
+   then cache the plaintext branch key for future sessions on the same survey.
+
+8. Generate a plaintext session DEK and wrap it locally.
+
+   Generate a fresh 32-byte session DEK using `os.urandom`.
+
+   Wrap the session DEK with AES-256-GCM using the plaintext survey branch key.
+   The wrapped session DEK format is `nonce(12 bytes) || ciphertext_and_tag`.
+
+   AAD for the local wrap includes: crypto version, project ID, survey ID,
+   session ID, and session locator.
 
    The plaintext DEK may be cached by `SessionDEKService` for the active session window.
 
-8. Create the Response DB response envelope.
+9. Create the Response DB response envelope.
 
    The response side stores:
 
    * session locator;
    * linkage key version;
-   * wrapped DEK;
-   * KMS key reference;
-   * KMS context version;
+   * wrapped session DEK;
    * crypto version.
 
-9. Apply the recognition-token action using `SubjectTokenService.apply_token_action`.
+   The response side does not store KMS key ARNs or KMS context versions.
+   KMS metadata stays on the survey encryption key row in Core DB.
 
-   This may issue, rotate, mark used, or keep the browser recognition token.
+10. Apply the recognition-token action using `SubjectTokenService.apply_token_action`.
 
-10. Return browser cookies only after the required Core DB and Response DB records both exist.
+    This may issue, rotate, mark used, or keep the browser recognition token.
+
+11. Return browser cookies only after the required Core DB and Response DB records both exist.
 
 The browser may receive:
 
@@ -159,11 +174,14 @@ The flow is:
 
 5. derive the answer locator using `LocatorService.answer_locator(session_id, question_node_id, linkage_key_version)`;
 
-6. load the plaintext DEK using `SessionDEKService.get_for_session(...)`;
+6. load the plaintext DEK through the survey branch-key chain;
 
-   On cache hit, return the cached DEK.
+   On session DEK cache hit, return the cached DEK.
 
-   On cache miss, unwrap the envelope’s `wrapped_dek` with KMS and cache the plaintext DEK.
+   On miss, load the survey encryption key from Core, unwrap the survey branch
+   key (from cache or KMS), then locally unwrap the envelope’s
+   `wrapped_session_dek` using the survey branch key and cache the plaintext
+   session DEK.
 
 7. encrypt the answer payload with AES-GCM using a fresh nonce;
 
@@ -224,7 +242,7 @@ The flow is:
 5. load the response envelope;
 6. load the latest revision set for detail reads;
 7. load revision history for authorized history reads;
-8. load the plaintext DEK using `SessionDEKService.get_for_session(...)`;
+8. load the plaintext DEK through the survey branch-key chain;
 9. decrypt through the service;
 10. map decrypted answers back to the frozen survey version.
 

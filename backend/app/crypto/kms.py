@@ -1,4 +1,4 @@
-"""KMS wrap/unwrap for per-session DEKs."""
+"""KMS wrap/unwrap for envelope key material."""
 
 from __future__ import annotations
 

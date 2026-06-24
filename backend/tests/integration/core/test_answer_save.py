@@ -116,15 +116,13 @@ def _create_envelope_and_context(core_db, response_db, session, version):
     """Create a response envelope and build a SessionContext."""
     session_locator = os.urandom(32)
     plaintext_dek = os.urandom(32)
-    wrapped_dek = os.urandom(64)
+    wrapped_session_dek = os.urandom(64)
 
     envelope = response_envelope_repo.create(
         response_db,
         session_locator=session_locator,
         linkage_key_version=1,
-        wrapped_dek=wrapped_dek,
-        kms_key_arn="arn:aws:kms:us-east-1:000:key/test",
-        kms_context_version=1,
+        wrapped_session_dek=wrapped_session_dek,
         crypto_version=1,
     )
 

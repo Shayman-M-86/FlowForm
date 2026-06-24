@@ -64,3 +64,14 @@ class SessionDEKUnavailableError(AppError):
             code="SESSION_DEK_UNAVAILABLE",
             message="Session encryption key is temporarily unavailable",
         )
+
+
+class SurveyBranchKeyUnavailableError(AppError):
+    """The survey branch key could not be wrapped or unwrapped with KMS."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=503,
+            code="SURVEY_BRANCH_KEY_UNAVAILABLE",
+            message="Survey encryption key is temporarily unavailable",
+        )

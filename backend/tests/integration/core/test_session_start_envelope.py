@@ -49,9 +49,26 @@ _FAKE_ENC_SETTINGS = EncryptionSettings(
 )
 
 
-@pytest.fixture()
-def _mock_session_encryption() -> None:
-    """Override the autouse conftest mock — these tests exercise envelope creation."""
+@pytest.fixture(autouse=True)
+def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Override the autouse conftest mock — these tests exercise envelope creation
+    but still need the survey branch-key layer mocked out."""
+    fake_survey_key = MagicMock()
+    monkeypatch.setattr(
+        "app.services.public_submissions.core.actions.session_starter.load_survey_encryption_key",
+        lambda *_args, **_kwargs: fake_survey_key,
+    )
+
+    branch_key_svc = MagicMock()
+    branch_key_svc.get_plaintext_key.return_value = b"\x03" * 32
+
+    original_init = SessionStarter.__init__
+
+    def patched_init(self, **kwargs):
+        kwargs.setdefault("survey_branch_key_service", branch_key_svc)
+        original_init(self, **kwargs)
+
+    monkeypatch.setattr(SessionStarter, "__init__", patched_init)
 
 
 def _seed_published_survey(db: Session, slug: str) -> int:
@@ -111,7 +128,7 @@ def _mock_dek_service(
     svc = MagicMock()
     svc.create_for_session.return_value = NewSessionDEK(
         plaintext_dek=plaintext_dek or _FAKE_PLAINTEXT_DEK,
-        wrapped_dek=wrapped_dek or _FAKE_WRAPPED_DEK,
+        wrapped_session_dek=wrapped_dek or _FAKE_WRAPPED_DEK,
     )
     return svc
 
@@ -166,10 +183,8 @@ class TestSuccessfulSessionStart:
 
         envelope = db_sessions.response.scalar(select(ResponseEnvelope))
         assert envelope is not None, "response envelope must exist"
-        assert envelope.wrapped_dek == _FAKE_WRAPPED_DEK
-        assert envelope.kms_key_arn == _FAKE_ENC_SETTINGS.kms_key_arn
+        assert envelope.wrapped_session_dek == _FAKE_WRAPPED_DEK
         assert envelope.crypto_version == 1
-        assert envelope.kms_context_version == 1
 
     def test_dek_service_create_called_with_session_id(
         self,
@@ -292,7 +307,7 @@ class TestPreCommitEnvelopeFailureRollback:
         db_sessions: DbSessions,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        _seed_published_survey(db_sessions.core, "response-commit-fail-test")
+        survey_id = _seed_published_survey(db_sessions.core, "response-commit-fail-test")
         _fail_response_commit_once(monkeypatch)
 
         starter = SessionStarter(
@@ -311,8 +326,6 @@ class TestPreCommitEnvelopeFailureRollback:
 
         session = db_sessions.core.scalar(
             select(SubmissionSession).where(SubmissionSession.survey_id == survey_id)
-            if False
-            else select(SubmissionSession)
         )
         assert session is None, "core session must be rolled back when response commit fails"
 

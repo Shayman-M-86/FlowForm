@@ -94,6 +94,7 @@ from app.schema.orm.core import (
     SubmissionEvent,
     SubmissionSession,
     Survey,
+    SurveyEncryptionKey,
     SurveyLink,
     SurveyMembershipRole,
     SurveyQuestion,
@@ -119,6 +120,7 @@ type RuleContext = (
     | SubmissionSession
     | SubmissionEvent
     | SurveyQuestion
+    | SurveyEncryptionKey
     | SurveyRole
     | SurveyScoringRule
     | ProjectRole
@@ -161,6 +163,7 @@ allowed_parameters = {
     "name",
     "invited_email",
     "client_mutation_id",
+    "kms_context_version",
 }
 
 
@@ -285,6 +288,15 @@ def _survey_question_ctx(question: SurveyQuestion) -> dict[str, object]:
         "survey_question_id": question.id,
         "survey_version_id": question.survey_version_id,
         "node_type": question.node_type,
+    }
+
+
+def _survey_encryption_key_ctx(key: SurveyEncryptionKey) -> dict[str, object]:
+    return {
+        "survey_encryption_key_id": key.id,
+        "project_id": key.project_id,
+        "survey_id": key.survey_id,
+        "kms_context_version": key.kms_context_version,
     }
 
 
@@ -978,6 +990,64 @@ PROJECT_INVITATION_RULES: tuple[DbErrorRule, ...] = (
     ),
 )
 
+SURVEY_ENCRYPTION_KEY_RULES: tuple[DbErrorRule, ...] = (
+    unique_rule(
+        "uq_survey_encryption_keys_survey",
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
+            409,
+            "SURVEY_ENCRYPTION_KEY_EXISTS",
+            "A survey encryption key already exists for this survey.",
+        ),
+        extractor=_survey_encryption_key_ctx,
+    ),
+    unique_rule(
+        "uq_survey_encryption_keys_project_survey",
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
+            409,
+            "SURVEY_ENCRYPTION_KEY_EXISTS",
+            "A survey encryption key already exists for this survey.",
+        ),
+        extractor=_survey_encryption_key_ctx,
+    ),
+    foreign_key_rule(
+        "fk_survey_encryption_keys_survey_same_project",
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
+            409,
+            "SURVEY_ENCRYPTION_KEY_SURVEY_MISMATCH",
+            "The survey encryption key does not reference a survey in this project.",
+        ),
+        extractor=_survey_encryption_key_ctx,
+    ),
+    check_rule(
+        "ck_survey_encryption_keys_wrapped_key_len",
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
+            500,
+            "SURVEY_ENCRYPTION_KEY_INVALID",
+            "Server invariant violated: a survey encryption key was written without wrapped key material.",
+        ),
+        extractor=_survey_encryption_key_ctx,
+    ),
+    check_rule(
+        "ck_survey_encryption_keys_kms_key_arn_len",
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
+            500,
+            "SURVEY_ENCRYPTION_KEY_INVALID",
+            "Server invariant violated: a survey encryption key was written without valid KMS key metadata.",
+        ),
+        extractor=_survey_encryption_key_ctx,
+    ),
+    check_rule(
+        "ck_survey_encryption_keys_kms_context_version_valid",
+        lambda ctx, _exc: DbIntegrityError(
+            500,
+            "SURVEY_ENCRYPTION_KEY_INVALID",
+            "Server invariant violated: a survey encryption key was written"
+            f" with invalid kms_context_version={ctx['kms_context_version']!r}.",
+        ),
+        extractor=_survey_encryption_key_ctx,
+    ),
+)
+
 RESPONSE_ENVELOPE_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
         "uq_response_envelopes_session_locator",
@@ -1039,6 +1109,7 @@ RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
     SubmissionSession: SUBMISSION_SESSION_RULES,
     SubmissionEvent: SUBMISSION_EVENT_RULES,
     SurveyQuestion: SURVEY_QUESTION_RULES,
+    SurveyEncryptionKey: SURVEY_ENCRYPTION_KEY_RULES,
     SurveyScoringRule: SURVEY_SCORING_RULE_RULES,
     ProjectRole: PROJECT_ROLE_RULES,
     ProjectMembership: PROJECT_MEMBERSHIP_RULES,

@@ -108,7 +108,7 @@ def _mock_dek_service(
     svc = MagicMock()
     svc.create_for_session.return_value = NewSessionDEK(
         plaintext_dek=plaintext_dek or _FAKE_PLAINTEXT_DEK,
-        wrapped_dek=wrapped_dek or _FAKE_WRAPPED_DEK,
+        wrapped_session_dek=wrapped_dek or _FAKE_WRAPPED_DEK,
     )
     return svc
 
@@ -140,7 +140,7 @@ class TestSuccessfulSessionStart:
 
         envelope = db_sessions.response.scalar(select(ResponseEnvelope))
         assert envelope is not None, "response envelope must exist"
-        assert envelope.wrapped_dek == _FAKE_WRAPPED_DEK
+        assert envelope.wrapped_session_dek == _FAKE_WRAPPED_DEK
         assert envelope.session_locator is not None
 
     def test_session_locator_is_opaque_32_bytes(

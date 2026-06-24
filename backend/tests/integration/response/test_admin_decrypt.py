@@ -66,12 +66,19 @@ def _mock_dek_service(plaintext_dek: bytes):
     return svc
 
 
+def _mock_branch_key_service():
+    svc = MagicMock()
+    svc.get_plaintext_key.return_value = b"\x03" * 32
+    return svc
+
+
 def _build_admin_service(plaintext_dek: bytes) -> AdminResponseService:
     crypto = CryptoServices(
         linkage_key_service=MagicMock(spec=LinkageKeyService),
         locator_service=_mock_locator_service(),
         dek_service=_mock_dek_service(plaintext_dek),
         answer_crypto_service=AnswerCryptoService(),
+        survey_branch_key_service=_mock_branch_key_service(),
     )
     return AdminResponseService(crypto)
 
@@ -120,15 +127,13 @@ def _create_session_and_envelope(core_db: Session, response_db: Session, project
 
     session_locator = derive_session_locator(session.id, _LINKAGE_SECRET)
     plaintext_dek = os.urandom(32)
-    wrapped_dek = os.urandom(64)
+    wrapped_session_dek = os.urandom(64)
 
     envelope = response_envelope_repo.create(
         response_db,
         session_locator=session_locator,
         linkage_key_version=1,
-        wrapped_dek=wrapped_dek,
-        kms_key_arn="arn:aws:kms:us-east-1:000000000000:key/test-key",
-        kms_context_version=1,
+        wrapped_session_dek=wrapped_session_dek,
         crypto_version=1,
     )
 

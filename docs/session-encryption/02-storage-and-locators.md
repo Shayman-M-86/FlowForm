@@ -26,8 +26,8 @@ The response database stores encrypted answer material:
 - immutable answer revisions;
 - ciphertext;
 - nonces;
-- wrapped per-session DEKs;
-- crypto metadata needed for decryption.
+- locally wrapped per-session DEKs;
+- crypto version.
 
 The response database must not store:
 
@@ -44,7 +44,9 @@ The response database must not store:
 - browser resume tokens;
 - core session UUIDs;
 - plaintext question IDs;
-- plaintext answers.
+- plaintext answers;
+- KMS key ARNs;
+- KMS context versions.
 
 ## No direct database join
 

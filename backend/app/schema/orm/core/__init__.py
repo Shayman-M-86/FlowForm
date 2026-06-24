@@ -21,6 +21,7 @@ from app.schema.orm.core.survey_access import (
     survey_role_permissions,
 )
 from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
+from app.schema.orm.core.survey_encryption_key import SurveyEncryptionKey
 from app.schema.orm.core.user import User
 
 __all__ = [
@@ -40,6 +41,7 @@ __all__ = [
     "SubmissionEvent",
     "SubmissionSession",
     "Survey",
+    "SurveyEncryptionKey",
     "SurveyLink",
     "SurveyMembershipRole",
     "SurveyPublicLink",
