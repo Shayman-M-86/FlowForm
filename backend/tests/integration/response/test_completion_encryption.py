@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -269,6 +269,36 @@ class TestCompletion:
         assert session.session_status == "completed"
         assert session.completed_at is not None
 
+    def test_completion_handles_started_at_ahead_of_app_clock(self, db_sessions: DbSessions) -> None:
+        core_db, response_db = db_sessions.core, db_sessions.response
+        project, survey, version, _question = _setup_core_fixtures(core_db)
+        session, _ = _create_session_row(core_db, project, survey, version)
+
+        future_started_at = datetime.now(UTC) + timedelta(minutes=5)
+        core_db.execute(
+            text(
+                "UPDATE submission_sessions "
+                "SET started_at = :started_at, last_activity_at = :started_at, expires_at = :expires_at "
+                "WHERE id = :sid"
+            ),
+            {
+                "started_at": future_started_at,
+                "expires_at": future_started_at + timedelta(days=7),
+                "sid": session.id,
+            },
+        )
+        core_db.expire(session)
+
+        ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
+        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+
+        result = svc.complete_session(core_db, response_db, ctx=ctx)
+
+        core_db.expire(session)
+        assert result.status == "completed"
+        assert result.completed_at >= session.started_at
+        assert session.completed_at == result.completed_at
+
     def test_repeated_completion_is_rejected(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
@@ -304,7 +334,7 @@ class TestCompletion:
 
     def test_missing_required_answer_does_not_block_completion(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
-        project, survey, version, question = _setup_core_fixtures(core_db, required_questions=True)
+        project, survey, version, _question = _setup_core_fixtures(core_db, required_questions=True)
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 
@@ -317,7 +347,7 @@ class TestCompletion:
 
     def test_completion_with_no_required_questions_succeeds(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
-        project, survey, version, question = _setup_core_fixtures(core_db)
+        project, survey, version, _question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
 

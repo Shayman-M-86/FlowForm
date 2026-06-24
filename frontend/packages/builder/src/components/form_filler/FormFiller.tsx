@@ -35,6 +35,7 @@ interface FormFillerProps {
   exitLabel?: string;
   onExit?: () => void;
   onComplete?: (result: FormFillerResult) => void;
+  onAnswerCommit?: (questionKey: string, answer: QuestionAnswer) => void;
   showAnswerSummary?: boolean;
   stackSidebar?: boolean;
 }
@@ -54,6 +55,7 @@ export function FormFiller({
   exitLabel = "Close",
   onExit,
   onComplete,
+  onAnswerCommit,
   showAnswerSummary = false,
   stackSidebar = false,
 }: FormFillerProps) {
@@ -130,6 +132,10 @@ export function FormFiller({
     }
 
     setValidationMessage(null);
+    const committedAnswer = answers[currentNode.node_key];
+    if (committedAnswer !== undefined) {
+      onAnswerCommit?.(currentNode.node_key, committedAnswer);
+    }
     setCommittedQuestionIds([...progress.effectiveCommittedIds, currentNode.node_key]);
   }
 

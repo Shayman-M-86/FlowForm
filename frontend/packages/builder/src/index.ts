@@ -2,6 +2,7 @@ export { NodePage } from "./pages/builder/NodePage";
 export { findIncompleteNodeIds, isNodeIncomplete } from "./pages/builder/nodeOrdering";
 export { BuilderToolbar } from "./components/builder/BuilderToolbar";
 export { FormFiller, type FormFillerResult, type SubmissionAnswer } from "./components/form_filler/FormFiller";
+export { type QuestionAnswer } from "./components/form_filler/formFillerRuntime";
 export { FormFillerPage } from "./pages/FormFillerPage";
 export { draftStorage, type DraftStorage } from "./pages/builder/draftStorage";
 export {

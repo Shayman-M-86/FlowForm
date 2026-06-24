@@ -125,10 +125,20 @@ class SessionDEKService:
         with self._lock:
             entry = self._cache.get(cache_key)
             if entry is not None and entry.expires_at > now_mono:
+                logger.debug(
+                    "session_dek source=cache session_id=%s kms_key_arn=%s",
+                    session_id,
+                    kms_key_arn,
+                )
                 return entry.plaintext_dek
 
         context = encryption_context if encryption_context is not None else {}
         try:
+            logger.debug(
+                "session_dek source=kms_api_lookup session_id=%s kms_key_arn=%s",
+                session_id,
+                kms_key_arn,
+            )
             plaintext_dek = unwrap_dek(
                 wrapped_dek,
                 kms_key_arn,

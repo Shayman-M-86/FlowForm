@@ -54,9 +54,10 @@ class CompletionService:
         if locked_session.session_status != "in_progress":
             raise SessionInvalidError(f"Session is {locked_session.session_status}.")
 
-        # Mark session completed
-        now = datetime.now(UTC)
-        ssr.mark_completed(db, submission_session=locked_session, completed_at=now)
+        # Mark session completed. Use a timestamp that satisfies the DB invariant
+        # even when app and database clocks differ slightly.
+        completed_at = max(datetime.now(UTC), locked_session.started_at)
+        ssr.mark_completed(db, submission_session=locked_session, completed_at=completed_at)
 
         # Insert completion event — non-fatal on failure
         try:
@@ -74,5 +75,5 @@ class CompletionService:
         return CompletionResult(
             session_id=ctx.session.id,
             status="completed",
-            completed_at=now,
+            completed_at=completed_at,
         )

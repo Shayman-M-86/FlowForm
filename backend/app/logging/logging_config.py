@@ -173,6 +173,7 @@ def configure_root_logger(
     handlers: list[logging.Handler] | None = None,
     sqlalchemy_level: str = "WARNING",
     werkzeug_level: str = "INFO",
+    botocore_level: str = "WARNING",
 ) -> None:
     """Configure the root logger and selected third-party loggers."""
     root = logging.getLogger()
@@ -195,6 +196,7 @@ def configure_root_logger(
 
     logging.getLogger("sqlalchemy.engine").setLevel(resolve_log_level(sqlalchemy_level, logging.WARNING))
     logging.getLogger("werkzeug").setLevel(resolve_log_level(werkzeug_level, logging.INFO))
+    logging.getLogger("botocore").setLevel(resolve_log_level(botocore_level, logging.WARNING))
 
 
 # =============================================================================

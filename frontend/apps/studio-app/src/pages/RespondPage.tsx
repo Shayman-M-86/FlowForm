@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FormFiller, type FormFillerResult } from '@flowform/builder'
+import { FormFiller, type FormFillerResult, type QuestionAnswer } from '@flowform/builder'
 import type { SurveyNode, QuestionNode } from '@flowform/builder'
 import { Card, Spinner } from '@flowform/ui'
 import { respondentClient } from '@/api/respondentClient'
@@ -23,11 +23,13 @@ export function RespondPage({ token }: RespondPageProps) {
   const [state, setState] = useState<PageState>({ phase: 'loading' })
   const resolveData = useRef<ResolveResponse | null>(null)
   const questionNodesRef = useRef<QuestionNode[]>([])
+  const sessionStartedRef = useRef(false)
+  const savedAnswersRef = useRef(new Set<string>())
 
   useEffect(() => {
     let cancelled = false
 
-    async function resolve() {
+    async function resolveAndStartSession() {
       const { data, error } = await respondentClient.POST('/api/v1/respondent/links/resolve', {
         body: { token },
       })
@@ -48,7 +50,21 @@ export function RespondPage({ token }: RespondPageProps) {
         return
       }
 
-      const surveyNodes = rawNodes.map(normalizeNode) as SurveyNode[]
+      const { error: startError } = await respondentClient.POST(
+        '/api/v1/respondent/submission-sessions',
+        { body: { access: { type: 'link_token' as const, token } } },
+      )
+
+      if (cancelled) return
+
+      if (startError) {
+        setState({ phase: 'error', message: 'Failed to start submission session.' })
+        return
+      }
+
+      sessionStartedRef.current = true
+
+      const surveyNodes = rawNodes.map((raw) => normalizeNode(raw as Record<string, unknown>)) as unknown as SurveyNode[]
       const questionNodes = surveyNodes.filter(
         (n): n is QuestionNode => n.node_type === 'question',
       )
@@ -58,9 +74,30 @@ export function RespondPage({ token }: RespondPageProps) {
       setState({ phase: 'filling', survey: surveyNodes, title, nodes: questionNodes })
     }
 
-    void resolve()
+    void resolveAndStartSession()
     return () => { cancelled = true }
   }, [token])
+
+  const handleAnswerCommit = useCallback((questionKey: string, answer: QuestionAnswer) => {
+    if (!sessionStartedRef.current || answer == null) return
+
+    const questionNodes = questionNodesRef.current
+    const node = questionNodes.find((n) => n.node_key === questionKey)
+    if (!node) return
+
+    const payload = mapAnswerToPayload(node, answer)
+    if (!payload) return
+
+    savedAnswersRef.current.add(questionKey)
+
+    void respondentClient.PUT(
+      '/api/v1/respondent/submission-sessions/current/answers/{question_node_id}',
+      {
+        params: { path: { question_node_id: node.id } },
+        body: payload,
+      },
+    )
+  }, [])
 
   const handleComplete = useCallback(async (result: FormFillerResult) => {
     if (result.status === 'discarded') {
@@ -71,24 +108,17 @@ export function RespondPage({ token }: RespondPageProps) {
     setState({ phase: 'submitting' })
 
     try {
-      const { error: startError } = await respondentClient.POST(
-        '/api/v1/respondent/submission-sessions',
-        { body: { access: { type: 'link_token' as const, token } } },
-      )
-      if (startError) throw new Error('Failed to start submission session.')
-
       const questionNodes = questionNodesRef.current
-      if (questionNodes.length === 0) throw new Error('Missing survey data.')
-
-      const nodeById = new Map<string, QuestionNode>()
+      const nodeByKey = new Map<string, QuestionNode>()
       for (const node of questionNodes) {
-        nodeById.set(node.node_key, node)
+        nodeByKey.set(node.node_key, node)
       }
 
       for (const answer of result.answers) {
         if (answer.answer == null) continue
+        if (savedAnswersRef.current.has(answer.question_key)) continue
 
-        const node = nodeById.get(answer.question_key)
+        const node = nodeByKey.get(answer.question_key)
         if (!node) continue
 
         const payload = mapAnswerToPayload(node, answer.answer)
@@ -116,7 +146,7 @@ export function RespondPage({ token }: RespondPageProps) {
         message: err instanceof Error ? err.message : 'Something went wrong submitting your answers.',
       })
     }
-  }, [token])
+  }, [])
 
   switch (state.phase) {
     case 'loading':
@@ -144,6 +174,7 @@ export function RespondPage({ token }: RespondPageProps) {
           title={state.title}
           exitLabel="Close"
           showAnswerSummary
+          onAnswerCommit={handleAnswerCommit}
           onComplete={handleComplete}
         />
       )
@@ -211,7 +242,7 @@ function mapAnswerToPayload(
     case 'matching': {
       if (typeof answer !== 'object' || Array.isArray(answer)) return null
       const pairs = Object.entries(answer as Record<string, string>).map(
-        ([left_key, right_key]) => ({ left_key, right_key }),
+        ([prompt_id, match_id]) => ({ prompt_id, match_id }),
       )
       if (pairs.length === 0) return null
       return {

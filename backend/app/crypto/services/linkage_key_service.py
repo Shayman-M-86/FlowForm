@@ -95,6 +95,7 @@ class LinkageKeyService:
         If the version is not yet in the ``linkage_key_versions`` table,
         inserts it and marks it as current.
         """
+        logger.debug("linkage_key source=secrets_manager_api_lookup context=current")
         sv = self._fetch_secret(version_stage="AWSCURRENT", context="current")
         key = self._parse_and_validate(sv)
         self._store(key)
@@ -111,17 +112,26 @@ class LinkageKeyService:
         with self._lock:
             entry = self._cache.get(version)
             if entry is not None and entry.expires_at > now:
+                logger.debug("linkage_key source=cache version=%s context=v%s", version, version)
                 return entry.key
 
             aws_version_id = self._version_id_map.get(version)
+            version_id_source = "memory"
 
         # Fall back to the DB lookup table
         if aws_version_id is None:
             db_version_id = get_aws_version_id(db, version)
             if db_version_id is not None:
                 aws_version_id = str(db_version_id)
+                version_id_source = "database"
 
         if aws_version_id is not None:
+            logger.debug(
+                "linkage_key source=secrets_manager_api_lookup version=%s version_id_source=%s context=v%s",
+                version,
+                version_id_source,
+                version,
+            )
             sv = self._fetch_secret(
                 version_id=aws_version_id, context=f"v{version}"
             )
