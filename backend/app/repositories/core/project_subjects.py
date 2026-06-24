@@ -1,15 +1,25 @@
 from __future__ import annotations
 
 import secrets
+from collections.abc import Sequence
+from typing import Literal
 from uuid import UUID
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import Row, Select, func, or_, select
+from sqlalchemy.orm import Session, joinedload
 
 from app.db.error_handling import flush_with_err_handle
-from app.schema.orm.core.project_subject import ProjectSubject
+from app.schema.orm.core.project_participant import ProjectParticipant
+from app.schema.orm.core.project_subject import (
+    ProjectSubject,
+    ProjectSubjectIdentity,
+)
 
 _SUBJECT_CODE_BYTES = 18
+
+CanonicalStatus = Literal["canonical", "alias", "all"]
+
+SubjectListRow = Row[tuple[ProjectSubject, int, UUID | None]]
 
 
 def generate_subject_code() -> str:
@@ -53,3 +63,150 @@ def set_canonical_subject(
 def delete_subject(db: Session, *, subject: ProjectSubject) -> None:
     db.delete(subject)
     flush_with_err_handle(db, contexts=[subject])
+
+
+def _list_subjects_base(
+    *,
+    project_id: int,
+    canonical_status: CanonicalStatus = "canonical",
+    is_participant: bool | None = None,
+    search: str | None = None,
+) -> Select:
+    """Build the shared WHERE clause for list_subjects and its count query."""
+    active_identity_count = (
+        select(func.count())
+        .where(
+            ProjectSubjectIdentity.project_id == ProjectSubject.project_id,
+            ProjectSubjectIdentity.project_subject_id == ProjectSubject.id,
+            ProjectSubjectIdentity.revoked_at.is_(None),
+        )
+        .correlate(ProjectSubject)
+        .scalar_subquery()
+        .label("active_identity_count")
+    )
+
+    participant_id = (
+        select(ProjectParticipant.id)
+        .where(
+            ProjectParticipant.project_id == ProjectSubject.project_id,
+            ProjectParticipant.project_subject_id == ProjectSubject.id,
+        )
+        .correlate(ProjectSubject)
+        .scalar_subquery()
+        .label("participant_id")
+    )
+
+    stmt = (
+        select(ProjectSubject, active_identity_count, participant_id)
+        .where(ProjectSubject.project_id == project_id)
+    )
+
+    if canonical_status == "canonical":
+        stmt = stmt.where(ProjectSubject.canonical_subject_id.is_(None))
+    elif canonical_status == "alias":
+        stmt = stmt.where(ProjectSubject.canonical_subject_id.is_not(None))
+
+    if is_participant is True:
+        stmt = stmt.where(
+            select(ProjectParticipant.id)
+            .where(
+                ProjectParticipant.project_id == ProjectSubject.project_id,
+                ProjectParticipant.project_subject_id == ProjectSubject.id,
+            )
+            .correlate(ProjectSubject)
+            .exists()
+        )
+    elif is_participant is False:
+        stmt = stmt.where(
+            ~select(ProjectParticipant.id)
+            .where(
+                ProjectParticipant.project_id == ProjectSubject.project_id,
+                ProjectParticipant.project_subject_id == ProjectSubject.id,
+            )
+            .correlate(ProjectSubject)
+            .exists()
+        )
+
+    if search:
+        pattern = f"%{search}%"
+        stmt = stmt.where(
+            or_(
+                ProjectSubject.subject_code.ilike(pattern),
+                select(ProjectSubjectIdentity.id)
+                .where(
+                    ProjectSubjectIdentity.project_id == ProjectSubject.project_id,
+                    ProjectSubjectIdentity.project_subject_id == ProjectSubject.id,
+                    ProjectSubjectIdentity.revoked_at.is_(None),
+                    ProjectSubjectIdentity.normalized_email.ilike(pattern),
+                )
+                .correlate(ProjectSubject)
+                .exists(),
+            )
+        )
+
+    return stmt
+
+
+def list_subjects(
+    db: Session,
+    *,
+    project_id: int,
+    canonical_status: CanonicalStatus = "canonical",
+    is_participant: bool | None = None,
+    search: str | None = None,
+    offset: int = 0,
+    limit: int = 50,
+) -> tuple[Sequence[SubjectListRow], int]:
+    """Return paginated subjects with active_identity_count and participant_id."""
+    base = _list_subjects_base(
+        project_id=project_id,
+        canonical_status=canonical_status,
+        is_participant=is_participant,
+        search=search,
+    )
+
+    count_stmt = select(func.count()).select_from(
+        base.with_only_columns(ProjectSubject.id).subquery()
+    )
+    total = db.scalar(count_stmt) or 0
+
+    rows: Sequence[SubjectListRow] = db.execute(
+        base.order_by(ProjectSubject.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+    ).all()
+
+    return rows, total
+
+
+def get_subject_with_participant(
+    db: Session, *, project_id: int, subject_id: UUID
+) -> tuple[ProjectSubject, UUID | None] | None:
+    """Fetch a subject with its participant_id (if enrolled).
+
+    Active identities are eagerly loaded via the ORM relationship.
+    """
+    participant_id = (
+        select(ProjectParticipant.id)
+        .where(
+            ProjectParticipant.project_id == ProjectSubject.project_id,
+            ProjectParticipant.project_subject_id == ProjectSubject.id,
+        )
+        .correlate(ProjectSubject)
+        .scalar_subquery()
+        .label("participant_id")
+    )
+
+    row = db.execute(
+        select(ProjectSubject, participant_id)
+        .options(joinedload(ProjectSubject.identities))
+        .where(
+            ProjectSubject.project_id == project_id,
+            ProjectSubject.id == subject_id,
+        )
+    ).unique().first()
+
+    if row is None:
+        return None
+
+    return row[0], row[1]

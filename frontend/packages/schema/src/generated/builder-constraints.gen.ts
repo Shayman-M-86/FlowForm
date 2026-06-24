@@ -92,6 +92,11 @@ export const MatchingQuestionSchemaInConstraints = {
   title: { minLength: 0, maxLength: 500 },
 } as const;
 
+export const RatingRangeInConstraints = {
+  min: { minimum: -1000, maximum: 1000 },
+  max: { minimum: -1000, maximum: 1000 },
+} as const;
+
 export const RatingUIInConstraints = {
   left_label: { minLength: 1, maxLength: 50 },
   right_label: { minLength: 1, maxLength: 50 },

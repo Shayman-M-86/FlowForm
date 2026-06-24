@@ -24,6 +24,7 @@ tags:
 - name: Respondent Submission Sessions
 - name: Respondent Surveys
 - name: Roles
+- name: Subjects
 - name: Survey Access Links
 - name: Survey Builder
 - name: Survey Members
@@ -1005,6 +1006,32 @@ paths:
           type: integer
           minimum: 1
           maximum: 2147483647
+      - name: search
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Search
+      - name: page
+        in: query
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          title: Page
+          type: integer
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          default: 20
+          maximum: 100
+          minimum: 1
+          title: Page Size
+          type: integer
       responses:
         '200':
           description: Successful response.
@@ -1555,6 +1582,189 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyProjectPermissionsResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/studio/projects/{project_id}/subjects:
+    get:
+      operationId: listSubjects
+      summary: List subjects
+      description: List subjects
+      tags:
+      - Subjects
+      x-flowform-rbac:
+        permission: project:manage_members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: canonical_status
+        in: query
+        required: false
+        schema:
+          default: canonical
+          enum:
+          - canonical
+          - alias
+          - all
+          title: Canonical Status
+          type: string
+      - name: is_participant
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Is Participant
+      - name: search
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Search
+      - name: page
+        in: query
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          title: Page
+          type: integer
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          default: 20
+          maximum: 100
+          minimum: 1
+          title: Page Size
+          type: integer
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSubjectsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/studio/projects/{project_id}/subjects/{subject_id}:
+    get:
+      operationId: getSubject
+      summary: Get subject
+      description: Get subject
+      tags:
+      - Subjects
+      x-flowform-rbac:
+        permission: project:manage_members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: subject_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      operationId: updateSubject
+      summary: Update subject
+      description: Update subject
+      tags:
+      - Subjects
+      x-flowform-rbac:
+        permission: project:manage_members
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: subject_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSubjectRequest'
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectDetailResponse'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -4001,10 +4211,10 @@ components:
           title: Name
           type: string
           maxLength: 120
-        token_prefix:
-          title: Token Prefix
+        token:
+          title: Token
           type: string
-          maxLength: 32
+          maxLength: 256
         is_active:
           title: Is Active
           type: boolean
@@ -4053,7 +4263,7 @@ components:
       - id
       - survey_id
       - name
-      - token_prefix
+      - token
       - is_active
       - link_type
       - assignment_source
@@ -4803,6 +5013,11 @@ components:
           title: Id
           type: string
           maxLength: 36
+        subject_id:
+          format: uuid
+          title: Subject Id
+          type: string
+          maxLength: 36
         subject_code:
           title: Subject Code
           type: string
@@ -4819,6 +5034,7 @@ components:
           maxLength: 35
       required:
       - id
+      - subject_id
       - subject_code
       - email
       - created_at
@@ -4832,8 +5048,20 @@ components:
             $ref: '#/components/schemas/ParticipantResponses'
           title: Participants
           type: array
+        total:
+          title: Total
+          type: integer
+        page:
+          title: Page
+          type: integer
+        page_size:
+          title: Page Size
+          type: integer
       required:
       - participants
+      - total
+      - page
+      - page_size
       title: ListParticipantsResponses
       type: object
     CreateParticipantRequest:
@@ -5083,6 +5311,175 @@ components:
           title: Slug
       title: UpdateProjectRequest
       type: object
+    SubjectResponse:
+      description: List-item shape for a project subject.
+      properties:
+        id:
+          format: uuid
+          title: Id
+          type: string
+          maxLength: 36
+        subject_code:
+          title: Subject Code
+          type: string
+        canonical_subject_id:
+          anyOf:
+          - format: uuid
+            type: string
+            maxLength: 36
+          - type: 'null'
+          title: Canonical Subject Id
+        is_participant:
+          title: Is Participant
+          type: boolean
+        participant_id:
+          anyOf:
+          - format: uuid
+            type: string
+            maxLength: 36
+          - type: 'null'
+          title: Participant Id
+        active_identity_count:
+          title: Active Identity Count
+          type: integer
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+          maxLength: 35
+      required:
+      - id
+      - subject_code
+      - canonical_subject_id
+      - is_participant
+      - participant_id
+      - active_identity_count
+      - created_at
+      title: SubjectResponse
+      type: object
+    ListSubjectsResponse:
+      properties:
+        subjects:
+          items:
+            $ref: '#/components/schemas/SubjectResponse'
+          title: Subjects
+          type: array
+        total:
+          title: Total
+          type: integer
+        page:
+          title: Page
+          type: integer
+        page_size:
+          title: Page Size
+          type: integer
+      required:
+      - subjects
+      - total
+      - page
+      - page_size
+      title: ListSubjectsResponse
+      type: object
+    SubjectIdentityResponse:
+      description: Read-only identity attached to a subject.
+      properties:
+        id:
+          format: uuid
+          title: Id
+          type: string
+          maxLength: 36
+        identity_type:
+          title: Identity Type
+          type: string
+        normalized_email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Normalized Email
+        verification_status:
+          title: Verification Status
+          type: string
+        attached_at:
+          format: date-time
+          title: Attached At
+          type: string
+          maxLength: 35
+        revoked_at:
+          anyOf:
+          - format: date-time
+            type: string
+            maxLength: 35
+          - type: 'null'
+          title: Revoked At
+      required:
+      - id
+      - identity_type
+      - normalized_email
+      - verification_status
+      - attached_at
+      - revoked_at
+      title: SubjectIdentityResponse
+      type: object
+    SubjectDetailResponse:
+      description: Detail shape for a single project subject.
+      properties:
+        id:
+          format: uuid
+          title: Id
+          type: string
+          maxLength: 36
+        subject_code:
+          title: Subject Code
+          type: string
+        canonical_subject_id:
+          anyOf:
+          - format: uuid
+            type: string
+            maxLength: 36
+          - type: 'null'
+          title: Canonical Subject Id
+        is_participant:
+          title: Is Participant
+          type: boolean
+        participant_id:
+          anyOf:
+          - format: uuid
+            type: string
+            maxLength: 36
+          - type: 'null'
+          title: Participant Id
+        identities:
+          items:
+            $ref: '#/components/schemas/SubjectIdentityResponse'
+          title: Identities
+          type: array
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+          maxLength: 35
+      required:
+      - id
+      - subject_code
+      - canonical_subject_id
+      - is_participant
+      - participant_id
+      - identities
+      - created_at
+      title: SubjectDetailResponse
+      type: object
+    UpdateSubjectRequest:
+      description: Request body for updating a subject's code.
+      properties:
+        subject_code:
+          maxLength: 128
+          minLength: 1
+          title: Subject Code
+          type: string
+      required:
+      - subject_code
+      title: UpdateSubjectRequest
+      type: object
     ListSurveyAccessLinksResponse:
       description: API response shape for listing survey access links for a survey.
       properties:
@@ -5145,17 +5542,12 @@ components:
       properties:
         link:
           $ref: '#/components/schemas/SurveyAccessLinkResponse'
-        token:
-          title: Token
-          type: string
-          maxLength: 256
         url:
           title: Url
           type: string
           maxLength: 2048
       required:
       - link
-      - token
       - url
       title: CreateSurveyAccessLinkResponse
       type: object
@@ -7308,6 +7700,11 @@ components:
               value:
                 code: USER_NOT_FOUND
                 message: User <example> not found.
+            subject_not_found:
+              summary: SubjectNotFoundError
+              value:
+                code: SUBJECT_NOT_FOUND
+                message: Subject not found.
             participant_not_found:
               summary: ParticipantNotFoundError
               value:
@@ -7517,16 +7914,11 @@ components:
               value:
                 code: VERSION_STATE_PROTECTED
                 message: The active published survey version cannot be unpublished or deleted.
-            uq_survey_links_token_hash:
+            uq_survey_links_token:
               summary: 'DB rule: LINK_TOKEN_CONFLICT'
               value:
                 code: LINK_TOKEN_CONFLICT
                 message: This survey link token is already in use.
-            uq_survey_links_survey_id_token_prefix:
-              summary: 'DB rule: LINK_PREFIX_CONFLICT'
-              value:
-                code: LINK_PREFIX_CONFLICT
-                message: This survey already has a link with this token prefix.
             fk_survey_links_survey_same_project:
               summary: 'DB rule: LINK_SURVEY_PROJECT_CONFLICT'
               value:

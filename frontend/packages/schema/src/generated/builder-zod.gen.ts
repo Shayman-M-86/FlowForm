@@ -110,9 +110,9 @@ export const MatchingQuestionSchemaInSchema = z.object({
 });
 
 export const RatingRangeInSchema = z.object({
-  min: z.union([z.number().int(), z.number()]),
-  max: z.union([z.number().int(), z.number()]),
-  step: z.union([z.number().int(), z.number()]),
+  min: z.number().min(-1000).max(1000),
+  max: z.number().min(-1000).max(1000),
+  step: z.number().gt(0),
 });
 
 export const RatingUIInSchema = z.object({

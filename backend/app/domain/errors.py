@@ -438,6 +438,13 @@ class UserNotFoundError(AppError):
         )
 
 
+class SubjectNotFoundError(AppError):
+    """Error raised when a project subject cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="SUBJECT_NOT_FOUND", message="Subject not found.")
+
+
 class ParticipantNotFoundError(AppError):
     """Error raised when a project participant cannot be found."""
 

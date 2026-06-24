@@ -8,6 +8,7 @@ from app.services.members import MembersService
 from app.services.participants import ParticipantService
 from app.services.projects import ProjectService
 from app.services.roles import RolesService
+from app.services.subjects import SubjectService
 from app.services.survey_links import SurveyLinkService
 from app.services.surveys import SurveyService
 from app.services.users import UserService
@@ -23,6 +24,7 @@ participant_service = ParticipantService()
 project_service = ProjectService()
 roles_service = RolesService()
 survey_link_service = SurveyLinkService()
+subject_service = SubjectService()
 survey_service = SurveyService()
 
 from app.api.v1.studio.projects import (  # noqa: E402, I001
@@ -31,5 +33,6 @@ from app.api.v1.studio.projects import (  # noqa: E402, I001
     participants,
     roles,
     routes,
+    subjects,
 )
 from app.api.v1.studio import surveys  # noqa: E402

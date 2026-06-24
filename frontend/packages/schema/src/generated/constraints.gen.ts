@@ -48,6 +48,7 @@ export const EmailFieldAnswerValueConstraints = {
 
 export const EmojiRatingAnswerValueConstraints = {
   variant: { maxLength: 5 },
+  number: { minimum: 1, maximum: 12 },
 } as const;
 
 export const LongTextFieldAnswerValueConstraints = {
@@ -66,6 +67,7 @@ export const MatchingAnswerValueConstraints = {
 
 export const NumberFieldAnswerValueConstraints = {
   field_type: { maxLength: 6 },
+  number: { minimum: -1000000, maximum: 1000000 },
 } as const;
 
 export const PhoneFieldAnswerValueConstraints = {
@@ -80,10 +82,12 @@ export const ShortTextFieldAnswerValueConstraints = {
 
 export const SliderRatingAnswerValueConstraints = {
   variant: { maxLength: 6 },
+  number: { minimum: -1000, maximum: 1000 },
 } as const;
 
 export const StarsRatingAnswerValueConstraints = {
   variant: { maxLength: 5 },
+  number: { minimum: 1, maximum: 12 },
 } as const;
 
 export const SubmissionSessionAnswerResponseConstraints = {
@@ -99,8 +103,27 @@ export const CompleteSubmissionSessionResponseConstraints = {
   completed_at: { maxLength: 35 },
 } as const;
 
+export const SubjectResponseConstraints = {
+  id: { maxLength: 36 },
+  canonical_subject_id: { maxLength: 36 },
+  participant_id: { maxLength: 36 },
+  created_at: { maxLength: 35 },
+} as const;
+
+export const SubjectIdentityResponseConstraints = {
+  id: { maxLength: 36 },
+  attached_at: { maxLength: 35 },
+  revoked_at: { maxLength: 35 },
+} as const;
+
+export const SubjectDetailResponseConstraints = {
+  id: { maxLength: 36 },
+  canonical_subject_id: { maxLength: 36 },
+  participant_id: { maxLength: 36 },
+  created_at: { maxLength: 35 },
+} as const;
+
 export const CreateSurveyAccessLinkResponseConstraints = {
-  token: { maxLength: 256 },
   url: { maxLength: 2048 },
 } as const;
 
@@ -208,6 +231,10 @@ export const UpdateProjectRequestConstraints = {
   slug: { minLength: 1, maxLength: 80, pattern: /^[a-z0-9]+(?:-[a-z0-9]+)*$/ },
 } as const;
 
+export const UpdateSubjectRequestConstraints = {
+  subject_code: { minLength: 1, maxLength: 128 },
+} as const;
+
 export const CreateSurveyAccessLinkRequestConstraints = {
   name: { minLength: 1, maxLength: 120 },
   link_type: { maxLength: 13 },
@@ -310,6 +337,11 @@ export const MatchingQuestionSchemaInConstraints = {
   family: { maxLength: 8 },
   label: { minLength: 1, maxLength: 1000 },
   title: { minLength: 0, maxLength: 500 },
+} as const;
+
+export const RatingRangeInConstraints = {
+  min: { minimum: -1000, maximum: 1000 },
+  max: { minimum: -1000, maximum: 1000 },
 } as const;
 
 export const RatingUIInConstraints = {
@@ -513,6 +545,7 @@ export const PaginatedPublicSurveysResponsesConstraints = {
 
 export const ParticipantResponsesConstraints = {
   id: { maxLength: 36 },
+  subject_id: { maxLength: 36 },
   email: { maxLength: 254 },
   created_at: { maxLength: 35 },
 } as const;

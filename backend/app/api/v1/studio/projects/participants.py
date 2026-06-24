@@ -2,27 +2,47 @@ from uuid import UUID
 
 from flask import request
 
-from app.api.utils.validation import parse
+from app.api.utils.validation import parse, parse_query
 from app.api.v1.studio.projects import participant_service, studio_projects_bp
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
-from app.schema.api.requests.participants import CreateParticipantRequest, UpdateParticipantRequest
+from app.schema.api.requests.participants import (
+    CreateParticipantRequest,
+    ListParticipantsQuery,
+    UpdateParticipantRequest,
+)
 from app.schema.api.responses.participants import ListParticipantsResponses, ParticipantResponses
 from app.services.access.access_service import require_project_permission
 
 _BASE = "/<bint:project_id>/participants"
 
 
-@openapi_route(summary="List participants", response_model=ListParticipantsResponses, tags=["Participants"])
+@openapi_route(
+    summary="List participants",
+    query_model=ListParticipantsQuery,
+    response_model=ListParticipantsResponses,
+    tags=["Participants"],
+)
 @studio_projects_bp.route(_BASE, methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
 def list_participants(project_id: int):
-    participants = participant_service.list_participants(db=get_core_db(), project_id=project_id)
+    params = parse_query(ListParticipantsQuery, request)
+    offset = (params.page - 1) * params.page_size
+    participants, total = participant_service.list_participants(
+        db=get_core_db(),
+        project_id=project_id,
+        search=params.search,
+        offset=offset,
+        limit=params.page_size,
+    )
     return ListParticipantsResponses(
-        participants=[ParticipantResponses.model_validate(p) for p in participants]
+        participants=[ParticipantResponses.model_validate(p) for p in participants],
+        total=total,
+        page=params.page,
+        page_size=params.page_size,
     ).model_dump(mode="json"), 200
 
 

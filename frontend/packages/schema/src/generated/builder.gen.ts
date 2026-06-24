@@ -109,9 +109,9 @@ export interface MatchingQuestionSchemaIn {
 }
 
 export interface RatingRangeIn {
-  min: number | number;
-  max: number | number;
-  step: number | number;
+  min: number;
+  max: number;
+  step: number;
 }
 
 export interface RatingUIIn {

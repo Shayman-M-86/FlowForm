@@ -34,8 +34,13 @@ class ParticipantService:
         db: Session,
         *,
         project_id: int,
-    ) -> list[ProjectParticipant]:
-        return ppr.list_participants(db, project_id=project_id)
+        search: str | None = None,
+        offset: int = 0,
+        limit: int = 20,
+    ) -> tuple[list[ProjectParticipant], int]:
+        return ppr.list_participants(
+            db, project_id=project_id, search=search, offset=offset, limit=limit
+        )
 
     def get_participant(
         self,

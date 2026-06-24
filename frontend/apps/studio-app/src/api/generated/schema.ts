@@ -644,6 +644,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/studio/projects/{project_id}/subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List subjects
+         * @description List subjects
+         */
+        get: operations["listSubjects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/subjects/{subject_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get subject
+         * @description Get subject
+         */
+        get: operations["getSubject"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update subject
+         * @description Update subject
+         */
+        patch: operations["updateSubject"];
+        trace?: never;
+    };
     "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/links": {
         parameters: {
             query?: never;
@@ -1900,6 +1944,11 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Subject Id
+             * Format: uuid
+             */
+            subject_id: string;
             /** Subject Code */
             subject_code: string;
             /** Email */
@@ -1917,6 +1966,12 @@ export interface components {
         ListParticipantsResponses: {
             /** Participants */
             participants: components["schemas"]["ParticipantResponses"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
         };
         /**
          * CreateParticipantRequest
@@ -2042,6 +2097,101 @@ export interface components {
              * @default null
              */
             slug: string | null;
+        };
+        /**
+         * SubjectResponse
+         * @description List-item shape for a project subject.
+         */
+        SubjectResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Subject Code */
+            subject_code: string;
+            /** Canonical Subject Id */
+            canonical_subject_id: string | null;
+            /** Is Participant */
+            is_participant: boolean;
+            /** Participant Id */
+            participant_id: string | null;
+            /** Active Identity Count */
+            active_identity_count: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ListSubjectsResponse */
+        ListSubjectsResponse: {
+            /** Subjects */
+            subjects: components["schemas"]["SubjectResponse"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * SubjectIdentityResponse
+         * @description Read-only identity attached to a subject.
+         */
+        SubjectIdentityResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Identity Type */
+            identity_type: string;
+            /** Normalized Email */
+            normalized_email: string | null;
+            /** Verification Status */
+            verification_status: string;
+            /**
+             * Attached At
+             * Format: date-time
+             */
+            attached_at: string;
+            /** Revoked At */
+            revoked_at: string | null;
+        };
+        /**
+         * SubjectDetailResponse
+         * @description Detail shape for a single project subject.
+         */
+        SubjectDetailResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Subject Code */
+            subject_code: string;
+            /** Canonical Subject Id */
+            canonical_subject_id: string | null;
+            /** Is Participant */
+            is_participant: boolean;
+            /** Participant Id */
+            participant_id: string | null;
+            /** Identities */
+            identities: components["schemas"]["SubjectIdentityResponse"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * UpdateSubjectRequest
+         * @description Request body for updating a subject's code.
+         */
+        UpdateSubjectRequest: {
+            /** Subject Code */
+            subject_code: string;
         };
         /**
          * ListSurveyAccessLinksResponse
@@ -3391,6 +3541,11 @@ export type UpdateProjectRoleRequest = components['schemas']['UpdateProjectRoleR
 export type CreateProjectRequest = components['schemas']['CreateProjectRequest'];
 export type MyProjectPermissionsResponses = components['schemas']['MyProjectPermissionsResponses'];
 export type UpdateProjectRequest = components['schemas']['UpdateProjectRequest'];
+export type SubjectResponse = components['schemas']['SubjectResponse'];
+export type ListSubjectsResponse = components['schemas']['ListSubjectsResponse'];
+export type SubjectIdentityResponse = components['schemas']['SubjectIdentityResponse'];
+export type SubjectDetailResponse = components['schemas']['SubjectDetailResponse'];
+export type UpdateSubjectRequest = components['schemas']['UpdateSubjectRequest'];
 export type ListSurveyAccessLinksResponse = components['schemas']['ListSurveyAccessLinksResponse'];
 export type CreateSurveyAccessLinkRequest = components['schemas']['CreateSurveyAccessLinkRequest'];
 export type CreateSurveyAccessLinkResponse = components['schemas']['CreateSurveyAccessLinkResponse'];
@@ -4256,7 +4411,11 @@ export interface operations {
     };
     listParticipants: {
         parameters: {
-            query?: never;
+            query?: {
+                search?: string | null;
+                page?: number;
+                page_size?: number;
+            };
             header?: never;
             path: {
                 project_id: number;
@@ -4680,6 +4839,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyProjectPermissionsResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listSubjects: {
+        parameters: {
+            query?: {
+                canonical_status?: "canonical" | "alias" | "all";
+                is_participant?: boolean | null;
+                search?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListSubjectsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getSubject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubjectDetailResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateSubject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSubjectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubjectDetailResponse"];
                 };
             };
             400: components["responses"]["BadRequestError"];

@@ -11,6 +11,7 @@ class ParticipantResponses(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    subject_id: UUID
     subject_code: str
     email: str | None
     created_at: datetime
@@ -22,6 +23,7 @@ class ParticipantResponses(BaseModel):
             return data
         return {
             "id": data.id,
+            "subject_id": data.project_subject_id,
             "subject_code": data.subject.subject_code,
             "email": data.identity.normalized_email,
             "created_at": data.created_at,
@@ -31,5 +33,7 @@ class ParticipantResponses(BaseModel):
 class ListParticipantsResponses(BaseModel):
     """API response shape for listing a project's participants."""
 
-    model_config = ConfigDict(from_attributes=True)
     participants: list[ParticipantResponses]
+    total: int
+    page: int
+    page_size: int
