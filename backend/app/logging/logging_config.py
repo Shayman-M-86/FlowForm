@@ -82,7 +82,9 @@ class JsonFormatter(logging.Formatter):
             "resource_type",
             "resource_id",
             "duration_ms",
-            "metadata"
+            "step_delta_ms",
+            "timing_label",
+            "metadata",
         ):
             value = getattr(record, attr, None)
             if value is not None:

@@ -33,6 +33,7 @@ class LockedTTLCache[T]:
 
     def __init__(self, *, name: str, maxsize: int, ttl_seconds: int) -> None:
         self.name = name
+        self.enabled = True
         self._cache: TTLCache[Hashable, T] = TTLCache(
             maxsize=maxsize,
             ttl=ttl_seconds,
@@ -42,6 +43,10 @@ class LockedTTLCache[T]:
 
     def get_or_load(self, key: Hashable, loader: Callable[[], T]) -> T:
         """Return cached value or call *loader* exactly once per cache miss."""
+        if not self.enabled:
+            logger.debug("%s source=cache_disabled key=%r", self.name, key)
+            return loader()
+
         with self._lock:
             try:
                 value = self._cache[key]
@@ -72,6 +77,10 @@ class LockedTTLCache[T]:
 
     def get(self, key: Hashable) -> T | None:
         """Return cached value or ``None`` without loading."""
+        if not self.enabled:
+            logger.debug("%s source=cache_disabled key=%r", self.name, key)
+            return None
+
         with self._lock:
             try:
                 value = self._cache[key]
@@ -82,6 +91,10 @@ class LockedTTLCache[T]:
 
     def put(self, key: Hashable, value: T) -> None:
         """Store a value explicitly."""
+        if not self.enabled:
+            logger.debug("%s source=cache_disabled key=%r", self.name, key)
+            return
+
         with self._lock:
             self._cache[key] = value
 
@@ -95,6 +108,12 @@ class LockedTTLCache[T]:
         with self._lock:
             self._cache.clear()
             self._key_locks.clear()
+
+    def set_enabled(self, enabled: bool) -> None:
+        """Enable or disable caching. Disabling also drops existing entries."""
+        self.enabled = enabled
+        if not enabled:
+            self.clear()
 
     def __len__(self) -> int:
         with self._lock:
@@ -121,6 +140,14 @@ class CryptoKeyCache:
             ttl_seconds=1800,
         )
 
-    def init_app(self, app: Flask) -> None:
+    def set_enabled(self, enabled: bool) -> None:
+        """Enable or disable all crypto key caches."""
+        self.linkage_keys.set_enabled(enabled)
+        self.survey_branch_keys.set_enabled(enabled)
+        self.session_deks.set_enabled(enabled)
+
+    def init_app(self, app: Flask, *, enabled: bool = True) -> None:
         """Register as a Flask extension."""
+        self.set_enabled(enabled)
         app.extensions["crypto_key_cache"] = self
+        logger.debug("crypto_key_cache enabled=%s", enabled)

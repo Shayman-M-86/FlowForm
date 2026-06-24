@@ -43,6 +43,7 @@ def get_linkage_secret(
     region: str,
     access_key_id: SecretStr,
     secret_access_key: SecretStr,
+    client: Any | None = None,
 ) -> SecretValue:
     """Fetch a secret from Secrets Manager.
 
@@ -50,14 +51,18 @@ def get_linkage_secret(
     ``LinkageSecretError`` on any AWS failure and ``LinkageKeyError``
     when the secret has no string value.
     """
-    client = _build_secretsmanager_client(region, access_key_id, secret_access_key)
+    secrets_client = client or _build_secretsmanager_client(
+        region,
+        access_key_id,
+        secret_access_key,
+    )
     kwargs: dict[str, Any] = {"SecretId": secret_arn}
     if version_id is not None:
         kwargs["VersionId"] = version_id
     if version_stage is not None:
         kwargs["VersionStage"] = version_stage
     try:
-        response = client.get_secret_value(**kwargs)
+        response = secrets_client.get_secret_value(**kwargs)
     except Exception as exc:
         logger.error("Secrets Manager fetch failed: %s", type(exc).__name__)
         raise LinkageSecretError("Failed to fetch linkage secret") from exc

@@ -81,6 +81,7 @@ def test_submission_session_response_contains_only_acknowledgement_fields() -> N
         started_at=current,
         expires_at=current,
         survey_version_id=31,
+        subject_code="sub_test",
     )
 
     dumped = response.model_dump(mode="json")
@@ -90,6 +91,7 @@ def test_submission_session_response_contains_only_acknowledgement_fields() -> N
         "started_at": current.isoformat().replace("+00:00", "Z"),
         "expires_at": current.isoformat().replace("+00:00", "Z"),
         "survey_version_id": 31,
+        "subject_code": "sub_test",
     }
     assert "survey_schema" not in dumped
     assert "survey" not in dumped

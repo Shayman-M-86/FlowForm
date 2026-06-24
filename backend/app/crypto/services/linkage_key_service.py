@@ -30,7 +30,11 @@ from app.crypto.errors import (
     LinkageKeyUnavailableError,
     LinkageSecretError,
 )
-from app.crypto.secrets import SecretValue, get_linkage_secret
+from app.crypto.secrets import (
+    SecretValue,
+    _build_secretsmanager_client,
+    get_linkage_secret,
+)
 from app.db.error_handling import commit_with_err_handle
 from app.repositories.linkage_key_versions_repo import (
     get_aws_version_id,
@@ -41,6 +45,7 @@ from app.repositories.linkage_key_versions_repo import (
 logger = logging.getLogger(__name__)
 
 _MIN_SECRET_BYTES = 32
+_CURRENT_LINKAGE_KEY_CACHE_KEY = "current"
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +80,11 @@ class LinkageKeyService:
         self._region = region
         self._access_key_id = access_key_id
         self._secret_access_key = secret_access_key
+        self._secrets_client = _build_secretsmanager_client(
+            region,
+            access_key_id,
+            secret_access_key,
+        )
 
         self._version_id_lock = threading.Lock()
         self._version_id_map: dict[int, str] = {}
@@ -85,9 +95,14 @@ class LinkageKeyService:
         If the version is not yet in the ``linkage_key_versions`` table,
         inserts it and marks it as current.
         """
+        cached = self._cache.get(_CURRENT_LINKAGE_KEY_CACHE_KEY)
+        if cached is not None:
+            return cached
+
         logger.debug("linkage_key source=secrets_manager_api_lookup context=current")
         sv = self._fetch_secret(version_stage="AWSCURRENT", context="current")
         key = self._parse_and_validate(sv)
+        self._cache.put(_CURRENT_LINKAGE_KEY_CACHE_KEY, key)
         self._cache.put(key.version, key)
         self._record_version_id(key.version, key.aws_version_id)
         self._ensure_db_row(db, key, is_current=True)
@@ -204,6 +219,7 @@ class LinkageKeyService:
                 region=self._region,
                 access_key_id=self._access_key_id,
                 secret_access_key=self._secret_access_key,
+                client=self._secrets_client,
             )
         except LinkageSecretError as exc:
             logger.error("Failed to fetch linkage key (%s) from Secrets Manager", context)

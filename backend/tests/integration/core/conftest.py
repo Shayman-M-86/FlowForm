@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest  # type: ignore[import]
 from sqlalchemy.orm import Session
 
-from app.crypto.services import NewSessionDEK, NewSessionLocator
+from app.crypto.services import LinkageKey, NewSessionDEK, NewSessionLocator
 from app.schema.orm.core import Project, ProjectRole, ResponseStore, Survey, SurveyVersion, User
 from tests.integration.core.factories import (
     make_project,
@@ -20,6 +20,11 @@ from tests.integration.core.factories import (
 def _make_mock_locator_service():
     svc = MagicMock()
     svc.get_current_linkage_key_version.return_value = 1
+    svc.get_current_linkage_key.return_value = LinkageKey(
+        version=1,
+        secret=b"\xcc" * 32,
+        aws_version_id="test-version",
+    )
     svc.for_new_session.return_value = NewSessionLocator(
         linkage_key_version=1, session_locator=b"\x00" * 32,
     )

@@ -8,7 +8,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.crypto.locators import derive_answer_locator, derive_session_locator
-from app.crypto.services.linkage_key_service import LinkageKeyService
+from app.crypto.services.linkage_key_service import LinkageKey, LinkageKeyService
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,12 +27,23 @@ class LocatorService:
 
     def get_current_linkage_key_version(self, db: Session) -> int:
         """Return the current linkage key version without deriving a locator."""
-        key = self._keys.get_linkage_key(db)
+        key = self.get_current_linkage_key(db)
         return key.version
 
-    def for_new_session(self, session_id: UUID, db: Session) -> NewSessionLocator:
-        """Derive a session locator using the current linkage key."""
+    def get_current_linkage_key(self, db: Session) -> LinkageKey:
+        """Return the current linkage key for callers that need version and secret."""
         key = self._keys.get_linkage_key(db)
+        return key
+
+    def for_new_session(
+        self,
+        session_id: UUID,
+        db: Session,
+        *,
+        linkage_key: LinkageKey | None = None,
+    ) -> NewSessionLocator:
+        """Derive a session locator using the current linkage key."""
+        key = linkage_key or self.get_current_linkage_key(db)
         locator = derive_session_locator(session_id, key.secret)
         return NewSessionLocator(
             linkage_key_version=key.version,

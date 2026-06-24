@@ -71,6 +71,20 @@ class TestLockedTTLCacheLoading:
         assert cache.get_or_load("key", loader) == b"\xaa" * 32
         assert calls == 1
 
+    def test_disabled_cache_calls_loader_every_time(self) -> None:
+        cache = _make_cache()
+        cache.set_enabled(False)
+        calls = 0
+
+        def loader() -> bytes:
+            nonlocal calls
+            calls += 1
+            return bytes([calls]) * 32
+
+        assert cache.get_or_load("key", loader) == b"\x01" * 32
+        assert cache.get_or_load("key", loader) == b"\x02" * 32
+        assert calls == 2
+
 
 class TestLockedTTLCacheTTL:
     def test_expired_entry_returns_none(self) -> None:
@@ -106,6 +120,28 @@ class TestLockedTTLCacheOverwrite:
         assert cache.get(key) == b"\xbb" * 32
 
 
+class TestLockedTTLCacheDisabled:
+    def test_disabled_cache_does_not_return_put_value(self) -> None:
+        cache = _make_cache()
+        key = b"\x01" * 32
+
+        cache.set_enabled(False)
+        cache.put(key, b"\xaa" * 32)
+
+        assert cache.get(key) is None
+        assert len(cache) == 0
+
+    def test_disabling_cache_clears_existing_values(self) -> None:
+        cache = _make_cache()
+        key = b"\x01" * 32
+        cache.put(key, b"\xaa" * 32)
+
+        cache.set_enabled(False)
+
+        assert cache.get(key) is None
+        assert len(cache) == 0
+
+
 class TestCryptoKeyCache:
     def test_container_exposes_named_crypto_caches(self) -> None:
         cache = CryptoKeyCache()
@@ -115,3 +151,13 @@ class TestCryptoKeyCache:
 
         assert cache.survey_branch_keys.get("survey-key-id") == b"\xaa" * 32
         assert cache.session_deks.get("session-id") == b"\xbb" * 32
+
+    def test_can_disable_all_named_crypto_caches(self) -> None:
+        cache = CryptoKeyCache()
+        cache.set_enabled(False)
+
+        cache.survey_branch_keys.put("survey-key-id", b"\xaa" * 32)
+        cache.session_deks.put("session-id", b"\xbb" * 32)
+
+        assert cache.survey_branch_keys.get("survey-key-id") is None
+        assert cache.session_deks.get("session-id") is None

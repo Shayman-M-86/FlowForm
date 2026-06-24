@@ -95,6 +95,7 @@ class SubjectResolver:
         if token_subject_id is None:
             return SubjectResolutionResult(
                 final_subject_id=canonical_assigned.id,
+                subject_code=canonical_assigned.subject_code,
                 subject_source="assigned_link",
                 token_action="issue",
             )
@@ -106,12 +107,14 @@ class SubjectResolver:
             if token_subject_id == canonical_assigned.id:
                 return SubjectResolutionResult(
                     final_subject_id=canonical_assigned.id,
+                    subject_code=canonical_assigned.subject_code,
                     subject_source="assigned_link",
                     token_action="keep",
                 )
             # Token points at a non-canonical that resolves to the same canonical.
             return SubjectResolutionResult(
                 final_subject_id=canonical_assigned.id,
+                subject_code=canonical_assigned.subject_code,
                 subject_source="assigned_link",
                 token_action="rotate",
             )
@@ -119,6 +122,7 @@ class SubjectResolver:
         # Token canonical differs from assigned subject — merge token into assigned.
         return SubjectResolutionResult(
             final_subject_id=canonical_assigned.id,
+            subject_code=canonical_assigned.subject_code,
             subject_source="assigned_link",
             token_action="rotate",
             merge_subject_id=effective_token_subject_id,
@@ -154,8 +158,12 @@ class SubjectResolver:
             )
 
         if effective_token_subject_id is not None:
+            effective_subject = self._require_subject(
+                db, project_id=project_id, subject_id=effective_token_subject_id
+            )
             return SubjectResolutionResult(
-                final_subject_id=effective_token_subject_id,
+                final_subject_id=effective_subject.id,
+                subject_code=effective_subject.subject_code,
                 subject_source="recognition_token",
                 token_action="mark_used",
             )
@@ -163,6 +171,7 @@ class SubjectResolver:
         new_subject = subjects.create_subject(db, project_id=project_id)
         return SubjectResolutionResult(
             final_subject_id=new_subject.id,
+            subject_code=new_subject.subject_code,
             subject_source="anonymous_created",
             token_action="issue",
         )
@@ -189,8 +198,12 @@ class SubjectResolver:
         if identity is None:
             if effective_token_subject_id is not None:
                 # Attach identity to existing token subject — caller writes identity row.
+                effective_subject = self._require_subject(
+                    db, project_id=project_id, subject_id=effective_token_subject_id
+                )
                 return SubjectResolutionResult(
-                    final_subject_id=effective_token_subject_id,
+                    final_subject_id=effective_subject.id,
+                    subject_code=effective_subject.subject_code,
                     subject_source="authenticated_user",
                     token_action="mark_used",
                     needs_identity_write=True,
@@ -199,6 +212,7 @@ class SubjectResolver:
             new_subject = subjects.create_subject(db, project_id=project_id)
             return SubjectResolutionResult(
                 final_subject_id=new_subject.id,
+                subject_code=new_subject.subject_code,
                 subject_source="authenticated_user",
                 token_action="issue",
                 needs_identity_write=True,
@@ -215,6 +229,7 @@ class SubjectResolver:
         if effective_token_subject_id is None:
             return SubjectResolutionResult(
                 final_subject_id=canonical_identity.id,
+                subject_code=canonical_identity.subject_code,
                 subject_source="authenticated_user",
                 token_action="issue",
             )
@@ -224,12 +239,14 @@ class SubjectResolver:
             if token_subject_id == canonical_identity.id:
                 return SubjectResolutionResult(
                     final_subject_id=canonical_identity.id,
+                    subject_code=canonical_identity.subject_code,
                     subject_source="authenticated_user",
                     token_action="mark_used",
                 )
             # Token points at non-canonical that resolves to identity — rotate to canonical.
             return SubjectResolutionResult(
                 final_subject_id=canonical_identity.id,
+                subject_code=canonical_identity.subject_code,
                 subject_source="authenticated_user",
                 token_action="rotate",
             )
@@ -237,6 +254,7 @@ class SubjectResolver:
         # Token canonical differs from identity canonical — merge token subject into identity.
         return SubjectResolutionResult(
             final_subject_id=canonical_identity.id,
+            subject_code=canonical_identity.subject_code,
             subject_source="authenticated_user",
             token_action="rotate",
             merge_subject_id=effective_token_subject_id,

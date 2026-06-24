@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings
 from app.crypto.errors import KmsError
-from app.crypto.services import NewSessionDEK, NewSessionLocator
+from app.crypto.services import LinkageKey, NewSessionDEK, NewSessionLocator
 from app.domain.errors import SessionNotFoundError, SessionStartError
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.orm.core.submission_session import SubmissionSession
@@ -93,6 +93,11 @@ def _mock_locator_service(session_locator: bytes | None = None):
     svc = MagicMock()
     loc_bytes = session_locator or _FAKE_SESSION_LOCATOR
     svc.get_current_linkage_key_version.return_value = 1
+    svc.get_current_linkage_key.return_value = LinkageKey(
+        version=1,
+        secret=b"\xcc" * 32,
+        aws_version_id="test-version",
+    )
     svc.for_new_session.return_value = NewSessionLocator(
         linkage_key_version=1,
         session_locator=loc_bytes,

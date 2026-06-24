@@ -117,6 +117,7 @@ class SubjectResolutionResult:
     """
 
     final_subject_id: UUID
+    subject_code: str
     subject_source: SubjectResolutionSource
     token_action: TokenAction
     needs_identity_write: bool = False

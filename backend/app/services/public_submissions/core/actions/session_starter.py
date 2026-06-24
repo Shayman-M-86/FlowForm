@@ -17,15 +17,17 @@ from app.crypto.errors import SurveyBranchKeyUnavailableError
 from app.crypto.services import LocatorService, SessionDEKService, SurveyBranchKeyService
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import SessionStartError
+from app.logging.request_timing import request_timing
 from app.repositories import public_link_repo as plr
-from app.repositories.core import project_subject_identities as sub_id
-from app.repositories.core import project_subjects as subjects
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_envelope_repo
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.api.responses.submission_sessions import StartSubmissionSessionResponse
 from app.schema.orm.core.user import User
 from app.services.public_submissions.core.resolution.access_resolver import AccessResolver
+from app.services.public_submissions.core.resolution.session_subject_service import (
+    SessionSubjectService,
+)
 from app.services.public_submissions.core.resolution.subject_resolver import SubjectResolver
 from app.services.public_submissions.core.resolution.subject_token import SubjectTokenService
 from app.services.public_submissions.core.shared.crypto_provider import CryptoServices
@@ -34,9 +36,10 @@ from app.services.public_submissions.core.shared.session_crypto import (
     load_survey_encryption_key,
     resolve_session_crypto_services,
 )
-from app.services.results import SubjectResolutionResult, SubmissionAccessGrant
+from app.services.results import SubmissionAccessGrant
 
 if TYPE_CHECKING:
+    from app.crypto.services.linkage_key_service import LinkageKey
     from app.schema.orm.core.submission_session import SubmissionSession
 
 
@@ -63,6 +66,7 @@ class SessionStarter:
         self,
         *,
         access_resolver: AccessResolver | None = None,
+        subject_service: SessionSubjectService | None = None,
         subject_resolver: SubjectResolver | None = None,
         token_service: SubjectTokenService | None = None,
         locator_service: LocatorService | None = None,
@@ -70,10 +74,11 @@ class SessionStarter:
         survey_branch_key_service: SurveyBranchKeyService | None = None,
         encryption_settings: EncryptionSettings | None = None,
     ) -> None:
-        self._token_service = token_service or SubjectTokenService()
+        token_service = token_service or SubjectTokenService()
         self._access_resolver = access_resolver or AccessResolver()
-        self._subject_resolver = subject_resolver or SubjectResolver(
-            token_service=self._token_service,
+        self._subject_service = subject_service or SessionSubjectService(
+            subject_resolver=subject_resolver,
+            token_service=token_service,
         )
 
         self._encryption_settings = encryption_settings
@@ -100,44 +105,36 @@ class SessionStarter:
             raw_recognition_token, or None when token_action is "none"
         """
         access = self._access_resolver.resolve(db, payload=payload, actor=actor)
+        request_timing.log("session_start.access_resolved")
 
-        resolution = self._resolve_subject(
+        subject = self._subject_service.resolve_for_session_start(
             db,
             access=access,
             actor=actor,
             recognition_token=recognition_token,
         )
 
-        self._apply_subject_writes(
-            db,
-            access=access,
-            actor=actor,
-            resolution=resolution,
-        )
-
-        raw_recognition_token = self._apply_token_action(
-            db,
-            access=access,
-            resolution=resolution,
-            existing_raw_token=recognition_token,
-        )
-
-        linkage_key_version = self._current_linkage_key_version(db)
+        linkage_key = self._current_linkage_key(db)
+        request_timing.log("session_start.linkage_key_loaded")
 
         session, raw_browser_session_token = self._create_core_session(
             db,
             access=access,
-            project_subject_id=resolution.final_subject_id,
-            linkage_key_version=linkage_key_version,
+            project_subject_id=subject.final_subject_id,
+            linkage_key_version=linkage_key.version,
         )
+        request_timing.log("session_start.core_session_created")
 
         self._consume_single_use_link_if_needed(db, access)
+        request_timing.log("session_start.link_consumed_if_needed")
 
         session_locator = self._create_response_envelope(
             db,
             response_db,
             session=session,
+            linkage_key=linkage_key,
         )
+        request_timing.log("session_start.response_envelope_created")
 
         self._commit_core_or_cleanup_envelope(
             db,
@@ -146,137 +143,14 @@ class SessionStarter:
             session=session,
             session_locator=session_locator,
         )
+        request_timing.log("session_start.core_committed")
 
-        response = self._build_response(access, session)
-        return response, raw_browser_session_token, raw_recognition_token
-
-    def _resolve_subject(
-        self,
-        db: Session,
-        *,
-        access: SubmissionAccessGrant,
-        actor: User | None,
-        recognition_token: str | None,
-    ) -> SubjectResolutionResult:
-        token_subject_id, canonical_token_subject_id = self._lookup_token_subject_ids(
-            db,
-            project_id=access.project_id,
-            raw_token=recognition_token,
+        response = self._build_response(
+            access,
+            session,
+            subject_code=subject.subject_code,
         )
-
-        return self._subject_resolver.resolve(
-            db,
-            project_id=access.project_id,
-            access_method=access.access_method,
-            assigned_subject_id=access.assigned_subject_id,
-            token_subject_id=token_subject_id,
-            canonical_token_subject_id=canonical_token_subject_id,
-            actor_user_id=actor.id if actor is not None else None,
-        )
-
-    def _lookup_token_subject_ids(
-        self,
-        db: Session,
-        *,
-        project_id: int,
-        raw_token: str | None,
-    ) -> tuple[UUID | None, UUID | None]:
-        if not raw_token:
-            return None, None
-
-        lookup = self._token_service.lookup(
-            db,
-            project_id=project_id,
-            raw_token=raw_token,
-        )
-
-        if not lookup.token_valid:
-            return None, None
-
-        return lookup.token_subject_id, lookup.canonical_token_subject_id
-
-    def _apply_subject_writes(
-        self,
-        db: Session,
-        *,
-        access: SubmissionAccessGrant,
-        actor: User | None,
-        resolution: SubjectResolutionResult,
-    ) -> None:
-        self._merge_subject_if_needed(db, access=access, resolution=resolution)
-        self._write_actor_identity_if_needed(
-            db,
-            access=access,
-            actor=actor,
-            resolution=resolution,
-        )
-
-    def _merge_subject_if_needed(
-        self,
-        db: Session,
-        *,
-        access: SubmissionAccessGrant,
-        resolution: SubjectResolutionResult,
-    ) -> None:
-        if resolution.merge_subject_id is None:
-            return
-
-        if resolution.merge_into_subject_id is None:
-            return
-
-        weaker = subjects.get_subject(
-            db,
-            project_id=access.project_id,
-            subject_id=resolution.merge_subject_id,
-        )
-
-        stronger = subjects.get_subject(
-            db,
-            project_id=access.project_id,
-            subject_id=resolution.merge_into_subject_id,
-        )
-
-        if weaker is None or stronger is None:
-            return
-
-        subjects.set_canonical_subject(db, subject=weaker, canonical=stronger)
-
-    def _write_actor_identity_if_needed(
-        self,
-        db: Session,
-        *,
-        access: SubmissionAccessGrant,
-        actor: User | None,
-        resolution: SubjectResolutionResult,
-    ) -> None:
-        if actor is None:
-            return
-
-        if not resolution.needs_identity_write:
-            return
-
-        sub_id.create_user_identity(
-            db,
-            project_id=access.project_id,
-            project_subject_id=resolution.final_subject_id,
-            user=actor,
-        )
-
-    def _apply_token_action(
-        self,
-        db: Session,
-        *,
-        access: SubmissionAccessGrant,
-        resolution: SubjectResolutionResult,
-        existing_raw_token: str | None,
-    ) -> str | None:
-        return self._token_service.apply_token_action(
-            db,
-            project_id=access.project_id,
-            final_subject_id=resolution.final_subject_id,
-            token_action=resolution.token_action,
-            existing_raw_token=existing_raw_token,
-        )
+        return response, raw_browser_session_token, subject.raw_recognition_token
 
     def _create_core_session(
         self,
@@ -307,10 +181,13 @@ class SessionStarter:
         db: Session,
         access: SubmissionAccessGrant,
     ) -> None:
-        if access.link is None or not access.is_single_use:
+        if not access.is_single_use:
             return
 
-        plr.mark_used(db, link=access.link)
+        if access.link_id is None:
+            return
+
+        plr.mark_used(db, link=access.link)  # type: ignore
 
     def _create_response_envelope(
         self,
@@ -318,6 +195,7 @@ class SessionStarter:
         response_db: Session,
         *,
         session: SubmissionSession,
+        linkage_key: LinkageKey,
     ) -> bytes:
         """Create and commit the response envelope.
 
@@ -331,9 +209,16 @@ class SessionStarter:
             if branch_key_service is None:
                 raise SurveyBranchKeyUnavailableError()
 
-            loc = crypto.locator_service.for_new_session(session.id, db)
+            loc = crypto.locator_service.for_new_session(
+                session.id,
+                db,
+                linkage_key=linkage_key,
+            )
+            request_timing.log("session_start.envelope.locator_derived")
             survey_key = load_survey_encryption_key(db, session=session)
+            request_timing.log("session_start.envelope.survey_key_loaded")
             plaintext_branch_key = branch_key_service.get_plaintext_key(survey_key)
+            request_timing.log("session_start.envelope.branch_key_ready")
             wrap_aad = build_session_dek_wrap_aad(
                 crypto_version=_CRYPTO_VERSION,
                 project_id=session.project_id,
@@ -348,6 +233,7 @@ class SessionStarter:
                 session.expires_at,
                 wrap_aad=wrap_aad,
             )
+            request_timing.log("session_start.envelope.session_dek_wrapped")
 
             response_envelope_repo.create(
                 response_db,
@@ -358,6 +244,7 @@ class SessionStarter:
             )
 
             commit_with_err_handle(response_db, contexts=[])
+            request_timing.log("session_start.envelope.response_committed")
 
         except Exception as err:
             logger.error("session_start.envelope_creation_failed", exc_info=True)
@@ -404,9 +291,9 @@ class SessionStarter:
                 exc_info=True,
             )
 
-    def _current_linkage_key_version(self, db: Session) -> int:
+    def _current_linkage_key(self, db: Session) -> LinkageKey:
         crypto = self._ensure_crypto()
-        return crypto.locator_service.get_current_linkage_key_version(db)
+        return crypto.locator_service.get_current_linkage_key(db)
 
     def _ensure_crypto(self) -> CryptoServices:
         """Lazily build crypto services on first use."""
@@ -437,10 +324,13 @@ class SessionStarter:
     def _build_response(
         access: SubmissionAccessGrant,
         session: SubmissionSession,
+        *,
+        subject_code: str,
     ) -> StartSubmissionSessionResponse:
         return StartSubmissionSessionResponse(
             status=session.session_status,
             started_at=session.started_at,
             expires_at=session.expires_at,
             survey_version_id=access.survey_version_id,
+            subject_code=subject_code,
         )

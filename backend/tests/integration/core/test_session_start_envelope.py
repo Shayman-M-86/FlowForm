@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings
 from app.crypto.errors import KmsError
-from app.crypto.services import NewSessionDEK, NewSessionLocator
+from app.crypto.services import LinkageKey, NewSessionDEK, NewSessionLocator
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import SessionStartError
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
@@ -113,6 +113,11 @@ def _slug_payload(slug: str) -> StartSubmissionSessionRequest:
 def _mock_locator_service(session_locator: bytes | None = None):
     svc = MagicMock()
     svc.get_current_linkage_key_version.return_value = 1
+    svc.get_current_linkage_key.return_value = LinkageKey(
+        version=1,
+        secret=b"\xcc" * 32,
+        aws_version_id="test-version",
+    )
     loc = NewSessionLocator(
         linkage_key_version=1,
         session_locator=session_locator or _FAKE_SESSION_LOCATOR,
@@ -248,6 +253,11 @@ class TestPreCommitEnvelopeFailureRollback:
 
         loc_svc = MagicMock()
         loc_svc.get_current_linkage_key_version.return_value = 1
+        loc_svc.get_current_linkage_key.return_value = LinkageKey(
+            version=1,
+            secret=b"\xcc" * 32,
+            aws_version_id="test-version",
+        )
         loc_svc.for_new_session.side_effect = RuntimeError("locator derivation failed")
 
         starter = SessionStarter(

@@ -105,6 +105,15 @@ def mark_used(db: Session, *, link: SurveyLink) -> SurveyLink:
     return link
 
 
+def mark_used_and_deactivate(db: Session, *, link: SurveyLink) -> SurveyLink:
+    """Mark a link as used and deactivate it."""
+    if link.used_at is None:
+        link.used_at = datetime.now(UTC)
+    link.is_active = False
+    flush_with_err_handle(db, contexts=[link])
+    return link
+
+
 def delete_link(db: Session, link: SurveyLink) -> None:
     db.delete(link)
     flush_with_err_handle(db, contexts=[link])

@@ -141,6 +141,19 @@ class TestGetLinkageKey:
         mock.assert_not_called()
         assert key.version == 2
 
+    def test_reuses_current_key_cache(self) -> None:
+        svc = _make_service()
+        db = _db()
+        with (
+            patch("app.crypto.services.linkage_key_service.get_linkage_secret", return_value=_secret_value(2)) as mock,
+            patch("app.crypto.services.linkage_key_service.version_exists", return_value=True),
+        ):
+            first = svc.get_linkage_key(db)
+            second = svc.get_linkage_key(db)
+
+        assert first == second
+        mock.assert_called_once()
+
 
 class TestGetLinkageKeyByVersion:
     def test_returns_version_via_in_memory_map(self) -> None:

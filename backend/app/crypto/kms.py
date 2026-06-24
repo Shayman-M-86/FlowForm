@@ -34,11 +34,12 @@ def wrap_dek(
     region: str,
     access_key_id: SecretStr,
     secret_access_key: SecretStr,
+    client: Any | None = None,
 ) -> bytes:
     """Encrypt a plaintext DEK using KMS. Returns the wrapped (ciphertext) blob."""
-    client = _build_kms_client(region, access_key_id, secret_access_key)
+    kms_client = client or _build_kms_client(region, access_key_id, secret_access_key)
     try:
-        response = client.encrypt(
+        response = kms_client.encrypt(
             KeyId=key_arn,
             Plaintext=plaintext_dek,
             EncryptionContext=context,
@@ -57,11 +58,12 @@ def unwrap_dek(
     region: str,
     access_key_id: SecretStr,
     secret_access_key: SecretStr,
+    client: Any | None = None,
 ) -> bytes:
     """Decrypt a wrapped DEK using KMS. Returns the plaintext DEK."""
-    client = _build_kms_client(region, access_key_id, secret_access_key)
+    kms_client = client or _build_kms_client(region, access_key_id, secret_access_key)
     try:
-        response = client.decrypt(
+        response = kms_client.decrypt(
             KeyId=key_arn,
             CiphertextBlob=wrapped_dek,
             EncryptionContext=context,

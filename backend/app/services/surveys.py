@@ -15,7 +15,7 @@ from app.repositories import (
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.user import User
-from app.services.public_submissions.core.shared.crypto_provider import build_crypto_services
+from app.services.public_submissions.core.shared.crypto_provider import get_crypto_services
 
 
 class SurveyService:
@@ -236,7 +236,7 @@ class SurveyService:
 
     def _get_survey_branch_key_service(self) -> SurveyBranchKeyService:
         if self._survey_branch_key_service is None:
-            service = build_crypto_services(
+            service = get_crypto_services(
                 self._encryption_settings
             ).survey_branch_key_service
             if service is None:

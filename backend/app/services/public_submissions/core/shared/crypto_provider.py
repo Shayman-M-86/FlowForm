@@ -1,39 +1,26 @@
-"""Build the crypto service graph from EncryptionSettings.
+"""Access the crypto service graph from public-submission code.
 
-Centralises AWS credential wiring so that orchestration services receive
-ready-to-use crypto service instances instead of threading credentials
-through every call site.
+Construction lives in ``app.crypto.services.provider``. This module keeps the
+public-submission import path stable while preferring the app-wide service graph
+registered during extension startup.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import cast
+
+from flask import current_app, has_app_context
 
 from app.core.config import EncryptionSettings, current_settings
-from app.core.extensions import crypto_key_cache
-from app.crypto.services import (
-    AnswerCryptoService,
-    LinkageKeyService,
-    LocatorService,
-    SessionDEKService,
-    SurveyBranchKeyService,
+from app.crypto.cache import CryptoKeyCache
+from app.crypto.services.provider import (
+    CRYPTO_SERVICES_EXTENSION_KEY,
+    CryptoServices,
+    build_crypto_service_graph,
 )
 from app.domain.errors import SessionInvalidError
 
-if TYPE_CHECKING:
-    from app.crypto.cache import CryptoKeyCache
-
-
-@dataclass(frozen=True, slots=True)
-class CryptoServices:
-    """Pre-wired crypto service instances."""
-
-    linkage_key_service: LinkageKeyService
-    locator_service: LocatorService
-    dek_service: SessionDEKService
-    answer_crypto_service: AnswerCryptoService
-    survey_branch_key_service: SurveyBranchKeyService | None = None
+_fallback_crypto_key_cache = CryptoKeyCache()
 
 
 def _resolve_encryption_settings(enc: EncryptionSettings | None) -> EncryptionSettings:
@@ -49,7 +36,11 @@ def _resolve_encryption_settings(enc: EncryptionSettings | None) -> EncryptionSe
 def _resolve_cache(cache: CryptoKeyCache | None) -> CryptoKeyCache:
     if cache is not None:
         return cache
-    return crypto_key_cache
+    if has_app_context():
+        registered = current_app.extensions.get("crypto_key_cache")
+        if registered is not None:
+            return cast(CryptoKeyCache, registered)
+    return _fallback_crypto_key_cache
 
 
 def build_crypto_services(
@@ -65,33 +56,18 @@ def build_crypto_services(
     """
     resolved = _resolve_encryption_settings(enc)
     resolved_cache = _resolve_cache(cache)
+    return build_crypto_service_graph(resolved, cache=resolved_cache)
 
-    linkage_key_service = LinkageKeyService(
-        cache=resolved_cache.linkage_keys,
-        linkage_secret_arn=resolved.linkage_secret_arn,
-        region=resolved.aws_region,
-        access_key_id=resolved.aws_access_key_id,
-        secret_access_key=resolved.aws_secret_access_key,
-    )
 
-    locator_service = LocatorService(linkage_key_service=linkage_key_service)
+def get_crypto_services(
+    enc: EncryptionSettings | None = None,
+    *,
+    cache: CryptoKeyCache | None = None,
+) -> CryptoServices:
+    """Return app-wide crypto services, or build an isolated graph for overrides."""
+    if enc is None and cache is None and has_app_context():
+        crypto = current_app.extensions.get(CRYPTO_SERVICES_EXTENSION_KEY)
+        if crypto is not None:
+            return cast(CryptoServices, crypto)
 
-    dek_service = SessionDEKService(cache=resolved_cache.session_deks)
-
-    survey_branch_key_service = SurveyBranchKeyService(
-        cache=resolved_cache.survey_branch_keys,
-        kms_key_arn=resolved.kms_key_arn,
-        region=resolved.aws_region,
-        access_key_id=resolved.aws_access_key_id,
-        secret_access_key=resolved.aws_secret_access_key,
-    )
-
-    answer_crypto_service = AnswerCryptoService()
-
-    return CryptoServices(
-        linkage_key_service=linkage_key_service,
-        locator_service=locator_service,
-        dek_service=dek_service,
-        answer_crypto_service=answer_crypto_service,
-        survey_branch_key_service=survey_branch_key_service,
-    )
+    return build_crypto_services(enc, cache=cache)

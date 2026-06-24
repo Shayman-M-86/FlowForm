@@ -28,7 +28,7 @@ from app.repositories.core import survey_encryption_keys as survey_key_repo
 from app.repositories.response import response_envelope_repo
 from app.services.public_submissions.core.shared.crypto_provider import (
     CryptoServices,
-    build_crypto_services,
+    get_crypto_services,
 )
 
 if TYPE_CHECKING:
@@ -67,7 +67,7 @@ def resolve_session_crypto_services(
     survey_branch_key_service: SurveyBranchKeyService | None = None,
 ) -> CryptoServices:
     if locator_service is not None and dek_service is not None and answer_crypto_service is not None:
-        crypto = build_crypto_services(encryption_settings)
+        crypto = get_crypto_services(encryption_settings)
         return CryptoServices(
             linkage_key_service=crypto.linkage_key_service,
             locator_service=locator_service,
@@ -76,7 +76,7 @@ def resolve_session_crypto_services(
             survey_branch_key_service=survey_branch_key_service or crypto.survey_branch_key_service,
         )
 
-    crypto = build_crypto_services(encryption_settings)
+    crypto = get_crypto_services(encryption_settings)
     return CryptoServices(
         linkage_key_service=crypto.linkage_key_service,
         locator_service=locator_service or crypto.locator_service,

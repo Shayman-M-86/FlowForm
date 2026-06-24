@@ -8,11 +8,8 @@ Docs: 01-service-boundary.md — survey schema delivery belongs to discovery flo
 """
 from __future__ import annotations
 
-import hashlib
-import secrets
 from datetime import UTC, datetime
 
-import pytest
 from sqlalchemy.orm import Session
 
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
@@ -137,6 +134,7 @@ def test_private_link_session_start_omits_survey_schema(
     )
 
     assert not hasattr(response, "survey_schema"), "session start must not include survey_schema"
+    assert response.subject_code == "schema-test-assigned"
 
 
 def test_public_slug_session_start_returns_browser_session_token(

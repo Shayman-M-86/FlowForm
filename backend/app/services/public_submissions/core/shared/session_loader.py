@@ -26,7 +26,7 @@ from app.domain.errors import (
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_envelope_repo
 from app.schema.orm.core.survey import SurveyVersion
-from app.services.public_submissions.core.shared.crypto_provider import build_crypto_services
+from app.services.public_submissions.core.shared.crypto_provider import get_crypto_services
 
 if TYPE_CHECKING:
     from app.schema.orm.core.submission_session import SubmissionSession
@@ -66,11 +66,11 @@ def _get_encryption_settings(enc: EncryptionSettings | None) -> EncryptionSettin
 
 def _get_locator_service(
     locator_service: LocatorService | None,
-    enc: EncryptionSettings,
+    enc: EncryptionSettings | None,
 ) -> LocatorService:
     if locator_service is not None:
         return locator_service
-    return build_crypto_services(enc).locator_service
+    return get_crypto_services(enc).locator_service
 
 
 def load_current_session(
@@ -109,7 +109,7 @@ def load_current_session(
     if survey_version is None:
         raise SessionInvalidError("Frozen survey version not found.")
 
-    loc_svc = _get_locator_service(locator_service, enc)
+    loc_svc = _get_locator_service(locator_service, encryption_settings)
     session_locator = loc_svc.for_existing_session(session.id, session.linkage_key_version, db)
 
     envelope = response_envelope_repo.get_by_locator(response_db, session_locator)

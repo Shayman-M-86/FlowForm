@@ -5,6 +5,7 @@ from flask_cors import CORS
 
 # from flask_jwt_extended import JWTManager
 from app.crypto.cache import CryptoKeyCache
+from app.crypto.services.provider import init_crypto_services
 from app.db.manager import DatabaseManager
 from app.middleware.auth import AuthExtension
 from app.middleware.url_converters import register_url_converters
@@ -24,7 +25,11 @@ def init_extensions(app: Flask) -> None:
     Args:
         app: Flask application instance.
     """
-    crypto_key_cache.init_app(app)
+    settings = app.extensions["settings"]
+    enc = settings.flowform.encryption
+    key_cache_enabled = enc.key_cache_enabled if enc is not None else True
+    crypto_key_cache.init_app(app, enabled=key_cache_enabled)
+    init_crypto_services(app, cache=crypto_key_cache)
     logger.debug("Initializing core database")
     db_manager.init_app(app)
     auth.init_app(app)

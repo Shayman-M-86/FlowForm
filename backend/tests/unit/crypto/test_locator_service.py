@@ -32,10 +32,10 @@ def _make_service(
             2: os.urandom(32),
         }
     keys = MagicMock(spec=LinkageKeyService)
-    keys.get_linkage_key.side_effect = lambda db: LinkageKey(
+    keys.get_linkage_key.side_effect = lambda _db: LinkageKey(
         version=current_version, secret=secrets[current_version], aws_version_id="vid-test"
     )
-    keys.get_linkage_key_by_version.side_effect = lambda v, db: LinkageKey(
+    keys.get_linkage_key_by_version.side_effect = lambda v, _db: LinkageKey(
         version=v, secret=secrets[v], aws_version_id=f"vid-{v}"
     )
     return LocatorService(keys)
@@ -65,6 +65,18 @@ class TestForNewSession:
         a = svc.for_new_session(SESS_1, db)
         b = svc.for_new_session(SESS_2, db)
         assert a.session_locator != b.session_locator
+
+    def test_uses_supplied_linkage_key(self) -> None:
+        secret = os.urandom(32)
+        svc = _make_service(secrets={2: os.urandom(32)})
+        db = _db()
+        key = LinkageKey(version=7, secret=secret, aws_version_id="vid-7")
+
+        result = svc.for_new_session(SESS_1, db, linkage_key=key)
+
+        get_linkage_key = cast(MagicMock, svc._keys.get_linkage_key)
+        get_linkage_key.assert_not_called()
+        assert result.linkage_key_version == 7
 
 
 class TestForExistingSession:

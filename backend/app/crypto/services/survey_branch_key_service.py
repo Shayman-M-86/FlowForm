@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.crypto.cache import LockedTTLCache
 from app.crypto.errors import KmsError, SurveyBranchKeyUnavailableError
-from app.crypto.kms import unwrap_dek, wrap_dek
+from app.crypto.kms import _build_kms_client, unwrap_dek, wrap_dek
 from app.repositories.core import survey_encryption_keys as survey_key_repo
 from app.schema.orm.core.survey_encryption_key import SurveyEncryptionKey
 
@@ -44,6 +44,11 @@ class SurveyBranchKeyService:
         self._region = region
         self._access_key_id = access_key_id
         self._secret_access_key = secret_access_key
+        self._kms_client = _build_kms_client(
+            region,
+            access_key_id,
+            secret_access_key,
+        )
 
     def ensure_for_survey(
         self,
@@ -71,6 +76,7 @@ class SurveyBranchKeyService:
                 region=self._region,
                 access_key_id=self._access_key_id,
                 secret_access_key=self._secret_access_key,
+                client=self._kms_client,
             )
         except KmsError as exc:
             logger.error(
@@ -118,6 +124,7 @@ class SurveyBranchKeyService:
                 region=self._region,
                 access_key_id=self._access_key_id,
                 secret_access_key=self._secret_access_key,
+                client=self._kms_client,
             )
         except KmsError as exc:
             logger.error(

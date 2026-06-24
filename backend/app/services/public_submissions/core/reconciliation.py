@@ -17,7 +17,7 @@ from app.core.config import EncryptionSettings
 from app.crypto.services import LocatorService
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_envelope_repo
-from app.services.public_submissions.core.shared.crypto_provider import build_crypto_services
+from app.services.public_submissions.core.shared.crypto_provider import get_crypto_services
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ def reconcile_orphaned_sessions(
     locator_service: LocatorService | None = None,
 ) -> ReconciliationResult:
     """Mark committed core sessions without response envelopes as abandoned."""
-    loc_svc = locator_service or build_crypto_services(encryption_settings).locator_service
+    loc_svc = locator_service or get_crypto_services(encryption_settings).locator_service
 
     sessions = ssr.get_in_progress_sessions(db)
 
