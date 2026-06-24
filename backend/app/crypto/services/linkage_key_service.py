@@ -17,7 +17,6 @@ import base64
 import json
 import logging
 import threading
-import time
 import uuid
 from dataclasses import dataclass
 from typing import Any
@@ -25,6 +24,7 @@ from typing import Any
 from pydantic import SecretStr
 from sqlalchemy.orm import Session
 
+from app.crypto.cache import LockedTTLCache
 from app.crypto.errors import (
     LinkageKeyError,
     LinkageKeyUnavailableError,
@@ -41,7 +41,6 @@ from app.repositories.linkage_key_versions_repo import (
 logger = logging.getLogger(__name__)
 
 _MIN_SECRET_BYTES = 32
-_DEFAULT_CACHE_TTL_SECONDS = 1800.0  # 30 minutes
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,12 +50,6 @@ class LinkageKey:
     version: int
     secret: bytes
     aws_version_id: str
-
-
-@dataclass(slots=True)
-class _CacheEntry:
-    key: LinkageKey
-    expires_at: float
 
 
 class LinkageKeyService:
@@ -71,22 +64,19 @@ class LinkageKeyService:
     def __init__(
         self,
         *,
+        cache: LockedTTLCache[LinkageKey],
         linkage_secret_arn: str,
         region: str,
         access_key_id: SecretStr,
         secret_access_key: SecretStr,
-        cache_ttl_seconds: float = _DEFAULT_CACHE_TTL_SECONDS,
     ) -> None:
+        self._cache = cache
         self._linkage_secret_arn = linkage_secret_arn
         self._region = region
         self._access_key_id = access_key_id
         self._secret_access_key = secret_access_key
-        self._cache_ttl_seconds = cache_ttl_seconds
 
-        self._lock = threading.RLock()
-        # app-level version → cached key
-        self._cache: dict[int, _CacheEntry] = {}
-        # app-level version → AWS VersionId (survives cache expiry)
+        self._version_id_lock = threading.Lock()
         self._version_id_map: dict[int, str] = {}
 
     def get_linkage_key(self, db: Session) -> LinkageKey:
@@ -98,7 +88,8 @@ class LinkageKeyService:
         logger.debug("linkage_key source=secrets_manager_api_lookup context=current")
         sv = self._fetch_secret(version_stage="AWSCURRENT", context="current")
         key = self._parse_and_validate(sv)
-        self._store(key)
+        self._cache.put(key.version, key)
+        self._record_version_id(key.version, key.aws_version_id)
         self._ensure_db_row(db, key, is_current=True)
         return key
 
@@ -108,17 +99,14 @@ class LinkageKeyService:
         Resolves the AWS VersionId via the in-memory map first, then falls
         back to the ``linkage_key_versions`` database table.
         """
-        now = time.monotonic()
-        with self._lock:
-            entry = self._cache.get(version)
-            if entry is not None and entry.expires_at > now:
-                logger.debug("linkage_key source=cache version=%s context=v%s", version, version)
-                return entry.key
+        cached = self._cache.get(version)
+        if cached is not None:
+            return cached
 
+        with self._version_id_lock:
             aws_version_id = self._version_id_map.get(version)
-            version_id_source = "memory"
+        version_id_source = "memory"
 
-        # Fall back to the DB lookup table
         if aws_version_id is None:
             db_version_id = get_aws_version_id(db, version)
             if db_version_id is not None:
@@ -147,8 +135,13 @@ class LinkageKeyService:
                 f"Requested linkage key v{version} but secret contains v{key.version}"
             )
 
-        self._store(key)
+        self._cache.put(key.version, key)
+        self._record_version_id(key.version, key.aws_version_id)
         return key
+
+    def _record_version_id(self, version: int, aws_version_id: str) -> None:
+        with self._version_id_lock:
+            self._version_id_map[version] = aws_version_id
 
     def _parse_and_validate(self, sv: SecretValue) -> LinkageKey:
         try:
@@ -183,14 +176,6 @@ class LinkageKeyService:
         return LinkageKey(
             version=version, secret=secret_bytes, aws_version_id=sv.version_id
         )
-
-    def _store(self, key: LinkageKey) -> None:
-        with self._lock:
-            self._cache[key.version] = _CacheEntry(
-                key=key,
-                expires_at=time.monotonic() + self._cache_ttl_seconds,
-            )
-            self._version_id_map[key.version] = key.aws_version_id
 
     def _ensure_db_row(self, db: Session, key: LinkageKey, *, is_current: bool) -> None:
         if version_exists(db, key.version):

@@ -4,6 +4,7 @@ from flask import Flask
 from flask_cors import CORS
 
 # from flask_jwt_extended import JWTManager
+from app.crypto.cache import CryptoKeyCache
 from app.db.manager import DatabaseManager
 from app.middleware.auth import AuthExtension
 from app.middleware.url_converters import register_url_converters
@@ -11,6 +12,7 @@ from app.middleware.url_converters import register_url_converters
 logger = getLogger(__name__)
 
 
+crypto_key_cache = CryptoKeyCache()
 db_manager = DatabaseManager()
 auth = AuthExtension()
 cors = CORS()
@@ -22,6 +24,7 @@ def init_extensions(app: Flask) -> None:
     Args:
         app: Flask application instance.
     """
+    crypto_key_cache.init_app(app)
     logger.debug("Initializing core database")
     db_manager.init_app(app)
     auth.init_app(app)

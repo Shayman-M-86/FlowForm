@@ -23,15 +23,14 @@ from __future__ import annotations
 
 import logging
 import os
-import threading
-import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from app.crypto.cache import LockedTTLCache
 from app.crypto.errors import SessionDEKUnavailableError
 from app.crypto.nonces import generate_nonce
 
@@ -55,18 +54,11 @@ class NewSessionDEK:
         return self.wrapped_session_dek
 
 
-@dataclass(slots=True)
-class _CacheEntry:
-    plaintext_dek: bytes
-    expires_at: float
-
-
 class SessionDEKService:
     """Creates, unwraps, caches, and serves plaintext session DEKs."""
 
-    def __init__(self, **_: object) -> None:
-        self._lock = threading.Lock()
-        self._cache: dict[uuid.UUID, _CacheEntry] = {}
+    def __init__(self, *, cache: LockedTTLCache[bytes]) -> None:
+        self._cache = cache
 
     def create_for_session(
         self,
@@ -77,6 +69,7 @@ class SessionDEKService:
         wrap_aad: bytes,
     ) -> NewSessionDEK:
         """Generate a new plaintext session DEK and wrap it locally."""
+        _ = expires_at
         plaintext_dek = os.urandom(_KEY_LENGTH)
         try:
             wrapped_session_dek = _wrap_session_dek(
@@ -88,7 +81,7 @@ class SessionDEKService:
             logger.error("session_dek wrap_failed session_id=%s", session_id)
             raise SessionDEKUnavailableError() from exc
 
-        self._cache_plaintext(session_id, plaintext_dek, expires_at)
+        self._cache.put(session_id, plaintext_dek)
         return NewSessionDEK(
             plaintext_dek=plaintext_dek,
             wrapped_session_dek=wrapped_session_dek,
@@ -104,12 +97,10 @@ class SessionDEKService:
         survey_branch_key_loader: Callable[[], bytes],
     ) -> bytes:
         """Return the plaintext session DEK, unwrapping locally on cache miss."""
-        now_mono = time.monotonic()
-        with self._lock:
-            entry = self._cache.get(session_id)
-            if entry is not None and entry.expires_at > now_mono:
-                logger.debug("session_dek source=cache session_id=%s", session_id)
-                return entry.plaintext_dek
+        _ = expires_at
+        cached = self._cache.get(session_id)
+        if cached is not None:
+            return cached
 
         try:
             logger.debug("session_dek source=local_unwrap session_id=%s", session_id)
@@ -122,42 +113,12 @@ class SessionDEKService:
             logger.error("session_dek unwrap_failed session_id=%s", session_id)
             raise SessionDEKUnavailableError() from exc
 
-        self._cache_plaintext(session_id, plaintext_dek, expires_at)
+        self._cache.put(session_id, plaintext_dek)
         return plaintext_dek
 
     def clear_for_session(self, session_id: uuid.UUID) -> None:
         """Remove the cached DEK for a session."""
-        with self._lock:
-            self._cache.pop(session_id, None)
-
-    def clear_expired(self) -> None:
-        """Remove all expired entries from cache."""
-        now = time.monotonic()
-        with self._lock:
-            expired = [k for k, v in self._cache.items() if v.expires_at <= now]
-            for k in expired:
-                del self._cache[k]
-
-    def _cache_plaintext(
-        self,
-        session_id: uuid.UUID,
-        plaintext_dek: bytes,
-        expires_at: datetime,
-    ) -> None:
-        ttl = self._datetime_to_ttl(expires_at)
-        if ttl <= 0:
-            return
-
-        with self._lock:
-            self._cache[session_id] = _CacheEntry(
-                plaintext_dek=plaintext_dek,
-                expires_at=time.monotonic() + ttl,
-            )
-
-    @staticmethod
-    def _datetime_to_ttl(expires_at: datetime) -> float:
-        delta = expires_at - datetime.now(UTC)
-        return max(delta.total_seconds(), 0.0)
+        self._cache.evict(session_id)
 
 
 def _wrap_session_dek(

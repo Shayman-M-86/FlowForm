@@ -2,7 +2,7 @@
 
 from app.crypto.aad import build_aad
 from app.crypto.aes_gcm import DecryptionError, decrypt_answer, encrypt_answer
-from app.crypto.dek_cache import DekCache
+from app.crypto.cache import CryptoKeyCache, LockedTTLCache
 from app.crypto.errors import (
     KmsError,
     LinkageKeyError,
@@ -41,10 +41,10 @@ from app.crypto.services import (
 __all__ = [
     "SURVEY_KMS_CONTEXT_VERSION",
     "AnswerCryptoService",
+    "CryptoKeyCache",
     "DecryptedAnswer",
     "DecryptedAnswerPayload",
     "DecryptionError",
-    "DekCache",
     "EncryptedAnswer",
     "EncryptedAnswerPayload",
     "KmsError",
@@ -55,6 +55,7 @@ __all__ = [
     "LinkageKeyVersionUnavailableError",
     "LinkageSecretError",
     "LocatorService",
+    "LockedTTLCache",
     "NewSessionDEK",
     "NewSessionLocator",
     "PayloadDecodeError",

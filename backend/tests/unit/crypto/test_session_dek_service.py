@@ -2,19 +2,22 @@
 
 from __future__ import annotations
 
-import time
 import uuid
+from collections.abc import Hashable
 from datetime import UTC, datetime, timedelta
-from unittest.mock import patch
 
 import pytest
 
+from app.crypto.cache import LockedTTLCache
 from app.crypto.errors import SessionDEKUnavailableError
 from app.crypto.services.session_dek_service import NewSessionDEK, SessionDEKService
 
 
 def _make_service() -> SessionDEKService:
-    return SessionDEKService()
+    cache: LockedTTLCache[bytes] = LockedTTLCache(
+        name="test_session_dek", maxsize=100, ttl_seconds=3600,
+    )
+    return SessionDEKService(cache=cache)
 
 
 _S1 = uuid.UUID("00000000-0000-0000-0000-000000000001")
@@ -119,14 +122,25 @@ class TestGetForSession:
         assert a != b
 
     def test_expired_cache_triggers_unwrap(self) -> None:
-        svc = _make_service()
-        short_expiry = datetime.now(UTC) + timedelta(seconds=1)
-        created = svc.create_for_session(
-            _S1,
-            _SURVEY_BRANCH_KEY,
-            short_expiry,
-            wrap_aad=_WRAP_AAD,
+        from cachetools import TTLCache
+
+        fake_time = 0.0
+
+        def tick() -> float:
+            return fake_time
+
+        ttl_cache: TTLCache[Hashable, bytes] = TTLCache(maxsize=100, ttl=1, timer=tick)
+        cache: LockedTTLCache[bytes] = LockedTTLCache(
+            name="test_expiry", maxsize=100, ttl_seconds=1,
         )
+        cache._cache = ttl_cache
+        svc = SessionDEKService(cache=cache)
+
+        created = svc.create_for_session(
+            _S1, _SURVEY_BRANCH_KEY, _EXPIRES, wrap_aad=_WRAP_AAD,
+        )
+
+        fake_time = 2.0
 
         loader_calls = 0
 
@@ -135,15 +149,13 @@ class TestGetForSession:
             loader_calls += 1
             return _SURVEY_BRANCH_KEY
 
-        with patch("app.crypto.services.session_dek_service.time") as mock_time:
-            mock_time.monotonic.return_value = time.monotonic() + 2.0
-            svc.get_for_session(
-                _S1,
-                created.wrapped_session_dek,
-                _EXPIRES,
-                wrap_aad=_WRAP_AAD,
-                survey_branch_key_loader=counting_loader,
-            )
+        svc.get_for_session(
+            _S1,
+            created.wrapped_session_dek,
+            _EXPIRES,
+            wrap_aad=_WRAP_AAD,
+            survey_branch_key_loader=counting_loader,
+        )
         assert loader_calls == 1
 
     def test_unwrap_failure_raises_app_error(self) -> None:
@@ -159,7 +171,7 @@ class TestGetForSession:
                 survey_branch_key_loader=_branch_key_loader,
             )
 
-    def test_already_expired_session_not_cached(self) -> None:
+    def test_session_expiry_does_not_override_cache_ttl(self) -> None:
         svc = _make_service()
         past = datetime.now(UTC) - timedelta(seconds=10)
         created = _create_wrapped_dek(svc, _S1)
@@ -186,7 +198,7 @@ class TestGetForSession:
             wrap_aad=_WRAP_AAD,
             survey_branch_key_loader=counting_loader,
         )
-        assert loader_calls == 2
+        assert loader_calls == 1
 
 
 class TestClearForSession:
@@ -217,19 +229,28 @@ class TestClearForSession:
         svc.clear_for_session(_S1)
 
 
-class TestClearExpired:
-    def test_removes_expired_entries(self) -> None:
-        svc = _make_service()
-        short_expiry = datetime.now(UTC) + timedelta(seconds=1)
+class TestTTLExpiry:
+    def test_expired_entry_triggers_unwrap(self) -> None:
+        """Cache with a 1-second TTL expires entries automatically."""
+        from cachetools import TTLCache
 
-        created_s1 = svc.create_for_session(
-            _S1, _SURVEY_BRANCH_KEY, short_expiry, wrap_aad=_WRAP_AAD,
+        fake_time = 0.0
+
+        def tick() -> float:
+            return fake_time
+
+        ttl_cache: TTLCache[Hashable, bytes] = TTLCache(maxsize=100, ttl=1, timer=tick)
+        cache: LockedTTLCache[bytes] = LockedTTLCache(
+            name="test_short_ttl", maxsize=100, ttl_seconds=1,
         )
-        created_s2 = _create_wrapped_dek(svc, _S2)
+        cache._cache = ttl_cache
+        svc = SessionDEKService(cache=cache)
 
-        with patch("app.crypto.services.session_dek_service.time") as mock_time:
-            mock_time.monotonic.return_value = time.monotonic() + 2.0
-            svc.clear_expired()
+        created = svc.create_for_session(
+            _S1, _SURVEY_BRANCH_KEY, _EXPIRES, wrap_aad=_WRAP_AAD,
+        )
+
+        fake_time = 2.0
 
         loader_calls = 0
 
@@ -240,19 +261,12 @@ class TestClearExpired:
 
         svc.get_for_session(
             _S1,
-            created_s1.wrapped_session_dek,
+            created.wrapped_session_dek,
             _EXPIRES,
             wrap_aad=_WRAP_AAD,
             survey_branch_key_loader=counting_loader,
         )
-        svc.get_for_session(
-            _S2,
-            created_s2.wrapped_session_dek,
-            _EXPIRES,
-            wrap_aad=_WRAP_AAD,
-            survey_branch_key_loader=counting_loader,
-        )
-        assert loader_calls == 1  # s1 unwrapped, s2 still cached
+        assert loader_calls == 1
 
 
 class TestCreateForSession:
@@ -293,7 +307,7 @@ class TestCreateForSession:
                 _S1, bad_key, _EXPIRES, wrap_aad=_WRAP_AAD,
             )
 
-    def test_expired_session_not_cached(self) -> None:
+    def test_create_caches_plaintext_dek_even_if_session_expiry_is_past(self) -> None:
         svc = _make_service()
         past = datetime.now(UTC) - timedelta(seconds=10)
         result = svc.create_for_session(
@@ -315,4 +329,4 @@ class TestCreateForSession:
             wrap_aad=_WRAP_AAD,
             survey_branch_key_loader=counting_loader,
         )
-        assert loader_calls == 1
+        assert loader_calls == 0

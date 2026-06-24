@@ -234,11 +234,8 @@ def _save_encrypted_answer(
 
 
 def _make_service_with_cached_dek(ctx, plaintext_dek):
-    from app.crypto.dek_cache import DekCache
-
-    dek_cache = DekCache()
-    dek_cache.put(ctx.session_locator, plaintext_dek)
-    return CompletionService(dek_cache=dek_cache)
+    _ = ctx, plaintext_dek
+    return CompletionService()
 
 
 class TestCompletion:

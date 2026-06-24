@@ -11,7 +11,7 @@ from typing import Any
 import pytest
 
 from app.crypto.aes_gcm import decrypt_answer, encrypt_answer
-from app.crypto.dek_cache import DekCache
+from app.crypto.cache import LockedTTLCache
 from app.crypto.kms import unwrap_dek, wrap_dek
 from app.crypto.locators import derive_session_locator
 from app.crypto.nonces import generate_nonce
@@ -130,7 +130,11 @@ class TestCryptoSmoke:
         )
 
         session_locator = os.urandom(32)
-        cache = DekCache(default_ttl_seconds=60.0)
+        cache: LockedTTLCache[bytes] = LockedTTLCache(
+            name="test_session_dek",
+            maxsize=16,
+            ttl_seconds=60,
+        )
 
         # Cache miss → unwrap via KMS
         assert cache.get(session_locator) is None
