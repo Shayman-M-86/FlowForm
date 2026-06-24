@@ -140,6 +140,18 @@ export const QUERY_POLICIES = {
     storage: 'memory',
     staleTime: 30_000,
   },
+
+  subjects: {
+    storage: 'session',
+    staleTime: 2 * MINUTE,
+    cooldownMs: 15_000,
+  },
+
+  participants: {
+    storage: 'session',
+    staleTime: 2 * MINUTE,
+    cooldownMs: 15_000,
+  },
 } as const satisfies Record<string, QueryPolicy>
 
 export function resolveQueryPolicy(policy: QueryPolicy): QueryPolicy {

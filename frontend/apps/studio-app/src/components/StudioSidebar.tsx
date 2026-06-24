@@ -72,6 +72,16 @@ function IconResponses() {
     </svg>
   );
 }
+function IconSubjects() {
+  return (
+    <svg {...svgProps}>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <line x1="19" y1="8" x2="19" y2="14" />
+      <line x1="22" y1="11" x2="16" y2="11" />
+    </svg>
+  );
+}
 function IconMembers() {
   return (
     <svg {...svgProps}>
@@ -545,6 +555,7 @@ export function StudioSidebar() {
               <div aria-hidden className="h-px bg-border mt-5" />
               <NavSection label={projectName ?? "Project"}>
                 <NavItem to={`${projectBase}/surveys`} icon={<IconSurveys />} label="Surveys" active={isExactActive(`${projectBase}/surveys`)} disabled={!canViewSurveys} tooltip={PERMISSION_REQUIRED_TOOLTIP.surveys} />
+                <NavItem to={`${projectBase}/subjects`} icon={<IconSubjects />} label="Subjects" active={isActive(`${projectBase}/subjects`)} disabled={!canManageMembers} tooltip={PERMISSION_REQUIRED_TOOLTIP.subjects} />
                 <NavItem to={`${projectBase}/members`} icon={<IconMembers />} label="Members" active={isActive(`${projectBase}/members`)} disabled={!canManageMembers} tooltip={PERMISSION_REQUIRED_TOOLTIP.members} />
                 <NavItem to={`${projectBase}/roles`} icon={<IconRoles />} label="Roles" active={isActive(`${projectBase}/roles`)} disabled={!canManageRoles} tooltip={PERMISSION_REQUIRED_TOOLTIP.roles} />
                 <NavItem to={`${projectBase}/settings`} icon={<IconSettings />} label="Settings" active={isActive(`${projectBase}/settings`)} disabled={!canEditSettings && !canDeleteProject} tooltip={PERMISSION_REQUIRED_TOOLTIP.settings} />

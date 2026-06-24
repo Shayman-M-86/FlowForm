@@ -20,6 +20,7 @@ import { Route as StudioProjectsSlugRouteImport } from './routes/_studio/project
 import { Route as RespondentRespondTokenRouteImport } from './routes/_respondent/respond/$token'
 import { Route as StudioProjectsSlugIndexRouteImport } from './routes/_studio/projects/$slug/index'
 import { Route as StudioProjectsSlugSurveysRouteImport } from './routes/_studio/projects/$slug/surveys'
+import { Route as StudioProjectsSlugSubjectsRouteImport } from './routes/_studio/projects/$slug/subjects'
 import { Route as StudioProjectsSlugSettingsRouteImport } from './routes/_studio/projects/$slug/settings'
 import { Route as StudioProjectsSlugRolesRouteImport } from './routes/_studio/projects/$slug/roles'
 import { Route as StudioProjectsSlugMembersRouteImport } from './routes/_studio/projects/$slug/members'
@@ -86,6 +87,12 @@ const StudioProjectsSlugSurveysRoute =
   StudioProjectsSlugSurveysRouteImport.update({
     id: '/surveys',
     path: '/surveys',
+    getParentRoute: () => StudioProjectsSlugRoute,
+  } as any)
+const StudioProjectsSlugSubjectsRoute =
+  StudioProjectsSlugSubjectsRouteImport.update({
+    id: '/subjects',
+    path: '/subjects',
     getParentRoute: () => StudioProjectsSlugRoute,
   } as any)
 const StudioProjectsSlugSettingsRoute =
@@ -177,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/projects/$slug/members': typeof StudioProjectsSlugMembersRoute
   '/projects/$slug/roles': typeof StudioProjectsSlugRolesRoute
   '/projects/$slug/settings': typeof StudioProjectsSlugSettingsRoute
+  '/projects/$slug/subjects': typeof StudioProjectsSlugSubjectsRoute
   '/projects/$slug/surveys': typeof StudioProjectsSlugSurveysRouteWithChildren
   '/projects/$slug/': typeof StudioProjectsSlugIndexRoute
   '/projects/$slug/surveys/$surveySlug': typeof StudioProjectsSlugSurveysSurveySlugRouteWithChildren
@@ -200,6 +208,7 @@ export interface FileRoutesByTo {
   '/projects/$slug/members': typeof StudioProjectsSlugMembersRoute
   '/projects/$slug/roles': typeof StudioProjectsSlugRolesRoute
   '/projects/$slug/settings': typeof StudioProjectsSlugSettingsRoute
+  '/projects/$slug/subjects': typeof StudioProjectsSlugSubjectsRoute
   '/projects/$slug': typeof StudioProjectsSlugIndexRoute
   '/projects/$slug/surveys': typeof StudioProjectsSlugSurveysIndexRoute
   '/projects/$slug/surveys/$surveySlug/access': typeof StudioProjectsSlugSurveysSurveySlugAccessRoute
@@ -225,6 +234,7 @@ export interface FileRoutesById {
   '/_studio/projects/$slug/members': typeof StudioProjectsSlugMembersRoute
   '/_studio/projects/$slug/roles': typeof StudioProjectsSlugRolesRoute
   '/_studio/projects/$slug/settings': typeof StudioProjectsSlugSettingsRoute
+  '/_studio/projects/$slug/subjects': typeof StudioProjectsSlugSubjectsRoute
   '/_studio/projects/$slug/surveys': typeof StudioProjectsSlugSurveysRouteWithChildren
   '/_studio/projects/$slug/': typeof StudioProjectsSlugIndexRoute
   '/_studio/projects/$slug/surveys/$surveySlug': typeof StudioProjectsSlugSurveysSurveySlugRouteWithChildren
@@ -251,6 +261,7 @@ export interface FileRouteTypes {
     | '/projects/$slug/members'
     | '/projects/$slug/roles'
     | '/projects/$slug/settings'
+    | '/projects/$slug/subjects'
     | '/projects/$slug/surveys'
     | '/projects/$slug/'
     | '/projects/$slug/surveys/$surveySlug'
@@ -274,6 +285,7 @@ export interface FileRouteTypes {
     | '/projects/$slug/members'
     | '/projects/$slug/roles'
     | '/projects/$slug/settings'
+    | '/projects/$slug/subjects'
     | '/projects/$slug'
     | '/projects/$slug/surveys'
     | '/projects/$slug/surveys/$surveySlug/access'
@@ -298,6 +310,7 @@ export interface FileRouteTypes {
     | '/_studio/projects/$slug/members'
     | '/_studio/projects/$slug/roles'
     | '/_studio/projects/$slug/settings'
+    | '/_studio/projects/$slug/subjects'
     | '/_studio/projects/$slug/surveys'
     | '/_studio/projects/$slug/'
     | '/_studio/projects/$slug/surveys/$surveySlug'
@@ -394,6 +407,13 @@ declare module '@tanstack/react-router' {
       path: '/surveys'
       fullPath: '/projects/$slug/surveys'
       preLoaderRoute: typeof StudioProjectsSlugSurveysRouteImport
+      parentRoute: typeof StudioProjectsSlugRoute
+    }
+    '/_studio/projects/$slug/subjects': {
+      id: '/_studio/projects/$slug/subjects'
+      path: '/subjects'
+      fullPath: '/projects/$slug/subjects'
+      preLoaderRoute: typeof StudioProjectsSlugSubjectsRouteImport
       parentRoute: typeof StudioProjectsSlugRoute
     }
     '/_studio/projects/$slug/settings': {
@@ -559,6 +579,7 @@ interface StudioProjectsSlugRouteChildren {
   StudioProjectsSlugMembersRoute: typeof StudioProjectsSlugMembersRoute
   StudioProjectsSlugRolesRoute: typeof StudioProjectsSlugRolesRoute
   StudioProjectsSlugSettingsRoute: typeof StudioProjectsSlugSettingsRoute
+  StudioProjectsSlugSubjectsRoute: typeof StudioProjectsSlugSubjectsRoute
   StudioProjectsSlugSurveysRoute: typeof StudioProjectsSlugSurveysRouteWithChildren
   StudioProjectsSlugIndexRoute: typeof StudioProjectsSlugIndexRoute
 }
@@ -567,6 +588,7 @@ const StudioProjectsSlugRouteChildren: StudioProjectsSlugRouteChildren = {
   StudioProjectsSlugMembersRoute: StudioProjectsSlugMembersRoute,
   StudioProjectsSlugRolesRoute: StudioProjectsSlugRolesRoute,
   StudioProjectsSlugSettingsRoute: StudioProjectsSlugSettingsRoute,
+  StudioProjectsSlugSubjectsRoute: StudioProjectsSlugSubjectsRoute,
   StudioProjectsSlugSurveysRoute: StudioProjectsSlugSurveysRouteWithChildren,
   StudioProjectsSlugIndexRoute: StudioProjectsSlugIndexRoute,
 }

@@ -223,7 +223,7 @@
   }
 
   .ui-modal-panel {
-    @apply flex max-h-[min(90vh,760px)] w-full min-w-0 flex-col rounded-xl border border-border bg-card shadow-lg;
+    @apply flex max-h-[min(90vh,760px)] w-full min-w-0 flex-col rounded-lg border border-border bg-card shadow-lg;
   }
 
   .ui-modal-header {
@@ -261,7 +261,7 @@
     }
 
     .ui-card {
-        @apply rounded-xl border transition-colors;
+        @apply rounded-lg border transition-colors;
       }
 
       .ui-expandable-selection-button {
@@ -402,7 +402,7 @@
 
   /* The table itself */
   .ui-table {
-    @apply w-full overflow-hidden rounded-xl border border-border bg-card;
+    @apply w-full overflow-hidden rounded-lg border border-border bg-card;
   }
 
   /* Header row */

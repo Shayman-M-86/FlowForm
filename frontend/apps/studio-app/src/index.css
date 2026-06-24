@@ -64,7 +64,7 @@ body {
     }
 
     .app-main {
-      @apply border-l border-border rounded-l-3xl shadow-lg;
+      @apply border-l border-border rounded-l-2xl shadow-lg;
       transition: border-radius 200ms ease-out;
     }
   }

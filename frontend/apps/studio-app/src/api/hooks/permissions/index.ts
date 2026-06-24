@@ -9,6 +9,7 @@ export { permissionKeys }
 
 export const PERMISSION_REQUIRED_TOOLTIP = {
   surveys: 'You need survey:view permission to access surveys.',
+  subjects: 'You need project:manage_members permission to view subjects.',
   members: 'You need project:manage_members permission to manage members.',
   roles: 'You need project:manage_roles permission to manage roles.',
   settings: 'You need project:edit or project:delete permission to access settings.',

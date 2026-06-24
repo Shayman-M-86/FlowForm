@@ -51,10 +51,11 @@ function ProjectLayout() {
     return <ProjectNotFound />
   }
 
-  const activeTab = ['surveys', 'members', 'roles', 'settings'].find((t) => pathname.includes(`/${t}`)) ?? 'surveys'
+  const activeTab = ['surveys', 'subjects', 'members', 'roles', 'settings'].find((t) => pathname.includes(`/${t}`)) ?? 'surveys'
 
   const tabs = [
     { id: 'surveys',  label: 'Surveys',  disabled: !canViewSurveys,                      tooltip: 'You need survey:view permission to access surveys.' },
+    { id: 'subjects', label: 'Subjects', disabled: !canManageMembers,                     tooltip: 'You need project:manage_members permission to view subjects.' },
     { id: 'members',  label: 'Members',  disabled: !canManageMembers,                     tooltip: 'You need project:manage_members permission to manage members.' },
     { id: 'roles',    label: 'Roles',    disabled: !canManageRoles,                       tooltip: 'You need project:manage_roles permission to manage roles.' },
     { id: 'settings', label: 'Settings', disabled: !canEditSettings && !canDeleteProject, tooltip: 'You need project:edit or project:delete permission to access settings.' },
