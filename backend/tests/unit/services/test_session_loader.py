@@ -118,7 +118,7 @@ class TestSessionLoaderRejection:
         envelope = MagicMock()
 
         locator_service = MagicMock()
-        locator_service.for_existing_session.return_value = b"\x02" * 32
+        locator_service.for_existing_session.return_value = (b"\x02" * 32, MagicMock())
 
         with patch(
             "app.services.public_submissions.core.shared.session_loader.ssr.hash_browser_session_token",
@@ -148,7 +148,7 @@ class TestSessionLoaderRejection:
         version.id = 1
 
         locator_service = MagicMock()
-        locator_service.for_existing_session.return_value = b"\x02" * 32
+        locator_service.for_existing_session.return_value = (b"\x02" * 32, MagicMock())
 
         with patch(
             "app.services.public_submissions.core.shared.session_loader.ssr.hash_browser_session_token",

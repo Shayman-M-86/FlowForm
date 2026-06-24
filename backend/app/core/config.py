@@ -163,7 +163,7 @@ class EncryptionSettings(BaseModel):
 
     # How long (seconds) to cache linkage keys in memory before re-fetching
     linkage_key_cache_ttl_seconds: float = 1800.0
-    key_cache_enabled: bool = False  
+    key_cache_enabled: bool = True  
 
     aws_region: str
     aws_access_key_id: SecretStr

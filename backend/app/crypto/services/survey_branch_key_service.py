@@ -10,6 +10,8 @@ from __future__ import annotations
 import logging
 import os
 import uuid
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 
 from pydantic import SecretStr
 from sqlalchemy.orm import Session
@@ -23,6 +25,8 @@ from app.schema.orm.core.survey_encryption_key import SurveyEncryptionKey
 logger = logging.getLogger(__name__)
 
 SURVEY_KMS_CONTEXT_VERSION = 1
+
+_PREFETCH_POOL = ThreadPoolExecutor(max_workers=2)
 
 _BRANCH_KEY_LENGTH = 32
 
@@ -138,6 +142,21 @@ class SurveyBranchKeyService:
 
         self._cache.put(key.id, plaintext_branch_key)
         return plaintext_branch_key
+
+    def prefetch_plaintext_key(
+        self, key: SurveyEncryptionKey,
+    ) -> Callable[[], bytes]:
+        """Start branch key decryption in the background on cache miss.
+
+        Returns a callable that blocks until the result is ready.
+        On cache hit the callable returns immediately with no thread overhead.
+        """
+        cached = self._cache.get(key.id)
+        if cached is not None:
+            return lambda: cached
+
+        future = _PREFETCH_POOL.submit(self.get_plaintext_key, key)
+        return future.result
 
     def clear_for_key(self, key_id: uuid.UUID) -> None:
         """Remove one plaintext survey branch key from the worker-local cache."""

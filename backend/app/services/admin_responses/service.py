@@ -160,7 +160,7 @@ class AdminResponseService:
         Response-first ordering is mandatory per doc 06.
         """
         session = _load_session(db, survey_id=survey_id, session_id=session_id)
-        session_locator = self._crypto.locator_service.for_existing_session(
+        session_locator, _ = self._crypto.locator_service.for_existing_session(
             session.id, session.linkage_key_version, db,
         )
 

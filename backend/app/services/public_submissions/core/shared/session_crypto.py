@@ -10,6 +10,7 @@ transaction management, or action-specific orchestration.
 from __future__ import annotations
 
 import struct
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -118,11 +119,11 @@ def load_plaintext_session_dek(
     envelope: ResponseEnvelope,
     dek_service: SessionDEKService,
     survey_branch_key_service: SurveyBranchKeyService | None,
+    prefetched_branch_key_loader: Callable[[], bytes] | None = None,
 ) -> bytes:
     if survey_branch_key_service is None:
         raise SurveyBranchKeyUnavailableError()
 
-    survey_key = load_survey_encryption_key(db, session=session)
     aad = build_session_dek_wrap_aad(
         crypto_version=envelope.crypto_version,
         project_id=session.project_id,
@@ -130,12 +131,21 @@ def load_plaintext_session_dek(
         session_id=session.id,
         session_locator=session_locator,
     )
+
+    if prefetched_branch_key_loader is not None:
+        branch_key_loader = prefetched_branch_key_loader
+    else:
+        survey_key = load_survey_encryption_key(db, session=session)
+
+        def branch_key_loader() -> bytes:
+            return survey_branch_key_service.get_plaintext_key(survey_key)
+
     return dek_service.get_for_session(
         session.id,
         envelope.wrapped_session_dek,
         session.expires_at,
         wrap_aad=aad,
-        survey_branch_key_loader=lambda: survey_branch_key_service.get_plaintext_key(survey_key),
+        survey_branch_key_loader=branch_key_loader,
     )
 
 
@@ -148,7 +158,7 @@ def load_session_envelope_crypto_context(
     dek_service: SessionDEKService,
     survey_branch_key_service: SurveyBranchKeyService | None,
 ) -> SessionEnvelopeCryptoContext:
-    session_locator = locator_service.for_existing_session(
+    session_locator, _ = locator_service.for_existing_session(
         session.id,
         session.linkage_key_version,
         db,

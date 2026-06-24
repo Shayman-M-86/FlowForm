@@ -7,9 +7,12 @@ from dataclasses import dataclass
 from typing import Any
 
 import boto3
+from botocore.config import Config
 from pydantic import SecretStr
 
 from app.crypto.errors import LinkageKeyError, LinkageSecretError
+
+_CLIENT_CONFIG = Config(tcp_keepalive=True)
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +35,7 @@ def _build_secretsmanager_client(
         aws_access_key_id=access_key_id.get_secret_value(),
         aws_secret_access_key=secret_access_key.get_secret_value(),
     )
-    return session.client("secretsmanager")
+    return session.client("secretsmanager", config=_CLIENT_CONFIG)
 
 
 def get_linkage_secret(

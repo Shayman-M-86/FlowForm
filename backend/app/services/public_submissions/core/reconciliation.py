@@ -49,7 +49,7 @@ def reconcile_orphaned_sessions(
 
     for session in sessions:
         try:
-            session_locator = loc_svc.for_existing_session(
+            session_locator, _ = loc_svc.for_existing_session(
                 session.id, session.linkage_key_version, db,
             )
 

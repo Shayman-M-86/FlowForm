@@ -134,9 +134,10 @@ def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
         )
 
     loc_svc.for_new_session.side_effect = _new_session_locator
-    loc_svc.for_existing_session.side_effect = lambda session_id, *_args, **_kwargs: derive_session_locator(
-        session_id,
-        linkage_secret,
+    _linkage_key = LinkageKey(version=1, secret=linkage_secret, aws_version_id="test-version")
+    loc_svc.for_existing_session.side_effect = lambda session_id, *_args, **_kwargs: (
+        derive_session_locator(session_id, linkage_secret),
+        _linkage_key,
     )
 
     dek_svc = MagicMock()

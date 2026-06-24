@@ -35,6 +35,7 @@ from app.crypto import (
     parse_plaintext_payload,
 )
 from app.crypto.services import AnswerCryptoService
+from app.crypto.services.linkage_key_service import LinkageKey
 from app.domain.errors import SessionExpiredError, SessionInvalidError
 from app.repositories.core.submission_sessions import create_session
 from app.repositories.response import (
@@ -186,6 +187,7 @@ def _create_envelope_and_context(
         session_locator=session_locator,
         envelope=envelope,
         encryption_settings=_FAKE_ENC_SETTINGS,
+        linkage_key=LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version"),
     )
     return ctx, plaintext_dek
 
@@ -193,8 +195,12 @@ def _create_envelope_and_context(
 def _mock_locator_service(session_id: uuid.UUID, linkage_secret: bytes = _LINKAGE_SECRET):
     """Create a mock LocatorService that derives real locators from the test secret."""
     svc = MagicMock()
-    svc.answer_locator.side_effect = lambda sid, qid, version, db: derive_answer_locator(sid, qid, linkage_secret)
-    svc.for_existing_session.side_effect = lambda sid, version, db: derive_session_locator(sid, linkage_secret)
+    _linkage_key = LinkageKey(version=1, secret=linkage_secret, aws_version_id="test-version")
+    svc.answer_locator.side_effect = lambda sid, qid, version, db, **kw: derive_answer_locator(sid, qid, linkage_secret)
+    svc.for_existing_session.side_effect = lambda sid, version, db: (
+        derive_session_locator(sid, linkage_secret),
+        _linkage_key,
+    )
     return svc
 
 
@@ -490,7 +496,10 @@ class TestExpiredSession:
         _create_envelope_and_context(core_db, response_db, session, version)
 
         locator_service = MagicMock()
-        locator_service.for_existing_session.return_value = derive_session_locator(session.id, _LINKAGE_SECRET)
+        locator_service.for_existing_session.return_value = (
+            derive_session_locator(session.id, _LINKAGE_SECRET),
+            LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version"),
+        )
 
         with pytest.raises(SessionExpiredError):
             load_current_session(
@@ -510,7 +519,10 @@ class TestCompletedSession:
         _create_envelope_and_context(core_db, response_db, session, version)
 
         locator_service = MagicMock()
-        locator_service.for_existing_session.return_value = derive_session_locator(session.id, _LINKAGE_SECRET)
+        locator_service.for_existing_session.return_value = (
+            derive_session_locator(session.id, _LINKAGE_SECRET),
+            LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version"),
+        )
 
         with pytest.raises(SessionInvalidError, match="already completed"):
             load_current_session(

@@ -28,7 +28,10 @@ def _make_mock_locator_service():
     svc.for_new_session.return_value = NewSessionLocator(
         linkage_key_version=1, session_locator=b"\x00" * 32,
     )
-    svc.for_existing_session.return_value = b"\x00" * 32
+    svc.for_existing_session.return_value = (
+        b"\x00" * 32,
+        LinkageKey(version=1, secret=b"\xcc" * 32, aws_version_id="test-version"),
+    )
     svc.answer_locator.return_value = b"\x00" * 32
     return svc
 

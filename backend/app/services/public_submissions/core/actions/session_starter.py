@@ -7,6 +7,7 @@ response envelope creation, and final commit/cleanup.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -30,11 +31,15 @@ from app.services.public_submissions.core.resolution.session_subject_service imp
 )
 from app.services.public_submissions.core.resolution.subject_resolver import SubjectResolver
 from app.services.public_submissions.core.resolution.subject_token import SubjectTokenService
+from app.services.public_submissions.core.shared import session_write_cache
 from app.services.public_submissions.core.shared.crypto_provider import CryptoServices
 from app.services.public_submissions.core.shared.session_crypto import (
     build_session_dek_wrap_aad,
     load_survey_encryption_key,
     resolve_session_crypto_services,
+)
+from app.services.public_submissions.core.shared.session_write_cache import (
+    SessionWriteContext,
 )
 from app.services.results import SubmissionAccessGrant
 
@@ -46,6 +51,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _CRYPTO_VERSION = 1
+
+
+@dataclass(frozen=True, slots=True)
+class _EnvelopeResult:
+    session_locator: bytes
+    plaintext_session_dek: bytes
+    envelope_id: UUID
+    linkage_key_version: int
 
 
 class SessionStarter:
@@ -128,7 +141,7 @@ class SessionStarter:
         self._consume_single_use_link_if_needed(db, access)
         request_timing.log("session_start.link_consumed_if_needed")
 
-        session_locator = self._create_response_envelope(
+        envelope_result = self._create_response_envelope(
             db,
             response_db,
             session=session,
@@ -141,9 +154,25 @@ class SessionStarter:
             response_db,
             access=access,
             session=session,
-            session_locator=session_locator,
+            session_locator=envelope_result.session_locator,
         )
         request_timing.log("session_start.core_committed")
+
+        session_write_cache.put(
+            session.browser_session_token_hash,
+            SessionWriteContext(
+                session_id=session.id,
+                project_id=session.project_id,
+                survey_id=session.survey_id,
+                survey_version_id=session.survey_version_id,
+                session_locator=envelope_result.session_locator,
+                envelope_id=envelope_result.envelope_id,
+                plaintext_session_dek=envelope_result.plaintext_session_dek,
+                crypto_version=_CRYPTO_VERSION,
+                expires_at=session.expires_at,
+                linkage_key=linkage_key,
+            ),
+        )
 
         response = self._build_response(
             access,
@@ -196,7 +225,7 @@ class SessionStarter:
         *,
         session: SubmissionSession,
         linkage_key: LinkageKey,
-    ) -> bytes:
+    ) -> _EnvelopeResult:
         """Create and commit the response envelope.
 
         Core rows are flushed, but not committed yet. If response envelope
@@ -209,15 +238,19 @@ class SessionStarter:
             if branch_key_service is None:
                 raise SurveyBranchKeyUnavailableError()
 
+            survey_key = load_survey_encryption_key(db, session=session)
+            request_timing.log("session_start.envelope.survey_key_loaded")
+
+            branch_key_resolver = branch_key_service.prefetch_plaintext_key(survey_key)
+
             loc = crypto.locator_service.for_new_session(
                 session.id,
                 db,
                 linkage_key=linkage_key,
             )
             request_timing.log("session_start.envelope.locator_derived")
-            survey_key = load_survey_encryption_key(db, session=session)
-            request_timing.log("session_start.envelope.survey_key_loaded")
-            plaintext_branch_key = branch_key_service.get_plaintext_key(survey_key)
+
+            plaintext_branch_key = branch_key_resolver()
             request_timing.log("session_start.envelope.branch_key_ready")
             wrap_aad = build_session_dek_wrap_aad(
                 crypto_version=_CRYPTO_VERSION,
@@ -235,7 +268,7 @@ class SessionStarter:
             )
             request_timing.log("session_start.envelope.session_dek_wrapped")
 
-            response_envelope_repo.create(
+            envelope = response_envelope_repo.create(
                 response_db,
                 session_locator=loc.session_locator,
                 linkage_key_version=loc.linkage_key_version,
@@ -251,7 +284,12 @@ class SessionStarter:
             db.rollback()
             raise SessionStartError("Failed to create response envelope") from err
 
-        return loc.session_locator
+        return _EnvelopeResult(
+            session_locator=loc.session_locator,
+            plaintext_session_dek=new_dek.plaintext_dek,
+            envelope_id=envelope.id,
+            linkage_key_version=loc.linkage_key_version,
+        )
 
     def _commit_core_or_cleanup_envelope(
         self,

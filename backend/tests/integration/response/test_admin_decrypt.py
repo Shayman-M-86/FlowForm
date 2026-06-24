@@ -28,6 +28,7 @@ from app.crypto import (
     generate_nonce,
 )
 from app.crypto.services import AnswerCryptoService, LinkageKeyService
+from app.crypto.services.linkage_key_service import LinkageKey
 from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.core.submission_sessions import create_session
 from app.repositories.response import (
@@ -56,7 +57,11 @@ _PAYLOAD_VERSION = 1
 
 def _mock_locator_service():
     svc = MagicMock()
-    svc.for_existing_session.side_effect = lambda sid, _version, _db: derive_session_locator(sid, _LINKAGE_SECRET)
+    _linkage_key = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
+    svc.for_existing_session.side_effect = lambda sid, _version, _db: (
+        derive_session_locator(sid, _LINKAGE_SECRET),
+        _linkage_key,
+    )
     return svc
 
 

@@ -85,15 +85,16 @@ class TestForExistingSession:
         svc = _make_service(secrets={2: secret})
         db = _db()
         new = svc.for_new_session(SESS_1, db)
-        existing = svc.for_existing_session(SESS_1, 2, db)
-        assert new.session_locator == existing
+        existing_locator, existing_key = svc.for_existing_session(SESS_1, 2, db)
+        assert new.session_locator == existing_locator
+        assert existing_key.version == 2
 
     def test_uses_stored_version(self) -> None:
         secrets = {1: os.urandom(32), 2: os.urandom(32)}
         svc = _make_service(current_version=2, secrets=secrets)
         db = _db()
-        loc_v1 = svc.for_existing_session(SESS_1, 1, db)
-        loc_v2 = svc.for_existing_session(SESS_1, 2, db)
+        loc_v1, _ = svc.for_existing_session(SESS_1, 1, db)
+        loc_v2, _ = svc.for_existing_session(SESS_1, 2, db)
         assert loc_v1 != loc_v2
 
 

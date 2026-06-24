@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings, current_settings
 from app.crypto.services import LocatorService
+from app.crypto.services.linkage_key_service import LinkageKey
 from app.domain.errors import (
     EnvelopeNotFoundError,
     SessionExpiredError,
@@ -49,6 +50,7 @@ class SessionContext:
     session_locator: bytes
     envelope: ResponseEnvelope
     encryption_settings: EncryptionSettings
+    linkage_key: LinkageKey
 
 
 _FORBIDDEN_EDIT_STATUSES = frozenset({"abandoned"})
@@ -110,7 +112,7 @@ def load_current_session(
         raise SessionInvalidError("Frozen survey version not found.")
 
     loc_svc = _get_locator_service(locator_service, encryption_settings)
-    session_locator = loc_svc.for_existing_session(session.id, session.linkage_key_version, db)
+    session_locator, linkage_key = loc_svc.for_existing_session(session.id, session.linkage_key_version, db)
 
     envelope = response_envelope_repo.get_by_locator(response_db, session_locator)
     if envelope is None:
@@ -122,4 +124,5 @@ def load_current_session(
         session_locator=session_locator,
         envelope=envelope,
         encryption_settings=enc,
+        linkage_key=linkage_key,
     )

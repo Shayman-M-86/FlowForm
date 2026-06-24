@@ -50,10 +50,19 @@ class LocatorService:
             session_locator=locator,
         )
 
-    def for_existing_session(self, session_id: UUID, linkage_key_version: int, db: Session) -> bytes:
-        """Derive a session locator using a stored linkage key version."""
+    def for_existing_session(
+        self,
+        session_id: UUID,
+        linkage_key_version: int,
+        db: Session,
+    ) -> tuple[bytes, LinkageKey]:
+        """Derive a session locator using a stored linkage key version.
+
+        Returns the locator bytes and the resolved LinkageKey so callers can
+        reuse it for answer locator derivation without a second API call.
+        """
         key = self._keys.get_linkage_key_by_version(linkage_key_version, db)
-        return derive_session_locator(session_id, key.secret)
+        return derive_session_locator(session_id, key.secret), key
 
     def answer_locator(
         self,
@@ -61,9 +70,11 @@ class LocatorService:
         question_node_id: UUID,
         linkage_key_version: int,
         db: Session,
+        *,
+        linkage_key: LinkageKey | None = None,
     ) -> bytes:
         """Derive a single answer locator."""
-        key = self._keys.get_linkage_key_by_version(linkage_key_version, db)
+        key = linkage_key or self._keys.get_linkage_key_by_version(linkage_key_version, db)
         return derive_answer_locator(session_id, question_node_id, key.secret)
 
     def answer_locators(
@@ -72,7 +83,9 @@ class LocatorService:
         question_node_ids: list[UUID],
         linkage_key_version: int,
         db: Session,
+        *,
+        linkage_key: LinkageKey | None = None,
     ) -> dict[UUID, bytes]:
         """Derive answer locators for multiple questions in one call."""
-        key = self._keys.get_linkage_key_by_version(linkage_key_version, db)
+        key = linkage_key or self._keys.get_linkage_key_by_version(linkage_key_version, db)
         return {qid: derive_answer_locator(session_id, qid, key.secret) for qid in question_node_ids}

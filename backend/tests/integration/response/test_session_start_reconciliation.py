@@ -107,7 +107,7 @@ def _mock_locator_service(session_locator: bytes | None = None):
         linkage_key_version=1,
         session_locator=loc_bytes,
     )
-    svc.for_existing_session.return_value = loc_bytes
+    svc.for_existing_session.return_value = (loc_bytes, MagicMock())
     return svc
 
 

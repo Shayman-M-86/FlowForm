@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from app.crypto import derive_session_locator
 from app.crypto.services import LinkageKeyService, SessionDEKService
 from app.crypto.services.answer_crypto_service import AnswerCryptoService
+from app.crypto.services.linkage_key_service import LinkageKey
 from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.core.submission_sessions import create_session
 from app.repositories.response import response_envelope_repo
@@ -42,7 +43,10 @@ def _mock_locator_service(session_locator: bytes | None = None) -> MagicMock:
     """A LocatorService stub whose for_existing_session returns a fixed locator."""
     svc = MagicMock()
     if session_locator is not None:
-        svc.for_existing_session.return_value = session_locator
+        svc.for_existing_session.return_value = (
+            session_locator,
+            LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version"),
+        )
     return svc
 
 

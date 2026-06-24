@@ -23,9 +23,11 @@ from app.crypto.services import (
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import AnswerSaveError, QuestionNotInVersionError, SessionInvalidError
 from app.domain.survey_answer_validation import validate_answer
+from app.logging.request_timing import request_timing
 from app.repositories import content_repo
 from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
+from app.repositories.core import survey_encryption_keys as survey_key_repo
 from app.repositories.response import response_answer_repo, response_answer_revision_repo
 from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import SubmissionAnswerState
@@ -35,6 +37,7 @@ from app.services.public_submissions.core.shared.session_crypto import (
     resolve_session_crypto_services,
 )
 from app.services.public_submissions.core.shared.session_loader import SessionContext
+from app.services.public_submissions.core.shared.session_write_cache import SessionWriteContext
 
 logger = logging.getLogger(__name__)
 
@@ -96,12 +99,28 @@ class AnswerSaveService:
         """Execute the 12-step answer save sequence. Returns the revision number."""
         crypto = self._ensure_crypto()
 
+        branch_key_resolver = None
+        if crypto.survey_branch_key_service is not None:
+            survey_key = survey_key_repo.get_by_project_survey(
+                db,
+                project_id=ctx.session.project_id,
+                survey_id=ctx.session.survey_id,
+            )
+            if survey_key is not None:
+                branch_key_resolver = (
+                    crypto.survey_branch_key_service.prefetch_plaintext_key(
+                        survey_key,
+                    )
+                )
+        request_timing.log("Crypto service is loaded ")
+
         # Step 1: Validate and lock the current session
         locked_session = ssr.lock_for_update(db, ctx.session.id)
         if locked_session is None:
             raise AnswerSaveError("Session disappeared during answer save.")
         if locked_session.session_status != "in_progress":
             raise SessionInvalidError(f"Session is {locked_session.session_status}.")
+        request_timing.log("Session is locked for update")
 
         # Step 2: Check mutation ID — before any row lock on the logical answer
         answer_locator = crypto.locator_service.answer_locator(
@@ -109,7 +128,9 @@ class AnswerSaveService:
             question_node_id,
             ctx.session.linkage_key_version,
             db,
+            linkage_key=ctx.linkage_key,
         )
+        request_timing.log("Answer locator is derived")
         existing_answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
         if existing_answer is not None:
             dup_revision = response_answer_revision_repo.get_by_mutation_id(
@@ -117,6 +138,7 @@ class AnswerSaveService:
             )
             if dup_revision is not None:
                 return dup_revision.revision_number
+        request_timing.log("Mutation ID checked for duplicates")
 
         # Step 3: Validate the answer against the frozen survey question node
         question = content_repo.get_question_node(db, ctx.survey_version.id, question_node_id)
@@ -127,6 +149,7 @@ class AnswerSaveService:
         json_answer_value = _answer_value_to_json(answer_value)
         if answer_state != "cleared" and json_answer_value is not None:
             validate_answer(question.question_schema, json_answer_value)
+        request_timing.log("Answer shape validated")
 
         # Step 4: Derive session locator and answer locator (locator already derived)
         # Step 5: Load the response envelope (already in ctx)
@@ -139,7 +162,9 @@ class AnswerSaveService:
             envelope=ctx.envelope,
             dek_service=crypto.dek_service,
             survey_branch_key_service=crypto.survey_branch_key_service,
+            prefetched_branch_key_loader=branch_key_resolver,
         )
+        request_timing.log("Plaintext DEK loaded")
 
         # Steps 8-9: Insert revision and update latest pointer
         if existing_answer is not None:
@@ -155,7 +180,7 @@ class AnswerSaveService:
 
         # We need the revision ID for AAD before creating. Pre-generate it.
         revision_id = uuid.uuid4()
-
+        request_timing.log("Revision ID generated")
         if existing_answer is None:
             # First save: create logical answer row with the revision we're about to insert
             answer_row, created = response_answer_repo.get_or_create(
@@ -180,6 +205,7 @@ class AnswerSaveService:
                 existing_answer = locked_answer
         else:
             answer_row = locked_answer  # type: ignore[assignment]
+        request_timing.log("Logical answer row is ready with next revision number")
 
         # Step 7: Encrypt the answer payload
         aad = build_aad(
@@ -190,6 +216,7 @@ class AnswerSaveService:
             revision_id=revision_id,
             revision_number=next_revision_number,
         )
+        request_timing.log("Answer payload encrypted")
         encrypted = crypto.answer_crypto_service.encrypt(
             dek=plaintext_dek,
             question_node_id=question_node_id,
@@ -215,12 +242,148 @@ class AnswerSaveService:
 
         # Step 10: Commit the response transaction
         commit_with_err_handle(response_db, contexts=[])
+        request_timing.log("Response transaction committed")
 
         # Step 11-12: Insert and commit core analytics event (non-fatal)
         event_repo.record_event(
             db,
             session_id=ctx.session.id,
             survey_version_id=ctx.survey_version.id,
+            event_type="answer_saved",
+            question_node_id=question_node_id,
+            log_label="answer_save.analytics",
+        )
+
+        return revision.revision_number
+
+    def save_answer_cached(
+        self,
+        db: Session,
+        response_db: Session,
+        *,
+        wctx: SessionWriteContext,
+        question_node_id: UUID,
+        answer_state: SubmissionAnswerState,
+        answer_value: AnswerValueInput,
+        client_mutation_id: uuid.UUID,
+    ) -> int:
+        """Fast-path answer save using a pre-resolved SessionWriteContext."""
+        crypto = self._ensure_crypto()
+
+        # Step 1: DB safety check — session still in-progress and not expired
+        if ssr.touch_if_active(db, wctx.session_id) is None:
+            raise SessionInvalidError("Session is no longer active.")
+        request_timing.log("Session touched (cached path)")
+
+        # Step 2: Derive answer locator
+        answer_locator = crypto.locator_service.answer_locator(
+            wctx.session_id,
+            question_node_id,
+            wctx.linkage_key.version,
+            db,
+            linkage_key=wctx.linkage_key,
+        )
+        request_timing.log("Answer locator is derived")
+
+        existing_answer = response_answer_repo.get_by_locator(
+            response_db, wctx.envelope_id, answer_locator,
+        )
+        if existing_answer is not None:
+            dup_revision = response_answer_revision_repo.get_by_mutation_id(
+                response_db, existing_answer.id, client_mutation_id,
+            )
+            if dup_revision is not None:
+                return dup_revision.revision_number
+        request_timing.log("Mutation ID checked for duplicates")
+
+        # Step 3: Validate answer
+        question = content_repo.get_question_node(db, wctx.survey_version_id, question_node_id)
+        if question is None:
+            raise QuestionNotInVersionError()
+
+        json_answer_value = _answer_value_to_json(answer_value)
+        if answer_state != "cleared" and json_answer_value is not None:
+            validate_answer(question.question_schema, json_answer_value)
+        request_timing.log("Answer shape validated")
+
+        # Step 4: DEK already cached — no unwrap needed
+        plaintext_dek = wctx.plaintext_session_dek
+        request_timing.log("Plaintext DEK loaded")
+
+        # Steps 5-9: Insert revision (same as normal path)
+        if existing_answer is not None:
+            locked_answer = response_answer_repo.lock_for_update(response_db, existing_answer.id)
+            if locked_answer is None:
+                raise AnswerSaveError("Logical answer row disappeared.")
+            latest_rev = response_answer_revision_repo.get_latest(response_db, locked_answer.id)
+            next_revision_number = (latest_rev.revision_number + 1) if latest_rev else 1
+        else:
+            next_revision_number = 1
+
+        revision_id = uuid.uuid4()
+        request_timing.log("Revision ID generated")
+
+        if existing_answer is None:
+            answer_row, created = response_answer_repo.get_or_create(
+                response_db,
+                envelope_id=wctx.envelope_id,
+                answer_locator=answer_locator,
+                latest_revision_id=revision_id,
+            )
+            if not created:
+                dup_revision = response_answer_revision_repo.get_by_mutation_id(
+                    response_db, answer_row.id, client_mutation_id,
+                )
+                if dup_revision is not None:
+                    return dup_revision.revision_number
+                locked_answer = response_answer_repo.lock_for_update(response_db, answer_row.id)
+                if locked_answer is None:
+                    raise AnswerSaveError("Logical answer row disappeared after race.")
+                latest_rev = response_answer_revision_repo.get_latest(response_db, locked_answer.id)
+                next_revision_number = (latest_rev.revision_number + 1) if latest_rev else 1
+                existing_answer = locked_answer
+        else:
+            answer_row = locked_answer  # type: ignore[assignment]
+        request_timing.log("Logical answer row is ready with next revision number")
+
+        aad = build_aad(
+            crypto_version=wctx.crypto_version,
+            envelope_id=answer_row.envelope_id,
+            answer_id=answer_row.id,
+            answer_locator=answer_locator,
+            revision_id=revision_id,
+            revision_number=next_revision_number,
+        )
+        request_timing.log("Answer payload encrypted")
+
+        encrypted = crypto.answer_crypto_service.encrypt(
+            dek=plaintext_dek,
+            question_node_id=question_node_id,
+            answer_state=answer_state,
+            answer_value=answer_value,
+            aad=aad,
+        )
+
+        revision = response_answer_revision_repo.create(
+            response_db,
+            answer_id=answer_row.id,
+            envelope_id=wctx.envelope_id,
+            revision_number=next_revision_number,
+            nonce=encrypted.nonce,
+            ciphertext=encrypted.ciphertext,
+            client_mutation_id=client_mutation_id,
+            revision_id=revision_id,
+        )
+
+        response_answer_revision_repo.update_latest_pointer(response_db, answer_row.id, revision.id)
+
+        commit_with_err_handle(response_db, contexts=[])
+        request_timing.log("Response transaction committed")
+
+        event_repo.record_event(
+            db,
+            session_id=wctx.session_id,
+            survey_version_id=wctx.survey_version_id,
             event_type="answer_saved",
             question_node_id=question_node_id,
             log_label="answer_save.analytics",

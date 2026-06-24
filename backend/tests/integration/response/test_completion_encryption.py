@@ -13,6 +13,7 @@ import os
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock
 from uuid import UUID
 
 import pytest
@@ -178,6 +179,7 @@ def _create_envelope_and_context(core_db: Session, response_db: Session, session
         session_locator=session_locator,
         envelope=envelope,
         encryption_settings=_FAKE_ENC_SETTINGS,
+        linkage_key=MagicMock(),
     )
     return ctx, plaintext_dek
 
@@ -320,6 +322,7 @@ class TestCompletion:
             session_locator=ctx.session_locator,
             envelope=ctx.envelope,
             encryption_settings=_FAKE_ENC_SETTINGS,
+            linkage_key=MagicMock(),
         )
 
         with pytest.raises(SessionInvalidError, match="completed"):

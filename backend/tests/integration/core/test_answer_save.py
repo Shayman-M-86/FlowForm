@@ -134,6 +134,7 @@ def _create_envelope_and_context(core_db, response_db, session, version):
         session_locator=session_locator,
         envelope=envelope,
         encryption_settings=enc,
+        linkage_key=MagicMock(),
     )
     return ctx, plaintext_dek
 

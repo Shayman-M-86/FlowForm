@@ -5,7 +5,7 @@ import secrets
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
@@ -88,6 +88,27 @@ def mark_completed(
     submission_session.completed_at = completed_at
     submission_session.last_activity_at = completed_at
     flush_with_err_handle(db, contexts=[submission_session])
+
+
+def touch_if_active(db: Session, session_id: UUID) -> UUID | None:
+    """Bump last_activity_at if the session is still in-progress and not expired.
+
+    Returns the session_id on success, None if the session has been completed,
+    expired, or abandoned.
+    """
+    now = datetime.now(UTC)
+    result = db.execute(
+        update(SubmissionSession)
+        .where(
+            SubmissionSession.id == session_id,
+            SubmissionSession.session_status == "in_progress",
+            SubmissionSession.expires_at > now,
+        )
+        .values(last_activity_at=now)
+        .returning(SubmissionSession.id)
+    )
+    row = result.scalar_one_or_none()
+    return row
 
 
 def delete_session(db: Session, *, submission_session: SubmissionSession) -> None:
