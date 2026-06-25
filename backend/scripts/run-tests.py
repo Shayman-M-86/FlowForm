@@ -60,6 +60,7 @@ if isinstance(sys.stderr, TextIOWrapper):
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_FILE = PROJECT_ROOT / "infra/docker/docker-compose.test.yml"
+COMPOSE_PROJECT = "flowform-test-environment"
 BACKEND_SERVICE = "backend-test"
 CONTAINER = "flowform-backend-test"
 POSTGRES_CONTAINERS = ("flowform-postgres-core-test", "flowform-postgres-response-test")
@@ -157,7 +158,7 @@ def run(args: list[str], *, check: bool = True, capture: bool = False) -> subpro
 
 
 def compose_args(*args: str) -> list[str]:
-    return ["docker", "compose", "-f", str(COMPOSE_FILE), *args]
+    return ["docker", "compose", "-p", COMPOSE_PROJECT, "-f", str(COMPOSE_FILE), *args]
 
 
 def print_section(title: str) -> None:
@@ -410,6 +411,8 @@ def compose_volume_names(volume: str) -> list[str]:
             "ls",
             "-q",
             "--filter",
+            f"label=com.docker.compose.project={COMPOSE_PROJECT}",
+            "--filter",
             f"label=com.docker.compose.volume={volume}",
         ],
         capture=True,
@@ -418,7 +421,14 @@ def compose_volume_names(volume: str) -> list[str]:
     if names:
         return names
 
-    fallback = run(["docker", "volume", "ls", "-q", "--filter", f"name={volume}"], capture=True)
+    fallback_name = f"{COMPOSE_PROJECT}_{volume}"
+    fallback = run(
+        ["docker", "volume", "inspect", fallback_name, "--format", "{{.Name}}"],
+        check=False,
+        capture=True,
+    )
+    if fallback.returncode != 0:
+        return []
     return [line.strip() for line in fallback.stdout.splitlines() if line.strip()]
 
 

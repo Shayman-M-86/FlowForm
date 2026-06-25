@@ -31,6 +31,7 @@ export function SubjectsTab({ projectId }: Props) {
   const deleteParticipant = useDeleteParticipant(projectId)
 
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const searchParam = search.trim() || undefined
 
@@ -178,11 +179,21 @@ export function SubjectsTab({ projectId }: Props) {
         setSuccessMsg('Participant deleted')
         setToDelete(null)
       },
+      onError: (error) => {
+        setToDelete(null)
+        const msg = (error as { message?: string })?.message
+        setErrorMsg(msg ?? 'Failed to delete participant.')
+      },
     })
   }
 
   return (
     <section className="grid gap-4">
+      {errorMsg && (
+        <Toast variant="error" onClose={() => setErrorMsg(null)}>
+          {errorMsg}
+        </Toast>
+      )}
       {successMsg && (
         <Toast variant="success" onClose={() => setSuccessMsg(null)}>
           {successMsg}

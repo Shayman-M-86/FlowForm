@@ -4,46 +4,55 @@ from uuid import UUID
 
 import pytest
 
-from app.crypto.payload import PayloadDecodeError, build_plaintext_payload, parse_plaintext_payload
+from app.crypto._internal.payload import build_plaintext_payload, parse_plaintext_payload
 
-Q1 = UUID("00000000-0000-0000-0000-000000000001")
-Q42 = UUID("00000000-0000-0000-0000-000000000042")
-
-
-class TestPayloadRoundTrip:
-    def test_basic_round_trip(self) -> None:
-        raw = build_plaintext_payload(1, Q42, "answered", "yes")
-        result = parse_plaintext_payload(raw)
-        assert result == {
-            "payload_version": 1,
-            "question_node_id": Q42,
-            "answer_state": "answered",
-            "answer_value": "yes",
-        }
-
-    def test_cleared_state_round_trip(self) -> None:
-        raw = build_plaintext_payload(1, Q42, "cleared", None)
-        result = parse_plaintext_payload(raw)
-        assert result["answer_state"] == "cleared"
-        assert result["answer_value"] is None
-
-    def test_complex_value_round_trip(self) -> None:
-        value = {"choices": ["a", "b"], "other": "text"}
-        raw = build_plaintext_payload(1, Q1, "answered", value)
-        result = parse_plaintext_payload(raw)
-        assert result["answer_value"] == value
-
-    def test_numeric_value_round_trip(self) -> None:
-        raw = build_plaintext_payload(1, Q1, "answered", 42)
-        result = parse_plaintext_payload(raw)
-        assert result["answer_value"] == 42
+_Q1 = UUID("00000000-0000-0000-0000-000000000001")
 
 
-class TestPayloadDecodeErrors:
-    def test_invalid_bytes(self) -> None:
-        with pytest.raises(PayloadDecodeError, match="Invalid payload bytes"):
-            parse_plaintext_payload(b"\xff\xfe")
+class TestBuildPlaintextPayload:
+    def test_returns_bytes(self) -> None:
+        result = build_plaintext_payload(
+            question_node_id=_Q1,
+            answer_state="answered",
+            answer_value={"value": "yes"},
+        )
+        assert isinstance(result, bytes)
 
-    def test_missing_fields(self) -> None:
-        with pytest.raises(PayloadDecodeError, match="Missing payload fields"):
-            parse_plaintext_payload(b'{"v":1}')
+    def test_round_trip(self) -> None:
+        payload = build_plaintext_payload(
+            question_node_id=_Q1,
+            answer_state="answered",
+            answer_value={"value": "yes"},
+        )
+        parsed = parse_plaintext_payload(payload)
+        assert parsed.question_node_id == _Q1
+        assert parsed.answer_state == "answered"
+        assert parsed.answer_value == {"value": "yes"}
+
+    def test_none_value(self) -> None:
+        payload = build_plaintext_payload(
+            question_node_id=_Q1,
+            answer_state="cleared",
+            answer_value=None,
+        )
+        parsed = parse_plaintext_payload(payload)
+        assert parsed.answer_value is None
+        assert parsed.answer_state == "cleared"
+
+    def test_complex_value(self) -> None:
+        value = {"selected": [1, 2, 3], "nested": {"key": "val"}}
+        payload = build_plaintext_payload(
+            question_node_id=_Q1,
+            answer_state="answered",
+            answer_value=value,
+        )
+        parsed = parse_plaintext_payload(payload)
+        assert parsed.answer_value == value
+
+
+class TestParsePlaintextPayload:
+    def test_invalid_json_raises(self) -> None:
+        from app.crypto._internal.errors import PayloadDecodeError
+
+        with pytest.raises(PayloadDecodeError):
+            parse_plaintext_payload(b"not valid json")

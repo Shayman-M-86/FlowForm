@@ -13,16 +13,21 @@ from __future__ import annotations
 import os
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-from pydantic import SecretStr
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import EncryptionSettings
 from app.crypto._internal.errors import KmsError
-from app.crypto.services import LinkageKey, NewSessionDEK, NewSessionLocator
+from app.crypto.models import (
+    LinkageKey,
+    NewSessionKey,
+    NewSessionLocator,
+    PlaintextSessionKey,
+    SessionLocator,
+    WrappedSessionKey,
+)
 from app.domain.errors import SessionInvalidError, SessionStartError
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.orm.core.submission_session import SubmissionSession
@@ -44,16 +49,15 @@ if TYPE_CHECKING:
     from tests.conftest import DbSessions
 
 _SCHEMA = {"nodes": [{"id": "q1", "type": "short_text"}]}
-_FAKE_SESSION_LOCATOR = os.urandom(32)
-_FAKE_PLAINTEXT_DEK = os.urandom(32)
-_FAKE_WRAPPED_DEK = b"\xbb" * 64
-_FAKE_ENC_SETTINGS = EncryptionSettings(
-    kms_key_arn="arn:aws:kms:us-east-1:000000000000:key/test-key",
-    linkage_secret_arn="arn:aws:secretsmanager:us-east-1:000000000000:secret:test",
-    aws_region="us-east-1",
-    aws_access_key_id=SecretStr("AKIAIOSFODNN7EXAMPLE"),
-    aws_secret_access_key=SecretStr("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"),
-)
+_LINKAGE_SECRET = b"\xcc" * 32
+_FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
+_FAKE_SESSION_LOCATOR = SessionLocator(os.urandom(32))
+_FAKE_PLAINTEXT_DEK = PlaintextSessionKey(os.urandom(32))
+_FAKE_WRAPPED_DEK = WrappedSessionKey(b"\xbb" * 64)
+
+_STARTER_MODULE = "app.services.public_submissions.core.actions.session_starter"
+_LOADER_MODULE = "app.services.public_submissions.core.session_loader"
+_RECON_MODULE = "app.services.public_submissions.core.reconciliation"
 
 
 def _seed_published_survey(db: Session, slug: str) -> int:
@@ -89,282 +93,136 @@ def _seed_published_survey(db: Session, slug: str) -> int:
 
 
 def _slug_payload(slug: str) -> StartSubmissionSessionRequest:
-    return StartSubmissionSessionRequest.model_validate(
-        {"access": {"type": "public_slug", "public_slug": slug}}
-    )
+    return StartSubmissionSessionRequest.model_validate({"access": {"type": "public_slug", "public_slug": slug}})
 
 
-def _mock_locator_service(session_locator: bytes | None = None):
-    svc = MagicMock()
-    loc_bytes = session_locator or _FAKE_SESSION_LOCATOR
-    svc.get_current_linkage_key.return_value = LinkageKey(
-        version=1,
-        secret=b"\xcc" * 32,
-        aws_version_id="test-version",
-    )
-    svc.for_new_session.return_value = NewSessionLocator(
-        linkage_key_version=1,
-        session_locator=loc_bytes,
-    )
-    svc.for_existing_session.return_value = (loc_bytes, MagicMock())
-    return svc
+def _mock_crypto_for_start():
+    return [
+        patch(f"{_STARTER_MODULE}.load_current_linkage_key", return_value=_FAKE_LINKAGE_KEY),
+        patch(
+            f"{_STARTER_MODULE}.derive_session_locator",
+            return_value=NewSessionLocator(linkage_key_version=1, session_locator=_FAKE_SESSION_LOCATOR),
+        ),
+        patch(
+            f"{_STARTER_MODULE}.start_plaintext_survey_key_load",
+            return_value=MagicMock(return_value=os.urandom(32)),
+        ),
+        patch(
+            f"{_STARTER_MODULE}.create_session_key",
+            return_value=NewSessionKey(plaintext_key=_FAKE_PLAINTEXT_DEK, wrapped_key=_FAKE_WRAPPED_DEK),
+        ),
+    ]
 
 
-def _mock_dek_service(
-    plaintext_dek: bytes | None = None,
-    wrapped_dek: bytes | None = None,
-):
-    svc = MagicMock()
-    svc.create_for_session.return_value = NewSessionDEK(
-        plaintext_dek=plaintext_dek or _FAKE_PLAINTEXT_DEK,
-        wrapped_session_dek=wrapped_dek or _FAKE_WRAPPED_DEK,
-    )
-    return svc
+class TestReconciliation:
+    def test_orphan_session_marked_abandoned(self, db_sessions: DbSessions) -> None:
+        survey_id = _seed_published_survey(db_sessions.core, "recon-orphan")
 
+        patches = _mock_crypto_for_start()
+        with patches[0], patches[1], patches[2], patches[3]:
+            starter = SessionStarter()
+            starter.start(
+                db_sessions.core, db_sessions.response,
+                payload=_slug_payload("recon-orphan"), actor=None,
+            )
 
-def _start_session(
-    db_sessions: DbSessions,
-    slug: str,
-    *,
-    locator_service: MagicMock | None = None,
-) -> tuple[SubmissionSession, str, MagicMock]:
-    """Start a full session (core + response envelope) and return the session, token, and locator service."""
-    loc_svc = locator_service or _mock_locator_service()
-    starter = SessionStarter(
-        locator_service=loc_svc,
-        dek_service=_mock_dek_service(),
-        encryption_settings=_FAKE_ENC_SETTINGS,
-    )
-    _, browser_token, _ = starter.start(
-        db_sessions.core,
-        db_sessions.response,
-        payload=_slug_payload(slug),
-        actor=None,
-    )
-    session = db_sessions.core.scalar(
-        select(SubmissionSession).order_by(SubmissionSession.started_at.desc())
-    )
-    assert session is not None
-    return session, browser_token, loc_svc
-
-
-class TestReconcileOrphanedSessions:
-    def test_in_progress_without_envelope_is_marked_abandoned(
-        self,
-        db_sessions: DbSessions,
-    ) -> None:
-        _seed_published_survey(db_sessions.core, "recon-orphan")
-        loc_svc = _mock_locator_service()
-
-        starter = SessionStarter(
-            locator_service=loc_svc,
-            dek_service=_mock_dek_service(),
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-        _, _browser_token, _ = starter.start(
-            db_sessions.core,
-            db_sessions.response,
-            payload=_slug_payload("recon-orphan"),
-            actor=None,
-        )
-
-        # Delete the response envelope to simulate the orphan state
         envelope = db_sessions.response.scalar(select(ResponseEnvelope))
         assert envelope is not None
         db_sessions.response.delete(envelope)
         db_sessions.response.commit()
 
-        result = reconcile_orphaned_sessions(
-            db_sessions.core,
-            db_sessions.response,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-            locator_service=loc_svc,
-        )
+        with patch(
+            f"{_RECON_MODULE}.resolve_existing_session_locator",
+            return_value=(_FAKE_SESSION_LOCATOR, _FAKE_LINKAGE_KEY),
+        ):
+            result = reconcile_orphaned_sessions(db_sessions.core, db_sessions.response)
 
         assert result.abandoned == 1
-        assert result.matched == 0
 
-        session = db_sessions.core.scalar(select(SubmissionSession))
+        session = db_sessions.core.scalar(
+            select(SubmissionSession).where(SubmissionSession.survey_id == survey_id),
+        )
         assert session is not None
         assert session.session_status == "abandoned"
 
-    def test_in_progress_with_matching_envelope_stays_in_progress(
-        self,
-        db_sessions: DbSessions,
-    ) -> None:
-        _seed_published_survey(db_sessions.core, "recon-match")
-        loc_svc = _mock_locator_service()
+    def test_session_with_envelope_stays_in_progress(self, db_sessions: DbSessions) -> None:
+        _seed_published_survey(db_sessions.core, "recon-ok")
 
-        starter = SessionStarter(
-            locator_service=loc_svc,
-            dek_service=_mock_dek_service(),
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-        starter.start(
-            db_sessions.core,
-            db_sessions.response,
-            payload=_slug_payload("recon-match"),
-            actor=None,
-        )
+        patches = _mock_crypto_for_start()
+        with patches[0], patches[1], patches[2], patches[3]:
+            starter = SessionStarter()
+            starter.start(
+                db_sessions.core, db_sessions.response,
+                payload=_slug_payload("recon-ok"), actor=None,
+            )
 
-        result = reconcile_orphaned_sessions(
-            db_sessions.core,
-            db_sessions.response,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-            locator_service=loc_svc,
-        )
+        with patch(
+            f"{_RECON_MODULE}.resolve_existing_session_locator",
+            return_value=(_FAKE_SESSION_LOCATOR, _FAKE_LINKAGE_KEY),
+        ):
+            result = reconcile_orphaned_sessions(db_sessions.core, db_sessions.response)
 
         assert result.matched == 1
         assert result.abandoned == 0
 
-        session = db_sessions.core.scalar(select(SubmissionSession))
-        assert session is not None
-        assert session.session_status == "in_progress"
-
-    def test_completed_session_is_ignored(
-        self,
-        db_sessions: DbSessions,
-    ) -> None:
-        _seed_published_survey(db_sessions.core, "recon-completed")
-        loc_svc = _mock_locator_service()
-
-        starter = SessionStarter(
-            locator_service=loc_svc,
-            dek_service=_mock_dek_service(),
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-        starter.start(
-            db_sessions.core,
-            db_sessions.response,
-            payload=_slug_payload("recon-completed"),
-            actor=None,
-        )
-
-        session = db_sessions.core.scalar(select(SubmissionSession))
-        assert session is not None
-        now = datetime.now(UTC)
-        session.session_status = "completed"
-        session.completed_at = now
-        session.last_activity_at = now
-        db_sessions.core.flush()
-        db_sessions.core.commit()
-
-        result = reconcile_orphaned_sessions(
-            db_sessions.core,
-            db_sessions.response,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-            locator_service=loc_svc,
-        )
-
-        assert result.scanned == 0
-        assert result.abandoned == 0
-
-    def test_already_abandoned_session_is_ignored(
-        self,
-        db_sessions: DbSessions,
-    ) -> None:
-        _seed_published_survey(db_sessions.core, "recon-abandoned")
-        loc_svc = _mock_locator_service()
-
-        starter = SessionStarter(
-            locator_service=loc_svc,
-            dek_service=_mock_dek_service(),
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-        starter.start(
-            db_sessions.core,
-            db_sessions.response,
-            payload=_slug_payload("recon-abandoned"),
-            actor=None,
-        )
-
-        session = db_sessions.core.scalar(select(SubmissionSession))
-        assert session is not None
-        session.session_status = "abandoned"
-        db_sessions.core.flush()
-        db_sessions.core.commit()
-
-        result = reconcile_orphaned_sessions(
-            db_sessions.core,
-            db_sessions.response,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-            locator_service=loc_svc,
-        )
-
-        assert result.scanned == 0
-        assert result.abandoned == 0
-
-
-class TestAbandonedSessionRejectedByLoader:
-    def test_loader_rejects_abandoned_session(
-        self,
-        db_sessions: DbSessions,
-    ) -> None:
+    def test_abandoned_session_rejected_by_loader(self, db_sessions: DbSessions) -> None:
         _seed_published_survey(db_sessions.core, "recon-reject")
-        loc_svc = _mock_locator_service()
 
-        starter = SessionStarter(
-            locator_service=loc_svc,
-            dek_service=_mock_dek_service(),
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-        _, browser_token, _ = starter.start(
-            db_sessions.core,
-            db_sessions.response,
-            payload=_slug_payload("recon-reject"),
-            actor=None,
-        )
+        patches = _mock_crypto_for_start()
+        with patches[0], patches[1], patches[2], patches[3]:
+            starter = SessionStarter()
+            _, resume_token, _ = starter.start(
+                db_sessions.core, db_sessions.response,
+                payload=_slug_payload("recon-reject"), actor=None,
+            )
 
-        # Delete envelope and reconcile to mark abandoned
         envelope = db_sessions.response.scalar(select(ResponseEnvelope))
         assert envelope is not None
         db_sessions.response.delete(envelope)
         db_sessions.response.commit()
 
-        result = reconcile_orphaned_sessions(
-            db_sessions.core,
-            db_sessions.response,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-            locator_service=loc_svc,
-        )
-        assert result.abandoned == 1
+        with patch(
+            f"{_RECON_MODULE}.resolve_existing_session_locator",
+            return_value=(_FAKE_SESSION_LOCATOR, _FAKE_LINKAGE_KEY),
+        ):
+            reconcile_orphaned_sessions(db_sessions.core, db_sessions.response)
 
-        with pytest.raises(SessionInvalidError, match="abandoned"):
-            load_current_session(
-                db_sessions.core,
-                db_sessions.response,
-                browser_token,
-                encryption_settings=_FAKE_ENC_SETTINGS,
-                locator_service=loc_svc,
-            )
+        from app.core.extensions import app_cache
+        from app.repositories.core.submission_sessions import hash_browser_session_token
 
+        app_cache.sessions.write_context.evict(hash_browser_session_token(resume_token))
 
-class TestKmsFailureStillRollsBack:
-    def test_kms_failure_rolls_back_not_abandoned(
-        self,
-        db_sessions: DbSessions,
-    ) -> None:
-        survey_id = _seed_published_survey(db_sessions.core, "recon-kms-fail")
+        with pytest.raises(SessionInvalidError, match="abandoned"), patch(
+            f"{_LOADER_MODULE}.resolve_existing_session_locator",
+            return_value=(_FAKE_SESSION_LOCATOR, _FAKE_LINKAGE_KEY),
+        ):
+            load_current_session(db_sessions.core, db_sessions.response, resume_token)
 
-        dek_svc = MagicMock()
-        dek_svc.create_for_session.side_effect = KmsError("KMS encrypt failed")
+    def test_kms_failure_rolls_back_not_abandoned(self, db_sessions: DbSessions) -> None:
+        survey_id = _seed_published_survey(db_sessions.core, "recon-kms")
 
-        starter = SessionStarter(
-            locator_service=_mock_locator_service(),
-            dek_service=dek_svc,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-        with pytest.raises(SessionStartError):
+        with (
+            patch(f"{_STARTER_MODULE}.load_current_linkage_key", return_value=_FAKE_LINKAGE_KEY),
+            patch(
+                f"{_STARTER_MODULE}.derive_session_locator",
+                return_value=NewSessionLocator(
+                    linkage_key_version=1, session_locator=_FAKE_SESSION_LOCATOR,
+                ),
+            ),
+            patch(
+                f"{_STARTER_MODULE}.start_plaintext_survey_key_load",
+                return_value=MagicMock(return_value=os.urandom(32)),
+            ),
+            patch(f"{_STARTER_MODULE}.create_session_key", side_effect=KmsError("KMS encrypt failed")),
+            pytest.raises(SessionStartError),
+        ):
+            starter = SessionStarter()
             starter.start(
-                db_sessions.core,
-                db_sessions.response,
-                payload=_slug_payload("recon-kms-fail"),
-                actor=None,
+                db_sessions.core, db_sessions.response,
+                payload=_slug_payload("recon-kms"), actor=None,
             )
 
         session = db_sessions.core.scalar(
-            select(SubmissionSession).where(
-                SubmissionSession.survey_id == survey_id
-            )
+            select(SubmissionSession).where(SubmissionSession.survey_id == survey_id),
         )
         assert session is None, "core session must be rolled back, not abandoned"

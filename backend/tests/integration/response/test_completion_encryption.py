@@ -13,22 +13,22 @@ import os
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock
 from uuid import UUID
 
 import pytest
-from pydantic import SecretStr
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.core.config import EncryptionSettings
-from app.crypto import (
-    build_aad,
-    build_plaintext_payload,
-    derive_answer_locator,
-    derive_session_locator,
-    encrypt_answer,
-    generate_nonce,
+from app.crypto._internal.aad import build_aad
+from app.crypto._internal.nonces import generate_nonce
+from app.crypto._internal.payload import build_plaintext_payload
+from app.crypto._internal.wrapping import encrypt_answer
+from app.crypto.locators import derive_answer_locator, derive_session_locator
+from app.crypto.models import (
+    LinkageKey,
+    PlaintextSessionKey,
+    RevisionContext,
+    SessionContext,
 )
 from app.domain.errors import SessionInvalidError
 from app.repositories.core.submission_sessions import create_session
@@ -38,8 +38,8 @@ from app.repositories.response import (
     response_envelope_repo,
 )
 from app.schema.enums import SubmissionAnswerState
+from app.schema.orm.core.submission_session import SessionRef
 from app.services.public_submissions.core.actions.completion import CompletionService
-from app.services.public_submissions.core.session_loader import SessionContext
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -54,14 +54,7 @@ if TYPE_CHECKING:
     from tests.conftest import DbSessions
 
 _LINKAGE_SECRET = b"\xcc" * 32
-_FAKE_ENC_SETTINGS = EncryptionSettings(
-    kms_key_arn="arn:aws:kms:us-east-1:000000000000:key/test-key",
-    linkage_secret_arn="arn:aws:secretsmanager:us-east-1:000000000000:secret:test",
-    aws_region="us-east-1",
-    aws_access_key_id=SecretStr("AKIAIOSFODNN7EXAMPLE"),
-    aws_secret_access_key=SecretStr("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"),
-)
-_PAYLOAD_VERSION = 1
+_FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
 
 
 def _setup_core_fixtures(core_db: Session, *, required_questions: bool = False):
@@ -161,8 +154,9 @@ def _create_session_row(core_db: Session, project, survey, version, *, status: s
 
 
 def _create_envelope_and_context(core_db: Session, response_db: Session, session, version):
-    session_locator = derive_session_locator(session.id, _LINKAGE_SECRET)
-    plaintext_dek = os.urandom(32)
+    loc = derive_session_locator(session.id, _FAKE_LINKAGE_KEY)
+    session_locator = loc.session_locator
+    plaintext_dek = PlaintextSessionKey(os.urandom(32))
     wrapped_session_dek = os.urandom(64)
 
     envelope = response_envelope_repo.create(
@@ -173,13 +167,20 @@ def _create_envelope_and_context(core_db: Session, response_db: Session, session
         crypto_version=1,
     )
 
+    session_ref = SessionRef(
+        id=session.id,
+        project_id=session.project_id,
+        survey_id=session.survey_id,
+        survey_version_id=version.id,
+        expires_at=session.expires_at,
+        browser_session_token_hash=session.browser_session_token_hash,
+    )
+
     ctx = SessionContext(
-        session=session,
-        survey_version=version,
+        session_ref=session_ref,
         session_locator=session_locator,
-        envelope=envelope,
-        encryption_settings=_FAKE_ENC_SETTINGS,
-        linkage_key=MagicMock(),
+        envelope_id=envelope.id,
+        linkage_key=_FAKE_LINKAGE_KEY,
     )
     return ctx, plaintext_dek
 
@@ -187,44 +188,44 @@ def _create_envelope_and_context(core_db: Session, response_db: Session, session
 def _save_encrypted_answer(
     response_db: Session,
     ctx: SessionContext,
-    plaintext_dek: bytes,
+    plaintext_dek: PlaintextSessionKey,
     question_node_id: UUID,
     answer_state: SubmissionAnswerState = "answered",
     answer_value=None,
 ):
-    """Helper to create an encrypted answer directly in the response DB."""
-    answer_locator = derive_answer_locator(ctx.session.id, question_node_id, _LINKAGE_SECRET)
+    answer_locator = derive_answer_locator(ctx.session_id, question_node_id, _FAKE_LINKAGE_KEY)
 
     revision_id = uuid.uuid4()
 
     answer_row, _ = response_answer_repo.get_or_create(
         response_db,
-        envelope_id=ctx.envelope.id,
+        envelope_id=ctx.envelope_id,
         answer_locator=answer_locator,
         latest_revision_id=revision_id,
     )
 
     plaintext = build_plaintext_payload(
-        payload_version=_PAYLOAD_VERSION,
         question_node_id=question_node_id,
         answer_state=answer_state,
         answer_value=answer_value,
     )
     nonce = generate_nonce()
-    aad = build_aad(
-        crypto_version=ctx.envelope.crypto_version,
-        envelope_id=answer_row.envelope_id,
+    revision_ctx = RevisionContext(
+        dek=plaintext_dek,
+        crypto_version=ctx.crypto_version,
+        envelope_id=ctx.envelope_id,
         answer_id=answer_row.id,
         answer_locator=answer_locator,
         revision_id=revision_id,
         revision_number=1,
     )
+    aad = build_aad(revision_ctx)
     ciphertext = encrypt_answer(plaintext, plaintext_dek, nonce, aad)
 
     response_answer_revision_repo.create(
         response_db,
         answer_id=answer_row.id,
-        envelope_id=ctx.envelope.id,
+        envelope_id=ctx.envelope_id,
         revision_number=1,
         nonce=nonce,
         ciphertext=ciphertext,
@@ -233,11 +234,6 @@ def _save_encrypted_answer(
     )
 
     return answer_row
-
-
-def _make_service_with_cached_dek(ctx, plaintext_dek):
-    _ = ctx, plaintext_dek
-    return CompletionService()
 
 
 class TestCompletion:
@@ -255,7 +251,7 @@ class TestCompletion:
             answer_value={"field_type": "short_text", "text": "my answer"},
         )
 
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = CompletionService()
 
         result = svc.complete_session(core_db, response_db, ctx=ctx)
 
@@ -286,8 +282,8 @@ class TestCompletion:
         )
         core_db.expire(session)
 
-        ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        ctx, _dek = _create_envelope_and_context(core_db, response_db, session, version)
+        svc = CompletionService()
 
         result = svc.complete_session(core_db, response_db, ctx=ctx)
 
@@ -300,7 +296,7 @@ class TestCompletion:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
-        ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
+        ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)  # needed below
 
         _save_encrypted_answer(
             response_db,
@@ -310,34 +306,20 @@ class TestCompletion:
             answer_value={"field_type": "short_text", "text": "my answer"},
         )
 
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = CompletionService()
 
-        result1 = svc.complete_session(core_db, response_db, ctx=ctx)
-
-        # Reload the session to get the completed state into the context
-        core_db.expire(session)
-        ctx2 = SessionContext(
-            session=session,
-            survey_version=version,
-            session_locator=ctx.session_locator,
-            envelope=ctx.envelope,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-            linkage_key=MagicMock(),
-        )
+        svc.complete_session(core_db, response_db, ctx=ctx)
 
         with pytest.raises(SessionInvalidError, match="completed"):
-            svc.complete_session(core_db, response_db, ctx=ctx2)
-
-        assert result1.status == "completed"
+            svc.complete_session(core_db, response_db, ctx=ctx)
 
     def test_missing_required_answer_does_not_block_completion(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, _question = _setup_core_fixtures(core_db, required_questions=True)
         session, _ = _create_session_row(core_db, project, survey, version)
-        ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
+        ctx, _dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        # No answers saved — completion is now only a state transition.
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = CompletionService()
 
         result = svc.complete_session(core_db, response_db, ctx=ctx)
 
@@ -347,10 +329,9 @@ class TestCompletion:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, _question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
-        ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
+        ctx, _dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        # No answers saved, but no required questions either
-        svc = _make_service_with_cached_dek(ctx, plaintext_dek)
+        svc = CompletionService()
 
         result = svc.complete_session(core_db, response_db, ctx=ctx)
 

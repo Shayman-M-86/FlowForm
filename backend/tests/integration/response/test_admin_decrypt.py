@@ -13,22 +13,23 @@ from __future__ import annotations
 import os
 import uuid
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock
+from unittest.mock import patch
 from uuid import UUID
 
 import pytest
 from sqlalchemy.orm import Session
 
-from app.crypto import (
-    build_aad,
-    build_plaintext_payload,
-    derive_answer_locator,
-    derive_session_locator,
-    encrypt_answer,
-    generate_nonce,
+from app.crypto._internal.aad import build_aad
+from app.crypto._internal.nonces import generate_nonce
+from app.crypto._internal.payload import build_plaintext_payload
+from app.crypto._internal.wrapping import encrypt_answer
+from app.crypto.locators import derive_answer_locator, derive_session_locator
+from app.crypto.models import (
+    LinkageKey,
+    PlaintextSessionKey,
+    RevisionContext,
 )
-from app.crypto.services import AnswerCryptoService, LinkageKeyService
-from app.crypto.services.linkage_key_service import LinkageKey
+from app.crypto.session_key import SessionEnvelopeCryptoContext
 from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.core.submission_sessions import create_session
 from app.repositories.response import (
@@ -38,7 +39,6 @@ from app.repositories.response import (
 )
 from app.schema.enums import SubmissionAnswerState
 from app.services.admin_responses.service import AdminResponseService
-from app.services.public_submissions.core.shared.crypto_provider import CryptoServices
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -52,40 +52,9 @@ if TYPE_CHECKING:
     from tests.conftest import DbSessions
 
 _LINKAGE_SECRET = b"\xcc" * 32
-_PAYLOAD_VERSION = 1
+_FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
 
-
-def _mock_locator_service():
-    svc = MagicMock()
-    _linkage_key = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
-    svc.for_existing_session.side_effect = lambda sid, _version, _db: (
-        derive_session_locator(sid, _LINKAGE_SECRET),
-        _linkage_key,
-    )
-    return svc
-
-
-def _mock_dek_service(plaintext_dek: bytes):
-    svc = MagicMock()
-    svc.get_for_session.return_value = plaintext_dek
-    return svc
-
-
-def _mock_branch_key_service():
-    svc = MagicMock()
-    svc.get_plaintext_key.return_value = b"\x03" * 32
-    return svc
-
-
-def _build_admin_service(plaintext_dek: bytes) -> AdminResponseService:
-    crypto = CryptoServices(
-        linkage_key_service=MagicMock(spec=LinkageKeyService),
-        locator_service=_mock_locator_service(),
-        dek_service=_mock_dek_service(plaintext_dek),
-        answer_crypto_service=AnswerCryptoService(),
-        survey_branch_key_service=_mock_branch_key_service(),
-    )
-    return AdminResponseService(crypto)
+_ADMIN_MODULE = "app.services.admin_responses.service"
 
 
 def _setup_core_fixtures(core_db: Session):
@@ -130,8 +99,9 @@ def _create_session_and_envelope(core_db: Session, response_db: Session, project
         linkage_key_version=1,
     )
 
-    session_locator = derive_session_locator(session.id, _LINKAGE_SECRET)
-    plaintext_dek = os.urandom(32)
+    loc = derive_session_locator(session.id, _FAKE_LINKAGE_KEY)
+    session_locator = loc.session_locator
+    plaintext_dek = PlaintextSessionKey(os.urandom(32))
     wrapped_session_dek = os.urandom(64)
 
     envelope = response_envelope_repo.create(
@@ -142,19 +112,30 @@ def _create_session_and_envelope(core_db: Session, response_db: Session, project
         crypto_version=1,
     )
 
-    return session, envelope, plaintext_dek
+    return session, envelope, plaintext_dek, session_locator
+
+
+def _mock_crypto_context(session_locator, envelope, plaintext_dek):
+    return patch(
+        f"{_ADMIN_MODULE}.load_session_envelope_crypto_context",
+        return_value=SessionEnvelopeCryptoContext(
+            session_locator=session_locator,
+            envelope=envelope,
+            plaintext_key=plaintext_dek,
+        ),
+    )
 
 
 def _save_encrypted_answer(
     response_db: Session,
     session,
     envelope,
-    plaintext_dek: bytes,
+    plaintext_dek: PlaintextSessionKey,
     question_node_id: UUID,
     answer_value=None,
     answer_state: SubmissionAnswerState = "answered",
 ):
-    answer_locator = derive_answer_locator(session.id, question_node_id, _LINKAGE_SECRET)
+    answer_locator = derive_answer_locator(session.id, question_node_id, _FAKE_LINKAGE_KEY)
     revision_id = uuid.uuid4()
 
     answer_row, _ = response_answer_repo.get_or_create(
@@ -165,13 +146,13 @@ def _save_encrypted_answer(
     )
 
     plaintext = build_plaintext_payload(
-        payload_version=_PAYLOAD_VERSION,
         question_node_id=question_node_id,
         answer_state=answer_state,
         answer_value=answer_value,
     )
     nonce = generate_nonce()
-    aad = build_aad(
+    revision_ctx = RevisionContext(
+        dek=plaintext_dek,
         crypto_version=envelope.crypto_version,
         envelope_id=answer_row.envelope_id,
         answer_id=answer_row.id,
@@ -179,6 +160,7 @@ def _save_encrypted_answer(
         revision_id=revision_id,
         revision_number=1,
     )
+    aad = build_aad(revision_ctx)
     ciphertext = encrypt_answer(plaintext, plaintext_dek, nonce, aad)
 
     response_answer_revision_repo.create(
@@ -200,21 +182,21 @@ def _add_second_revision(
     session,
     envelope,
     answer_row,
-    plaintext_dek: bytes,
+    plaintext_dek: PlaintextSessionKey,
     question_node_id: UUID,
     answer_value=None,
 ):
-    answer_locator = derive_answer_locator(session.id, question_node_id, _LINKAGE_SECRET)
+    answer_locator = derive_answer_locator(session.id, question_node_id, _FAKE_LINKAGE_KEY)
     revision_id = uuid.uuid4()
 
     plaintext = build_plaintext_payload(
-        payload_version=_PAYLOAD_VERSION,
         question_node_id=question_node_id,
         answer_state="answered",
         answer_value=answer_value,
     )
     nonce = generate_nonce()
-    aad = build_aad(
+    revision_ctx = RevisionContext(
+        dek=plaintext_dek,
         crypto_version=envelope.crypto_version,
         envelope_id=answer_row.envelope_id,
         answer_id=answer_row.id,
@@ -222,6 +204,7 @@ def _add_second_revision(
         revision_id=revision_id,
         revision_number=2,
     )
+    aad = build_aad(revision_ctx)
     ciphertext = encrypt_answer(plaintext, plaintext_dek, nonce, aad)
 
     response_answer_revision_repo.create(
@@ -242,19 +225,20 @@ class TestAdminDecryptDetail:
     def test_admin_detail_returns_decrypted_answers(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
-        session, envelope, plaintext_dek = _create_session_and_envelope(core_db, response_db, project, survey, version)
-
-        _save_encrypted_answer(
-            response_db,
-            session,
-            envelope,
-            plaintext_dek,
-            question_node_id=question.id,
-            answer_value="test answer",
+        session, envelope, plaintext_dek, session_locator = _create_session_and_envelope(
+            core_db, response_db, project, survey, version,
         )
 
-        service = _build_admin_service(plaintext_dek)
-        result = service.get_session_detail(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
+        _save_encrypted_answer(
+            response_db, session, envelope, plaintext_dek,
+            question_node_id=question.id, answer_value="test answer",
+        )
+
+        with _mock_crypto_context(session_locator, envelope, plaintext_dek):
+            service = AdminResponseService()
+            result = service.get_session_detail(
+                core_db, response_db, survey_id=session.survey_id, session_id=session.id,
+            )
 
         assert result.session.id == session.id
         assert len(result.answers) == 1
@@ -280,38 +264,42 @@ class TestAdminDecryptDetail:
             linkage_key_version=1,
         )
 
-        service = _build_admin_service(os.urandom(32))
-        with pytest.raises(EnvelopeNotFoundError):
-            service.get_session_detail(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
+        with (
+            patch(
+                f"{_ADMIN_MODULE}.load_session_envelope_crypto_context",
+                side_effect=EnvelopeNotFoundError(),
+            ),
+            pytest.raises(EnvelopeNotFoundError),
+        ):
+            service = AdminResponseService()
+            service.get_session_detail(
+                core_db, response_db, survey_id=session.survey_id, session_id=session.id,
+            )
 
 
 class TestAdminDecryptHistory:
     def test_admin_history_returns_all_revisions(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
-        session, envelope, plaintext_dek = _create_session_and_envelope(core_db, response_db, project, survey, version)
+        session, envelope, plaintext_dek, session_locator = _create_session_and_envelope(
+            core_db, response_db, project, survey, version,
+        )
 
         answer_row = _save_encrypted_answer(
-            response_db,
-            session,
-            envelope,
-            plaintext_dek,
-            question_node_id=question.id,
-            answer_value="first answer",
+            response_db, session, envelope, plaintext_dek,
+            question_node_id=question.id, answer_value="first answer",
         )
 
         _add_second_revision(
-            response_db,
-            session,
-            envelope,
-            answer_row,
-            plaintext_dek,
-            question_node_id=question.id,
-            answer_value="second answer",
+            response_db, session, envelope, answer_row, plaintext_dek,
+            question_node_id=question.id, answer_value="second answer",
         )
 
-        service = _build_admin_service(plaintext_dek)
-        result = service.get_session_history(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
+        with _mock_crypto_context(session_locator, envelope, plaintext_dek):
+            service = AdminResponseService()
+            result = service.get_session_history(
+                core_db, response_db, survey_id=session.survey_id, session_id=session.id,
+            )
 
         assert len(result.revisions) == 2
         values = [a.answer_value for a in result.revisions]
@@ -350,18 +338,19 @@ class TestAdminDecryptFamilyReconstruction:
         core_db.add(question)
         core_db.flush()
 
-        session, envelope, plaintext_dek = _create_session_and_envelope(core_db, response_db, project, survey, version)
+        session, envelope, plaintext_dek, session_locator = _create_session_and_envelope(
+            core_db, response_db, project, survey, version,
+        )
         _save_encrypted_answer(
-            response_db,
-            session,
-            envelope,
-            plaintext_dek,
-            question_node_id=question.id,
-            answer_value={"selected": ["o1", "o2"]},
+            response_db, session, envelope, plaintext_dek,
+            question_node_id=question.id, answer_value={"selected": ["o1", "o2"]},
         )
 
-        service = _build_admin_service(plaintext_dek)
-        result = service.get_session_detail(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
+        with _mock_crypto_context(session_locator, envelope, plaintext_dek):
+            service = AdminResponseService()
+            result = service.get_session_detail(
+                core_db, response_db, survey_id=session.survey_id, session_id=session.id,
+            )
 
         answer = result.answers[0]
         assert answer.answer_family == "choice"
@@ -371,19 +360,20 @@ class TestAdminDecryptFamilyReconstruction:
     def test_unknown_question_node_falls_back(self, db_sessions: DbSessions) -> None:
         core_db, response_db = db_sessions.core, db_sessions.response
         project, survey, version, _ = _setup_core_fixtures(core_db)
-        session, envelope, plaintext_dek = _create_session_and_envelope(core_db, response_db, project, survey, version)
+        session, envelope, plaintext_dek, session_locator = _create_session_and_envelope(
+            core_db, response_db, project, survey, version,
+        )
         orphan_node_id = uuid.uuid4()
         _save_encrypted_answer(
-            response_db,
-            session,
-            envelope,
-            plaintext_dek,
-            question_node_id=orphan_node_id,
-            answer_value={"selected": ["o1"]},
+            response_db, session, envelope, plaintext_dek,
+            question_node_id=orphan_node_id, answer_value={"selected": ["o1"]},
         )
 
-        service = _build_admin_service(plaintext_dek)
-        result = service.get_session_detail(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
+        with _mock_crypto_context(session_locator, envelope, plaintext_dek):
+            service = AdminResponseService()
+            result = service.get_session_detail(
+                core_db, response_db, survey_id=session.survey_id, session_id=session.id,
+            )
 
         answer = result.answers[0]
         assert answer.question_node_id == orphan_node_id
@@ -415,18 +405,19 @@ class TestAdminDecryptFamilyReconstruction:
         core_db.add(question)
         core_db.flush()
 
-        session, envelope, plaintext_dek = _create_session_and_envelope(core_db, response_db, project, survey, version)
+        session, envelope, plaintext_dek, session_locator = _create_session_and_envelope(
+            core_db, response_db, project, survey, version,
+        )
         _save_encrypted_answer(
-            response_db,
-            session,
-            envelope,
-            plaintext_dek,
-            question_node_id=question.id,
-            answer_value={"garbage": True},
+            response_db, session, envelope, plaintext_dek,
+            question_node_id=question.id, answer_value={"garbage": True},
         )
 
-        service = _build_admin_service(plaintext_dek)
-        result = service.get_session_detail(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
+        with _mock_crypto_context(session_locator, envelope, plaintext_dek):
+            service = AdminResponseService()
+            result = service.get_session_detail(
+                core_db, response_db, survey_id=session.survey_id, session_id=session.id,
+            )
 
         answer = result.answers[0]
         assert answer.answer_family == "choice"

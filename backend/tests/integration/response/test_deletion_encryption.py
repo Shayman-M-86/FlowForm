@@ -11,20 +11,17 @@ from __future__ import annotations
 import os
 import uuid
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy.orm import Session
 
-from app.crypto import derive_session_locator
-from app.crypto.services import LinkageKeyService, SessionDEKService
-from app.crypto.services.answer_crypto_service import AnswerCryptoService
-from app.crypto.services.linkage_key_service import LinkageKey
+from app.crypto.locators import derive_session_locator
+from app.crypto.models import LinkageKey
 from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.core.submission_sessions import create_session
 from app.repositories.response import response_envelope_repo
 from app.services.admin_responses.service import AdminResponseService
-from app.services.public_submissions.core.shared.crypto_provider import CryptoServices
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -37,27 +34,9 @@ if TYPE_CHECKING:
     from tests.conftest import DbSessions
 
 _LINKAGE_SECRET = b"\xcc" * 32
+_FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
 
-
-def _mock_locator_service(session_locator: bytes | None = None) -> MagicMock:
-    """A LocatorService stub whose for_existing_session returns a fixed locator."""
-    svc = MagicMock()
-    if session_locator is not None:
-        svc.for_existing_session.return_value = (
-            session_locator,
-            LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version"),
-        )
-    return svc
-
-
-def _build_admin_service(session_locator: bytes | None = None) -> AdminResponseService:
-    crypto = CryptoServices(
-        linkage_key_service=MagicMock(spec=LinkageKeyService),
-        locator_service=_mock_locator_service(session_locator),
-        dek_service=MagicMock(spec=SessionDEKService),
-        answer_crypto_service=AnswerCryptoService(),
-    )
-    return AdminResponseService(crypto)
+_ADMIN_SERVICE_MODULE = "app.services.admin_responses.service"
 
 
 def _setup_core_fixtures(core_db: Session):
@@ -107,6 +86,8 @@ class TestDeletion:
         project, survey, version = _setup_core_fixtures(core_db)
         session = _create_session_row(core_db, project, survey, version)
 
+        loc = derive_session_locator(session.id, _FAKE_LINKAGE_KEY)
+
         call_order: list[str] = []
 
         def mock_delete_by_locator(db, locator):
@@ -121,20 +102,26 @@ class TestDeletion:
 
         with (
             patch(
-                "app.services.admin_responses.service.response_envelope_repo.delete_by_locator",
+                f"{_ADMIN_SERVICE_MODULE}.resolve_existing_session_locator",
+                return_value=(loc.session_locator, _FAKE_LINKAGE_KEY),
+            ),
+            patch(
+                f"{_ADMIN_SERVICE_MODULE}.response_envelope_repo.delete_by_locator",
                 side_effect=mock_delete_by_locator,
             ),
             patch(
-                "app.services.admin_responses.service.ssr.delete_session",
+                f"{_ADMIN_SERVICE_MODULE}.ssr.delete_session",
                 side_effect=mock_delete_session,
             ),
             patch(
-                "app.services.admin_responses.service.commit_with_err_handle",
+                f"{_ADMIN_SERVICE_MODULE}.commit_with_err_handle",
                 side_effect=mock_commit,
             ),
         ):
-            service = _build_admin_service(_LINKAGE_SECRET)
-            result = service.delete_session(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
+            service = AdminResponseService()
+            result = service.delete_session(
+                core_db, response_db, survey_id=session.survey_id, session_id=session.id,
+            )
 
         assert result.response_deleted is True
         assert result.core_deleted is True
@@ -146,7 +133,8 @@ class TestDeletion:
         project, survey, version = _setup_core_fixtures(core_db)
         session = _create_session_row(core_db, project, survey, version)
 
-        session_locator = derive_session_locator(session.id, _LINKAGE_SECRET)
+        loc = derive_session_locator(session.id, _FAKE_LINKAGE_KEY)
+        session_locator = loc.session_locator
         wrapped_session_dek = os.urandom(64)
 
         response_envelope_repo.create(
@@ -157,8 +145,14 @@ class TestDeletion:
             crypto_version=1,
         )
 
-        service = _build_admin_service(session_locator)
-        result = service.delete_session(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
+        with patch(
+            f"{_ADMIN_SERVICE_MODULE}.resolve_existing_session_locator",
+            return_value=(session_locator, _FAKE_LINKAGE_KEY),
+        ):
+            service = AdminResponseService()
+            result = service.delete_session(
+                core_db, response_db, survey_id=session.survey_id, session_id=session.id,
+            )
 
         assert result.response_deleted is True
         assert result.core_deleted is True
@@ -169,6 +163,16 @@ class TestDeletion:
         project, survey, version = _setup_core_fixtures(core_db)
         session = _create_session_row(core_db, project, survey, version)
 
-        service = _build_admin_service(_LINKAGE_SECRET)
-        with pytest.raises(EnvelopeNotFoundError):
-            service.delete_session(core_db, response_db, survey_id=session.survey_id, session_id=session.id)
+        loc = derive_session_locator(session.id, _FAKE_LINKAGE_KEY)
+
+        with (
+            patch(
+                f"{_ADMIN_SERVICE_MODULE}.resolve_existing_session_locator",
+                return_value=(loc.session_locator, _FAKE_LINKAGE_KEY),
+            ),
+            pytest.raises(EnvelopeNotFoundError),
+        ):
+            service = AdminResponseService()
+            service.delete_session(
+                core_db, response_db, survey_id=session.survey_id, session_id=session.id,
+            )

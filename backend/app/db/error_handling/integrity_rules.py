@@ -620,6 +620,15 @@ PROJECT_PARTICIPANT_RULES: tuple[DbErrorRule, ...] = (
         ),
         extractor=_project_participant_ctx,
     ),
+    foreign_key_rule(
+        "fk_survey_links_assigned_participant_same_project",
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
+            409,
+            "PARTICIPANT_IN_USE",
+            "This participant is assigned to one or more survey links and cannot be deleted.",
+        ),
+        extractor=_project_participant_ctx,
+    ),
 )
 
 PROJECT_SUBJECT_TOKEN_RULES: tuple[DbErrorRule, ...] = (

@@ -21,6 +21,7 @@ def test_typed_answer_value_serializes_to_expected_json() -> None:
 
     response = SubmissionSessionAnswerResponse(
         question_node_id=node_id,
+        node_key="question-1",
         state="answered",
         answer_family="choice",
         answer_value=ChoiceAnswerValue(selected=["o1", "o2"]),
@@ -30,6 +31,7 @@ def test_typed_answer_value_serializes_to_expected_json() -> None:
     )
 
     dumped = response.model_dump(mode="json")
+    assert dumped["node_key"] == "question-1"
     assert dumped["answer_family"] == "choice"
     assert dumped["answer_value"] == {"selected": ["o1", "o2"]}
     assert dumped["state"] == "answered"
@@ -39,6 +41,7 @@ def test_typed_answer_value_serializes_to_expected_json() -> None:
 def test_cleared_answer_value_is_none() -> None:
     response = SubmissionSessionAnswerResponse(
         question_node_id=uuid4(),
+        node_key="question-1",
         state="cleared",
         answer_family=None,
         answer_value=None,

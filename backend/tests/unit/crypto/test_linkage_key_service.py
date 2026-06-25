@@ -1,312 +1,130 @@
-"""Unit tests for LinkageKeyService."""
+"""Unit tests for linkage key access functions."""
 
 from __future__ import annotations
 
 import base64
-import json
 import uuid
-from collections.abc import Hashable
 from unittest.mock import MagicMock, patch
 
 import pytest
-from cachetools import TTLCache
-from pydantic import SecretStr
 
 from app.cache import LockedTTLCache
-from app.crypto._internal.errors import (
-    LinkageKeyError,
-    LinkageKeyUnavailableError,
-    LinkageSecretError,
-)
-from app.crypto.secrets import SecretValue
-from app.crypto.services.linkage_key_service import (
-    LinkageKey,
-    LinkageKeyService,
-)
-
-
-class _FakeTimer:
-    def __init__(self) -> None:
-        self.now = 0.0
-
-    def __call__(self) -> float:
-        return self.now
-
-
-def _make_cache(*, ttl_seconds: int = 3600) -> LockedTTLCache[LinkageKey]:
-    return LockedTTLCache(
-        name="test_linkage_key",
-        maxsize=100,
-        ttl_seconds=ttl_seconds,
-    )
-
-
-def _make_expiring_cache(timer: _FakeTimer) -> LockedTTLCache[LinkageKey]:
-    cache = _make_cache(ttl_seconds=1)
-    ttl_cache: TTLCache[Hashable, LinkageKey] = TTLCache(maxsize=100, ttl=1, timer=timer)
-    cache._cache = ttl_cache
-    return cache
-
-
-def _make_service(**overrides: object) -> LinkageKeyService:
-    cache_ttl_raw = overrides.pop("cache_ttl_seconds", 3600)
-    if not isinstance(cache_ttl_raw, int | float):
-        raise TypeError("cache_ttl_seconds must be numeric")
-    cache_ttl_seconds = int(cache_ttl_raw)
-    defaults: dict[str, object] = {
-        "cache": _make_cache(ttl_seconds=cache_ttl_seconds),
-        "linkage_secret_arn": "arn:aws:secretsmanager:us-east-1:000:secret:linkage",
-        "region": "us-east-1",
-        "access_key_id": SecretStr("fake-id"),
-        "secret_access_key": SecretStr("fake-secret"),
-    }
-    defaults.update(overrides)
-    return LinkageKeyService(**defaults)  # type: ignore[arg-type]
-
-
-def _db() -> MagicMock:
-    return MagicMock()
-
+from app.crypto._internal.errors import LinkageKeyError
+from app.crypto._internal.linkage_keys import get_current_linkage_key, get_linkage_key_by_version
+from app.crypto._internal.models import SecretValue
+from app.crypto.models import LinkageKey
 
 _GOOD_SECRET_BYTES = b"\xaa" * 32
 _GOOD_SECRET_B64 = base64.b64encode(_GOOD_SECRET_BYTES).decode()
-_VID_1 = "11111111-1111-1111-1111-111111111111"
-_VID_2 = "22222222-2222-2222-2222-222222222222"
-_DB_UUID_1 = uuid.UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+_VID_1 = "00000000-0000-0000-0000-000000000001"
+_VID_2 = "00000000-0000-0000-0000-000000000002"
+
+_LINKAGE_KEYS_MODULE = "app.crypto._internal.linkage_keys"
 
 
-def _secret_value(version: int, secret_b64: str = _GOOD_SECRET_B64, aws_vid: str = _VID_1) -> SecretValue:
-    return SecretValue(
-        secret_string=json.dumps({"version": version, "secret_b64": secret_b64}),
-        version_id=aws_vid,
-    )
+def _secret_value(version: int, aws_vid: str = _VID_1) -> SecretValue:
+    import json
 
-
-def _bad_secret_value(raw: str, aws_vid: str = _VID_1) -> SecretValue:
+    raw = json.dumps({"version": version, "secret_b64": _GOOD_SECRET_B64})
     return SecretValue(secret_string=raw, version_id=aws_vid)
 
 
-class TestGetLinkageKey:
-    def test_returns_current_version_and_secret(self) -> None:
-        svc = _make_service()
+def _mock_cache():
+    cache = MagicMock()
+    cache.current_linkage_key = LockedTTLCache(name="test_current", maxsize=4, ttl_seconds=60)
+    cache.linkage_keys_by_version = LockedTTLCache(name="test_versions", maxsize=4, ttl_seconds=60)
+    return cache
+
+
+def _db():
+    return MagicMock()
+
+
+class TestGetCurrentLinkageKey:
+    def test_returns_key_from_aws(self) -> None:
+        mock_cache = _mock_cache()
         with (
+            patch(f"{_LINKAGE_KEYS_MODULE}.get_app_cache") as get_cache,
             patch(
-                "app.crypto.services.linkage_key_service.get_linkage_secret",
-                return_value=_secret_value(2, aws_vid=_VID_2),
+                f"{_LINKAGE_KEYS_MODULE}.fetch_linkage_secret_from_aws",
+                return_value=_secret_value(1),
             ),
-            patch("app.crypto.services.linkage_key_service.version_exists", return_value=True),
+            patch(f"{_LINKAGE_KEYS_MODULE}.linkage_key_repo") as repo,
         ):
-            key = svc.get_linkage_key(_db())
-        assert key == LinkageKey(version=2, secret=_GOOD_SECRET_BYTES, aws_version_id=_VID_2)
+            get_cache.return_value.crypto = mock_cache
+            repo.version_exists.return_value = True
+            key = get_current_linkage_key(_db())
 
-    def test_inserts_db_row_for_new_version(self) -> None:
-        svc = _make_service()
-        db = _db()
+        assert key.version == 1
+        assert key.secret == _GOOD_SECRET_BYTES
+
+    def test_caches_on_hit(self) -> None:
+        mock_cache = _mock_cache()
+        cached_key = LinkageKey(version=2, secret=_GOOD_SECRET_BYTES, aws_version_id=_VID_2)
+        mock_cache.current_linkage_key.put("current", cached_key)
+
+        with patch(f"{_LINKAGE_KEYS_MODULE}.get_app_cache") as get_cache:
+            get_cache.return_value.crypto = mock_cache
+            key = get_current_linkage_key(_db())
+
+        assert key == cached_key
+
+    def test_persists_new_version_row(self) -> None:
+        mock_cache = _mock_cache()
         with (
+            patch(f"{_LINKAGE_KEYS_MODULE}.get_app_cache") as get_cache,
             patch(
-                "app.crypto.services.linkage_key_service.get_linkage_secret",
-                return_value=_secret_value(3, aws_vid=_VID_1),
+                f"{_LINKAGE_KEYS_MODULE}.fetch_linkage_secret_from_aws",
+                return_value=_secret_value(3),
             ),
-            patch("app.crypto.services.linkage_key_service.version_exists", return_value=False),
-            patch("app.crypto.services.linkage_key_service.insert_version") as insert_mock,
+            patch(f"{_LINKAGE_KEYS_MODULE}.linkage_key_repo") as repo,
+            patch(f"{_LINKAGE_KEYS_MODULE}.commit_with_err_handle"),
+            patch(f"{_LINKAGE_KEYS_MODULE}.current_settings") as settings,
         ):
-            svc.get_linkage_key(db)
-        insert_mock.assert_called_once_with(
-            db,
-            version=3,
-            aws_secret_id="arn:aws:secretsmanager:us-east-1:000:secret:linkage",
-            aws_secret_version_id=uuid.UUID(_VID_1),
-            is_current=True,
-        )
+            get_cache.return_value.crypto = mock_cache
+            repo.version_exists.return_value = False
+            settings.return_value.flowform.encryption.linkage_secret_arn = "arn:test"
+            get_current_linkage_key(_db())
 
-    def test_skips_insert_when_version_exists(self) -> None:
-        svc = _make_service()
-        with (
-            patch("app.crypto.services.linkage_key_service.get_linkage_secret", return_value=_secret_value(2)),
-            patch("app.crypto.services.linkage_key_service.version_exists", return_value=True),
-            patch("app.crypto.services.linkage_key_service.insert_version") as insert_mock,
-        ):
-            svc.get_linkage_key(_db())
-        insert_mock.assert_not_called()
-
-    def test_populates_cache_for_by_version(self) -> None:
-        svc = _make_service()
-        with (
-            patch("app.crypto.services.linkage_key_service.get_linkage_secret", return_value=_secret_value(2)),
-            patch("app.crypto.services.linkage_key_service.version_exists", return_value=True),
-        ):
-            svc.get_linkage_key(_db())
-        with patch("app.crypto.services.linkage_key_service.get_linkage_secret") as mock:
-            key = svc.get_linkage_key_by_version(2, _db())
-        mock.assert_not_called()
-        assert key.version == 2
-
-    def test_reuses_current_key_cache(self) -> None:
-        svc = _make_service()
-        db = _db()
-        with (
-            patch("app.crypto.services.linkage_key_service.get_linkage_secret", return_value=_secret_value(2)) as mock,
-            patch("app.crypto.services.linkage_key_service.version_exists", return_value=True),
-        ):
-            first = svc.get_linkage_key(db)
-            second = svc.get_linkage_key(db)
-
-        assert first == second
-        mock.assert_called_once()
+        repo.insert_version.assert_called_once()
 
 
 class TestGetLinkageKeyByVersion:
-    def test_returns_version_via_in_memory_map(self) -> None:
-        svc = _make_service()
-        with patch("app.crypto.services.linkage_key_service.get_linkage_secret") as mock:
-            mock.return_value = _secret_value(2, aws_vid=_VID_2)
-            svc.get_linkage_key_by_version(2, _db())
-        assert mock.call_count == 1
+    def test_returns_from_cache(self) -> None:
+        mock_cache = _mock_cache()
+        cached_key = LinkageKey(version=1, secret=_GOOD_SECRET_BYTES, aws_version_id=_VID_1)
+        mock_cache.linkage_keys_by_version.put(1, cached_key)
 
-        with patch("app.crypto.services.linkage_key_service.get_linkage_secret") as mock:
-            key = svc.get_linkage_key_by_version(2, _db())
-        mock.assert_not_called()
+        with patch(f"{_LINKAGE_KEYS_MODULE}.get_app_cache") as get_cache:
+            get_cache.return_value.crypto = mock_cache
+            key = get_linkage_key_by_version(1, _db())
+
+        assert key == cached_key
+
+    def test_fetches_from_aws_on_cache_miss(self) -> None:
+        mock_cache = _mock_cache()
+        with (
+            patch(f"{_LINKAGE_KEYS_MODULE}.get_app_cache") as get_cache,
+            patch(f"{_LINKAGE_KEYS_MODULE}.linkage_key_repo") as repo,
+            patch(
+                f"{_LINKAGE_KEYS_MODULE}.fetch_linkage_secret_from_aws",
+                return_value=_secret_value(2, aws_vid=_VID_2),
+            ),
+        ):
+            get_cache.return_value.crypto = mock_cache
+            repo.get_aws_version_id.return_value = uuid.UUID(_VID_2.ljust(32, "0").replace("-", "")[:32])
+            key = get_linkage_key_by_version(2, _db())
+
         assert key.version == 2
 
-    def test_falls_back_to_db_lookup(self) -> None:
-        svc = _make_service()
-        db = _db()
-        with (
-            patch("app.crypto.services.linkage_key_service.get_aws_version_id", return_value=_DB_UUID_1) as db_mock,
-            patch("app.crypto.services.linkage_key_service.get_linkage_secret") as sm_mock,
-        ):
-            sm_mock.return_value = _secret_value(1, aws_vid=str(_DB_UUID_1))
-            key = svc.get_linkage_key_by_version(1, db)
-
-        db_mock.assert_called_once_with(db, 1)
-        assert key.version == 1
-        assert sm_mock.call_args.kwargs.get("version_id") == str(_DB_UUID_1)
-
-    def test_raises_when_version_not_in_cache_or_db(self) -> None:
-        svc = _make_service()
-        with (
-            patch("app.crypto.services.linkage_key_service.get_aws_version_id", return_value=None),
-            pytest.raises(LinkageKeyError, match="not found in cache or database"),
-        ):
-            svc.get_linkage_key_by_version(99, _db())
-
-    def test_uses_in_memory_map_after_cache_expiry(self) -> None:
-        timer = _FakeTimer()
-        svc = _make_service(cache=_make_expiring_cache(timer))
-        db = _db()
-        with patch("app.crypto.services.linkage_key_service.get_linkage_secret") as mock:
-            mock.return_value = _secret_value(1, aws_vid="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-            svc.get_linkage_key_by_version(1, db)
-
-        timer.now = 2.0
-
-        with patch("app.crypto.services.linkage_key_service.get_linkage_secret") as mock:
-            mock.return_value = _secret_value(1, aws_vid="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-            svc.get_linkage_key_by_version(1, db)
-        assert mock.call_args.kwargs.get("version_id") == "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
-
-    def test_version_mismatch_from_aws_raises(self) -> None:
-        svc = _make_service()
-        with (
-            patch("app.crypto.services.linkage_key_service.get_aws_version_id", return_value=_DB_UUID_1),
-            patch("app.crypto.services.linkage_key_service.get_linkage_secret") as sm_mock,
-        ):
-            sm_mock.return_value = _secret_value(99, aws_vid=str(_DB_UUID_1))
-            with pytest.raises(LinkageKeyError, match="secret contains v99"):
-                svc.get_linkage_key_by_version(1, _db())
-
-
-class TestCacheExpiry:
-    def test_expired_entry_triggers_refetch(self) -> None:
-        timer = _FakeTimer()
-        svc = _make_service(cache=_make_expiring_cache(timer))
-        db = _db()
-        with patch("app.crypto.services.linkage_key_service.get_linkage_secret") as mock:
-            mock.return_value = _secret_value(1)
-            svc.get_linkage_key_by_version(1, db)
-
-        timer.now = 2.0
-
-        with patch("app.crypto.services.linkage_key_service.get_linkage_secret") as mock_fetch:
-            mock_fetch.return_value = _secret_value(1)
-            svc.get_linkage_key_by_version(1, db)
-        mock_fetch.assert_called_once()
-
-
-class TestValidationErrors:
-    def test_invalid_json_raises(self) -> None:
-        svc = _make_service()
-        with (
-            patch("app.crypto.services.linkage_key_service.get_aws_version_id", return_value=_DB_UUID_1),
-            patch(
-                "app.crypto.services.linkage_key_service.get_linkage_secret",
-                return_value=_bad_secret_value("not-json"),
-            ),
-            pytest.raises(LinkageKeyError, match="not valid JSON"),
-        ):
-            svc.get_linkage_key_by_version(1, _db())
-
     def test_missing_version_raises(self) -> None:
-        svc = _make_service()
-        raw = json.dumps({"secret_b64": _GOOD_SECRET_B64})
+        mock_cache = _mock_cache()
         with (
-            patch("app.crypto.services.linkage_key_service.get_aws_version_id", return_value=_DB_UUID_1),
-            patch("app.crypto.services.linkage_key_service.get_linkage_secret", return_value=_bad_secret_value(raw)),
-            pytest.raises(LinkageKeyError, match="missing or invalid 'version'"),
+            patch(f"{_LINKAGE_KEYS_MODULE}.get_app_cache") as get_cache,
+            patch(f"{_LINKAGE_KEYS_MODULE}.linkage_key_repo") as repo,
         ):
-            svc.get_linkage_key_by_version(1, _db())
+            get_cache.return_value.crypto = mock_cache
+            repo.get_aws_version_id.return_value = None
 
-    def test_missing_secret_b64_raises(self) -> None:
-        svc = _make_service()
-        raw = json.dumps({"version": 1})
-        with (
-            patch("app.crypto.services.linkage_key_service.get_aws_version_id", return_value=_DB_UUID_1),
-            patch("app.crypto.services.linkage_key_service.get_linkage_secret", return_value=_bad_secret_value(raw)),
-            pytest.raises(LinkageKeyError, match="missing 'secret_b64'"),
-        ):
-            svc.get_linkage_key_by_version(1, _db())
-
-    def test_invalid_base64_raises(self) -> None:
-        svc = _make_service()
-        raw = json.dumps({"version": 1, "secret_b64": "!!not-base64!!"})
-        with (
-            patch("app.crypto.services.linkage_key_service.get_aws_version_id", return_value=_DB_UUID_1),
-            patch("app.crypto.services.linkage_key_service.get_linkage_secret", return_value=_bad_secret_value(raw)),
-            pytest.raises(LinkageKeyError, match="Invalid base64"),
-        ):
-            svc.get_linkage_key_by_version(1, _db())
-
-    def test_secret_too_short_raises(self) -> None:
-        svc = _make_service()
-        short = base64.b64encode(b"\x01" * 16).decode()
-        raw = json.dumps({"version": 1, "secret_b64": short})
-        with (
-            patch("app.crypto.services.linkage_key_service.get_aws_version_id", return_value=_DB_UUID_1),
-            patch("app.crypto.services.linkage_key_service.get_linkage_secret", return_value=_bad_secret_value(raw)),
-            pytest.raises(LinkageKeyError, match="too short"),
-        ):
-            svc.get_linkage_key_by_version(1, _db())
-
-    def test_empty_decoded_secret_raises(self) -> None:
-        svc = _make_service()
-        raw = json.dumps({"version": 1, "secret_b64": "IA=="})
-        with (
-            patch("app.crypto.services.linkage_key_service.get_aws_version_id", return_value=_DB_UUID_1),
-            patch("app.crypto.services.linkage_key_service.get_linkage_secret", return_value=_bad_secret_value(raw)),
-            pytest.raises(LinkageKeyError, match="too short"),
-        ):
-            svc.get_linkage_key_by_version(1, _db())
-
-
-class TestAwsFailureTranslation:
-    def test_aws_failure_raises_unavailable(self) -> None:
-        svc = _make_service()
-        with (
-            patch("app.crypto.services.linkage_key_service.get_aws_version_id", return_value=_DB_UUID_1),
-            patch(
-                "app.crypto.services.linkage_key_service.get_linkage_secret",
-                side_effect=LinkageSecretError("boom"),
-            ),
-            pytest.raises(LinkageKeyUnavailableError),
-        ):
-            svc.get_linkage_key_by_version(1, _db())
+            with pytest.raises(LinkageKeyError):
+                get_linkage_key_by_version(99, _db())

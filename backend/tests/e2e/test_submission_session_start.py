@@ -24,7 +24,7 @@ def test_start_submission_session_returns_json_tuple_and_sets_cookie(
 
     assert resp.status_code == 201
     body = resp.get_json()
-    assert set(body) == {"status", "started_at", "expires_at", "survey_version_id"}
+    assert set(body) == {"status", "started_at", "expires_at", "survey_version_id", "subject_code"}
     assert body["status"] == "in_progress"
     assert body["survey_version_id"] == seed.published_version.id
     assert "survey_schema" not in body

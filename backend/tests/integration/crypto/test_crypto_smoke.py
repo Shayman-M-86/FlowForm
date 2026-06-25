@@ -1,99 +1,76 @@
-"""Smoke test: full crypto round-trip against real AWS infrastructure."""
+"""Smoke tests: crypto round-trip exercising the primitives.
+
+The local tests verify the full tier-2 and tier-3 chain without AWS.
+The AWS test (skipped without env vars) exercises KMS tier-1 wrapping.
+"""
 
 from __future__ import annotations
 
-import base64
-import json
 import os
 import uuid
-from typing import Any
 
 import pytest
 
 from app.cache import LockedTTLCache
-from app.crypto.aes_gcm import decrypt_answer, encrypt_answer
-from app.crypto.kms import unwrap_dek, wrap_dek
+from app.crypto._internal.aad import build_session_dek_wrap_aad
 from app.crypto._internal.locators import derive_session_locator
-from app.crypto.nonces import generate_nonce
-from app.crypto.payload import build_plaintext_payload, parse_plaintext_payload
-from app.crypto.secrets import get_linkage_secret
-
-
-def _encryption_configured() -> bool:
-    return bool(os.environ.get("FLOWFORM_ENCRYPTION_KMS_KEY_ARN"))
-
-
-skip_no_aws = pytest.mark.skipif(
-    not _encryption_configured(),
-    reason="FLOWFORM_ENCRYPTION_* env vars not set",
+from app.crypto._internal.nonces import generate_nonce
+from app.crypto._internal.payload import build_plaintext_payload, parse_plaintext_payload
+from app.crypto._internal.wrapping import (
+    decrypt_answer,
+    encrypt_answer,
+    unwrap_session_key,
+    wrap_session_key,
+)
+from app.crypto.models import (
+    PlaintextSessionKey,
+    PlaintextSurveyKey,
+    SessionDEKContext,
+    SessionLocator,
 )
 
 
-def _decode_linkage_secret(secret_string: str) -> bytes:
-    data: Any = json.loads(secret_string)
-    assert isinstance(data, dict)
-    secret_b64 = data["secret_b64"]
-    assert isinstance(secret_b64, str)
-    return base64.b64decode(secret_b64)
+def _real_aws_available() -> bool:
+    arn = os.environ.get("FLOWFORM_ENCRYPTION_KMS_KEY_ARN", "")
+    if not arn:
+        return False
+    env = os.environ.get("FLASK_ENV", os.environ.get("APP_ENV", ""))
+    return env not in ("test", "testing")
 
 
-@skip_no_aws
-class TestCryptoSmoke:
-    """End-to-end crypto round-trip against real KMS and Secrets Manager."""
+skip_no_aws = pytest.mark.skipif(
+    not _real_aws_available(),
+    reason="KMS smoke tests skipped in test environment",
+)
 
-    def test_crypto_smoke_round_trip(self, settings) -> None:
-        enc = settings.flowform.encryption
-        assert enc is not None, "EncryptionSettings not loaded"
 
-        region = enc.aws_region
-        access_key_id = enc.aws_access_key_id
-        secret_access_key = enc.aws_secret_access_key
+class TestLocalCryptoRoundTrip:
+    """Full round-trip using local-only primitives (tiers 2 and 3)."""
 
-        # 1. Fetch linkage secret
-        linkage_secret = get_linkage_secret(
-            enc.linkage_secret_arn,
-            region=region,
-            access_key_id=access_key_id,
-            secret_access_key=secret_access_key,
+    def test_session_key_wrap_unwrap(self) -> None:
+        survey_key = PlaintextSurveyKey(os.urandom(32))
+        session_key = PlaintextSessionKey(os.urandom(32))
+
+        context = SessionDEKContext(
+            session_id=uuid.uuid4(),
+            crypto_version=1,
+            project_id=1,
+            survey_id=1,
+            session_locator=SessionLocator(os.urandom(32)),
         )
-        linkage_secret_bytes = _decode_linkage_secret(linkage_secret.secret_string)
-        assert len(linkage_secret_bytes) == 32
+        aad = build_session_dek_wrap_aad(context)
 
-        # 2. Derive a session locator
-        core_session_id = uuid.uuid4()
-        session_locator = derive_session_locator(core_session_id, linkage_secret_bytes)
-        assert len(session_locator) == 32
+        wrapped = wrap_session_key(plaintext_key=session_key, survey_key=survey_key, aad=aad)
+        assert wrapped != session_key
 
-        # 3. Generate a DEK (32 bytes for AES-256)
-        plaintext_dek = os.urandom(32)
+        unwrapped = unwrap_session_key(wrapped_key=wrapped, survey_key=survey_key, aad=aad)
+        assert unwrapped == session_key
 
-        # 4. Wrap DEK with KMS
-        encryption_context = {"session_locator": session_locator.hex()}
-        wrapped = wrap_dek(
-            plaintext_dek,
-            enc.kms_key_arn,
-            encryption_context,
-            region=region,
-            access_key_id=access_key_id,
-            secret_access_key=secret_access_key,
-        )
-        assert wrapped != plaintext_dek
-
-        # 5. Unwrap DEK
-        unwrapped = unwrap_dek(
-            wrapped,
-            enc.kms_key_arn,
-            encryption_context,
-            region=region,
-            access_key_id=access_key_id,
-            secret_access_key=secret_access_key,
-        )
-        assert unwrapped == plaintext_dek
-
-        # 6. Build a plaintext payload and encrypt
+    def test_answer_encrypt_decrypt_round_trip(self) -> None:
+        plaintext_dek = PlaintextSessionKey(os.urandom(32))
         question_node_id = uuid.uuid4()
+
         payload_bytes = build_plaintext_payload(
-            payload_version=1,
             question_node_id=question_node_id,
             answer_state="answered",
             answer_value={"choice": "option_a"},
@@ -102,55 +79,57 @@ class TestCryptoSmoke:
         aad = b"test-aad-binding"
         ciphertext = encrypt_answer(payload_bytes, plaintext_dek, nonce, aad)
 
-        # 7. Decrypt and verify round-trip
         decrypted = decrypt_answer(ciphertext, plaintext_dek, nonce, aad)
         parsed = parse_plaintext_payload(decrypted)
-        assert parsed["question_node_id"] == question_node_id
-        assert parsed["answer_state"] == "answered"
-        assert parsed["answer_value"] == {"choice": "option_a"}
+        assert parsed.question_node_id == question_node_id
+        assert parsed.answer_state == "answered"
+        assert parsed.answer_value == {"choice": "option_a"}
 
-    def test_dek_cache_with_real_kms(self, settings) -> None:
-        enc = settings.flowform.encryption
-        assert enc is not None
+    def test_session_locator_deterministic(self) -> None:
+        session_id = uuid.uuid4()
+        secret = b"\xaa" * 32
 
-        region = enc.aws_region
-        access_key_id = enc.aws_access_key_id
-        secret_access_key = enc.aws_secret_access_key
+        loc1 = derive_session_locator(session_id, secret)
+        loc2 = derive_session_locator(session_id, secret)
 
-        plaintext_dek = os.urandom(32)
-        encryption_context = {"test": "cache"}
+        assert loc1 == loc2
+        assert len(loc1) == 32
+        assert loc1 != session_id.bytes
 
-        wrapped = wrap_dek(
-            plaintext_dek,
-            enc.kms_key_arn,
-            encryption_context,
-            region=region,
-            access_key_id=access_key_id,
-            secret_access_key=secret_access_key,
-        )
-
+    def test_dek_cache_round_trip(self) -> None:
         session_locator = os.urandom(32)
+        plaintext_dek = os.urandom(32)
+
         cache: LockedTTLCache[bytes] = LockedTTLCache(
             name="test_session_dek",
             maxsize=16,
             ttl_seconds=60,
         )
 
-        # Cache miss → unwrap via KMS
         assert cache.get(session_locator) is None
-        unwrapped = unwrap_dek(
-            wrapped,
-            enc.kms_key_arn,
-            encryption_context,
-            region=region,
-            access_key_id=access_key_id,
-            secret_access_key=secret_access_key,
-        )
-        cache.put(session_locator, unwrapped)
-
-        # Cache hit
+        cache.put(session_locator, plaintext_dek)
         assert cache.get(session_locator) == plaintext_dek
 
-        # Eviction
         cache.evict(session_locator)
         assert cache.get(session_locator) is None
+
+
+@skip_no_aws
+class TestKmsSmokeRoundTrip:
+    """End-to-end crypto round-trip against real KMS."""
+
+    def test_survey_key_wrap_unwrap_via_kms(self, settings, app_ctx) -> None:
+        from app.crypto._internal.kms_context import build_survey_kms_context
+        from app.crypto._internal.wrapping import unwrap_survey_key, wrap_survey_key
+
+        enc = settings.flowform.encryption
+        assert enc is not None, "EncryptionSettings not loaded"
+
+        survey_key = PlaintextSurveyKey(os.urandom(32))
+        context = build_survey_kms_context(project_id=1, survey_id=1)
+
+        wrapped = wrap_survey_key(survey_key, enc.kms_key_arn, context)
+        assert wrapped != survey_key
+
+        unwrapped = unwrap_survey_key(wrapped, enc.kms_key_arn, context)
+        assert unwrapped == survey_key

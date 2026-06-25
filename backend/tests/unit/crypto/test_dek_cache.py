@@ -151,33 +151,37 @@ class TestLockedTTLCacheDisabled:
 
 class TestCryptoCacheNamespace:
     def test_container_exposes_named_crypto_caches(self) -> None:
+        from app.crypto.models import PlaintextSessionKey, PlaintextSurveyKey
+
         cache = create_app_cache().crypto
         linkage_key = _make_linkage_key()
-        survey_key_id = uuid.UUID("00000000-0000-0000-0000-000000000003")
         session_id = uuid.UUID("00000000-0000-0000-0000-000000000004")
+        survey_cache_key = (1, 1)
 
         cache.current_linkage_key.put("current", linkage_key)
         cache.linkage_keys_by_version.put(1, linkage_key)
-        cache.survey_branch_keys.put(survey_key_id, b"\xaa" * 32)
-        cache.session_deks.put(session_id, b"\xbb" * 32)
+        cache.survey_keys.put(survey_cache_key, PlaintextSurveyKey(b"\xaa" * 32))
+        cache.session_deks.put(session_id, PlaintextSessionKey(b"\xbb" * 32))
 
         assert cache.current_linkage_key.get("current") == linkage_key
         assert cache.linkage_keys_by_version.get(1) == linkage_key
-        assert cache.survey_branch_keys.get(survey_key_id) == b"\xaa" * 32
+        assert cache.survey_keys.get(survey_cache_key) == b"\xaa" * 32
         assert cache.session_deks.get(session_id) == b"\xbb" * 32
 
     def test_can_disable_all_named_crypto_caches(self) -> None:
+        from app.crypto.models import PlaintextSessionKey, PlaintextSurveyKey
+
         app_cache = create_app_cache()
         cache = app_cache.crypto
-        survey_key_id = uuid.UUID("00000000-0000-0000-0000-000000000003")
+        survey_cache_key = (1, 1)
         session_id = uuid.UUID("00000000-0000-0000-0000-000000000004")
 
         app_cache.set_enabled(False)
 
-        cache.survey_branch_keys.put(survey_key_id, b"\xaa" * 32)
-        cache.session_deks.put(session_id, b"\xbb" * 32)
+        cache.survey_keys.put(survey_cache_key, PlaintextSurveyKey(b"\xaa" * 32))
+        cache.session_deks.put(session_id, PlaintextSessionKey(b"\xbb" * 32))
 
-        assert cache.survey_branch_keys.get(survey_key_id) is None
+        assert cache.survey_keys.get(survey_cache_key) is None
         assert cache.session_deks.get(session_id) is None
 
 

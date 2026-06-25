@@ -12,6 +12,7 @@ type SaveAnswerRequest = components['schemas']['SaveSubmissionSessionAnswerReque
 type PageState =
   | { phase: 'loading' }
   | { phase: 'auth-required' }
+  | { phase: 'auth-mismatch'; message: string }
   | { phase: 'error'; message: string }
   | { phase: 'filling'; survey: SurveyNode[]; title: string; nodes: QuestionNode[] }
   | { phase: 'submitting' }
@@ -61,12 +62,43 @@ export function RespondPage({ token }: RespondPageProps) {
 
       if (error || !data) {
         const errorBody = error as { code?: string; message?: string } | undefined
+
         if (errorBody?.code === 'LINK_AUTH_REQUIRED') {
           setState({ phase: 'auth-required' })
           return
         }
-        setState({ phase: 'error', message: errorBody?.message ?? 'This link is invalid or has expired.' })
-        return
+
+        if (errorBody?.code === 'LINK_PARTICIPANT_VERIFICATION_REQUIRED') {
+          const { error: verifyError } = await client.POST(
+            '/api/v1/respondent/links/verification/link',
+            { body: { token } },
+          )
+
+          if (cancelled) return
+
+          if (verifyError) {
+            const verifyBody = verifyError as { code?: string; message?: string } | undefined
+            setState({ phase: 'auth-mismatch', message: verifyBody?.message ?? 'Verification failed. Please ensure you are signed in with the correct email.' })
+            return
+          }
+
+          const retryResult = await client.POST('/api/v1/respondent/links/resolve', {
+            body: { token },
+          })
+
+          if (cancelled) return
+
+          if (retryResult.error || !retryResult.data) {
+            const retryBody = retryResult.error as { message?: string } | undefined
+            setState({ phase: 'error', message: retryBody?.message ?? 'This link is invalid or has expired.' })
+            return
+          }
+
+          data = retryResult.data
+        } else {
+          setState({ phase: 'error', message: errorBody?.message ?? 'This link is invalid or has expired.' })
+          return
+        }
       }
 
       resolveData.current = data
@@ -222,6 +254,25 @@ export function RespondPage({ token }: RespondPageProps) {
               Create account
             </Button>
           </div>
+        </CenteredCard>
+      )
+
+    case 'auth-mismatch':
+      return (
+        <CenteredCard>
+          <h1 className="text-2xl font-semibold mb-3">Wrong account</h1>
+          <p className="text-muted-foreground text-sm mb-6">
+            {state.message}
+          </p>
+          <Button
+            variant="primary"
+            onClick={() => loginWithRedirect({
+              appState: { returnTo: window.location.pathname },
+              authorizationParams: { prompt: 'login' },
+            })}
+          >
+            Sign in with a different account
+          </Button>
         </CenteredCard>
       )
 

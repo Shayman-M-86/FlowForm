@@ -36,7 +36,6 @@ from __future__ import annotations
 from collections.abc import Generator
 from datetime import UTC, datetime
 from typing import Any, NamedTuple
-from uuid import UUID
 
 import pytest  # type: ignore[import]
 from flask import Flask
@@ -109,73 +108,63 @@ class SeedData(NamedTuple):
 
 @pytest.fixture(autouse=True)
 def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Auto-mock crypto services so e2e tests run without AWS."""
+    """Auto-mock module-level crypto calls so e2e tests run without AWS."""
+    import os
     from unittest.mock import MagicMock
 
-    from app.api.v1.respondent import session_management_service
-    from app.crypto._internal.locators import derive_session_locator
-    from app.crypto.services import LinkageKey, NewSessionDEK, NewSessionLocator
-    from app.services.public_submissions.core.actions.session_starter import SessionStarter
+    from app.crypto._internal.locators import derive_session_locator as _raw_derive
+    from app.crypto.models import (
+        LinkageKey,
+        NewSessionKey,
+        NewSessionLocator,
+        PlaintextSessionKey,
+        SessionLocator,
+        WrappedSessionKey,
+    )
 
     linkage_secret = b"\xcc" * 32
-
-    loc_svc = MagicMock()
-    loc_svc.get_current_linkage_key.return_value = LinkageKey(
-        version=1,
-        secret=linkage_secret,
-        aws_version_id="test-version",
-    )
-
-    def _new_session_locator(session_id: UUID, *_args, **_kwargs) -> NewSessionLocator:
-        return NewSessionLocator(
-            linkage_key_version=1,
-            session_locator=derive_session_locator(session_id, linkage_secret),
-        )
-
-    loc_svc.for_new_session.side_effect = _new_session_locator
     _linkage_key = LinkageKey(version=1, secret=linkage_secret, aws_version_id="test-version")
-    loc_svc.for_existing_session.side_effect = lambda session_id, *_args, **_kwargs: (
-        derive_session_locator(session_id, linkage_secret),
-        _linkage_key,
-    )
+    _plaintext_dek = PlaintextSessionKey(os.urandom(32))
+    _wrapped_dek = WrappedSessionKey(b"\x02" * 64)
 
-    dek_svc = MagicMock()
-    dek_svc.create_for_session.return_value = NewSessionDEK(
-        plaintext_dek=b"\x01" * 32,
-        wrapped_session_dek=b"\x02" * 64,
-    )
-    dek_svc.get_for_session.return_value = b"\x01" * 32
+    _starter = "app.services.public_submissions.core.actions.session_starter"
+    _loader = "app.services.public_submissions.core.session_loader"
+    _answer = "app.services.public_submissions.core.actions.answer_save"
+    _recon = "app.services.public_submissions.core.reconciliation"
+    _admin = "app.services.admin_responses.service"
 
-    branch_key_svc = MagicMock()
-    branch_key_svc.get_plaintext_key.return_value = b"\x03" * 32
-    branch_key_svc.ensure_for_survey.return_value = MagicMock()
-
-    fake_survey_key = MagicMock()
+    monkeypatch.setattr(f"{_starter}.load_current_linkage_key", lambda _db: _linkage_key)
     monkeypatch.setattr(
-        "app.services.public_submissions.core.actions.session_starter.load_survey_encryption_key",
-        lambda *_args, **_kwargs: fake_survey_key,
+        f"{_starter}.derive_session_locator",
+        lambda sid, _key: NewSessionLocator(
+            linkage_key_version=1,
+            session_locator=SessionLocator(_raw_derive(sid, linkage_secret)),
+        ),
     )
-
-    original_init = SessionStarter.__init__
-    route_session_starter = SessionStarter(
-        locator_service=loc_svc,
-        dek_service=dek_svc,
-        survey_branch_key_service=branch_key_svc,
-    )
-
     monkeypatch.setattr(
-        session_management_service,
-        "_session_starter",
-        route_session_starter,
+        f"{_starter}.start_plaintext_survey_key_load",
+        lambda _db, **_kw: MagicMock(return_value=os.urandom(32)),
     )
-
-    def patched_init(self, **kwargs):
-        kwargs.setdefault("locator_service", loc_svc)
-        kwargs.setdefault("dek_service", dek_svc)
-        kwargs.setdefault("survey_branch_key_service", branch_key_svc)
-        original_init(self, **kwargs)
-
-    monkeypatch.setattr(SessionStarter, "__init__", patched_init)
+    monkeypatch.setattr(
+        f"{_starter}.create_session_key",
+        lambda _ctx, _sk: NewSessionKey(plaintext_key=_plaintext_dek, wrapped_key=_wrapped_dek),
+    )
+    monkeypatch.setattr(
+        f"{_loader}.resolve_existing_session_locator",
+        lambda db, sid, ver: (SessionLocator(_raw_derive(sid, linkage_secret)), _linkage_key),
+    )
+    monkeypatch.setattr(
+        f"{_answer}.start_plaintext_session_key_load",
+        lambda _db, _rdb, **_kw: (lambda: _plaintext_dek),
+    )
+    monkeypatch.setattr(
+        f"{_recon}.resolve_existing_session_locator",
+        lambda db, sid, ver: (SessionLocator(_raw_derive(sid, linkage_secret)), _linkage_key),
+    )
+    monkeypatch.setattr(
+        f"{_admin}.resolve_existing_session_locator",
+        lambda db, sid, ver: (SessionLocator(_raw_derive(sid, linkage_secret)), _linkage_key),
+    )
 
 
 @pytest.fixture

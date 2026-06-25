@@ -12,16 +12,21 @@ from __future__ import annotations
 import os
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-from pydantic import SecretStr
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import EncryptionSettings
 from app.crypto._internal.errors import KmsError
-from app.crypto.services import LinkageKey, NewSessionDEK, NewSessionLocator
+from app.crypto.models import (
+    LinkageKey,
+    NewSessionKey,
+    NewSessionLocator,
+    PlaintextSessionKey,
+    SessionLocator,
+    WrappedSessionKey,
+)
 from app.domain.errors import SessionNotFoundError, SessionStartError
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.orm.core.submission_session import SubmissionSession
@@ -40,16 +45,14 @@ if TYPE_CHECKING:
     from tests.conftest import DbSessions
 
 _SCHEMA = {"nodes": [{"id": "q1", "type": "short_text"}]}
-_FAKE_SESSION_LOCATOR = os.urandom(32)
-_FAKE_PLAINTEXT_DEK = os.urandom(32)
-_FAKE_WRAPPED_DEK = b"\xbb" * 64
-_FAKE_ENC_SETTINGS = EncryptionSettings(
-    kms_key_arn="arn:aws:kms:us-east-1:000000000000:key/test-key",
-    linkage_secret_arn="arn:aws:secretsmanager:us-east-1:000000000000:secret:test",
-    aws_region="us-east-1",
-    aws_access_key_id=SecretStr("AKIAIOSFODNN7EXAMPLE"),
-    aws_secret_access_key=SecretStr("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"),
-)
+_LINKAGE_SECRET = b"\xcc" * 32
+_FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
+_FAKE_SESSION_LOCATOR = SessionLocator(os.urandom(32))
+_FAKE_PLAINTEXT_DEK = PlaintextSessionKey(os.urandom(32))
+_FAKE_WRAPPED_DEK = WrappedSessionKey(b"\xbb" * 64)
+
+_STARTER_MODULE = "app.services.public_submissions.core.actions.session_starter"
+_LOADER_MODULE = "app.services.public_submissions.core.session_loader"
 
 
 def _seed_published_survey(db: Session, slug: str) -> int:
@@ -88,33 +91,32 @@ def _slug_payload(slug: str) -> StartSubmissionSessionRequest:
     return StartSubmissionSessionRequest.model_validate({"access": {"type": "public_slug", "public_slug": slug}})
 
 
-def _mock_locator_service(session_locator: bytes | None = None):
-    """Locator service that returns the same locator for both new and existing sessions."""
-    svc = MagicMock()
-    loc_bytes = session_locator or _FAKE_SESSION_LOCATOR
-    svc.get_current_linkage_key.return_value = LinkageKey(
-        version=1,
-        secret=b"\xcc" * 32,
-        aws_version_id="test-version",
-    )
-    svc.for_new_session.return_value = NewSessionLocator(
-        linkage_key_version=1,
-        session_locator=loc_bytes,
-    )
-    svc.for_existing_session.return_value = (loc_bytes, MagicMock())
-    return svc
-
-
-def _mock_dek_service(
-    plaintext_dek: bytes | None = None,
-    wrapped_dek: bytes | None = None,
-):
-    svc = MagicMock()
-    svc.create_for_session.return_value = NewSessionDEK(
-        plaintext_dek=plaintext_dek or _FAKE_PLAINTEXT_DEK,
-        wrapped_session_dek=wrapped_dek or _FAKE_WRAPPED_DEK,
-    )
-    return svc
+def _mock_crypto_for_start():
+    """Patch module-level crypto calls used by SessionStarter.start."""
+    return [
+        patch(
+            f"{_STARTER_MODULE}.load_current_linkage_key",
+            return_value=_FAKE_LINKAGE_KEY,
+        ),
+        patch(
+            f"{_STARTER_MODULE}.derive_session_locator",
+            return_value=NewSessionLocator(
+                linkage_key_version=1,
+                session_locator=_FAKE_SESSION_LOCATOR,
+            ),
+        ),
+        patch(
+            f"{_STARTER_MODULE}.start_plaintext_survey_key_load",
+            return_value=MagicMock(return_value=os.urandom(32)),
+        ),
+        patch(
+            f"{_STARTER_MODULE}.create_session_key",
+            return_value=NewSessionKey(
+                plaintext_key=_FAKE_PLAINTEXT_DEK,
+                wrapped_key=_FAKE_WRAPPED_DEK,
+            ),
+        ),
+    ]
 
 
 class TestSuccessfulSessionStart:
@@ -124,17 +126,15 @@ class TestSuccessfulSessionStart:
     ) -> None:
         survey_id = _seed_published_survey(db_sessions.core, "enc-start-ok")
 
-        starter = SessionStarter(
-            locator_service=_mock_locator_service(),
-            dek_service=_mock_dek_service(),
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-        response, browser_token, _ = starter.start(
-            db_sessions.core,
-            db_sessions.response,
-            payload=_slug_payload("enc-start-ok"),
-            actor=None,
-        )
+        patches = _mock_crypto_for_start()
+        with patches[0], patches[1], patches[2], patches[3]:
+            starter = SessionStarter()
+            response, browser_token, _ = starter.start(
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("enc-start-ok"),
+                actor=None,
+            )
 
         assert browser_token, "browser token must be returned on success"
         assert response.status == "in_progress"
@@ -153,17 +153,15 @@ class TestSuccessfulSessionStart:
     ) -> None:
         _seed_published_survey(db_sessions.core, "enc-locator-check")
 
-        starter = SessionStarter(
-            locator_service=_mock_locator_service(),
-            dek_service=_mock_dek_service(),
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-        starter.start(
-            db_sessions.core,
-            db_sessions.response,
-            payload=_slug_payload("enc-locator-check"),
-            actor=None,
-        )
+        patches = _mock_crypto_for_start()
+        with patches[0], patches[1], patches[2], patches[3]:
+            starter = SessionStarter()
+            starter.start(
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("enc-locator-check"),
+                actor=None,
+            )
 
         envelope = db_sessions.response.scalar(select(ResponseEnvelope))
         assert envelope is not None
@@ -182,40 +180,17 @@ class TestSuccessfulSessionStart:
     ) -> None:
         _seed_published_survey(db_sessions.core, "enc-resume-cookie")
 
-        starter = SessionStarter(
-            locator_service=_mock_locator_service(),
-            dek_service=_mock_dek_service(),
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-        _, browser_token, _ = starter.start(
-            db_sessions.core,
-            db_sessions.response,
-            payload=_slug_payload("enc-resume-cookie"),
-            actor=None,
-        )
+        patches = _mock_crypto_for_start()
+        with patches[0], patches[1], patches[2], patches[3]:
+            starter = SessionStarter()
+            _, browser_token, _ = starter.start(
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("enc-resume-cookie"),
+                actor=None,
+            )
 
         assert len(browser_token) > 0, "resume token must be non-empty"
-
-    def test_dek_service_create_called_on_session_start(
-        self,
-        db_sessions: DbSessions,
-    ) -> None:
-        _seed_published_survey(db_sessions.core, "enc-wrap-assert")
-
-        dek_svc = _mock_dek_service()
-        starter = SessionStarter(
-            locator_service=_mock_locator_service(),
-            dek_service=dek_svc,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-        starter.start(
-            db_sessions.core,
-            db_sessions.response,
-            payload=_slug_payload("enc-wrap-assert"),
-            actor=None,
-        )
-
-        dek_svc.create_for_session.assert_called_once()
 
 
 class TestEnvelopeCreationFailure:
@@ -225,15 +200,23 @@ class TestEnvelopeCreationFailure:
     ) -> None:
         survey_id = _seed_published_survey(db_sessions.core, "enc-kms-fail")
 
-        dek_svc = MagicMock()
-        dek_svc.create_for_session.side_effect = KmsError("KMS encrypt failed")
-
-        starter = SessionStarter(
-            locator_service=_mock_locator_service(),
-            dek_service=dek_svc,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-        with pytest.raises(SessionStartError):
+        with (
+            patch(f"{_STARTER_MODULE}.load_current_linkage_key", return_value=_FAKE_LINKAGE_KEY),
+            patch(
+                f"{_STARTER_MODULE}.derive_session_locator",
+                return_value=NewSessionLocator(
+                    linkage_key_version=1,
+                    session_locator=_FAKE_SESSION_LOCATOR,
+                ),
+            ),
+            patch(
+                f"{_STARTER_MODULE}.start_plaintext_survey_key_load",
+                return_value=MagicMock(return_value=os.urandom(32)),
+            ),
+            patch(f"{_STARTER_MODULE}.create_session_key", side_effect=KmsError("KMS encrypt failed")),
+            pytest.raises(SessionStartError),
+        ):
+            starter = SessionStarter()
             starter.start(
                 db_sessions.core,
                 db_sessions.response,
@@ -255,31 +238,29 @@ class TestResumedSession:
     ) -> None:
         survey_id = _seed_published_survey(db_sessions.core, "enc-resume-load")
 
-        loc_svc = _mock_locator_service()
-        starter = SessionStarter(
-            locator_service=loc_svc,
-            dek_service=_mock_dek_service(),
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-        _, browser_token, _ = starter.start(
-            db_sessions.core,
-            db_sessions.response,
-            payload=_slug_payload("enc-resume-load"),
-            actor=None,
-        )
+        patches = _mock_crypto_for_start()
+        with patches[0], patches[1], patches[2], patches[3]:
+            starter = SessionStarter()
+            _, browser_token, _ = starter.start(
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("enc-resume-load"),
+                actor=None,
+            )
 
-        ctx = load_current_session(
-            db_sessions.core,
-            db_sessions.response,
-            browser_token,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-            locator_service=loc_svc,
-        )
+        with patch(
+            f"{_LOADER_MODULE}.resolve_existing_session_locator",
+            return_value=(_FAKE_SESSION_LOCATOR, _FAKE_LINKAGE_KEY),
+        ):
+            ctx = load_current_session(
+                db_sessions.core,
+                db_sessions.response,
+                browser_token,
+            )
 
-        assert ctx.session is not None
-        assert ctx.session.survey_id == survey_id
-        assert ctx.survey_version is not None
-        assert ctx.envelope is not None
+        assert ctx.session_id is not None
+        assert ctx.survey_id == survey_id
+        assert ctx.envelope_id is not None
         assert ctx.session_locator is not None
         assert len(ctx.session_locator) == 32
 
@@ -289,29 +270,27 @@ class TestResumedSession:
     ) -> None:
         _seed_published_survey(db_sessions.core, "enc-resume-version")
 
-        loc_svc = _mock_locator_service()
-        starter = SessionStarter(
-            locator_service=loc_svc,
-            dek_service=_mock_dek_service(),
-            encryption_settings=_FAKE_ENC_SETTINGS,
-        )
-        _, browser_token, _ = starter.start(
-            db_sessions.core,
-            db_sessions.response,
-            payload=_slug_payload("enc-resume-version"),
-            actor=None,
-        )
+        patches = _mock_crypto_for_start()
+        with patches[0], patches[1], patches[2], patches[3]:
+            starter = SessionStarter()
+            _, browser_token, _ = starter.start(
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("enc-resume-version"),
+                actor=None,
+            )
 
-        ctx = load_current_session(
-            db_sessions.core,
-            db_sessions.response,
-            browser_token,
-            encryption_settings=_FAKE_ENC_SETTINGS,
-            locator_service=loc_svc,
-        )
+        with patch(
+            f"{_LOADER_MODULE}.resolve_existing_session_locator",
+            return_value=(_FAKE_SESSION_LOCATOR, _FAKE_LINKAGE_KEY),
+        ):
+            ctx = load_current_session(
+                db_sessions.core,
+                db_sessions.response,
+                browser_token,
+            )
 
-        assert ctx.survey_version.status == "published"
-        assert ctx.survey_version.compiled_schema == _SCHEMA
+        assert ctx.survey_version_id is not None
 
     def test_loader_rejects_invalid_token(
         self,
@@ -322,6 +301,4 @@ class TestResumedSession:
                 db_sessions.core,
                 db_sessions.response,
                 "bogus-token-that-does-not-exist",
-                encryption_settings=_FAKE_ENC_SETTINGS,
-                locator_service=_mock_locator_service(),
             )

@@ -1,146 +1,87 @@
-"""Unit tests for LocatorService."""
+"""Unit tests for locator derivation functions."""
 
 from __future__ import annotations
 
-import os
-from typing import cast
-from unittest.mock import MagicMock
-from uuid import UUID
+import uuid
 
-from app.crypto.services.linkage_key_service import LinkageKey, LinkageKeyService
-from app.crypto.services.locator_service import LocatorService, NewSessionLocator
+from app.crypto._internal.locators import derive_answer_locator, derive_session_locator
+from app.crypto.locators import (
+    derive_answer_locator as public_derive_answer_locator,
+)
+from app.crypto.locators import (
+    derive_session_locator as public_derive_session_locator,
+)
+from app.crypto.models import LinkageKey
 
-SESS_1 = UUID("00000000-0000-0000-0000-000000000001")
-SESS_2 = UUID("00000000-0000-0000-0000-000000000002")
-
-Q1 = UUID("00000000-0000-0000-0000-000000000001")
-Q2 = UUID("00000000-0000-0000-0000-000000000002")
-Q3 = UUID("00000000-0000-0000-0000-000000000003")
-
-
-def _db() -> MagicMock:
-    return MagicMock()
+_LINKAGE_SECRET = b"\xcc" * 32
+_FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
 
 
-def _make_service(
-    current_version: int = 2,
-    secrets: dict[int, bytes] | None = None,
-) -> LocatorService:
-    if secrets is None:
-        secrets = {
-            1: os.urandom(32),
-            2: os.urandom(32),
-        }
-    keys = MagicMock(spec=LinkageKeyService)
-    keys.get_linkage_key.side_effect = lambda _db: LinkageKey(
-        version=current_version, secret=secrets[current_version], aws_version_id="vid-test"
-    )
-    keys.get_linkage_key_by_version.side_effect = lambda v, _db: LinkageKey(
-        version=v, secret=secrets[v], aws_version_id=f"vid-{v}"
-    )
-    return LocatorService(keys)
+class TestDeriveSessionLocator:
+    def test_deterministic(self) -> None:
+        sid = uuid.uuid4()
+        loc1 = derive_session_locator(sid, _LINKAGE_SECRET)
+        loc2 = derive_session_locator(sid, _LINKAGE_SECRET)
+        assert loc1 == loc2
+
+    def test_different_sessions_differ(self) -> None:
+        loc1 = derive_session_locator(uuid.uuid4(), _LINKAGE_SECRET)
+        loc2 = derive_session_locator(uuid.uuid4(), _LINKAGE_SECRET)
+        assert loc1 != loc2
+
+    def test_different_secrets_differ(self) -> None:
+        sid = uuid.uuid4()
+        loc1 = derive_session_locator(sid, b"\xaa" * 32)
+        loc2 = derive_session_locator(sid, b"\xbb" * 32)
+        assert loc1 != loc2
+
+    def test_length_is_32_bytes(self) -> None:
+        loc = derive_session_locator(uuid.uuid4(), _LINKAGE_SECRET)
+        assert len(loc) == 32
+
+    def test_not_raw_uuid(self) -> None:
+        sid = uuid.uuid4()
+        loc = derive_session_locator(sid, _LINKAGE_SECRET)
+        assert loc != sid.bytes
 
 
-class TestForNewSession:
-    def test_returns_version_and_locator(self) -> None:
-        svc = _make_service()
-        result = svc.for_new_session(SESS_1, _db())
-        assert isinstance(result, NewSessionLocator)
-        assert result.linkage_key_version == 2
-        assert isinstance(result.session_locator, bytes)
+class TestDeriveAnswerLocator:
+    def test_deterministic(self) -> None:
+        sid = uuid.uuid4()
+        qid = uuid.uuid4()
+        loc1 = derive_answer_locator(sid, qid, _LINKAGE_SECRET)
+        loc2 = derive_answer_locator(sid, qid, _LINKAGE_SECRET)
+        assert loc1 == loc2
+
+    def test_different_questions_differ(self) -> None:
+        sid = uuid.uuid4()
+        loc1 = derive_answer_locator(sid, uuid.uuid4(), _LINKAGE_SECRET)
+        loc2 = derive_answer_locator(sid, uuid.uuid4(), _LINKAGE_SECRET)
+        assert loc1 != loc2
+
+    def test_length_is_32_bytes(self) -> None:
+        loc = derive_answer_locator(uuid.uuid4(), uuid.uuid4(), _LINKAGE_SECRET)
+        assert len(loc) == 32
+
+
+class TestPublicDeriveSessionLocator:
+    def test_returns_new_session_locator(self) -> None:
+        sid = uuid.uuid4()
+        result = public_derive_session_locator(sid, _FAKE_LINKAGE_KEY)
+        assert result.linkage_key_version == 1
         assert len(result.session_locator) == 32
 
     def test_deterministic(self) -> None:
-        secret = os.urandom(32)
-        svc = _make_service(secrets={2: secret})
-        db = _db()
-        a = svc.for_new_session(SESS_1, db)
-        b = svc.for_new_session(SESS_1, db)
-        assert a == b
-
-    def test_different_sessions_differ(self) -> None:
-        secret = os.urandom(32)
-        svc = _make_service(secrets={2: secret})
-        db = _db()
-        a = svc.for_new_session(SESS_1, db)
-        b = svc.for_new_session(SESS_2, db)
-        assert a.session_locator != b.session_locator
-
-    def test_uses_supplied_linkage_key(self) -> None:
-        secret = os.urandom(32)
-        svc = _make_service(secrets={2: os.urandom(32)})
-        db = _db()
-        key = LinkageKey(version=7, secret=secret, aws_version_id="vid-7")
-
-        result = svc.for_new_session(SESS_1, db, linkage_key=key)
-
-        get_linkage_key = cast(MagicMock, svc._keys.get_linkage_key)
-        get_linkage_key.assert_not_called()
-        assert result.linkage_key_version == 7
+        sid = uuid.uuid4()
+        a = public_derive_session_locator(sid, _FAKE_LINKAGE_KEY)
+        b = public_derive_session_locator(sid, _FAKE_LINKAGE_KEY)
+        assert a.session_locator == b.session_locator
 
 
-class TestForExistingSession:
-    def test_returns_same_locator_as_new(self) -> None:
-        secret = os.urandom(32)
-        svc = _make_service(secrets={2: secret})
-        db = _db()
-        new = svc.for_new_session(SESS_1, db)
-        existing_locator, existing_key = svc.for_existing_session(SESS_1, 2, db)
-        assert new.session_locator == existing_locator
-        assert existing_key.version == 2
-
-    def test_uses_stored_version(self) -> None:
-        secrets = {1: os.urandom(32), 2: os.urandom(32)}
-        svc = _make_service(current_version=2, secrets=secrets)
-        db = _db()
-        loc_v1, _ = svc.for_existing_session(SESS_1, 1, db)
-        loc_v2, _ = svc.for_existing_session(SESS_1, 2, db)
-        assert loc_v1 != loc_v2
-
-
-class TestAnswerLocator:
+class TestPublicDeriveAnswerLocator:
     def test_returns_32_bytes(self) -> None:
-        svc = _make_service()
-        loc = svc.answer_locator(SESS_1, Q1, 2, _db())
-        assert isinstance(loc, bytes)
-        assert len(loc) == 32
-
-    def test_deterministic(self) -> None:
-        secret = os.urandom(32)
-        svc = _make_service(secrets={2: secret})
-        db = _db()
-        a = svc.answer_locator(SESS_1, Q1, 2, db)
-        b = svc.answer_locator(SESS_1, Q1, 2, db)
-        assert a == b
-
-    def test_different_questions_differ(self) -> None:
-        secret = os.urandom(32)
-        svc = _make_service(secrets={2: secret})
-        db = _db()
-        a = svc.answer_locator(SESS_1, Q1, 2, db)
-        b = svc.answer_locator(SESS_1, Q2, 2, db)
-        assert a != b
-
-
-class TestAnswerLocators:
-    def test_returns_map(self) -> None:
-        secret = os.urandom(32)
-        svc = _make_service(secrets={2: secret})
-        result = svc.answer_locators(SESS_1, [Q1, Q2, Q3], 2, _db())
-        assert set(result.keys()) == {Q1, Q2, Q3}
-        assert all(len(v) == 32 for v in result.values())
-
-    def test_matches_single_answer_locator(self) -> None:
-        secret = os.urandom(32)
-        svc = _make_service(secrets={2: secret})
-        db = _db()
-        batch = svc.answer_locators(SESS_1, [Q1], 2, db)
-        single = svc.answer_locator(SESS_1, Q1, 2, db)
-        assert batch[Q1] == single
-
-    def test_fetches_key_once(self) -> None:
-        svc = _make_service()
-        db = _db()
-        svc.answer_locators(SESS_1, [Q1, Q2, Q3], 2, db)
-        get_linkage_key_by_version = cast(MagicMock, svc._keys.get_linkage_key_by_version)
-        get_linkage_key_by_version.assert_called_once_with(2, db)
+        sid = uuid.uuid4()
+        qid = uuid.uuid4()
+        result = public_derive_answer_locator(sid, qid, _FAKE_LINKAGE_KEY)
+        assert isinstance(result, bytes)
+        assert len(result) == 32

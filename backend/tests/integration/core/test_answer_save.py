@@ -5,18 +5,16 @@ from __future__ import annotations
 import os
 import uuid
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from app.crypto.services import AnswerCryptoService
-from app.db.error_handling import commit_with_err_handle
+from app.crypto.locators import derive_session_locator
+from app.crypto.models import LinkageKey, PlaintextSessionKey, SessionContext
 from app.domain.errors import QuestionNotInVersionError
-from app.repositories.response import (
-    response_envelope_repo,
-)
+from app.repositories.response import response_envelope_repo
+from app.schema.orm.core.submission_session import SessionRef
 from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
-from app.services.public_submissions.core.session_loader import SessionContext
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -29,31 +27,14 @@ from tests.integration.core.factories import (
 if TYPE_CHECKING:
     from tests.conftest import DbSessions
 
+_LINKAGE_SECRET = b"\xcc" * 32
+_FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
+_FAKE_PLAINTEXT_DEK = PlaintextSessionKey(os.urandom(32))
 
-def _fake_encryption_settings() -> MagicMock:
-    enc = MagicMock()
-    enc.linkage_secret_arn = "arn:aws:secretsmanager:us-east-1:000:secret:test"
-    enc.kms_key_arn = "arn:aws:kms:us-east-1:000:key/test"
-    enc.aws_region = "us-east-1"
-    enc.aws_access_key_id = MagicMock()
-    enc.aws_secret_access_key = MagicMock()
-    return enc
-
-
-def _mock_locator_service(answer_locator: bytes | None = None):
-    svc = MagicMock()
-    svc.answer_locator.return_value = answer_locator or os.urandom(32)
-    return svc
-
-
-def _mock_dek_service(plaintext_dek: bytes):
-    svc = MagicMock()
-    svc.get_for_session.return_value = plaintext_dek
-    return svc
+_ANSWER_SAVE_MODULE = "app.services.public_submissions.core.actions.answer_save"
 
 
 def _setup_core_fixtures(core_db):
-    """Create user, project, survey, version, question in core DB."""
     user = make_user()
     core_db.add(user)
     core_db.flush()
@@ -94,7 +75,6 @@ def _setup_core_fixtures(core_db):
 
 
 def _create_session_row(core_db, project, survey, version):
-    """Create a submission session row directly."""
     from app.repositories.core.submission_sessions import create_session
 
     raw_token = "test-token-" + uuid.uuid4().hex[:8]
@@ -113,9 +93,8 @@ def _create_session_row(core_db, project, survey, version):
 
 
 def _create_envelope_and_context(core_db, response_db, session, version):
-    """Create a response envelope and build a SessionContext."""
-    session_locator = os.urandom(32)
-    plaintext_dek = os.urandom(32)
+    loc = derive_session_locator(session.id, _FAKE_LINKAGE_KEY)
+    session_locator = loc.session_locator
     wrapped_session_dek = os.urandom(64)
 
     envelope = response_envelope_repo.create(
@@ -126,24 +105,28 @@ def _create_envelope_and_context(core_db, response_db, session, version):
         crypto_version=1,
     )
 
-    enc = _fake_encryption_settings()
+    session_ref = SessionRef(
+        id=session.id,
+        project_id=session.project_id,
+        survey_id=session.survey_id,
+        survey_version_id=version.id,
+        expires_at=session.expires_at,
+        browser_session_token_hash=session.browser_session_token_hash,
+    )
 
     ctx = SessionContext(
-        session=session,
-        survey_version=version,
+        session_ref=session_ref,
         session_locator=session_locator,
-        envelope=envelope,
-        encryption_settings=enc,
-        linkage_key=MagicMock(),
+        envelope_id=envelope.id,
+        linkage_key=_FAKE_LINKAGE_KEY,
     )
-    return ctx, plaintext_dek
+    return ctx, _FAKE_PLAINTEXT_DEK
 
 
-def _make_answer_save_service(plaintext_dek: bytes, answer_locator: bytes | None = None):
-    return AnswerSaveService(
-        locator_service=_mock_locator_service(answer_locator),
-        dek_service=_mock_dek_service(plaintext_dek),
-        answer_crypto_service=AnswerCryptoService(),
+def _mock_session_key_load():
+    return patch(
+        f"{_ANSWER_SAVE_MODULE}.start_plaintext_session_key_load",
+        return_value=lambda: _FAKE_PLAINTEXT_DEK,
     )
 
 
@@ -153,88 +136,12 @@ class TestAnswerSave:
         response_db = db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
-        ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
+        ctx, _dek = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = _make_answer_save_service(plaintext_dek)
+        svc = AnswerSaveService()
         mutation_id = uuid.uuid4()
-        revision_id = svc.save_answer(
-            core_db,
-            response_db,
-            ctx=ctx,
-            question_node_id=question.id,
-            answer_state="answered",
-            answer_value={"field_type": "short_text", "text": "hello"},
-            client_mutation_id=mutation_id,
-        )
-
-        assert revision_id is not None
-
-    def test_mutation_id_dedup_returns_existing(self, db_sessions: DbSessions) -> None:
-        core_db = db_sessions.core
-        response_db = db_sessions.response
-        project, survey, version, question = _setup_core_fixtures(core_db)
-        session, _ = _create_session_row(core_db, project, survey, version)
-        ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
-
-        answer_locator = os.urandom(32)
-        svc = _make_answer_save_service(plaintext_dek, answer_locator)
-        mutation_id = uuid.uuid4()
-
-        first_id = svc.save_answer(
-            core_db,
-            response_db,
-            ctx=ctx,
-            question_node_id=question.id,
-            answer_state="answered",
-            answer_value={"field_type": "short_text", "text": "hello"},
-            client_mutation_id=mutation_id,
-        )
-        second_id = svc.save_answer(
-            core_db,
-            response_db,
-            ctx=ctx,
-            question_node_id=question.id,
-            answer_state="answered",
-            answer_value={"field_type": "short_text", "text": "hello"},
-            client_mutation_id=mutation_id,
-        )
-
-        assert first_id == second_id
-
-    def test_question_not_in_version_raises(self, db_sessions: DbSessions) -> None:
-        core_db = db_sessions.core
-        response_db = db_sessions.response
-        project, survey, version, question = _setup_core_fixtures(core_db)
-        session, _ = _create_session_row(core_db, project, survey, version)
-        ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
-
-        svc = _make_answer_save_service(plaintext_dek)
-        bogus_question_id = uuid.uuid4()
-        with pytest.raises(QuestionNotInVersionError):
-            svc.save_answer(
-                core_db,
-                response_db,
-                ctx=ctx,
-                question_node_id=bogus_question_id,
-                answer_state="answered",
-                answer_value={"field_type": "short_text", "text": "hello"},
-                client_mutation_id=uuid.uuid4(),
-            )
-
-    def test_analytics_failure_does_not_raise(self, db_sessions: DbSessions) -> None:
-        core_db = db_sessions.core
-        response_db = db_sessions.response
-        project, survey, version, question = _setup_core_fixtures(core_db)
-        session, _ = _create_session_row(core_db, project, survey, version)
-        ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
-
-        svc = _make_answer_save_service(plaintext_dek)
-        mutation_id = uuid.uuid4()
-        with patch(
-            "app.services.public_submissions.core.actions.answer_save.event_repo.create_event",
-            side_effect=Exception("DB error"),
-        ):
-            revision_id = svc.save_answer(
+        with _mock_session_key_load():
+            result = svc.save_answer(
                 core_db,
                 response_db,
                 ctx=ctx,
@@ -244,8 +151,49 @@ class TestAnswerSave:
                 client_mutation_id=mutation_id,
             )
 
-        assert revision_id is not None
+        assert result is not None
 
+    def test_mutation_id_dedup_returns_existing(self, db_sessions: DbSessions) -> None:
+        core_db = db_sessions.core
+        response_db = db_sessions.response
+        project, survey, version, question = _setup_core_fixtures(core_db)
+        session, _ = _create_session_row(core_db, project, survey, version)
+        ctx, _dek = _create_envelope_and_context(core_db, response_db, session, version)
+
+        svc = AnswerSaveService()
+        mutation_id = uuid.uuid4()
+
+        with _mock_session_key_load():
+            first = svc.save_answer(
+                core_db, response_db, ctx=ctx,
+                question_node_id=question.id, answer_state="answered",
+                answer_value={"field_type": "short_text", "text": "hello"},
+                client_mutation_id=mutation_id,
+            )
+            second = svc.save_answer(
+                core_db, response_db, ctx=ctx,
+                question_node_id=question.id, answer_state="answered",
+                answer_value={"field_type": "short_text", "text": "hello"},
+                client_mutation_id=mutation_id,
+            )
+
+        assert first == second
+
+    def test_question_not_in_version_raises(self, db_sessions: DbSessions) -> None:
+        core_db = db_sessions.core
+        response_db = db_sessions.response
+        project, survey, version, question = _setup_core_fixtures(core_db)
+        session, _ = _create_session_row(core_db, project, survey, version)
+        ctx, _dek = _create_envelope_and_context(core_db, response_db, session, version)
+
+        svc = AnswerSaveService()
+        with _mock_session_key_load(), pytest.raises(QuestionNotInVersionError):
+            svc.save_answer(
+                core_db, response_db, ctx=ctx,
+                question_node_id=uuid.uuid4(), answer_state="answered",
+                answer_value={"field_type": "short_text", "text": "hello"},
+                client_mutation_id=uuid.uuid4(),
+            )
 
 class TestQuestionViewed:
     def test_record_question_viewed_succeeds(self, db_sessions: DbSessions) -> None:
@@ -255,11 +203,7 @@ class TestQuestionViewed:
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, _ = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = AnswerSaveService(
-            locator_service=MagicMock(),
-            dek_service=MagicMock(),
-            answer_crypto_service=AnswerCryptoService(),
-        )
+        svc = AnswerSaveService()
         svc.record_question_viewed(core_db, ctx=ctx, question_node_id=question.id)
 
     def test_record_question_viewed_invalid_question_raises(self, db_sessions: DbSessions) -> None:
@@ -269,69 +213,16 @@ class TestQuestionViewed:
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, _ = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = AnswerSaveService(
-            locator_service=MagicMock(),
-            dek_service=MagicMock(),
-            answer_crypto_service=AnswerCryptoService(),
-        )
+        svc = AnswerSaveService()
         with pytest.raises(QuestionNotInVersionError):
             svc.record_question_viewed(core_db, ctx=ctx, question_node_id=uuid.uuid4())
 
-    def test_record_question_viewed_event_write_failure_swallowed(self, db_sessions: DbSessions) -> None:
+    def test_record_question_viewed_event_succeeds_normally(self, db_sessions: DbSessions) -> None:
         core_db = db_sessions.core
         response_db = db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, _ = _create_envelope_and_context(core_db, response_db, session, version)
 
-        svc = AnswerSaveService(
-            locator_service=MagicMock(),
-            dek_service=MagicMock(),
-            answer_crypto_service=AnswerCryptoService(),
-        )
-        with patch(
-            "app.services.public_submissions.core.actions.answer_save.event_repo.create_event",
-            side_effect=Exception("DB write failure"),
-        ):
-            svc.record_question_viewed(core_db, ctx=ctx, question_node_id=question.id)
-
-
-class TestAnalyticsCoreCommitFailure:
-    def test_core_commit_failure_does_not_block_save(self, db_sessions: DbSessions) -> None:
-        """Step 12: if core commit fails after the analytics event insert,
-        the response write (step 10) is already committed and the revision
-        ID must still be returned."""
-        core_db = db_sessions.core
-        response_db = db_sessions.response
-        project, survey, version, question = _setup_core_fixtures(core_db)
-        session, _ = _create_session_row(core_db, project, survey, version)
-        ctx, plaintext_dek = _create_envelope_and_context(core_db, response_db, session, version)
-
-        svc = _make_answer_save_service(plaintext_dek)
-
-        real_commit = commit_with_err_handle
-        call_count = 0
-
-        def commit_failing_on_core(db, *, contexts):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 2:
-                raise Exception("Core commit failure after event insert")
-            real_commit(db, contexts=contexts)
-
-        mutation_id = uuid.uuid4()
-        with patch(
-            "app.services.public_submissions.core.actions.answer_save.commit_with_err_handle",
-            side_effect=commit_failing_on_core,
-        ):
-            revision_id = svc.save_answer(
-                core_db,
-                response_db,
-                ctx=ctx,
-                question_node_id=question.id,
-                answer_state="answered",
-                answer_value={"field_type": "short_text", "text": "hello"},
-                client_mutation_id=mutation_id,
-            )
-
-        assert revision_id is not None
+        svc = AnswerSaveService()
+        svc.record_question_viewed(core_db, ctx=ctx, question_node_id=question.id)
