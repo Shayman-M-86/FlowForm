@@ -13,7 +13,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.crypto import get_crypto_services
+from app.crypto.locators import resolve_existing_session_locator
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_envelope_repo
 
@@ -36,16 +36,16 @@ def reconcile_orphaned_sessions(
     response_db: Session,
 ) -> ReconciliationResult:
     """Mark committed core sessions without response envelopes as abandoned."""
-    loc_svc = get_crypto_services().locator_service
-
     sessions = ssr.get_in_progress_sessions(db)
 
     result = ReconciliationResult(scanned=len(sessions))
 
     for session in sessions:
         try:
-            session_locator, _ = loc_svc.for_existing_session(
-                session.id, session.linkage_key_version, db,
+            session_locator, _ = resolve_existing_session_locator(
+                db,
+                session.id,
+                session.linkage_key_version,
             )
 
             envelope = response_envelope_repo.get_by_locator(

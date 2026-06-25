@@ -6,12 +6,15 @@ Key labels (all NewType over bytes — type-checker only, no runtime validation)
     WrappedSurveyKey     — KMS-encrypted survey key, stored in DB
     PlaintextSessionKey  — unwrapped session DEK, usable for answer encryption
     WrappedSessionKey    — survey-key-encrypted session DEK, stored in DB
+    SessionLocator       — pseudonymous session locator, stored in response DB
+    AnswerLocator        — pseudonymous answer locator, stored in response DB
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from typing import NewType, Self
 from uuid import UUID
 
@@ -25,6 +28,7 @@ from app.crypto._internal.models import (
     PositiveVersion,
     SecretValue,
 )
+from app.schema.orm.core.submission_session import SessionRef
 
 # --- Key-material labels (NewType over bytes) ---
 
@@ -32,8 +36,13 @@ PlaintextSurveyKey = NewType("PlaintextSurveyKey", bytes)
 WrappedSurveyKey = NewType("WrappedSurveyKey", bytes)
 PlaintextSessionKey = NewType("PlaintextSessionKey", bytes)
 WrappedSessionKey = NewType("WrappedSessionKey", bytes)
+SessionLocator = NewType("SessionLocator", bytes)
+AnswerLocator = NewType("AnswerLocator", bytes)
 
 SurveyKeyResolver = Callable[[], PlaintextSurveyKey]
+SessionKeyResolver = Callable[[], PlaintextSessionKey]
+
+_CRYPTO_VERSION = 1
 
 
 class NewSessionKey(CryptoValueModel):
@@ -47,7 +56,7 @@ class NewSessionLocator(CryptoValueModel):
     """Locator material for a brand-new session."""
 
     linkage_key_version: PositiveVersion
-    session_locator: bytes = Field(min_length=1, repr=False)
+    session_locator: SessionLocator = Field(min_length=1, repr=False)
 
 
 class LinkageKey(CryptoValueModel):
@@ -76,18 +85,9 @@ class RevisionContext:
     crypto_version: int
     envelope_id: UUID
     answer_id: UUID
-    answer_locator: bytes
+    answer_locator: AnswerLocator
     revision_id: UUID
     revision_number: int
-
-
-@dataclass(frozen=True, slots=True)
-class EncryptedRevision:
-    """A revision's ciphertext paired with its AAD context for decryption."""
-
-    ciphertext: bytes
-    nonce: bytes
-    context: RevisionContext
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,4 +102,55 @@ class SessionDEKContext:
     crypto_version: int
     project_id: int
     survey_id: int
-    session_locator: bytes
+    session_locator: SessionLocator
+
+
+@dataclass(frozen=True, slots=True)
+class SessionContext:
+    """Validated session state shared by public submission actions.
+
+    This is intentionally scalar/id oriented so it is safe to cache and pass
+    between service actions without carrying ORM rows across transaction
+    boundaries.
+    """
+
+    session_ref: SessionRef
+    session_locator: SessionLocator
+    envelope_id: UUID
+    linkage_key: LinkageKey
+    crypto_version: int = _CRYPTO_VERSION
+    loaded_from_cache: bool = False
+
+    @property
+    def session_id(self) -> UUID:
+        return self.session_ref.id
+
+    @property
+    def project_id(self) -> int:
+        return self.session_ref.project_id
+
+    @property
+    def survey_id(self) -> int:
+        return self.session_ref.survey_id
+
+    @property
+    def survey_version_id(self) -> int:
+        return self.session_ref.survey_version_id
+
+    @property
+    def expires_at(self) -> datetime:
+        return self.session_ref.expires_at
+
+    @property
+    def browser_session_token_hash(self) -> bytes:
+        return self.session_ref.browser_session_token_hash
+
+    @property
+    def session_dek_context(self) -> SessionDEKContext:
+        return SessionDEKContext(
+            session_id=self.session_id,
+            crypto_version=self.crypto_version,
+            project_id=self.project_id,
+            survey_id=self.survey_id,
+            session_locator=self.session_locator,
+        )

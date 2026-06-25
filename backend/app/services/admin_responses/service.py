@@ -1,15 +1,24 @@
 """Admin response service: decrypt, history, and deletion.
 
-Orchestrates admin response workflows using pre-wired crypto services.
 Authorization is the caller's responsibility (per doc 01 §1).
 """
 
 from __future__ import annotations
 
+import logging
+from typing import Any, cast, get_args
 from uuid import UUID
 
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
+from app.crypto.answers import decrypt_answer_revision
+from app.crypto.locators import resolve_existing_session_locator
+from app.crypto.models import (
+    AnswerLocator,
+    RevisionContext,
+)
+from app.crypto.session_key import load_session_envelope_crypto_context
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import EnvelopeNotFoundError, SessionNotFoundError
 from app.repositories import content_repo as cr
@@ -19,20 +28,24 @@ from app.repositories.response import (
     response_answer_revision_repo,
     response_envelope_repo,
 )
-from app.schema.orm.core.submission_session import SubmissionSession
-from app.crypto import get_crypto_services
-from app.services.admin_responses.assembler import (
-    build_decrypted_answer_result,
-    build_question_meta_map,
-    decrypt_revision,
+from app.schema.api.submission_sessions.answer_payload import (
+    SubmissionAnswerValue,
+    parse_answer_value,
 )
-from app.services.public_submissions.core.shared.session_crypto import load_session_envelope_crypto_context
+from app.schema.enums import AnswerFamily, QuestionFamily, SubmissionAnswerState
+from app.schema.orm.core.submission_session import SubmissionSession
+from app.schema.orm.core.survey_content import SurveyQuestion
 from app.services.results import (
     AdminSessionDetailResult,
     AdminSessionHistoryResult,
     DecryptedAnswerResult,
     DeletionResult,
 )
+
+logger = logging.getLogger(__name__)
+
+_QUESTION_FAMILIES: frozenset[str] = frozenset(get_args(QuestionFamily))
+QuestionMetaMap = dict[UUID, tuple[str, AnswerFamily | None]]
 
 
 class AdminResponseService:
@@ -47,7 +60,6 @@ class AdminResponseService:
         session_id: UUID,
     ) -> AdminSessionDetailResult:
         """Decrypt latest answers for admin detail view."""
-        crypto = get_crypto_services()
         session = _load_session(db, survey_id=survey_id, session_id=session_id)
         ectx = load_session_envelope_crypto_context(
             db,
@@ -57,7 +69,7 @@ class AdminResponseService:
 
         answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)
         question_nodes = cr.list_question_nodes(db, session.survey_version_id)
-        question_meta_map = build_question_meta_map(question_nodes)
+        question_meta_map = _build_question_meta_map(question_nodes)
 
         decrypted: list[DecryptedAnswerResult] = []
         for answer in answers:
@@ -65,29 +77,9 @@ class AdminResponseService:
             if latest_rev is None:
                 continue
 
-            parsed = decrypt_revision(
-                ciphertext=latest_rev.ciphertext,
-                nonce=latest_rev.nonce,
-                dek=ectx.plaintext_dek,
-                crypto_version=ectx.envelope.crypto_version,
-                envelope_id=answer.envelope_id,
-                answer_id=answer.id,
-                answer_locator=answer.answer_locator,
-                revision_id=latest_rev.id,
-                revision_number=latest_rev.revision_number,
-                answer_crypto_service=crypto.answer_crypto_service,
-            )
+            decrypted.append(_decrypt_to_result(ectx, answer, latest_rev, question_meta_map))
 
-            decrypted.append(
-                build_decrypted_answer_result(
-                    parsed=parsed,
-                    question_meta_map=question_meta_map,
-                    revision_number=latest_rev.revision_number,
-                    revision_id=latest_rev.id,
-                )
-            )
-
-        return _build_session_result(session, decrypted)
+        return AdminSessionDetailResult(session=session, answers=decrypted)
 
     def get_session_history(
         self,
@@ -98,7 +90,6 @@ class AdminResponseService:
         session_id: UUID,
     ) -> AdminSessionHistoryResult:
         """Decrypt full revision history for authorized history reads."""
-        crypto = get_crypto_services()
         session = _load_session(db, survey_id=survey_id, session_id=session_id)
         ectx = load_session_envelope_crypto_context(
             db,
@@ -108,33 +99,13 @@ class AdminResponseService:
 
         answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)
         question_nodes = cr.list_question_nodes(db, session.survey_version_id)
-        question_meta_map = build_question_meta_map(question_nodes)
+        question_meta_map = _build_question_meta_map(question_nodes)
 
         decrypted: list[DecryptedAnswerResult] = []
         for answer in answers:
             revisions = response_answer_revision_repo.get_history(response_db, answer.id)
             for rev in revisions:
-                parsed = decrypt_revision(
-                    ciphertext=rev.ciphertext,
-                    nonce=rev.nonce,
-                    dek=ectx.plaintext_dek,
-                    crypto_version=ectx.envelope.crypto_version,
-                    envelope_id=answer.envelope_id,
-                    answer_id=answer.id,
-                    answer_locator=answer.answer_locator,
-                    revision_id=rev.id,
-                    revision_number=rev.revision_number,
-                    answer_crypto_service=crypto.answer_crypto_service,
-                )
-
-                decrypted.append(
-                    build_decrypted_answer_result(
-                        parsed=parsed,
-                        question_meta_map=question_meta_map,
-                        revision_number=rev.revision_number,
-                        revision_id=rev.id,
-                    )
-                )
+                decrypted.append(_decrypt_to_result(ectx, answer, rev, question_meta_map))
 
         return AdminSessionHistoryResult(session=session, revisions=decrypted)
 
@@ -150,10 +121,11 @@ class AdminResponseService:
 
         Response-first ordering is mandatory per doc 06.
         """
-        crypto = get_crypto_services()
         session = _load_session(db, survey_id=survey_id, session_id=session_id)
-        session_locator, _ = crypto.locator_service.for_existing_session(
-            session.id, session.linkage_key_version, db,
+        session_locator, _ = resolve_existing_session_locator(
+            db,
+            session.id,
+            session.linkage_key_version,
         )
 
         # Step 1: Delete response DB records (cascade deletes answers + revisions)
@@ -174,6 +146,43 @@ class AdminResponseService:
         )
 
 
+def _decrypt_to_result(ectx, answer, rev, question_meta_map: QuestionMetaMap) -> DecryptedAnswerResult:
+    parsed = decrypt_answer_revision(**_decrypt_revision_args(ectx, answer, rev))
+    question_key, answer_family = question_meta_map.get(
+        parsed.question_node_id,
+        (None, None),
+    )
+    return DecryptedAnswerResult(
+        question_node_id=parsed.question_node_id,
+        question_key=question_key,
+        answer_family=answer_family,
+        answer_state=parsed.answer_state,
+        answer_value=_resolve_answer_value(
+            answer_family=answer_family,
+            answer_state=parsed.answer_state,
+            raw_value=parsed.answer_value,
+        ),
+        revision_id=rev.id,
+        revision_number=rev.revision_number,
+    )
+
+
+def _decrypt_revision_args(ectx, answer, rev) -> dict:
+    return {
+        "ciphertext": rev.ciphertext,
+        "nonce": rev.nonce,
+        "context": RevisionContext(
+            dek=ectx.plaintext_key,
+            crypto_version=ectx.envelope.crypto_version,
+            envelope_id=answer.envelope_id,
+            answer_id=answer.id,
+            answer_locator=AnswerLocator(answer.answer_locator),
+            revision_id=rev.id,
+            revision_number=rev.revision_number,
+        ),
+    }
+
+
 def _load_session(db: Session, *, survey_id: int, session_id: UUID) -> SubmissionSession:
     session = ssr.get_by_id(db, session_id)
     if session is None or session.survey_id != survey_id:
@@ -181,8 +190,39 @@ def _load_session(db: Session, *, survey_id: int, session_id: UUID) -> Submissio
     return session
 
 
-def _build_session_result(
-    session: SubmissionSession,
-    decrypted: list[DecryptedAnswerResult],
-) -> AdminSessionDetailResult:
-    return AdminSessionDetailResult(session=session, answers=decrypted)
+def _build_question_meta_map(
+    question_nodes: list[SurveyQuestion],
+) -> QuestionMetaMap:
+    """Map each question node id to its question key and answer family."""
+    return {q.id: (q.question_key, _answer_family_from_schema(q.question_schema)) for q in question_nodes}
+
+
+def _answer_family_from_schema(question_schema: object) -> AnswerFamily | None:
+    """Read the top-level family discriminator from persisted question content."""
+    if not isinstance(question_schema, dict):
+        return None
+    raw_family = question_schema.get("family")
+    if raw_family not in _QUESTION_FAMILIES:
+        return None
+    return cast(AnswerFamily, raw_family)
+
+
+def _resolve_answer_value(
+    *,
+    answer_family: AnswerFamily | None,
+    answer_state: SubmissionAnswerState,
+    raw_value: Any,
+) -> SubmissionAnswerValue | dict[str, Any] | None:
+    """Validate decrypted raw values into canonical answer models when possible."""
+    if raw_value is None or answer_state == "cleared" or answer_family is None:
+        return raw_value
+    if not isinstance(raw_value, dict):
+        return raw_value
+    try:
+        return parse_answer_value(answer_family, raw_value)
+    except ValidationError:
+        logger.warning(
+            "Decrypted answer value did not match canonical %s shape; keeping raw value.",
+            answer_family,
+        )
+        return raw_value

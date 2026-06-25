@@ -16,7 +16,7 @@ from app.repositories.response import (
     response_envelope_repo,
 )
 from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
-from app.services.public_submissions.core.shared.session_loader import SessionContext
+from app.services.public_submissions.core.session_loader import SessionContext
 from tests.integration.core.factories import (
     make_project,
     make_response_store,

@@ -13,7 +13,12 @@ from uuid import UUID
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.crypto import build_aad, get_crypto_services
+from app.crypto.answers import (
+    derive_session_answer_locator,
+    encrypt_answer_revision,
+)
+from app.crypto.models import RevisionContext, SessionContext
+from app.crypto.session_key import start_plaintext_session_key_load
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import AnswerSaveError, QuestionNotInVersionError, SessionInvalidError
 from app.domain.survey_answer_validation import validate_answer
@@ -21,12 +26,9 @@ from app.logging.request_timing import request_timing
 from app.repositories import content_repo
 from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
-from app.repositories.core import survey_encryption_keys as survey_key_repo
 from app.repositories.response import response_answer_repo, response_answer_revision_repo
 from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import SubmissionAnswerState
-from app.services.public_submissions.core.shared.session_crypto import load_plaintext_session_dek
-from app.services.public_submissions.core.shared.session_loader import SessionContext
 
 logger = logging.getLogger(__name__)
 
@@ -60,25 +62,8 @@ class AnswerSaveService:
         client_mutation_id: uuid.UUID,
     ) -> int:
         """Execute the 12-step answer save sequence. Returns the revision number."""
-        crypto = get_crypto_services()
-
-        branch_key_resolver = None
-        if crypto.survey_branch_key_service is not None:
-            survey_key = survey_key_repo.get_by_project_survey(
-                db,
-                project_id=ctx.session.project_id,
-                survey_id=ctx.session.survey_id,
-            )
-            if survey_key is not None:
-                branch_key_resolver = (
-                    crypto.survey_branch_key_service.prefetch_plaintext_key(
-                        survey_key,
-                    )
-                )
-        request_timing.log("Crypto service is loaded ")
-
         # Step 1: Validate and lock the current session
-        locked_session = ssr.lock_for_update(db, ctx.session.id)
+        locked_session = ssr.lock_for_update(db, ctx.session_id)
         if locked_session is None:
             raise AnswerSaveError("Session disappeared during answer save.")
         if locked_session.session_status != "in_progress":
@@ -86,15 +71,9 @@ class AnswerSaveService:
         request_timing.log("Session is locked for update")
 
         # Step 2: Check mutation ID — before any row lock on the logical answer
-        answer_locator = crypto.locator_service.answer_locator(
-            ctx.session.id,
-            question_node_id,
-            ctx.session.linkage_key_version,
-            db,
-            linkage_key=ctx.linkage_key,
-        )
+        answer_locator = derive_session_answer_locator(ctx, question_node_id)
         request_timing.log("Answer locator is derived")
-        existing_answer = response_answer_repo.get_by_locator(response_db, ctx.envelope.id, answer_locator)
+        existing_answer = response_answer_repo.get_by_locator(response_db, ctx.envelope_id, answer_locator)
         if existing_answer is not None:
             dup_revision = response_answer_revision_repo.get_by_mutation_id(
                 response_db, existing_answer.id, client_mutation_id
@@ -104,7 +83,7 @@ class AnswerSaveService:
         request_timing.log("Mutation ID checked for duplicates")
 
         # Step 3: Validate the answer against the frozen survey question node
-        question = content_repo.get_question_node(db, ctx.survey_version.id, question_node_id)
+        question = content_repo.get_question_node(db, ctx.survey_version_id, question_node_id)
         if question is None:
             raise QuestionNotInVersionError()
 
@@ -114,19 +93,13 @@ class AnswerSaveService:
             validate_answer(question.question_schema, json_answer_value)
         request_timing.log("Answer shape validated")
 
-        # Step 4: Derive session locator and answer locator (locator already derived)
-        # Step 5: Load the response envelope (already in ctx)
-
-        # Step 6: Load plaintext DEK from cache; on miss, unwrap locally through the survey branch key.
-        plaintext_dek = load_plaintext_session_dek(
+        # Step 4-6: Start session-key resolution after dedupe and validation.
+        resolve_session_key = start_plaintext_session_key_load(
             db,
-            session=locked_session,
-            session_locator=ctx.session_locator,
-            envelope=ctx.envelope,
-            crypto=crypto,
-            prefetched_branch_key_loader=branch_key_resolver,
+            response_db,
+            context=ctx,
         )
-        request_timing.log("Plaintext DEK loaded")
+        request_timing.log("Session key resolver is ready")
 
         # Steps 8-9: Insert revision and update latest pointer
         if existing_answer is not None:
@@ -147,7 +120,7 @@ class AnswerSaveService:
             # First save: create logical answer row with the revision we're about to insert
             answer_row, created = response_answer_repo.get_or_create(
                 response_db,
-                envelope_id=ctx.envelope.id,
+                envelope_id=ctx.envelope_id,
                 answer_locator=answer_locator,
                 latest_revision_id=revision_id,
             )
@@ -170,28 +143,28 @@ class AnswerSaveService:
         request_timing.log("Logical answer row is ready with next revision number")
 
         # Step 7: Encrypt the answer payload
-        aad = build_aad(
-            crypto_version=ctx.envelope.crypto_version,
-            envelope_id=answer_row.envelope_id,
+        revision_context = RevisionContext(
+            dek=resolve_session_key(),
+            crypto_version=ctx.crypto_version,
+            envelope_id=ctx.envelope_id,
             answer_id=answer_row.id,
             answer_locator=answer_locator,
             revision_id=revision_id,
             revision_number=next_revision_number,
         )
-        request_timing.log("Answer payload encrypted")
-        encrypted = crypto.answer_crypto_service.encrypt(
-            dek=plaintext_dek,
+        encrypted = encrypt_answer_revision(
+            context=revision_context,
             question_node_id=question_node_id,
             answer_state=answer_state,
             answer_value=answer_value,
-            aad=aad,
         )
+        request_timing.log("Answer payload encrypted")
 
         # Step 8: Insert a new immutable revision
         revision = response_answer_revision_repo.create(
             response_db,
             answer_id=answer_row.id,
-            envelope_id=ctx.envelope.id,
+            envelope_id=ctx.envelope_id,
             revision_number=next_revision_number,
             nonce=encrypted.nonce,
             ciphertext=encrypted.ciphertext,
@@ -209,8 +182,8 @@ class AnswerSaveService:
         # Step 11-12: Insert and commit core analytics event (non-fatal)
         event_repo.record_event(
             db,
-            session_id=ctx.session.id,
-            survey_version_id=ctx.survey_version.id,
+            session_id=ctx.session_id,
+            survey_version_id=ctx.survey_version_id,
             event_type="answer_saved",
             question_node_id=question_node_id,
             log_label="answer_save.analytics",
@@ -226,12 +199,12 @@ class AnswerSaveService:
         question_node_id: UUID,
     ) -> None:
         """Record a question-viewed analytics event. Failure does not block the respondent."""
-        if content_repo.get_question_node(db, ctx.survey_version.id, question_node_id) is None:
+        if content_repo.get_question_node(db, ctx.survey_version_id, question_node_id) is None:
             raise QuestionNotInVersionError()
         event_repo.record_event(
             db,
-            session_id=ctx.session.id,
-            survey_version_id=ctx.survey_version.id,
+            session_id=ctx.session_id,
+            survey_version_id=ctx.survey_version_id,
             event_type="question_viewed",
             question_node_id=question_node_id,
             log_label="question_viewed",

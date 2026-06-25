@@ -26,7 +26,7 @@ from app.services.public_submissions.core.actions.completion import (
     CompletionService,
 )
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
-from app.services.public_submissions.core.shared.session_loader import load_current_session
+from app.services.public_submissions.core.session_loader import load_current_session
 
 
 class SessionManagementService:

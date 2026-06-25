@@ -30,15 +30,17 @@ answers  (tier 3)
     Side effects: none (pure crypto)
 
 locators  (separate chain — pseudonymous IDs, not key wrapping)
-    new_session_locator       — derive a locator for a new submission
-    existing_session_locator  — re-derive a locator for a returning submission
-    answer_locator(s)         — derive answer locators for DB lookups
+    load_current_linkage_key         — load the active linkage key
+    derive_session_locator           — derive with caller-provided linkage key
+    resolve_new_session_locator      — load current key + derive session locator
+    resolve_existing_session_locator — load historical key + derive session locator
+    derive_answer_locator            — derive with caller-provided linkage key
+    resolve_answer_locator(s)        — load historical key + derive answer locators
     Side effects: cache read/write, Secrets Manager API on cache miss,
                   DB read/write for linkage key version mapping
 
 models
     RevisionContext     — AAD fields shared by encrypt/decrypt
-    EncryptedRevision   — ciphertext + nonce + context for decryption
     SessionDEKContext   — session identity used to build the wrap AAD
     NewSessionDEK       — plaintext + wrapped session key pair
     NewSessionLocator   — locator + linkage key version

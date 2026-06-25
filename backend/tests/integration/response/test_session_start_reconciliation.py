@@ -31,7 +31,7 @@ from app.services.public_submissions.core.actions.session_starter import Session
 from app.services.public_submissions.core.reconciliation import (
     reconcile_orphaned_sessions,
 )
-from app.services.public_submissions.core.shared.session_loader import load_current_session
+from app.services.public_submissions.core.session_loader import load_current_session
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -97,7 +97,6 @@ def _slug_payload(slug: str) -> StartSubmissionSessionRequest:
 def _mock_locator_service(session_locator: bytes | None = None):
     svc = MagicMock()
     loc_bytes = session_locator or _FAKE_SESSION_LOCATOR
-    svc.get_current_linkage_key_version.return_value = 1
     svc.get_current_linkage_key.return_value = LinkageKey(
         version=1,
         secret=b"\xcc" * 32,

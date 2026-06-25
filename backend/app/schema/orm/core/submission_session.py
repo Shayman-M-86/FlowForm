@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING 
 
 from sqlalchemy import (
     BigInteger,
@@ -27,6 +28,17 @@ if TYPE_CHECKING:
     from app.schema.orm.core.survey_access import SurveyLink
     from app.schema.orm.core.survey_content import SurveyQuestion
 
+
+@dataclass(frozen=True, slots=True)
+class SessionRef:
+    """Scalar session fields needed by crypto/session locator services."""
+
+    id: uuid.UUID
+    project_id: int
+    survey_id: int
+    survey_version_id: int
+    expires_at: datetime
+    browser_session_token_hash: bytes
 
 class SubmissionSession(CoreBase):
     """One respondent survey attempt, used to derive response-side locators."""
@@ -103,6 +115,17 @@ class SubmissionSession(CoreBase):
     response_store: Mapped[ResponseStore] = relationship("ResponseStore", foreign_keys=[response_store_id])
     survey: Mapped[Survey] = relationship("Survey", foreign_keys=[project_id, survey_id])
     survey_version: Mapped[SurveyVersion] = relationship("SurveyVersion", foreign_keys=[survey_version_id])
+    
+    def to_crypto_ref(self) -> SessionRef:
+        """Return a scalar-only snapshot for crypto/session locator services."""
+        return SessionRef(
+            id=self.id,
+            project_id=self.project_id,
+            survey_id=self.survey_id,
+            survey_version_id=self.survey_version_id,
+            expires_at=self.expires_at,
+            browser_session_token_hash=self.browser_session_token_hash,
+        )
 
 
 class SubmissionEvent(CoreBase):

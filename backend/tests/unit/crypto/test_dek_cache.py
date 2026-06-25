@@ -12,8 +12,8 @@ from flask import Flask
 
 from app.cache import LockedTTLCache, create_app_cache
 from app.cache._registry import EXTENSION_KEY
-from app.cache.sessions import SessionWriteContext
-from app.crypto.operations.models import LinkageKey
+from app.crypto.models import LinkageKey, SessionContext, SessionLocator
+from app.schema.orm.core.submission_session import SessionRef
 
 
 def _make_cache(ttl_seconds: int = 3600) -> LockedTTLCache[bytes]:
@@ -197,17 +197,20 @@ def _make_linkage_key() -> LinkageKey:
     )
 
 
-def _make_session_write_context() -> SessionWriteContext:
-    return SessionWriteContext(
-        session_id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+def _make_session_context() -> SessionContext:
+    session_ref = SessionRef(
+        id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
         project_id=1,
         survey_id=2,
         survey_version_id=3,
-        session_locator=b"\x01" * 32,
-        envelope_id=uuid.UUID("00000000-0000-0000-0000-000000000002"),
-        plaintext_session_dek=b"\x02" * 32,
-        crypto_version=1,
         expires_at=datetime.now(UTC) + timedelta(minutes=30),
+        browser_session_token_hash=b"token-hash",
+    )
+    return SessionContext(
+        session_ref=session_ref,
+        session_locator=SessionLocator(b"\x01" * 32),
+        envelope_id=uuid.UUID("00000000-0000-0000-0000-000000000002"),
+        crypto_version=1,
         linkage_key=_make_linkage_key(),
     )
 
@@ -215,7 +218,7 @@ def _make_session_write_context() -> SessionWriteContext:
 class TestSessionCacheNamespace:
     def test_container_exposes_write_context_cache(self) -> None:
         cache = create_app_cache().sessions
-        ctx = _make_session_write_context()
+        ctx = _make_session_context()
 
         cache.write_context.put(b"token-hash", ctx)
 
@@ -227,7 +230,7 @@ class TestSessionCacheNamespace:
 
         app_cache.set_enabled(False)
 
-        cache.write_context.put(b"token-hash", _make_session_write_context())
+        cache.write_context.put(b"token-hash", _make_session_context())
 
         assert cache.write_context.get(b"token-hash") is None
 
@@ -237,7 +240,7 @@ class TestSessionCacheNamespace:
         cache = create_app_cache()
 
         cache.init_app(app)
-        cache.sessions.write_context.put(b"token-hash", _make_session_write_context())
+        cache.sessions.write_context.put(b"token-hash", _make_session_context())
 
         assert cache.sessions.write_context.get(b"token-hash") is None
 
@@ -245,7 +248,7 @@ class TestSessionCacheNamespace:
         app = Flask(__name__)
         app.extensions["settings"] = _settings_with_cache_enabled(True)
         registry = create_app_cache()
-        ctx = _make_session_write_context()
+        ctx = _make_session_context()
 
         registry.init_app(app)
         app.extensions[EXTENSION_KEY].sessions.write_context.put(b"token-hash", ctx)

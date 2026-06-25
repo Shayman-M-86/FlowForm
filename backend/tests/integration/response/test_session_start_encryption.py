@@ -27,7 +27,7 @@ from app.schema.api.requests.submission_sessions import StartSubmissionSessionRe
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.response.response_envelope import ResponseEnvelope
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
-from app.services.public_submissions.core.shared.session_loader import load_current_session
+from app.services.public_submissions.core.session_loader import load_current_session
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -92,7 +92,6 @@ def _mock_locator_service(session_locator: bytes | None = None):
     """Locator service that returns the same locator for both new and existing sessions."""
     svc = MagicMock()
     loc_bytes = session_locator or _FAKE_SESSION_LOCATOR
-    svc.get_current_linkage_key_version.return_value = 1
     svc.get_current_linkage_key.return_value = LinkageKey(
         version=1,
         secret=b"\xcc" * 32,

@@ -19,7 +19,6 @@ from tests.integration.core.factories import (
 
 def _make_mock_locator_service():
     svc = MagicMock()
-    svc.get_current_linkage_key_version.return_value = 1
     svc.get_current_linkage_key.return_value = LinkageKey(
         version=1,
         secret=b"\xcc" * 32,

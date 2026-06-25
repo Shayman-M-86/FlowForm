@@ -112,7 +112,6 @@ def _slug_payload(slug: str) -> StartSubmissionSessionRequest:
 
 def _mock_locator_service(session_locator: bytes | None = None):
     svc = MagicMock()
-    svc.get_current_linkage_key_version.return_value = 1
     svc.get_current_linkage_key.return_value = LinkageKey(
         version=1,
         secret=b"\xcc" * 32,
@@ -252,7 +251,6 @@ class TestPreCommitEnvelopeFailureRollback:
         survey_id = _seed_published_survey(db_sessions.core, "linkage-fail-test")
 
         loc_svc = MagicMock()
-        loc_svc.get_current_linkage_key_version.return_value = 1
         loc_svc.get_current_linkage_key.return_value = LinkageKey(
             version=1,
             secret=b"\xcc" * 32,

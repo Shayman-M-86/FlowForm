@@ -3,7 +3,7 @@
 import os
 from uuid import UUID
 
-from app.crypto.locators import derive_answer_locator, derive_session_locator
+from app.crypto._internal.locators import derive_answer_locator, derive_session_locator
 
 SESS_1 = UUID("00000000-0000-0000-0000-000000000001")
 SESS_2 = UUID("00000000-0000-0000-0000-000000000002")

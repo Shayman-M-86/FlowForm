@@ -113,14 +113,13 @@ def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
     from unittest.mock import MagicMock
 
     from app.api.v1.respondent import session_management_service
-    from app.crypto.locators import derive_session_locator
+    from app.crypto._internal.locators import derive_session_locator
     from app.crypto.services import LinkageKey, NewSessionDEK, NewSessionLocator
     from app.services.public_submissions.core.actions.session_starter import SessionStarter
 
     linkage_secret = b"\xcc" * 32
 
     loc_svc = MagicMock()
-    loc_svc.get_current_linkage_key_version.return_value = 1
     loc_svc.get_current_linkage_key.return_value = LinkageKey(
         version=1,
         secret=linkage_secret,

@@ -13,7 +13,7 @@ import pytest
 from app.cache import LockedTTLCache
 from app.crypto.aes_gcm import decrypt_answer, encrypt_answer
 from app.crypto.kms import unwrap_dek, wrap_dek
-from app.crypto.locators import derive_session_locator
+from app.crypto._internal.locators import derive_session_locator
 from app.crypto.nonces import generate_nonce
 from app.crypto.payload import build_plaintext_payload, parse_plaintext_payload
 from app.crypto.secrets import get_linkage_secret

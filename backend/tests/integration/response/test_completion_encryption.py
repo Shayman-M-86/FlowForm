@@ -39,7 +39,7 @@ from app.repositories.response import (
 )
 from app.schema.enums import SubmissionAnswerState
 from app.services.public_submissions.core.actions.completion import CompletionService
-from app.services.public_submissions.core.shared.session_loader import SessionContext
+from app.services.public_submissions.core.session_loader import SessionContext
 from tests.integration.core.factories import (
     make_project,
     make_response_store,

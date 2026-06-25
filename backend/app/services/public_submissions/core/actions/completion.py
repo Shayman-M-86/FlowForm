@@ -14,11 +14,11 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.core.extensions import app_cache
+from app.crypto.models import SessionContext
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import SessionInvalidError
 from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
-from app.services.public_submissions.core.shared.session_loader import SessionContext
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class CompletionService:
         _ = response_db
 
         # Lock the session for mutation
-        locked_session = ssr.lock_for_update(db, ctx.session.id)
+        locked_session = ssr.lock_for_update(db, ctx.session_id)
         if locked_session is None:
             raise SessionInvalidError("Session disappeared during completion.")
         if locked_session.session_status != "in_progress":
@@ -64,8 +64,8 @@ class CompletionService:
         try:
             event_repo.create_event(
                 db,
-                session_id=ctx.session.id,
-                survey_version_id=ctx.survey_version.id,
+                session_id=ctx.session_id,
+                survey_version_id=ctx.survey_version_id,
                 event_type="session_completed",
             )
         except Exception:
@@ -73,10 +73,10 @@ class CompletionService:
 
         commit_with_err_handle(db, contexts=[])
 
-        app_cache.sessions.write_context.evict(ctx.session.browser_session_token_hash)
+        app_cache.sessions.write_context.evict(ctx.browser_session_token_hash)
 
         return CompletionResult(
-            session_id=ctx.session.id,
+            session_id=ctx.session_id,
             status="completed",
             completed_at=completed_at,
         )
