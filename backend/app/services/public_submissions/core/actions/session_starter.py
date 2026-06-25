@@ -13,9 +13,10 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.config import EncryptionSettings, current_settings
-from app.crypto.errors import SurveyBranchKeyUnavailableError
-from app.crypto.services import LocatorService, SessionDEKService, SurveyBranchKeyService
+from app.cache.sessions import SessionWriteContext
+from app.core.extensions import app_cache
+from app.crypto import get_crypto_services
+from app.crypto._internal.errors import SurveyBranchKeyUnavailableError
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import SessionStartError
 from app.logging.request_timing import request_timing
@@ -31,15 +32,9 @@ from app.services.public_submissions.core.resolution.session_subject_service imp
 )
 from app.services.public_submissions.core.resolution.subject_resolver import SubjectResolver
 from app.services.public_submissions.core.resolution.subject_token import SubjectTokenService
-from app.services.public_submissions.core.shared import session_write_cache
-from app.services.public_submissions.core.shared.crypto_provider import CryptoServices
 from app.services.public_submissions.core.shared.session_crypto import (
     build_session_dek_wrap_aad,
     load_survey_encryption_key,
-    resolve_session_crypto_services,
-)
-from app.services.public_submissions.core.shared.session_write_cache import (
-    SessionWriteContext,
 )
 from app.services.results import SubmissionAccessGrant
 
@@ -82,10 +77,6 @@ class SessionStarter:
         subject_service: SessionSubjectService | None = None,
         subject_resolver: SubjectResolver | None = None,
         token_service: SubjectTokenService | None = None,
-        locator_service: LocatorService | None = None,
-        dek_service: SessionDEKService | None = None,
-        survey_branch_key_service: SurveyBranchKeyService | None = None,
-        encryption_settings: EncryptionSettings | None = None,
     ) -> None:
         token_service = token_service or SubjectTokenService()
         self._access_resolver = access_resolver or AccessResolver()
@@ -93,13 +84,6 @@ class SessionStarter:
             subject_resolver=subject_resolver,
             token_service=token_service,
         )
-
-        self._encryption_settings = encryption_settings
-        self._locator_service_override = locator_service
-        self._dek_service_override = dek_service
-        self._survey_branch_key_service_override = survey_branch_key_service
-
-        self._crypto: CryptoServices | None = None
 
     def start(
         self,
@@ -158,7 +142,7 @@ class SessionStarter:
         )
         request_timing.log("session_start.core_committed")
 
-        session_write_cache.put(
+        app_cache.sessions.write_context.put(
             session.browser_session_token_hash,
             SessionWriteContext(
                 session_id=session.id,
@@ -231,7 +215,7 @@ class SessionStarter:
         Core rows are flushed, but not committed yet. If response envelope
         creation fails, the core transaction is rolled back.
         """
-        crypto = self._ensure_crypto()
+        crypto = get_crypto_services()
 
         try:
             branch_key_service = crypto.survey_branch_key_service
@@ -330,33 +314,7 @@ class SessionStarter:
             )
 
     def _current_linkage_key(self, db: Session) -> LinkageKey:
-        crypto = self._ensure_crypto()
-        return crypto.locator_service.get_current_linkage_key(db)
-
-    def _ensure_crypto(self) -> CryptoServices:
-        """Lazily build crypto services on first use."""
-        if self._crypto is not None:
-            return self._crypto
-
-        self._crypto = resolve_session_crypto_services(
-            self._get_encryption_settings(),
-            locator_service=self._locator_service_override,
-            dek_service=self._dek_service_override,
-            survey_branch_key_service=self._survey_branch_key_service_override,
-        )
-        return self._crypto
-
-    def _get_encryption_settings(self) -> EncryptionSettings:
-        if self._encryption_settings is not None:
-            return self._encryption_settings
-
-        enc = current_settings().flowform.encryption
-
-        if enc is None:
-            raise SessionStartError("Encryption settings not configured")
-
-        self._encryption_settings = enc
-        return enc
+        return get_crypto_services().locator_service.get_current_linkage_key(db)
 
     @staticmethod
     def _build_response(

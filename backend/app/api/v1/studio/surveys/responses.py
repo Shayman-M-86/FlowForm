@@ -17,7 +17,6 @@ from app.schema.api.responses.survey_responses import (
 )
 from app.services.access.access_service import require_survey_permission
 from app.services.admin_responses.service import AdminResponseService
-from app.services.public_submissions.core.shared.crypto_provider import get_crypto_services
 
 _admin_response_service: AdminResponseService | None = None
 
@@ -25,7 +24,7 @@ _admin_response_service: AdminResponseService | None = None
 def _build_service() -> AdminResponseService:
     global _admin_response_service
     if _admin_response_service is None:
-        _admin_response_service = AdminResponseService(get_crypto_services())
+        _admin_response_service = AdminResponseService()
     return _admin_response_service
 
 

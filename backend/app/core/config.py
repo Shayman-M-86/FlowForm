@@ -202,7 +202,7 @@ class FlowForm(BaseModel):
     server: ServerSettings = Field(default_factory=ServerSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
-    encryption: EncryptionSettings | None = None
+    encryption: EncryptionSettings
 
 
 class DataBase(BaseModel):

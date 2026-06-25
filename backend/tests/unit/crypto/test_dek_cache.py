@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import Hashable
+from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 from cachetools import TTLCache
+from flask import Flask
 
-from app.crypto.cache import CryptoKeyCache, LockedTTLCache
+from app.cache import LockedTTLCache, create_app_cache
+from app.cache._registry import EXTENSION_KEY
+from app.cache.sessions import SessionWriteContext
+from app.crypto.operations.models import LinkageKey
 
 
 def _make_cache(ttl_seconds: int = 3600) -> LockedTTLCache[bytes]:
@@ -142,22 +149,105 @@ class TestLockedTTLCacheDisabled:
         assert len(cache) == 0
 
 
-class TestCryptoKeyCache:
+class TestCryptoCacheNamespace:
     def test_container_exposes_named_crypto_caches(self) -> None:
-        cache = CryptoKeyCache()
+        cache = create_app_cache().crypto
+        linkage_key = _make_linkage_key()
+        survey_key_id = uuid.UUID("00000000-0000-0000-0000-000000000003")
+        session_id = uuid.UUID("00000000-0000-0000-0000-000000000004")
 
-        cache.survey_branch_keys.put("survey-key-id", b"\xaa" * 32)
-        cache.session_deks.put("session-id", b"\xbb" * 32)
+        cache.current_linkage_key.put("current", linkage_key)
+        cache.linkage_keys_by_version.put(1, linkage_key)
+        cache.survey_branch_keys.put(survey_key_id, b"\xaa" * 32)
+        cache.session_deks.put(session_id, b"\xbb" * 32)
 
-        assert cache.survey_branch_keys.get("survey-key-id") == b"\xaa" * 32
-        assert cache.session_deks.get("session-id") == b"\xbb" * 32
+        assert cache.current_linkage_key.get("current") == linkage_key
+        assert cache.linkage_keys_by_version.get(1) == linkage_key
+        assert cache.survey_branch_keys.get(survey_key_id) == b"\xaa" * 32
+        assert cache.session_deks.get(session_id) == b"\xbb" * 32
 
     def test_can_disable_all_named_crypto_caches(self) -> None:
-        cache = CryptoKeyCache()
-        cache.set_enabled(False)
+        app_cache = create_app_cache()
+        cache = app_cache.crypto
+        survey_key_id = uuid.UUID("00000000-0000-0000-0000-000000000003")
+        session_id = uuid.UUID("00000000-0000-0000-0000-000000000004")
 
-        cache.survey_branch_keys.put("survey-key-id", b"\xaa" * 32)
-        cache.session_deks.put("session-id", b"\xbb" * 32)
+        app_cache.set_enabled(False)
 
-        assert cache.survey_branch_keys.get("survey-key-id") is None
-        assert cache.session_deks.get("session-id") is None
+        cache.survey_branch_keys.put(survey_key_id, b"\xaa" * 32)
+        cache.session_deks.put(session_id, b"\xbb" * 32)
+
+        assert cache.survey_branch_keys.get(survey_key_id) is None
+        assert cache.session_deks.get(session_id) is None
+
+
+def _settings_with_cache_enabled(enabled: bool) -> SimpleNamespace:
+    return SimpleNamespace(
+        flowform=SimpleNamespace(
+            encryption=SimpleNamespace(key_cache_enabled=enabled),
+        ),
+    )
+
+
+def _make_linkage_key() -> LinkageKey:
+    return LinkageKey(
+        version=1,
+        secret=b"\x03" * 32,
+        aws_version_id="11111111-1111-1111-1111-111111111111",
+    )
+
+
+def _make_session_write_context() -> SessionWriteContext:
+    return SessionWriteContext(
+        session_id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+        project_id=1,
+        survey_id=2,
+        survey_version_id=3,
+        session_locator=b"\x01" * 32,
+        envelope_id=uuid.UUID("00000000-0000-0000-0000-000000000002"),
+        plaintext_session_dek=b"\x02" * 32,
+        crypto_version=1,
+        expires_at=datetime.now(UTC) + timedelta(minutes=30),
+        linkage_key=_make_linkage_key(),
+    )
+
+
+class TestSessionCacheNamespace:
+    def test_container_exposes_write_context_cache(self) -> None:
+        cache = create_app_cache().sessions
+        ctx = _make_session_write_context()
+
+        cache.write_context.put(b"token-hash", ctx)
+
+        assert cache.write_context.get(b"token-hash") == ctx
+
+    def test_can_disable_write_context_cache(self) -> None:
+        app_cache = create_app_cache()
+        cache = app_cache.sessions
+
+        app_cache.set_enabled(False)
+
+        cache.write_context.put(b"token-hash", _make_session_write_context())
+
+        assert cache.write_context.get(b"token-hash") is None
+
+    def test_init_app_uses_key_cache_enabled_setting(self) -> None:
+        app = Flask(__name__)
+        app.extensions["settings"] = _settings_with_cache_enabled(False)
+        cache = create_app_cache()
+
+        cache.init_app(app)
+        cache.sessions.write_context.put(b"token-hash", _make_session_write_context())
+
+        assert cache.sessions.write_context.get(b"token-hash") is None
+
+    def test_init_app_registers_cache_registry(self) -> None:
+        app = Flask(__name__)
+        app.extensions["settings"] = _settings_with_cache_enabled(True)
+        registry = create_app_cache()
+        ctx = _make_session_write_context()
+
+        registry.init_app(app)
+        app.extensions[EXTENSION_KEY].sessions.write_context.put(b"token-hash", ctx)
+
+        assert app.extensions[EXTENSION_KEY].sessions.write_context.get(b"token-hash") == ctx

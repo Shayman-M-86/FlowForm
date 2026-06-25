@@ -8,8 +8,8 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.crypto.cache import LockedTTLCache
-from app.crypto.errors import SessionDEKUnavailableError
+from app.cache import LockedTTLCache
+from app.crypto._internal.errors import SessionDEKUnavailableError
 from app.crypto.services.session_dek_service import NewSessionDEK, SessionDEKService
 
 

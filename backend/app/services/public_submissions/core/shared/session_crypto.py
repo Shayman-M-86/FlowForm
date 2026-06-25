@@ -17,23 +17,16 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.crypto.errors import SurveyBranchKeyUnavailableError
-from app.crypto.services import (
-    AnswerCryptoService,
-    LocatorService,
-    SessionDEKService,
-    SurveyBranchKeyService,
+from app.crypto import (
+    CryptoServices,
+    SurveyBranchKeyUnavailableError,
+    get_crypto_services,
 )
 from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.core import survey_encryption_keys as survey_key_repo
 from app.repositories.response import response_envelope_repo
-from app.services.public_submissions.core.shared.crypto_provider import (
-    CryptoServices,
-    get_crypto_services,
-)
 
 if TYPE_CHECKING:
-    from app.core.config import EncryptionSettings
     from app.schema.orm.core.submission_session import SubmissionSession
     from app.schema.orm.core.survey_encryption_key import SurveyEncryptionKey
     from app.schema.orm.response.response_envelope import ResponseEnvelope
@@ -56,34 +49,6 @@ def build_session_dek_wrap_aad(
         session_id.bytes,
         locator_len,
         session_locator,
-    )
-
-
-def resolve_session_crypto_services(
-    encryption_settings: EncryptionSettings | None = None,
-    *,
-    locator_service: LocatorService | None = None,
-    dek_service: SessionDEKService | None = None,
-    answer_crypto_service: AnswerCryptoService | None = None,
-    survey_branch_key_service: SurveyBranchKeyService | None = None,
-) -> CryptoServices:
-    if locator_service is not None and dek_service is not None and answer_crypto_service is not None:
-        crypto = get_crypto_services(encryption_settings)
-        return CryptoServices(
-            linkage_key_service=crypto.linkage_key_service,
-            locator_service=locator_service,
-            dek_service=dek_service,
-            answer_crypto_service=answer_crypto_service,
-            survey_branch_key_service=survey_branch_key_service or crypto.survey_branch_key_service,
-        )
-
-    crypto = get_crypto_services(encryption_settings)
-    return CryptoServices(
-        linkage_key_service=crypto.linkage_key_service,
-        locator_service=locator_service or crypto.locator_service,
-        dek_service=dek_service or crypto.dek_service,
-        answer_crypto_service=answer_crypto_service or crypto.answer_crypto_service,
-        survey_branch_key_service=survey_branch_key_service or crypto.survey_branch_key_service,
     )
 
 
@@ -117,10 +82,11 @@ def load_plaintext_session_dek(
     session: SubmissionSession,
     session_locator: bytes,
     envelope: ResponseEnvelope,
-    dek_service: SessionDEKService,
-    survey_branch_key_service: SurveyBranchKeyService | None,
+    crypto: CryptoServices | None = None,
     prefetched_branch_key_loader: Callable[[], bytes] | None = None,
 ) -> bytes:
+    crypto = crypto or get_crypto_services()
+    survey_branch_key_service = crypto.survey_branch_key_service
     if survey_branch_key_service is None:
         raise SurveyBranchKeyUnavailableError()
 
@@ -140,7 +106,7 @@ def load_plaintext_session_dek(
         def branch_key_loader() -> bytes:
             return survey_branch_key_service.get_plaintext_key(survey_key)
 
-    return dek_service.get_for_session(
+    return crypto.dek_service.get_for_session(
         session.id,
         envelope.wrapped_session_dek,
         session.expires_at,
@@ -154,11 +120,9 @@ def load_session_envelope_crypto_context(
     response_db: Session,
     *,
     session: SubmissionSession,
-    locator_service: LocatorService,
-    dek_service: SessionDEKService,
-    survey_branch_key_service: SurveyBranchKeyService | None,
 ) -> SessionEnvelopeCryptoContext:
-    session_locator, _ = locator_service.for_existing_session(
+    crypto = get_crypto_services()
+    session_locator, _ = crypto.locator_service.for_existing_session(
         session.id,
         session.linkage_key_version,
         db,
@@ -173,8 +137,7 @@ def load_session_envelope_crypto_context(
         session=session,
         session_locator=session_locator,
         envelope=envelope,
-        dek_service=dek_service,
-        survey_branch_key_service=survey_branch_key_service,
+        crypto=crypto,
     )
 
     return SessionEnvelopeCryptoContext(

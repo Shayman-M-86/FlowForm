@@ -9,10 +9,6 @@ from app.core.errors import AppError
 # ---------------------------------------------------------------------------
 
 
-class LinkageSecretError(Exception):
-    """Secrets Manager fetch failure (internal)."""
-
-
 class KmsError(Exception):
     """KMS wrap or unwrap operation failure (internal)."""
 
@@ -29,6 +25,17 @@ class LinkageKeyError(AppError):
         super().__init__(
             status_code=500,
             code="LINKAGE_KEY_ERROR",
+            message=message,
+        )
+
+
+class PayloadDecodeError(AppError):
+    """Decrypted plaintext bytes are not a supported payload."""
+
+    def __init__(self, message: str = "Invalid plaintext payload") -> None:
+        super().__init__(
+            status_code=500,
+            code="PAYLOAD_DECODE_ERROR",
             message=message,
         )
 

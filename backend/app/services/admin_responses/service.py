@@ -20,15 +20,13 @@ from app.repositories.response import (
     response_envelope_repo,
 )
 from app.schema.orm.core.submission_session import SubmissionSession
+from app.crypto import get_crypto_services
 from app.services.admin_responses.assembler import (
     build_decrypted_answer_result,
     build_question_meta_map,
     decrypt_revision,
 )
-from app.services.public_submissions.core.shared.crypto_provider import CryptoServices
-from app.services.public_submissions.core.shared.session_crypto import (
-    load_session_envelope_crypto_context,
-)
+from app.services.public_submissions.core.shared.session_crypto import load_session_envelope_crypto_context
 from app.services.results import (
     AdminSessionDetailResult,
     AdminSessionHistoryResult,
@@ -40,9 +38,6 @@ from app.services.results import (
 class AdminResponseService:
     """Admin response viewing, decryption, and deletion."""
 
-    def __init__(self, crypto: CryptoServices) -> None:
-        self._crypto = crypto
-
     def get_session_detail(
         self,
         db: Session,
@@ -52,14 +47,12 @@ class AdminResponseService:
         session_id: UUID,
     ) -> AdminSessionDetailResult:
         """Decrypt latest answers for admin detail view."""
+        crypto = get_crypto_services()
         session = _load_session(db, survey_id=survey_id, session_id=session_id)
         ectx = load_session_envelope_crypto_context(
             db,
             response_db,
             session=session,
-            locator_service=self._crypto.locator_service,
-            dek_service=self._crypto.dek_service,
-            survey_branch_key_service=self._crypto.survey_branch_key_service,
         )
 
         answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)
@@ -82,7 +75,7 @@ class AdminResponseService:
                 answer_locator=answer.answer_locator,
                 revision_id=latest_rev.id,
                 revision_number=latest_rev.revision_number,
-                answer_crypto_service=self._crypto.answer_crypto_service,
+                answer_crypto_service=crypto.answer_crypto_service,
             )
 
             decrypted.append(
@@ -105,14 +98,12 @@ class AdminResponseService:
         session_id: UUID,
     ) -> AdminSessionHistoryResult:
         """Decrypt full revision history for authorized history reads."""
+        crypto = get_crypto_services()
         session = _load_session(db, survey_id=survey_id, session_id=session_id)
         ectx = load_session_envelope_crypto_context(
             db,
             response_db,
             session=session,
-            locator_service=self._crypto.locator_service,
-            dek_service=self._crypto.dek_service,
-            survey_branch_key_service=self._crypto.survey_branch_key_service,
         )
 
         answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)
@@ -133,7 +124,7 @@ class AdminResponseService:
                     answer_locator=answer.answer_locator,
                     revision_id=rev.id,
                     revision_number=rev.revision_number,
-                    answer_crypto_service=self._crypto.answer_crypto_service,
+                    answer_crypto_service=crypto.answer_crypto_service,
                 )
 
                 decrypted.append(
@@ -159,8 +150,9 @@ class AdminResponseService:
 
         Response-first ordering is mandatory per doc 06.
         """
+        crypto = get_crypto_services()
         session = _load_session(db, survey_id=survey_id, session_id=session_id)
-        session_locator, _ = self._crypto.locator_service.for_existing_session(
+        session_locator, _ = crypto.locator_service.for_existing_session(
             session.id, session.linkage_key_version, db,
         )
 

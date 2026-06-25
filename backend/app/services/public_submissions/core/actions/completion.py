@@ -13,6 +13,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.core.extensions import app_cache
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import SessionInvalidError
 from app.repositories.core import submission_events as event_repo
@@ -71,6 +72,8 @@ class CompletionService:
             logger.warning("completion.event_create_failed", exc_info=True)
 
         commit_with_err_handle(db, contexts=[])
+
+        app_cache.sessions.write_context.evict(ctx.session.browser_session_token_hash)
 
         return CompletionResult(
             session_id=ctx.session.id,

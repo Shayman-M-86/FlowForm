@@ -12,8 +12,8 @@ import pytest
 from cachetools import TTLCache
 from pydantic import SecretStr
 
-from app.crypto.cache import LockedTTLCache
-from app.crypto.errors import (
+from app.cache import LockedTTLCache
+from app.crypto._internal.errors import (
     LinkageKeyError,
     LinkageKeyUnavailableError,
     LinkageSecretError,

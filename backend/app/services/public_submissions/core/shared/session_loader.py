@@ -16,7 +16,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings, current_settings
-from app.crypto.services import LocatorService
+from app.core.extensions import app_cache
+from app.crypto import get_crypto_services
 from app.crypto.services.linkage_key_service import LinkageKey
 from app.domain.errors import (
     EnvelopeNotFoundError,
@@ -27,11 +28,10 @@ from app.domain.errors import (
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_envelope_repo
 from app.schema.orm.core.survey import SurveyVersion
-from app.services.public_submissions.core.shared.crypto_provider import get_crypto_services
+from app.schema.orm.response.response_envelope import ResponseEnvelope
 
 if TYPE_CHECKING:
     from app.schema.orm.core.submission_session import SubmissionSession
-    from app.schema.orm.response.response_envelope import ResponseEnvelope
 
 logger = logging.getLogger(__name__)
 
@@ -56,23 +56,12 @@ class SessionContext:
 _FORBIDDEN_EDIT_STATUSES = frozenset({"abandoned"})
 
 
-def _get_encryption_settings(enc: EncryptionSettings | None) -> EncryptionSettings:
-    if enc is not None:
-        return enc
+def _get_encryption_settings() -> EncryptionSettings:
     settings = current_settings()
     enc_cfg = settings.flowform.encryption
     if enc_cfg is None:
         raise SessionInvalidError("Encryption settings not configured")
     return enc_cfg
-
-
-def _get_locator_service(
-    locator_service: LocatorService | None,
-    enc: EncryptionSettings | None,
-) -> LocatorService:
-    if locator_service is not None:
-        return locator_service
-    return get_crypto_services(enc).locator_service
 
 
 def load_current_session(
@@ -81,15 +70,13 @@ def load_current_session(
     raw_resume_token: str,
     *,
     allow_completed: bool = False,
-    encryption_settings: EncryptionSettings | None = None,
-    locator_service: LocatorService | None = None,
 ) -> SessionContext:
     """Load and validate the current session from a browser resume token.
 
     Raises domain errors for every forbidden edit state:
     missing, expired, abandoned, and completed (unless allow_completed).
     """
-    enc = _get_encryption_settings(encryption_settings)
+    enc = _get_encryption_settings()
 
     token_hash = ssr.hash_browser_session_token(raw_resume_token)
     session = ssr.get_by_token_hash(db, token_hash)
@@ -111,7 +98,21 @@ def load_current_session(
     if survey_version is None:
         raise SessionInvalidError("Frozen survey version not found.")
 
-    loc_svc = _get_locator_service(locator_service, encryption_settings)
+    wctx = app_cache.sessions.write_context.get(token_hash)
+    if wctx is not None:
+        envelope = response_db.get(ResponseEnvelope, wctx.envelope_id)
+        if envelope is not None:
+            return SessionContext(
+                session=session,
+                survey_version=survey_version,
+                session_locator=wctx.session_locator,
+                envelope=envelope,
+                encryption_settings=enc,
+                linkage_key=wctx.linkage_key,
+            )
+        app_cache.sessions.write_context.evict(token_hash)
+
+    loc_svc = get_crypto_services().locator_service
     session_locator, linkage_key = loc_svc.for_existing_session(session.id, session.linkage_key_version, db)
 
     envelope = response_envelope_repo.get_by_locator(response_db, session_locator)

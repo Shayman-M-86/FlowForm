@@ -20,7 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import EncryptionSettings
-from app.crypto.errors import KmsError
+from app.crypto._internal.errors import KmsError
 from app.crypto.services import LinkageKey, NewSessionDEK, NewSessionLocator
 from app.domain.errors import SessionNotFoundError, SessionStartError
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest

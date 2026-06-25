@@ -1,4 +1,4 @@
-"""App-wide in-memory TTL caches for crypto key material.
+"""Thread-safe TTL cache with per-key single-flight loading.
 
 Created once when the Flask app starts and reused by all requests handled by
 that Python process.  Values expire after a TTL.  Locks prevent two parallel
@@ -13,13 +13,8 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable, Hashable
 from threading import Lock
-from typing import TYPE_CHECKING
 
 from cachetools import TTLCache
-from flask import Flask
-
-if TYPE_CHECKING:
-    from app.crypto.services.linkage_key_service import LinkageKey
 
 logger = logging.getLogger(__name__)
 
@@ -118,36 +113,3 @@ class LockedTTLCache[T]:
     def __len__(self) -> int:
         with self._lock:
             return len(self._cache)
-
-
-class CryptoKeyCache:
-    """Container for all crypto key caches.  Registered as a Flask extension."""
-
-    def __init__(self) -> None:
-        self.linkage_keys: LockedTTLCache[LinkageKey] = LockedTTLCache(
-            name="linkage_key",
-            maxsize=16,
-            ttl_seconds=1800,
-        )
-        self.survey_branch_keys: LockedTTLCache[bytes] = LockedTTLCache(
-            name="survey_branch_key",
-            maxsize=512,
-            ttl_seconds=600,
-        )
-        self.session_deks: LockedTTLCache[bytes] = LockedTTLCache(
-            name="session_dek",
-            maxsize=10_000,
-            ttl_seconds=1800,
-        )
-
-    def set_enabled(self, enabled: bool) -> None:
-        """Enable or disable all crypto key caches."""
-        self.linkage_keys.set_enabled(enabled)
-        self.survey_branch_keys.set_enabled(enabled)
-        self.session_deks.set_enabled(enabled)
-
-    def init_app(self, app: Flask, *, enabled: bool = True) -> None:
-        """Register as a Flask extension."""
-        self.set_enabled(enabled)
-        app.extensions["crypto_key_cache"] = self
-        logger.debug("crypto_key_cache enabled=%s", enabled)

@@ -10,8 +10,8 @@ from typing import Any
 
 import pytest
 
+from app.cache import LockedTTLCache
 from app.crypto.aes_gcm import decrypt_answer, encrypt_answer
-from app.crypto.cache import LockedTTLCache
 from app.crypto.kms import unwrap_dek, wrap_dek
 from app.crypto.locators import derive_session_locator
 from app.crypto.nonces import generate_nonce
