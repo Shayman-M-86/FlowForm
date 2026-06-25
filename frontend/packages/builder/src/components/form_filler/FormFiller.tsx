@@ -33,11 +33,13 @@ interface FormFillerProps {
   emptyTitle?: string;
   emptyMessage?: string;
   exitLabel?: string;
+  submitLabel?: string;
   onExit?: () => void;
   onComplete?: (result: FormFillerResult) => void;
   onAnswerCommit?: (questionKey: string, answer: QuestionAnswer) => void;
   showAnswerSummary?: boolean;
   stackSidebar?: boolean;
+  confirmSubmit?: boolean;
 }
 
 const panelClass = [
@@ -53,16 +55,19 @@ export function FormFiller({
   emptyTitle = "No survey is available",
   emptyMessage = "There are no survey steps to render.",
   exitLabel = "Close",
+  submitLabel = "Submit",
   onExit,
   onComplete,
   onAnswerCommit,
   showAnswerSummary = false,
   stackSidebar = false,
+  confirmSubmit = false,
 }: FormFillerProps) {
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [committedQuestionIds, setCommittedQuestionIds] = useState<string[]>([]);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const lastReportedCompletionKey = useRef<string | null>(null);
+  const [userConfirmedSubmit, setUserConfirmedSubmit] = useState(false);
 
   useEffect(() => {
     setAnswers({});
@@ -96,8 +101,11 @@ export function FormFiller({
       }
       : null;
 
+  const shouldAutoComplete = completionResult != null
+    && !(confirmSubmit && completionResult.status === 'submitted');
+
   useEffect(() => {
-    if (!completionResult) {
+    if (!shouldAutoComplete || !completionResult) {
       lastReportedCompletionKey.current = null;
       return;
     }
@@ -107,7 +115,12 @@ export function FormFiller({
 
     lastReportedCompletionKey.current = completionKey;
     onComplete?.(completionResult);
-  }, [completionResult, onComplete]);
+  }, [shouldAutoComplete, completionResult, onComplete]);
+
+  useEffect(() => {
+    if (!userConfirmedSubmit || !completionResult) return;
+    onComplete?.(completionResult);
+  }, [userConfirmedSubmit, completionResult, onComplete]);
 
   function handleAnswerChange(questionId: string, nextValue: QuestionAnswer) {
     setAnswers((current) => ({
@@ -254,6 +267,34 @@ export function FormFiller({
               <div className="flex flex-wrap gap-3">
                 <Button type="button" variant="primary" onClick={handleRestart}>
                   Start over
+                </Button>
+                {onExit && (
+                  <Button type="button" variant="secondary" onClick={onExit}>
+                    {exitLabel}
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : confirmSubmit && completionResult?.status === "submitted" && !userConfirmedSubmit ? (
+            <div className="flex flex-col gap-4.5">
+              <Badge variant="accent" size="sm">Ready to submit</Badge>
+              <h1 className="m-0 text-[clamp(1.7rem,4vw,2.4rem)] text-foreground">
+                Review your answers
+              </h1>
+              <p className="m-0 leading-relaxed text-muted-foreground">
+                You&apos;ve answered all the questions. When you&apos;re ready, click submit to send your response.
+              </p>
+              {showAnswerSummary && (
+                <pre className="m-0 overflow-auto rounded-2xl bg-muted p-4 font-mono text-[0.82rem] leading-[1.55] text-foreground">
+                  {JSON.stringify(answerSummary, null, 2)}
+                </pre>
+              )}
+              <div className="flex flex-wrap gap-3">
+                <Button type="button" variant="primary" onClick={() => setUserConfirmedSubmit(true)}>
+                  {submitLabel}
+                </Button>
+                <Button type="button" variant="secondary" onClick={handleBack}>
+                  Back
                 </Button>
                 {onExit && (
                   <Button type="button" variant="secondary" onClick={onExit}>

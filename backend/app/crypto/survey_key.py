@@ -11,12 +11,19 @@ from __future__ import annotations
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
+from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
+
+if TYPE_CHECKING:
+    from mypy_boto3_kms import KMSClient
+
+    from app.cache import CacheItem
 
 from app.cache import get_app_cache
 from app.cache.crypto import SurveyKeyCacheKey
 from app.core.config import current_settings
+from app.crypto._internal.client_extension import get_crypto_clients
 from app.crypto._internal.errors import KmsError, SurveyBranchKeyUnavailableError
 from app.crypto._internal.kms_context import (
     SURVEY_KMS_CONTEXT_VERSION,
@@ -107,7 +114,9 @@ def load_plaintext_survey_key(
         return cached
 
     record = _get_wrapped_record(db, project_id=project_id, survey_id=survey_id)
-    return _unwrap_and_cache(record)
+    return _unwrap_and_cache(
+        record, get_crypto_clients().kms, get_app_cache().crypto.survey_keys
+    )
 
 
 def start_plaintext_survey_key_load(
@@ -129,7 +138,11 @@ def start_plaintext_survey_key_load(
         return lambda: cached
 
     record = _get_wrapped_record(db, project_id=project_id, survey_id=survey_id)
-    future = _PREFETCH_POOL.submit(_unwrap_and_cache, record)
+    kms_client = get_crypto_clients().kms
+    survey_key_cache = get_app_cache().crypto.survey_keys
+    future = _PREFETCH_POOL.submit(
+        _unwrap_and_cache, record, kms_client, survey_key_cache
+    )
     return future.result
 
 
@@ -155,8 +168,12 @@ def _get_wrapped_record(
     return record
 
 
-def _unwrap_and_cache(record: SurveyEncryptionKey) -> PlaintextSurveyKey:
-    """Unwrap a record's key via KMS and cache it. No DB access."""
+def _unwrap_and_cache(
+    record: SurveyEncryptionKey,
+    kms_client: KMSClient,
+    survey_key_cache: CacheItem[SurveyKeyCacheKey, PlaintextSurveyKey],
+) -> PlaintextSurveyKey:
+    """Unwrap a record's key via KMS and cache it. No DB or app-context access."""
     cache_key: SurveyKeyCacheKey = (record.project_id, record.survey_id)
     context = build_survey_kms_context(
         project_id=record.project_id,
@@ -169,10 +186,11 @@ def _unwrap_and_cache(record: SurveyEncryptionKey) -> PlaintextSurveyKey:
             WrappedSurveyKey(record.wrapped_survey_branch_key),
             record.kms_key_arn,
             context,
+            client=kms_client,
         )
     except KmsError as exc:
         logger.error("survey_key unwrap_failed survey_id=%s", record.survey_id)
         raise SurveyBranchKeyUnavailableError() from exc
 
-    get_app_cache().crypto.survey_keys.put(cache_key, plaintext_survey_key)
+    survey_key_cache.put(cache_key, plaintext_survey_key)
     return plaintext_survey_key

@@ -10,7 +10,7 @@ from botocore.config import Config
 from flask import Flask, current_app
 from pydantic import SecretStr
 
-from app.core.config import current_settings
+from app.core.config import Settings
 
 if TYPE_CHECKING:
     from mypy_boto3_kms import KMSClient
@@ -37,7 +37,8 @@ class CryptoClientManager:
         self._clients: CryptoClients | None = None
 
     def init_app(self, app: Flask) -> None:
-        encryption = current_settings().flowform.encryption
+        settings: Settings = app.extensions["settings"]
+        encryption = settings.flowform.encryption
 
         self._clients = CryptoClients(
             kms=self._build_client(

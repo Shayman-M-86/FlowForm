@@ -25,6 +25,7 @@ export function RespondPage({ token }: RespondPageProps) {
   const questionNodesRef = useRef<QuestionNode[]>([])
   const sessionStartedRef = useRef(false)
   const savedAnswersRef = useRef(new Set<string>())
+  const inflightSavesRef = useRef(new Map<string, Promise<void>>())
 
   useEffect(() => {
     let cancelled = false
@@ -90,13 +91,19 @@ export function RespondPage({ token }: RespondPageProps) {
 
     savedAnswersRef.current.add(questionKey)
 
-    void respondentClient.PUT(
+    const savePromise = respondentClient.PUT(
       '/api/v1/respondent/submission-sessions/current/answers/{question_node_id}',
       {
         params: { path: { question_node_id: node.id } },
         body: payload,
       },
-    )
+    ).then(({ error }) => {
+      if (error) throw error
+    }).finally(() => {
+      inflightSavesRef.current.delete(questionKey)
+    })
+
+    inflightSavesRef.current.set(questionKey, savePromise)
   }, [])
 
   const handleComplete = useCallback(async (result: FormFillerResult) => {
@@ -108,6 +115,11 @@ export function RespondPage({ token }: RespondPageProps) {
     setState({ phase: 'submitting' })
 
     try {
+      // Wait for any in-flight answer saves to finish before completing.
+      if (inflightSavesRef.current.size > 0) {
+        await Promise.all(inflightSavesRef.current.values())
+      }
+
       const questionNodes = questionNodesRef.current
       const nodeByKey = new Map<string, QuestionNode>()
       for (const node of questionNodes) {
@@ -174,6 +186,7 @@ export function RespondPage({ token }: RespondPageProps) {
           title={state.title}
           exitLabel="Close"
           showAnswerSummary
+          confirmSubmit
           onAnswerCommit={handleAnswerCommit}
           onComplete={handleComplete}
         />
