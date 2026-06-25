@@ -69,6 +69,10 @@ export function isNodeIncomplete(node: SurveyNode): boolean {
       matches.some((item) => item.label.trim() === "")
     );
   }
+  if (content.family === "rating") {
+    const { ui } = content.definition;
+    return ui.left_label.trim() === "" || ui.right_label.trim() === "";
+  }
   return false;
 }
 

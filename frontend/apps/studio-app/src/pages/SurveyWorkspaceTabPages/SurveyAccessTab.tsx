@@ -706,28 +706,34 @@ function LinksSection({
                     onChange={(e) => setParticipantSearch(e.target.value)}
                   />
                 </div>
-                <Button variant="secondary" size="md" onClick={() => setShowNewParticipant((v) => !v)}>
-                  {showNewParticipant ? 'Cancel' : 'New participant'}
+                <Button variant="secondary" size="md" onClick={() => setShowNewParticipant(true)}>
+                  New participant
                 </Button>
               </div>
 
-              {showNewParticipant && (
-                <div className="rounded-md border border-border bg-muted/20 p-3 grid gap-3">
-                  <p className="text-xs font-semibold text-foreground">Create new participant</p>
-                  <Input
-                    label="Email address"
-                    type="email"
-                    value={newParticipantEmail}
-                    onChange={(e) => setNewParticipantEmail(e.target.value)}
-                    placeholder="name@example.com"
-                  />
-                  <Input
-                    label="Subject code (optional)"
-                    value={newParticipantCode}
-                    onChange={(e) => setNewParticipantCode(e.target.value)}
-                    placeholder="sub_xxx"
-                  />
-                  <div className="flex justify-end">
+              <Select
+                label="Assign to participant"
+                value={form.assignedParticipantId ?? ''}
+                onValueChange={(value) => setForm((current) => ({ ...current, assignedParticipantId: value || null }))}
+                options={[
+                  { value: '', label: 'Select a participant…' },
+                  ...(participantsQuery.data?.participants ?? []).map((p) => ({
+                    value: p.id,
+                    label: `${p.email ?? 'No email'} — ${p.subject_code}`,
+                  })),
+                ]}
+              />
+
+              <Modal
+                open={showNewParticipant}
+                onClose={() => setShowNewParticipant(false)}
+                title="Create new participant"
+                width={420}
+                footer={(
+                  <div className="flex w-full items-center justify-between gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setShowNewParticipant(false)}>
+                      Cancel
+                    </Button>
                     <Button
                       variant="primary"
                       size="sm"
@@ -749,28 +755,29 @@ function LinksSection({
                       {createParticipant.isPending ? 'Creating…' : 'Create & select'}
                     </Button>
                   </div>
+                )}
+              >
+                <div className="grid gap-3">
+                  <Input
+                    label="Email address"
+                    type="email"
+                    value={newParticipantEmail}
+                    onChange={(e) => setNewParticipantEmail(e.target.value)}
+                    placeholder="name@example.com"
+                  />
+                  <Input
+                    label="Subject code (optional)"
+                    value={newParticipantCode}
+                    onChange={(e) => setNewParticipantCode(e.target.value)}
+                    placeholder="sub_xxx"
+                  />
                   {createParticipant.isError && (
                     <p className="text-sm text-destructive">
                       {(createParticipant.error as { message?: string } | null)?.message ?? 'Failed to create participant.'}
                     </p>
                   )}
                 </div>
-              )}
-
-              {!showNewParticipant && (
-                <Select
-                  label="Assign to participant"
-                  value={form.assignedParticipantId ?? ''}
-                  onValueChange={(value) => setForm((current) => ({ ...current, assignedParticipantId: value || null }))}
-                  options={[
-                    { value: '', label: 'Select a participant…' },
-                    ...(participantsQuery.data?.participants ?? []).map((p) => ({
-                      value: p.id,
-                      label: `${p.email ?? 'No email'} — ${p.subject_code}`,
-                    })),
-                  ]}
-                />
-              )}
+              </Modal>
 
               {form.assignedParticipantId && (
                 <p className="text-xs text-muted-foreground">

@@ -17,7 +17,7 @@ import {
   nodePillShellClass,
   nodePillShellEditClass,
 } from "../nodePillStyles";
-import { Input, NumberStepper, NumberStepperGroup, Select, Toggle } from "@flowform/ui";
+import { Input, NumberStepper, NumberStepperGroup, Select, Toggle, formLabelClass } from "@flowform/ui";
 import type { RatingContent, EmojiListType } from "../questionTypes";
 import type { CreateQuestionNodeRequest } from "@flowform/schema";
 
@@ -39,8 +39,6 @@ interface RatingQuestionProps {
 }
 
 const controlClass = "flex min-w-0 flex-col gap-2";
-const controlLabelClass =
-  "text-[0.78rem] font-semibold uppercase tracking-[0.04em] text-muted-foreground";
 
 const MAX_STARS = 12;
 
@@ -417,8 +415,9 @@ export function RatingQuestion({
               <>
                 <div className="flex flex-wrap items-start gap-4">
                   <Select
-                    className={controlClass}
+                    className={`${controlClass} w-44`}
                     label="Type"
+                    size="md"
                     value={ratingType}
                     disabled={!isEditMode}
                     options={RATING_TYPE_OPTIONS}
@@ -426,11 +425,11 @@ export function RatingQuestion({
                   />
                   {ratingType === "stars" ? (
                     <div className={controlClass}>
-                      <span className={controlLabelClass}>Stars</span>
+                      <span className={formLabelClass}>Stars</span>
                       <NumberStepper
-                        className="self-start"
+                        className="self-start h-[40px]"
                         ariaLabel="Star count"
-                        size="sm"
+                        size="xs"
                         variant="primary"
                         allowInput
                         value={starCount}
@@ -443,8 +442,9 @@ export function RatingQuestion({
                   ) : ratingType === "emoji" ? (
                     <>
                       <Select
-                        className={`${controlClass} flex-1 min-w-60`}
+                        className={`${controlClass} min-w-60 max-w-72`}
                         label="Emoji list"
+                        size="md"
                         value={emojiScaleType}
                         disabled={!isEditMode}
                         options={[
@@ -456,24 +456,26 @@ export function RatingQuestion({
                           updateEmojiScaleType(event.target.value as EmojiScaleType)
                         }
                       />
-                      <div className={controlClass}>
-                        <span className={controlLabelClass}>Words</span>
-                        <Toggle
-                          label="Show words"
-                          checked={showEmojiWords}
-                          disabled={!isEditMode}
-                          onChange={updateShowEmojiWords}
-                        />
+                      <div className={`${controlClass} ml-auto`}>
+                        <span className={formLabelClass}>Words</span>
+                        <div className="min-h-10 flex items-center">
+                          <Toggle
+                            label="Show words"
+                            checked={showEmojiWords}
+                            disabled={!isEditMode}
+                            onChange={updateShowEmojiWords}
+                          />
+                        </div>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className={`${controlClass} flex-1 min-w-60`}>
-                        <span className={controlLabelClass}>Range</span>
+                        <span className={formLabelClass}>Range</span>
                         <NumberStepperGroup
-                          className="self-start"
+                          className="self-start h-[40px]"
                           ariaLabel="Slider range"
-                          size="sm"
+                          size="xs"
                           variant="primary"
                           allowInput
                           items={[
@@ -505,11 +507,11 @@ export function RatingQuestion({
                       </div>
 
                       <div className={controlClass}>
-                        <span className={controlLabelClass}>Step</span>
+                        <span className={formLabelClass}>Step</span>
                         <NumberStepper
-                          className="self-start"
+                          className="self-start h-[40px]"
                           ariaLabel="Slider step"
-                          size="sm"
+                          size="xs"
                           variant="primary"
                           value={safeStepValue}
                           min={validSteps[0]}
@@ -536,27 +538,29 @@ export function RatingQuestion({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="flex justify-between gap-4">
                   <Input
-                    className="min-w-0"
+                    className="min-w-0 max-w-64"
                     label="Left label"
                     type="text"
                     placeholder="Low-end label"
                     value={leftLabel}
                     maxLength={50}
                     disabled={!isEditMode}
+                    error={validationError && !leftLabel.trim() ? validationError : undefined}
                     onChange={(event) => updateLeftLabel(event.target.value)}
                     onKeyDown={blurOnEnter}
                   />
 
                   <Input
-                    className="min-w-0"
+                    className="min-w-0 max-w-64"
                     label="Right label"
                     type="text"
                     placeholder="High-end label"
                     value={rightLabel}
                     maxLength={50}
                     disabled={!isEditMode}
+                    error={validationError && !rightLabel.trim() ? validationError : undefined}
                     onChange={(event) => updateRightLabel(event.target.value)}
                     onKeyDown={blurOnEnter}
                   />
@@ -666,7 +670,7 @@ export function RatingQuestion({
                     {rangeStart}
                   </span>
                   <div className="relative h-6.5 rating-question__preview-line">
-                    <div className="rating-question__slider-track" aria-hidden="true" />
+                    <div className="rating-question__slider-track " aria-hidden="true" />
                     <div className="rating-question__slider-ticks" aria-hidden="true">
                       {tickValues.map((tickValue) => (
                         <span key={tickValue} className="rating-question__slider-tick" />
