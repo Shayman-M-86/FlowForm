@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
+from app.schema.enums import SubmissionSessionStatus
 from app.schema.orm.core.submission_session import SubmissionSession
 
 _BROWSER_SESSION_TOKEN_BYTES = 32
@@ -136,3 +138,52 @@ def mark_abandoned(db: Session, *, submission_session: SubmissionSession) -> Non
     """
     submission_session.session_status = "abandoned"
     flush_with_err_handle(db, contexts=[submission_session])
+
+
+def list_by_survey(
+    db: Session,
+    *,
+    project_id: int,
+    survey_id: int,
+    status: SubmissionSessionStatus | None = None,
+    offset: int = 0,
+    limit: int = 50,
+) -> tuple[Sequence[SubmissionSession], int]:
+    """Return paginated submission sessions for a survey."""
+    base = select(SubmissionSession).where(
+        SubmissionSession.project_id == project_id,
+        SubmissionSession.survey_id == survey_id,
+    )
+    if status is not None:
+        base = base.where(SubmissionSession.session_status == status)
+
+    total = db.scalar(
+        select(func.count()).select_from(
+            base.with_only_columns(SubmissionSession.id).subquery()
+        )
+    ) or 0
+
+    rows = db.scalars(
+        base.order_by(SubmissionSession.started_at.desc())
+        .offset(offset)
+        .limit(limit)
+    ).all()
+
+    return rows, total
+
+
+def get_by_ids(
+    db: Session,
+    *,
+    survey_id: int,
+    session_ids: Sequence[UUID],
+) -> Sequence[SubmissionSession]:
+    """Fetch sessions by ID, filtered to the given survey."""
+    if not session_ids:
+        return []
+    return db.scalars(
+        select(SubmissionSession).where(
+            SubmissionSession.survey_id == survey_id,
+            SubmissionSession.id.in_(session_ids),
+        )
+    ).all()

@@ -157,6 +157,11 @@ export const QUERY_POLICIES = {
     storage: 'memory',
     staleTime: 30_000,
   },
+
+  responseDetail: {
+    storage: 'session',
+    staleTime: 20 * MINUTE,
+  },
 } as const satisfies Record<string, QueryPolicy>
 
 export function resolveQueryPolicy(policy: QueryPolicy): QueryPolicy {

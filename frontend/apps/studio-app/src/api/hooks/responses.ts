@@ -64,7 +64,7 @@ export function useResponseDetail(
       if (error) throw error
       return data
     },
-    policy: QUERY_POLICIES.responses,
+    policy: QUERY_POLICIES.responseDetail,
   })
 }
 
@@ -88,18 +88,32 @@ export function useDeleteResponse(projectId: number, surveyId: number) {
   })
 }
 
+type ExportParams = {
+  body: components['schemas']['ExportSurveyResponsesRequest']
+  filename: string
+}
+
 export function useExportResponses(projectId: number, surveyId: number) {
   return useMutation({
-    mutationFn: async (body: components['schemas']['ExportSurveyResponsesRequest']) => {
+    mutationFn: async ({ body, filename }: ExportParams) => {
       const { data, error } = await apiClient.POST(
         '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses/export',
         {
           params: { path: { project_id: projectId, survey_id: surveyId } },
           body,
+          parseAs: 'blob',
         },
       )
       if (error) throw error
-      return data
+
+      const url = URL.createObjectURL(data as Blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
+
+      return { format: body.format }
     },
   })
 }

@@ -68,7 +68,7 @@ def save_submission_session_answer(question_node_id: UUID):
     core_db = get_core_db()
     response_db = get_response_db()
 
-    revision_number = session_management_service.save_answer(
+    result = session_management_service.save_answer(
         core_db,
         response_db,
         raw_resume_token=get_submission_session_token(),
@@ -80,10 +80,11 @@ def save_submission_session_answer(question_node_id: UUID):
 
     response = SubmissionSessionAnswerResponse(
         question_node_id=question_node_id,
+        node_key=result.node_key,
         state=payload.state,
         answer_family=payload.answer_family,
         answer_value=payload.answer_value,
-        revision_number=revision_number,
+        revision_number=result.revision_number,
         client_mutation_id=payload.client_mutation_id,
         saved_at=datetime.now(UTC),
     )

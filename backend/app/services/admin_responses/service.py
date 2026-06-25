@@ -6,6 +6,7 @@ Authorization is the caller's responsibility (per doc 01 §1).
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from typing import Any, cast, get_args
 from uuid import UUID
 
@@ -32,7 +33,7 @@ from app.schema.api.submission_sessions.answer_payload import (
     SubmissionAnswerValue,
     parse_answer_value,
 )
-from app.schema.enums import AnswerFamily, QuestionFamily, SubmissionAnswerState
+from app.schema.enums import AnswerFamily, QuestionFamily, SubmissionAnswerState, SubmissionSessionStatus
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.core.survey_content import SurveyQuestion
 from app.services.results import (
@@ -50,6 +51,62 @@ QuestionMetaMap = dict[UUID, tuple[str, AnswerFamily | None]]
 
 class AdminResponseService:
     """Admin response viewing, decryption, and deletion."""
+
+    def list_responses(
+        self,
+        db: Session,
+        *,
+        project_id: int,
+        survey_id: int,
+        status: SubmissionSessionStatus | None = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> tuple[Sequence[SubmissionSession], int]:
+        offset = (page - 1) * page_size
+        return ssr.list_by_survey(
+            db,
+            project_id=project_id,
+            survey_id=survey_id,
+            status=status,
+            offset=offset,
+            limit=page_size,
+        )
+
+    def export_responses(
+        self,
+        db: Session,
+        response_db: Session,
+        *,
+        project_id: int,
+        survey_id: int,
+        session_ids: list[UUID] | None = None,
+        include_history: bool = False,
+    ) -> list[AdminSessionDetailResult] | list[AdminSessionHistoryResult]:
+        """Decrypt answers for export across multiple sessions."""
+        if session_ids is not None:
+            sessions = ssr.get_by_ids(db, survey_id=survey_id, session_ids=session_ids)
+        else:
+            sessions, _ = ssr.list_by_survey(
+                db,
+                project_id=project_id,
+                survey_id=survey_id,
+                offset=0,
+                limit=10_000,
+            )
+
+        if include_history:
+            return [
+                self.get_session_history(
+                    db, response_db, survey_id=survey_id, session_id=s.id,
+                )
+                for s in sessions
+            ]
+        return [
+            self.get_session_detail(
+                db, response_db, survey_id=survey_id, session_id=s.id,
+            )
+            for s in sessions
+        ]
 
     def get_session_detail(
         self,

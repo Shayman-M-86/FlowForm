@@ -13,6 +13,7 @@ class SubmissionSessionAnswerResponse(BaseModel):
     """Canonical latest answer state returned to a respondent."""
 
     question_node_id: UUID
+    node_key: str
     state: SubmissionAnswerState
     answer_family: AnswerFamily | None = None
     answer_value: SubmissionAnswerValue | None = None

@@ -1652,6 +1652,8 @@ export interface components {
             expires_at: string;
             /** Survey Version Id */
             survey_version_id: number;
+            /** Subject Code */
+            subject_code: string;
         };
         /**
          * ChoiceAnswerValue
@@ -1835,6 +1837,8 @@ export interface components {
              * Format: uuid
              */
             question_node_id: string;
+            /** Node Key */
+            node_key: string;
             /**
              * State
              * @enum {string}
@@ -2990,7 +2994,7 @@ export interface components {
              * Answer Value
              * @default null
              */
-            answer_value: {
+            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | {
                 [key: string]: unknown;
             } | null;
             /** Revision Number */
@@ -3029,7 +3033,7 @@ export interface components {
              * Answer Value
              * @default null
              */
-            answer_value: {
+            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | {
                 [key: string]: unknown;
             } | null;
             /** Revision Number */
@@ -3065,26 +3069,6 @@ export interface components {
              * @default null
              */
             session_ids: string[] | null;
-        };
-        /**
-         * SurveyResponseExportResponses
-         * @description Result envelope for a survey-response export request.
-         */
-        SurveyResponseExportResponses: {
-            /**
-             * Format
-             * @enum {string}
-             */
-            format: "csv" | "json";
-            /** Include History */
-            include_history: boolean;
-            /** Session Count */
-            session_count: number;
-            /**
-             * Download Url
-             * @default null
-             */
-            download_url: string | null;
         };
         /**
          * CreateSurveyRoleRequest
@@ -3601,7 +3585,6 @@ export type SurveyResponseDetailResponses = components['schemas']['SurveyRespons
 export type SurveyResponseAnswerRevisionResponses = components['schemas']['SurveyResponseAnswerRevisionResponses'];
 export type SurveyResponseHistoryResponses = components['schemas']['SurveyResponseHistoryResponses'];
 export type ExportSurveyResponsesRequest = components['schemas']['ExportSurveyResponsesRequest'];
-export type SurveyResponseExportResponses = components['schemas']['SurveyResponseExportResponses'];
 export type CreateSurveyRoleRequest = components['schemas']['CreateSurveyRoleRequest'];
 export type UpdateSurveyRoleRequest = components['schemas']['UpdateSurveyRoleRequest'];
 export type CreateSurveyRequest = components['schemas']['CreateSurveyRequest'];
@@ -5532,13 +5515,11 @@ export interface operations {
         };
         responses: {
             /** @description Successful response. */
-            202: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["SurveyResponseExportResponses"];
-                };
+                content?: never;
             };
             400: components["responses"]["BadRequestError"];
             401: components["responses"]["UnauthorizedError"];

@@ -27,6 +27,7 @@ from app.services.public_submissions.core.actions.completion import (
 )
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
 from app.services.public_submissions.core.session_loader import load_current_session
+from app.services.results import AnswerSaveResult
 
 
 class SessionManagementService:
@@ -88,8 +89,8 @@ class SessionManagementService:
         answer_state: SubmissionAnswerState,
         answer_value: SubmissionAnswerValue | dict[str, Any] | None,
         client_mutation_id: UUID,
-    ) -> int:
-        """Save a respondent answer. Returns the revision number."""
+    ) -> AnswerSaveResult:
+        """Save a respondent answer. Returns the save result."""
         if raw_resume_token is None:
             raise SessionNotFoundError()
         ctx = load_current_session(db, response_db, raw_resume_token)

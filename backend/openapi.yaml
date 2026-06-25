@@ -2754,12 +2754,8 @@ paths:
             schema:
               $ref: '#/components/schemas/ExportSurveyResponsesRequest'
       responses:
-        '202':
+        '200':
           description: Successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SurveyResponseExportResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -4539,11 +4535,15 @@ components:
         survey_version_id:
           title: Survey Version Id
           type: integer
+        subject_code:
+          title: Subject Code
+          type: string
       required:
       - status
       - started_at
       - expires_at
       - survey_version_id
+      - subject_code
       title: StartSubmissionSessionResponse
       type: object
     ChoiceAnswerValue:
@@ -4841,6 +4841,10 @@ components:
           title: Question Node Id
           type: string
           maxLength: 36
+        node_key:
+          title: Node Key
+          type: string
+          maxLength: 128
         state:
           enum:
           - answered
@@ -4908,6 +4912,7 @@ components:
           maxLength: 35
       required:
       - question_node_id
+      - node_key
       - state
       - revision_number
       - client_mutation_id
@@ -6821,6 +6826,34 @@ components:
           title: Answer Family
         answer_value:
           anyOf:
+          - $ref: '#/components/schemas/ChoiceAnswerValue'
+          - discriminator:
+              mapping:
+                date: '#/components/schemas/DateFieldAnswerValue'
+                email: '#/components/schemas/EmailFieldAnswerValue'
+                long_text: '#/components/schemas/LongTextFieldAnswerValue'
+                number: '#/components/schemas/NumberFieldAnswerValue'
+                phone: '#/components/schemas/PhoneFieldAnswerValue'
+                short_text: '#/components/schemas/ShortTextFieldAnswerValue'
+              propertyName: field_type
+            oneOf:
+            - $ref: '#/components/schemas/ShortTextFieldAnswerValue'
+            - $ref: '#/components/schemas/LongTextFieldAnswerValue'
+            - $ref: '#/components/schemas/EmailFieldAnswerValue'
+            - $ref: '#/components/schemas/NumberFieldAnswerValue'
+            - $ref: '#/components/schemas/DateFieldAnswerValue'
+            - $ref: '#/components/schemas/PhoneFieldAnswerValue'
+          - $ref: '#/components/schemas/MatchingAnswerValue'
+          - discriminator:
+              mapping:
+                emoji: '#/components/schemas/EmojiRatingAnswerValue'
+                slider: '#/components/schemas/SliderRatingAnswerValue'
+                stars: '#/components/schemas/StarsRatingAnswerValue'
+              propertyName: variant
+            oneOf:
+            - $ref: '#/components/schemas/SliderRatingAnswerValue'
+            - $ref: '#/components/schemas/StarsRatingAnswerValue'
+            - $ref: '#/components/schemas/EmojiRatingAnswerValue'
           - additionalProperties: true
             type: object
           - type: 'null'
@@ -6880,6 +6913,34 @@ components:
           title: Answer Family
         answer_value:
           anyOf:
+          - $ref: '#/components/schemas/ChoiceAnswerValue'
+          - discriminator:
+              mapping:
+                date: '#/components/schemas/DateFieldAnswerValue'
+                email: '#/components/schemas/EmailFieldAnswerValue'
+                long_text: '#/components/schemas/LongTextFieldAnswerValue'
+                number: '#/components/schemas/NumberFieldAnswerValue'
+                phone: '#/components/schemas/PhoneFieldAnswerValue'
+                short_text: '#/components/schemas/ShortTextFieldAnswerValue'
+              propertyName: field_type
+            oneOf:
+            - $ref: '#/components/schemas/ShortTextFieldAnswerValue'
+            - $ref: '#/components/schemas/LongTextFieldAnswerValue'
+            - $ref: '#/components/schemas/EmailFieldAnswerValue'
+            - $ref: '#/components/schemas/NumberFieldAnswerValue'
+            - $ref: '#/components/schemas/DateFieldAnswerValue'
+            - $ref: '#/components/schemas/PhoneFieldAnswerValue'
+          - $ref: '#/components/schemas/MatchingAnswerValue'
+          - discriminator:
+              mapping:
+                emoji: '#/components/schemas/EmojiRatingAnswerValue'
+                slider: '#/components/schemas/SliderRatingAnswerValue'
+                stars: '#/components/schemas/StarsRatingAnswerValue'
+              propertyName: variant
+            oneOf:
+            - $ref: '#/components/schemas/SliderRatingAnswerValue'
+            - $ref: '#/components/schemas/StarsRatingAnswerValue'
+            - $ref: '#/components/schemas/EmojiRatingAnswerValue'
           - additionalProperties: true
             type: object
           - type: 'null'
@@ -6938,34 +6999,6 @@ components:
           default: null
           title: Session Ids
       title: ExportSurveyResponsesRequest
-      type: object
-    SurveyResponseExportResponses:
-      description: Result envelope for a survey-response export request.
-      properties:
-        format:
-          enum:
-          - csv
-          - json
-          title: Format
-          type: string
-          maxLength: 4
-        include_history:
-          title: Include History
-          type: boolean
-        session_count:
-          title: Session Count
-          type: integer
-        download_url:
-          anyOf:
-          - type: string
-          - type: 'null'
-          default: null
-          title: Download Url
-      required:
-      - format
-      - include_history
-      - session_count
-      title: SurveyResponseExportResponses
       type: object
     CreateSurveyRoleRequest:
       description: Request body for creating a survey role.
@@ -8054,6 +8087,21 @@ components:
               value:
                 code: SCORING_VERSION_LOCKED
                 message: Scoring rules cannot be changed on a published survey version.
+            uq_survey_encryption_keys_survey:
+              summary: 'DB rule: SURVEY_ENCRYPTION_KEY_EXISTS'
+              value:
+                code: SURVEY_ENCRYPTION_KEY_EXISTS
+                message: A survey encryption key already exists for this survey.
+            uq_survey_encryption_keys_project_survey:
+              summary: 'DB rule: SURVEY_ENCRYPTION_KEY_EXISTS'
+              value:
+                code: SURVEY_ENCRYPTION_KEY_EXISTS
+                message: A survey encryption key already exists for this survey.
+            fk_survey_encryption_keys_survey_same_project:
+              summary: 'DB rule: SURVEY_ENCRYPTION_KEY_SURVEY_MISMATCH'
+              value:
+                code: SURVEY_ENCRYPTION_KEY_SURVEY_MISMATCH
+                message: The survey encryption key does not reference a survey in this project.
             uq_survey_scoring_rules_survey_version_id_scoring_key:
               summary: 'DB rule: SCORING_KEY_CONFLICT'
               value:
@@ -8192,6 +8240,11 @@ components:
               value:
                 code: LINKAGE_KEY_ERROR
                 message: <example>
+            payload_decode:
+              summary: PayloadDecodeError
+              value:
+                code: PAYLOAD_DECODE_ERROR
+                message: Invalid plaintext payload
             ck_project_invitations_status_valid:
               summary: 'DB rule: INVITATION_STATE_INVALID'
               value:
@@ -8219,6 +8272,21 @@ components:
               value:
                 code: EVENT_TYPE_INVALID
                 message: 'Server invariant violated: a submission event was written with invalid event_type=''<event_type>''.'
+            ck_survey_encryption_keys_wrapped_key_len:
+              summary: 'DB rule: SURVEY_ENCRYPTION_KEY_INVALID'
+              value:
+                code: SURVEY_ENCRYPTION_KEY_INVALID
+                message: 'Server invariant violated: a survey encryption key was written without wrapped key material.'
+            ck_survey_encryption_keys_kms_key_arn_len:
+              summary: 'DB rule: SURVEY_ENCRYPTION_KEY_INVALID'
+              value:
+                code: SURVEY_ENCRYPTION_KEY_INVALID
+                message: 'Server invariant violated: a survey encryption key was written without valid KMS key metadata.'
+            ck_survey_encryption_keys_kms_context_version_valid:
+              summary: 'DB rule: SURVEY_ENCRYPTION_KEY_INVALID'
+              value:
+                code: SURVEY_ENCRYPTION_KEY_INVALID
+                message: 'Server invariant violated: a survey encryption key was written with invalid kms_context_version=''<kms_context_version>''.'
             ck_project_memberships_status_valid:
               summary: 'DB rule: MEMBERSHIP_STATE_INVALID'
               value:

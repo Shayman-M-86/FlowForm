@@ -29,6 +29,7 @@ from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_answer_repo, response_answer_revision_repo
 from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import SubmissionAnswerState
+from app.services.results import AnswerSaveResult
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +61,8 @@ class AnswerSaveService:
         answer_state: SubmissionAnswerState,
         answer_value: AnswerValueInput,
         client_mutation_id: uuid.UUID,
-    ) -> int:
-        """Execute the 12-step answer save sequence. Returns the revision number."""
+    ) -> AnswerSaveResult:
+        """Execute the 12-step answer save sequence. Returns the save result."""
         # Step 1: Validate and lock the current session
         locked_session = ssr.lock_for_update(db, ctx.session_id)
         if locked_session is None:
@@ -70,7 +71,12 @@ class AnswerSaveService:
             raise SessionInvalidError(f"Session is {locked_session.session_status}.")
         request_timing.log("Session is locked for update")
 
-        # Step 2: Check mutation ID — before any row lock on the logical answer
+        # Step 2a: Validate the question node exists in this survey version
+        question = content_repo.get_question_node(db, ctx.survey_version_id, question_node_id)
+        if question is None:
+            raise QuestionNotInVersionError()
+
+        # Step 2b: Check mutation ID — before any row lock on the logical answer
         answer_locator = derive_session_answer_locator(ctx, question_node_id)
         request_timing.log("Answer locator is derived")
         existing_answer = response_answer_repo.get_by_locator(response_db, ctx.envelope_id, answer_locator)
@@ -79,13 +85,8 @@ class AnswerSaveService:
                 response_db, existing_answer.id, client_mutation_id
             )
             if dup_revision is not None:
-                return dup_revision.revision_number
+                return AnswerSaveResult(revision_number=dup_revision.revision_number, node_key=question.question_key)
         request_timing.log("Mutation ID checked for duplicates")
-
-        # Step 3: Validate the answer against the frozen survey question node
-        question = content_repo.get_question_node(db, ctx.survey_version_id, question_node_id)
-        if question is None:
-            raise QuestionNotInVersionError()
 
         # Step 3b: Validate answer shape against the frozen question definition
         json_answer_value = _answer_value_to_json(answer_value)
@@ -131,7 +132,9 @@ class AnswerSaveService:
                     response_db, answer_row.id, client_mutation_id
                 )
                 if dup_revision is not None:
-                    return dup_revision.revision_number
+                    return AnswerSaveResult(
+                        revision_number=dup_revision.revision_number, node_key=question.question_key,
+                    )
                 locked_answer = response_answer_repo.lock_for_update(response_db, answer_row.id)
                 if locked_answer is None:
                     raise AnswerSaveError("Logical answer row disappeared after race.")
@@ -189,7 +192,7 @@ class AnswerSaveService:
             log_label="answer_save.analytics",
         )
 
-        return revision.revision_number
+        return AnswerSaveResult(revision_number=revision.revision_number, node_key=question.question_key)
 
     def record_question_viewed(
         self,

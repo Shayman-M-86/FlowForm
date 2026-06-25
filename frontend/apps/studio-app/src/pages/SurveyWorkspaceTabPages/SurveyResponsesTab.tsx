@@ -82,18 +82,16 @@ export function SurveyResponsesTab() {
   }, [deleteTarget, deleteResponse])
 
   const handleExport = useCallback((format: 'csv' | 'json') => {
+    const safeName = (survey?.title ?? 'responses').replace(/[^a-zA-Z0-9_-]/g, '_')
     exportResponses.mutate(
-      { format, include_history: false, session_ids: null },
+      { body: { format, include_history: false, session_ids: null }, filename: `${safeName}.${format}` },
       {
         onSuccess: (result) => {
-          if (result.download_url) {
-            window.open(result.download_url, '_blank')
-          }
-          setExportToast(`Export started — ${result.session_count} responses as ${result.format.toUpperCase()}.`)
+          setExportToast(`Exported responses as ${result.format.toUpperCase()}.`)
         },
       },
     )
-  }, [exportResponses])
+  }, [exportResponses, survey?.title])
 
   // ── Export dropdown ──────────────────────────────────────────────────────────
   const [exportOpen, setExportOpen] = useState(false)

@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schema.api import limits
+from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import AnswerFamily, ExportFormat, SubmissionAnswerState, SubmissionSessionStatus
 
 
@@ -45,7 +46,7 @@ class SurveyResponseAnswerResponses(BaseModel):
     question_node_id: UUID
     state: SubmissionAnswerState = Field(validation_alias="answer_state")
     answer_family: AnswerFamily | None = None
-    answer_value: dict[str, Any] | None = None
+    answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
     revision_number: int
 
 
@@ -66,7 +67,7 @@ class SurveyResponseAnswerRevisionResponses(BaseModel):
     question_node_id: UUID
     state: SubmissionAnswerState = Field(validation_alias="answer_state")
     answer_family: AnswerFamily | None = None
-    answer_value: dict[str, Any] | None = None
+    answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
     revision_number: int
 
 

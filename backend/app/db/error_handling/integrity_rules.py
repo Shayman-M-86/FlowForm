@@ -806,6 +806,15 @@ SUBMISSION_EVENT_RULES: tuple[DbErrorRule, ...] = (
 
 SURVEY_QUESTION_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
+        "survey_questions_pkey",
+        lambda ctx, _exc: DbIntegrityError(
+            409,
+            "NODE_ID_CONFLICT",
+            "A node with this ID already exists.",
+        ),
+        extractor=_survey_question_ctx,
+    ),
+    unique_rule(
         "uq_survey_questions_survey_version_id_question_key",
         lambda ctx, _exc: DbIntegrityError(
             409,

@@ -148,6 +148,14 @@ class BootstrapCurrentUserResult:
 
 
 @dataclass(frozen=True, slots=True)
+class AnswerSaveResult:
+    """Result of saving a respondent answer."""
+
+    revision_number: int
+    node_key: str
+
+
+@dataclass(frozen=True, slots=True)
 class DecryptedAnswerResult:
     """One decrypted answer for admin detail or export."""
 

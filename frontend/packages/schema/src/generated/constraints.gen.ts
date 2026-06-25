@@ -92,6 +92,7 @@ export const StarsRatingAnswerValueConstraints = {
 
 export const SubmissionSessionAnswerResponseConstraints = {
   question_node_id: { maxLength: 36 },
+  node_key: { maxLength: 128 },
   state: { maxLength: 8 },
   answer_family: { maxLength: 8 },
   client_mutation_id: { maxLength: 36 },
@@ -598,10 +599,6 @@ export const SurveyResponseAnswerRevisionResponsesConstraints = {
 
 export const SurveyResponseHistoryResponsesConstraints = {
   revisions: { maxItems: 50 },
-} as const;
-
-export const SurveyResponseExportResponsesConstraints = {
-  format: { maxLength: 4 },
 } as const;
 
 export const ScoringRuleResponsesConstraints = {
