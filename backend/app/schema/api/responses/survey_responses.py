@@ -47,7 +47,6 @@ class SurveyResponseAnswerResponses(BaseModel):
     state: SubmissionAnswerState = Field(validation_alias="answer_state")
     answer_family: AnswerFamily | None = None
     answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
-    revision_number: int
 
 
 class SurveyResponseDetailResponses(BaseModel):
@@ -59,25 +58,13 @@ class SurveyResponseDetailResponses(BaseModel):
     answers: list[SurveyResponseAnswerResponses] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
 
 
-class SurveyResponseAnswerRevisionResponses(BaseModel):
-    """One historical decrypted answer revision for the answer-history view."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    question_node_id: UUID
-    state: SubmissionAnswerState = Field(validation_alias="answer_state")
-    answer_family: AnswerFamily | None = None
-    answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
-    revision_number: int
-
-
 class SurveyResponseHistoryResponses(BaseModel):
-    """Admin answer-history view: every decrypted revision for a session."""
+    """Admin current-answer history-compatible view for a session."""
 
     model_config = ConfigDict(from_attributes=True)
 
     session: SurveyResponseSummaryResponses
-    revisions: list[SurveyResponseAnswerRevisionResponses] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
+    revisions: list[SurveyResponseAnswerResponses] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
 
 
 class SurveyResponseExportResponses(BaseModel):

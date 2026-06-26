@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.extensions import db_manager
 from app.db.base import ResponseBase
-from app.schema.orm.response import ResponseAnswer, ResponseAnswerRevision, ResponseEnvelope
+from app.schema.orm.response import ResponseAnswer, ResponseEnvelope
 
 
 def assert_model_uses_response_db(
@@ -48,8 +48,7 @@ def assert_model_uses_response_db(
     [
         ResponseEnvelope,
         ResponseAnswer,
-        ResponseAnswerRevision,
-    ],
+            ],
 )
 def test_response_models_use_response_db(
     db_session: Session,

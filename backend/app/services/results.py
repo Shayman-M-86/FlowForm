@@ -151,7 +151,6 @@ class BootstrapCurrentUserResult:
 class AnswerSaveResult:
     """Result of saving a respondent answer."""
 
-    revision_number: int
     node_key: str
 
 
@@ -164,8 +163,6 @@ class DecryptedAnswerResult:
     answer_family: AnswerFamily | None
     answer_state: SubmissionAnswerState
     answer_value: SubmissionAnswerValue | dict[str, Any] | None
-    revision_number: int
-    revision_id: UUID
 
 
 @dataclass(frozen=True, slots=True)

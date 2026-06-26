@@ -91,6 +91,7 @@ from app.schema.orm.core import (
     ProjectSubjectIdentity,
     ProjectSubjectToken,
     SubjectIpObservation,
+    SubmissionAnswerSlot,
     SubmissionEvent,
     SubmissionSession,
     Survey,
@@ -103,7 +104,7 @@ from app.schema.orm.core import (
     SurveyVersion,
     User,
 )
-from app.schema.orm.response import ResponseAnswer, ResponseAnswerRevision, ResponseEnvelope
+from app.schema.orm.response import ResponseAnswer, ResponseEnvelope
 
 type RuleContext = (
     User
@@ -118,6 +119,7 @@ type RuleContext = (
     | ProjectSubjectToken
     | SubjectIpObservation
     | SubmissionSession
+    | SubmissionAnswerSlot
     | SubmissionEvent
     | SurveyQuestion
     | SurveyEncryptionKey
@@ -128,7 +130,6 @@ type RuleContext = (
     | SurveyMembershipRole
     | ResponseEnvelope
     | ResponseAnswer
-    | ResponseAnswerRevision
 )
 # Fields that may be surfaced to API clients (in error messages) *and* written
 # to server logs. This set is deliberately restricted to values the user
@@ -338,20 +339,20 @@ def _response_envelope_ctx(envelope: ResponseEnvelope) -> dict[str, object]:
     }
 
 
+def _submission_answer_slot_ctx(slot: SubmissionAnswerSlot) -> dict[str, object]:
+    return {
+        "answer_slot_id": slot.id,
+        "session_id": slot.submission_session_id,
+        "survey_version_id": slot.survey_version_id,
+        "question_node_id": slot.question_node_id,
+    }
+
+
 def _response_answer_ctx(answer: ResponseAnswer) -> dict[str, object]:
     return {
-        "answer_id": answer.id,
         "envelope_id": answer.envelope_id,
     }
 
-
-def _response_answer_revision_ctx(revision: ResponseAnswerRevision) -> dict[str, object]:
-    return {
-        "revision_id": revision.id,
-        "answer_id": revision.answer_id,
-        "envelope_id": revision.envelope_id,
-        "client_mutation_id": revision.client_mutation_id,
-    }
 
 
 def _invitation_ctx(invitation: ProjectInvitation) -> dict[str, object]:
@@ -1078,36 +1079,27 @@ RESPONSE_ENVELOPE_RULES: tuple[DbErrorRule, ...] = (
     ),
 )
 
-RESPONSE_ANSWER_RULES: tuple[DbErrorRule, ...] = (
+SUBMISSION_ANSWER_SLOT_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
-        "uq_response_answers_envelope_id_answer_locator",
+        "uq_submission_answer_slots_session_question",
         lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
-            "ANSWER_EXISTS",
-            "An answer already exists for this question in this envelope.",
+            "ANSWER_SLOT_EXISTS",
+            "An answer slot already exists for this session and question.",
         ),
-        extractor=_response_answer_ctx,
+        extractor=_submission_answer_slot_ctx,
     ),
 )
 
-RESPONSE_ANSWER_REVISION_RULES: tuple[DbErrorRule, ...] = (
+RESPONSE_ANSWER_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
-        "uq_response_answer_revisions_answer_id_client_mutation_id",
-        lambda ctx, _exc: DbIntegrityError(
-            409,
-            "REVISION_MUTATION_CONFLICT",
-            f"A revision with client_mutation_id={ctx['client_mutation_id']} already exists for this answer.",
-        ),
-        extractor=_response_answer_revision_ctx,
-    ),
-    foreign_key_rule(
-        "fk_response_answer_revisions_answer_same_envelope",
+        "uq_response_answers_envelope_id_nonce",
         lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
-            "REVISION_ANSWER_ENVELOPE_MISMATCH",
-            "The answer does not belong to this envelope.",
+            "ANSWER_NONCE_CONFLICT",
+            "An answer with this nonce already exists in this envelope.",
         ),
-        extractor=_response_answer_revision_ctx,
+        extractor=_response_answer_ctx,
     ),
 )
 
@@ -1125,6 +1117,7 @@ RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
     ProjectSubjectToken: PROJECT_SUBJECT_TOKEN_RULES,
     SubjectIpObservation: SUBJECT_IP_OBSERVATION_RULES,
     SubmissionSession: SUBMISSION_SESSION_RULES,
+    SubmissionAnswerSlot: SUBMISSION_ANSWER_SLOT_RULES,
     SubmissionEvent: SUBMISSION_EVENT_RULES,
     SurveyQuestion: SURVEY_QUESTION_RULES,
     SurveyEncryptionKey: SURVEY_ENCRYPTION_KEY_RULES,
@@ -1134,5 +1127,4 @@ RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
     SurveyMembershipRole: SURVEY_MEMBERSHIP_ROLE_RULES,
     ResponseEnvelope: RESPONSE_ENVELOPE_RULES,
     ResponseAnswer: RESPONSE_ANSWER_RULES,
-    ResponseAnswerRevision: RESPONSE_ANSWER_REVISION_RULES,
 }

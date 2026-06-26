@@ -84,7 +84,6 @@ def save_submission_session_answer(question_node_id: UUID):
         state=payload.state,
         answer_family=payload.answer_family,
         answer_value=payload.answer_value,
-        revision_number=result.revision_number,
         client_mutation_id=payload.client_mutation_id,
         saved_at=datetime.now(UTC),
     )

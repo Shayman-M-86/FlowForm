@@ -78,16 +78,13 @@ class LinkageKey(CryptoValueModel):
 
 
 @dataclass(frozen=True, slots=True)
-class RevisionContext:
-    """AAD context shared by encrypt and decrypt operations."""
+class AnswerContext:
+    """AAD context shared by current-answer encrypt and decrypt operations."""
 
     dek: PlaintextSessionKey
     crypto_version: int
     envelope_id: UUID
-    answer_id: UUID
     answer_locator: AnswerLocator
-    revision_id: UUID
-    revision_number: int
 
 
 @dataclass(frozen=True, slots=True)

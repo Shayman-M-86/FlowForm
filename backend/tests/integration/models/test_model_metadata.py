@@ -13,6 +13,7 @@ from app.schema.orm.core import (
     ProjectSubjectIdentity,
     ProjectSubjectToken,
     ResponseStore,
+    SubmissionAnswerSlot,
     SubmissionEvent,
     SubmissionSession,
     Survey,
@@ -26,7 +27,7 @@ from app.schema.orm.core import (
     project_role_permissions,
     survey_role_permissions,
 )
-from app.schema.orm.response import ResponseAnswer, ResponseAnswerRevision, ResponseEnvelope
+from app.schema.orm.response import ResponseAnswer, ResponseEnvelope
 
 
 def get_relationship(model, name: str):
@@ -130,14 +131,13 @@ def test_submission_session_relationships() -> None:
     assert get_relationship(SubmissionSession, "link").mapper.class_ is SurveyLink
     assert get_relationship(SubmissionEvent, "session").mapper.class_ is SubmissionSession
     assert get_relationship(SubmissionEvent, "question").mapper.class_ is SurveyQuestion
+    assert get_relationship(SubmissionAnswerSlot, "session").mapper.class_ is SubmissionSession
+    assert get_relationship(SubmissionAnswerSlot, "question").mapper.class_ is SurveyQuestion
 
 
 def test_response_relationships() -> None:
     assert get_relationship(ResponseEnvelope, "answers").mapper.class_ is ResponseAnswer
     assert get_relationship(ResponseAnswer, "envelope").mapper.class_ is ResponseEnvelope
-    assert get_relationship(ResponseAnswer, "revisions").mapper.class_ is ResponseAnswerRevision
-    assert get_relationship(ResponseAnswer, "latest_revision").mapper.class_ is ResponseAnswerRevision
-    assert get_relationship(ResponseAnswerRevision, "answer").mapper.class_ is ResponseAnswer
 
 
 # -------------------------
@@ -240,18 +240,13 @@ def test_submission_session_unique_constraints() -> None:
     assert "uq_submission_sessions_id_project_subject_id" in names
 
 
+def test_submission_answer_slot_unique_constraints() -> None:
+    assert "uq_submission_answer_slots_session_question" in unique_constraint_names(SubmissionAnswerSlot)
+
+
 def test_response_answer_unique_constraints() -> None:
     names = unique_constraint_names(ResponseAnswer)
-    assert "uq_response_answers_id_envelope_id" in names
-    assert "uq_response_answers_envelope_id_answer_locator" in names
-
-
-def test_response_answer_revision_unique_constraints() -> None:
-    names = unique_constraint_names(ResponseAnswerRevision)
-    assert "uq_response_answer_revisions_id_answer_id" in names
-    assert "uq_response_answer_revisions_answer_id_revision_number" in names
-    assert "uq_response_answer_revisions_envelope_id_nonce" in names
-    assert "uq_response_answer_revisions_answer_id_client_mutation_id" in names
+    assert "uq_response_answers_envelope_id_nonce" in names
 
 
 # -------------------------

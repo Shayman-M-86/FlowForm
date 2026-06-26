@@ -17,6 +17,5 @@ class SubmissionSessionAnswerResponse(BaseModel):
     state: SubmissionAnswerState
     answer_family: AnswerFamily | None = None
     answer_value: SubmissionAnswerValue | None = None
-    revision_number: int
     client_mutation_id: UUID
     saved_at: datetime

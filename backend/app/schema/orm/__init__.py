@@ -10,6 +10,7 @@ from app.schema.orm.core import (
     ResponseStore,
     # TEMP(rework): Legacy alias for ProjectSubject.
     SubjectIpObservation,
+    SubmissionAnswerSlot,
     SubmissionEvent,
     SubmissionSession,
     Survey,
@@ -28,7 +29,6 @@ from app.schema.orm.core import (
 )
 from app.schema.orm.response import (
     ResponseAnswer,
-    ResponseAnswerRevision,
     ResponseEnvelope,
     # TEMP(rework): Legacy aliases for ResponseEnvelope/ResponseAnswer.
     Submission,
@@ -45,12 +45,12 @@ __all__ = [
     "ProjectSubjectIdentity",
     "ProjectSubjectToken",
     "ResponseAnswer",
-    "ResponseAnswerRevision",
     "ResponseEnvelope",
     "ResponseStore",
     "SubjectIpObservation",
     "Submission",
     "SubmissionAnswer",
+    "SubmissionAnswerSlot",
     "SubmissionEvent",
     "SubmissionSession",
     "Survey",

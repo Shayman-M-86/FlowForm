@@ -70,45 +70,28 @@ def resolve_existing_session_locator(
 
 
 def derive_answer_locator(
-    session_id: UUID,
-    question_node_id: UUID,
+    slot_id: UUID,
     linkage_key: LinkageKey,
 ) -> AnswerLocator:
-    """Derive an answer locator with a caller-supplied linkage key."""
-    return AnswerLocator(_derive_answer_locator(session_id, question_node_id, linkage_key.secret))
+    """Derive an answer locator from a core submission answer slot ID."""
+    return AnswerLocator(_derive_answer_locator(slot_id, linkage_key.secret))
 
 
 def resolve_answer_locator(
     db: Session,
-    session_id: UUID,
+    slot_id: UUID,
     linkage_key_version: int,
-    question_node_id: UUID,
 ) -> AnswerLocator:
-    """Resolve the historical linkage key and derive one answer locator.
-
-    Used for storing or looking up an encrypted answer in the
-    response database.
-    """
+    """Resolve the historical linkage key and derive one answer locator."""
     key = get_linkage_key_by_version(linkage_key_version, db)
-    return AnswerLocator(_derive_answer_locator(session_id, question_node_id, key.secret))
+    return AnswerLocator(_derive_answer_locator(slot_id, key.secret))
 
 
 def resolve_answer_locators(
     db: Session,
-    session_id: UUID,
     linkage_key_version: int,
-    question_node_ids: list[UUID],
+    slot_ids: list[UUID],
 ) -> dict[UUID, AnswerLocator]:
-    """Resolve the historical linkage key and derive answer locators.
-
-    Fetches the linkage key once and derives a locator per question,
-    avoiding repeated key lookups.
-    """
+    """Resolve the historical linkage key and derive answer locators for slots."""
     key = get_linkage_key_by_version(linkage_key_version, db)
-
-    locators = {
-        question_node_id: AnswerLocator(_derive_answer_locator(session_id, question_node_id, key.secret))
-        for question_node_id in question_node_ids
-    }
-
-    return locators
+    return {slot_id: AnswerLocator(_derive_answer_locator(slot_id, key.secret)) for slot_id in slot_ids}

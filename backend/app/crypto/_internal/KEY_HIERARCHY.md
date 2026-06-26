@@ -8,7 +8,7 @@ every tier caches its plaintext key after the first unwrap.
 KMS (AWS, never leaves AWS)
   └─ wraps ─▶ Survey Branch Key   (one per survey)
                 └─ wraps ─▶ Session DEK        (one per submission session)
-                              └─ wraps ─▶ Answer payload  (one per revision)
+                              └─ wraps ─▶ Answer payload  (current answer)
 ```
 
 ## What each tier's wrap/unwrap primitive is, and where it lives
@@ -31,7 +31,7 @@ AWS.
 |------|---------------|------------------|
 | 1 | `survey_key.py` | `create_wrapped_survey_key`, `load_plaintext_survey_key`, `start_plaintext_survey_key_load` |
 | 2 | `session_key.py` | `create_session_key`, `load_plaintext_session_key` |
-| 3 | `answers.py` | `encrypt_answer_revision`, `decrypt_answer_revision` |
+| 3 | `answers.py` | `encrypt_answer_current`, `decrypt_answer_current` |
 
 ## Supporting internals (not part of the key chain)
 
@@ -60,5 +60,5 @@ AWS.
 → `wrapping.unwrap_dek_with_kms`        (tier 1, KMS)
 → `session_key.load_plaintext_session_key`
 → `wrapping.unwrap_session_dek`         (tier 2, AES)
-→ `answers.decrypt_answer_revision`
+→ `answers.decrypt_answer_current`
 → `wrapping.decrypt_answer`             (tier 3, AES)

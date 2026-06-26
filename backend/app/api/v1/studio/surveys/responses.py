@@ -131,8 +131,6 @@ def export_responses(project_id: int, survey_id: int):
         "session_id", "status", "started_at", "completed_at",
         "question_key", "answer_family", "answer_state", "answer_value",
     ]
-    if payload.include_history:
-        fieldnames.append("revision_number")
 
     writer = csv.DictWriter(output, fieldnames=fieldnames)
     writer.writeheader()
@@ -190,8 +188,6 @@ def _flatten_export_rows(
                 "answer_state": None,
                 "answer_value": None,
             }
-            if include_history:
-                row["revision_number"] = None
             rows.append(row)
             continue
 
@@ -206,7 +202,5 @@ def _flatten_export_rows(
                 "answer_state": answer.answer_state,
                 "answer_value": _serialize_answer_value(answer.answer_value),
             }
-            if include_history:
-                row["revision_number"] = answer.revision_number
             rows.append(row)
     return rows
