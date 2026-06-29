@@ -14,6 +14,7 @@ from pydantic import (
     ValidationError,
     computed_field,
     model_validator,
+    EmailStr,
 )
 from pydantic.networks import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -84,6 +85,25 @@ class DatabaseSettings(BaseModel):
     @property
     def url(self) -> str:
         return str(self.dsn_url)
+
+
+class AwsSettings(BaseModel):
+    """Shared AWS runtime settings used by app services."""
+
+    region: str = "ap-southeast-2"
+
+    access_key_id: SecretStr
+    secret_access_key: SecretStr
+
+
+class EmailSettings(BaseModel):
+    """Email delivery settings for AWS SES."""
+    from_address: EmailStr 
+    from_name: str = "FlowForm"
+    reply_to_address: EmailStr | None = None
+
+    configuration_set_name: str | None = None
+    enabled: bool = True
 
 
 class ServerSettings(BaseModel):
@@ -165,9 +185,6 @@ class EncryptionSettings(BaseModel):
     linkage_key_cache_ttl_seconds: float = 1800.0
     key_cache_enabled: bool = True  
 
-    aws_region: str
-    aws_access_key_id: SecretStr
-    aws_secret_access_key: SecretStr
 
 
 class RateLimitSettings(BaseModel):
@@ -202,7 +219,9 @@ class FlowForm(BaseModel):
     server: ServerSettings = Field(default_factory=ServerSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
+    aws: AwsSettings
     encryption: EncryptionSettings
+    email: EmailSettings
 
 
 class DataBase(BaseModel):

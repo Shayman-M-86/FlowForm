@@ -129,5 +129,6 @@ exclude_lines = [
 [dependency-groups]
 dev = [
     "boto3-stubs[kms,secretsmanager]>=1.43.36",
+    "mypy-boto3-sesv2>=1.43.18",
     "pyright>=1.1.408",
 ]

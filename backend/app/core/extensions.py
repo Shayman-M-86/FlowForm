@@ -2,19 +2,19 @@ from logging import getLogger
 
 from flask import Flask
 from flask_cors import CORS
-
+from app.aws import AwsClientManager
 from app.cache import create_app_cache
-from app.crypto._internal.client_extension import CryptoClientManager
 from app.db.manager import DatabaseManager
 from app.middleware.auth import AuthExtension
 from app.middleware.url_converters import register_url_converters
+from app.email_service import EmailServiceManager
 
 logger = getLogger(__name__)
 
-
+aws_client_manager = AwsClientManager()
 app_cache = create_app_cache()
-crypto_clients = CryptoClientManager()
 
+email_service_manager = EmailServiceManager()
 db_manager = DatabaseManager()
 auth = AuthExtension()
 cors = CORS()
@@ -23,8 +23,9 @@ cors = CORS()
 def init_extensions(app: Flask) -> None:
     """Initialize core Flask extensions for the application."""
     app_cache.init_app(app)
-    crypto_clients.init_app(app)
 
+    aws_client_manager.init_app(app)
+    email_service_manager.init_app(app)
     logger.debug("Initializing core database")
     db_manager.init_app(app)
     auth.init_app(app)

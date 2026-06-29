@@ -9,7 +9,8 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import HTTPException
 
 from app.api.utils.validation import normalize_pydantic_errors
-from app.core.errors import AppError,  RequestValidationError, ResponseValidationError
+from app.core.errors import AppError, RequestValidationError, ResponseValidationError
+from app.email_service.exceptions import EmailServiceError
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +153,15 @@ def register_error_handlers(app: Flask) -> None:
             code="UNHANDLED_DB_INTEGRITY_ERROR",
             message="An unexpected database integrity error occurred.",
             status_code=500,
+        )
+
+    @app.errorhandler(EmailServiceError)
+    def handle_email_service_error(exc: EmailServiceError):
+        logger.exception("Email service error", exc_info=exc)
+        return _error_response(
+            code="EMAIL_SERVICE_ERROR",
+            message="Failed to send email. Please try again later.",
+            status_code=502,
         )
 
     @app.errorhandler(Exception)

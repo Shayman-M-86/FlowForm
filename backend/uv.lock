@@ -141,6 +141,7 @@ test = [
 [package.dev-dependencies]
 dev = [
     { name = "boto3-stubs", extra = ["kms", "secretsmanager"] },
+    { name = "mypy-boto3-sesv2" },
     { name = "pyright" },
 ]
 
@@ -181,6 +182,7 @@ provides-extras = ["dev", "test"]
 [package.metadata.requires-dev]
 dev = [
     { name = "boto3-stubs", extras = ["kms", "secretsmanager"], specifier = ">=1.43.36" },
+    { name = "mypy-boto3-sesv2", specifier = ">=1.43.18" },
     { name = "pyright", specifier = ">=1.1.408" },
 ]
 
@@ -785,6 +787,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/c6/e0/3b9f954dcce063407224e6601ed5af2d684185387b0572901c5f984fc8f6/mypy_boto3_secretsmanager-1.43.0.tar.gz", hash = "sha256:265ee2fddf9d3e42ae39685625fb7861a539110d8e324372847c0e1cbd666b20", size = 19967, upload-time = "2026-04-29T23:05:45.139Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4f/93/ae939d61eed240972553395b5e31f780825685b99f0ab4ebe5767430f103/mypy_boto3_secretsmanager-1.43.0-py3-none-any.whl", hash = "sha256:38415cdecb73dd20e485707a7cf456f6dde54ff4b155e7fb255eb001eb47d5bc", size = 27335, upload-time = "2026-04-29T23:05:43.152Z" },
+]
+
+[[package]]
+name = "mypy-boto3-sesv2"
+version = "1.43.18"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d0/22/4f6b3e345d52e4a54d3deeb195349d5d25abf89161d32d24084909865e87/mypy_boto3_sesv2-1.43.18.tar.gz", hash = "sha256:db04563b8105ea51ffebda3c52f6af306e6d96ca8e48fe2176f1796f039c4b53", size = 47659, upload-time = "2026-05-29T20:08:17.911Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b2/fe/c78f3294016e9a8dd0acfd72a2ddc5eb5b96522f59e4892aff38531b674d/mypy_boto3_sesv2-1.43.18-py3-none-any.whl", hash = "sha256:62c32b858e20f28feba0461205eddb08424902889be60196729e07383413c144", size = 53176, upload-time = "2026-05-29T20:08:14.812Z" },
 ]
 
 [[package]]

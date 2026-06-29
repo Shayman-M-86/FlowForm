@@ -1,11 +1,12 @@
 from datetime import UTC, datetime
 from logging import getLogger
 
-from flask import jsonify
+from flask import jsonify, request
 from sqlalchemy import text
 
 from app.api.v1.system import system_bp
 from app.db.context import get_core_db, get_response_db
+from app.email_service import SurveyInviteEmail, get_email_service
 from app.openapi import openapi_route
 
 logger = getLogger(__name__)
@@ -60,3 +61,28 @@ def db_check():
     if core_db or response_db:
         return f"Database connectivity Failed: {core_db or ''} {response_db or ''}", 503
     return "Service is ready", 200
+
+
+@openapi_route(summary="Test email sending", tags=["Health"], auth_required=False)
+@system_bp.route("/health/test-email", methods=["POST"])
+def test_email():
+    """Send a test survey-invite email via SES. No auth required."""
+    body = request.get_json(silent=True) or {}
+    to_email: str = body.get("to", "")
+
+    if not to_email:
+        return jsonify(message="Missing 'to' in request body"), 400
+
+    email_service = get_email_service()
+    email = SurveyInviteEmail(
+        to_email=to_email,
+        recipient_name=body.get("name"),
+        survey_name="Test Survey",
+        survey_url="https://example.com/survey/test",
+    )
+    message_id = email_service.send_survey_invite(email)
+
+    return jsonify(
+        data={"message_id": message_id},
+        message=f"Test email sent to {to_email}",
+    ), 200
