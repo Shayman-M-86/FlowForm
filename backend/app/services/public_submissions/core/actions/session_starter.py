@@ -12,9 +12,8 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.cache import get_app_cache
 from app.crypto.locators import derive_session_locator, load_current_linkage_key
-from app.crypto.models import SessionContext, SessionDEKContext, SessionLocator
+from app.crypto.models import PlaintextSessionKey, SessionDEKContext, SessionLocator, SubmissionSessionContext
 from app.crypto.session_key import create_session_key
 from app.crypto.survey_key import start_plaintext_survey_key_load
 from app.db.error_handling import commit_with_err_handle
@@ -35,6 +34,8 @@ from app.services.public_submissions.core.resolution.subject_token import Subjec
 from app.services.results import SubmissionAccessGrant
 
 if TYPE_CHECKING:
+    from app.cache import AppCache
+    from app.crypto._internal.client_extension import CryptoClients
     from app.crypto.models import LinkageKey
     from app.schema.orm.core.submission_session import SubmissionSession
 
@@ -61,17 +62,19 @@ class SessionStarter:
     def __init__(
         self,
         *,
-        access_resolver: AccessResolver | None = None,
-        subject_service: SessionSubjectService | None = None,
-        subject_resolver: SubjectResolver | None = None,
-        token_service: SubjectTokenService | None = None,
+        access_resolver: AccessResolver,
+        subject_service: SessionSubjectService,
+        subject_resolver: SubjectResolver,
+        token_service: SubjectTokenService,
+        cache: AppCache,
+        clients: CryptoClients,
     ) -> None:
-        token_service = token_service or SubjectTokenService()
-        self._access_resolver = access_resolver or AccessResolver()
-        self._subject_service = subject_service or SessionSubjectService(
-            subject_resolver=subject_resolver,
-            token_service=token_service,
-        )
+        self._access_resolver = access_resolver
+        self._subject_service = subject_service
+        self._subject_resolver = subject_resolver
+        self._token_service = token_service
+        self._cache = cache
+        self._clients = clients
 
     def start(
         self,
@@ -99,7 +102,7 @@ class SessionStarter:
             recognition_token=recognition_token,
         )
 
-        linkage_key = load_current_linkage_key(db)
+        linkage_key = load_current_linkage_key(db, cache=self._cache, clients=self._clients)
         request_timing.log("session_start.linkage_key_loaded")
 
         raw_browser_session_token = ssr.generate_browser_session_token()
@@ -119,7 +122,7 @@ class SessionStarter:
         self._consume_single_use_link_if_needed(db, access)
         request_timing.log("session_start.link_consumed_if_needed")
 
-        session_locator, envelope_id = self._create_response_envelope(
+        session_locator, envelope_id, plaintext_dek = self._create_response_envelope(
             db,
             response_db,
             session=session,
@@ -135,14 +138,21 @@ class SessionStarter:
             session_locator=session_locator,
         )
         request_timing.log("session_start.core_committed")
-        get_app_cache().sessions.write_context.put(
+        self._cache.sessions.write_context.put(
             session.browser_session_token_hash,
-            SessionContext(
-                session_ref=session.to_crypto_ref(),
-                session_locator=session_locator,
+            SubmissionSessionContext(
+                session_id=session.id,
+                project_id=session.project_id,
+                survey_id=session.survey_id,
+                survey_version_id=session.survey_version_id,
                 envelope_id=envelope_id,
-                crypto_version=_CRYPTO_VERSION,
+                session_locator=session_locator,
                 linkage_key=linkage_key,
+                linkage_key_version=linkage_key.version,
+                _session_dek=plaintext_dek,
+                crypto_version=_CRYPTO_VERSION,
+                expires_at=session.expires_at,
+                browser_session_token_hash=session.browser_session_token_hash,
             ),
         )
 
@@ -175,7 +185,7 @@ class SessionStarter:
         *,
         session: SubmissionSession,
         linkage_key: LinkageKey,
-    ) -> tuple[SessionLocator, UUID]:
+    ) -> tuple[SessionLocator, UUID, PlaintextSessionKey]:
         """Create and commit the response envelope.
 
         Core rows are flushed, but not committed yet. If response envelope
@@ -186,6 +196,8 @@ class SessionStarter:
                 db,
                 project_id=session.project_id,
                 survey_id=session.survey_id,
+                cache=self._cache,
+                clients=self._clients,
             )
             loc = derive_session_locator(
                 session.id,
@@ -203,7 +215,7 @@ class SessionStarter:
                 session_locator=loc.session_locator,
             )
 
-            new_key = create_session_key(context, survey_key)
+            new_key = create_session_key(context, survey_key, cache=self._cache)
             request_timing.log("session_start.envelope.session_dek_wrapped")
 
             envelope = response_envelope_repo.create(
@@ -222,7 +234,7 @@ class SessionStarter:
             db.rollback()
             raise SessionStartError("Failed to create response envelope") from err
 
-        return loc.session_locator, envelope.id
+        return loc.session_locator, envelope.id, new_key.plaintext_key
 
     def _commit_core_or_cleanup_envelope(
         self,
@@ -251,4 +263,3 @@ class SessionStarter:
             raise SessionStartError(
                 "Core commit failed after response envelope creation",
             ) from err
-

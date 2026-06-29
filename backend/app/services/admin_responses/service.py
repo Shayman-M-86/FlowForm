@@ -7,17 +7,19 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from typing import Any, cast, get_args
+from typing import TYPE_CHECKING, Any, cast, get_args
 from uuid import UUID
 
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
+from app.cache import get_app_cache
+from app.crypto._internal.client_extension import get_crypto_clients
 from app.crypto.answers import decrypt_answer_current
 from app.crypto.locators import resolve_existing_session_locator
 from app.crypto.models import (
-    AnswerLocator,
     AnswerContext,
+    AnswerLocator,
 )
 from app.crypto.session_key import load_session_envelope_crypto_context
 from app.db.error_handling import commit_with_err_handle
@@ -42,6 +44,10 @@ from app.services.results import (
     DeletionResult,
 )
 
+if TYPE_CHECKING:
+    from app.cache import AppCache
+    from app.crypto._internal.client_extension import CryptoClients
+
 logger = logging.getLogger(__name__)
 
 _QUESTION_FAMILIES: frozenset[str] = frozenset(get_args(QuestionFamily))
@@ -50,6 +56,15 @@ QuestionMetaMap = dict[UUID, tuple[str, AnswerFamily | None]]
 
 class AdminResponseService:
     """Admin response viewing, decryption, and deletion."""
+
+    def __init__(
+        self,
+        *,
+        cache: AppCache | None = None,
+        clients: CryptoClients | None = None,
+    ) -> None:
+        self._cache = cache or get_app_cache()
+        self._clients = clients or get_crypto_clients()
 
     def list_responses(
         self,
@@ -96,13 +111,19 @@ class AdminResponseService:
         if include_history:
             return [
                 self.get_session_history(
-                    db, response_db, survey_id=survey_id, session_id=s.id,
+                    db,
+                    response_db,
+                    survey_id=survey_id,
+                    session_id=s.id,
                 )
                 for s in sessions
             ]
         return [
             self.get_session_detail(
-                db, response_db, survey_id=survey_id, session_id=s.id,
+                db,
+                response_db,
+                survey_id=survey_id,
+                session_id=s.id,
             )
             for s in sessions
         ]
@@ -121,6 +142,8 @@ class AdminResponseService:
             db,
             response_db,
             session=session,
+            cache=self._cache,
+            clients=self._clients,
         )
 
         answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)
@@ -147,6 +170,8 @@ class AdminResponseService:
             db,
             response_db,
             session=session,
+            cache=self._cache,
+            clients=self._clients,
         )
 
         answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)
@@ -176,6 +201,8 @@ class AdminResponseService:
             db,
             session.id,
             session.linkage_key_version,
+            cache=self._cache,
+            clients=self._clients,
         )
 
         # Step 1: Delete response DB records (cascade deletes answers)

@@ -987,12 +987,36 @@ CREATE TABLE submission_sessions (
         REFERENCES project_subjects(project_id, id)
 );
 
+CREATE TABLE submission_answer_slots (
+    id UUID DEFAULT gen_random_uuid() NOT NULL,
+    submission_session_id UUID NOT NULL,
+    survey_version_id BIGINT NOT NULL,
+    question_node_id UUID NOT NULL,
+    question_key TEXT,
+
+    CONSTRAINT pk_submission_answer_slots
+        PRIMARY KEY (id),
+
+    CONSTRAINT uq_submission_answer_slots_session_question
+        UNIQUE (submission_session_id, question_node_id),
+
+    CONSTRAINT fk_submission_answer_slots_session_version
+        FOREIGN KEY (submission_session_id, survey_version_id)
+        REFERENCES submission_sessions (id, survey_version_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_submission_answer_slots_question_same_version
+        FOREIGN KEY (survey_version_id, question_node_id)
+        REFERENCES survey_questions (survey_version_id, id)
+);
+
 CREATE TABLE submission_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id UUID NOT NULL,
     survey_version_id BIGINT NOT NULL,
     event_type TEXT NOT NULL,
     question_node_id UUID REFERENCES survey_questions(id) ON DELETE SET NULL,
+    metadata JSONB,
     received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT ck_submission_events_event_type_valid
@@ -1009,6 +1033,9 @@ CREATE TABLE submission_events (
             event_type NOT IN ('session_started', 'session_completed')
             OR question_node_id IS NULL
         ),
+
+    CONSTRAINT ck_submission_events_metadata_is_object
+        CHECK (metadata IS NULL OR jsonb_typeof(metadata) = 'object'),
 
     CONSTRAINT fk_submission_events_session_version
         FOREIGN KEY (session_id, survey_version_id)

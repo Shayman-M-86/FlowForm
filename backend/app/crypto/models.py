@@ -28,7 +28,6 @@ from app.crypto._internal.models import (
     PositiveVersion,
     SecretValue,
 )
-from app.schema.orm.core.submission_session import SessionRef
 
 # --- Key-material labels (NewType over bytes) ---
 
@@ -41,8 +40,6 @@ AnswerLocator = NewType("AnswerLocator", bytes)
 
 SurveyKeyResolver = Callable[[], PlaintextSurveyKey]
 SessionKeyResolver = Callable[[], PlaintextSessionKey]
-
-_CRYPTO_VERSION = 1
 
 
 class NewSessionKey(CryptoValueModel):
@@ -103,44 +100,35 @@ class SessionDEKContext:
 
 
 @dataclass(frozen=True, slots=True)
-class SessionContext:
-    """Validated session state shared by public submission actions.
+class SubmissionSessionContext:
+    """Unified session context for both public submission and admin decrypt flows.
 
-    This is intentionally scalar/id oriented so it is safe to cache and pass
+    Intentionally scalar/id oriented so it is safe to cache and pass
     between service actions without carrying ORM rows across transaction
     boundaries.
     """
 
-    session_ref: SessionRef
-    session_locator: SessionLocator
+    session_id: UUID
+    project_id: int
+    survey_id: int
+    survey_version_id: int
     envelope_id: UUID
+    session_locator: SessionLocator
     linkage_key: LinkageKey
-    crypto_version: int = _CRYPTO_VERSION
-    loaded_from_cache: bool = False
+    linkage_key_version: int
+    _session_dek: PlaintextSessionKey | SessionKeyResolver
+    crypto_version: int
+    expires_at: datetime
+    browser_session_token_hash: bytes
 
     @property
-    def session_id(self) -> UUID:
-        return self.session_ref.id
-
-    @property
-    def project_id(self) -> int:
-        return self.session_ref.project_id
-
-    @property
-    def survey_id(self) -> int:
-        return self.session_ref.survey_id
-
-    @property
-    def survey_version_id(self) -> int:
-        return self.session_ref.survey_version_id
-
-    @property
-    def expires_at(self) -> datetime:
-        return self.session_ref.expires_at
-
-    @property
-    def browser_session_token_hash(self) -> bytes:
-        return self.session_ref.browser_session_token_hash
+    def plaintext_session_dek(self) -> PlaintextSessionKey:
+        dek = self._session_dek
+        if callable(dek):
+            resolved = dek()
+            object.__setattr__(self, "_session_dek", resolved)
+            return resolved
+        return dek
 
     @property
     def session_dek_context(self) -> SessionDEKContext:

@@ -48,9 +48,7 @@ def wrap_survey_key(
 ) -> WrappedSurveyKey:
     """Encrypt a plaintext survey key with AWS KMS."""
     if client is None:
-        from app.crypto._internal.client_extension import get_crypto_clients
-
-        client = get_crypto_clients().kms
+        raise ValueError("KMS client is required")
 
     try:
         response = client.encrypt(
@@ -74,9 +72,7 @@ def unwrap_survey_key(
 ) -> PlaintextSurveyKey:
     """Decrypt a KMS-wrapped survey key."""
     if client is None:
-        from app.crypto._internal.client_extension import get_crypto_clients
-
-        client = get_crypto_clients().kms
+        raise ValueError("KMS client is required")
 
     try:
         response = client.decrypt(

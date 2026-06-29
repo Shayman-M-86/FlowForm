@@ -18,12 +18,11 @@ from sqlalchemy.orm import Session
 if TYPE_CHECKING:
     from mypy_boto3_kms import KMSClient
 
-    from app.cache import CacheItem
+    from app.cache import AppCache, CacheItem
+    from app.crypto._internal.client_extension import CryptoClients
 
-from app.cache import get_app_cache
 from app.cache.crypto import SurveyKeyCacheKey
 from app.core.config import current_settings
-from app.crypto._internal.client_extension import get_crypto_clients
 from app.crypto._internal.errors import KmsError, SurveyBranchKeyUnavailableError
 from app.crypto._internal.kms_context import (
     SURVEY_KMS_CONTEXT_VERSION,
@@ -45,6 +44,8 @@ def create_wrapped_survey_key(
     *,
     project_id: int,
     survey_id: int,
+    cache: AppCache,
+    clients: CryptoClients,
 ) -> SurveyEncryptionKey:
     """Mint, wrap, and persist a new survey key.
 
@@ -56,7 +57,9 @@ def create_wrapped_survey_key(
     context = build_survey_kms_context(project_id=project_id, survey_id=survey_id)
 
     try:
-        wrapped_survey_key = wrap_survey_key(plaintext_survey_key, kms_key_arn, context)
+        wrapped_survey_key = wrap_survey_key(
+            plaintext_survey_key, kms_key_arn, context, client=clients.kms,
+        )
     except KmsError as exc:
         logger.error("survey_key wrap_failed survey_id=%s", survey_id)
         raise SurveyBranchKeyUnavailableError() from exc
@@ -69,7 +72,7 @@ def create_wrapped_survey_key(
         kms_key_arn=kms_key_arn,
         kms_context_version=SURVEY_KMS_CONTEXT_VERSION,
     )
-    get_app_cache().crypto.survey_keys.put((project_id, survey_id), plaintext_survey_key)
+    cache.crypto.survey_keys.put((project_id, survey_id), plaintext_survey_key)
     return record
 
 
@@ -78,6 +81,7 @@ def wrapped_survey_key_exists(
     *,
     project_id: int,
     survey_id: int,
+    cache: AppCache,
 ) -> bool:
     """Return whether a survey key exists for the given survey.
 
@@ -85,7 +89,7 @@ def wrapped_survey_key_exists(
     created, so a hit is conclusive. On a miss, falls back to the DB.
     Side effects: cache read; on miss, DB read.
     """
-    if get_app_cache().crypto.survey_keys.get((project_id, survey_id)) is not None:
+    if cache.crypto.survey_keys.get((project_id, survey_id)) is not None:
         return True
 
     record = survey_key_repo.get_by_project_survey(
@@ -101,6 +105,8 @@ def load_plaintext_survey_key(
     *,
     project_id: int,
     survey_id: int,
+    cache: AppCache,
+    clients: CryptoClients,
 ) -> PlaintextSurveyKey:
     """Return the plaintext survey key, unwrapping on cache miss.
 
@@ -109,13 +115,13 @@ def load_plaintext_survey_key(
     wrapped record and unwraps it via KMS. Side effects: cache read; on
     miss, DB read + KMS unwrap + cache write.
     """
-    cached = get_app_cache().crypto.survey_keys.get((project_id, survey_id))
+    cached = cache.crypto.survey_keys.get((project_id, survey_id))
     if cached is not None:
         return cached
 
     record = _get_wrapped_record(db, project_id=project_id, survey_id=survey_id)
     return _unwrap_and_cache(
-        record, get_crypto_clients().kms, get_app_cache().crypto.survey_keys
+        record, clients.kms, cache.crypto.survey_keys,
     )
 
 
@@ -124,6 +130,8 @@ def start_plaintext_survey_key_load(
     *,
     project_id: int,
     survey_id: int,
+    cache: AppCache,
+    clients: CryptoClients,
 ) -> SurveyKeyResolver:
     """Begin loading the plaintext survey key, returning a resolver for the result.
 
@@ -133,22 +141,27 @@ def start_plaintext_survey_key_load(
     resolver to block until the key is ready. Side effects: cache read;
     on miss, DB read now + a background KMS unwrap.
     """
-    cached = get_app_cache().crypto.survey_keys.get((project_id, survey_id))
+    cached = cache.crypto.survey_keys.get((project_id, survey_id))
     if cached is not None:
         return lambda: cached
 
     record = _get_wrapped_record(db, project_id=project_id, survey_id=survey_id)
-    kms_client = get_crypto_clients().kms
-    survey_key_cache = get_app_cache().crypto.survey_keys
+    kms_client = clients.kms
+    survey_key_cache = cache.crypto.survey_keys
     future = _PREFETCH_POOL.submit(
-        _unwrap_and_cache, record, kms_client, survey_key_cache
+        _unwrap_and_cache, record, kms_client, survey_key_cache,
     )
     return future.result
 
 
-def clear_plaintext_survey_key(*, project_id: int, survey_id: int) -> None:
+def clear_plaintext_survey_key(
+    *,
+    project_id: int,
+    survey_id: int,
+    cache: AppCache,
+) -> None:
     """Evict a plaintext survey key from the cache."""
-    get_app_cache().crypto.survey_keys.evict((project_id, survey_id))
+    cache.crypto.survey_keys.evict((project_id, survey_id))
 
 
 def _get_wrapped_record(

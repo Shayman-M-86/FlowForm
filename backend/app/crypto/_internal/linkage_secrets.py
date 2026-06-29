@@ -30,9 +30,7 @@ def fetch_linkage_secret_from_aws(
 ) -> SecretValue:
     """Fetch a linkage secret from AWS Secrets Manager."""
     if client is None:
-        from app.crypto._internal.client_extension import get_crypto_clients
-
-        client = get_crypto_clients().secretsmanager
+        raise ValueError("Secrets Manager client is required")
     if secret_arn is None:
         secret_arn = current_settings().flowform.encryption.linkage_secret_arn
 

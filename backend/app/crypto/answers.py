@@ -15,9 +15,8 @@ from app.crypto._internal.payload import build_plaintext_payload, parse_plaintex
 from app.crypto._internal.wrapping import decrypt_answer, encrypt_answer
 from app.crypto.locators import derive_answer_locator
 from app.crypto.models import (
-    AnswerLocator,
     AnswerContext,
-    SessionContext,
+    AnswerLocator,
 )
 from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import SubmissionAnswerState

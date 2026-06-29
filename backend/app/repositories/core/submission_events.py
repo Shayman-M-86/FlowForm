@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -19,12 +20,14 @@ def create_event(
     survey_version_id: int,
     event_type: SubmissionEventType,
     question_node_id: uuid.UUID | None = None,
+    event_metadata: dict[str, Any] | None = None,
 ) -> SubmissionEvent:
     event = SubmissionEvent(
         session_id=session_id,
         survey_version_id=survey_version_id,
         event_type=event_type,
         question_node_id=question_node_id,
+        event_metadata=event_metadata,
     )
     db.add(event)
     flush_with_err_handle(db, contexts=[event])
@@ -38,6 +41,7 @@ def record_event(
     survey_version_id: int,
     event_type: SubmissionEventType,
     question_node_id: uuid.UUID | None = None,
+    event_metadata: dict[str, Any] | None = None,
     log_label: str = "submission_event",
 ) -> None:
     """Insert and commit an analytics event. Failure is logged and swallowed — never raises."""
@@ -48,6 +52,7 @@ def record_event(
             survey_version_id=survey_version_id,
             event_type=event_type,
             question_node_id=question_node_id,
+            event_metadata=event_metadata,
         )
         db.commit()
     except Exception:

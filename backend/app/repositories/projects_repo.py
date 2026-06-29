@@ -56,7 +56,7 @@ def create_project(
 ) -> Project:
     project = Project(
         name=data.name,
-        slug=data.slug,
+        slug=str(data.slug),
         created_by_user_id=created_by_user_id,
     )
     db.add(project)

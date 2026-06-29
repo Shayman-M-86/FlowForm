@@ -1,5 +1,7 @@
 from sqlalchemy.orm import Session  # noqa: I001
 
+from app.cache import get_app_cache
+from app.crypto._internal.client_extension import get_crypto_clients
 from app.crypto.survey_key import (
     create_wrapped_survey_key,
     wrapped_survey_key_exists,
@@ -219,10 +221,14 @@ class SurveyService:
         project_id: int,
         survey_id: int,
     ) -> None:
-        if wrapped_survey_key_exists(db, project_id=project_id, survey_id=survey_id):
+        cache = get_app_cache()
+        clients = get_crypto_clients()
+        if wrapped_survey_key_exists(db, project_id=project_id, survey_id=survey_id, cache=cache):
             return
 
-        create_wrapped_survey_key(db, project_id=project_id, survey_id=survey_id)
+        create_wrapped_survey_key(
+            db, project_id=project_id, survey_id=survey_id, cache=cache, clients=clients,
+        )
 
     def archive_version(
         self,

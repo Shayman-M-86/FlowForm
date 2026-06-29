@@ -8,12 +8,16 @@ from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
+from sqlalchemy import select
 
+from app.crypto.answers import derive_slot_answer_locator
 from app.crypto.locators import derive_session_locator
 from app.crypto.models import LinkageKey, PlaintextSessionKey, SessionContext
 from app.domain.errors import QuestionNotInVersionError
 from app.repositories.response import response_envelope_repo
+from app.schema.orm.core import SubmissionAnswerSlot
 from app.schema.orm.core.submission_session import SessionRef
+from app.schema.orm.response import ResponseAnswer
 from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
 from tests.integration.core.factories import (
     make_project,
@@ -179,10 +183,78 @@ class TestAnswerSave:
 
         assert first == second
 
-    def test_question_not_in_version_raises(self, db_sessions: DbSessions) -> None:
+    def test_analytics_rollback_does_not_orphan_response_answer(
+        self,
+        db_sessions: DbSessions,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
         core_db = db_sessions.core
         response_db = db_sessions.response
         project, survey, version, question = _setup_core_fixtures(core_db)
+        session, _ = _create_session_row(core_db, project, survey, version)
+        ctx, _dek = _create_envelope_and_context(core_db, response_db, session, version)
+
+        def _analytics_failure_rollback(db, **_kwargs) -> None:
+            db.rollback()
+
+        monkeypatch.setattr(
+            f"{_ANSWER_SAVE_MODULE}.event_repo.record_event",
+            _analytics_failure_rollback,
+        )
+
+        svc = AnswerSaveService()
+
+        with _mock_session_key_load():
+            svc.save_answer(
+                core_db,
+                response_db,
+                ctx=ctx,
+                question_node_id=question.id,
+                answer_state="answered",
+                answer_value={"field_type": "short_text", "text": "hello"},
+                client_mutation_id=uuid.uuid4(),
+            )
+
+        slot = core_db.scalar(
+            select(SubmissionAnswerSlot).where(
+                SubmissionAnswerSlot.submission_session_id == session.id,
+                SubmissionAnswerSlot.question_node_id == question.id,
+            )
+        )
+        assert slot is not None
+        answer_locator = derive_slot_answer_locator(slot.id, ctx.linkage_key)
+        assert response_db.get(ResponseAnswer, answer_locator) is not None
+
+        with _mock_session_key_load():
+            svc.save_answer(
+                core_db,
+                response_db,
+                ctx=ctx,
+                question_node_id=question.id,
+                answer_state="answered",
+                answer_value={"field_type": "short_text", "text": "hello again"},
+                client_mutation_id=uuid.uuid4(),
+            )
+
+        slots = list(
+            core_db.scalars(
+                select(SubmissionAnswerSlot).where(
+                    SubmissionAnswerSlot.submission_session_id == session.id,
+                    SubmissionAnswerSlot.question_node_id == question.id,
+                )
+            )
+        )
+        answers = list(
+            response_db.scalars(select(ResponseAnswer).where(ResponseAnswer.envelope_id == ctx.envelope_id))
+        )
+
+        assert [saved_slot.id for saved_slot in slots] == [slot.id]
+        assert [answer.answer_locator for answer in answers] == [answer_locator]
+
+    def test_question_not_in_version_raises(self, db_sessions: DbSessions) -> None:
+        core_db = db_sessions.core
+        response_db = db_sessions.response
+        project, survey, version, _question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, _dek = _create_envelope_and_context(core_db, response_db, session, version)
 
@@ -209,7 +281,7 @@ class TestQuestionViewed:
     def test_record_question_viewed_invalid_question_raises(self, db_sessions: DbSessions) -> None:
         core_db = db_sessions.core
         response_db = db_sessions.response
-        project, survey, version, question = _setup_core_fixtures(core_db)
+        project, survey, version, _question = _setup_core_fixtures(core_db)
         session, _ = _create_session_row(core_db, project, survey, version)
         ctx, _ = _create_envelope_and_context(core_db, response_db, session, version)
 

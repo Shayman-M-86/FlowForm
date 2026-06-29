@@ -17,14 +17,14 @@ from app.crypto.answers import (
     derive_slot_answer_locator,
     encrypt_answer_current,
 )
-from app.crypto.models import AnswerContext, SessionContext
-from app.crypto.session_key import start_plaintext_session_key_load
+from app.crypto.models import AnswerContext, SubmissionSessionContext
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import AnswerSaveError, QuestionNotInVersionError, SessionInvalidError
 from app.domain.survey_answer_validation import validate_answer
 from app.logging.request_timing import request_timing
 from app.repositories import content_repo
-from app.repositories.core import submission_answer_slots, submission_events as event_repo
+from app.repositories.core import submission_answer_slots
+from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_answer_repo
 from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
@@ -56,7 +56,7 @@ class AnswerSaveService:
         db: Session,
         response_db: Session,
         *,
-        ctx: SessionContext,
+        ctx: SubmissionSessionContext,
         question_node_id: UUID,
         answer_state: SubmissionAnswerState,
         answer_value: AnswerValueInput,
@@ -91,15 +91,8 @@ class AnswerSaveService:
             validate_answer(question.question_schema, json_answer_value)
         request_timing.log("Answer shape validated")
 
-        resolve_session_key = start_plaintext_session_key_load(
-            db,
-            response_db,
-            context=ctx,
-        )
-        request_timing.log("Session key resolver is ready")
-
         answer_context = AnswerContext(
-            dek=resolve_session_key(),
+            dek=ctx.plaintext_session_dek,
             crypto_version=ctx.crypto_version,
             envelope_id=ctx.envelope_id,
             answer_locator=answer_locator,
@@ -111,6 +104,10 @@ class AnswerSaveService:
             answer_value=answer_value,
         )
         request_timing.log("Answer payload encrypted")
+
+        # Commit the core answer slot immediately before updating the response DB.
+        commit_with_err_handle(db, contexts=[slot])
+        request_timing.log("Answer slot committed")
 
         response_answer_repo.upsert_current(
             response_db,
@@ -139,7 +136,7 @@ class AnswerSaveService:
         self,
         db: Session,
         *,
-        ctx: SessionContext,
+        ctx: SubmissionSessionContext,
         question_node_id: UUID,
     ) -> None:
         """Record a question-viewed analytics event. Failure does not block the respondent."""
