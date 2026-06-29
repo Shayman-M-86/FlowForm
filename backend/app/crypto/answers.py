@@ -15,9 +15,8 @@ from app.crypto._internal.payload import build_plaintext_payload, parse_plaintex
 from app.crypto._internal.wrapping import decrypt_answer, encrypt_answer
 from app.crypto.locators import derive_answer_locator
 from app.crypto.models import (
+    AnswerContext,
     AnswerLocator,
-    RevisionContext,
-    SessionContext,
 )
 from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import SubmissionAnswerState
@@ -25,31 +24,27 @@ from app.schema.enums import SubmissionAnswerState
 AnswerValueInput = SubmissionAnswerValue | PlaintextAnswerValue
 
 
-def derive_session_answer_locator(
-    context: SessionContext,
-    question_node_id: UUID,
+def derive_slot_answer_locator(
+    slot_id: UUID,
+    linkage_key,
 ) -> AnswerLocator:
-    """Derive the response-side answer locator for a session/question pair."""
-    return derive_answer_locator(
-        context.session_id,
-        question_node_id,
-        context.linkage_key,
-    )
+    """Derive the response-side answer locator from the core answer slot ID."""
+    return derive_answer_locator(slot_id, linkage_key)
 
 
-def encrypt_answer_revision(
+def encrypt_answer_current(
     *,
-    context: RevisionContext,
+    context: AnswerContext,
     question_node_id: UUID,
     answer_state: SubmissionAnswerState,
     answer_value: AnswerValueInput,
 ) -> EncryptedAnswerPayload:
-    """Encrypt a new answer revision before storing it.
+    """Encrypt a current answer before storing it.
 
     Called during public submission when a respondent saves or updates
     an answer. Serialises the answer into a plaintext payload, generates
     a fresh nonce, and encrypts with AES-256-GCM using AAD derived from
-    the revision context.
+    the answer context.
     """
     aad = build_aad(context)
     plaintext = build_plaintext_payload(
@@ -62,11 +57,11 @@ def encrypt_answer_revision(
     return EncryptedAnswerPayload(ciphertext=ciphertext, nonce=nonce)
 
 
-def decrypt_answer_revision(
+def decrypt_answer_current(
     *,
     ciphertext: bytes,
     nonce: bytes,
-    context: RevisionContext,
+    context: AnswerContext,
 ) -> DecryptedAnswerPayload:
     """Decrypt a stored answer revision for admin viewing."""
     aad = build_aad(context)

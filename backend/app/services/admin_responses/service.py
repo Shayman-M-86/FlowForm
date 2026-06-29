@@ -7,17 +7,19 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from typing import Any, cast, get_args
+from typing import TYPE_CHECKING, Any, cast, get_args
 from uuid import UUID
 
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from app.crypto.answers import decrypt_answer_revision
+from app.cache import get_app_cache
+from app.crypto._internal.client_extension import get_crypto_clients
+from app.crypto.answers import decrypt_answer_current
 from app.crypto.locators import resolve_existing_session_locator
 from app.crypto.models import (
+    AnswerContext,
     AnswerLocator,
-    RevisionContext,
 )
 from app.crypto.session_key import load_session_envelope_crypto_context
 from app.db.error_handling import commit_with_err_handle
@@ -26,7 +28,6 @@ from app.repositories import content_repo as cr
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import (
     response_answer_repo,
-    response_answer_revision_repo,
     response_envelope_repo,
 )
 from app.schema.api.submission_sessions.answer_payload import (
@@ -43,6 +44,10 @@ from app.services.results import (
     DeletionResult,
 )
 
+if TYPE_CHECKING:
+    from app.cache import AppCache
+    from app.crypto._internal.client_extension import CryptoClients
+
 logger = logging.getLogger(__name__)
 
 _QUESTION_FAMILIES: frozenset[str] = frozenset(get_args(QuestionFamily))
@@ -51,6 +56,15 @@ QuestionMetaMap = dict[UUID, tuple[str, AnswerFamily | None]]
 
 class AdminResponseService:
     """Admin response viewing, decryption, and deletion."""
+
+    def __init__(
+        self,
+        *,
+        cache: AppCache | None = None,
+        clients: CryptoClients | None = None,
+    ) -> None:
+        self._cache = cache or get_app_cache()
+        self._clients = clients or get_crypto_clients()
 
     def list_responses(
         self,
@@ -97,13 +111,19 @@ class AdminResponseService:
         if include_history:
             return [
                 self.get_session_history(
-                    db, response_db, survey_id=survey_id, session_id=s.id,
+                    db,
+                    response_db,
+                    survey_id=survey_id,
+                    session_id=s.id,
                 )
                 for s in sessions
             ]
         return [
             self.get_session_detail(
-                db, response_db, survey_id=survey_id, session_id=s.id,
+                db,
+                response_db,
+                survey_id=survey_id,
+                session_id=s.id,
             )
             for s in sessions
         ]
@@ -122,6 +142,8 @@ class AdminResponseService:
             db,
             response_db,
             session=session,
+            cache=self._cache,
+            clients=self._clients,
         )
 
         answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)
@@ -130,11 +152,7 @@ class AdminResponseService:
 
         decrypted: list[DecryptedAnswerResult] = []
         for answer in answers:
-            latest_rev = response_answer_revision_repo.get_latest(response_db, answer.id)
-            if latest_rev is None:
-                continue
-
-            decrypted.append(_decrypt_to_result(ectx, answer, latest_rev, question_meta_map))
+            decrypted.append(_decrypt_to_result(ectx, answer, question_meta_map))
 
         return AdminSessionDetailResult(session=session, answers=decrypted)
 
@@ -152,6 +170,8 @@ class AdminResponseService:
             db,
             response_db,
             session=session,
+            cache=self._cache,
+            clients=self._clients,
         )
 
         answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)
@@ -160,9 +180,7 @@ class AdminResponseService:
 
         decrypted: list[DecryptedAnswerResult] = []
         for answer in answers:
-            revisions = response_answer_revision_repo.get_history(response_db, answer.id)
-            for rev in revisions:
-                decrypted.append(_decrypt_to_result(ectx, answer, rev, question_meta_map))
+            decrypted.append(_decrypt_to_result(ectx, answer, question_meta_map))
 
         return AdminSessionHistoryResult(session=session, revisions=decrypted)
 
@@ -183,9 +201,11 @@ class AdminResponseService:
             db,
             session.id,
             session.linkage_key_version,
+            cache=self._cache,
+            clients=self._clients,
         )
 
-        # Step 1: Delete response DB records (cascade deletes answers + revisions)
+        # Step 1: Delete response DB records (cascade deletes answers)
         deleted = response_envelope_repo.delete_by_locator(response_db, session_locator)
         if not deleted:
             raise EnvelopeNotFoundError()
@@ -203,8 +223,8 @@ class AdminResponseService:
         )
 
 
-def _decrypt_to_result(ectx, answer, rev, question_meta_map: QuestionMetaMap) -> DecryptedAnswerResult:
-    parsed = decrypt_answer_revision(**_decrypt_revision_args(ectx, answer, rev))
+def _decrypt_to_result(ectx, answer, question_meta_map: QuestionMetaMap) -> DecryptedAnswerResult:
+    parsed = decrypt_answer_current(**_decrypt_answer_args(ectx, answer))
     question_key, answer_family = question_meta_map.get(
         parsed.question_node_id,
         (None, None),
@@ -219,23 +239,18 @@ def _decrypt_to_result(ectx, answer, rev, question_meta_map: QuestionMetaMap) ->
             answer_state=parsed.answer_state,
             raw_value=parsed.answer_value,
         ),
-        revision_id=rev.id,
-        revision_number=rev.revision_number,
     )
 
 
-def _decrypt_revision_args(ectx, answer, rev) -> dict:
+def _decrypt_answer_args(ectx, answer) -> dict:
     return {
-        "ciphertext": rev.ciphertext,
-        "nonce": rev.nonce,
-        "context": RevisionContext(
+        "ciphertext": answer.ciphertext,
+        "nonce": answer.nonce,
+        "context": AnswerContext(
             dek=ectx.plaintext_key,
             crypto_version=ectx.envelope.crypto_version,
             envelope_id=answer.envelope_id,
-            answer_id=answer.id,
             answer_locator=AnswerLocator(answer.answer_locator),
-            revision_id=rev.id,
-            revision_number=rev.revision_number,
         ),
     }
 

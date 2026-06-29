@@ -20,8 +20,7 @@ _FAKE_PLAINTEXT_DEK = PlaintextSessionKey(os.urandom(32))
 _FAKE_WRAPPED_DEK = WrappedSessionKey(b"\x02" * 64)
 
 _STARTER_MODULE = "app.services.public_submissions.core.actions.session_starter"
-_LOADER_MODULE = "app.services.public_submissions.core.session_loader"
-_ANSWER_SAVE_MODULE = "app.services.public_submissions.core.actions.answer_save"
+_SESSION_KEY_MODULE = "app.crypto.session_key"
 
 
 @pytest.fixture(autouse=True)
@@ -29,7 +28,7 @@ def _mock_crypto_layer(monkeypatch: pytest.MonkeyPatch) -> None:
     """Patch module-level crypto calls so response integration tests run without AWS."""
     monkeypatch.setattr(
         f"{_STARTER_MODULE}.load_current_linkage_key",
-        lambda _db: _FAKE_LINKAGE_KEY,
+        lambda *_args, **_kwargs: _FAKE_LINKAGE_KEY,
     )
     monkeypatch.setattr(
         f"{_STARTER_MODULE}.derive_session_locator",
@@ -40,16 +39,16 @@ def _mock_crypto_layer(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setattr(
         f"{_STARTER_MODULE}.start_plaintext_survey_key_load",
-        lambda _db, **_kw: MagicMock(return_value=os.urandom(32)),
+        lambda *_args, **_kwargs: MagicMock(return_value=os.urandom(32)),
     )
     monkeypatch.setattr(
         f"{_STARTER_MODULE}.create_session_key",
-        lambda _ctx, _survey_key: NewSessionKey(
+        lambda *_args, **_kwargs: NewSessionKey(
             plaintext_key=_FAKE_PLAINTEXT_DEK,
             wrapped_key=_FAKE_WRAPPED_DEK,
         ),
     )
     monkeypatch.setattr(
-        f"{_LOADER_MODULE}.resolve_existing_session_locator",
-        lambda _db, _sid, _ver: (_FAKE_SESSION_LOCATOR, _FAKE_LINKAGE_KEY),
+        f"{_SESSION_KEY_MODULE}.resolve_existing_session_locator",
+        lambda *_args, **_kwargs: (_FAKE_SESSION_LOCATOR, _FAKE_LINKAGE_KEY),
     )

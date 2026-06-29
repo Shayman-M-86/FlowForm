@@ -591,12 +591,6 @@ export const SurveyResponseDetailResponsesConstraints = {
   answers: { maxItems: 50 },
 } as const;
 
-export const SurveyResponseAnswerRevisionResponsesConstraints = {
-  question_node_id: { maxLength: 36 },
-  state: { maxLength: 8 },
-  answer_family: { maxLength: 8 },
-} as const;
-
 export const SurveyResponseHistoryResponsesConstraints = {
   revisions: { maxItems: 50 },
 } as const;

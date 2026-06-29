@@ -7,11 +7,13 @@ core/answer_save.py. Complete delegates to core/completion.py.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.cache import get_app_cache
+from app.crypto._internal.client_extension import get_crypto_clients
 from app.domain.errors import SessionNotFoundError
 from app.schema.api.requests.submission_sessions import (
     StartSubmissionSessionRequest,
@@ -23,11 +25,19 @@ from app.schema.orm.core.user import User
 from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
 from app.services.public_submissions.core.actions.completion import (
     CompletionResult,
-    CompletionService,
+    complete_session,
 )
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
+from app.services.public_submissions.core.resolution.access_resolver import AccessResolver
+from app.services.public_submissions.core.resolution.session_subject_service import SessionSubjectService
+from app.services.public_submissions.core.resolution.subject_resolver import SubjectResolver
+from app.services.public_submissions.core.resolution.subject_token import SubjectTokenService
 from app.services.public_submissions.core.session_loader import load_current_session
 from app.services.results import AnswerSaveResult
+
+if TYPE_CHECKING:
+    from app.cache import AppCache
+    from app.crypto._internal.client_extension import CryptoClients
 
 
 class SessionManagementService:
@@ -37,12 +47,36 @@ class SessionManagementService:
         self,
         *,
         session_starter: SessionStarter | None = None,
-        completion_service: CompletionService | None = None,
         answer_save_service: AnswerSaveService | None = None,
+        access_resolver: AccessResolver | None = None,
+        subject_service: SessionSubjectService | None = None,
+        subject_resolver: SubjectResolver | None = None,
+        token_service: SubjectTokenService | None = None,
+        cache: AppCache | None = None,
+        clients: CryptoClients | None = None,
     ) -> None:
-        self._session_starter = session_starter or SessionStarter()
-        self._completion_service = completion_service or CompletionService()
+        self._cache = cache
+        self._clients = clients
+        self._session_starter = session_starter
+        self._access_resolver = access_resolver or AccessResolver()
+        self._subject_service = subject_service or SessionSubjectService()
+        self._subject_resolver = subject_resolver or SubjectResolver()
+        self._token_service = token_service or SubjectTokenService()
         self._answer_save_service = answer_save_service or AnswerSaveService()
+
+    def _cache_and_clients(self) -> tuple[AppCache, CryptoClients]:
+        return self._cache or get_app_cache(), self._clients or get_crypto_clients()
+
+    def _starter(self) -> SessionStarter:
+        cache, clients = self._cache_and_clients()
+        return self._session_starter or SessionStarter(
+            access_resolver=self._access_resolver,
+            subject_service=self._subject_service,
+            subject_resolver=self._subject_resolver,
+            token_service=self._token_service,
+            cache=cache,
+            clients=clients,
+        )
 
     def start_session(
         self,
@@ -58,7 +92,7 @@ class SessionManagementService:
         Returns (session_response, raw_browser_session_token, raw_recognition_token).
         The route sets the browser-session and recognition cookies from the raw tokens.
         """
-        return self._session_starter.start(
+        return self._starter().start(
             db, response_db, payload=payload, actor=actor, recognition_token=recognition_token
         )
 
@@ -72,12 +106,21 @@ class SessionManagementService:
         """Complete a respondent session.
 
         Loads the session from the browser resume token, then delegates to
-        CompletionService for the completion state transition.
+        the completion action for the state transition.
         """
         if raw_resume_token is None:
             raise SessionNotFoundError()
-        ctx = load_current_session(db, response_db, raw_resume_token, allow_completed=True)
-        return self._completion_service.complete_session(db, response_db, ctx=ctx)
+
+        cache, clients = self._cache_and_clients()
+        ctx = load_current_session(
+            db,
+            response_db,
+            raw_resume_token,
+            allow_completed=True,
+            cache=cache,
+            clients=clients,
+        )
+        return complete_session(db, ctx=ctx)
 
     def save_answer(
         self,
@@ -93,7 +136,14 @@ class SessionManagementService:
         """Save a respondent answer. Returns the save result."""
         if raw_resume_token is None:
             raise SessionNotFoundError()
-        ctx = load_current_session(db, response_db, raw_resume_token)
+        cache, clients = self._cache_and_clients()
+        ctx = load_current_session(
+            db,
+            response_db,
+            raw_resume_token,
+            cache=cache,
+            clients=clients,
+        )
         return self._answer_save_service.save_answer(
             db,
             response_db,
@@ -115,7 +165,14 @@ class SessionManagementService:
         """Record a question-viewed analytics event."""
         if raw_resume_token is None:
             raise SessionNotFoundError()
-        ctx = load_current_session(db, response_db, raw_resume_token)
+        cache, clients = self._cache_and_clients()
+        ctx = load_current_session(
+            db,
+            response_db,
+            raw_resume_token,
+            cache=cache,
+            clients=clients,
+        )
         self._answer_save_service.record_question_viewed(
             db,
             ctx=ctx,

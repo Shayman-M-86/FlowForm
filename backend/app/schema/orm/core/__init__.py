@@ -11,6 +11,7 @@ from app.schema.orm.core.project_subject import (
 )
 from app.schema.orm.core.response_store import ResponseStore
 from app.schema.orm.core.subject_ip_observation import SubjectIpObservation
+from app.schema.orm.core.submission_answer_slot import SubmissionAnswerSlot
 from app.schema.orm.core.submission_session import SubmissionEvent, SubmissionSession
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import (
@@ -38,6 +39,7 @@ __all__ = [
     "ProjectSubjectToken",
     "ResponseStore",
     "SubjectIpObservation",
+    "SubmissionAnswerSlot",
     "SubmissionEvent",
     "SubmissionSession",
     "Survey",

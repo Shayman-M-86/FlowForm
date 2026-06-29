@@ -25,8 +25,8 @@ session_key  (tier 2)
     Side effects: cache read/write
 
 answers  (tier 3)
-    encrypt_answer_revision  — encrypt an answer before storage
-    decrypt_answer_revision  — decrypt a stored answer for admin viewing
+    encrypt_answer_current   — encrypt an answer before storage
+    decrypt_answer_current   — decrypt a stored answer for admin viewing
     Side effects: none (pure crypto)
 
 locators  (separate chain — pseudonymous IDs, not key wrapping)
@@ -40,7 +40,7 @@ locators  (separate chain — pseudonymous IDs, not key wrapping)
                   DB read/write for linkage key version mapping
 
 models
-    RevisionContext     — AAD fields shared by encrypt/decrypt
+    AnswerContext       — AAD fields shared by encrypt/decrypt
     SessionDEKContext   — session identity used to build the wrap AAD
     NewSessionDEK       — plaintext + wrapped session key pair
     NewSessionLocator   — locator + linkage key version

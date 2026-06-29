@@ -13,6 +13,8 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.cache import get_app_cache
+from app.crypto._internal.client_extension import get_crypto_clients
 from app.crypto.locators import resolve_existing_session_locator
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_envelope_repo
@@ -42,10 +44,14 @@ def reconcile_orphaned_sessions(
 
     for session in sessions:
         try:
+            cache = get_app_cache()
+            clients = get_crypto_clients()
             session_locator, _ = resolve_existing_session_locator(
                 db,
                 session.id,
                 session.linkage_key_version,
+                cache=cache,
+                clients=clients,
             )
 
             envelope = response_envelope_repo.get_by_locator(

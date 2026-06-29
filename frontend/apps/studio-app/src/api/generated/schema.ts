@@ -1854,8 +1854,6 @@ export interface components {
              * @default null
              */
             answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | null;
-            /** Revision Number */
-            revision_number: number;
             /**
              * Client Mutation Id
              * Format: uuid
@@ -2997,8 +2995,6 @@ export interface components {
             answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | {
                 [key: string]: unknown;
             } | null;
-            /** Revision Number */
-            revision_number: number;
         };
         /**
          * SurveyResponseDetailResponses
@@ -3010,43 +3006,13 @@ export interface components {
             answers: components["schemas"]["SurveyResponseAnswerResponses"][];
         };
         /**
-         * SurveyResponseAnswerRevisionResponses
-         * @description One historical decrypted answer revision for the answer-history view.
-         */
-        SurveyResponseAnswerRevisionResponses: {
-            /**
-             * Question Node Id
-             * Format: uuid
-             */
-            question_node_id: string;
-            /**
-             * State
-             * @enum {string}
-             */
-            state: "answered" | "cleared";
-            /**
-             * Answer Family
-             * @default null
-             */
-            answer_family: ("choice" | "field" | "matching" | "rating") | null;
-            /**
-             * Answer Value
-             * @default null
-             */
-            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | {
-                [key: string]: unknown;
-            } | null;
-            /** Revision Number */
-            revision_number: number;
-        };
-        /**
          * SurveyResponseHistoryResponses
-         * @description Admin answer-history view: every decrypted revision for a session.
+         * @description Admin current-answer history-compatible view for a session.
          */
         SurveyResponseHistoryResponses: {
             session: components["schemas"]["SurveyResponseSummaryResponses"];
             /** Revisions */
-            revisions: components["schemas"]["SurveyResponseAnswerRevisionResponses"][];
+            revisions: components["schemas"]["SurveyResponseAnswerResponses"][];
         };
         /**
          * ExportSurveyResponsesRequest
@@ -3582,7 +3548,6 @@ export type SurveyResponseSummaryResponses = components['schemas']['SurveyRespon
 export type PaginatedSurveyResponsesResponses = components['schemas']['PaginatedSurveyResponsesResponses'];
 export type SurveyResponseAnswerResponses = components['schemas']['SurveyResponseAnswerResponses'];
 export type SurveyResponseDetailResponses = components['schemas']['SurveyResponseDetailResponses'];
-export type SurveyResponseAnswerRevisionResponses = components['schemas']['SurveyResponseAnswerRevisionResponses'];
 export type SurveyResponseHistoryResponses = components['schemas']['SurveyResponseHistoryResponses'];
 export type ExportSurveyResponsesRequest = components['schemas']['ExportSurveyResponsesRequest'];
 export type CreateSurveyRoleRequest = components['schemas']['CreateSurveyRoleRequest'];

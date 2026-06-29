@@ -15,14 +15,12 @@ def derive_session_locator(core_session_id: UUID, linkage_secret: bytes) -> byte
 
 
 def derive_answer_locator(
-    core_session_id: UUID,
-    question_node_id: UUID,
+    slot_id: UUID,
     linkage_secret: bytes,
 ) -> bytes:
-    """Derive an opaque answer locator from a core session ID and question node ID."""
-    msg = core_session_id.bytes + question_node_id.bytes
+    """Derive an opaque answer locator from a core answer slot ID."""
     return hmac.new(
         key=linkage_secret,
-        msg=msg,
+        msg=slot_id.bytes,
         digestmod=hashlib.sha256,
     ).digest()

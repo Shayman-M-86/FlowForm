@@ -1,10 +1,11 @@
 import uuid
-from datetime import datetime
 from dataclasses import dataclass
-from typing import TYPE_CHECKING 
+from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -15,7 +16,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
@@ -39,6 +40,7 @@ class SessionRef:
     survey_version_id: int
     expires_at: datetime
     browser_session_token_hash: bytes
+
 
 class SubmissionSession(CoreBase):
     """One respondent survey attempt, used to derive response-side locators."""
@@ -115,7 +117,8 @@ class SubmissionSession(CoreBase):
     response_store: Mapped[ResponseStore] = relationship("ResponseStore", foreign_keys=[response_store_id])
     survey: Mapped[Survey] = relationship("Survey", foreign_keys=[project_id, survey_id])
     survey_version: Mapped[SurveyVersion] = relationship("SurveyVersion", foreign_keys=[survey_version_id])
-    
+
+
     def to_crypto_ref(self) -> SessionRef:
         """Return a scalar-only snapshot for crypto/session locator services."""
         return SessionRef(
@@ -138,10 +141,14 @@ class SubmissionEvent(CoreBase):
     survey_version_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     event_type: Mapped[SubmissionEventType] = mapped_column(Text, nullable=False)
     question_node_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    event_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
+        CheckConstraint(
+            "metadata IS NULL OR jsonb_typeof(metadata) = 'object'", name="ck_submission_events_metadata_is_object"
+        ),
         ForeignKeyConstraint(
             ["session_id", "survey_version_id"],
             ["submission_sessions.id", "submission_sessions.survey_version_id"],

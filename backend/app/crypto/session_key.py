@@ -12,11 +12,11 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.cache import get_app_cache
 from app.crypto._internal.aad import build_session_dek_wrap_aad
 from app.crypto._internal.errors import SessionDEKUnavailableError
 from app.crypto._internal.models import SESSION_DEK_BYTES
@@ -26,10 +26,10 @@ from app.crypto.models import (
     NewSessionKey,
     PlaintextSessionKey,
     PlaintextSurveyKey,
-    SessionKeyResolver,
-    SessionContext,
     SessionDEKContext,
+    SessionKeyResolver,
     SessionLocator,
+    SubmissionSessionContext,
     WrappedSessionKey,
 )
 from app.crypto.survey_key import start_plaintext_survey_key_load
@@ -38,18 +38,109 @@ from app.repositories.response import response_envelope_repo
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.response.response_envelope import ResponseEnvelope
 
+if TYPE_CHECKING:
+    from app.cache import AppCache
+    from app.crypto._internal.client_extension import CryptoClients
+
 logger = logging.getLogger(__name__)
+
+
+def build_session_context(
+    db: Session,
+    response_db: Session,
+    *,
+    session: SubmissionSession,
+    cache: AppCache,
+    clients: CryptoClients,
+) -> SubmissionSessionContext:
+    """Build the unified session context from a SubmissionSession ORM row.
+
+    Resolves the session locator and response envelope. If the plaintext
+    DEK is already cached it is stored directly; otherwise a lazy resolver
+    is attached that will unwrap the DEK on first property access and
+    mutate the frozen field in-place (so the cached reference is updated
+    transparently).
+    """
+    session_locator, linkage_key = resolve_existing_session_locator(
+        db,
+        session.id,
+        session.linkage_key_version,
+        cache=cache,
+        clients=clients,
+    )
+
+    envelope = response_envelope_repo.get_by_locator(response_db, session_locator)
+    if envelope is None:
+        raise EnvelopeNotFoundError()
+
+    crypto_cache = cache.crypto
+    cached_dek = crypto_cache.session_deks.get(session.id)
+
+    if cached_dek is not None:
+        dek_or_resolver: PlaintextSessionKey | SessionKeyResolver = cached_dek
+    else:
+        dek_context = SessionDEKContext(
+            session_id=session.id,
+            crypto_version=envelope.crypto_version,
+            project_id=session.project_id,
+            survey_id=session.survey_id,
+            session_locator=session_locator,
+        )
+        aad = build_session_dek_wrap_aad(dek_context)
+        survey_key_loader = start_plaintext_survey_key_load(
+            db,
+            project_id=session.project_id,
+            survey_id=session.survey_id,
+            cache=cache,
+            clients=clients,
+        )
+
+        def resolve() -> PlaintextSessionKey:
+            cached_late = crypto_cache.session_deks.get(session.id)
+            if cached_late is not None:
+                return cached_late
+
+            try:
+                plaintext_key = unwrap_session_key(
+                    wrapped_key=WrappedSessionKey(envelope.wrapped_session_dek),
+                    survey_key=survey_key_loader(),
+                    aad=aad,
+                )
+            except Exception as exc:
+                logger.error("session_key unwrap_failed session_id=%s", session.id)
+                raise SessionDEKUnavailableError() from exc
+
+            crypto_cache.session_deks.put(session.id, plaintext_key)
+            return plaintext_key
+
+        dek_or_resolver = resolve
+
+    return SubmissionSessionContext(
+        session_id=session.id,
+        project_id=session.project_id,
+        survey_id=session.survey_id,
+        survey_version_id=session.survey_version_id,
+        envelope_id=envelope.id,
+        session_locator=session_locator,
+        linkage_key=linkage_key,
+        linkage_key_version=linkage_key.version,
+        _session_dek=dek_or_resolver,
+        crypto_version=envelope.crypto_version,
+        expires_at=session.expires_at,
+        browser_session_token_hash=session.browser_session_token_hash,
+    )
 
 
 def create_session_key(
     context: SessionDEKContext,
     survey_key: PlaintextSurveyKey,
+    *,
+    cache: AppCache,
 ) -> NewSessionKey:
     """Generate a new session key and wrap it under the survey key.
 
     Returns both plaintext and wrapped forms. Side effects: cache write.
     """
-    cache = get_app_cache().crypto
     aad = build_session_dek_wrap_aad(context)
     plaintext_key = PlaintextSessionKey(os.urandom(SESSION_DEK_BYTES))
 
@@ -68,86 +159,13 @@ def create_session_key(
         logger.error("session_key wrap_failed session_id=%s", context.session_id)
         raise SessionDEKUnavailableError() from exc
 
-    cache.session_deks.put(context.session_id, plaintext_key)
+    cache.crypto.session_deks.put(context.session_id, plaintext_key)
     return new_key
 
 
-def load_plaintext_session_key(
-    db: Session,
-    response_db: Session,
-    *,
-    context: SessionContext,
-) -> PlaintextSessionKey:
-    """Return the plaintext session key, resolving stored material on cache miss.
-
-    Checks the session-DEK cache first. On a miss, fetches the response
-    envelope by locator, loads the plaintext survey key, unwraps the stored
-    session key, and caches the plaintext result.
-    """
-    return start_plaintext_session_key_load(db, response_db, context=context)()
-
-
-def start_plaintext_session_key_load(
-    db: Session,
-    response_db: Session,
-    *,
-    context: SessionContext,
-) -> SessionKeyResolver:
-    """Start resolving a plaintext session key and return a blocking resolver.
-
-    On a session-key cache hit, the resolver returns immediately. On a miss,
-    this fetches the response envelope now and starts the threaded survey-key
-    load so KMS unwrap can overlap with later answer-write work.
-    """
-    cache = get_app_cache().crypto
-
-    cached = cache.session_deks.get(context.session_id)
-    if cached is not None:
-        return lambda: cached
-
-    envelope = _get_response_envelope(response_db, context)
-    aad = build_session_dek_wrap_aad(context.session_dek_context)
-    survey_key_loader = start_plaintext_survey_key_load(
-        db,
-        project_id=context.project_id,
-        survey_id=context.survey_id,
-    )
-
-    def resolve() -> PlaintextSessionKey:
-        cached_late = cache.session_deks.get(context.session_id)
-        if cached_late is not None:
-            return cached_late
-
-        try:
-            plaintext_key = unwrap_session_key(
-                wrapped_key=WrappedSessionKey(envelope.wrapped_session_dek),
-                survey_key=survey_key_loader(),
-                aad=aad,
-            )
-        except Exception as exc:
-            logger.error("session_key unwrap_failed session_id=%s", context.session_id)
-            raise SessionDEKUnavailableError() from exc
-
-        cache.session_deks.put(context.session_id, plaintext_key)
-        return plaintext_key
-
-    return resolve
-
-
-def clear_plaintext_session_key(session_id: UUID) -> None:
+def clear_plaintext_session_key(session_id: UUID, *, cache: AppCache) -> None:
     """Evict a cached plaintext session key for a session."""
-    get_app_cache().crypto.session_deks.evict(session_id)
-
-
-def _get_response_envelope(
-    response_db: Session,
-    context: SessionContext,
-) -> ResponseEnvelope:
-    """Fetch the response envelope that stores the wrapped session key."""
-    envelope = response_db.get(ResponseEnvelope, context.envelope_id)
-    if envelope is None:
-        raise EnvelopeNotFoundError()
-    return envelope
+    cache.crypto.session_deks.evict(session_id)
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,33 +182,20 @@ def load_session_envelope_crypto_context(
     response_db: Session,
     *,
     session: SubmissionSession,
+    cache: AppCache,
+    clients: CryptoClients,
 ) -> SessionEnvelopeCryptoContext:
     """Load the response envelope and plaintext session key for a session."""
-    session_locator, linkage_key = resolve_existing_session_locator(
-        db,
-        session.id,
-        session.linkage_key_version,
+    ctx = build_session_context(
+        db, response_db, session=session, cache=cache, clients=clients,
     )
 
-    envelope = response_envelope_repo.get_by_locator(response_db, session_locator)
+    envelope = response_db.get(ResponseEnvelope, ctx.envelope_id)
     if envelope is None:
         raise EnvelopeNotFoundError()
 
-    context = SessionContext(
-        session_ref=session.to_crypto_ref(),
-        session_locator=session_locator,
-        envelope_id=envelope.id,
-        linkage_key=linkage_key,
-        crypto_version=envelope.crypto_version,
-    )
-    plaintext_key = load_plaintext_session_key(
-        db,
-        response_db,
-        context=context,
-    )
-
     return SessionEnvelopeCryptoContext(
-        session_locator=session_locator,
+        session_locator=ctx.session_locator,
         envelope=envelope,
-        plaintext_key=plaintext_key,
+        plaintext_key=ctx.plaintext_session_dek,
     )
