@@ -4897,9 +4897,6 @@ components:
           - type: 'null'
           default: null
           title: Answer Value
-        revision_number:
-          title: Revision Number
-          type: integer
         client_mutation_id:
           format: uuid
           title: Client Mutation Id
@@ -4914,7 +4911,6 @@ components:
       - question_node_id
       - node_key
       - state
-      - revision_number
       - client_mutation_id
       - saved_at
       title: SubmissionSessionAnswerResponse
@@ -6859,13 +6855,9 @@ components:
           - type: 'null'
           default: null
           title: Answer Value
-        revision_number:
-          title: Revision Number
-          type: integer
       required:
       - question_node_id
       - state
-      - revision_number
       title: SurveyResponseAnswerResponses
       type: object
     SurveyResponseDetailResponses:
@@ -6884,85 +6876,14 @@ components:
       - answers
       title: SurveyResponseDetailResponses
       type: object
-    SurveyResponseAnswerRevisionResponses:
-      description: One historical decrypted answer revision for the answer-history view.
-      properties:
-        question_node_id:
-          format: uuid
-          title: Question Node Id
-          type: string
-          maxLength: 36
-        state:
-          enum:
-          - answered
-          - cleared
-          title: State
-          type: string
-          maxLength: 8
-        answer_family:
-          anyOf:
-          - enum:
-            - choice
-            - field
-            - matching
-            - rating
-            type: string
-            maxLength: 8
-          - type: 'null'
-          default: null
-          title: Answer Family
-        answer_value:
-          anyOf:
-          - $ref: '#/components/schemas/ChoiceAnswerValue'
-          - discriminator:
-              mapping:
-                date: '#/components/schemas/DateFieldAnswerValue'
-                email: '#/components/schemas/EmailFieldAnswerValue'
-                long_text: '#/components/schemas/LongTextFieldAnswerValue'
-                number: '#/components/schemas/NumberFieldAnswerValue'
-                phone: '#/components/schemas/PhoneFieldAnswerValue'
-                short_text: '#/components/schemas/ShortTextFieldAnswerValue'
-              propertyName: field_type
-            oneOf:
-            - $ref: '#/components/schemas/ShortTextFieldAnswerValue'
-            - $ref: '#/components/schemas/LongTextFieldAnswerValue'
-            - $ref: '#/components/schemas/EmailFieldAnswerValue'
-            - $ref: '#/components/schemas/NumberFieldAnswerValue'
-            - $ref: '#/components/schemas/DateFieldAnswerValue'
-            - $ref: '#/components/schemas/PhoneFieldAnswerValue'
-          - $ref: '#/components/schemas/MatchingAnswerValue'
-          - discriminator:
-              mapping:
-                emoji: '#/components/schemas/EmojiRatingAnswerValue'
-                slider: '#/components/schemas/SliderRatingAnswerValue'
-                stars: '#/components/schemas/StarsRatingAnswerValue'
-              propertyName: variant
-            oneOf:
-            - $ref: '#/components/schemas/SliderRatingAnswerValue'
-            - $ref: '#/components/schemas/StarsRatingAnswerValue'
-            - $ref: '#/components/schemas/EmojiRatingAnswerValue'
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          default: null
-          title: Answer Value
-        revision_number:
-          title: Revision Number
-          type: integer
-      required:
-      - question_node_id
-      - state
-      - revision_number
-      title: SurveyResponseAnswerRevisionResponses
-      type: object
     SurveyResponseHistoryResponses:
-      description: 'Admin answer-history view: every decrypted revision for a session.'
+      description: Admin current-answer history-compatible view for a session.
       properties:
         session:
           $ref: '#/components/schemas/SurveyResponseSummaryResponses'
         revisions:
           items:
-            $ref: '#/components/schemas/SurveyResponseAnswerRevisionResponses'
+            $ref: '#/components/schemas/SurveyResponseAnswerResponses'
           maxItems: 50
           title: Revisions
           type: array
@@ -7958,10 +7879,10 @@ components:
                 code: LINK_SURVEY_PROJECT_CONFLICT
                 message: The survey does not belong to this project.
             fk_survey_links_assigned_participant_same_project:
-              summary: 'DB rule: LINK_PARTICIPANT_PROJECT_CONFLICT'
+              summary: 'DB rule: PARTICIPANT_IN_USE'
               value:
-                code: LINK_PARTICIPANT_PROJECT_CONFLICT
-                message: The assigned participant does not belong to this project.
+                code: PARTICIPANT_IN_USE
+                message: This participant is assigned to one or more survey links and cannot be deleted.
             uq_survey_roles_project_id_name:
               summary: 'DB rule: SURVEY_ROLE_NAME_CONFLICT'
               value:
@@ -8062,6 +7983,11 @@ components:
               value:
                 code: SESSION_SUBJECT_PROJECT_CONFLICT
                 message: The project subject does not belong to this project.
+            uq_submission_answer_slots_session_question:
+              summary: 'DB rule: ANSWER_SLOT_EXISTS'
+              value:
+                code: ANSWER_SLOT_EXISTS
+                message: An answer slot already exists for this session and question.
             fk_submission_events_session_version:
               summary: 'DB rule: EVENT_SESSION_VERSION_CONFLICT'
               value:
@@ -8072,6 +7998,11 @@ components:
               value:
                 code: EVENT_QUESTION_VERSION_CONFLICT
                 message: The question node does not belong to this survey version.
+            survey_questions_pkey:
+              summary: 'DB rule: NODE_ID_CONFLICT'
+              value:
+                code: NODE_ID_CONFLICT
+                message: A node with this ID already exists.
             uq_survey_questions_survey_version_id_question_key:
               summary: 'DB rule: RULE_KEY_CONFLICT'
               value:
@@ -8142,21 +8073,11 @@ components:
               value:
                 code: ENVELOPE_EXISTS
                 message: A response envelope already exists for this session.
-            uq_response_answers_envelope_id_answer_locator:
-              summary: 'DB rule: ANSWER_EXISTS'
+            uq_response_answers_envelope_id_nonce:
+              summary: 'DB rule: ANSWER_NONCE_CONFLICT'
               value:
-                code: ANSWER_EXISTS
-                message: An answer already exists for this question in this envelope.
-            uq_response_answer_revisions_answer_id_client_mutation_id:
-              summary: 'DB rule: REVISION_MUTATION_CONFLICT'
-              value:
-                code: REVISION_MUTATION_CONFLICT
-                message: A revision with client_mutation_id=<client_mutation_id> already exists for this answer.
-            fk_response_answer_revisions_answer_same_envelope:
-              summary: 'DB rule: REVISION_ANSWER_ENVELOPE_MISMATCH'
-              value:
-                code: REVISION_ANSWER_ENVELOPE_MISMATCH
-                message: The answer does not belong to this envelope.
+                code: ANSWER_NONCE_CONFLICT
+                message: An answer with this nonce already exists in this envelope.
     ValidationError:
       description: Request was syntactically valid but semantically invalid.
       content:

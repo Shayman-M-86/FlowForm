@@ -230,8 +230,8 @@ SliderRatingNumber = Annotated[
 ]
 
 StarsRatingNumber = Annotated[
-    int,
-    Field(ge=limits.RATING_STARS_MIN, le=limits.RATING_STARS_MAX),
+    float,
+    Field(ge=limits.RATING_STARS_MIN, le=limits.RATING_STARS_MAX, multiple_of=0.5),
 ]
 
 EmojiRatingNumber = Annotated[
