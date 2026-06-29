@@ -19,6 +19,8 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.cache import get_app_cache
+from app.crypto._internal.client_extension import get_crypto_clients
 from app.crypto._internal.errors import KmsError
 from app.crypto.models import (
     LinkageKey,
@@ -56,7 +58,6 @@ _FAKE_PLAINTEXT_DEK = PlaintextSessionKey(os.urandom(32))
 _FAKE_WRAPPED_DEK = WrappedSessionKey(b"\xbb" * 64)
 
 _STARTER_MODULE = "app.services.public_submissions.core.actions.session_starter"
-_LOADER_MODULE = "app.services.public_submissions.core.session_loader"
 _RECON_MODULE = "app.services.public_submissions.core.reconciliation"
 
 
@@ -192,11 +193,14 @@ class TestReconciliation:
 
         app_cache.sessions.write_context.evict(hash_browser_session_token(resume_token))
 
-        with pytest.raises(SessionInvalidError, match="abandoned"), patch(
-            f"{_LOADER_MODULE}.resolve_existing_session_locator",
-            return_value=(_FAKE_SESSION_LOCATOR, _FAKE_LINKAGE_KEY),
-        ):
-            load_current_session(db_sessions.core, db_sessions.response, resume_token)
+        with pytest.raises(SessionInvalidError, match="abandoned"):
+            load_current_session(
+                db_sessions.core,
+                db_sessions.response,
+                resume_token,
+                cache=get_app_cache(),
+                clients=get_crypto_clients(),
+            )
 
     def test_kms_failure_rolls_back_not_abandoned(self, db_sessions: DbSessions) -> None:
         survey_id = _seed_published_survey(db_sessions.core, "recon-kms")

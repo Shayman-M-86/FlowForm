@@ -5,18 +5,16 @@ from __future__ import annotations
 import os
 import uuid
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 import pytest
 from sqlalchemy import select
 
 from app.crypto.answers import derive_slot_answer_locator
 from app.crypto.locators import derive_session_locator
-from app.crypto.models import LinkageKey, PlaintextSessionKey, SessionContext
+from app.crypto.models import LinkageKey, PlaintextSessionKey, SubmissionSessionContext
 from app.domain.errors import QuestionNotInVersionError
 from app.repositories.response import response_envelope_repo
 from app.schema.orm.core import SubmissionAnswerSlot
-from app.schema.orm.core.submission_session import SessionRef
 from app.schema.orm.response import ResponseAnswer
 from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
 from tests.integration.core.factories import (
@@ -34,9 +32,7 @@ if TYPE_CHECKING:
 _LINKAGE_SECRET = b"\xcc" * 32
 _FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
 _FAKE_PLAINTEXT_DEK = PlaintextSessionKey(os.urandom(32))
-
 _ANSWER_SAVE_MODULE = "app.services.public_submissions.core.actions.answer_save"
-
 
 def _setup_core_fixtures(core_db):
     user = make_user()
@@ -109,29 +105,21 @@ def _create_envelope_and_context(core_db, response_db, session, version):
         crypto_version=1,
     )
 
-    session_ref = SessionRef(
-        id=session.id,
+    ctx = SubmissionSessionContext(
+        session_id=session.id,
         project_id=session.project_id,
         survey_id=session.survey_id,
         survey_version_id=version.id,
+        envelope_id=envelope.id,
+        session_locator=session_locator,
+        linkage_key=_FAKE_LINKAGE_KEY,
+        linkage_key_version=_FAKE_LINKAGE_KEY.version,
+        _session_dek=_FAKE_PLAINTEXT_DEK,
+        crypto_version=1,
         expires_at=session.expires_at,
         browser_session_token_hash=session.browser_session_token_hash,
     )
-
-    ctx = SessionContext(
-        session_ref=session_ref,
-        session_locator=session_locator,
-        envelope_id=envelope.id,
-        linkage_key=_FAKE_LINKAGE_KEY,
-    )
     return ctx, _FAKE_PLAINTEXT_DEK
-
-
-def _mock_session_key_load():
-    return patch(
-        f"{_ANSWER_SAVE_MODULE}.start_plaintext_session_key_load",
-        return_value=lambda: _FAKE_PLAINTEXT_DEK,
-    )
 
 
 class TestAnswerSave:
@@ -144,16 +132,15 @@ class TestAnswerSave:
 
         svc = AnswerSaveService()
         mutation_id = uuid.uuid4()
-        with _mock_session_key_load():
-            result = svc.save_answer(
-                core_db,
-                response_db,
-                ctx=ctx,
-                question_node_id=question.id,
-                answer_state="answered",
-                answer_value={"field_type": "short_text", "text": "hello"},
-                client_mutation_id=mutation_id,
-            )
+        result = svc.save_answer(
+            core_db,
+            response_db,
+            ctx=ctx,
+            question_node_id=question.id,
+            answer_state="answered",
+            answer_value={"field_type": "short_text", "text": "hello"},
+            client_mutation_id=mutation_id,
+        )
 
         assert result is not None
 
@@ -167,19 +154,18 @@ class TestAnswerSave:
         svc = AnswerSaveService()
         mutation_id = uuid.uuid4()
 
-        with _mock_session_key_load():
-            first = svc.save_answer(
-                core_db, response_db, ctx=ctx,
-                question_node_id=question.id, answer_state="answered",
-                answer_value={"field_type": "short_text", "text": "hello"},
-                client_mutation_id=mutation_id,
-            )
-            second = svc.save_answer(
-                core_db, response_db, ctx=ctx,
-                question_node_id=question.id, answer_state="answered",
-                answer_value={"field_type": "short_text", "text": "hello"},
-                client_mutation_id=mutation_id,
-            )
+        first = svc.save_answer(
+            core_db, response_db, ctx=ctx,
+            question_node_id=question.id, answer_state="answered",
+            answer_value={"field_type": "short_text", "text": "hello"},
+            client_mutation_id=mutation_id,
+        )
+        second = svc.save_answer(
+            core_db, response_db, ctx=ctx,
+            question_node_id=question.id, answer_state="answered",
+            answer_value={"field_type": "short_text", "text": "hello"},
+            client_mutation_id=mutation_id,
+        )
 
         assert first == second
 
@@ -204,16 +190,15 @@ class TestAnswerSave:
 
         svc = AnswerSaveService()
 
-        with _mock_session_key_load():
-            svc.save_answer(
-                core_db,
-                response_db,
-                ctx=ctx,
-                question_node_id=question.id,
-                answer_state="answered",
-                answer_value={"field_type": "short_text", "text": "hello"},
-                client_mutation_id=uuid.uuid4(),
-            )
+        svc.save_answer(
+            core_db,
+            response_db,
+            ctx=ctx,
+            question_node_id=question.id,
+            answer_state="answered",
+            answer_value={"field_type": "short_text", "text": "hello"},
+            client_mutation_id=uuid.uuid4(),
+        )
 
         slot = core_db.scalar(
             select(SubmissionAnswerSlot).where(
@@ -225,16 +210,15 @@ class TestAnswerSave:
         answer_locator = derive_slot_answer_locator(slot.id, ctx.linkage_key)
         assert response_db.get(ResponseAnswer, answer_locator) is not None
 
-        with _mock_session_key_load():
-            svc.save_answer(
-                core_db,
-                response_db,
-                ctx=ctx,
-                question_node_id=question.id,
-                answer_state="answered",
-                answer_value={"field_type": "short_text", "text": "hello again"},
-                client_mutation_id=uuid.uuid4(),
-            )
+        svc.save_answer(
+            core_db,
+            response_db,
+            ctx=ctx,
+            question_node_id=question.id,
+            answer_state="answered",
+            answer_value={"field_type": "short_text", "text": "hello again"},
+            client_mutation_id=uuid.uuid4(),
+        )
 
         slots = list(
             core_db.scalars(
@@ -259,7 +243,7 @@ class TestAnswerSave:
         ctx, _dek = _create_envelope_and_context(core_db, response_db, session, version)
 
         svc = AnswerSaveService()
-        with _mock_session_key_load(), pytest.raises(QuestionNotInVersionError):
+        with pytest.raises(QuestionNotInVersionError):
             svc.save_answer(
                 core_db, response_db, ctx=ctx,
                 question_node_id=uuid.uuid4(), answer_state="answered",

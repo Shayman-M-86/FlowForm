@@ -18,6 +18,8 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.cache import get_app_cache
+from app.crypto._internal.client_extension import get_crypto_clients
 from app.crypto._internal.errors import KmsError
 from app.crypto.models import (
     LinkageKey,
@@ -52,7 +54,6 @@ _FAKE_PLAINTEXT_DEK = PlaintextSessionKey(os.urandom(32))
 _FAKE_WRAPPED_DEK = WrappedSessionKey(b"\xbb" * 64)
 
 _STARTER_MODULE = "app.services.public_submissions.core.actions.session_starter"
-_LOADER_MODULE = "app.services.public_submissions.core.session_loader"
 
 
 def _seed_published_survey(db: Session, slug: str) -> int:
@@ -248,15 +249,13 @@ class TestResumedSession:
                 actor=None,
             )
 
-        with patch(
-            f"{_LOADER_MODULE}.resolve_existing_session_locator",
-            return_value=(_FAKE_SESSION_LOCATOR, _FAKE_LINKAGE_KEY),
-        ):
-            ctx = load_current_session(
-                db_sessions.core,
-                db_sessions.response,
-                browser_token,
-            )
+        ctx = load_current_session(
+            db_sessions.core,
+            db_sessions.response,
+            browser_token,
+            cache=get_app_cache(),
+            clients=get_crypto_clients(),
+        )
 
         assert ctx.session_id is not None
         assert ctx.survey_id == survey_id
@@ -280,15 +279,13 @@ class TestResumedSession:
                 actor=None,
             )
 
-        with patch(
-            f"{_LOADER_MODULE}.resolve_existing_session_locator",
-            return_value=(_FAKE_SESSION_LOCATOR, _FAKE_LINKAGE_KEY),
-        ):
-            ctx = load_current_session(
-                db_sessions.core,
-                db_sessions.response,
-                browser_token,
-            )
+        ctx = load_current_session(
+            db_sessions.core,
+            db_sessions.response,
+            browser_token,
+            cache=get_app_cache(),
+            clients=get_crypto_clients(),
+        )
 
         assert ctx.survey_version_id is not None
 
@@ -301,4 +298,6 @@ class TestResumedSession:
                 db_sessions.core,
                 db_sessions.response,
                 "bogus-token-that-does-not-exist",
+                cache=get_app_cache(),
+                clients=get_crypto_clients(),
             )

@@ -4,7 +4,6 @@ import uuid
 
 from app.crypto.answers import decrypt_answer_current, encrypt_answer_current
 from app.crypto.models import AnswerContext, AnswerLocator, PlaintextSessionKey
-from app.schema.enums import SubmissionAnswerState
 
 
 def _ctx() -> AnswerContext:
@@ -21,7 +20,7 @@ def test_encrypt_decrypt_current_answer_round_trip() -> None:
     encrypted = encrypt_answer_current(
         context=_ctx(),
         question_node_id=question_node_id,
-        answer_state=SubmissionAnswerState.ANSWERED,
+        answer_state="answered",
         answer_value={"value": "yes"},
     )
 
@@ -32,5 +31,5 @@ def test_encrypt_decrypt_current_answer_round_trip() -> None:
     )
 
     assert decrypted.question_node_id == question_node_id
-    assert decrypted.answer_state == SubmissionAnswerState.ANSWERED
+    assert decrypted.answer_state == "answered"
     assert decrypted.answer_value == {"value": "yes"}

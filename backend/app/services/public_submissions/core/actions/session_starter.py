@@ -12,6 +12,8 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.cache import get_app_cache
+from app.crypto._internal.client_extension import get_crypto_clients
 from app.crypto.locators import derive_session_locator, load_current_linkage_key
 from app.crypto.models import PlaintextSessionKey, SessionDEKContext, SessionLocator, SubmissionSessionContext
 from app.crypto.session_key import create_session_key
@@ -62,19 +64,19 @@ class SessionStarter:
     def __init__(
         self,
         *,
-        access_resolver: AccessResolver,
-        subject_service: SessionSubjectService,
-        subject_resolver: SubjectResolver,
-        token_service: SubjectTokenService,
-        cache: AppCache,
-        clients: CryptoClients,
+        access_resolver: AccessResolver | None = None,
+        subject_service: SessionSubjectService | None = None,
+        subject_resolver: SubjectResolver | None = None,
+        token_service: SubjectTokenService | None = None,
+        cache: AppCache | None = None,
+        clients: CryptoClients | None = None,
     ) -> None:
-        self._access_resolver = access_resolver
-        self._subject_service = subject_service
-        self._subject_resolver = subject_resolver
-        self._token_service = token_service
-        self._cache = cache
-        self._clients = clients
+        self._access_resolver = access_resolver or AccessResolver()
+        self._subject_service = subject_service or SessionSubjectService()
+        self._subject_resolver = subject_resolver or SubjectResolver()
+        self._token_service = token_service or SubjectTokenService()
+        self._cache = cache or get_app_cache()
+        self._clients = clients or get_crypto_clients()
 
     def start(
         self,

@@ -47,20 +47,18 @@ class TestDeriveSessionLocator:
 
 class TestDeriveAnswerLocator:
     def test_deterministic(self) -> None:
-        sid = uuid.uuid4()
-        qid = uuid.uuid4()
-        loc1 = derive_answer_locator(sid, qid, _LINKAGE_SECRET)
-        loc2 = derive_answer_locator(sid, qid, _LINKAGE_SECRET)
+        slot_id = uuid.uuid4()
+        loc1 = derive_answer_locator(slot_id, _LINKAGE_SECRET)
+        loc2 = derive_answer_locator(slot_id, _LINKAGE_SECRET)
         assert loc1 == loc2
 
-    def test_different_questions_differ(self) -> None:
-        sid = uuid.uuid4()
-        loc1 = derive_answer_locator(sid, uuid.uuid4(), _LINKAGE_SECRET)
-        loc2 = derive_answer_locator(sid, uuid.uuid4(), _LINKAGE_SECRET)
+    def test_different_slots_differ(self) -> None:
+        loc1 = derive_answer_locator(uuid.uuid4(), _LINKAGE_SECRET)
+        loc2 = derive_answer_locator(uuid.uuid4(), _LINKAGE_SECRET)
         assert loc1 != loc2
 
     def test_length_is_32_bytes(self) -> None:
-        loc = derive_answer_locator(uuid.uuid4(), uuid.uuid4(), _LINKAGE_SECRET)
+        loc = derive_answer_locator(uuid.uuid4(), _LINKAGE_SECRET)
         assert len(loc) == 32
 
 
@@ -80,8 +78,7 @@ class TestPublicDeriveSessionLocator:
 
 class TestPublicDeriveAnswerLocator:
     def test_returns_32_bytes(self) -> None:
-        sid = uuid.uuid4()
-        qid = uuid.uuid4()
-        result = public_derive_answer_locator(sid, qid, _FAKE_LINKAGE_KEY)
+        slot_id = uuid.uuid4()
+        result = public_derive_answer_locator(slot_id, _FAKE_LINKAGE_KEY)
         assert isinstance(result, bytes)
         assert len(result) == 32

@@ -12,8 +12,7 @@ from flask import Flask
 
 from app.cache import LockedTTLCache, create_app_cache
 from app.cache._registry import EXTENSION_KEY
-from app.crypto.models import LinkageKey, SessionContext, SessionLocator
-from app.schema.orm.core.submission_session import SessionRef
+from app.crypto.models import LinkageKey, PlaintextSessionKey, SessionLocator, SubmissionSessionContext
 
 
 def _make_cache(ttl_seconds: int = 3600) -> LockedTTLCache[bytes]:
@@ -201,21 +200,20 @@ def _make_linkage_key() -> LinkageKey:
     )
 
 
-def _make_session_context() -> SessionContext:
-    session_ref = SessionRef(
-        id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+def _make_session_context() -> SubmissionSessionContext:
+    return SubmissionSessionContext(
+        session_id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
         project_id=1,
         survey_id=2,
         survey_version_id=3,
+        envelope_id=uuid.UUID("00000000-0000-0000-0000-000000000002"),
+        session_locator=SessionLocator(b"\x01" * 32),
+        linkage_key=_make_linkage_key(),
+        linkage_key_version=1,
+        _session_dek=PlaintextSessionKey(b"\x02" * 32),
+        crypto_version=1,
         expires_at=datetime.now(UTC) + timedelta(minutes=30),
         browser_session_token_hash=b"token-hash",
-    )
-    return SessionContext(
-        session_ref=session_ref,
-        session_locator=SessionLocator(b"\x01" * 32),
-        envelope_id=uuid.UUID("00000000-0000-0000-0000-000000000002"),
-        crypto_version=1,
-        linkage_key=_make_linkage_key(),
     )
 
 

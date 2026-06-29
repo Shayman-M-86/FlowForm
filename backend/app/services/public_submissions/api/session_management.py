@@ -55,17 +55,28 @@ class SessionManagementService:
         cache: AppCache | None = None,
         clients: CryptoClients | None = None,
     ) -> None:
-        self._cache = cache or get_app_cache()
-        self._clients = clients or get_crypto_clients()
-        self._session_starter = session_starter or SessionStarter(
-            access_resolver=access_resolver or AccessResolver(),
-            subject_service=subject_service or SessionSubjectService(),
-            subject_resolver=subject_resolver or SubjectResolver(),
-            token_service=token_service or SubjectTokenService(),
-            cache=self._cache,
-            clients=self._clients,
-        )
+        self._cache = cache
+        self._clients = clients
+        self._session_starter = session_starter
+        self._access_resolver = access_resolver or AccessResolver()
+        self._subject_service = subject_service or SessionSubjectService()
+        self._subject_resolver = subject_resolver or SubjectResolver()
+        self._token_service = token_service or SubjectTokenService()
         self._answer_save_service = answer_save_service or AnswerSaveService()
+
+    def _cache_and_clients(self) -> tuple[AppCache, CryptoClients]:
+        return self._cache or get_app_cache(), self._clients or get_crypto_clients()
+
+    def _starter(self) -> SessionStarter:
+        cache, clients = self._cache_and_clients()
+        return self._session_starter or SessionStarter(
+            access_resolver=self._access_resolver,
+            subject_service=self._subject_service,
+            subject_resolver=self._subject_resolver,
+            token_service=self._token_service,
+            cache=cache,
+            clients=clients,
+        )
 
     def start_session(
         self,
@@ -81,7 +92,7 @@ class SessionManagementService:
         Returns (session_response, raw_browser_session_token, raw_recognition_token).
         The route sets the browser-session and recognition cookies from the raw tokens.
         """
-        return self._session_starter.start(
+        return self._starter().start(
             db, response_db, payload=payload, actor=actor, recognition_token=recognition_token
         )
 
@@ -100,13 +111,14 @@ class SessionManagementService:
         if raw_resume_token is None:
             raise SessionNotFoundError()
 
+        cache, clients = self._cache_and_clients()
         ctx = load_current_session(
             db,
             response_db,
             raw_resume_token,
             allow_completed=True,
-            cache=self._cache,
-            clients=self._clients,
+            cache=cache,
+            clients=clients,
         )
         return complete_session(db, ctx=ctx)
 
@@ -124,12 +136,13 @@ class SessionManagementService:
         """Save a respondent answer. Returns the save result."""
         if raw_resume_token is None:
             raise SessionNotFoundError()
+        cache, clients = self._cache_and_clients()
         ctx = load_current_session(
             db,
             response_db,
             raw_resume_token,
-            cache=self._cache,
-            clients=self._clients,
+            cache=cache,
+            clients=clients,
         )
         return self._answer_save_service.save_answer(
             db,
@@ -152,12 +165,13 @@ class SessionManagementService:
         """Record a question-viewed analytics event."""
         if raw_resume_token is None:
             raise SessionNotFoundError()
+        cache, clients = self._cache_and_clients()
         ctx = load_current_session(
             db,
             response_db,
             raw_resume_token,
-            cache=self._cache,
-            clients=self._clients,
+            cache=cache,
+            clients=clients,
         )
         self._answer_save_service.record_question_viewed(
             db,

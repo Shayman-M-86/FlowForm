@@ -118,7 +118,8 @@ class TestLocalCryptoRoundTrip:
 class TestKmsSmokeRoundTrip:
     """End-to-end crypto round-trip against real KMS."""
 
-    def test_survey_key_wrap_unwrap_via_kms(self, settings, app_ctx) -> None:
+    def test_survey_key_wrap_unwrap_via_kms(self, settings, app_ctx) -> None:  # noqa: ARG002
+        from app.crypto._internal.client_extension import get_crypto_clients
         from app.crypto._internal.kms_context import build_survey_kms_context
         from app.crypto._internal.wrapping import unwrap_survey_key, wrap_survey_key
 
@@ -127,9 +128,10 @@ class TestKmsSmokeRoundTrip:
 
         survey_key = PlaintextSurveyKey(os.urandom(32))
         context = build_survey_kms_context(project_id=1, survey_id=1)
+        kms_client = get_crypto_clients().kms
 
-        wrapped = wrap_survey_key(survey_key, enc.kms_key_arn, context)
+        wrapped = wrap_survey_key(survey_key, enc.kms_key_arn, context, client=kms_client)
         assert wrapped != survey_key
 
-        unwrapped = unwrap_survey_key(wrapped, enc.kms_key_arn, context)
+        unwrapped = unwrap_survey_key(wrapped, enc.kms_key_arn, context, client=kms_client)
         assert unwrapped == survey_key

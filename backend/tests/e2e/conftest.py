@@ -128,12 +128,11 @@ def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
     _wrapped_dek = WrappedSessionKey(b"\x02" * 64)
 
     _starter = "app.services.public_submissions.core.actions.session_starter"
-    _loader = "app.services.public_submissions.core.session_loader"
-    _answer = "app.services.public_submissions.core.actions.answer_save"
+    _session_key = "app.crypto.session_key"
     _recon = "app.services.public_submissions.core.reconciliation"
     _admin = "app.services.admin_responses.service"
 
-    monkeypatch.setattr(f"{_starter}.load_current_linkage_key", lambda _db: _linkage_key)
+    monkeypatch.setattr(f"{_starter}.load_current_linkage_key", lambda *_args, **_kwargs: _linkage_key)
     monkeypatch.setattr(
         f"{_starter}.derive_session_locator",
         lambda sid, _key: NewSessionLocator(
@@ -143,27 +142,23 @@ def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setattr(
         f"{_starter}.start_plaintext_survey_key_load",
-        lambda _db, **_kw: MagicMock(return_value=os.urandom(32)),
+        lambda *_args, **_kwargs: MagicMock(return_value=os.urandom(32)),
     )
     monkeypatch.setattr(
         f"{_starter}.create_session_key",
-        lambda _ctx, _sk: NewSessionKey(plaintext_key=_plaintext_dek, wrapped_key=_wrapped_dek),
+        lambda *_args, **_kwargs: NewSessionKey(plaintext_key=_plaintext_dek, wrapped_key=_wrapped_dek),
     )
     monkeypatch.setattr(
-        f"{_loader}.resolve_existing_session_locator",
-        lambda db, sid, ver: (SessionLocator(_raw_derive(sid, linkage_secret)), _linkage_key),
-    )
-    monkeypatch.setattr(
-        f"{_answer}.start_plaintext_session_key_load",
-        lambda _db, _rdb, **_kw: (lambda: _plaintext_dek),
+        f"{_session_key}.resolve_existing_session_locator",
+        lambda _db, sid, _ver, **_kwargs: (SessionLocator(_raw_derive(sid, linkage_secret)), _linkage_key),
     )
     monkeypatch.setattr(
         f"{_recon}.resolve_existing_session_locator",
-        lambda db, sid, ver: (SessionLocator(_raw_derive(sid, linkage_secret)), _linkage_key),
+        lambda _db, sid, _ver, **_kwargs: (SessionLocator(_raw_derive(sid, linkage_secret)), _linkage_key),
     )
     monkeypatch.setattr(
         f"{_admin}.resolve_existing_session_locator",
-        lambda db, sid, ver: (SessionLocator(_raw_derive(sid, linkage_secret)), _linkage_key),
+        lambda _db, sid, _ver, **_kwargs: (SessionLocator(_raw_derive(sid, linkage_secret)), _linkage_key),
     )
 
 
