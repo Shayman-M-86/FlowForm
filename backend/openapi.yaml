@@ -28,7 +28,7 @@ tags:
 - name: Survey Access Links
 - name: Survey Builder
 - name: Survey Members
-- name: Survey Responses
+- name: Survey Results
 - name: Survey Roles
 - name: Survey Scoring
 - name: Survey Versions
@@ -2582,13 +2582,13 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses:
+  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/subjects:
     get:
-      operationId: listResponses
-      summary: List survey responses
-      description: List survey responses
+      operationId: listSurveyResultSubjects
+      summary: List survey result subjects
+      description: List survey result subjects
       tags:
-      - Survey Responses
+      - Survey Results
       x-flowform-rbac:
         permission: submission:view
       parameters:
@@ -2606,19 +2606,6 @@ paths:
           type: integer
           minimum: 1
           maximum: 2147483647
-      - name: status
-        in: query
-        required: false
-        schema:
-          anyOf:
-          - enum:
-            - in_progress
-            - completed
-            - abandoned
-            type: string
-          - type: 'null'
-          default: null
-          title: Status
       - name: page
         in: query
         required: false
@@ -2636,13 +2623,27 @@ paths:
           minimum: 1
           title: Page Size
           type: integer
+      - name: include_decrypted_answer_values
+        in: query
+        required: false
+        schema:
+          default: false
+          title: Include Decrypted Answer Values
+          type: boolean
+      - name: include_events
+        in: query
+        required: false
+        schema:
+          default: false
+          title: Include Events
+          type: boolean
       responses:
         '200':
           description: Successful response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedSurveyResponsesResponses'
+                $ref: '#/components/schemas/PaginatedSurveySubjectTreesResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -2659,13 +2660,13 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses/{session_id}:
+  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/subjects/{subject_id}:
     get:
-      operationId: getResponseDetail
-      summary: Get survey response detail
-      description: Get survey response detail
+      operationId: getSubjectTree
+      summary: Get survey result subject tree
+      description: Get survey result subject tree
       tags:
-      - Survey Responses
+      - Survey Results
       x-flowform-rbac:
         permission: submission:view
       parameters:
@@ -2683,19 +2684,33 @@ paths:
           type: integer
           minimum: 1
           maximum: 2147483647
-      - name: session_id
+      - name: subject_id
         in: path
         required: true
         schema:
           type: string
           format: uuid
+      - name: include_decrypted_answer_values
+        in: query
+        required: false
+        schema:
+          default: false
+          title: Include Decrypted Answer Values
+          type: boolean
+      - name: include_events
+        in: query
+        required: false
+        schema:
+          default: false
+          title: Include Events
+          type: boolean
       responses:
         '200':
           description: Successful response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyResponseDetailResponses'
+                $ref: '#/components/schemas/SurveySubjectTreeResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -2712,12 +2727,63 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    delete:
-      operationId: deleteResponse
-      summary: Delete survey response
-      description: Delete survey response
+  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/export:
+    post:
+      operationId: exportResults
+      summary: Export survey results
+      description: Streams a CSV or JSON file attachment (one row per answer slot), not a JSON envelope. Use the `format`
+        field on the request body to choose CSV or JSON.
       tags:
-      - Survey Responses
+      - Survey Results
+      x-flowform-rbac:
+        permission: submission:view
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportSurveyResultsRequest'
+      responses:
+        '200':
+          description: Successful response.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/sessions/{session_id}:
+    delete:
+      operationId: deleteSession
+      summary: Delete survey response session
+      description: Delete survey response session
+      tags:
+      - Survey Results
       x-flowform-rbac:
         permission: submission:view
       parameters:
@@ -2744,108 +2810,6 @@ paths:
       responses:
         '204':
           description: No content.
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses/{session_id}/history:
-    get:
-      operationId: getResponseHistory
-      summary: Get survey response history
-      description: Get survey response history
-      tags:
-      - Survey Responses
-      x-flowform-rbac:
-        permission: submission:view
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: session_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: Successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SurveyResponseHistoryResponses'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses/export:
-    post:
-      operationId: exportResponses
-      summary: Export survey responses
-      description: Export survey responses
-      tags:
-      - Survey Responses
-      x-flowform-rbac:
-        permission: submission:view
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ExportSurveyResponsesRequest'
-      responses:
-        '200':
-          description: Successful response.
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -6895,7 +6859,121 @@ components:
       - role_id
       title: UpdateSurveyMemberRoleRequest
       type: object
-    SurveyResponseSummaryResponses:
+    SurveyAnswerSlotResponses:
+      description: One answer slot in an admin survey-results view, optionally decrypted.
+      properties:
+        question_node_id:
+          format: uuid
+          title: Question Node Id
+          type: string
+          maxLength: 36
+        question_key:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          default: null
+          title: Question Key
+        answer_family:
+          anyOf:
+          - enum:
+            - choice
+            - field
+            - matching
+            - rating
+            type: string
+            maxLength: 8
+          - type: 'null'
+          default: null
+          title: Answer Family
+        has_encrypted_answer:
+          title: Has Encrypted Answer
+          type: boolean
+        decrypted:
+          title: Decrypted
+          type: boolean
+        state:
+          anyOf:
+          - enum:
+            - answered
+            - cleared
+            type: string
+            maxLength: 8
+          - type: 'null'
+          default: null
+          title: State
+        answer_value:
+          anyOf:
+          - $ref: '#/components/schemas/ChoiceAnswerValue'
+          - discriminator:
+              mapping:
+                date: '#/components/schemas/DateFieldAnswerValue'
+                email: '#/components/schemas/EmailFieldAnswerValue'
+                long_text: '#/components/schemas/LongTextFieldAnswerValue'
+                number: '#/components/schemas/NumberFieldAnswerValue'
+                phone: '#/components/schemas/PhoneFieldAnswerValue'
+                short_text: '#/components/schemas/ShortTextFieldAnswerValue'
+              propertyName: field_type
+            oneOf:
+            - $ref: '#/components/schemas/ShortTextFieldAnswerValue'
+            - $ref: '#/components/schemas/LongTextFieldAnswerValue'
+            - $ref: '#/components/schemas/EmailFieldAnswerValue'
+            - $ref: '#/components/schemas/NumberFieldAnswerValue'
+            - $ref: '#/components/schemas/DateFieldAnswerValue'
+            - $ref: '#/components/schemas/PhoneFieldAnswerValue'
+          - $ref: '#/components/schemas/MatchingAnswerValue'
+          - discriminator:
+              mapping:
+                emoji: '#/components/schemas/EmojiRatingAnswerValue'
+                slider: '#/components/schemas/SliderRatingAnswerValue'
+                stars: '#/components/schemas/StarsRatingAnswerValue'
+              propertyName: variant
+            oneOf:
+            - $ref: '#/components/schemas/SliderRatingAnswerValue'
+            - $ref: '#/components/schemas/StarsRatingAnswerValue'
+            - $ref: '#/components/schemas/EmojiRatingAnswerValue'
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Answer Value
+      required:
+      - question_node_id
+      - has_encrypted_answer
+      - decrypted
+      title: SurveyAnswerSlotResponses
+      type: object
+    SurveySessionEventResponses:
+      description: One timeline event for a session. Never carries answer values.
+      properties:
+        event_type:
+          enum:
+          - session_started
+          - question_viewed
+          - answer_saved
+          - session_completed
+          title: Event Type
+          type: string
+          maxLength: 17
+        question_node_id:
+          anyOf:
+          - format: uuid
+            type: string
+            maxLength: 36
+          - type: 'null'
+          default: null
+          title: Question Node Id
+        received_at:
+          format: date-time
+          title: Received At
+          type: string
+          maxLength: 35
+      required:
+      - event_type
+      - received_at
+      title: SurveySessionEventResponses
+      type: object
+    SurveySessionResponses:
       description: 'Admin-facing summary of one respondent submission session.
 
 
@@ -6947,14 +7025,69 @@ components:
       - status
       - started_at
       - last_activity_at
-      title: SurveyResponseSummaryResponses
+      title: SurveySessionResponses
       type: object
-    PaginatedSurveyResponsesResponses:
-      description: Paginated list of admin survey-response summaries.
+    SurveySessionTreeResponses:
+      description: One session with its answer slots and optional event timeline.
+      properties:
+        session:
+          $ref: '#/components/schemas/SurveySessionResponses'
+        answers:
+          items:
+            $ref: '#/components/schemas/SurveyAnswerSlotResponses'
+          maxItems: 50
+          title: Answers
+          type: array
+        events:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/SurveySessionEventResponses'
+            type: array
+          - type: 'null'
+          default: null
+          title: Events
+      required:
+      - session
+      - answers
+      title: SurveySessionTreeResponses
+      type: object
+    SurveySubjectResponses:
+      description: Admin-facing summary of one project subject.
+      properties:
+        subject_id:
+          format: uuid
+          title: Subject Id
+          type: string
+          maxLength: 36
+        subject_code:
+          title: Subject Code
+          type: string
+      required:
+      - subject_id
+      - subject_code
+      title: SurveySubjectResponses
+      type: object
+    SurveySubjectTreeResponses:
+      description: One subject with all of its sessions for a survey.
+      properties:
+        subject:
+          $ref: '#/components/schemas/SurveySubjectResponses'
+        sessions:
+          items:
+            $ref: '#/components/schemas/SurveySessionTreeResponses'
+          title: Sessions
+          type: array
+      required:
+      - subject
+      - sessions
+      title: SurveySubjectTreeResponses
+      type: object
+    PaginatedSurveySubjectTreesResponses:
+      description: Paginated list of subject result trees.
       properties:
         items:
           items:
-            $ref: '#/components/schemas/SurveyResponseSummaryResponses'
+            $ref: '#/components/schemas/SurveySubjectTreeResponses'
           maxItems: 100
           title: Items
           type: array
@@ -6967,115 +7100,20 @@ components:
         page_size:
           title: Page Size
           type: integer
+        include_decrypted_answer_values:
+          title: Include Decrypted Answer Values
+          type: boolean
       required:
       - items
       - total
       - page
       - page_size
-      title: PaginatedSurveyResponsesResponses
+      - include_decrypted_answer_values
+      title: PaginatedSurveySubjectTreesResponses
       type: object
-    SurveyResponseAnswerResponses:
-      description: One decrypted canonical answer in an admin survey-response detail view.
-      properties:
-        question_node_id:
-          format: uuid
-          title: Question Node Id
-          type: string
-          maxLength: 36
-        state:
-          enum:
-          - answered
-          - cleared
-          title: State
-          type: string
-          maxLength: 8
-        answer_family:
-          anyOf:
-          - enum:
-            - choice
-            - field
-            - matching
-            - rating
-            type: string
-            maxLength: 8
-          - type: 'null'
-          default: null
-          title: Answer Family
-        answer_value:
-          anyOf:
-          - $ref: '#/components/schemas/ChoiceAnswerValue'
-          - discriminator:
-              mapping:
-                date: '#/components/schemas/DateFieldAnswerValue'
-                email: '#/components/schemas/EmailFieldAnswerValue'
-                long_text: '#/components/schemas/LongTextFieldAnswerValue'
-                number: '#/components/schemas/NumberFieldAnswerValue'
-                phone: '#/components/schemas/PhoneFieldAnswerValue'
-                short_text: '#/components/schemas/ShortTextFieldAnswerValue'
-              propertyName: field_type
-            oneOf:
-            - $ref: '#/components/schemas/ShortTextFieldAnswerValue'
-            - $ref: '#/components/schemas/LongTextFieldAnswerValue'
-            - $ref: '#/components/schemas/EmailFieldAnswerValue'
-            - $ref: '#/components/schemas/NumberFieldAnswerValue'
-            - $ref: '#/components/schemas/DateFieldAnswerValue'
-            - $ref: '#/components/schemas/PhoneFieldAnswerValue'
-          - $ref: '#/components/schemas/MatchingAnswerValue'
-          - discriminator:
-              mapping:
-                emoji: '#/components/schemas/EmojiRatingAnswerValue'
-                slider: '#/components/schemas/SliderRatingAnswerValue'
-                stars: '#/components/schemas/StarsRatingAnswerValue'
-              propertyName: variant
-            oneOf:
-            - $ref: '#/components/schemas/SliderRatingAnswerValue'
-            - $ref: '#/components/schemas/StarsRatingAnswerValue'
-            - $ref: '#/components/schemas/EmojiRatingAnswerValue'
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          default: null
-          title: Answer Value
-      required:
-      - question_node_id
-      - state
-      title: SurveyResponseAnswerResponses
-      type: object
-    SurveyResponseDetailResponses:
-      description: 'Admin survey-response detail: session metadata plus canonical decrypted answers.'
-      properties:
-        session:
-          $ref: '#/components/schemas/SurveyResponseSummaryResponses'
-        answers:
-          items:
-            $ref: '#/components/schemas/SurveyResponseAnswerResponses'
-          maxItems: 50
-          title: Answers
-          type: array
-      required:
-      - session
-      - answers
-      title: SurveyResponseDetailResponses
-      type: object
-    SurveyResponseHistoryResponses:
-      description: Admin current-answer history-compatible view for a session.
-      properties:
-        session:
-          $ref: '#/components/schemas/SurveyResponseSummaryResponses'
-        revisions:
-          items:
-            $ref: '#/components/schemas/SurveyResponseAnswerResponses'
-          maxItems: 50
-          title: Revisions
-          type: array
-      required:
-      - session
-      - revisions
-      title: SurveyResponseHistoryResponses
-      type: object
-    ExportSurveyResponsesRequest:
+    ExportSurveyResultsRequest:
       additionalProperties: false
-      description: Request body for exporting a survey's responses.
+      description: Request body for exporting a survey's results.
       properties:
         format:
           default: csv
@@ -7085,9 +7123,9 @@ components:
           title: Format
           type: string
           maxLength: 4
-        include_history:
+        include_decrypted_answer_values:
           default: false
-          title: Include History
+          title: Include Decrypted Answer Values
           type: boolean
         session_ids:
           anyOf:
@@ -7100,7 +7138,7 @@ components:
           - type: 'null'
           default: null
           title: Session Ids
-      title: ExportSurveyResponsesRequest
+      title: ExportSurveyResultsRequest
       type: object
     CreateSurveyRoleRequest:
       description: Request body for creating a survey role.

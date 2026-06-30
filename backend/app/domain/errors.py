@@ -291,17 +291,6 @@ class ProjectSlugConflictError(AppError):
         )
 
 
-class UserBootstrapConflictError(AppError):
-    """Error raised when user bootstrap conflicts with an existing local identity."""
-
-    def __init__(self, *, email: str) -> None:
-        super().__init__(
-            status_code=409,
-            code="CONFLICT",
-            message=f"Conflict — a user with email '{email}' already exists",
-        )
-
-
 class SurveySlugConflictError(AppError):
     """Error raised when a survey slug already exists within the project."""
 

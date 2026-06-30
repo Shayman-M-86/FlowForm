@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.transaction import commit_or_rollback
-from app.domain.errors import UserBootstrapConflictError, UserNotFoundError
+from app.domain.errors import UserNotFoundError
 from app.domain.guards import ensure_present
 from app.repositories import users_repo as ur
 from app.schema.orm.core.user import User
@@ -51,9 +51,6 @@ class UserService:
                 ur.update_user(user, email=email, display_name=display_name)
                 commit_or_rollback(db)
                 return user, False
-
-            if isinstance(exc.orig, UniqueViolation) and "email" in constraint:
-                raise UserBootstrapConflictError(email=email) from None
 
             raise
 

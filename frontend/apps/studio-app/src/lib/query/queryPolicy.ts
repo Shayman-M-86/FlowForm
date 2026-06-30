@@ -153,12 +153,12 @@ export const QUERY_POLICIES = {
     cooldownMs: 15_000,
   },
 
-  responses: {
+  results: {
     storage: 'memory',
     staleTime: 30_000,
   },
 
-  responseDetail: {
+  resultDetail: {
     storage: 'session',
     staleTime: 20 * MINUTE,
   },

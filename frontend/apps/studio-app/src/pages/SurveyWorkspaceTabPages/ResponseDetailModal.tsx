@@ -1,10 +1,8 @@
-import { Badge, Card, Modal, Spinner } from '@flowform/ui'
-import { useResponseDetail, type ResponseAnswer } from '@/api/hooks/responses'
+import { Badge, Card, Modal } from '@flowform/ui'
+import type { AnswerSlot, SessionTree } from '@/api/hooks/results'
 
 type Props = {
-  projectId: number
-  surveyId: number
-  sessionId: string | null
+  sessionTree: SessionTree | null
   onClose: () => void
 }
 
@@ -30,21 +28,29 @@ function formatTimestamp(iso: string): string {
   })
 }
 
-function AnswerCard({ answer }: { answer: ResponseAnswer }) {
+function AnswerCard({ answer }: { answer: AnswerSlot }) {
   return (
     <Card size="sm" tone="muted">
       <div className="flex items-start justify-between gap-2">
-        <p className="font-mono text-xs text-muted-foreground">{answer.question_node_id.slice(0, 8)}</p>
+        <p className="font-mono text-xs text-muted-foreground">
+          {answer.question_key ?? answer.question_node_id.slice(0, 8)}
+        </p>
         <div className="flex items-center gap-1.5">
           {answer.answer_family && (
             <Badge variant="muted" size="xs">{answer.answer_family}</Badge>
           )}
-          <Badge variant={answer.state === 'answered' ? 'success' : 'warning'} size="xs">
-            {answer.state}
-          </Badge>
+          {answer.state ? (
+            <Badge variant={answer.state === 'answered' ? 'success' : 'warning'} size="xs">
+              {answer.state}
+            </Badge>
+          ) : (
+            <Badge variant="muted" size="xs">
+              {answer.has_encrypted_answer ? 'encrypted' : 'no answer'}
+            </Badge>
+          )}
         </div>
       </div>
-      {answer.state === 'answered' && answer.answer_value != null && (
+      {answer.decrypted && answer.answer_value != null && (
         <pre className="mt-2 overflow-x-auto rounded bg-background p-2 text-xs text-foreground">
           {JSON.stringify(answer.answer_value, null, 2)}
         </pre>
@@ -53,21 +59,18 @@ function AnswerCard({ answer }: { answer: ResponseAnswer }) {
   )
 }
 
-export function ResponseDetailModal({ projectId, surveyId, sessionId, onClose }: Props) {
-  const { data, isLoading } = useResponseDetail(projectId, surveyId, sessionId)
-  const session = data?.session
-  const answers = data?.answers ?? []
+export function ResponseDetailModal({ sessionTree, onClose }: Props) {
+  const session = sessionTree?.session
+  const answers = sessionTree?.answers ?? []
 
   return (
     <Modal
-      open={sessionId != null}
+      open={sessionTree != null}
       onClose={onClose}
       title="Response detail"
       width={640}
     >
-      {isLoading ? (
-        <div className="flex justify-center py-10"><Spinner size={24} /></div>
-      ) : session ? (
+      {session ? (
         <div className="grid gap-4">
           {/* ── Session metadata ────────────────────────────────────────── */}
           <div className="grid gap-2 text-sm">

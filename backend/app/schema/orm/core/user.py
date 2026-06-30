@@ -21,7 +21,7 @@ class User(CoreBase):
         ),
     )
     auth0_user_id: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
-    email: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(Text, nullable=False)
     display_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     platform_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

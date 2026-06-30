@@ -33,6 +33,7 @@ _MGMT_REQUIRED_SCOPES = frozenset(
         "delete:guardian_enrollments",
         "delete:users",
         "update:users",
+        "read:users",
     }
 )
 _MGMT_SCOPE_REQUEST = " ".join(sorted(_MGMT_REQUIRED_SCOPES))

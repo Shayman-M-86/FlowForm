@@ -876,7 +876,7 @@ export interface paths {
         patch: operations["updateSurveyMemberRole"];
         trace?: never;
     };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/subjects": {
         parameters: {
             query?: never;
             header?: never;
@@ -884,10 +884,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List survey responses
-         * @description List survey responses
+         * List survey result subjects
+         * @description List survey result subjects
          */
-        get: operations["listResponses"];
+        get: operations["listSurveyResultSubjects"];
         put?: never;
         post?: never;
         delete?: never;
@@ -896,7 +896,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses/{session_id}": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/subjects/{subject_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -904,34 +904,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get survey response detail
-         * @description Get survey response detail
+         * Get survey result subject tree
+         * @description Get survey result subject tree
          */
-        get: operations["getResponseDetail"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete survey response
-         * @description Delete survey response
-         */
-        delete: operations["deleteResponse"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses/{session_id}/history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get survey response history
-         * @description Get survey response history
-         */
-        get: operations["getResponseHistory"];
+        get: operations["getSubjectTree"];
         put?: never;
         post?: never;
         delete?: never;
@@ -940,7 +916,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses/export": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/export": {
         parameters: {
             query?: never;
             header?: never;
@@ -950,11 +926,31 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Export survey responses
-         * @description Export survey responses
+         * Export survey results
+         * @description Streams a CSV or JSON file attachment (one row per answer slot), not a JSON envelope. Use the `format` field on the request body to choose CSV or JSON.
          */
-        post: operations["exportResponses"];
+        post: operations["exportResults"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete survey response session
+         * @description Delete survey response session
+         */
+        delete: operations["deleteSession"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3020,13 +3016,71 @@ export interface components {
             role_id: number;
         };
         /**
-         * SurveyResponseSummaryResponses
+         * SurveyAnswerSlotResponses
+         * @description One answer slot in an admin survey-results view, optionally decrypted.
+         */
+        SurveyAnswerSlotResponses: {
+            /**
+             * Question Node Id
+             * Format: uuid
+             */
+            question_node_id: string;
+            /**
+             * Question Key
+             * @default null
+             */
+            question_key: string | null;
+            /**
+             * Answer Family
+             * @default null
+             */
+            answer_family: ("choice" | "field" | "matching" | "rating") | null;
+            /** Has Encrypted Answer */
+            has_encrypted_answer: boolean;
+            /** Decrypted */
+            decrypted: boolean;
+            /**
+             * State
+             * @default null
+             */
+            state: ("answered" | "cleared") | null;
+            /**
+             * Answer Value
+             * @default null
+             */
+            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * SurveySessionEventResponses
+         * @description One timeline event for a session. Never carries answer values.
+         */
+        SurveySessionEventResponses: {
+            /**
+             * Event Type
+             * @enum {string}
+             */
+            event_type: "session_started" | "question_viewed" | "answer_saved" | "session_completed";
+            /**
+             * Question Node Id
+             * @default null
+             */
+            question_node_id: string | null;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+        };
+        /**
+         * SurveySessionResponses
          * @description Admin-facing summary of one respondent submission session.
          *
          *     Sourced from core session metadata only; carries no decrypted answer
          *     payloads and no response-database locators or crypto material.
          */
-        SurveyResponseSummaryResponses: {
+        SurveySessionResponses: {
             /**
              * Session Id
              * Format: uuid
@@ -3058,70 +3112,62 @@ export interface components {
             last_activity_at: string;
         };
         /**
-         * PaginatedSurveyResponsesResponses
-         * @description Paginated list of admin survey-response summaries.
+         * SurveySessionTreeResponses
+         * @description One session with its answer slots and optional event timeline.
          */
-        PaginatedSurveyResponsesResponses: {
+        SurveySessionTreeResponses: {
+            session: components["schemas"]["SurveySessionResponses"];
+            /** Answers */
+            answers: components["schemas"]["SurveyAnswerSlotResponses"][];
+            /**
+             * Events
+             * @default null
+             */
+            events: components["schemas"]["SurveySessionEventResponses"][] | null;
+        };
+        /**
+         * SurveySubjectResponses
+         * @description Admin-facing summary of one project subject.
+         */
+        SurveySubjectResponses: {
+            /**
+             * Subject Id
+             * Format: uuid
+             */
+            subject_id: string;
+            /** Subject Code */
+            subject_code: string;
+        };
+        /**
+         * SurveySubjectTreeResponses
+         * @description One subject with all of its sessions for a survey.
+         */
+        SurveySubjectTreeResponses: {
+            subject: components["schemas"]["SurveySubjectResponses"];
+            /** Sessions */
+            sessions: components["schemas"]["SurveySessionTreeResponses"][];
+        };
+        /**
+         * PaginatedSurveySubjectTreesResponses
+         * @description Paginated list of subject result trees.
+         */
+        PaginatedSurveySubjectTreesResponses: {
             /** Items */
-            items: components["schemas"]["SurveyResponseSummaryResponses"][];
+            items: components["schemas"]["SurveySubjectTreeResponses"][];
             /** Total */
             total: number;
             /** Page */
             page: number;
             /** Page Size */
             page_size: number;
+            /** Include Decrypted Answer Values */
+            include_decrypted_answer_values: boolean;
         };
         /**
-         * SurveyResponseAnswerResponses
-         * @description One decrypted canonical answer in an admin survey-response detail view.
+         * ExportSurveyResultsRequest
+         * @description Request body for exporting a survey's results.
          */
-        SurveyResponseAnswerResponses: {
-            /**
-             * Question Node Id
-             * Format: uuid
-             */
-            question_node_id: string;
-            /**
-             * State
-             * @enum {string}
-             */
-            state: "answered" | "cleared";
-            /**
-             * Answer Family
-             * @default null
-             */
-            answer_family: ("choice" | "field" | "matching" | "rating") | null;
-            /**
-             * Answer Value
-             * @default null
-             */
-            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | {
-                [key: string]: unknown;
-            } | null;
-        };
-        /**
-         * SurveyResponseDetailResponses
-         * @description Admin survey-response detail: session metadata plus canonical decrypted answers.
-         */
-        SurveyResponseDetailResponses: {
-            session: components["schemas"]["SurveyResponseSummaryResponses"];
-            /** Answers */
-            answers: components["schemas"]["SurveyResponseAnswerResponses"][];
-        };
-        /**
-         * SurveyResponseHistoryResponses
-         * @description Admin current-answer history-compatible view for a session.
-         */
-        SurveyResponseHistoryResponses: {
-            session: components["schemas"]["SurveyResponseSummaryResponses"];
-            /** Revisions */
-            revisions: components["schemas"]["SurveyResponseAnswerResponses"][];
-        };
-        /**
-         * ExportSurveyResponsesRequest
-         * @description Request body for exporting a survey's responses.
-         */
-        ExportSurveyResponsesRequest: {
+        ExportSurveyResultsRequest: {
             /**
              * Format
              * @default csv
@@ -3129,10 +3175,10 @@ export interface components {
              */
             format: "csv" | "json";
             /**
-             * Include History
+             * Include Decrypted Answer Values
              * @default false
              */
-            include_history: boolean;
+            include_decrypted_answer_values: boolean;
             /**
              * Session Ids
              * @default null
@@ -3542,6 +3588,146 @@ export interface components {
     headers: never;
     pathItems: never;
 }
+export type ErrorResponse = components['schemas']['ErrorResponse'];
+export type BootstrapUserRequest = components['schemas']['BootstrapUserRequest'];
+export type CurrentUserResponses = components['schemas']['CurrentUserResponses'];
+export type ProjectResponses = components['schemas']['ProjectResponses'];
+export type BootstrapUserResponses = components['schemas']['BootstrapUserResponses'];
+export type ProjectInvitationResponses = components['schemas']['ProjectInvitationResponses'];
+export type MemberUserResponses = components['schemas']['MemberUserResponses'];
+export type ProjectMemberResponses = components['schemas']['ProjectMemberResponses'];
+export type PublicInvitationResolveResponse = components['schemas']['PublicInvitationResolveResponse'];
+export type CurrentUserProfileResponses = components['schemas']['CurrentUserProfileResponses'];
+export type UpdateProfileRequest = components['schemas']['UpdateProfileRequest'];
+export type ChangeEmailRequest = components['schemas']['ChangeEmailRequest'];
+export type ChangeUsernameRequest = components['schemas']['ChangeUsernameRequest'];
+export type PasswordChangeTicketResponses = components['schemas']['PasswordChangeTicketResponses'];
+export type ResolveSurveyAccessLinkTokenRequest = components['schemas']['ResolveSurveyAccessLinkTokenRequest'];
+export type SurveyAccessLinkResponse = components['schemas']['SurveyAccessLinkResponse'];
+export type SurveyResponses = components['schemas']['SurveyResponses'];
+export type SurveyVersionResponses = components['schemas']['SurveyVersionResponses'];
+export type ResolveSurveyAccessLinkResponse = components['schemas']['ResolveSurveyAccessLinkResponse'];
+export type PaginatedPublicSurveysResponses = components['schemas']['PaginatedPublicSurveysResponses'];
+export type PublicSurveyResponses = components['schemas']['PublicSurveyResponses'];
+export type LinkTokenAccess = components['schemas']['LinkTokenAccess'];
+export type PublicSlugAccess = components['schemas']['PublicSlugAccess'];
+export type StartSubmissionSessionRequest = components['schemas']['StartSubmissionSessionRequest'];
+export type StartSubmissionSessionResponse = components['schemas']['StartSubmissionSessionResponse'];
+export type ChoiceAnswerValue = components['schemas']['ChoiceAnswerValue'];
+export type DateFieldAnswerValue = components['schemas']['DateFieldAnswerValue'];
+export type EmailFieldAnswerValue = components['schemas']['EmailFieldAnswerValue'];
+export type EmojiRatingAnswerValue = components['schemas']['EmojiRatingAnswerValue'];
+export type LongTextFieldAnswerValue = components['schemas']['LongTextFieldAnswerValue'];
+export type MatchingAnswerPair = components['schemas']['MatchingAnswerPair'];
+export type MatchingAnswerValue = components['schemas']['MatchingAnswerValue'];
+export type NumberFieldAnswerValue = components['schemas']['NumberFieldAnswerValue'];
+export type PhoneFieldAnswerValue = components['schemas']['PhoneFieldAnswerValue'];
+export type ShortTextFieldAnswerValue = components['schemas']['ShortTextFieldAnswerValue'];
+export type SliderRatingAnswerValue = components['schemas']['SliderRatingAnswerValue'];
+export type StarsRatingAnswerValue = components['schemas']['StarsRatingAnswerValue'];
+export type SaveSubmissionSessionAnswerRequest = components['schemas']['SaveSubmissionSessionAnswerRequest'];
+export type SubmissionSessionAnswerResponse = components['schemas']['SubmissionSessionAnswerResponse'];
+export type SubmissionSessionEventRequest = components['schemas']['SubmissionSessionEventRequest'];
+export type CompleteSubmissionSessionResponse = components['schemas']['CompleteSubmissionSessionResponse'];
+export type SendInvitationRequest = components['schemas']['SendInvitationRequest'];
+export type UpdateMemberRequest = components['schemas']['UpdateMemberRequest'];
+export type ParticipantResponses = components['schemas']['ParticipantResponses'];
+export type ListParticipantsResponses = components['schemas']['ListParticipantsResponses'];
+export type CreateParticipantRequest = components['schemas']['CreateParticipantRequest'];
+export type UpdateParticipantRequest = components['schemas']['UpdateParticipantRequest'];
+export type ProjectRoleResponses = components['schemas']['ProjectRoleResponses'];
+export type CreateProjectRoleRequest = components['schemas']['CreateProjectRoleRequest'];
+export type UpdateProjectRoleRequest = components['schemas']['UpdateProjectRoleRequest'];
+export type CreateProjectRequest = components['schemas']['CreateProjectRequest'];
+export type MyProjectPermissionsResponses = components['schemas']['MyProjectPermissionsResponses'];
+export type UpdateProjectRequest = components['schemas']['UpdateProjectRequest'];
+export type SubjectResponse = components['schemas']['SubjectResponse'];
+export type ListSubjectsResponse = components['schemas']['ListSubjectsResponse'];
+export type SubjectIdentityResponse = components['schemas']['SubjectIdentityResponse'];
+export type SubjectDetailResponse = components['schemas']['SubjectDetailResponse'];
+export type UpdateSubjectRequest = components['schemas']['UpdateSubjectRequest'];
+export type ListSurveyAccessLinksResponse = components['schemas']['ListSurveyAccessLinksResponse'];
+export type CreateSurveyAccessLinkRequest = components['schemas']['CreateSurveyAccessLinkRequest'];
+export type CreateSurveyAccessLinkResponse = components['schemas']['CreateSurveyAccessLinkResponse'];
+export type UpdateSurveyAccessLinkRequest = components['schemas']['UpdateSurveyAccessLinkRequest'];
+export type SendSurveyLinkEmailResponse = components['schemas']['SendSurveyLinkEmailResponse'];
+export type ChoiceConditionIn = components['schemas']['ChoiceConditionIn'];
+export type ChoiceDefinitionIn = components['schemas']['ChoiceDefinitionIn'];
+export type ChoiceOptionIn = components['schemas']['ChoiceOptionIn'];
+export type ChoiceQuestionSchemaIn = components['schemas']['ChoiceQuestionSchemaIn'];
+export type ChoiceRequirementsIn = components['schemas']['ChoiceRequirementsIn'];
+export type DateFieldRequirementsIn = components['schemas']['DateFieldRequirementsIn'];
+export type EndAndDiscardActionIn = components['schemas']['EndAndDiscardActionIn'];
+export type EndAndSubmitActionIn = components['schemas']['EndAndSubmitActionIn'];
+export type FieldConditionIn = components['schemas']['FieldConditionIn'];
+export type FieldDefinitionIn = components['schemas']['FieldDefinitionIn'];
+export type FieldQuestionSchemaIn = components['schemas']['FieldQuestionSchemaIn'];
+export type FieldUiIn = components['schemas']['FieldUIIn'];
+export type MatchingConditionIn = components['schemas']['MatchingConditionIn'];
+export type MatchingDefinitionIn = components['schemas']['MatchingDefinitionIn'];
+export type MatchingItemIn = components['schemas']['MatchingItemIn'];
+export type MatchingPairIn = components['schemas']['MatchingPairIn'];
+export type MatchingQuestionSchemaIn = components['schemas']['MatchingQuestionSchemaIn'];
+export type MatchingRequirementsIn = components['schemas']['MatchingRequirementsIn'];
+export type NumberFieldRequirementsIn = components['schemas']['NumberFieldRequirementsIn'];
+export type QuestionNodeResponse = components['schemas']['QuestionNodeResponse'];
+export type RatingConditionIn = components['schemas']['RatingConditionIn'];
+export type RatingEmojiDefinitionIn = components['schemas']['RatingEmojiDefinitionIn'];
+export type RatingQuestionSchemaIn = components['schemas']['RatingQuestionSchemaIn'];
+export type RatingRangeIn = components['schemas']['RatingRangeIn'];
+export type RatingRequirementsIn = components['schemas']['RatingRequirementsIn'];
+export type RatingSliderDefinitionIn = components['schemas']['RatingSliderDefinitionIn'];
+export type RatingStarDefinitionIn = components['schemas']['RatingStarDefinitionIn'];
+export type RatingUiIn = components['schemas']['RatingUIIn'];
+export type RuleBranchIn = components['schemas']['RuleBranchIn'];
+export type RuleIfIn = components['schemas']['RuleIfIn'];
+export type RuleNodeResponse = components['schemas']['RuleNodeResponse'];
+export type RuleSchemaIn = components['schemas']['RuleSchemaIn'];
+export type RuleSetItemIn = components['schemas']['RuleSetItemIn'];
+export type SkipToActionIn = components['schemas']['SkipToActionIn'];
+export type NodeResponses = components['schemas']['NodeResponses'];
+export type CreateQuestionNodeRequest = components['schemas']['CreateQuestionNodeRequest'];
+export type CreateRuleNodeRequest = components['schemas']['CreateRuleNodeRequest'];
+export type CreateNodeRequest = components['schemas']['CreateNodeRequest'];
+export type UpdateNodeRequest = components['schemas']['UpdateNodeRequest'];
+export type SurveyMemberResponses = components['schemas']['SurveyMemberResponses'];
+export type SurveyRoleResponses = components['schemas']['SurveyRoleResponses'];
+export type SurveyMemberRoleResponses = components['schemas']['SurveyMemberRoleResponses'];
+export type AssignSurveyMemberRoleRequest = components['schemas']['AssignSurveyMemberRoleRequest'];
+export type UpdateSurveyMemberRoleRequest = components['schemas']['UpdateSurveyMemberRoleRequest'];
+export type SurveyAnswerSlotResponses = components['schemas']['SurveyAnswerSlotResponses'];
+export type SurveySessionEventResponses = components['schemas']['SurveySessionEventResponses'];
+export type SurveySessionResponses = components['schemas']['SurveySessionResponses'];
+export type SurveySessionTreeResponses = components['schemas']['SurveySessionTreeResponses'];
+export type SurveySubjectResponses = components['schemas']['SurveySubjectResponses'];
+export type SurveySubjectTreeResponses = components['schemas']['SurveySubjectTreeResponses'];
+export type PaginatedSurveySubjectTreesResponses = components['schemas']['PaginatedSurveySubjectTreesResponses'];
+export type ExportSurveyResultsRequest = components['schemas']['ExportSurveyResultsRequest'];
+export type CreateSurveyRoleRequest = components['schemas']['CreateSurveyRoleRequest'];
+export type UpdateSurveyRoleRequest = components['schemas']['UpdateSurveyRoleRequest'];
+export type CreateSurveyRequest = components['schemas']['CreateSurveyRequest'];
+export type UpdateSurveyRequest = components['schemas']['UpdateSurveyRequest'];
+export type MySurveyPermissionsResponses = components['schemas']['MySurveyPermissionsResponses'];
+export type ScoringRuleResponses = components['schemas']['ScoringRuleResponses'];
+export type ChoiceOptionMapConfig = components['schemas']['ChoiceOptionMapConfig'];
+export type ChoiceOptionMapScoringSchemaIn = components['schemas']['ChoiceOptionMapScoringSchemaIn'];
+export type FieldNumericRangesConfig = components['schemas']['FieldNumericRangesConfig'];
+export type FieldNumericRangesScoringSchemaIn = components['schemas']['FieldNumericRangesScoringSchemaIn'];
+export type MatchingAnswerKeyConfig = components['schemas']['MatchingAnswerKeyConfig'];
+export type MatchingAnswerKeyScoringSchemaIn = components['schemas']['MatchingAnswerKeyScoringSchemaIn'];
+export type NumericRangeScoreIn = components['schemas']['NumericRangeScoreIn'];
+export type RatingDirectConfig = components['schemas']['RatingDirectConfig'];
+export type RatingDirectScoringSchemaIn = components['schemas']['RatingDirectScoringSchemaIn'];
+export type CreateScoringRuleRequest = components['schemas']['CreateScoringRuleRequest'];
+export type UpdateScoringRuleRequest = components['schemas']['UpdateScoringRuleRequest'];
+export type ResponseBadRequestError = components['responses']['BadRequestError'];
+export type ResponseUnauthorizedError = components['responses']['UnauthorizedError'];
+export type ResponseForbiddenError = components['responses']['ForbiddenError'];
+export type ResponseNotFoundError = components['responses']['NotFoundError'];
+export type ResponseConflictError = components['responses']['ConflictError'];
+export type ResponseValidationError = components['responses']['ValidationError'];
+export type ResponseRateLimitError = components['responses']['RateLimitError'];
+export type ResponseInternalServerError = components['responses']['InternalServerError'];
 export type $defs = Record<string, never>;
 export interface operations {
     bootstrapUser: {
@@ -5363,12 +5549,13 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    listResponses: {
+    listSurveyResultSubjects: {
         parameters: {
             query?: {
-                status?: ("in_progress" | "completed" | "abandoned") | null;
                 page?: number;
                 page_size?: number;
+                include_decrypted_answer_values?: boolean;
+                include_events?: boolean;
             };
             header?: never;
             path: {
@@ -5385,7 +5572,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedSurveyResponsesResponses"];
+                    "application/json": components["schemas"]["PaginatedSurveySubjectTreesResponses"];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -5398,14 +5585,17 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    getResponseDetail: {
+    getSubjectTree: {
         parameters: {
-            query?: never;
+            query?: {
+                include_decrypted_answer_values?: boolean;
+                include_events?: boolean;
+            };
             header?: never;
             path: {
                 project_id: number;
                 survey_id: number;
-                session_id: string;
+                subject_id: string;
             };
             cookie?: never;
         };
@@ -5417,7 +5607,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyResponseDetailResponses"];
+                    "application/json": components["schemas"]["SurveySubjectTreeResponses"];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -5430,21 +5620,24 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    deleteResponse: {
+    exportResults: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 project_id: number;
                 survey_id: number;
-                session_id: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportSurveyResultsRequest"];
+            };
+        };
         responses: {
-            /** @description No content. */
-            204: {
+            /** @description Successful response. */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5460,7 +5653,7 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    getResponseHistory: {
+    deleteSession: {
         parameters: {
             query?: never;
             header?: never;
@@ -5473,43 +5666,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyResponseHistoryResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    exportResponses: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExportSurveyResponsesRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
+            /** @description No content. */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

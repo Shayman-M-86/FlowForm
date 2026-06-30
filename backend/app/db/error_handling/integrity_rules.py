@@ -366,15 +366,8 @@ def _invitation_ctx(invitation: ProjectInvitation) -> dict[str, object]:
 
 
 USER_RULES: tuple[DbErrorRule, ...] = (
-    unique_rule(
-        "users_email_key",
-        lambda ctx, _exc: DbIntegrityError(
-            409,
-            "EMAIL_CONFLICT",
-            f"An account with email {ctx['email']!r} already exists.",
-        ),
-        extractor=_user_ctx,
-    ),
+    # No users_email_key rule: email is intentionally not unique (one email may
+    # back several Auth0 identities). auth0_user_id is the uniqueness guarantor.
     unique_rule(
         "users_auth0_user_id_key",
         lambda ctx, _exc: DbIntegrityError(

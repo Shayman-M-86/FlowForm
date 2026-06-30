@@ -425,7 +425,7 @@ export const UpdateSurveyMemberRoleRequestConstraints = {
   role_id: { minimum: 1, maximum: 2147483647 },
 } as const;
 
-export const ExportSurveyResponsesRequestConstraints = {
+export const ExportSurveyResultsRequestConstraints = {
   format: { maxLength: 4 },
   session_ids: { maxItems: 100 },
 } as const;
@@ -575,7 +575,20 @@ export const SurveyMemberRoleResponsesConstraints = {
   created_at: { maxLength: 35 },
 } as const;
 
-export const SurveyResponseSummaryResponsesConstraints = {
+export const SurveyAnswerSlotResponsesConstraints = {
+  question_node_id: { maxLength: 36 },
+  question_key: { maxLength: 128 },
+  answer_family: { maxLength: 8 },
+  state: { maxLength: 8 },
+} as const;
+
+export const SurveySessionEventResponsesConstraints = {
+  event_type: { maxLength: 17 },
+  question_node_id: { maxLength: 36 },
+  received_at: { maxLength: 35 },
+} as const;
+
+export const SurveySessionResponsesConstraints = {
   session_id: { maxLength: 36 },
   status: { maxLength: 11 },
   started_at: { maxLength: 35 },
@@ -583,22 +596,16 @@ export const SurveyResponseSummaryResponsesConstraints = {
   last_activity_at: { maxLength: 35 },
 } as const;
 
-export const PaginatedSurveyResponsesResponsesConstraints = {
-  items: { maxItems: 100 },
-} as const;
-
-export const SurveyResponseAnswerResponsesConstraints = {
-  question_node_id: { maxLength: 36 },
-  state: { maxLength: 8 },
-  answer_family: { maxLength: 8 },
-} as const;
-
-export const SurveyResponseDetailResponsesConstraints = {
+export const SurveySessionTreeResponsesConstraints = {
   answers: { maxItems: 50 },
 } as const;
 
-export const SurveyResponseHistoryResponsesConstraints = {
-  revisions: { maxItems: 50 },
+export const SurveySubjectResponsesConstraints = {
+  subject_id: { maxLength: 36 },
+} as const;
+
+export const PaginatedSurveySubjectTreesResponsesConstraints = {
+  items: { maxItems: 100 },
 } as const;
 
 export const ScoringRuleResponsesConstraints = {

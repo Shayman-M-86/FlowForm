@@ -72,23 +72,18 @@ def test_user_requires_email(db_session: Session) -> None:
     db_session.rollback()
 
 
-def test_user_unique_email(db_session: Session) -> None:
-    """Two users cannot share the same email address."""
+def test_user_email_not_unique(db_session: Session) -> None:
+    """Two users may share an email — one address can back several Auth0 identities."""
     user_a = make_user(auth0_user_id="auth0|a", email="dup@example.com")
     db_session.add(user_a)
     db_session.flush()
 
     user_b = make_user(auth0_user_id="auth0|b", email="dup@example.com")
     db_session.add(user_b)
+    db_session.flush()
 
-    with pytest.raises(IntegrityError) as exc_info:
-        db_session.flush()
-
-    orig = cast(UniqueViolation, exc_info.value.orig)
-    constraint = orig.diag.constraint_name
-    assert constraint == "users_email_key", (
-        f"Expected constraint 'users_email_key', got '{constraint}'\nDB error: {exc_info.value}"
-    )
+    assert user_a.id != user_b.id
+    assert user_a.email == user_b.email
 
     db_session.rollback()
 

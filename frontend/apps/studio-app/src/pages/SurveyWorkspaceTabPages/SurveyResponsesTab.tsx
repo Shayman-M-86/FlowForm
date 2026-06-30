@@ -3,7 +3,13 @@ import { useParams } from '@tanstack/react-router'
 import { Badge, Button, Card, DropdownMenu, Modal, Spinner, Table, Toast, type TableColumn } from '@flowform/ui'
 import { useProject } from '@/api/hooks/projects'
 import { useSurvey } from '@/api/hooks/surveys'
-import { useResponses, useDeleteResponse, useExportResponses, type ResponseSummary, type ResponseStatus } from '@/api/hooks/responses'
+import {
+  useSurveyResultSubjects,
+  useDeleteSession,
+  useExportResults,
+  type SessionTree,
+  type ResponseStatus,
+} from '@/api/hooks/results'
 import { ResponseDetailModal } from './ResponseDetailModal'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
@@ -25,6 +31,9 @@ const STATUS_LABEL: Record<ResponseStatus, string> = {
   in_progress: 'In Progress',
   abandoned: 'Abandoned',
 }
+
+/** A flattened table row: one survey session plus the owning subject's code. */
+type SessionRow = SessionTree & { subjectCode: string }
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -52,22 +61,35 @@ export function SurveyResponsesTab() {
 
   const [statusFilter, setStatusFilter] = useState<ResponseStatus | null>(null)
   const [page, setPage] = useState(1)
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<ResponseSummary | null>(null)
+  const [selectedSession, setSelectedSession] = useState<SessionTree | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<SessionRow | null>(null)
   const [exportToast, setExportToast] = useState<string | null>(null)
 
-  const { data: responsesPage, isLoading } = useResponses(projectId, surveyId, {
-    status: statusFilter ?? undefined,
+  const { data: subjectsPage, isLoading } = useSurveyResultSubjects(projectId, surveyId, {
     page,
     pageSize: PAGE_SIZE,
+    includeDecryptedAnswerValues: true,
   })
 
-  const items = responsesPage?.items ?? []
-  const total = responsesPage?.total ?? 0
+  // Flatten subject → session trees into table rows, then apply the
+  // client-side status filter (the results API no longer filters by status).
+  const rows = useMemo<SessionRow[]>(() => {
+    const flattened = (subjectsPage?.items ?? []).flatMap((subjectTree) =>
+      subjectTree.sessions.map((sessionTree) => ({
+        ...sessionTree,
+        subjectCode: subjectTree.subject.subject_code,
+      })),
+    )
+    return statusFilter
+      ? flattened.filter((row) => row.session.status === statusFilter)
+      : flattened
+  }, [subjectsPage, statusFilter])
+
+  const total = subjectsPage?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
-  const deleteResponse = useDeleteResponse(projectId, surveyId)
-  const exportResponses = useExportResponses(projectId, surveyId)
+  const deleteSession = useDeleteSession(projectId, surveyId)
+  const exportResults = useExportResults(projectId, surveyId)
 
   const handleStatusFilter = useCallback((status: ResponseStatus | null) => {
     setStatusFilter(status)
@@ -76,35 +98,46 @@ export function SurveyResponsesTab() {
 
   const handleDelete = useCallback(() => {
     if (!deleteTarget) return
-    deleteResponse.mutate(deleteTarget.session_id, {
+    deleteSession.mutate(deleteTarget.session.session_id, {
       onSuccess: () => setDeleteTarget(null),
     })
-  }, [deleteTarget, deleteResponse])
+  }, [deleteTarget, deleteSession])
 
   const handleExport = useCallback((format: 'csv' | 'json') => {
-    const safeName = (survey?.title ?? 'responses').replace(/[^a-zA-Z0-9_-]/g, '_')
-    exportResponses.mutate(
-      { body: { format, include_history: false, session_ids: null }, filename: `${safeName}.${format}` },
+    const safeName = (survey?.title ?? 'results').replace(/[^a-zA-Z0-9_-]/g, '_')
+    exportResults.mutate(
+      {
+        body: { format, include_decrypted_answer_values: true, session_ids: null },
+        filename: `${safeName}.${format}`,
+      },
       {
         onSuccess: (result) => {
-          setExportToast(`Exported responses as ${result.format.toUpperCase()}.`)
+          setExportToast(`Exported results as ${result.format.toUpperCase()}.`)
         },
       },
     )
-  }, [exportResponses, survey?.title])
+  }, [exportResults, survey?.title])
 
   // ── Export dropdown ──────────────────────────────────────────────────────────
   const [exportOpen, setExportOpen] = useState(false)
   const exportTriggerRef = useRef<HTMLButtonElement>(null)
 
   // ── Table columns ──────────────────────────────────────────────────────────
-  const columns = useMemo<TableColumn<ResponseSummary>[]>(() => [
+  const columns = useMemo<TableColumn<SessionRow>[]>(() => [
+    {
+      key: 'subject',
+      header: 'Subject',
+      minWidth: 120,
+      cell: (row) => (
+        <span className="font-mono text-xs text-foreground">{row.subjectCode}</span>
+      ),
+    },
     {
       key: 'session',
       header: 'Session',
       minWidth: 120,
       cell: (row) => (
-        <span className="font-mono text-xs text-foreground">{truncateUuid(row.session_id)}</span>
+        <span className="font-mono text-xs text-muted-foreground">{truncateUuid(row.session.session_id)}</span>
       ),
     },
     {
@@ -112,8 +145,8 @@ export function SurveyResponsesTab() {
       header: 'Status',
       minWidth: 110,
       cell: (row) => (
-        <Badge variant={STATUS_BADGE_VARIANT[row.status]} size="xs">
-          {STATUS_LABEL[row.status]}
+        <Badge variant={STATUS_BADGE_VARIANT[row.session.status]} size="xs">
+          {STATUS_LABEL[row.session.status]}
         </Badge>
       ),
     },
@@ -122,7 +155,7 @@ export function SurveyResponsesTab() {
       header: 'Started',
       minWidth: 140,
       cell: (row) => (
-        <span className="text-xs text-muted-foreground">{formatDate(row.started_at)}</span>
+        <span className="text-xs text-muted-foreground">{formatDate(row.session.started_at)}</span>
       ),
     },
     {
@@ -131,7 +164,7 @@ export function SurveyResponsesTab() {
       minWidth: 140,
       cell: (row) => (
         <span className="text-xs text-muted-foreground">
-          {row.completed_at ? formatDate(row.completed_at) : formatDate(row.last_activity_at)}
+          {row.session.completed_at ? formatDate(row.session.completed_at) : formatDate(row.session.last_activity_at)}
         </span>
       ),
     },
@@ -169,7 +202,7 @@ export function SurveyResponsesTab() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">Responses</h2>
-          <p className="text-sm text-muted-foreground">{total} total</p>
+          <p className="text-sm text-muted-foreground">{total} subjects</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -177,9 +210,9 @@ export function SurveyResponsesTab() {
             variant="secondary"
             size="sm"
             onClick={() => setExportOpen((o) => !o)}
-            disabled={total === 0 || exportResponses.isPending}
+            disabled={total === 0 || exportResults.isPending}
           >
-            {exportResponses.isPending ? 'Exporting…' : 'Export'}
+            {exportResults.isPending ? 'Exporting…' : 'Export'}
           </Button>
           <DropdownMenu
             open={exportOpen}
@@ -213,7 +246,7 @@ export function SurveyResponsesTab() {
       {/* ── Table ───────────────────────────────────────────────────────────── */}
       {isLoading ? (
         <div className="flex justify-center py-10"><Spinner size={24} /></div>
-      ) : items.length === 0 ? (
+      ) : rows.length === 0 ? (
         <Card tone="muted">
           <p className="text-sm font-medium text-muted-foreground">No responses yet</p>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -224,9 +257,9 @@ export function SurveyResponsesTab() {
         <>
           <Table
             columns={columns}
-            rows={items}
-            getRowKey={(row) => row.session_id}
-            onRowClick={(row) => setSelectedSessionId(row.session_id)}
+            rows={rows}
+            getRowKey={(row) => row.session.session_id}
+            onRowClick={(row) => setSelectedSession(row)}
           />
 
           {/* ── Pagination ────────────────────────────────────────────────── */}
@@ -260,10 +293,8 @@ export function SurveyResponsesTab() {
 
       {/* ── Detail modal ────────────────────────────────────────────────────── */}
       <ResponseDetailModal
-        projectId={projectId}
-        surveyId={surveyId}
-        sessionId={selectedSessionId}
-        onClose={() => setSelectedSessionId(null)}
+        sessionTree={selectedSession}
+        onClose={() => setSelectedSession(null)}
       />
 
       {/* ── Delete confirmation ─────────────────────────────────────────────── */}
@@ -278,9 +309,9 @@ export function SurveyResponsesTab() {
             <Button
               variant="destructive"
               onClick={handleDelete}
-              disabled={deleteResponse.isPending}
+              disabled={deleteSession.isPending}
             >
-              {deleteResponse.isPending ? 'Deleting…' : 'Delete'}
+              {deleteSession.isPending ? 'Deleting…' : 'Delete'}
             </Button>
           </>
         )}
@@ -288,7 +319,7 @@ export function SurveyResponsesTab() {
         {deleteTarget && (
           <p className="text-base leading-6 text-foreground">
             Are you sure you want to delete the response from session{' '}
-            <span className="font-mono text-sm">{truncateUuid(deleteTarget.session_id)}</span>?
+            <span className="font-mono text-sm">{truncateUuid(deleteTarget.session.session_id)}</span>?
             This action cannot be undone.
           </p>
         )}
