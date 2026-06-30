@@ -9,12 +9,12 @@ from typing import Any, Literal, cast
 from flask import Flask, current_app
 from pydantic import (
     BaseModel,
+    EmailStr,
     Field,
     SecretStr,
     ValidationError,
     computed_field,
     model_validator,
-    EmailStr,
 )
 from pydantic.networks import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -105,12 +105,17 @@ class EmailSettings(BaseModel):
     configuration_set_name: str | None = None
     enabled: bool = True
 
+    recipient_cooldown_seconds: int = 3600
+    global_rate_limit: int = 50
+    global_rate_window_seconds: int = 60
+
 
 class ServerSettings(BaseModel):
     """Server host and port settings."""
 
     host: str = "127.0.0.1"
     port: int = 5000
+    site_url: str = "http://localhost:5174"
 
 
 class Auth0MgmtSettings(BaseModel):

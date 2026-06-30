@@ -9,6 +9,7 @@ from flask import Flask, current_app
 
 from app.aws import get_aws_clients
 from app.core.config import Settings
+from app.email_service.rate_limiter import EmailRateLimiter
 from app.email_service.renderer import EmailRenderer
 from app.email_service.sender import SesEmailSender
 from app.email_service.service import EmailService
@@ -46,10 +47,12 @@ class EmailServiceManager:
             settings=email_settings,
             ses_client=ses_client,
         )
+        rate_limiter = EmailRateLimiter(settings=email_settings)
 
         service = EmailService(
             renderer=renderer,
             sender=sender,
+            rate_limiter=rate_limiter,
         )
 
         self._resources = EmailServiceResources(

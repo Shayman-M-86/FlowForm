@@ -1,4 +1,6 @@
 from datetime import datetime
+from hashlib import sha256
+from secrets import token_urlsafe
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -44,6 +46,10 @@ def get_pending_by_email(db: Session, *, email: str) -> list[ProjectInvitation]:
     )
 
 
+def _hash_token(token: str) -> str:
+    return sha256(token.encode()).hexdigest()
+
+
 def create_invitation(
     db: Session,
     *,
@@ -52,17 +58,32 @@ def create_invitation(
     role_id: int | None,
     invited_by_user_id: int | None,
     invite_message: str | None = None,
-) -> ProjectInvitation:
+) -> tuple[ProjectInvitation, str]:
+    """Create an invitation and return ``(invitation, raw_token)``.
+
+    The raw token is never persisted — only its SHA-256 hash is stored.
+    """
+    token = token_urlsafe(32)
+
     invitation = ProjectInvitation(
         project_id=project_id,
         invited_email=invited_email,
         role_id=role_id,
         invited_by_user_id=invited_by_user_id,
         invite_message=invite_message,
+        token_hash=_hash_token(token),
     )
     db.add(invitation)
     flush_with_err_handle(db, contexts=[invitation])
-    return invitation
+    return invitation, token
+
+
+def get_by_token(db: Session, token: str) -> ProjectInvitation | None:
+    """Look up an invitation by its raw token."""
+    hashed = _hash_token(token)
+    return db.execute(
+        select(ProjectInvitation).where(ProjectInvitation.token_hash == hashed)
+    ).scalar_one_or_none()
 
 
 def update_status(

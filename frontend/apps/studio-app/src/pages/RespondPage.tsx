@@ -291,6 +291,7 @@ export function RespondPage({ token }: RespondPageProps) {
           title={state.title}
           exitLabel="Close"
           showAnswerSummary
+          stackSidebar
           confirmSubmit
           onAnswerCommit={handleAnswerCommit}
           onComplete={handleComplete}

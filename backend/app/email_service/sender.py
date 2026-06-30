@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from email.utils import formataddr
+from logging import getLogger
 from typing import TYPE_CHECKING, Any
 
 from botocore.exceptions import BotoCoreError, ClientError
@@ -13,6 +14,9 @@ from app.email_service.schemas import EmailMessage, EmailRecipient
 
 if TYPE_CHECKING:
     from mypy_boto3_sesv2 import SESV2Client
+
+
+logger = getLogger(__name__)
 
 
 class SesEmailSender:
@@ -40,6 +44,7 @@ class SesEmailSender:
         Returns None when email sending is disabled.
         """
         if not self.settings.enabled:
+            logger.debug("email.send_skipped", extra={"reason": "disabled"})
             return None
 
         payload = self._build_send_email_payload(message)
@@ -47,6 +52,7 @@ class SesEmailSender:
         try:
             response = self.client.send_email(**payload)
         except (ClientError, BotoCoreError) as exc:
+            logger.error("email.ses_error", extra={"error": str(exc)}, exc_info=True)
             raise EmailSendError("Failed to send email through AWS SES.") from exc
 
         message_id = response.get("MessageId")

@@ -174,6 +174,43 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/v1/account/invitations/resolve/{token}:
+    get:
+      operationId: resolveInvitation
+      summary: Resolve invitation by token
+      description: Resolve invitation by token
+      tags:
+      - Account Invitations
+      security: []
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicInvitationResolveResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/v1/account/profile:
     get:
       operationId: getMyProfile
@@ -1971,6 +2008,59 @@ paths:
       responses:
         '204':
           description: No content.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/links/{link_id}/send-email:
+    post:
+      operationId: sendSurveyLinkEmail
+      summary: Send survey link email
+      description: Send survey link email
+      tags:
+      - Survey Access Links
+      x-flowform-rbac:
+        permission: survey:edit
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: link_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendSurveyLinkEmailResponse'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -3830,6 +3920,33 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/v1/system/health/test-email:
+    post:
+      operationId: testEmail
+      summary: Test email sending
+      description: Test email sending
+      tags:
+      - Health
+      security: []
+      responses:
+        '200':
+          description: Successful response.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   schemas:
     ErrorResponse:
@@ -4084,6 +4201,44 @@ components:
       - user
       title: ProjectMemberResponses
       type: object
+    PublicInvitationResolveResponse:
+      description: Public-facing response when resolving an invitation token.
+      properties:
+        invited_email:
+          title: Invited Email
+          type: string
+        project_name:
+          title: Project Name
+          type: string
+        inviter_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Inviter Name
+        expires_at:
+          anyOf:
+          - format: date-time
+            type: string
+            maxLength: 35
+          - type: 'null'
+          default: null
+          title: Expires At
+        status:
+          enum:
+          - pending
+          - accepted
+          - declined
+          - revoked
+          title: Status
+          type: string
+          maxLength: 8
+      required:
+      - invited_email
+      - project_name
+      - status
+      title: PublicInvitationResolveResponse
+      type: object
     CurrentUserProfileResponses:
       description: API response shape for the current user's profile.
       properties:
@@ -4236,6 +4391,12 @@ components:
             maxLength: 36
           - type: 'null'
           title: Assigned Participant Id
+        assigned_participant_email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Assigned Participant Email
         expires_at:
           anyOf:
           - format: date-time
@@ -4250,6 +4411,13 @@ components:
             maxLength: 35
           - type: 'null'
           title: Used At
+        emailed_at:
+          anyOf:
+          - format: date-time
+            type: string
+            maxLength: 35
+          - type: 'null'
+          title: Emailed At
         created_at:
           format: date-time
           title: Created At
@@ -4266,6 +4434,7 @@ components:
       - assigned_participant_id
       - expires_at
       - used_at
+      - emailed_at
       - created_at
       title: SurveyAccessLinkResponse
       type: object
@@ -4760,8 +4929,9 @@ components:
         number:
           maximum: 12
           minimum: 1
+          multipleOf: 0.5
           title: Number
-          type: integer
+          type: number
       required:
       - variant
       - number
@@ -5607,6 +5777,17 @@ components:
           default: null
           title: Expires At
       title: UpdateSurveyAccessLinkRequest
+      type: object
+    SendSurveyLinkEmailResponse:
+      description: API response shape for sending a survey link email.
+      properties:
+        message_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Message Id
+      title: SendSurveyLinkEmailResponse
       type: object
     ChoiceConditionIn:
       additionalProperties: false
@@ -8090,6 +8271,11 @@ components:
               value:
                 code: LINK_ASSIGNED_PARTICIPANT_REQUIRED
                 message: Links that require authentication must be assigned to a participant.
+            link_no_recipient:
+              summary: LinkNoRecipientError
+              value:
+                code: LINK_NO_RECIPIENT
+                message: Cannot send email for a link without an assigned participant.
             private_survey_assigned_email_required:
               summary: PrivateSurveyAssignedEmailRequiredError
               value:
@@ -8116,6 +8302,11 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           examples:
+            email_rate_limit:
+              summary: EmailRateLimitError
+              value:
+                code: EMAIL_RATE_LIMIT_EXCEEDED
+                message: Email rate limit exceeded.
             rate_limit_exceeded:
               summary: RateLimitExceededError
               value:
@@ -8148,6 +8339,21 @@ components:
               value:
                 code: ANSWER_SAVE_FAILED
                 message: Answer save failed.
+            email_config:
+              summary: EmailConfigError
+              value:
+                code: EMAIL_CONFIG_ERROR
+                message: Email service configuration error.
+            email_template_not_found:
+              summary: EmailTemplateNotFoundError
+              value:
+                code: EMAIL_RENDER_ERROR
+                message: Email template not found.
+            email_render:
+              summary: EmailRenderError
+              value:
+                code: EMAIL_RENDER_ERROR
+                message: Failed to render email template.
             unhandled_db_integrity:
               summary: UnhandledDbIntegrityError
               value:
@@ -8166,6 +8372,11 @@ components:
               value:
                 code: PAYLOAD_DECODE_ERROR
                 message: Invalid plaintext payload
+            uq_project_invitations_token_hash:
+              summary: 'DB rule: INVITATION_TOKEN_COLLISION'
+              value:
+                code: INVITATION_TOKEN_COLLISION
+                message: Invitation token collision — retry the request.
             ck_project_invitations_status_valid:
               summary: 'DB rule: INVITATION_STATE_INVALID'
               value:

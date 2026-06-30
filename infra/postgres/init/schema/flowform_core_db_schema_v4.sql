@@ -201,6 +201,7 @@ CREATE TABLE project_invitations (
     expires_at TIMESTAMPTZ,
     accepted_by_user_id BIGINT REFERENCES users (id) ON DELETE SET NULL,
     accepted_at TIMESTAMPTZ,
+    token_hash TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT ck_project_invitations_status_valid
@@ -230,6 +231,7 @@ CREATE UNIQUE INDEX uq_project_invitations_pending_project_email
     ON project_invitations (project_id, invited_email)
     WHERE status = 'pending';
 
+CREATE UNIQUE INDEX uq_project_invitations_token_hash ON project_invitations(token_hash);
 CREATE INDEX ix_project_invitations_project ON project_invitations(project_id);
 CREATE INDEX ix_project_invitations_email ON project_invitations(invited_email);
 CREATE INDEX ix_project_invitations_status ON project_invitations(status);
@@ -827,6 +829,7 @@ CREATE TABLE survey_links (
 
     expires_at TIMESTAMPTZ,
     used_at TIMESTAMPTZ,
+    emailed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT uq_survey_links_token

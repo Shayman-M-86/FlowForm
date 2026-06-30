@@ -120,6 +120,17 @@ class LinkAuthAssignmentRequiredError(AppError):
         )
 
 
+class LinkNoRecipientError(AppError):
+    """Error raised when trying to email a link that has no assigned participant."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=422,
+            code="LINK_NO_RECIPIENT",
+            message="Cannot send email for a link without an assigned participant.",
+        )
+
+
 class LinkParticipantVerificationRequiredError(AppError):
     """Error raised when an authenticated link's participant is not user-linked."""
 

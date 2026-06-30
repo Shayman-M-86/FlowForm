@@ -1,15 +1,19 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.core.config import current_settings
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import (
     LinkAuthAssignmentRequiredError,
+    LinkNoRecipientError,
     LinkNotFoundError,
     PrivateSurveyAssignedEmailRequiredError,
     SurveyNotFoundError,
 )
 from app.domain.guards import ensure_present
+from app.email_service import get_email_service
 from app.repositories import public_link_repo as plr
 from app.repositories import surveys_repo as sr
 from app.schema.api.requests.survey_access_links import CreateSurveyAccessLinkRequest, UpdateSurveyAccessLinkRequest
@@ -101,6 +105,40 @@ class SurveyLinkService:
         link = self._get_link_invalidate(db, survey_id=survey_id, link_id=link_id)
         plr.delete_link(db, link=link)
         commit_with_err_handle(db, contexts=[link])
+
+    def send_link_email(
+        self,
+        db: Session,
+        survey_id: int,
+        project_id: int,
+        link_id: UUID,
+        actor: User,  # noqa: ARG002
+    ) -> str | None:
+        """Send a survey invite email for an existing link."""
+        survey = self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
+        link = self._get_link_invalidate(db, survey_id=survey_id, link_id=link_id)
+
+        if link.assigned_participant is None:
+            raise LinkNoRecipientError()
+
+        recipient_email = link.assigned_participant.identity.normalized_email
+        if not recipient_email:
+            raise LinkNoRecipientError()
+
+        site_url = current_settings().flowform.server.site_url.rstrip("/")
+        survey_url = f"{site_url}/respond/{link.token}"
+
+        message_id = get_email_service().send_survey_invite({
+            "to_email": recipient_email,
+            "survey_name": survey.title,
+            "survey_url": survey_url,
+            "expires_at": link.expires_at,
+        })
+
+        link.emailed_at = datetime.now(UTC)
+        commit_with_err_handle(db)
+
+        return message_id
 
     def _ensure_survey_and_public_id_match(self, db: Session, survey_id: int, project_id: int) -> Survey:
         return ensure_present(

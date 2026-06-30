@@ -975,6 +975,15 @@ SURVEY_MEMBERSHIP_ROLE_RULES: tuple[DbErrorRule, ...] = (
 
 PROJECT_INVITATION_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
+        "uq_project_invitations_token_hash",
+        lambda ctx, _exc: DbIntegrityError(
+            500,
+            "INVITATION_TOKEN_COLLISION",
+            "Invitation token collision — retry the request.",
+        ),
+        extractor=_invitation_ctx,
+    ),
+    unique_rule(
         "uq_project_invitations_pending_project_email",
         lambda ctx, _exc: DbIntegrityError(
             409,

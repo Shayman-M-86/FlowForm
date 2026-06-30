@@ -67,6 +67,30 @@ export function useUpdatePublicLink(projectId: number | null, surveyId: number |
   })
 }
 
+export function useSendLinkEmail(projectId: number | null, surveyId: number | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (linkId: string) => {
+      if (projectId == null || surveyId == null) throw new Error('projectId and surveyId are required')
+      const { data, error } = await apiClient.POST(
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/links/{link_id}/send-email',
+        { params: { path: { project_id: projectId, survey_id: surveyId, link_id: linkId } } },
+      )
+      if (error) throw error
+      return data
+    },
+    onSuccess: (_data, linkId) => {
+      if (projectId == null || surveyId == null) return
+      queryClient.setQueryData<SurveyAccessLinkOut[]>(
+        linkKeys.list(projectId, surveyId),
+        (old) => old?.map((link) =>
+          link.id === linkId ? { ...link, emailed_at: new Date().toISOString() } : link,
+        ),
+      )
+    },
+  })
+}
+
 export function useDeletePublicLink(projectId: number | null, surveyId: number | null) {
   const queryClient = useQueryClient()
   return useMutation({

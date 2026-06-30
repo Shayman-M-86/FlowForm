@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react'
-import { createRootRoute, Outlet } from '@tanstack/react-router'
+import { createRootRoute, Outlet, redirect } from '@tanstack/react-router'
 
 const TanStackRouterDevtools = import.meta.env.DEV
   ? lazy(() =>
@@ -10,6 +10,13 @@ const TanStackRouterDevtools = import.meta.env.DEV
   : null
 
 export const Route = createRootRoute({
+  beforeLoad: ({ location }) => {
+    const returnPath = sessionStorage.getItem('ff:invitation-return')
+    if (returnPath && location.pathname === '/') {
+      sessionStorage.removeItem('ff:invitation-return')
+      throw redirect({ to: returnPath })
+    }
+  },
   component: () => (
     <>
       <Outlet />

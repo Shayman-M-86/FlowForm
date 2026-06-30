@@ -111,7 +111,7 @@ export function ResponseDetailModal({ projectId, surveyId, sessionId, onClose }:
             ) : (
               <div className="grid gap-2">
                 {answers.map((answer) => (
-                  <AnswerCard key={`${answer.question_node_id}-${answer.revision_number}`} answer={answer} />
+                  <AnswerCard key={answer.question_node_id} answer={answer} />
                 ))}
               </div>
             )}

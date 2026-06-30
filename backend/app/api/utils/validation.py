@@ -1,10 +1,10 @@
 from typing import Any, overload
 
 from flask import Request
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic import BaseModel, ValidationError
 from werkzeug.exceptions import BadRequest, UnsupportedMediaType
 
-from app.core.errors import RequestValidationError
+from app.core.validation import validate
 
 
 def _get_json_object(request_obj: Request) -> dict[str, Any]:
@@ -24,17 +24,6 @@ def _get_json_object(request_obj: Request) -> dict[str, Any]:
 
     return body
 
-def _validate_request_data(schema: Any, data: Any) -> Any:
-    """Validate client-provided data and classify failures as request errors."""
-    try:
-        if isinstance(schema, type) and issubclass(schema, BaseModel):
-            return schema.model_validate(data)
-
-        return TypeAdapter(schema).validate_python(data)
-
-    except ValidationError as exc:
-        raise RequestValidationError(exc) from exc
-
 
 @overload
 def parse[T: BaseModel](schema: type[T], request_obj: Request) -> T: ...
@@ -43,7 +32,7 @@ def parse(schema: Any, request_obj: Request) -> Any: ...
 def parse(schema: Any, request_obj: Request) -> Any:
     """Parse and validate a JSON request body."""
     body = _get_json_object(request_obj)
-    return _validate_request_data(schema, body)
+    return validate(schema, body)
 
 
 def parse_query[TModel: BaseModel](model_cls: type[TModel], request_obj: Request) -> TModel:

@@ -8,8 +8,10 @@ not know about Flask, SQLAlchemy, routes, ORM models, or AWS client creation.
 
 from __future__ import annotations
 
-from typing import Any
+from logging import getLogger
+from typing import TYPE_CHECKING, Any
 
+from app.core.validation import validate
 from app.email_service.renderer import EmailRenderer
 from app.email_service.schemas import (
     EmailMessage,
@@ -20,6 +22,11 @@ from app.email_service.schemas import (
 )
 from app.email_service.sender import SesEmailSender
 
+if TYPE_CHECKING:
+    from app.email_service.rate_limiter import EmailRateLimiter
+
+logger = getLogger(__name__)
+
 
 class EmailService:
     """Public interface for sending application emails."""
@@ -29,12 +36,15 @@ class EmailService:
         *,
         renderer: EmailRenderer,
         sender: SesEmailSender,
+        rate_limiter: EmailRateLimiter | None = None,
     ) -> None:
         self.renderer = renderer
         self.sender = sender
+        self._rate_limiter = rate_limiter
 
-    def send_survey_invite(self, email: SurveyInviteEmail) -> str | None:
+    def send_survey_invite(self, email: SurveyInviteEmail | dict) -> str | None:
         """Send a survey invitation email."""
+        email = validate(SurveyInviteEmail, email)
         context = {
             "recipient_name": email.recipient_name,
             "survey_name": email.survey_name,
@@ -50,8 +60,9 @@ class EmailService:
             context=context,
         )
 
-    def send_verify_email(self, email: VerifyEmailEmail) -> str | None:
+    def send_verify_email(self, email: VerifyEmailEmail | dict) -> str | None:
         """Send an email verification email."""
+        email = validate(VerifyEmailEmail, email)
         context = {
             "recipient_name": email.recipient_name,
             "verify_url": str(email.verify_url),
@@ -68,9 +79,10 @@ class EmailService:
 
     def send_project_member_invite(
         self,
-        email: ProjectMemberInviteEmail,
+        email: ProjectMemberInviteEmail | dict,
     ) -> str | None:
         """Send a project member invitation email."""
+        email = validate(ProjectMemberInviteEmail, email)
         context = {
             "recipient_name": email.recipient_name,
             "inviter_name": email.inviter_name,
@@ -97,6 +109,13 @@ class EmailService:
         context: dict[str, Any],
     ) -> str | None:
         """Render HTML/TXT templates and send the final email."""
+        log_extra = {"email_type": template_base_name, "to_email": to_email}
+
+        if self._rate_limiter is not None:
+            self._rate_limiter.check(
+                recipient=to_email, email_type=template_base_name
+            )
+
         html_body, text_body = self.renderer.render_html_and_text(
             template_base_name=template_base_name,
             context=context,
@@ -114,4 +133,20 @@ class EmailService:
             ],
         )
 
-        return self.sender.send(message)
+        try:
+            message_id = self.sender.send(message)
+        except Exception:
+            logger.error("email.send_failed", extra=log_extra)
+            raise
+
+        if message_id is not None:
+            logger.info(
+                "email.sent",
+                extra={**log_extra, "message_id": message_id},
+            )
+            if self._rate_limiter is not None:
+                self._rate_limiter.record(
+                    recipient=to_email, email_type=template_base_name
+                )
+
+        return message_id

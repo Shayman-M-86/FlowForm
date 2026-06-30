@@ -116,3 +116,13 @@ class ProjectInvitationResponses(BaseModel):
         if invited_by is not None:
             data.invited_by_display = getattr(invited_by, "display_name", None) or getattr(invited_by, "email", None)
         return data
+
+
+class PublicInvitationResolveResponse(BaseModel):
+    """Public-facing response when resolving an invitation token."""
+
+    invited_email: str
+    project_name: str
+    inviter_name: str | None = None
+    expires_at: datetime | None = None
+    status: ProjectInvitationStatus

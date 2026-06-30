@@ -4,6 +4,11 @@
 // Subtypes
 // ──────────────────────────────────────────────────────────────────────────
 
+export const PublicInvitationResolveResponseConstraints = {
+  expires_at: { maxLength: 35 },
+  status: { maxLength: 8 },
+} as const;
+
 export const SurveyAccessLinkResponseConstraints = {
   id: { maxLength: 36 },
   name: { maxLength: 120 },
@@ -13,6 +18,7 @@ export const SurveyAccessLinkResponseConstraints = {
   assigned_participant_id: { maxLength: 36 },
   expires_at: { maxLength: 35 },
   used_at: { maxLength: 35 },
+  emailed_at: { maxLength: 35 },
   created_at: { maxLength: 35 },
 } as const;
 

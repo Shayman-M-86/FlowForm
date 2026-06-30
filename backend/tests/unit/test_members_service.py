@@ -47,6 +47,7 @@ def _invitation(*, role_id: int, project_id: int = 10) -> ProjectInvitation:
     invitation.invited_email = "invitee@example.com"
     invitation.status = "pending"
     invitation.role_id = role_id
+    invitation.token_hash = "fakehash"
     return invitation
 
 

@@ -6,7 +6,7 @@ from sqlalchemy import text
 
 from app.api.v1.system import system_bp
 from app.db.context import get_core_db, get_response_db
-from app.email_service import SurveyInviteEmail, get_email_service
+from app.email_service import get_email_service
 from app.openapi import openapi_route
 
 logger = getLogger(__name__)
@@ -74,13 +74,12 @@ def test_email():
         return jsonify(message="Missing 'to' in request body"), 400
 
     email_service = get_email_service()
-    email = SurveyInviteEmail(
-        to_email=to_email,
-        recipient_name=body.get("name"),
-        survey_name="Test Survey",
-        survey_url="https://example.com/survey/test",
-    )
-    message_id = email_service.send_survey_invite(email)
+    message_id = email_service.send_survey_invite({
+        "to_email": to_email,
+        "recipient_name": body.get("name"),
+        "survey_name": "Test Survey",
+        "survey_url": "https://example.com/survey/test",
+    })
 
     return jsonify(
         data={"message_id": message_id},

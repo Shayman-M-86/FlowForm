@@ -4,6 +4,7 @@ from flask import g, request
 
 from app.api.utils.validation import parse
 from app.api.v1.studio.projects import studio_projects_bp, survey_link_service
+from app.core.config import current_settings
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.domain.permissions import PERMISSIONS
@@ -15,6 +16,7 @@ from app.schema.api.requests.survey_access_links import (
 from app.schema.api.responses.survey_access_links import (
     CreateSurveyAccessLinkResponse,
     ListSurveyAccessLinksResponse,
+    SendSurveyLinkEmailResponse,
     SurveyAccessLinkResponse,
 )
 from app.services.access.access_service import require_survey_permission
@@ -54,7 +56,8 @@ def create_survey_access_link(project_id: int, survey_id: int):
         data=payload,
         actor=g.actor,
     )
-    public_url = f"http://localhost:5173/quiz/resolve?token={link.token}"  # todo: construct URL based on config
+    site_url = current_settings().flowform.server.site_url.rstrip("/")
+    public_url = f"{site_url}/quiz/resolve?token={link.token}"
     response = CreateSurveyAccessLinkResponse(
         link=SurveyAccessLinkResponse.model_validate(link),
         url=public_url,
@@ -93,3 +96,18 @@ def delete_survey_access_link(project_id: int, survey_id: int, link_id: UUID):
         db=get_core_db(), survey_id=survey_id, project_id=project_id, link_id=link_id, actor=g.actor
     )
     return "", 204
+
+
+@openapi_route(
+    summary="Send survey link email",
+    response_model=SendSurveyLinkEmailResponse,
+    tags=["Survey Access Links"],
+)
+@studio_projects_bp.route(f"{_LBASE}/<uuid:link_id>/send-email", methods=["POST"])
+@auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.edit)
+def send_survey_link_email(project_id: int, survey_id: int, link_id: UUID):
+    message_id = survey_link_service.send_link_email(
+        db=get_core_db(), survey_id=survey_id, project_id=project_id, link_id=link_id, actor=g.actor
+    )
+    return SendSurveyLinkEmailResponse(message_id=message_id).model_dump(mode="json"), 200

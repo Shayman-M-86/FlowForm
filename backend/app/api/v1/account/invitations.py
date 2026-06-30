@@ -2,7 +2,11 @@ from app.api.v1.account import _users_service, account_bp
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.openapi import openapi_route
-from app.schema.api.responses.projects import ProjectInvitationResponses, ProjectMemberResponses
+from app.schema.api.responses.projects import (
+    ProjectInvitationResponses,
+    ProjectMemberResponses,
+    PublicInvitationResolveResponse,
+)
 from app.schema.orm.core.user import User
 from app.services.members import members_service
 
@@ -47,3 +51,22 @@ def decline_invitation(invitation_id: int):
     actor: User = _users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     members_service.decline_invitation(db=db, invitation_id=invitation_id, actor=actor)
     return {}, 204
+
+
+@openapi_route(
+    summary="Resolve invitation by token",
+    response_model=PublicInvitationResolveResponse,
+    tags=["Account Invitations"],
+    auth_required=False,
+)
+@account_bp.route("/invitations/resolve/<token>", methods=["GET"])
+def resolve_invitation(token: str):
+    db = get_core_db()
+    invitation = members_service.resolve_invitation_by_token(db=db, token=token)
+    return PublicInvitationResolveResponse(
+        invited_email=invitation.invited_email,
+        project_name=invitation.project.name,
+        inviter_name=invitation.invited_by.display_name if invitation.invited_by else None,
+        expires_at=invitation.expires_at,
+        status=invitation.status,
+    ).model_dump(mode="json"), 200

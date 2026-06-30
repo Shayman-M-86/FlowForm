@@ -35,6 +35,7 @@ import {
   useCreatePublicLink,
   useDeletePublicLink,
   usePublicLinks,
+  useSendLinkEmail,
   useUpdatePublicLink,
 } from '@/api/hooks/links'
 import {
@@ -313,11 +314,15 @@ function linkUrl(link: SurveyAccessLinkOut): string {
 function LinkCard({
   link,
   canEdit,
+  projectId,
+  surveyId,
   onToggle,
   onDelete,
 }: {
   link: SurveyAccessLinkOut
   canEdit: boolean
+  projectId: number
+  surveyId: number
   onToggle: (linkId: string, isActive: boolean) => void
   onDelete: (linkId: string) => void
 }) {
@@ -325,6 +330,10 @@ function LinkCard({
   const moreRef = useRef<HTMLSpanElement>(null)
   const [moreOpen, setMoreOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [emailConfirmOpen, setEmailConfirmOpen] = useState(false)
+  const sendEmail = useSendLinkEmail(projectId, surveyId)
+  const [emailSent, setEmailSent] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
   const url = linkUrl(link)
 
   function copyLink() {
@@ -334,6 +343,7 @@ function LinkCard({
   }
 
   return (
+    <>
     <Card size="sm">
       <div className="grid gap-2">
         <div className="flex items-start justify-between gap-4">
@@ -357,6 +367,19 @@ function LinkCard({
                 <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                   <MailCheck size={13} strokeWidth={2} aria-hidden="true" className="shrink-0 text-muted-foreground" />
                   <span className="truncate">Assigned</span>
+                  {link.emailed_at && (
+                    <Badge variant="muted" size="xs">Emailed {formatDate(link.emailed_at)}</Badge>
+                  )}
+                  {canEdit && !link.emailed_at && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => { setEmailSent(false); setEmailError(null); setEmailConfirmOpen(true) }}
+                    >
+                      Email link
+                    </Button>
+                  )}
                 </div>
               )}
               <p className="min-w-[min(100%,16rem)] max-w-full truncate font-mono text-xs text-muted-foreground ml-auto text-right">
@@ -428,6 +451,22 @@ function LinkCard({
                           ),
                           onSelect: () => onToggle(link.id, !link.is_active),
                         },
+                        ...(link.assigned_participant_id && link.emailed_at ? [{
+                          key: 'resend-email',
+                          content: (
+                            <Button
+                              type="button"
+                              role="menuitem"
+                              variant="secondary"
+                              size="sm"
+                              className="w-full justify-start gap-2"
+                            >
+                              <MailCheck size={14} strokeWidth={2} aria-hidden="true" />
+                              <span>Resend email</span>
+                            </Button>
+                          ),
+                          onSelect: () => { setEmailSent(false); setEmailError(null); setEmailConfirmOpen(true) },
+                        }] : []),
                         {
                           key: 'delete',
                           content: (
@@ -454,6 +493,61 @@ function LinkCard({
         </div>
       </div>
     </Card>
+
+    {emailConfirmOpen && (
+      <Modal
+        open
+        onClose={() => setEmailConfirmOpen(false)}
+        title={link.emailed_at ? 'Resend survey link' : 'Send survey link'}
+        width={440}
+        footer={
+          emailSent ? (
+            <Button variant="primary" onClick={() => setEmailConfirmOpen(false)}>Done</Button>
+          ) : (
+            <>
+              <Button variant="secondary" onClick={() => setEmailConfirmOpen(false)} disabled={sendEmail.isPending}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                disabled={sendEmail.isPending}
+                onClick={() => {
+                  setEmailError(null)
+                  sendEmail.mutate(link.id, {
+                    onSuccess: () => setEmailSent(true),
+                    onError: (err) => {
+                      const body = err as { message?: string }
+                      setEmailError(body?.message ?? 'Failed to send email. Please try again.')
+                    },
+                  })
+                }}
+              >
+                {sendEmail.isPending ? 'Sending…' : link.emailed_at ? 'Resend email' : 'Send email'}
+              </Button>
+            </>
+          )
+        }
+      >
+        {emailSent ? (
+          <div className="flex items-center gap-2 text-sm text-foreground">
+            <CheckCircle2 size={16} className="shrink-0 text-emerald-500" />
+            <span>Email sent successfully.</span>
+          </div>
+        ) : (
+          <div className="grid gap-2">
+            <p className="text-sm text-foreground">
+              {link.emailed_at
+                ? <>Resend the survey link for <span className="font-semibold">{link.name}</span> to <span className="font-semibold">{link.assigned_participant_email}</span>? The previous email was sent on {formatDate(link.emailed_at)}.</>
+                : <>Send the survey link for <span className="font-semibold">{link.name}</span> to <span className="font-semibold">{link.assigned_participant_email}</span>?</>}
+            </p>
+            {emailError && (
+              <p className="text-sm text-destructive">{emailError}</p>
+            )}
+          </div>
+        )}
+      </Modal>
+    )}
+  </>
   )
 }
 
@@ -620,7 +714,7 @@ function LinksSection({
       ) : links.length > 0 ? (
         <CardStack gap="sm">
           {links.map((link) => (
-            <LinkCard key={link.id} link={link} canEdit={canEdit} onToggle={handleToggle} onDelete={handleDelete} />
+            <LinkCard key={link.id} link={link} canEdit={canEdit} projectId={projectId} surveyId={surveyId} onToggle={handleToggle} onDelete={handleDelete} />
           ))}
         </CardStack>
       ) : canEdit ? (

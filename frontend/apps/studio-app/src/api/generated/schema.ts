@@ -84,6 +84,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/account/invitations/resolve/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resolve invitation by token
+         * @description Resolve invitation by token
+         */
+        get: operations["resolveInvitation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/account/profile": {
         parameters: {
             query?: never;
@@ -736,6 +756,26 @@ export interface paths {
         patch: operations["updateSurveyAccessLink"];
         trace?: never;
     };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/links/{link_id}/send-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send survey link email
+         * @description Send survey link email
+         */
+        post: operations["sendSurveyLinkEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes": {
         parameters: {
             query?: never;
@@ -1232,6 +1272,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/system/health/test-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test email sending
+         * @description Test email sending
+         */
+        post: operations["testEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1381,6 +1441,31 @@ export interface components {
             user: components["schemas"]["MemberUserResponses"];
         };
         /**
+         * PublicInvitationResolveResponse
+         * @description Public-facing response when resolving an invitation token.
+         */
+        PublicInvitationResolveResponse: {
+            /** Invited Email */
+            invited_email: string;
+            /** Project Name */
+            project_name: string;
+            /**
+             * Inviter Name
+             * @default null
+             */
+            inviter_name: string | null;
+            /**
+             * Expires At
+             * @default null
+             */
+            expires_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "accepted" | "declined" | "revoked";
+        };
+        /**
          * CurrentUserProfileResponses
          * @description API response shape for the current user's profile.
          */
@@ -1479,10 +1564,17 @@ export interface components {
             assignment_source: "manual" | "automated";
             /** Assigned Participant Id */
             assigned_participant_id: string | null;
+            /**
+             * Assigned Participant Email
+             * @default null
+             */
+            assigned_participant_email: string | null;
             /** Expires At */
             expires_at: string | null;
             /** Used At */
             used_at: string | null;
+            /** Emailed At */
+            emailed_at: string | null;
             /**
              * Created At
              * Format: date-time
@@ -2277,6 +2369,17 @@ export interface components {
              * @default null
              */
             expires_at: string | null;
+        };
+        /**
+         * SendSurveyLinkEmailResponse
+         * @description API response shape for sending a survey link email.
+         */
+        SendSurveyLinkEmailResponse: {
+            /**
+             * Message Id
+             * @default null
+             */
+            message_id: string | null;
         };
         /**
          * ChoiceConditionIn
@@ -3439,142 +3542,6 @@ export interface components {
     headers: never;
     pathItems: never;
 }
-export type ErrorResponse = components['schemas']['ErrorResponse'];
-export type BootstrapUserRequest = components['schemas']['BootstrapUserRequest'];
-export type CurrentUserResponses = components['schemas']['CurrentUserResponses'];
-export type ProjectResponses = components['schemas']['ProjectResponses'];
-export type BootstrapUserResponses = components['schemas']['BootstrapUserResponses'];
-export type ProjectInvitationResponses = components['schemas']['ProjectInvitationResponses'];
-export type MemberUserResponses = components['schemas']['MemberUserResponses'];
-export type ProjectMemberResponses = components['schemas']['ProjectMemberResponses'];
-export type CurrentUserProfileResponses = components['schemas']['CurrentUserProfileResponses'];
-export type UpdateProfileRequest = components['schemas']['UpdateProfileRequest'];
-export type ChangeEmailRequest = components['schemas']['ChangeEmailRequest'];
-export type ChangeUsernameRequest = components['schemas']['ChangeUsernameRequest'];
-export type PasswordChangeTicketResponses = components['schemas']['PasswordChangeTicketResponses'];
-export type ResolveSurveyAccessLinkTokenRequest = components['schemas']['ResolveSurveyAccessLinkTokenRequest'];
-export type SurveyAccessLinkResponse = components['schemas']['SurveyAccessLinkResponse'];
-export type SurveyResponses = components['schemas']['SurveyResponses'];
-export type SurveyVersionResponses = components['schemas']['SurveyVersionResponses'];
-export type ResolveSurveyAccessLinkResponse = components['schemas']['ResolveSurveyAccessLinkResponse'];
-export type PaginatedPublicSurveysResponses = components['schemas']['PaginatedPublicSurveysResponses'];
-export type PublicSurveyResponses = components['schemas']['PublicSurveyResponses'];
-export type LinkTokenAccess = components['schemas']['LinkTokenAccess'];
-export type PublicSlugAccess = components['schemas']['PublicSlugAccess'];
-export type StartSubmissionSessionRequest = components['schemas']['StartSubmissionSessionRequest'];
-export type StartSubmissionSessionResponse = components['schemas']['StartSubmissionSessionResponse'];
-export type ChoiceAnswerValue = components['schemas']['ChoiceAnswerValue'];
-export type DateFieldAnswerValue = components['schemas']['DateFieldAnswerValue'];
-export type EmailFieldAnswerValue = components['schemas']['EmailFieldAnswerValue'];
-export type EmojiRatingAnswerValue = components['schemas']['EmojiRatingAnswerValue'];
-export type LongTextFieldAnswerValue = components['schemas']['LongTextFieldAnswerValue'];
-export type MatchingAnswerPair = components['schemas']['MatchingAnswerPair'];
-export type MatchingAnswerValue = components['schemas']['MatchingAnswerValue'];
-export type NumberFieldAnswerValue = components['schemas']['NumberFieldAnswerValue'];
-export type PhoneFieldAnswerValue = components['schemas']['PhoneFieldAnswerValue'];
-export type ShortTextFieldAnswerValue = components['schemas']['ShortTextFieldAnswerValue'];
-export type SliderRatingAnswerValue = components['schemas']['SliderRatingAnswerValue'];
-export type StarsRatingAnswerValue = components['schemas']['StarsRatingAnswerValue'];
-export type SaveSubmissionSessionAnswerRequest = components['schemas']['SaveSubmissionSessionAnswerRequest'];
-export type SubmissionSessionAnswerResponse = components['schemas']['SubmissionSessionAnswerResponse'];
-export type SubmissionSessionEventRequest = components['schemas']['SubmissionSessionEventRequest'];
-export type CompleteSubmissionSessionResponse = components['schemas']['CompleteSubmissionSessionResponse'];
-export type SendInvitationRequest = components['schemas']['SendInvitationRequest'];
-export type UpdateMemberRequest = components['schemas']['UpdateMemberRequest'];
-export type ParticipantResponses = components['schemas']['ParticipantResponses'];
-export type ListParticipantsResponses = components['schemas']['ListParticipantsResponses'];
-export type CreateParticipantRequest = components['schemas']['CreateParticipantRequest'];
-export type UpdateParticipantRequest = components['schemas']['UpdateParticipantRequest'];
-export type ProjectRoleResponses = components['schemas']['ProjectRoleResponses'];
-export type CreateProjectRoleRequest = components['schemas']['CreateProjectRoleRequest'];
-export type UpdateProjectRoleRequest = components['schemas']['UpdateProjectRoleRequest'];
-export type CreateProjectRequest = components['schemas']['CreateProjectRequest'];
-export type MyProjectPermissionsResponses = components['schemas']['MyProjectPermissionsResponses'];
-export type UpdateProjectRequest = components['schemas']['UpdateProjectRequest'];
-export type SubjectResponse = components['schemas']['SubjectResponse'];
-export type ListSubjectsResponse = components['schemas']['ListSubjectsResponse'];
-export type SubjectIdentityResponse = components['schemas']['SubjectIdentityResponse'];
-export type SubjectDetailResponse = components['schemas']['SubjectDetailResponse'];
-export type UpdateSubjectRequest = components['schemas']['UpdateSubjectRequest'];
-export type ListSurveyAccessLinksResponse = components['schemas']['ListSurveyAccessLinksResponse'];
-export type CreateSurveyAccessLinkRequest = components['schemas']['CreateSurveyAccessLinkRequest'];
-export type CreateSurveyAccessLinkResponse = components['schemas']['CreateSurveyAccessLinkResponse'];
-export type UpdateSurveyAccessLinkRequest = components['schemas']['UpdateSurveyAccessLinkRequest'];
-export type ChoiceConditionIn = components['schemas']['ChoiceConditionIn'];
-export type ChoiceDefinitionIn = components['schemas']['ChoiceDefinitionIn'];
-export type ChoiceOptionIn = components['schemas']['ChoiceOptionIn'];
-export type ChoiceQuestionSchemaIn = components['schemas']['ChoiceQuestionSchemaIn'];
-export type ChoiceRequirementsIn = components['schemas']['ChoiceRequirementsIn'];
-export type DateFieldRequirementsIn = components['schemas']['DateFieldRequirementsIn'];
-export type EndAndDiscardActionIn = components['schemas']['EndAndDiscardActionIn'];
-export type EndAndSubmitActionIn = components['schemas']['EndAndSubmitActionIn'];
-export type FieldConditionIn = components['schemas']['FieldConditionIn'];
-export type FieldDefinitionIn = components['schemas']['FieldDefinitionIn'];
-export type FieldQuestionSchemaIn = components['schemas']['FieldQuestionSchemaIn'];
-export type FieldUiIn = components['schemas']['FieldUIIn'];
-export type MatchingConditionIn = components['schemas']['MatchingConditionIn'];
-export type MatchingDefinitionIn = components['schemas']['MatchingDefinitionIn'];
-export type MatchingItemIn = components['schemas']['MatchingItemIn'];
-export type MatchingPairIn = components['schemas']['MatchingPairIn'];
-export type MatchingQuestionSchemaIn = components['schemas']['MatchingQuestionSchemaIn'];
-export type MatchingRequirementsIn = components['schemas']['MatchingRequirementsIn'];
-export type NumberFieldRequirementsIn = components['schemas']['NumberFieldRequirementsIn'];
-export type QuestionNodeResponse = components['schemas']['QuestionNodeResponse'];
-export type RatingConditionIn = components['schemas']['RatingConditionIn'];
-export type RatingEmojiDefinitionIn = components['schemas']['RatingEmojiDefinitionIn'];
-export type RatingQuestionSchemaIn = components['schemas']['RatingQuestionSchemaIn'];
-export type RatingRangeIn = components['schemas']['RatingRangeIn'];
-export type RatingRequirementsIn = components['schemas']['RatingRequirementsIn'];
-export type RatingSliderDefinitionIn = components['schemas']['RatingSliderDefinitionIn'];
-export type RatingStarDefinitionIn = components['schemas']['RatingStarDefinitionIn'];
-export type RatingUiIn = components['schemas']['RatingUIIn'];
-export type RuleBranchIn = components['schemas']['RuleBranchIn'];
-export type RuleIfIn = components['schemas']['RuleIfIn'];
-export type RuleNodeResponse = components['schemas']['RuleNodeResponse'];
-export type RuleSchemaIn = components['schemas']['RuleSchemaIn'];
-export type RuleSetItemIn = components['schemas']['RuleSetItemIn'];
-export type SkipToActionIn = components['schemas']['SkipToActionIn'];
-export type NodeResponses = components['schemas']['NodeResponses'];
-export type CreateQuestionNodeRequest = components['schemas']['CreateQuestionNodeRequest'];
-export type CreateRuleNodeRequest = components['schemas']['CreateRuleNodeRequest'];
-export type CreateNodeRequest = components['schemas']['CreateNodeRequest'];
-export type UpdateNodeRequest = components['schemas']['UpdateNodeRequest'];
-export type SurveyMemberResponses = components['schemas']['SurveyMemberResponses'];
-export type SurveyRoleResponses = components['schemas']['SurveyRoleResponses'];
-export type SurveyMemberRoleResponses = components['schemas']['SurveyMemberRoleResponses'];
-export type AssignSurveyMemberRoleRequest = components['schemas']['AssignSurveyMemberRoleRequest'];
-export type UpdateSurveyMemberRoleRequest = components['schemas']['UpdateSurveyMemberRoleRequest'];
-export type SurveyResponseSummaryResponses = components['schemas']['SurveyResponseSummaryResponses'];
-export type PaginatedSurveyResponsesResponses = components['schemas']['PaginatedSurveyResponsesResponses'];
-export type SurveyResponseAnswerResponses = components['schemas']['SurveyResponseAnswerResponses'];
-export type SurveyResponseDetailResponses = components['schemas']['SurveyResponseDetailResponses'];
-export type SurveyResponseHistoryResponses = components['schemas']['SurveyResponseHistoryResponses'];
-export type ExportSurveyResponsesRequest = components['schemas']['ExportSurveyResponsesRequest'];
-export type CreateSurveyRoleRequest = components['schemas']['CreateSurveyRoleRequest'];
-export type UpdateSurveyRoleRequest = components['schemas']['UpdateSurveyRoleRequest'];
-export type CreateSurveyRequest = components['schemas']['CreateSurveyRequest'];
-export type UpdateSurveyRequest = components['schemas']['UpdateSurveyRequest'];
-export type MySurveyPermissionsResponses = components['schemas']['MySurveyPermissionsResponses'];
-export type ScoringRuleResponses = components['schemas']['ScoringRuleResponses'];
-export type ChoiceOptionMapConfig = components['schemas']['ChoiceOptionMapConfig'];
-export type ChoiceOptionMapScoringSchemaIn = components['schemas']['ChoiceOptionMapScoringSchemaIn'];
-export type FieldNumericRangesConfig = components['schemas']['FieldNumericRangesConfig'];
-export type FieldNumericRangesScoringSchemaIn = components['schemas']['FieldNumericRangesScoringSchemaIn'];
-export type MatchingAnswerKeyConfig = components['schemas']['MatchingAnswerKeyConfig'];
-export type MatchingAnswerKeyScoringSchemaIn = components['schemas']['MatchingAnswerKeyScoringSchemaIn'];
-export type NumericRangeScoreIn = components['schemas']['NumericRangeScoreIn'];
-export type RatingDirectConfig = components['schemas']['RatingDirectConfig'];
-export type RatingDirectScoringSchemaIn = components['schemas']['RatingDirectScoringSchemaIn'];
-export type CreateScoringRuleRequest = components['schemas']['CreateScoringRuleRequest'];
-export type UpdateScoringRuleRequest = components['schemas']['UpdateScoringRuleRequest'];
-export type ResponseBadRequestError = components['responses']['BadRequestError'];
-export type ResponseUnauthorizedError = components['responses']['UnauthorizedError'];
-export type ResponseForbiddenError = components['responses']['ForbiddenError'];
-export type ResponseNotFoundError = components['responses']['NotFoundError'];
-export type ResponseConflictError = components['responses']['ConflictError'];
-export type ResponseValidationError = components['responses']['ValidationError'];
-export type ResponseRateLimitError = components['responses']['RateLimitError'];
-export type ResponseInternalServerError = components['responses']['InternalServerError'];
 export type $defs = Record<string, never>;
 export interface operations {
     bootstrapUser: {
@@ -3684,6 +3651,36 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    resolveInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicInvitationResolveResponse"];
+                };
             };
             400: components["responses"]["BadRequestError"];
             401: components["responses"]["UnauthorizedError"];
@@ -5033,6 +5030,38 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
+    sendSurveyLinkEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendSurveyLinkEmailResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
     listNodes: {
         parameters: {
             query?: never;
@@ -6167,6 +6196,32 @@ export interface operations {
         };
     };
     readinessCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    testEmail: {
         parameters: {
             query?: never;
             header?: never;

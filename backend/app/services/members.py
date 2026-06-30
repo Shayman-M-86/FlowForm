@@ -2,7 +2,9 @@ from datetime import UTC, datetime  # noqa: I001
 
 from sqlalchemy.orm import Session
 
+from app.core.config import current_settings
 from app.db.error_handling import commit_with_err_handle
+from app.email_service import get_email_service
 from app.domain.errors import (
     AlreadyAMemberError,
     InvitationNotFoundError,
@@ -73,7 +75,7 @@ class MembersService:
                 raise AlreadyAMemberError()
         self._get_assignable_role(db, project_id=project_id, role_id=data.role_id)
 
-        invitation = ir.create_invitation(
+        invitation, token = ir.create_invitation(
             db,
             project_id=project_id,
             invited_email=data.email,
@@ -84,6 +86,14 @@ class MembersService:
         # UNIQUE (project_id, invited_email) catches a duplicate pending invite at the DB level.
         # The integrity rule translates that to InvitationAlreadyExistsError (409).
         commit_with_err_handle(db)
+
+        get_email_service().send_project_member_invite({
+            "to_email": data.email,
+            "inviter_name": actor.display_name,
+            "project_name": invitation.project.name,
+            "invite_url": f"{current_settings().flowform.server.site_url.rstrip('/')}/invitations/{token}",
+        })
+
         return invitation
 
     def revoke_invitation(
@@ -150,6 +160,14 @@ class MembersService:
             raise InvitationNotPendingError()
         ir.update_status(db, invitation, status="declined")
         commit_with_err_handle(db)
+
+    def resolve_invitation_by_token(self, db: Session, *, token: str) -> ProjectInvitation:
+        """Look up an invitation by its raw token for public resolution."""
+        invitation = ensure_present(
+            ir.get_by_token(db, token),
+            error=InvitationNotFoundError(),
+        )
+        return invitation
 
     def _get_member(self, db: Session, *, membership_id: int, project_id: int) -> ProjectMembership:
         return ensure_present(

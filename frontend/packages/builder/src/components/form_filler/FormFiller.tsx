@@ -42,6 +42,13 @@ interface FormFillerProps {
   confirmSubmit?: boolean;
 }
 
+interface AnswerReviewItem {
+  questionKey: string;
+  title: string;
+  prompt: string;
+  answer: string | string[];
+}
+
 const panelClass = [
   "flex w-full min-w-0 flex-col gap-7 rounded-3xl border border-border bg-card p-7",
   "shadow-md backdrop-blur-md",
@@ -89,6 +96,7 @@ export function FormFiller({
     ? deriveSurveyProgress(preparedSurvey, answers, [...progress.effectiveCommittedIds, currentNode.node_key])
     : null;
   const answerSummary = buildAnswerSummary(preparedSurvey, answers, progress.effectiveCommittedIds);
+  const answerReviewItems = buildAnswerReviewItems(preparedSurvey, answers, progress.effectiveCommittedIds);
   const isContinueDisabled = currentNode && currentQuestion
     ? Boolean(validateQuestionAnswer(currentQuestion, answers[currentNode.node_key], currentQuestionState?.required ?? true))
     : false;
@@ -166,7 +174,7 @@ export function FormFiller({
 
   if (survey.length === 0) {
     return (
-      <section className="box-border min-h-full px-8 py-9 max-sm:min-h-screen max-sm:px-4.5 max-sm:py-6">
+      <section className="box-border grid min-h-screen place-items-center px-8 py-9 max-sm:px-4.5 max-sm:py-6">
         <div className="mx-auto w-full max-w-[760px]">
           <div className={panelClass}>
             {title && <Badge variant="accent" size="sm">{title}</Badge>}
@@ -188,7 +196,7 @@ export function FormFiller({
   const isSingleColumn = !showAnswerSummary || stackSidebar;
 
   return (
-    <section className="box-border min-h-full px-8 py-9 max-sm:min-h-screen max-sm:flex max-sm:items-center max-sm:justify-center max-sm:px-4.5 max-sm:py-6">
+    <section className="box-border grid min-h-screen place-items-center px-8 py-9 max-sm:px-4.5 max-sm:py-6">
       <div
         className={[
           "mx-auto w-full",
@@ -284,11 +292,7 @@ export function FormFiller({
               <p className="m-0 leading-relaxed text-muted-foreground">
                 You&apos;ve answered all the questions. When you&apos;re ready, click submit to send your response.
               </p>
-              {showAnswerSummary && (
-                <pre className="m-0 overflow-auto rounded-2xl bg-muted p-4 font-mono text-[0.82rem] leading-[1.55] text-foreground">
-                  {JSON.stringify(answerSummary, null, 2)}
-                </pre>
-              )}
+              {showAnswerSummary && renderAnswerReview(answerReviewItems)}
               <div className="flex flex-wrap gap-3">
                 <Button type="button" variant="primary" onClick={() => setUserConfirmedSubmit(true)}>
                   {submitLabel}
@@ -316,11 +320,7 @@ export function FormFiller({
                   ? "A rule ended the survey before submission."
                   : "All visible survey steps have been completed."}
               </p>
-              {showAnswerSummary && (
-                <pre className="m-0 overflow-auto rounded-2xl bg-muted p-4 font-mono text-[0.82rem] leading-[1.55] text-foreground">
-                  {JSON.stringify(answerSummary, null, 2)}
-                </pre>
-              )}
+              {showAnswerSummary && renderAnswerReview(answerReviewItems)}
               <div className="flex flex-wrap gap-3">
                 <Button type="button" variant="primary" onClick={handleRestart}>
                   Start over
@@ -351,6 +351,147 @@ function buildAnswerSummary(
     if (!node) return [];
     return [{ question_key: node.node_key, answer: answers[questionId] ?? null }];
   });
+}
+
+function buildAnswerReviewItems(
+  preparedSurvey: PreparedSurvey,
+  answers: AnswerMap,
+  committedQuestionIds: string[],
+): AnswerReviewItem[] {
+  return committedQuestionIds.flatMap((questionId, index) => {
+    const node = preparedSurvey.questionById.get(questionId);
+    if (!node) return [];
+
+    return [{
+      questionKey: node.node_key,
+      title: node.content.title?.trim() || `Question ${index + 1}`,
+      prompt: node.content.label || "Untitled question",
+      answer: formatReviewAnswer(node, answers[questionId]),
+    }];
+  });
+}
+
+function renderAnswerReview(items: AnswerReviewItem[]) {
+  if (items.length === 0) {
+    return (
+      <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+        No answers recorded.
+      </div>
+    );
+  }
+
+  return (
+    <section className="flex flex-col gap-3.5" aria-label="Answer summary">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="m-0 text-[0.92rem] font-semibold uppercase tracking-[0.04em] text-muted-foreground">
+          Your answers
+        </h2>
+        <span className="text-sm text-muted-foreground">
+          {items.length} {items.length === 1 ? "answer" : "answers"}
+        </span>
+      </div>
+      <ol className="m-0 flex list-none flex-col gap-3 p-0">
+        {items.map((item, index) => (
+          <li
+            key={item.questionKey}
+            className="rounded-2xl border border-border bg-muted/20 p-4"
+          >
+            <div className="flex gap-3.5">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/15 text-sm font-semibold text-accent">
+                {index + 1}
+              </span>
+              <div className="flex min-w-0 flex-1 flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <h3 className="m-0 break-words text-base font-semibold leading-tight text-foreground">
+                    {item.title}
+                  </h3>
+                  <p className="m-0 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
+                    {item.prompt}
+                  </p>
+                </div>
+                {Array.isArray(item.answer) ? (
+                  <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                    {item.answer.map((line, lineIndex) => (
+                      <li
+                        key={`${item.questionKey}-${lineIndex}`}
+                        className="rounded-xl bg-card px-3.5 py-2.5 text-sm font-medium leading-relaxed text-foreground"
+                      >
+                        {line}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="m-0 rounded-xl bg-card px-3.5 py-2.5 text-sm font-medium leading-relaxed text-foreground">
+                    {item.answer}
+                  </p>
+                )}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function formatReviewAnswer(node: QuestionNode, answer: QuestionAnswer | undefined): string | string[] {
+  const emptyAnswerText = "No answer provided";
+  const question = node.content;
+
+  switch (question.family) {
+    case "choice": {
+      if (!Array.isArray(answer) || answer.length === 0) return emptyAnswerText;
+
+      const labelById = new Map(question.definition.options.map((option) => [option.id, option.label || option.id]));
+      return answer.map((optionId) => labelById.get(optionId) ?? optionId);
+    }
+
+    case "matching": {
+      const selectedPairs = toRecord(answer);
+      const matchLabelById = new Map(question.definition.matches.map((match) => [match.id, match.label || match.id]));
+      const formattedPairs = question.definition.prompts.flatMap((prompt) => {
+        const matchId = selectedPairs[prompt.id];
+        if (!matchId) return [];
+
+        return [`${prompt.label || prompt.id} -> ${matchLabelById.get(matchId) ?? matchId}`];
+      });
+
+      return formattedPairs.length > 0 ? formattedPairs : emptyAnswerText;
+    }
+
+    case "rating": {
+      if (typeof answer !== "number") return emptyAnswerText;
+
+      const definition = question.definition;
+      if (definition.variant === "stars") {
+        return `${answer} of ${definition.stars} stars`;
+      }
+
+      if (definition.variant === "emoji") {
+        const label = getEmojiRatingLabel(definition.emoji_list, answer);
+        return label ? `${label} (${answer} of 5)` : `${answer} of 5`;
+      }
+
+      const leftLabel = definition.ui.left_label || "Low";
+      const rightLabel = definition.ui.right_label || "High";
+      return `${answer} (${leftLabel} to ${rightLabel})`;
+    }
+
+    case "field":
+      return typeof answer === "string" && answer.trim() ? answer : emptyAnswerText;
+    default:
+      return emptyAnswerText;
+  }
+}
+
+function getEmojiRatingLabel(emojiList: "sad_to_happy" | "angry_to_happy" | "disgust_to_happy", value: number) {
+  const labelsByList: Record<typeof emojiList, string[]> = {
+    sad_to_happy: ["Sad", "Low", "Neutral", "Good", "Happy"],
+    angry_to_happy: ["Angry", "Tense", "Neutral", "Calm", "Happy"],
+    disgust_to_happy: ["Disgusted", "Uneasy", "Neutral", "Pleased", "Happy"],
+  };
+
+  return labelsByList[emojiList][value - 1] ?? null;
 }
 
 function renderQuestionInput(

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StudioRouteImport } from './routes/_studio'
 import { Route as RespondentRouteImport } from './routes/_respondent'
+import { Route as PublicRouteImport } from './routes/_public'
 import { Route as StudioIndexRouteImport } from './routes/_studio/index'
 import { Route as StudioUiTestIndexRouteImport } from './routes/_studio/ui-test/index'
 import { Route as StudioUiTest2IndexRouteImport } from './routes/_studio/ui-test-2/index'
@@ -18,6 +19,7 @@ import { Route as StudioProjectsIndexRouteImport } from './routes/_studio/projec
 import { Route as StudioAccountIndexRouteImport } from './routes/_studio/account/index'
 import { Route as StudioProjectsSlugRouteImport } from './routes/_studio/projects/$slug'
 import { Route as RespondentRespondTokenRouteImport } from './routes/_respondent/respond/$token'
+import { Route as PublicInvitationsTokenRouteImport } from './routes/_public/invitations/$token'
 import { Route as StudioProjectsSlugIndexRouteImport } from './routes/_studio/projects/$slug/index'
 import { Route as StudioProjectsSlugSurveysRouteImport } from './routes/_studio/projects/$slug/surveys'
 import { Route as StudioProjectsSlugSubjectsRouteImport } from './routes/_studio/projects/$slug/subjects'
@@ -41,6 +43,10 @@ const StudioRoute = StudioRouteImport.update({
 } as any)
 const RespondentRoute = RespondentRouteImport.update({
   id: '/_respondent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicRoute = PublicRouteImport.update({
+  id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StudioIndexRoute = StudioIndexRouteImport.update({
@@ -77,6 +83,11 @@ const RespondentRespondTokenRoute = RespondentRespondTokenRouteImport.update({
   id: '/respond/$token',
   path: '/respond/$token',
   getParentRoute: () => RespondentRoute,
+} as any)
+const PublicInvitationsTokenRoute = PublicInvitationsTokenRouteImport.update({
+  id: '/invitations/$token',
+  path: '/invitations/$token',
+  getParentRoute: () => PublicRoute,
 } as any)
 const StudioProjectsSlugIndexRoute = StudioProjectsSlugIndexRouteImport.update({
   id: '/',
@@ -175,6 +186,7 @@ const StudioProjectsSlugSurveysSurveySlugAccessRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof StudioIndexRoute
+  '/invitations/$token': typeof PublicInvitationsTokenRoute
   '/respond/$token': typeof RespondentRespondTokenRoute
   '/projects/$slug': typeof StudioProjectsSlugRouteWithChildren
   '/account/': typeof StudioAccountIndexRoute
@@ -200,6 +212,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof StudioIndexRoute
+  '/invitations/$token': typeof PublicInvitationsTokenRoute
   '/respond/$token': typeof RespondentRespondTokenRoute
   '/account': typeof StudioAccountIndexRoute
   '/projects': typeof StudioProjectsIndexRoute
@@ -222,9 +235,11 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_public': typeof PublicRouteWithChildren
   '/_respondent': typeof RespondentRouteWithChildren
   '/_studio': typeof StudioRouteWithChildren
   '/_studio/': typeof StudioIndexRoute
+  '/_public/invitations/$token': typeof PublicInvitationsTokenRoute
   '/_respondent/respond/$token': typeof RespondentRespondTokenRoute
   '/_studio/projects/$slug': typeof StudioProjectsSlugRouteWithChildren
   '/_studio/account/': typeof StudioAccountIndexRoute
@@ -252,6 +267,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/invitations/$token'
     | '/respond/$token'
     | '/projects/$slug'
     | '/account/'
@@ -277,6 +293,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/invitations/$token'
     | '/respond/$token'
     | '/account'
     | '/projects'
@@ -298,9 +315,11 @@ export interface FileRouteTypes {
     | '/projects/$slug/surveys/$surveySlug'
   id:
     | '__root__'
+    | '/_public'
     | '/_respondent'
     | '/_studio'
     | '/_studio/'
+    | '/_public/invitations/$token'
     | '/_respondent/respond/$token'
     | '/_studio/projects/$slug'
     | '/_studio/account/'
@@ -326,6 +345,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  PublicRoute: typeof PublicRouteWithChildren
   RespondentRoute: typeof RespondentRouteWithChildren
   StudioRoute: typeof StudioRouteWithChildren
 }
@@ -344,6 +364,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof RespondentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_public': {
+      id: '/_public'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_studio/': {
@@ -394,6 +421,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/respond/$token'
       preLoaderRoute: typeof RespondentRespondTokenRouteImport
       parentRoute: typeof RespondentRoute
+    }
+    '/_public/invitations/$token': {
+      id: '/_public/invitations/$token'
+      path: '/invitations/$token'
+      fullPath: '/invitations/$token'
+      preLoaderRoute: typeof PublicInvitationsTokenRouteImport
+      parentRoute: typeof PublicRoute
     }
     '/_studio/projects/$slug/': {
       id: '/_studio/projects/$slug/'
@@ -510,6 +544,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PublicRouteChildren {
+  PublicInvitationsTokenRoute: typeof PublicInvitationsTokenRoute
+}
+
+const PublicRouteChildren: PublicRouteChildren = {
+  PublicInvitationsTokenRoute: PublicInvitationsTokenRoute,
+}
+
+const PublicRouteWithChildren =
+  PublicRoute._addFileChildren(PublicRouteChildren)
+
 interface RespondentRouteChildren {
   RespondentRespondTokenRoute: typeof RespondentRespondTokenRoute
 }
@@ -618,6 +663,7 @@ const StudioRouteWithChildren =
   StudioRoute._addFileChildren(StudioRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  PublicRoute: PublicRouteWithChildren,
   RespondentRoute: RespondentRouteWithChildren,
   StudioRoute: StudioRouteWithChildren,
 }
