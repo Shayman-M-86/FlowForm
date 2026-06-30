@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { Button, Modal } from "@flowform/ui";
 import { AlertCircle, Check, ClipboardPaste, Copy, Sparkles } from "lucide-react";
 import type { SurveyNode } from "../../node/questionTypes";
-import { findNodeLine, parseSurveyNodeJson, SurveyNodeImportError } from "./surveyNodeImport";
+import {
+  findNodeLine,
+  parseSurveyNodeJson,
+  SurveyNodeImportError,
+  type SurveyNodeImportIssue,
+} from "./surveyNodeImport";
 
 const AI_IMPORT_STORAGE_KEY = "flowform.ai-import.pending";
 
@@ -11,11 +16,11 @@ const SCHEMA_PROMPT = `You are a survey schema generator for FlowForm.
 Return ONLY a JSON array of survey nodes — no explanation, no markdown, no code fences.
 
 Each node is either a question node or a rule node. Every node has:
-  "id": <unique integer>, "node_key": "<unique string>", "node_type": "question" | "rule",
+  "id": "<unique UUID string>", "node_key": "<unique string>", "node_type": "question" | "rule",
   "sort_key": <number>, "content": <Content>
 
 QUESTION NODE
-{ "id": 100001, "node_key": "question_id_1", "node_type": "question", "sort_key": 100000, "content": <QuestionContent> }
+{ "id": "11111111-1111-4111-8111-111111111111", "node_key": "question_id_1", "node_type": "question", "sort_key": 100000, "content": <QuestionContent> }
 
 QuestionContent shapes (note: family/label/title/definition live in content; the identifier is node_key, not inside content):
 
@@ -34,10 +39,10 @@ Matching:
 { "family": "matching", "title": "Section heading", "label": "Question text", "definition": { "prompts": [{ "id": "p1", "label": "Prompt" }], "matches": [{ "id": "m1", "label": "Match" }] } }
 
 RULE NODE
-{ "id": 100009, "node_key": "r1", "node_type": "rule", "sort_key": 250000, "content": { "if": { "match": "ALL", "conditions": [{ "target_id": "question_id_1", "family": "choice", "requirements": { "required": ["opt_1"] } }] }, "then": { "do": { "skip_to": "question_id_3" } } } }
+{ "id": "99999999-9999-4999-8999-999999999999", "node_key": "r1", "node_type": "rule", "sort_key": 250000, "content": { "if": { "match": "ALL", "conditions": [{ "target_id": "question_id_1", "family": "choice", "requirements": { "required": ["opt_1"] } }] }, "then": { "do": { "skip_to": "question_id_3" } } } }
 
 RULES
-- "id" is a unique integer per node. "node_key" is a unique string per node.
+- "id" is a unique UUID string per node. "node_key" is a unique string per node.
 - target_id and skip_to reference another node's "node_key" (e.g. "question_id_1"), not its id.
 - node_key suggestions: question_id_1, question_id_2, ...  Rules: r1, r2, ...
 - Rule conditions may only reference EARLIER questions; rule actions (skip_to / set) may only reference LATER questions.
@@ -78,7 +83,7 @@ function clearPending() {
 
 interface ValidationError {
   message: string;
-  nodeIndex: number | null;
+  issues: SurveyNodeImportIssue[];
 }
 
 export function hasAiImportPending(): boolean {
@@ -130,12 +135,22 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
       nodes = parseSurveyNodeJson(rawJson);
     } catch (e) {
       const importError = e instanceof SurveyNodeImportError ? e : null;
-      const line = findNodeLine(rawJson, importError?.nodeIndex ?? null);
+      const issues = importError
+        ? importError.issues.map((issue) => ({
+            ...issue,
+            line: issue.line ?? findNodeLine(rawJson, issue.nodeIndex),
+          }))
+        : [{
+            path: "$",
+            message: "Invalid survey structure.",
+            nodeIndex: null,
+            line: null,
+            column: null,
+          }];
       setError({
         message: importError?.message ?? "Invalid survey structure.",
-        nodeIndex: line,
+        issues,
       });
-      setPasteValue("");
       return;
     }
     if (hasExistingQuestions) {
@@ -280,16 +295,55 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
             </div>
           )}
           {error && (() => {
-            const fixPrompt = `The JSON you gave me has a validation error: "${error.message}". Fix the issue and return the complete corrected JSON array — no explanation, no markdown.`;
+            const issueSummary = error.issues
+              .slice(0, 12)
+              .map((issue, index) => {
+                const location = [
+                  issue.path,
+                  issue.line ? `line ${issue.line}${issue.column ? ` col ${issue.column}` : ""}` : null,
+                  issue.nodeIndex !== null ? `node index ${issue.nodeIndex}` : null,
+                ].filter(Boolean).join(", ");
+                return `${index + 1}. ${location}: ${issue.message}${issue.suggestion ? ` Suggested fix: ${issue.suggestion}` : ""}`;
+              })
+              .join("\n");
+            const fixPrompt = `The JSON you gave me failed FlowForm import validation.\n\nErrors:\n${issueSummary}\n\nFix the JSON below and return the complete corrected JSON array only — no explanation, no markdown.\n\n${pasteValue}`;
+            const visibleIssues = error.issues.slice(0, 8);
+            const hiddenCount = error.issues.length - visibleIssues.length;
             return (
               <div className="rounded-lg border border-destructive/30 bg-destructive/8 overflow-hidden">
                 <div className="flex items-start gap-2.5 px-3.5 py-3">
                   <AlertCircle size={14} className="mt-0.5 shrink-0 text-destructive" aria-hidden="true" />
-                  <div className="flex flex-col gap-0.5 min-w-0">
+                  <div className="flex min-w-0 flex-col gap-2">
                     <p className="m-0 text-xs font-semibold text-destructive">
-                      Validation error{error.nodeIndex !== null ? <span className="ml-1.5 font-normal opacity-60">line {error.nodeIndex}</span> : null}
+                      {error.issues.length === 1 ? "Validation error" : `${error.issues.length} validation errors`}
                     </p>
-                    <p className="m-0 text-xs text-destructive/80">{error.message}</p>
+                    <ul className="m-0 flex max-h-44 flex-col gap-2 overflow-auto p-0 text-xs text-destructive/85">
+                      {visibleIssues.map((issue, index) => (
+                        <li key={`${issue.path}-${index}`} className="list-none">
+                          <div className="font-mono text-[11px] font-semibold text-destructive">
+                            {issue.path}
+                            {issue.line ? (
+                              <span className="ml-1.5 font-sans font-normal opacity-70">
+                                line {issue.line}{issue.column ? `, col ${issue.column}` : ""}
+                              </span>
+                            ) : issue.nodeIndex !== null ? (
+                              <span className="ml-1.5 font-sans font-normal opacity-70">
+                                node {issue.nodeIndex}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div>{issue.message}</div>
+                          {issue.suggestion ? (
+                            <div className="mt-0.5 text-destructive/70">{issue.suggestion}</div>
+                          ) : null}
+                        </li>
+                      ))}
+                      {hiddenCount > 0 ? (
+                        <li className="list-none text-destructive/70">
+                          {hiddenCount} more error{hiddenCount === 1 ? "" : "s"} hidden. Copy the fix prompt for the full list.
+                        </li>
+                      ) : null}
+                    </ul>
                   </div>
                 </div>
                 <div className="flex items-center justify-between border-t border-destructive/20 bg-destructive/5 px-3.5 py-2">

@@ -59,9 +59,7 @@ def create_session(
 
 
 def get_by_id(db: Session, session_id: UUID) -> SubmissionSession | None:
-    return db.scalar(
-        select(SubmissionSession).where(SubmissionSession.id == session_id)
-    )
+    return db.scalar(select(SubmissionSession).where(SubmissionSession.id == session_id))
 
 
 def get_by_token_hash(db: Session, token_hash: bytes) -> SubmissionSession | None:
@@ -73,11 +71,7 @@ def get_by_token_hash(db: Session, token_hash: bytes) -> SubmissionSession | Non
 
 
 def lock_for_update(db: Session, session_id: UUID) -> SubmissionSession | None:
-    return db.scalar(
-        select(SubmissionSession)
-        .where(SubmissionSession.id == session_id)
-        .with_for_update()
-    )
+    return db.scalar(select(SubmissionSession).where(SubmissionSession.id == session_id).with_for_update())
 
 
 def mark_completed(
@@ -157,17 +151,9 @@ def list_by_survey(
     if status is not None:
         base = base.where(SubmissionSession.session_status == status)
 
-    total = db.scalar(
-        select(func.count()).select_from(
-            base.with_only_columns(SubmissionSession.id).subquery()
-        )
-    ) or 0
+    total = db.scalar(select(func.count()).select_from(base.with_only_columns(SubmissionSession.id).subquery())) or 0
 
-    rows = db.scalars(
-        base.order_by(SubmissionSession.started_at.desc())
-        .offset(offset)
-        .limit(limit)
-    ).all()
+    rows = db.scalars(base.order_by(SubmissionSession.started_at.desc()).offset(offset).limit(limit)).all()
 
     return rows, total
 
@@ -186,4 +172,23 @@ def get_by_ids(
             SubmissionSession.survey_id == survey_id,
             SubmissionSession.id.in_(session_ids),
         )
+    ).all()
+
+
+def list_by_subjects(
+    db: Session,
+    *,
+    survey_id: int,
+    project_subject_ids: Sequence[UUID],
+) -> Sequence[SubmissionSession]:
+    """Fetch all sessions in a survey for a set of subjects."""
+    if not project_subject_ids:
+        return []
+    return db.scalars(
+        select(SubmissionSession)
+        .where(
+            SubmissionSession.survey_id == survey_id,
+            SubmissionSession.project_subject_id.in_(project_subject_ids),
+        )
+        .order_by(SubmissionSession.started_at.desc())
     ).all()

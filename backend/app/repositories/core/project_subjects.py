@@ -14,6 +14,7 @@ from app.schema.orm.core.project_subject import (
     ProjectSubject,
     ProjectSubjectIdentity,
 )
+from app.schema.orm.core.submission_session import SubmissionSession
 
 _SUBJECT_CODE_BYTES = 18
 
@@ -51,9 +52,7 @@ def set_subject_code(db: Session, *, subject: ProjectSubject, subject_code: str)
     return subject
 
 
-def set_canonical_subject(
-    db: Session, *, subject: ProjectSubject, canonical: ProjectSubject
-) -> ProjectSubject:
+def set_canonical_subject(db: Session, *, subject: ProjectSubject, canonical: ProjectSubject) -> ProjectSubject:
     """Point subject to canonical as a merged/alias row. canonical must be in the same project."""
     subject.canonical_subject_id = canonical.id
     flush_with_err_handle(db, contexts=[subject])
@@ -96,10 +95,7 @@ def _list_subjects_base(
         .label("participant_id")
     )
 
-    stmt = (
-        select(ProjectSubject, active_identity_count, participant_id)
-        .where(ProjectSubject.project_id == project_id)
-    )
+    stmt = select(ProjectSubject, active_identity_count, participant_id).where(ProjectSubject.project_id == project_id)
 
     if canonical_status == "canonical":
         stmt = stmt.where(ProjectSubject.canonical_subject_id.is_(None))
@@ -165,15 +161,11 @@ def list_subjects(
         search=search,
     )
 
-    count_stmt = select(func.count()).select_from(
-        base.with_only_columns(ProjectSubject.id).subquery()
-    )
+    count_stmt = select(func.count()).select_from(base.with_only_columns(ProjectSubject.id).subquery())
     total = db.scalar(count_stmt) or 0
 
     rows: Sequence[SubjectListRow] = db.execute(
-        base.order_by(ProjectSubject.created_at.desc())
-        .offset(offset)
-        .limit(limit)
+        base.order_by(ProjectSubject.created_at.desc()).offset(offset).limit(limit)
     ).all()
 
     return rows, total
@@ -197,16 +189,73 @@ def get_subject_with_participant(
         .label("participant_id")
     )
 
-    row = db.execute(
-        select(ProjectSubject, participant_id)
-        .options(joinedload(ProjectSubject.identities))
-        .where(
-            ProjectSubject.project_id == project_id,
-            ProjectSubject.id == subject_id,
+    row = (
+        db.execute(
+            select(ProjectSubject, participant_id)
+            .options(joinedload(ProjectSubject.identities))
+            .where(
+                ProjectSubject.project_id == project_id,
+                ProjectSubject.id == subject_id,
+            )
         )
-    ).unique().first()
+        .unique()
+        .first()
+    )
 
     if row is None:
         return None
 
     return row[0], row[1]
+
+
+def list_subjects_by_survey(
+    db: Session,
+    *,
+    project_id: int,
+    survey_id: int,
+    offset: int = 0,
+    limit: int = 50,
+) -> tuple[Sequence[ProjectSubject], int]:
+    """Return paginated subjects with at least one session in this survey."""
+    has_session = (
+        select(SubmissionSession.id)
+        .where(
+            SubmissionSession.project_subject_id == ProjectSubject.id,
+            SubmissionSession.survey_id == survey_id,
+        )
+        .correlate(ProjectSubject)
+        .exists()
+    )
+    base = select(ProjectSubject).where(ProjectSubject.project_id == project_id, has_session)
+
+    total = db.scalar(select(func.count()).select_from(base.with_only_columns(ProjectSubject.id).subquery())) or 0
+
+    rows = db.scalars(base.order_by(ProjectSubject.created_at.desc()).offset(offset).limit(limit)).all()
+
+    return rows, total
+
+
+def get_subject_in_survey(
+    db: Session,
+    *,
+    project_id: int,
+    survey_id: int,
+    subject_id: UUID,
+) -> ProjectSubject | None:
+    """Fetch a subject only if it has at least one session in this survey."""
+    has_session = (
+        select(SubmissionSession.id)
+        .where(
+            SubmissionSession.project_subject_id == ProjectSubject.id,
+            SubmissionSession.survey_id == survey_id,
+        )
+        .correlate(ProjectSubject)
+        .exists()
+    )
+    return db.scalar(
+        select(ProjectSubject).where(
+            ProjectSubject.project_id == project_id,
+            ProjectSubject.id == subject_id,
+            has_session,
+        )
+    )

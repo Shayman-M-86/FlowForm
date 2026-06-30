@@ -1,5 +1,5 @@
-"""Admin response viewing, decryption, and deletion."""
+"""Admin survey results: subject/session viewing, decryption, and deletion."""
 
-from app.services.admin_responses.service import AdminResponseService
+from app.services.admin_results.service import AdminResultsService
 
-__all__ = ["AdminResponseService"]
+__all__ = ["AdminResultsService"]

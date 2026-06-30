@@ -13,7 +13,7 @@
  *   node scripts/generate-types.mjs
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import yaml from "js-yaml";
@@ -27,6 +27,10 @@ const generatedRoot = resolve(
 const schemaPackageDir = resolve(
   __dirname,
   "../packages/schema/src/generated",
+);
+const aiImportPromptPath = resolve(
+  __dirname,
+  "../packages/builder/src/components/Utils/ai-import/AiImportModal.tsx",
 );
 
 mkdirSync(schemaPackageDir, { recursive: true });
@@ -111,8 +115,9 @@ for (const category of ["subtype", "request", "response"]) {
   }
 }
 
-writeFileSync(`${schemaPackageDir}/builder.gen.ts`, interfaceLines.join("\n"));
-console.log(`Generated ${schemaPackageDir}/builder.gen.ts`);
+const builderTypesFile = `${schemaPackageDir}/builder.gen.ts`;
+const builderTypesChanged = writeGeneratedFile(builderTypesFile, interfaceLines.join("\n"));
+console.log(`Generated ${builderTypesFile}`);
 
 // ─── packages/schema/src/generated/builder-zod.gen.ts ────────────────────────
 // Zod schemas for all builder-scoped schemas (same set as builder.gen.ts).
@@ -160,8 +165,9 @@ for (const category of ["subtype", "request", "response"]) {
   }
 }
 
-writeFileSync(`${schemaPackageDir}/builder-zod.gen.ts`, zodLines.join("\n"));
-console.log(`Generated ${schemaPackageDir}/builder-zod.gen.ts`);
+const builderZodFile = `${schemaPackageDir}/builder-zod.gen.ts`;
+const builderZodChanged = writeGeneratedFile(builderZodFile, zodLines.join("\n"));
+console.log(`Generated ${builderZodFile}`);
 
 // ─── packages/schema/src/generated/constraints.gen.ts ────────────────────────
 // ─── packages/schema/src/generated/builder-constraints.gen.ts ────────────────
@@ -198,12 +204,25 @@ function buildConstraintFileLines(entries) {
   return lines;
 }
 
-writeFileSync(`${schemaPackageDir}/constraints.gen.ts`, buildConstraintFileLines(sorted).join("\n"));
-console.log(`Generated ${schemaPackageDir}/constraints.gen.ts`);
+const constraintsFile = `${schemaPackageDir}/constraints.gen.ts`;
+writeGeneratedFile(constraintsFile, buildConstraintFileLines(sorted).join("\n"));
+console.log(`Generated ${constraintsFile}`);
 
 const builderSortedForConstraints = sorted.filter(([name]) => builderSchemas.has(name));
-writeFileSync(`${schemaPackageDir}/builder-constraints.gen.ts`, buildConstraintFileLines(builderSortedForConstraints).join("\n"));
-console.log(`Generated ${schemaPackageDir}/builder-constraints.gen.ts`);
+const builderConstraintsFile = `${schemaPackageDir}/builder-constraints.gen.ts`;
+const builderConstraintsChanged = writeGeneratedFile(
+  builderConstraintsFile,
+  buildConstraintFileLines(builderSortedForConstraints).join("\n"),
+);
+console.log(`Generated ${builderConstraintsFile}`);
+
+if (builderTypesChanged || builderZodChanged || builderConstraintsChanged) {
+  warnAiImportPromptReview({
+    builderTypesChanged,
+    builderZodChanged,
+    builderConstraintsChanged,
+  });
+}
 
 // ─── rbac.gen.ts — permission union + operationId map ────────────────────────
 
@@ -264,10 +283,34 @@ rbacLines.push(`];`);
 rbacLines.push("");
 
 const rbacFile = `${generatedRoot}/rbac.gen.ts`;
-writeFileSync(rbacFile, rbacLines.join("\n"));
+writeGeneratedFile(rbacFile, rbacLines.join("\n"));
 console.log(`Generated ${rbacFile}`);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function writeGeneratedFile(path, content) {
+  const previous = existsSync(path) ? readFileSync(path, "utf8") : null;
+  writeFileSync(path, content);
+  return previous !== content;
+}
+
+function warnAiImportPromptReview(changes) {
+  const changedFiles = [
+    changes.builderTypesChanged ? "packages/schema/src/generated/builder.gen.ts" : null,
+    changes.builderZodChanged ? "packages/schema/src/generated/builder-zod.gen.ts" : null,
+    changes.builderConstraintsChanged ? "packages/schema/src/generated/builder-constraints.gen.ts" : null,
+  ].filter(Boolean);
+
+  console.warn("");
+  console.warn("============================================================");
+  console.warn("WARNING: Builder node schema output changed.");
+  console.warn("Review the handcrafted AI import schema prompt for drift:");
+  console.warn(`  ${aiImportPromptPath}`);
+  console.warn("Changed generated builder artifacts:");
+  for (const file of changedFiles) console.warn(`  - ${file}`);
+  console.warn("============================================================");
+  console.warn("");
+}
 
 /** Collect all $ref names reachable one level deep in a schema node. */
 function refsInSchema(schema) {

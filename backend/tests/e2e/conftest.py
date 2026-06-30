@@ -130,7 +130,7 @@ def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
     _starter = "app.services.public_submissions.core.actions.session_starter"
     _session_key = "app.crypto.session_key"
     _recon = "app.services.public_submissions.core.reconciliation"
-    _admin = "app.services.admin_responses.service"
+    _admin = "app.services.admin_results.service"
 
     monkeypatch.setattr(f"{_starter}.load_current_linkage_key", lambda *_args, **_kwargs: _linkage_key)
     monkeypatch.setattr(

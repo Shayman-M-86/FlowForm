@@ -8,10 +8,15 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.schema.api import limits
 from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
-from app.schema.enums import AnswerFamily, ExportFormat, SubmissionAnswerState, SubmissionSessionStatus
+from app.schema.enums import (
+    AnswerFamily,
+    SubmissionAnswerState,
+    SubmissionEventType,
+    SubmissionSessionStatus,
+)
 
 
-class SurveyResponseSummaryResponses(BaseModel):
+class SurveySessionResponses(BaseModel):
     """Admin-facing summary of one respondent submission session.
 
     Sourced from core session metadata only; carries no decrypted answer
@@ -29,48 +34,63 @@ class SurveyResponseSummaryResponses(BaseModel):
     last_activity_at: datetime
 
 
-class PaginatedSurveyResponsesResponses(BaseModel):
-    """Paginated list of admin survey-response summaries."""
-
-    items: list[SurveyResponseSummaryResponses] = Field(max_length=limits.LIST_PAGE_SIZE_MAX)
-    total: int
-    page: int
-    page_size: int
-
-
-class SurveyResponseAnswerResponses(BaseModel):
-    """One decrypted canonical answer in an admin survey-response detail view."""
+class SurveyAnswerSlotResponses(BaseModel):
+    """One answer slot in an admin survey-results view, optionally decrypted."""
 
     model_config = ConfigDict(from_attributes=True)
 
     question_node_id: UUID
-    state: SubmissionAnswerState = Field(validation_alias="answer_state")
+    question_key: str | None = None
     answer_family: AnswerFamily | None = None
+    has_encrypted_answer: bool
+    decrypted: bool
+    state: SubmissionAnswerState | None = Field(default=None, validation_alias="answer_state")
     answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
 
 
-class SurveyResponseDetailResponses(BaseModel):
-    """Admin survey-response detail: session metadata plus canonical decrypted answers."""
+class SurveySessionEventResponses(BaseModel):
+    """One timeline event for a session. Never carries answer values."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    session: SurveyResponseSummaryResponses
-    answers: list[SurveyResponseAnswerResponses] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
+    event_type: SubmissionEventType
+    question_node_id: UUID | None = None
+    received_at: datetime
 
 
-class SurveyResponseHistoryResponses(BaseModel):
-    """Admin current-answer history-compatible view for a session."""
+class SurveySessionTreeResponses(BaseModel):
+    """One session with its answer slots and optional event timeline."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    session: SurveyResponseSummaryResponses
-    revisions: list[SurveyResponseAnswerResponses] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
+    session: SurveySessionResponses
+    answers: list[SurveyAnswerSlotResponses] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
+    events: list[SurveySessionEventResponses] | None = None
 
 
-class SurveyResponseExportResponses(BaseModel):
-    """Result envelope for a survey-response export request."""
+class SurveySubjectResponses(BaseModel):
+    """Admin-facing summary of one project subject."""
 
-    format: ExportFormat
-    include_history: bool
-    session_count: int
-    download_url: str | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+    subject_id: UUID = Field(validation_alias="id")
+    subject_code: str
+
+
+class SurveySubjectTreeResponses(BaseModel):
+    """One subject with all of its sessions for a survey."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    subject: SurveySubjectResponses
+    sessions: list[SurveySessionTreeResponses]
+
+
+class PaginatedSurveySubjectTreesResponses(BaseModel):
+    """Paginated list of subject result trees."""
+
+    items: list[SurveySubjectTreeResponses] = Field(max_length=limits.LIST_PAGE_SIZE_MAX)
+    total: int
+    page: int
+    page_size: int
+    include_decrypted_answer_values: bool

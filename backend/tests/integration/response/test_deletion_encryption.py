@@ -21,7 +21,7 @@ from app.crypto.models import LinkageKey
 from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.core.submission_sessions import create_session
 from app.repositories.response import response_envelope_repo
-from app.services.admin_responses.service import AdminResponseService
+from app.services.admin_results.service import AdminResultsService
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 _LINKAGE_SECRET = b"\xcc" * 32
 _FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
 
-_ADMIN_SERVICE_MODULE = "app.services.admin_responses.service"
+_ADMIN_SERVICE_MODULE = "app.services.admin_results.service"
 
 
 def _setup_core_fixtures(core_db: Session):
@@ -118,7 +118,7 @@ class TestDeletion:
                 side_effect=mock_commit,
             ),
         ):
-            service = AdminResponseService()
+            service = AdminResultsService()
             result = service.delete_session(
                 core_db, response_db, survey_id=session.survey_id, session_id=session.id,
             )
@@ -149,7 +149,7 @@ class TestDeletion:
             f"{_ADMIN_SERVICE_MODULE}.resolve_existing_session_locator",
             return_value=(session_locator, _FAKE_LINKAGE_KEY),
         ):
-            service = AdminResponseService()
+            service = AdminResultsService()
             result = service.delete_session(
                 core_db, response_db, survey_id=session.survey_id, session_id=session.id,
             )
@@ -172,7 +172,7 @@ class TestDeletion:
             ),
             pytest.raises(EnvelopeNotFoundError),
         ):
-            service = AdminResponseService()
+            service = AdminResultsService()
             service.delete_session(
                 core_db, response_db, survey_id=session.survey_id, session_id=session.id,
             )

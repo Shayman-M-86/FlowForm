@@ -1,11 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
+from pydantic import BaseModel
+
 from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
-from app.schema.enums import AnswerFamily, SubmissionAnswerState
+from app.schema.enums import (
+    AnswerFamily,
+    SubmissionAnswerState,
+    SubmissionEventType,
+    SubmissionSessionStatus,
+)
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.project_subject import ProjectSubject
 from app.schema.orm.core.submission_session import SubmissionSession
@@ -155,30 +163,86 @@ class AnswerSaveResult:
 
 
 @dataclass(frozen=True, slots=True)
-class DecryptedAnswerResult:
-    """One decrypted answer for admin detail or export."""
+class AnswerSlotResult:
+    """One answer slot, optionally with its decrypted value."""
 
+    slot_id: UUID
     question_node_id: UUID
     question_key: str | None
     answer_family: AnswerFamily | None
-    answer_state: SubmissionAnswerState
+    has_encrypted_answer: bool
+    decrypted: bool
+    answer_state: SubmissionAnswerState | None
     answer_value: SubmissionAnswerValue | dict[str, Any] | None
 
 
 @dataclass(frozen=True, slots=True)
-class AdminSessionDetailResult:
-    """Decrypted session detail for admin views."""
+class SessionEventResult:
+    """One timeline event for a session (no answer values)."""
 
-    session: SubmissionSession
-    answers: list[DecryptedAnswerResult]
+    event_type: SubmissionEventType
+    question_node_id: UUID | None
+    received_at: datetime
 
 
 @dataclass(frozen=True, slots=True)
-class AdminSessionHistoryResult:
-    """Decrypted full revision history for admin views."""
+class SessionTreeResult:
+    """One session with its answer slots and optional event timeline."""
 
     session: SubmissionSession
-    revisions: list[DecryptedAnswerResult]
+    answers: list[AnswerSlotResult]
+    events: list[SessionEventResult] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SubjectTreeResult:
+    """A subject with all of its sessions for one survey."""
+
+    subject: ProjectSubject
+    sessions: list[SessionTreeResult]
+
+
+@dataclass(frozen=True, slots=True)
+class ExportRow:
+    """One flat row in a survey-results export, one per answer slot (or per session if none)."""
+
+    session_id: UUID
+    status: SubmissionSessionStatus
+    started_at: datetime
+    completed_at: datetime | None
+    question_key: str | None = None
+    answer_family: AnswerFamily | None = None
+    has_encrypted_answer: bool | None = None
+    decrypted: bool | None = None
+    answer_state: SubmissionAnswerState | None = None
+    answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
+
+    def to_json_dict(self) -> dict[str, Any]:
+        """Flatten to a JSON/CSV-safe dict, normalising the answer_value union."""
+        answer_value: Any = self.answer_value
+        if isinstance(answer_value, BaseModel):
+            answer_value = answer_value.model_dump(mode="json")
+        return {
+            "session_id": str(self.session_id),
+            "status": self.status,
+            "started_at": self.started_at.isoformat(),
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "question_key": self.question_key,
+            "answer_family": self.answer_family,
+            "has_encrypted_answer": self.has_encrypted_answer,
+            "decrypted": self.decrypted,
+            "answer_state": self.answer_state,
+            "answer_value": answer_value,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class ExportFile:
+    """A fully-formatted export file body, ready to stream as an HTTP response."""
+
+    body: str
+    mimetype: str
+    filename: str
 
 
 @dataclass(frozen=True, slots=True)

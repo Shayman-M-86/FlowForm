@@ -46,3 +46,12 @@ def get_or_create(
             if existing is not None:
                 return existing
         raise
+
+
+def list_by_session(db: Session, *, submission_session_id: uuid.UUID) -> list[SubmissionAnswerSlot]:
+    """Return all answer slots for one session."""
+    return list(
+        db.scalars(
+            select(SubmissionAnswerSlot).where(SubmissionAnswerSlot.submission_session_id == submission_session_id)
+        ).all()
+    )

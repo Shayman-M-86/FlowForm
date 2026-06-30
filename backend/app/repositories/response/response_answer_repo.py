@@ -49,3 +49,10 @@ def get_by_locator(db: Session, answer_locator: bytes) -> ResponseAnswer | None:
 
 def get_all_by_envelope(db: Session, envelope_id: uuid.UUID) -> list[ResponseAnswer]:
     return list(db.scalars(select(ResponseAnswer).where(ResponseAnswer.envelope_id == envelope_id)).all())
+
+
+def get_by_locators(db: Session, answer_locators: list[bytes]) -> list[ResponseAnswer]:
+    """Fetch encrypted answers for a batch of answer locators."""
+    if not answer_locators:
+        return []
+    return list(db.scalars(select(ResponseAnswer).where(ResponseAnswer.answer_locator.in_(answer_locators))).all())

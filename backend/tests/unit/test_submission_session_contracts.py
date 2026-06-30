@@ -15,7 +15,7 @@ from app.schema.api.requests.submission_sessions import (
     StartSubmissionSessionRequest,
     SubmissionSessionEventRequest,
 )
-from app.schema.api.requests.survey_responses import ExportSurveyResponsesRequest, ListSurveyResponsesRequest
+from app.schema.api.requests.survey_results import ExportSurveyResultsRequest, ListSubjectsRequest
 from app.schema.api.responses.submission_sessions import StartSubmissionSessionResponse
 
 # Snapshot the global @openapi_route registry at import time, once the v1 route
@@ -179,48 +179,49 @@ def test_submission_session_event_accepts_question_viewed_event() -> None:
     assert payload.question_node_id == UUID("771ab5a1-462c-4c98-8fe5-dbc2c1939539")
 
 
-def test_list_responses_request_applies_pagination_defaults() -> None:
-    payload = ListSurveyResponsesRequest.model_validate({})
+def test_list_subjects_request_applies_pagination_defaults() -> None:
+    payload = ListSubjectsRequest.model_validate({})
 
     assert payload.page == 1
     assert payload.page_size == 20
-    assert payload.status is None
+    assert payload.include_decrypted_answer_values is False
+    assert payload.include_events is False
 
 
-def test_list_responses_request_rejects_unknown_status() -> None:
+def test_list_subjects_request_rejects_extra_fields() -> None:
     with pytest.raises(ValidationError) as exc_info:
-        ListSurveyResponsesRequest.model_validate({"status": "not_a_status"})
+        ListSubjectsRequest.model_validate({"status": "not_a_status"})
 
-    assert exc_info.value.errors()[0]["loc"] == ("status",)
+    fields = {error["loc"][0] for error in exc_info.value.errors()}
+    assert "status" in fields
 
 
-def test_export_responses_request_defaults_to_csv() -> None:
-    payload = ExportSurveyResponsesRequest.model_validate({})
+def test_export_results_request_defaults_to_csv() -> None:
+    payload = ExportSurveyResultsRequest.model_validate({})
 
     assert payload.format == "csv"
-    assert payload.include_history is False
+    assert payload.include_decrypted_answer_values is False
     assert payload.session_ids is None
 
 
-def test_export_responses_request_rejects_extra_fields() -> None:
+def test_export_results_request_rejects_extra_fields() -> None:
     with pytest.raises(ValidationError) as exc_info:
-        ExportSurveyResponsesRequest.model_validate({"format": "json", "survey_version_id": 3})
+        ExportSurveyResultsRequest.model_validate({"format": "json", "survey_version_id": 3})
 
     fields = {error["loc"][0] for error in exc_info.value.errors()}
     assert "survey_version_id" in fields
 
 
-def test_admin_response_paths_are_in_openapi_spec(restored_openapi_registry: None) -> None:
+def test_admin_results_paths_are_in_openapi_spec(restored_openapi_registry: None) -> None:
     app = _build_minimal_spec_app()
     spec = build_spec(app)
     paths = spec["paths"]
 
-    base = "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/responses"
-    assert "get" in paths[base]
+    base = "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/results"
+    assert "get" in paths[f"{base}/subjects"]
+    assert "get" in paths[f"{base}/subjects/{{subject_id}}"]
     assert "post" in paths[f"{base}/export"]
-    assert "get" in paths[f"{base}/{{session_id}}"]
-    assert "delete" in paths[f"{base}/{{session_id}}"]
-    assert "get" in paths[f"{base}/{{session_id}}/history"]
+    assert "delete" in paths[f"{base}/sessions/{{session_id}}"]
 
 
 def test_openapi_export_covers_loaded_backend_routes(restored_openapi_registry: None) -> None:

@@ -4,6 +4,7 @@ import logging
 import uuid
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -86,3 +87,14 @@ def record_event(
     except Exception:
         db.rollback()
         logger.exception("%s.unexpected_event_failure", log_label)
+
+
+def list_by_session(db: Session, *, session_id: uuid.UUID) -> list[SubmissionEvent]:
+    """Return all timeline events for one session, oldest first."""
+    return list(
+        db.scalars(
+            select(SubmissionEvent)
+            .where(SubmissionEvent.session_id == session_id)
+            .order_by(SubmissionEvent.received_at)
+        ).all()
+    )

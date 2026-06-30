@@ -16,6 +16,9 @@ export interface SurveyNodeImportIssue {
   path: string;
   message: string;
   nodeIndex: number | null;
+  line: number | null;
+  column: number | null;
+  suggestion?: string;
 }
 
 export class SurveyNodeImportError extends Error {
@@ -62,6 +65,9 @@ export function parseSurveyNodeJson(rawJson: string): SurveyNode[] {
       path: "$",
       message: "The imported JSON exceeds the 1 MB size limit.",
       nodeIndex: null,
+      line: null,
+      column: null,
+      suggestion: "Shorten the JSON or split it into smaller imports.",
     }]);
   }
 
@@ -69,12 +75,16 @@ export function parseSurveyNodeJson(rawJson: string): SurveyNode[] {
   try {
     parsed = JSON.parse(normalizedJson);
   } catch (e) {
-    const location = e instanceof SyntaxError ? locateJsonError(e) : null;
+    const location = e instanceof SyntaxError ? locateJsonError(e, normalizedJson) : null;
+    const detail = e instanceof SyntaxError ? explainJsonSyntaxError(e, normalizedJson, location) : null;
     const suffix = location ? ` (line ${location.line}, col ${location.col})` : "";
     throwImport([{
       path: "$",
-      message: `Invalid JSON${suffix}. Paste a raw JSON array of survey nodes.`,
+      message: `Invalid JSON${suffix}. ${detail ?? "Paste a raw JSON array of survey nodes."}`,
       nodeIndex: null,
+      line: location?.line ?? null,
+      column: location?.col ?? null,
+      suggestion: "Return only valid JSON: no markdown, no comments, double-quoted keys/strings, no trailing commas.",
     }]);
   }
 
@@ -83,13 +93,13 @@ export function parseSurveyNodeJson(rawJson: string): SurveyNode[] {
 
 export function importSurveyNodes(input: unknown): SurveyNode[] {
   if (!Array.isArray(input)) {
-    throwImport([{ path: "$", message: "Expected a JSON array of survey nodes.", nodeIndex: null }]);
+    throwImport([{ path: "$", message: "Expected a JSON array of survey nodes.", nodeIndex: null, line: null, column: null, suggestion: "Wrap the nodes in an array: [{ ... }, { ... }]." }]);
   }
   if (input.length === 0) {
-    throwImport([{ path: "$", message: "Expected at least one survey node.", nodeIndex: null }]);
+    throwImport([{ path: "$", message: "Expected at least one survey node.", nodeIndex: null, line: null, column: null, suggestion: "Include at least one question node." }]);
   }
   if (input.length > IMPORT_NODES_MAX) {
-    throwImport([{ path: "$", message: `Expected at most ${IMPORT_NODES_MAX} nodes, got ${input.length}.`, nodeIndex: null }]);
+    throwImport([{ path: "$", message: `Expected at most ${IMPORT_NODES_MAX} nodes, got ${input.length}.`, nodeIndex: null, line: null, column: null, suggestion: `Split this into imports of ${IMPORT_NODES_MAX} nodes or fewer.` }]);
   }
 
   // Pass 1: parse individual node shapes. Collect all parse errors before proceeding.
@@ -198,6 +208,9 @@ function parseNode(
         path: formatZodPath(path, issue.path),
         message: annotateZodMessage(issue),
         nodeIndex,
+        line: null,
+        column: null,
+        suggestion: suggestZodFix(issue),
       });
     }
     return null;
@@ -595,8 +608,9 @@ function pushIssue(
   path: string,
   message: string,
   nodeIndex: number | null,
+  suggestion?: string,
 ) {
-  issues.push({ path, message, nodeIndex });
+  issues.push({ path, message, nodeIndex, line: null, column: null, suggestion });
 }
 
 function throwIfIssues(issues: SurveyNodeImportIssue[]): void {
@@ -609,15 +623,47 @@ function throwImport(issues: SurveyNodeImportIssue[]): never {
 
 function annotateZodMessage(issue: ZodIssue): string {
   if (issue.code === "invalid_type") {
-    return `${issue.message} (received ${issue.received})`;
+    const received = "received" in issue ? String(issue.received) : "unknown";
+    return `${issue.message} (received ${received})`;
   }
   if (issue.code === "invalid_literal") {
-    return `${issue.message} (received ${JSON.stringify(issue.received)})`;
+    const received = "received" in issue ? JSON.stringify(issue.received) : "unknown";
+    return `${issue.message} (received ${received})`;
   }
   return issue.message;
 }
 
-function locateJsonError(e: SyntaxError): { line: number; col: number } | null {
+function suggestZodFix(issue: ZodIssue): string | undefined {
+  const path = formatZodPath("$", issue.path);
+
+  if (path.endsWith(".id") && issue.code === "invalid_type") {
+    return "Use a UUID string for id, for example \"11111111-1111-4111-8111-111111111111\". Do not use integers.";
+  }
+  if (path.endsWith(".id") && issue.message.toLowerCase().includes("uuid")) {
+    return "Generate a unique UUID string for every node id.";
+  }
+  if (path.endsWith(".node_type")) {
+    return "Use node_type \"question\" or \"rule\".";
+  }
+  if (path.endsWith(".content.family")) {
+    return "Use one of these content families: \"choice\", \"field\", \"matching\", or \"rating\".";
+  }
+  if (path.endsWith(".content.definition.field_type")) {
+    return "Use field_type \"short_text\", \"long_text\", \"email\", \"phone\", \"number\", or \"date\".";
+  }
+  if (path.endsWith(".content.definition.variant")) {
+    return "Use rating variant \"stars\", \"slider\", or \"emoji\".";
+  }
+  if (issue.code === "invalid_type") {
+    return "Check that the value has the required JSON type and is not missing or null.";
+  }
+  if (issue.code === "too_small" || issue.code === "too_big") {
+    return "Adjust the value to fit the schema's min/max requirement.";
+  }
+  return undefined;
+}
+
+function locateJsonError(e: SyntaxError, source: string): { line: number; col: number } | null {
   // V8 (Chrome/Node): "... at position N (line L column C)"
   const lineCol = /\(line (\d+) column (\d+)\)/.exec(e.message);
   if (lineCol) return { line: parseInt(lineCol[1], 10), col: parseInt(lineCol[2], 10) };
@@ -625,11 +671,34 @@ function locateJsonError(e: SyntaxError): { line: number; col: number } | null {
   const pos = /\bposition (\d+)/.exec(e.message);
   if (pos) {
     const offset = parseInt(pos[1], 10);
-    // offset is into the source, not the message — but we don't have the source here;
-    // just surface the char offset directly so the user has something.
-    return { line: 1, col: offset + 1 };
+    return offsetToLineColumn(source, offset);
   }
   return null;
+}
+
+function explainJsonSyntaxError(
+  error: SyntaxError,
+  source: string,
+  location: { line: number; col: number } | null,
+): string {
+  const parts = [error.message.replace(/^JSON\.parse:\s*/i, "")];
+  const context = location ? jsonLinePreview(source, location.line, location.col) : null;
+  if (context) parts.push(context);
+  parts.push("Paste a raw JSON array of survey nodes.");
+  return parts.join(" ");
+}
+
+function offsetToLineColumn(source: string, offset: number): { line: number; col: number } {
+  const before = source.slice(0, Math.max(0, offset));
+  const lines = before.split("\n");
+  return { line: lines.length, col: lines[lines.length - 1].length + 1 };
+}
+
+function jsonLinePreview(source: string, line: number, col: number): string | null {
+  const lineText = source.split("\n")[line - 1];
+  if (!lineText) return null;
+  const trimmed = lineText.length > 140 ? `${lineText.slice(0, 137)}...` : lineText;
+  return `Near: ${trimmed}\n${" ".repeat(Math.max(0, Math.min(col - 1, 140)))}^`;
 }
 
 function stripJsonFence(rawJson: string): string {

@@ -1,61 +1,44 @@
-"""Admin response service: decrypt, history, and deletion.
+"""Admin survey results service: subjects, sessions, answer slots, and deletion.
 
 Authorization is the caller's responsibility (per doc 01 §1).
+
+This module is the API surface only. Tree assembly lives in
+``core.session_tree``, decryption in ``core.decryption``, question metadata in
+``core.question_meta``, and export serialization in ``core.export``.
 """
 
 from __future__ import annotations
 
-import logging
-from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, cast, get_args
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.cache import get_app_cache
 from app.crypto._internal.client_extension import get_crypto_clients
-from app.crypto.answers import decrypt_answer_current
 from app.crypto.locators import resolve_existing_session_locator
-from app.crypto.models import (
-    AnswerContext,
-    AnswerLocator,
-)
-from app.crypto.session_key import load_session_envelope_crypto_context
 from app.db.error_handling import commit_with_err_handle
-from app.domain.errors import EnvelopeNotFoundError, SessionNotFoundError
-from app.repositories import content_repo as cr
+from app.domain.errors import EnvelopeNotFoundError, SessionNotFoundError, SubjectNotFoundError
+from app.repositories.core import project_subjects
 from app.repositories.core import submission_sessions as ssr
-from app.repositories.response import (
-    response_answer_repo,
-    response_envelope_repo,
-)
-from app.schema.api.submission_sessions.answer_payload import (
-    SubmissionAnswerValue,
-    parse_answer_value,
-)
-from app.schema.enums import AnswerFamily, QuestionFamily, SubmissionAnswerState, SubmissionSessionStatus
+from app.repositories.response import response_envelope_repo
+from app.schema.enums import ExportFormat
 from app.schema.orm.core.submission_session import SubmissionSession
-from app.schema.orm.core.survey_content import SurveyQuestion
+from app.services.admin_results.core.export import format_export_file, to_export_rows
+from app.services.admin_results.core.session_tree import SessionTreeBuilder
 from app.services.results import (
-    AdminSessionDetailResult,
-    AdminSessionHistoryResult,
-    DecryptedAnswerResult,
     DeletionResult,
+    ExportFile,
+    SubjectTreeResult,
 )
 
 if TYPE_CHECKING:
     from app.cache import AppCache
     from app.crypto._internal.client_extension import CryptoClients
 
-logger = logging.getLogger(__name__)
 
-_QUESTION_FAMILIES: frozenset[str] = frozenset(get_args(QuestionFamily))
-QuestionMetaMap = dict[UUID, tuple[str, AnswerFamily | None]]
-
-
-class AdminResponseService:
-    """Admin response viewing, decryption, and deletion."""
+class AdminResultsService:
+    """Admin survey results: subjects, sessions, answer slots, and deletion."""
 
     def __init__(
         self,
@@ -65,38 +48,96 @@ class AdminResponseService:
     ) -> None:
         self._cache = cache or get_app_cache()
         self._clients = clients or get_crypto_clients()
+        self._tree = SessionTreeBuilder(cache=self._cache, clients=self._clients)
 
-    def list_responses(
-        self,
-        db: Session,
-        *,
-        project_id: int,
-        survey_id: int,
-        status: SubmissionSessionStatus | None = None,
-        page: int = 1,
-        page_size: int = 20,
-    ) -> tuple[Sequence[SubmissionSession], int]:
-        offset = (page - 1) * page_size
-        return ssr.list_by_survey(
-            db,
-            project_id=project_id,
-            survey_id=survey_id,
-            status=status,
-            offset=offset,
-            limit=page_size,
-        )
-
-    def export_responses(
+    def list_subjects(
         self,
         db: Session,
         response_db: Session,
         *,
         project_id: int,
         survey_id: int,
+        page: int = 1,
+        page_size: int = 20,
+        include_decrypted_answer_values: bool = False,
+        include_events: bool = False,
+    ) -> tuple[list[SubjectTreeResult], int]:
+        """List subjects with sessions in this survey, each with its session tree."""
+        offset = (page - 1) * page_size
+        subjects, total = project_subjects.list_subjects_by_survey(
+            db,
+            project_id=project_id,
+            survey_id=survey_id,
+            offset=offset,
+            limit=page_size,
+        )
+
+        sessions_by_subject = self._tree.group_sessions_by_subject(
+            db, survey_id=survey_id, subject_ids=[s.id for s in subjects]
+        )
+
+        items = [
+            SubjectTreeResult(
+                subject=subject,
+                sessions=[
+                    self._tree.build_session_result(
+                        db,
+                        response_db,
+                        session=session,
+                        include_decrypted_answer_values=include_decrypted_answer_values,
+                        include_events=include_events,
+                    )
+                    for session in sessions_by_subject.get(subject.id, [])
+                ],
+            )
+            for subject in subjects
+        ]
+        return items, total
+
+    def get_subject_tree(
+        self,
+        db: Session,
+        response_db: Session,
+        *,
+        project_id: int,
+        survey_id: int,
+        subject_id: UUID,
+        include_decrypted_answer_values: bool = False,
+        include_events: bool = False,
+    ) -> SubjectTreeResult:
+        """Return one subject's full session tree for this survey."""
+        subject = project_subjects.get_subject_in_survey(
+            db, project_id=project_id, survey_id=survey_id, subject_id=subject_id
+        )
+        if subject is None:
+            raise SubjectNotFoundError()
+
+        sessions = ssr.list_by_subjects(db, survey_id=survey_id, project_subject_ids=[subject_id])
+
+        session_results = [
+            self._tree.build_session_result(
+                db,
+                response_db,
+                session=session,
+                include_decrypted_answer_values=include_decrypted_answer_values,
+                include_events=include_events,
+            )
+            for session in sessions
+        ]
+        return SubjectTreeResult(subject=subject, sessions=session_results)
+
+    def export_results(
+        self,
+        db: Session,
+        response_db: Session,
+        *,
+        project_id: int,
+        survey_id: int,
+        export_format: ExportFormat,
         session_ids: list[UUID] | None = None,
-        include_history: bool = False,
-    ) -> list[AdminSessionDetailResult] | list[AdminSessionHistoryResult]:
-        """Decrypt answers for export across multiple sessions."""
+        include_decrypted_answer_values: bool = False,
+    ) -> ExportFile:
+        """Build a fully-formatted CSV or JSON export file for this survey's results."""
         if session_ids is not None:
             sessions = ssr.get_by_ids(db, survey_id=survey_id, session_ids=session_ids)
         else:
@@ -108,81 +149,18 @@ class AdminResponseService:
                 limit=10_000,
             )
 
-        if include_history:
-            return [
-                self.get_session_history(
-                    db,
-                    response_db,
-                    survey_id=survey_id,
-                    session_id=s.id,
-                )
-                for s in sessions
-            ]
-        return [
-            self.get_session_detail(
+        session_results = [
+            self._tree.build_session_result(
                 db,
                 response_db,
-                survey_id=survey_id,
-                session_id=s.id,
+                session=session,
+                include_decrypted_answer_values=include_decrypted_answer_values,
+                include_events=False,
             )
-            for s in sessions
+            for session in sessions
         ]
-
-    def get_session_detail(
-        self,
-        db: Session,
-        response_db: Session,
-        *,
-        survey_id: int,
-        session_id: UUID,
-    ) -> AdminSessionDetailResult:
-        """Decrypt latest answers for admin detail view."""
-        session = _load_session(db, survey_id=survey_id, session_id=session_id)
-        ectx = load_session_envelope_crypto_context(
-            db,
-            response_db,
-            session=session,
-            cache=self._cache,
-            clients=self._clients,
-        )
-
-        answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)
-        question_nodes = cr.list_question_nodes(db, session.survey_version_id)
-        question_meta_map = _build_question_meta_map(question_nodes)
-
-        decrypted: list[DecryptedAnswerResult] = []
-        for answer in answers:
-            decrypted.append(_decrypt_to_result(ectx, answer, question_meta_map))
-
-        return AdminSessionDetailResult(session=session, answers=decrypted)
-
-    def get_session_history(
-        self,
-        db: Session,
-        response_db: Session,
-        *,
-        survey_id: int,
-        session_id: UUID,
-    ) -> AdminSessionHistoryResult:
-        """Decrypt full revision history for authorized history reads."""
-        session = _load_session(db, survey_id=survey_id, session_id=session_id)
-        ectx = load_session_envelope_crypto_context(
-            db,
-            response_db,
-            session=session,
-            cache=self._cache,
-            clients=self._clients,
-        )
-
-        answers = response_answer_repo.get_all_by_envelope(response_db, ectx.envelope.id)
-        question_nodes = cr.list_question_nodes(db, session.survey_version_id)
-        question_meta_map = _build_question_meta_map(question_nodes)
-
-        decrypted: list[DecryptedAnswerResult] = []
-        for answer in answers:
-            decrypted.append(_decrypt_to_result(ectx, answer, question_meta_map))
-
-        return AdminSessionHistoryResult(session=session, revisions=decrypted)
+        rows = [row for result in session_results for row in to_export_rows(result)]
+        return format_export_file(rows, export_format=export_format, survey_id=survey_id)
 
     def delete_session(
         self,
@@ -223,78 +201,8 @@ class AdminResponseService:
         )
 
 
-def _decrypt_to_result(ectx, answer, question_meta_map: QuestionMetaMap) -> DecryptedAnswerResult:
-    parsed = decrypt_answer_current(**_decrypt_answer_args(ectx, answer))
-    question_key, answer_family = question_meta_map.get(
-        parsed.question_node_id,
-        (None, None),
-    )
-    return DecryptedAnswerResult(
-        question_node_id=parsed.question_node_id,
-        question_key=question_key,
-        answer_family=answer_family,
-        answer_state=parsed.answer_state,
-        answer_value=_resolve_answer_value(
-            answer_family=answer_family,
-            answer_state=parsed.answer_state,
-            raw_value=parsed.answer_value,
-        ),
-    )
-
-
-def _decrypt_answer_args(ectx, answer) -> dict:
-    return {
-        "ciphertext": answer.ciphertext,
-        "nonce": answer.nonce,
-        "context": AnswerContext(
-            dek=ectx.plaintext_key,
-            crypto_version=ectx.envelope.crypto_version,
-            envelope_id=answer.envelope_id,
-            answer_locator=AnswerLocator(answer.answer_locator),
-        ),
-    }
-
-
 def _load_session(db: Session, *, survey_id: int, session_id: UUID) -> SubmissionSession:
     session = ssr.get_by_id(db, session_id)
     if session is None or session.survey_id != survey_id:
         raise SessionNotFoundError()
     return session
-
-
-def _build_question_meta_map(
-    question_nodes: list[SurveyQuestion],
-) -> QuestionMetaMap:
-    """Map each question node id to its question key and answer family."""
-    return {q.id: (q.question_key, _answer_family_from_schema(q.question_schema)) for q in question_nodes}
-
-
-def _answer_family_from_schema(question_schema: object) -> AnswerFamily | None:
-    """Read the top-level family discriminator from persisted question content."""
-    if not isinstance(question_schema, dict):
-        return None
-    raw_family = question_schema.get("family")
-    if raw_family not in _QUESTION_FAMILIES:
-        return None
-    return cast(AnswerFamily, raw_family)
-
-
-def _resolve_answer_value(
-    *,
-    answer_family: AnswerFamily | None,
-    answer_state: SubmissionAnswerState,
-    raw_value: Any,
-) -> SubmissionAnswerValue | dict[str, Any] | None:
-    """Validate decrypted raw values into canonical answer models when possible."""
-    if raw_value is None or answer_state == "cleared" or answer_family is None:
-        return raw_value
-    if not isinstance(raw_value, dict):
-        return raw_value
-    try:
-        return parse_answer_value(answer_family, raw_value)
-    except ValidationError:
-        logger.warning(
-            "Decrypted answer value did not match canonical %s shape; keeping raw value.",
-            answer_family,
-        )
-        return raw_value
