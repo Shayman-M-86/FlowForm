@@ -2,12 +2,13 @@ from logging import getLogger
 
 from flask import Flask
 from flask_cors import CORS
+
 from app.aws import AwsClientManager
 from app.cache import create_app_cache
 from app.db.manager import DatabaseManager
+from app.email_service import EmailServiceManager
 from app.middleware.auth import AuthExtension
 from app.middleware.url_converters import register_url_converters
-from app.email_service import EmailServiceManager
 
 logger = getLogger(__name__)
 

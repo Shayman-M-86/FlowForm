@@ -19,6 +19,7 @@ class UserService:
         auth0_user_id: str,
         email: str,
         display_name: str | None,
+        email_verified: bool = False,
     ) -> tuple[User, bool]:
         """Create or update a user row for the authenticated Auth0 subject."""
         existing = ur.get_user_by_auth0_user_id(db, auth0_user_id)
@@ -31,6 +32,7 @@ class UserService:
                     auth0_user_id=auth0_user_id,
                     email=email,
                     display_name=display_name,
+                    email_verified=email_verified,
                 )
             else:
                 user = ur.update_user(

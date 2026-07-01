@@ -23,6 +23,23 @@ def test_bootstrap_user_creates_user(db_session: Session) -> None:
     assert user.auth0_user_id == "auth0|bootstrap-new"
     assert user.email == "bootstrap-new@example.com"
     assert user.display_name == "Bootstrap New"
+    assert user.email_verified is False
+
+
+def test_bootstrap_user_creates_user_with_email_verified_true(db_session: Session) -> None:
+    """bootstrap_user threads email_verified through on the create path."""
+    service = UserService()
+
+    user, created = service.bootstrap_user(
+        db_session, # type: ignore
+        auth0_user_id="auth0|bootstrap-verified",
+        email="bootstrap-verified@example.com",
+        display_name="Bootstrap Verified",
+        email_verified=True,
+    )
+
+    assert created is True
+    assert user.email_verified is True
 
 
 def test_bootstrap_user_updates_existing_user(
@@ -51,6 +68,7 @@ def test_bootstrap_user_updates_existing_user(
     assert refreshed is not None
     assert refreshed.email == "new@example.com"
     assert refreshed.display_name == "New Name"
+    assert refreshed.email_verified is False
 
 
 def test_bootstrap_user_allows_duplicate_email_for_new_identity(

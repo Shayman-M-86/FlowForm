@@ -12,6 +12,7 @@ from app.cache._item import CacheItem
 from app.cache._spec import CacheSpec
 
 if TYPE_CHECKING:
+    from app.cache.account import AccountCacheNamespace
     from app.cache.crypto import CryptoCacheNamespace
     from app.cache.sessions import SessionCacheNamespace
 
@@ -82,6 +83,9 @@ class AppCache:
             raise AttributeError(f"No cache namespace {name!r}") from None
 
     if TYPE_CHECKING:
+
+        @property
+        def account(self) -> AccountCacheNamespace: ...
 
         @property
         def crypto(self) -> CryptoCacheNamespace: ...

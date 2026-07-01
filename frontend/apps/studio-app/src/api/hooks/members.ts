@@ -11,6 +11,7 @@ const memberKeys = {
   list: (projectId: number) => ['members', 'project', projectId] as const,
   invitations: (projectId: number) => ['invitations', 'project', projectId] as const,
   myInvitations: () => ['me', 'invitations'] as const,
+  resolveByToken: (token: string) => ['invitations', 'resolve', token] as const,
 }
 
 // ─── Project members ──────────────────────────────────────────────────────────
@@ -115,9 +116,10 @@ export function useRevokeInvitation(projectId: number) {
 
 // ─── My invitations (sidebar notifications) ───────────────────────────────────
 
-export function useMyInvitations() {
+export function useMyInvitations(enabled = true) {
   return usePolicyQuery({
     queryKey: memberKeys.myInvitations(),
+    enabled,
     queryFn: async () => {
       const { data, error } = await apiClient.GET('/api/v1/account/invitations')
       if (error) throw error
@@ -141,6 +143,43 @@ export function useAcceptInvitation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: memberKeys.myInvitations() })
       void queryClient.invalidateQueries({ queryKey: ['projects'] })
+    },
+  })
+}
+
+// ─── Public invitation resolution (pre-login token flow) ──────────────────────
+
+export function useResolveInvitationByToken(token: string | null) {
+  return usePolicyQuery({
+    queryKey: memberKeys.resolveByToken(token ?? ''),
+    enabled: token != null && token.length > 0,
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET(
+        '/api/v1/account/invitations/resolve/{token}',
+        { params: { path: { token: token! } } },
+      )
+      if (error) throw error
+      return data
+    },
+    policy: QUERY_POLICIES.projectInvitations,
+  })
+}
+
+export function useAcceptInvitationByToken() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (token: string) => {
+      const { data, error } = await apiClient.POST(
+        '/api/v1/account/invitations/resolve/{token}/accept',
+        { params: { path: { token } } },
+      )
+      if (error) throw error
+      return data
+    },
+    onSuccess: (_data, token) => {
+      void queryClient.invalidateQueries({ queryKey: memberKeys.myInvitations() })
+      void queryClient.invalidateQueries({ queryKey: ['projects'] })
+      void queryClient.invalidateQueries({ queryKey: memberKeys.resolveByToken(token) })
     },
   })
 }

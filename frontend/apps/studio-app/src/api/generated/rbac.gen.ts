@@ -15,12 +15,14 @@ export type FlowFormPermission =
 
 export const operationPermissions: Record<string, FlowFormPermission | null> = {
   acceptInvitation: null,
+  acceptInvitationByToken: null,
   archiveVersion: "survey:archive",
   assignSurveyMemberRole: "project:manage_members",
   bootstrapUser: null,
   changeEmail: null,
   changePassword: null,
   changeUsername: null,
+  checkVerification: null,
   clearMfa: null,
   completeSubmissionSession: null,
   copyVersionToDraft: "survey:create",

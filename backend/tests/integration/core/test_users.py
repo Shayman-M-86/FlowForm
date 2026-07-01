@@ -7,6 +7,7 @@ from psycopg.errors import NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.repositories import users_repo as ur
 from app.schema.orm.core.user import User
 from tests.integration.core.factories import make_user
 
@@ -86,6 +87,47 @@ def test_user_email_not_unique(db_session: Session) -> None:
     assert user_a.email == user_b.email
 
     db_session.rollback()
+
+
+def test_user_email_verified_defaults_false(db_session: Session) -> None:
+    """email_verified defaults to False when not explicitly set."""
+    user = make_user(auth0_user_id="auth0|defaultverify", email="defaultverify@example.com")
+    db_session.add(user)
+    db_session.flush()
+
+    saved = db_session.get(User, user.id)
+    assert saved is not None
+    assert saved.email_verified is False
+
+
+def test_create_user_with_email_verified_true(db_session: Session) -> None:
+    """create_user threads email_verified through to the persisted row."""
+    user = ur.create_user(
+        db_session,
+        auth0_user_id="auth0|createverified",
+        email="createverified@example.com",
+        display_name="Created Verified",
+        email_verified=True,
+    )
+
+    saved = db_session.get(User, user.id)
+    assert saved is not None
+    assert saved.email_verified is True
+
+
+def test_set_email_verified_updates_flag(db_session: Session) -> None:
+    """set_email_verified flips only the email_verified column."""
+    user = make_user(auth0_user_id="auth0|setverify", email="setverify@example.com")
+    db_session.add(user)
+    db_session.flush()
+    assert user.email_verified is False
+
+    ur.set_email_verified(user, email_verified=True)
+    db_session.flush()
+
+    saved = db_session.get(User, user.id)
+    assert saved is not None
+    assert saved.email_verified is True
 
 
 def test_user_unique_auth0_user_id(db_session: Session) -> None:

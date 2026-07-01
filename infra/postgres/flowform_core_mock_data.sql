@@ -24,13 +24,14 @@ BEGIN;
 -- USERS
 -- =========================================
 
-INSERT INTO users (id, public_id, auth0_user_id, email, display_name, created_at, platform_admin) VALUES
-    (1, 'A1x9Kq43', 'auth0|flowform-admin',   'alex@flowform.dev',   'Alex Carter',   NOW() - INTERVAL '40 days', TRUE),
-    (2, 'M7s2Qa23', 'auth0|project-owner',    'maya@acme.dev',       'Maya Singh',    NOW() - INTERVAL '35 days', FALSE),
-    (3, 'L4t8Np34', 'auth0|project-editor',   'liam@acme.dev',       'Liam Turner',   NOW() - INTERVAL '30 days', FALSE),
-    (4, 'Z9w3Vr64', 'auth0|project-viewer',   'zoe@acme.dev',        'Zoe Walker',    NOW() - INTERVAL '28 days', FALSE),
-    (5, 'N2b6Hx25', 'auth0|research-owner',   'noah@beta.dev',       'Noah Bennett',  NOW() - INTERVAL '24 days', FALSE),
-    (6, 'G5p1Yu15', 'auth0|public-link-user', 'guest@example.test',  'Public Guest',  NOW() - INTERVAL '10 days', FALSE);
+INSERT INTO users (id, public_id, auth0_user_id, email, display_name, created_at, platform_admin, email_verified) VALUES
+    (1, 'A1x9Kq43', 'auth0|flowform-admin',   'alex@flowform.dev',   'Alex Carter',   NOW() - INTERVAL '40 days', TRUE,  TRUE),
+    (2, 'M7s2Qa23', 'auth0|project-owner',    'maya@acme.dev',       'Maya Singh',    NOW() - INTERVAL '35 days', FALSE, TRUE),
+    (3, 'L4t8Np34', 'auth0|project-editor',   'liam@acme.dev',       'Liam Turner',   NOW() - INTERVAL '30 days', FALSE, TRUE),
+    (4, 'Z9w3Vr64', 'auth0|project-viewer',   'zoe@acme.dev',        'Zoe Walker',    NOW() - INTERVAL '28 days', FALSE, TRUE),
+    (5, 'N2b6Hx25', 'auth0|research-owner',   'noah@beta.dev',       'Noah Bennett',  NOW() - INTERVAL '24 days', FALSE, TRUE),
+    (6, 'G5p1Yu15', 'auth0|public-link-user', 'guest@example.test',  'Public Guest',  NOW() - INTERVAL '10 days', FALSE, TRUE),
+    (7, 'U8n4Tq71', 'auth0|unverified-user',  'unverified@example.test', 'Pat Unverified', NOW() - INTERVAL '2 days', FALSE, FALSE);
 
 -- =========================================
 -- PROJECTS

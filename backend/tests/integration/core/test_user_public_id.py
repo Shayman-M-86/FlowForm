@@ -48,13 +48,13 @@ def test_retry_constants_are_correct() -> None:
 def test_create_user_non_public_id_integrity_error_propagates(
     db_session: Session,
 ) -> None:
-    """A duplicate email raises IntegrityError, not a silent retry."""
+    """A duplicate auth0_user_id raises IntegrityError, not a silent retry."""
     from sqlalchemy.exc import IntegrityError
 
     users_repo.create_user(
         db_session,  # type: ignore
-        auth0_user_id="auth0|pubid-email-1",
-        email="shared@example.com",
+        auth0_user_id="auth0|pubid-shared",
+        email="pubid-shared-1@example.com",
         display_name=None,
     )
     db_session.commit()  # type: ignore
@@ -62,7 +62,7 @@ def test_create_user_non_public_id_integrity_error_propagates(
     with pytest.raises(IntegrityError):
         users_repo.create_user(
             db_session,  # type: ignore
-            auth0_user_id="auth0|pubid-email-2",
-            email="shared@example.com",
+            auth0_user_id="auth0|pubid-shared",
+            email="pubid-shared-2@example.com",
             display_name=None,
         )

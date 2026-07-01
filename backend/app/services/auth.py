@@ -50,11 +50,13 @@ class AuthService:
         )
         email = auth_rules.ensure_email(claims=id_token_claims)
         display_name = auth_rules.normalize_display_name(claims=id_token_claims)
+        email_verified = auth_rules.extract_email_verified(claims=id_token_claims)
         user, created = self.user_service.bootstrap_user(
             db,
             auth0_user_id=id_token_sub,
             email=email,
             display_name=display_name,
+            email_verified=email_verified,
         )
 
         default_project = None

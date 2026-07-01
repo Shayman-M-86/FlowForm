@@ -104,6 +104,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/account/invitations/resolve/{token}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept invitation by token
+         * @description Accept invitation by token
+         */
+        post: operations["acceptInvitationByToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/account/profile": {
         parameters: {
             query?: never;
@@ -222,6 +242,26 @@ export interface paths {
          * @description Resend email verification
          */
         post: operations["resendVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account/check-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check email verification status
+         * @description Check email verification status
+         */
+        post: operations["checkVerification"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1521,6 +1561,14 @@ export interface components {
         PasswordChangeTicketResponses: {
             /** Ticket Url */
             ticket_url: string;
+        };
+        /**
+         * EmailVerificationCheckResponses
+         * @description Result of a live, on-demand email verification check against Auth0.
+         */
+        EmailVerificationCheckResponses: {
+            /** Email Verified */
+            email_verified: boolean;
         };
         /**
          * ResolveSurveyAccessLinkTokenRequest
@@ -3602,6 +3650,7 @@ export type UpdateProfileRequest = components['schemas']['UpdateProfileRequest']
 export type ChangeEmailRequest = components['schemas']['ChangeEmailRequest'];
 export type ChangeUsernameRequest = components['schemas']['ChangeUsernameRequest'];
 export type PasswordChangeTicketResponses = components['schemas']['PasswordChangeTicketResponses'];
+export type EmailVerificationCheckResponses = components['schemas']['EmailVerificationCheckResponses'];
 export type ResolveSurveyAccessLinkTokenRequest = components['schemas']['ResolveSurveyAccessLinkTokenRequest'];
 export type SurveyAccessLinkResponse = components['schemas']['SurveyAccessLinkResponse'];
 export type SurveyResponses = components['schemas']['SurveyResponses'];
@@ -3878,6 +3927,36 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
+    acceptInvitationByToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
     getMyProfile: {
         parameters: {
             query?: never;
@@ -4067,6 +4146,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    checkVerification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailVerificationCheckResponses"];
+                };
             };
             400: components["responses"]["BadRequestError"];
             401: components["responses"]["UnauthorizedError"];

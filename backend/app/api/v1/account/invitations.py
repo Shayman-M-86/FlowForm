@@ -1,4 +1,4 @@
-from app.api.v1.account import _users_service, account_bp
+from app.api.v1.account import _users_service, account_bp, members_service
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.openapi import openapi_route
@@ -8,7 +8,6 @@ from app.schema.api.responses.projects import (
     PublicInvitationResolveResponse,
 )
 from app.schema.orm.core.user import User
-from app.services.members import members_service
 
 
 @openapi_route(
@@ -36,7 +35,9 @@ def get_my_invitations():
 def accept_invitation(invitation_id: int):
     db = get_core_db()
     actor: User = _users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
-    membership = members_service.accept_invitation(db=db, invitation_id=invitation_id, actor=actor)
+    membership = members_service.accept_invitation(
+        db=db, invitation_id=invitation_id, actor=actor,
+    )
     return ProjectMemberResponses.model_validate(membership).model_dump(mode="json"), 200
 
 
@@ -70,3 +71,20 @@ def resolve_invitation(token: str):
         expires_at=invitation.expires_at,
         status=invitation.status,
     ).model_dump(mode="json"), 200
+
+
+@openapi_route(
+    summary="Accept invitation by token",
+    response_model=ProjectMemberResponses,
+    status_code=200,
+    tags=["Account Invitations"],
+)
+@account_bp.route("/invitations/resolve/<token>/accept", methods=["POST"])
+@auth.require_auth()
+def accept_invitation_by_token(token: str):
+    db = get_core_db()
+    actor: User = _users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
+    membership = members_service.accept_invitation_by_token(
+        db=db, token=token, actor=actor,
+    )
+    return ProjectMemberResponses.model_validate(membership).model_dump(mode="json"), 200

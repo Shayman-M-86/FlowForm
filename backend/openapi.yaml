@@ -211,6 +211,42 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/v1/account/invitations/resolve/{token}/accept:
+    post:
+      operationId: acceptInvitationByToken
+      summary: Accept invitation by token
+      description: Accept invitation by token
+      tags:
+      - Account Invitations
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMemberResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/v1/account/profile:
     get:
       operationId: getMyProfile
@@ -406,6 +442,36 @@ paths:
       responses:
         '200':
           description: Successful response.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/account/check-verification:
+    post:
+      operationId: checkVerification
+      summary: Check email verification status
+      description: Check email verification status
+      tags:
+      - Account
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailVerificationCheckResponses'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -4299,6 +4365,16 @@ components:
       - ticket_url
       title: PasswordChangeTicketResponses
       type: object
+    EmailVerificationCheckResponses:
+      description: Result of a live, on-demand email verification check against Auth0.
+      properties:
+        email_verified:
+          title: Email Verified
+          type: boolean
+      required:
+      - email_verified
+      title: EmailVerificationCheckResponses
+      type: object
     ResolveSurveyAccessLinkTokenRequest:
       description: Request body for resolving a respondent survey access link token.
       properties:
@@ -7801,6 +7877,11 @@ components:
               value:
                 code: PARTICIPANT_USER_MISMATCH
                 message: Participant identity is linked to a different authenticated user.
+            email_not_verified:
+              summary: EmailNotVerifiedError
+              value:
+                code: EMAIL_NOT_VERIFIED
+                message: Please verify your email address before accepting this invitation.
             member_self_action:
               summary: MemberSelfActionError
               value:
@@ -7937,11 +8018,6 @@ components:
               value:
                 code: CONFLICT
                 message: Conflict — a project with that slug already exists
-            user_bootstrap_conflict:
-              summary: UserBootstrapConflictError
-              value:
-                code: CONFLICT
-                message: Conflict — a user with email '<example>' already exists
             survey_slug_conflict:
               summary: SurveySlugConflictError
               value:
@@ -8017,11 +8093,6 @@ components:
               value:
                 code: SESSION_INVALID
                 message: Session is not in a valid state.
-            users_email_key:
-              summary: 'DB rule: EMAIL_CONFLICT'
-              value:
-                code: EMAIL_CONFLICT
-                message: An account with email '<email>' already exists.
             users_auth0_user_id_key:
               summary: 'DB rule: AUTH0_ID_CONFLICT'
               value:

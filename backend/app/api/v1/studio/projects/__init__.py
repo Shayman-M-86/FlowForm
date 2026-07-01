@@ -2,7 +2,6 @@ from logging import getLogger
 
 from flask import Blueprint
 
-from app.core.extensions import auth
 from app.services.content import ContentService
 from app.services.members import MembersService
 from app.services.participants import ParticipantService
@@ -19,13 +18,14 @@ studio_projects_bp = Blueprint("studio_projects_v1", __name__)
 
 users_service = UserService()
 content_svc = ContentService()
-members_service = MembersService()
 participant_service = ParticipantService()
 project_service = ProjectService()
 roles_service = RolesService()
 survey_link_service = SurveyLinkService()
 subject_service = SubjectService()
 survey_service = SurveyService()
+
+members_service = MembersService()
 
 from app.api.v1.studio.projects import (  # noqa: E402, I001
     invitations,

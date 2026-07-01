@@ -52,6 +52,18 @@ export const QUERY_POLICIES = {
     staleTime: 20 * MINUTE,
   },
 
+  // Live Auth0 verification re-check. Only meaningful while unverified (the
+  // hook gates `enabled` on that), so no persistence is needed. staleTime +
+  // cooldownMs together give the once-a-minute, refetch-on-mount/focus
+  // cadence: stale after a minute, and even if invalidated again sooner the
+  // cooldown blocks a second network call within that window.
+  verificationCheck: {
+    storage: 'memory',
+    staleTime: MINUTE,
+    cooldownMs: MINUTE,
+    refetchOnWindowFocus: true,
+  },
+
   // Project list changes occasionally and accepting invitations invalidates it.
   projects: {
     storage: 'local',

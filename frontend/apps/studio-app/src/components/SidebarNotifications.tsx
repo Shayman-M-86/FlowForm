@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button, Modal } from '@flowform/ui'
 import { useMyInvitations, useAcceptInvitation, useDeclineInvitation } from '@/api/hooks/members'
 import type { ProjectInvitationOut } from '@/api/hooks/members'
+import { useResendVerification } from '@/api/hooks/me'
 
 // ── Icon ──────────────────────────────────────────────────────────────────────
 
@@ -37,7 +38,43 @@ function InvitationModal({
 }) {
   const accept = useAcceptInvitation()
   const decline = useDeclineInvitation()
+  const resend = useResendVerification()
+  const [blocked, setBlocked] = useState(false)
   const projectName = invitation.project_name ?? `Project #${invitation.project_id}`
+
+  const handleAccept = () => {
+    accept.mutate(invitation.id, {
+      onSuccess: onClose,
+      onError: (err) => {
+        if ((err as { code?: string })?.code === 'EMAIL_NOT_VERIFIED') setBlocked(true)
+      },
+    })
+  }
+
+  if (blocked) {
+    return (
+      <Modal
+        open
+        onClose={onClose}
+        title="Verify your email"
+        width={440}
+        required={required}
+      >
+        <div className="grid gap-3">
+          <p className="text-sm text-foreground leading-relaxed">
+            You need to verify your email address before accepting this invitation.
+          </p>
+          <Button
+            variant="primary"
+            onClick={() => resend.mutate()}
+            disabled={resend.isPending}
+          >
+            {resend.isPending ? 'Sending…' : resend.isSuccess ? 'Verification email sent' : 'Resend verification email'}
+          </Button>
+        </div>
+      </Modal>
+    )
+  }
 
   return (
     <Modal
@@ -57,7 +94,7 @@ function InvitationModal({
           </Button>
           <Button
             variant="primary"
-            onClick={() => accept.mutate(invitation.id, { onSuccess: onClose })}
+            onClick={handleAccept}
             disabled={accept.isPending || decline.isPending}
           >
             {accept.isPending ? 'Accepting…' : 'Accept'}

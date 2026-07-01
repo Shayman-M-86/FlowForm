@@ -25,6 +25,7 @@ def create_user(
     auth0_user_id: str,
     email: str,
     display_name: str | None,
+    email_verified: bool = False,
 ) -> User:
     """Create and flush a new user row, retrying on public_id collisions."""
     attempt = 0
@@ -34,6 +35,7 @@ def create_user(
             auth0_user_id=auth0_user_id,
             email=email,
             display_name=display_name,
+            email_verified=email_verified,
         )
         db.add(user)
         try:
@@ -67,6 +69,12 @@ def update_user(
 def update_user_email(user: User, *, email: str) -> User:
     """Update only the email field on a user row."""
     user.email = email
+    return user
+
+
+def set_email_verified(user: User, *, email_verified: bool) -> User:
+    """Update only the email_verified flag on a user row."""
+    user.email_verified = email_verified
     return user
 
 

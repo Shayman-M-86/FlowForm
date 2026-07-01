@@ -1,9 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useAuth0 } from '@auth0/auth0-react'
 import { Button, Card, Spinner } from '@flowform/ui'
-import { apiClient } from '@/api/client'
-import { useAcceptInvitation, useDeclineInvitation } from '@/api/hooks/members'
+import { useProjects } from '@/api/hooks/projects'
+import {
+  useAcceptInvitationByToken,
+  useDeclineInvitation,
+  useMyInvitations,
+  useResolveInvitationByToken,
+} from '@/api/hooks/members'
 import type { components } from '@/api/generated/schema'
 
 type ResolveResponse = components['schemas']['PublicInvitationResolveResponse']
@@ -12,118 +17,90 @@ type PageState =
   | { phase: 'loading' }
   | { phase: 'resolved'; invitation: ResolveResponse }
   | { phase: 'email-mismatch'; invitation: ResolveResponse; userEmail: string }
-  | { phase: 'accepting'; invitation: ResolveResponse; invitationId: number }
+  | { phase: 'accepting'; invitation: ResolveResponse }
   | { phase: 'accepted'; projectName: string; projectSlug: string }
   | { phase: 'already-handled'; status: string; projectName: string }
   | { phase: 'error'; message: string }
+
+// Terminal outcome of a mutation the user just triggered on this page.
+// Once set it overrides the phase derived from query state, since the
+// underlying resolve query may not have refetched yet (or its data no
+// longer reflects what the user just did).
+type MutationOutcome =
+  | { kind: 'accepted'; projectName: string; projectSlug: string }
+  | { kind: 'declined'; projectName: string }
 
 interface InvitationPageProps {
   token: string
 }
 
 export function InvitationPage({ token }: InvitationPageProps) {
-  const [state, setState] = useState<PageState>({ phase: 'loading' })
   const { isLoading: isAuthLoading, isAuthenticated, user, loginWithRedirect, logout } = useAuth0()
   const navigate = useNavigate()
-  const accept = useAcceptInvitation()
+  const resolved = useResolveInvitationByToken(token)
+  const projects = useProjects(isAuthenticated)
+  const myInvitations = useMyInvitations(isAuthenticated)
+  const accept = useAcceptInvitationByToken()
   const decline = useDeclineInvitation()
-  const resolvedRef = useRef<ResolveResponse | null>(null)
+  const [declining, setDeclining] = useState(false)
+  const [outcome, setOutcome] = useState<MutationOutcome | null>(null)
 
-  useEffect(() => {
-    if (isAuthLoading) return
-
-    let cancelled = false
-
-    async function resolve() {
-      const { data, error } = await apiClient.GET(
-        '/api/v1/account/invitations/resolve/{token}',
-        { params: { path: { token } } },
-      )
-
-      if (cancelled) return
-
-      if (error || !data) {
-        setState({ phase: 'error', message: 'This invitation link is invalid or has expired.' })
-        return
-      }
-
-      resolvedRef.current = data
-
-      if (data.status !== 'pending') {
-        const labels: Record<string, string> = {
-          accepted: 'This invitation has already been accepted.',
-          declined: 'This invitation has been declined.',
-          revoked: 'This invitation has been revoked.',
-        }
-        setState({
-          phase: 'already-handled',
-          status: data.status,
-          projectName: data.project_name,
-        })
-        return
-      }
-
-      if (!isAuthenticated || !user?.email) {
-        setState({ phase: 'resolved', invitation: data })
-        return
-      }
-
-      if (user.email.toLowerCase() !== data.invited_email.toLowerCase()) {
-        setState({ phase: 'email-mismatch', invitation: data, userEmail: user.email })
-        return
-      }
-
-      const { data: myInvitations, error: listError } = await apiClient.GET(
-        '/api/v1/account/invitations',
-      )
-
-      if (cancelled) return
-
-      if (listError || !myInvitations) {
-        setState({ phase: 'error', message: 'Failed to load your invitations.' })
-        return
-      }
-
-      const match = myInvitations.find(
-        (inv) => inv.invited_email.toLowerCase() === data.invited_email.toLowerCase()
-          && inv.status === 'pending',
-      )
-
-      if (!match) {
-        setState({ phase: 'error', message: 'Could not find a matching pending invitation for your account.' })
-        return
-      }
-
-      setState({ phase: 'accepting', invitation: data, invitationId: match.id })
+  const state: PageState = (() => {
+    if (outcome?.kind === 'accepted') {
+      return { phase: 'accepted', projectName: outcome.projectName, projectSlug: outcome.projectSlug }
+    }
+    if (outcome?.kind === 'declined') {
+      return { phase: 'already-handled', status: 'declined', projectName: outcome.projectName }
+    }
+    if (isAuthLoading || resolved.isLoading) return { phase: 'loading' }
+    if (resolved.isError || !resolved.data) {
+      return { phase: 'error', message: 'This invitation link is invalid or has expired.' }
     }
 
-    void resolve()
-    return () => { cancelled = true }
-  }, [token, isAuthLoading, isAuthenticated, user?.email])
+    const data = resolved.data
+    if (data.status !== 'pending') {
+      return { phase: 'already-handled', status: data.status, projectName: data.project_name }
+    }
+    if (!isAuthenticated || !user?.email) {
+      return { phase: 'resolved', invitation: data }
+    }
+    if (user.email.toLowerCase() !== data.invited_email.toLowerCase()) {
+      return { phase: 'email-mismatch', invitation: data, userEmail: user.email }
+    }
+    return { phase: 'accepting', invitation: data }
+  })()
 
-  const handleAccept = useCallback((invitationId: number, projectName: string) => {
-    accept.mutate(invitationId, {
-      onSuccess: async (member) => {
-        const { data: project } = await apiClient.GET(
-          '/api/v1/studio/projects/{project_id}',
-          { params: { path: { project_id: member.project_id } } },
-        )
-        setState({
-          phase: 'accepted',
-          projectName,
-          projectSlug: project?.slug ?? '',
-        })
+  const handleAccept = useCallback((acceptToken: string, projectName: string) => {
+    accept.mutate(acceptToken, {
+      onSuccess: (member) => {
+        const project = projects.data?.find((p) => p.id === member.project_id)
+        setOutcome({ kind: 'accepted', projectName, projectSlug: project?.slug ?? '' })
       },
     })
-  }, [accept])
+  }, [accept, projects.data])
 
-  const handleDecline = useCallback((invitationId: number) => {
-    decline.mutate(invitationId, {
-      onSuccess: () => {
-        setState({ phase: 'already-handled', status: 'declined', projectName: resolvedRef.current?.project_name ?? 'the project' })
-      },
-    })
-  }, [decline])
+  const handleDecline = useCallback(async (invitedEmail: string) => {
+    setDeclining(true)
+    try {
+      const { data: invitations } = await myInvitations.refetch()
+      const match = invitations?.find(
+        (inv) => inv.invited_email.toLowerCase() === invitedEmail.toLowerCase()
+          && inv.status === 'pending',
+      )
+      if (!match) {
+        setDeclining(false)
+        return
+      }
+      decline.mutate(match.id, {
+        onSuccess: () => {
+          setOutcome({ kind: 'declined', projectName: resolved.data?.project_name ?? 'the project' })
+        },
+        onSettled: () => setDeclining(false),
+      })
+    } catch {
+      setDeclining(false)
+    }
+  }, [decline, myInvitations, resolved.data?.project_name])
 
   const handleSignIn = useCallback((invitation: ResolveResponse) => {
     void loginWithRedirect({
@@ -212,15 +189,15 @@ export function InvitationPage({ token }: InvitationPageProps) {
           <div className="flex gap-3">
             <Button
               variant="secondary"
-              onClick={() => handleDecline(state.invitationId)}
-              disabled={decline.isPending || accept.isPending}
+              onClick={() => void handleDecline(state.invitation.invited_email)}
+              disabled={declining || accept.isPending}
             >
-              {decline.isPending ? 'Declining…' : 'Decline'}
+              {declining ? 'Declining…' : 'Decline'}
             </Button>
             <Button
               variant="primary"
-              onClick={() => handleAccept(state.invitationId, state.invitation.project_name)}
-              disabled={accept.isPending || decline.isPending}
+              onClick={() => handleAccept(token, state.invitation.project_name)}
+              disabled={accept.isPending || declining}
             >
               {accept.isPending ? 'Accepting…' : 'Accept invitation'}
             </Button>

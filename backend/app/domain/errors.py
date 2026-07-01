@@ -525,6 +525,17 @@ class AlreadyAMemberError(AppError):
         )
 
 
+class EmailNotVerifiedError(AppError):
+    """Error raised when an action requires a verified email but the actor's is not."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="EMAIL_NOT_VERIFIED",
+            message="Please verify your email address before accepting this invitation.",
+        )
+
+
 class ProjectRoleNotFoundError(AppError):
     """Error raised when a project role cannot be found."""
 

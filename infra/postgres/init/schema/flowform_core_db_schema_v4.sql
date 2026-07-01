@@ -113,6 +113,15 @@ CREATE TABLE users (
     display_name TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     platform_admin BOOLEAN NOT NULL DEFAULT FALSE,
+    -- Durable, deliberately-proven verification flag. Set true only when:
+    -- (a) the user accepts a project invitation via its unique emailed token
+    --     (possession of the token is proof of mailbox control), or
+    -- (b) a lazy live check against Auth0's Management API confirms
+    --     email_verified=true server-side.
+    -- Not kept in sync with the ID token's email_verified claim on every
+    -- request -- see GET /api/v1/account/profile for the separate,
+    -- intentionally-live, UI-only claim-based value.
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE,
     public_id TEXT NOT NULL DEFAULT (translate(encode(gen_random_bytes(6), 'base64'), '+/', '-_')) UNIQUE,
 
     CONSTRAINT ck_users_platform_admin CHECK (NOT platform_admin OR id = 1),

@@ -285,6 +285,44 @@ class ManagementApiClient:
         """Trigger an email-verification job for the given user."""
         self._request("POST", "/jobs/verification-email", json={"user_id": auth0_user_id})
 
+    def get_user_email_verified(self, auth0_user_id: str) -> bool:
+        """Return the live email_verified flag for a user from Auth0.
+
+        Used as a lazy fallback check: a user may have completed Auth0's own
+        native email-verification flow independently of this app's invite
+        system, and this reflects that without requiring a webhook/event
+        stream integration to keep state continuously in sync.
+        """
+        response = self._request("GET", f"/users/{auth0_user_id}")
+        try:
+            data = response.json()
+        except ValueError as exc:
+            raise ManagementApiError(
+                status_code=response.status_code,
+                provider_error="invalid_user_response",
+                provider_message=response.text,
+            ) from exc
+
+        if not isinstance(data, dict):
+            raise ManagementApiError(
+                status_code=response.status_code,
+                provider_error="invalid_user_response",
+                provider_message="User response was not a JSON object.",
+            )
+
+        return bool(data.get("email_verified", False))
+
+    def mark_email_verified(self, auth0_user_id: str) -> None:
+        """Mark a user's email as verified on Auth0.
+
+        Deliberately a separate, single-purpose method rather than folded
+        into update_user -- email_verified is a security-sensitive flag
+        that should only ever be set True by a deliberate proof-of-control
+        event (here: a successful token-based invitation accept), never as
+        a side effect of an unrelated profile-field PATCH.
+        """
+        self._request("PATCH", f"/users/{auth0_user_id}", json={"email_verified": True})
+
     def clear_mfa_devices(self, auth0_user_id: str) -> None:
         """Remove all enrolled MFA authenticators for the given user."""
         self._request("DELETE", f"/users/{auth0_user_id}/authenticators")

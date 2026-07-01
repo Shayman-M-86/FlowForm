@@ -139,6 +139,7 @@ Every hook that creates a TanStack server-state query should pass one named poli
 | Policy | Current hook family |
 | --- | --- |
 | `profile` | `useMyProfile` |
+| `verificationCheck` | `useCheckVerification` |
 | `projects` | `useProjects` |
 | `projectPermissions` | `useProjectPermissions` |
 | `surveyPermissions` | `useSurveyPermissions` |
@@ -149,21 +150,29 @@ Every hook that creates a TanStack server-state query should pass one named poli
 | `projectRoles` | `useProjectRoles` |
 | `surveyMembers` | `useSurveyMembers` |
 | `surveyRoles` | `useSurveyRoles` |
-| `projectInvitations` | `useProjectInvitations` |
+| `projectInvitations` | `useProjectInvitations`, `useResolveInvitationByToken` |
 | `publicLinks` | `usePublicLinks` |
 | `surveyVersions` | `useSurveyVersions` |
 | `surveyNodes` | `useSurveyNodes` |
+| `subjects` | `useSubjects`, `useSubject` |
+| `participants` | `useParticipants` |
+| `results` | `useSurveyResultSubjects` |
+| `resultDetail` | `useSubjectTree` |
 
 Current policy behaviour:
 
 | Policy group | Storage | Stale time | Notes |
 | --- | --- | --- | --- |
 | `profile` | `local` | 20 min | Persists across browser restarts. |
+| `verificationCheck` | `memory` | 1 min | 1 min cooldown, refetch on focus; only enabled while unverified. |
 | `projects` | `local` | 5 min | 15s automatic-fetch cooldown. |
 | `projectPermissions`, `surveyPermissions` | `session` | 20 min | Permission checks read these caches; middleware does not fetch them. |
 | `myInvitations` | `session` | 5 min | 15s cooldown, 5 min polling, refetch on focus. |
 | `surveys`, `survey`, `projectMembers`, `projectRoles`, `surveyMembers`, `surveyRoles` | `session` | 5 min | 15s automatic-fetch cooldown. |
 | `projectInvitations`, `publicLinks`, `surveyVersions`, `surveyNodes` | `memory` | 30s | Fast-changing management or builder data; not persisted. |
+| `subjects`, `participants` | `session` | 2 min | 15s automatic-fetch cooldown. |
+| `results` | `memory` | 30s | Fast-changing result data; not persisted. |
+| `resultDetail` | `session` | 20 min | Per-subject result detail. |
 
 When adding a new query family, add a policy row first, then reference it from the hook. Dynamic IDs stay in query keys, not in policy rows.
 
@@ -212,6 +221,7 @@ enabled: projectId != null && projectId > 0 && surveyId != null && surveyId > 0,
 - Mutations that update a detail view invalidate both list and detail keys.
 - Deletions may also remove detail queries when the item can no longer exist.
 - `useAcceptInvitation()` invalidates both `myInvitations` and `['projects']`.
+- `useAcceptInvitationByToken()` invalidates `myInvitations`, `['projects']`, and its own `resolveByToken` query key.
 
 Example:
 
@@ -226,16 +236,18 @@ onSuccess: () => {
 
 | File | Hooks | Notes |
 | --- | --- | --- |
-| `projects.ts` | `useProjects`, `useProject`, `useCreateProject`, `useUpdateProject`, `useDeleteProject` | `useProject` derives slug lookup from the project list. |
+| `projects.ts` | `useProjects`, `useProject`, `useCreateProject`, `useUpdateProject`, `useDeleteProject` | `useProject` derives slug lookup from the project list. `useProjects` takes an optional `enabled` flag for routes that may not be authenticated yet. |
 | `surveys.ts` | `useSurveys`, `useSurvey`, `useCreateSurvey`, `useUpdateSurvey`, `useDeleteSurvey` | `useSurvey` resolves project ID from cached project list. |
-| `members.ts` | `useProjectMembers`, `useUpdateProjectMember`, `useDeleteProjectMember`, `useProjectInvitations`, `useSendInvitation`, `useRevokeInvitation`, `useMyInvitations`, `useAcceptInvitation`, `useDeclineInvitation` | Accepting an invitation also invalidates `['projects']`. |
+| `members.ts` | `useProjectMembers`, `useUpdateProjectMember`, `useDeleteProjectMember`, `useProjectInvitations`, `useSendInvitation`, `useRevokeInvitation`, `useMyInvitations`, `useAcceptInvitation`, `useResolveInvitationByToken`, `useAcceptInvitationByToken`, `useDeclineInvitation` | Accepting an invitation also invalidates `['projects']`. `useResolveInvitationByToken` is the public token-resolve query used pre-login; `useAcceptInvitationByToken` also invalidates its resolve query key on success. `useMyInvitations` takes an optional `enabled` flag for routes that may not be authenticated yet. |
 | `roles.ts` | `useProjectRoles`, `useCreateProjectRole`, `useUpdateProjectRole`, `useDeleteProjectRole` | Project-role management. |
 | `survey-roles.ts` | `useSurveyRoles`, `useCreateSurveyRole`, `useUpdateSurveyRole`, `useDeleteSurveyRole` | Survey-role management. |
 | `survey-members.ts` | `useSurveyMembers`, `useAssignSurveyMemberRole`, `useUpdateSurveyMemberRole`, `useRemoveSurveyMemberRole` | Survey-level member role assignments. |
 | `links.ts` | `usePublicLinks`, `useCreatePublicLink`, `useUpdatePublicLink`, `useDeletePublicLink` | List response is wrapped as `{ links: [] }` and unwrapped by the hook. |
 | `versions.ts` | `useSurveyVersions`, `useCreateSurveyVersion`, `usePublishSurveyVersion`, `useArchiveSurveyVersion`, `useCopyVersionToDraft` | Builder version lifecycle. |
 | `nodes.ts` | `useSurveyNodes`, `useCreateNode`, `useUpdateNode`, `useDeleteNode` | Builder node lifecycle. |
-| `me.ts` | `useMyProfile`, `useUpdateProfile`, `useChangePassword`, `useResendVerification`, `useDeleteAccount` | Deleting an account clears FlowForm query cache. |
+| `subjects.ts` | `useSubjects`, `useSubject`, `useUpdateSubject`, `useParticipants`, `useCreateParticipant`, `useUpdateParticipant`, `useDeleteParticipant` | Subject/participant management. |
+| `results.ts` | `useSurveyResultSubjects`, `useSubjectTree`, `useDeleteSession`, `useExportResults` | Survey results browsing. |
+| `me.ts` | `useMyProfile`, `useUpdateProfile`, `useChangePassword`, `useResendVerification`, `useCheckVerification`, `useDeleteAccount` | Deleting an account clears FlowForm query cache. `useCheckVerification(enabled)` re-checks Auth0 live and invalidates `profile` when newly verified. |
 | `permissions/index.ts` | `useProjectPermissions`, `useHasProjectPermission`, `useSurveyPermissions`, `useHasSurveyPermission` | Also exports `PERMISSION_REQUIRED_TOOLTIP`. |
 
 ## Verify

@@ -19,3 +19,9 @@ class PasswordChangeTicketResponses(BaseModel):
     """Hosted Auth0 password-change ticket URL."""
 
     ticket_url: str = Field(max_length=limits.URL_MAX)
+
+
+class EmailVerificationCheckResponses(BaseModel):
+    """Result of a live, on-demand email verification check against Auth0."""
+
+    email_verified: bool

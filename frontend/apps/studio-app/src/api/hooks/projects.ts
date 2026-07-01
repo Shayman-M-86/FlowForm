@@ -10,9 +10,10 @@ const projectKeys = {
   all: () => ['projects'] as const,
 }
 
-export function useProjects() {
+export function useProjects(enabled = true) {
   return usePolicyQuery({
     queryKey: projectKeys.all(),
+    enabled,
     queryFn: async () => {
       const { data, error } = await apiClient.GET('/api/v1/studio/projects')
       if (error) throw error

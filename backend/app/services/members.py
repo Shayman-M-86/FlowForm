@@ -1,30 +1,42 @@
-from datetime import UTC, datetime  # noqa: I001
+import logging
+from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
 from app.core.config import current_settings
 from app.db.error_handling import commit_with_err_handle
-from app.email_service import get_email_service
 from app.domain.errors import (
     AlreadyAMemberError,
+    EmailNotVerifiedError,
     InvitationNotFoundError,
     InvitationNotPendingError,
+    ManagementApiCallError,
     MemberNotFoundError,
     MemberOwnerProtectedError,
     MemberSelfActionError,
     ProjectRoleNotFoundError,
 )
 from app.domain.guards import ensure_present
+from app.email_service import get_email_service
 from app.repositories import (
     invitations_repo as ir,
+)
+from app.repositories import (
     members_repo as mr,
+)
+from app.repositories import (
     roles_repo as rr,
+)
+from app.repositories import (
     users_repo as ur,
 )
 from app.schema.api.requests.projects import SendInvitationRequest, UpdateMemberRequest
 from app.schema.orm.core.invitation import ProjectInvitation
 from app.schema.orm.core.project import ProjectMembership, ProjectRole
 from app.schema.orm.core.user import User
+from app.services.account import _call_mgmt
+
+logger = logging.getLogger(__name__)
 
 
 class MembersService:
@@ -118,9 +130,81 @@ class MembersService:
     def get_my_invitations(self, db: Session, *, actor: User) -> list[ProjectInvitation]:
         return ir.get_pending_by_email(db, email=actor.email)
 
-    def accept_invitation(self, db: Session, *, invitation_id: int, actor: User) -> ProjectMembership:
+    def accept_invitation(
+        self,
+        db: Session,
+        *,
+        invitation_id: int,
+        actor: User,
+    ) -> ProjectMembership:
         invitation = ensure_present(
             ir.get_by_id(db, invitation_id),
+            error=InvitationNotFoundError(),
+        )
+        if invitation.invited_email != actor.email:
+            raise InvitationNotFoundError()
+        if invitation.status != "pending":
+            raise InvitationNotPendingError()
+
+        if not actor.email_verified:
+            from app.core.extensions import auth
+
+            live_verified = False
+            if auth.mgmt is not None:
+                try:
+                    live_verified = _call_mgmt(auth.mgmt.get_user_email_verified, actor.auth0_user_id)
+                except ManagementApiCallError:
+                    logger.warning(
+                        "Lazy Auth0 email_verified check failed for user %s during accept_invitation; "
+                        "treating as unverified.",
+                        actor.auth0_user_id,
+                    )
+                    live_verified = False
+            if live_verified:
+                ur.set_email_verified(actor, email_verified=True)
+                commit_with_err_handle(db)
+            else:
+                raise EmailNotVerifiedError()
+
+        existing = mr.get_by_user_and_project(db, user_id=actor.id, project_id=invitation.project_id)
+        if existing is not None:
+            raise AlreadyAMemberError()
+        self._get_assignable_role(db, project_id=invitation.project_id, role_id=invitation.role_id)
+
+        membership = mr.create_membership(
+            db,
+            project_id=invitation.project_id,
+            user_id=actor.id,
+            role_id=invitation.role_id,
+        )
+        ir.update_status(
+            db,
+            invitation,
+            status="accepted",
+            accepted_by_user_id=actor.id,
+            accepted_at=datetime.now(UTC),
+        )
+        commit_with_err_handle(db)
+        return membership
+
+    def accept_invitation_by_token(
+        self,
+        db: Session,
+        *,
+        token: str,
+        actor: User,
+    ) -> ProjectMembership:
+        """Accept an invitation via its raw emailed token.
+
+        Possessing and presenting the unique token IS the proof of mailbox
+        control for this email -- no separate verification check is needed
+        on this path. A successful accept here also durably marks the
+        actor's email_verified=True, both locally and (best-effort) on
+        Auth0, so any later bell-icon (non-token) accept_invitation calls
+        for this user no longer need the lazy Auth0 fallback check.
+        """
+        invitation = ensure_present(
+            ir.get_by_token(db, token),
             error=InvitationNotFoundError(),
         )
         if invitation.invited_email != actor.email:
@@ -146,7 +230,25 @@ class MembersService:
             accepted_by_user_id=actor.id,
             accepted_at=datetime.now(UTC),
         )
+
+        needs_local_verify = not actor.email_verified
+        if needs_local_verify:
+            ur.set_email_verified(actor, email_verified=True)
         commit_with_err_handle(db)
+
+        if needs_local_verify:
+            from app.core.extensions import auth
+
+            if auth.mgmt is not None:
+                try:
+                    _call_mgmt(auth.mgmt.mark_email_verified, actor.auth0_user_id)
+                except ManagementApiCallError:
+                    logger.warning(
+                        "Failed to mirror email_verified=True to Auth0 for user %s after token-accept; "
+                        "local DB state is authoritative and already durable.",
+                        actor.auth0_user_id,
+                    )
+
         return membership
 
     def decline_invitation(self, db: Session, *, invitation_id: int, actor: User) -> None:
@@ -210,6 +312,3 @@ class MembersService:
         )
         commit_with_err_handle(db)
         return updated
-
-
-members_service = MembersService()

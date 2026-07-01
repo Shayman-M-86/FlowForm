@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
@@ -30,6 +32,16 @@ class PasswordTicketManagementApiClient:
         return "https://example.auth0.com/password-change-ticket"
 
 
+class CachedEmailVerified:
+    def __init__(self) -> None:
+        self.values: dict[str, bool] = {}
+
+    def get_or_load(self, key: str, loader: Callable[[], bool]) -> bool:
+        if key not in self.values:
+            self.values[key] = loader()
+        return self.values[key]
+
+
 def test_account_management_errors_return_generic_message(monkeypatch: pytest.MonkeyPatch) -> None:
     user = User()
     user.id = 1
@@ -38,13 +50,13 @@ def test_account_management_errors_return_generic_message(monkeypatch: pytest.Mo
     user.display_name = "Old Name"
     update_user = Mock()
     monkeypatch.setattr(account_module.ur, "update_user", update_user)
+    monkeypatch.setattr(account_module, "_mgmt", lambda: FailingManagementApiClient())
 
     with pytest.raises(ManagementApiCallError) as exc_info:
         UserAccountService().update_profile(
             Mock(),
             actor=user,
             data=UpdateProfileRequest(display_name="New Name"),
-            mgmt=FailingManagementApiClient(),  # type: ignore[arg-type]
         )
 
     assert exc_info.value.message == "Account management could not be completed at this time."
@@ -52,16 +64,75 @@ def test_account_management_errors_return_generic_message(monkeypatch: pytest.Mo
     update_user.assert_not_called()
 
 
-def test_change_password_returns_hosted_ticket_url() -> None:
+def test_change_password_returns_hosted_ticket_url(monkeypatch: pytest.MonkeyPatch) -> None:
     user = User()
     user.id = 1
     user.auth0_user_id = "auth0|user-123"
     mgmt = PasswordTicketManagementApiClient()
+    monkeypatch.setattr(account_module, "_mgmt", lambda: mgmt)
 
     ticket_url = UserAccountService().change_password(
         actor=user,
-        mgmt=mgmt,  # type: ignore[arg-type]
     )
 
     assert ticket_url == "https://example.auth0.com/password-change-ticket"
     assert mgmt.auth0_user_id == "auth0|user-123"
+
+
+def test_check_email_verified_caches_unverified_result(monkeypatch: pytest.MonkeyPatch) -> None:
+    user = User()
+    user.id = 1
+    user.auth0_user_id = "auth0|user-123"
+    user.email_verified = False
+    mgmt = Mock()
+    mgmt.get_user_email_verified = Mock(return_value=False)
+    cache = CachedEmailVerified()
+
+    monkeypatch.setattr(account_module, "_mgmt", lambda: mgmt)
+    monkeypatch.setattr(
+        account_module,
+        "get_app_cache",
+        lambda: SimpleNamespace(account=SimpleNamespace(email_verified=cache)),
+    )
+    monkeypatch.setattr(
+        account_module.ur,
+        "set_email_verified",
+        Mock(side_effect=lambda actor, *, email_verified: setattr(actor, "email_verified", email_verified)),
+    )
+    monkeypatch.setattr(account_module, "commit_with_err_handle", Mock())
+
+    service = UserAccountService()
+
+    assert service.check_email_verified(Mock(), actor=user) is False
+    assert service.check_email_verified(Mock(), actor=user) is False
+    mgmt.get_user_email_verified.assert_called_once_with(user.auth0_user_id)
+    account_module.ur.set_email_verified.assert_not_called()
+    account_module.commit_with_err_handle.assert_not_called()
+
+
+def test_check_email_verified_persists_cached_verified_result(monkeypatch: pytest.MonkeyPatch) -> None:
+    user = User()
+    user.id = 1
+    user.auth0_user_id = "auth0|user-123"
+    user.email_verified = False
+    mgmt = Mock()
+    mgmt.get_user_email_verified = Mock(return_value=True)
+    cache = CachedEmailVerified()
+    db = Mock()
+
+    monkeypatch.setattr(account_module, "_mgmt", lambda: mgmt)
+    monkeypatch.setattr(
+        account_module,
+        "get_app_cache",
+        lambda: SimpleNamespace(account=SimpleNamespace(email_verified=cache)),
+    )
+    monkeypatch.setattr(account_module.ur, "set_email_verified", Mock())
+    monkeypatch.setattr(account_module, "commit_with_err_handle", Mock())
+
+    service = UserAccountService()
+
+    assert service.check_email_verified(db, actor=user) is True
+    assert service.check_email_verified(db, actor=user) is True
+    mgmt.get_user_email_verified.assert_called_once_with(user.auth0_user_id)
+    assert account_module.ur.set_email_verified.call_count == 2
+    assert account_module.commit_with_err_handle.call_count == 2

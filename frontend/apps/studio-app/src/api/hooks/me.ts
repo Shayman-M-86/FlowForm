@@ -7,6 +7,7 @@ import type { components } from '@/api/generated/schema'
 
 const meKeys = {
   profile: () => ['me', 'profile'] as const,
+  verificationCheck: () => ['me', 'verification-check'] as const,
 }
 
 export function useMyProfile() {
@@ -51,6 +52,27 @@ export function useResendVerification() {
       const { error } = await apiClient.POST('/api/v1/account/resend-verification')
       if (error) throw error
     },
+  })
+}
+
+// Live re-check against Auth0, gated to run only while the profile shows
+// unverified. usePolicyQuery's staleTime + cooldownMs (queryPolicy.ts)
+// handle the once-a-minute, refetch-on-mount/focus cadence -- no manual
+// timers or storage needed.
+export function useCheckVerification(enabled: boolean) {
+  const queryClient = useQueryClient()
+  return usePolicyQuery({
+    queryKey: meKeys.verificationCheck(),
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await apiClient.POST('/api/v1/account/check-verification')
+      if (error) throw error
+      if (data.email_verified) {
+        void queryClient.invalidateQueries({ queryKey: meKeys.profile() })
+      }
+      return data
+    },
+    policy: QUERY_POLICIES.verificationCheck,
   })
 }
 
