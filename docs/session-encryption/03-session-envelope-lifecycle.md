@@ -152,7 +152,7 @@ The loader must not expose internal IDs, locators, key material, ciphertext, or 
 
 ## 3. Answer save
 
-Saving an answer means creating a new encrypted revision.
+Saving an answer means overwriting the current encrypted answer row for that answer locator.
 
 The response write is authoritative. The core analytics event is secondary.
 
@@ -160,9 +160,9 @@ The flow is:
 
 1. load and lock the current session using the shared current-session loader;
 
-2. check whether a revision with the same client mutation ID already exists for this logical answer;
+2. check whether the existing stored row already has the same client mutation ID;
 
-3. if it exists, return that revision immediately without creating another revision;
+3. if it does, return that stored row immediately without re-encrypting or writing again;
 
 4. load the question node from the session’s frozen survey version using the submitted `question_node_id`, then validate the submitted answer against that frozen question definition using the answer validator;
 
@@ -185,15 +185,15 @@ The flow is:
 
 7. encrypt the answer payload with AES-GCM using a fresh nonce;
 
-8. insert a new immutable answer revision;
+8. upsert the current encrypted answer row for the answer locator —
+   overwrites ciphertext, nonce, and client mutation ID in place; there is
+   no revision history (see `04-answer-revisions.md`);
 
-9. update the latest pointer for the logical answer;
+9. commit the response transaction;
 
-10. commit the response transaction;
+10. insert the core answer-saved event;
 
-11. insert the core answer-saved event;
-
-12. commit the core transaction.
+11. commit the core transaction.
 
 If the analytics event fails after the response write succeeds, the answer must still be treated as saved.
 
@@ -240,11 +240,10 @@ The flow is:
 3. load the frozen survey version;
 4. derive the session locator using `LocatorService.for_existing_session(session_id, linkage_key_version)`;
 5. load the response envelope;
-6. load the latest revision set for detail reads;
-7. load revision history for authorized history reads;
-8. load the plaintext DEK through the survey branch-key chain;
-9. decrypt through the service;
-10. map decrypted answers back to the frozen survey version.
+6. load the current stored answer rows for the envelope (there is no revision history to page through — see `04-answer-revisions.md`);
+7. load the plaintext DEK through the survey branch-key chain;
+8. decrypt through the service;
+9. map decrypted answers back to the frozen survey version.
 
 Admin paths must never bypass authorization, locator derivation, or the decrypt service.
 
@@ -258,7 +257,7 @@ The flow is:
 2. load the core session;
 3. derive the session locator using the stored linkage key version;
 4. load the response envelope;
-5. delete encrypted response answers, answer history, and response envelope;
+5. delete encrypted response answers and response envelope;
 6. mark or delete the core session record;
 7. clear any cached plaintext DEK using `SessionDEKService.clear_for_session(session_id)`.
 

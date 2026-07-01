@@ -284,11 +284,10 @@ notes. It is a routing aid, not a replacement for the pass reports.
     `SessionStarter`, `access_resolver`, and `subject_resolver` so the chosen
     behavior is applied consistently for public/general links.
    Further context:
-   - `backend/app/services/public_submissions/core/session_starter.py`
-   - `backend/app/services/public_submissions/core/access_resolver.py`
-   - `backend/app/services/public_submissions/core/subject_resolver.py`
-   - `docs/session-response-encryption/Over Details/flows.md`
-   - `docs/session-response-encryption/Over Details/data-model.md`
+   - `backend/app/services/public_submissions/core/actions/session_starter.py`
+   - `backend/app/services/public_submissions/core/resolution/access_resolver.py`
+   - `backend/app/services/public_submissions/core/resolution/subject_resolver.py`
+   - `docs/session-encryption/07-storage-and-flows-reference.md`
 
 17. **Interrupted e2e fixture cleanup**
     A prior diagnostic noted a likely `_ADMIN_SUB` versus `_MEMBER_SUB` mismatch

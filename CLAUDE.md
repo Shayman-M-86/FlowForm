@@ -27,9 +27,11 @@ FlowForm/
 
 ## Architecture
 
-**Backend:** Flask with `uv`, PostgreSQL split into `core` and `response`, and
-cross-db work kept in `services/`. Keep backend details in
-[backend/CLAUDE.md](backend/CLAUDE.md).
+**Backend:** Flask with `uv`, PostgreSQL split into `core` and `response`
+with no cross-db SQL foreign keys — the two sides are linked via
+HMAC-derived opaque locators, and cross-db work is kept in `services/`. See
+[docs/session-encryption/](docs/session-encryption/) for the full model and
+[backend/CLAUDE.md](backend/CLAUDE.md) for backend details.
 
 **Frontend:** Vite/React 19 monorepo. Studio handles authenticated survey
 management; Public Site handles form delivery and response capture.

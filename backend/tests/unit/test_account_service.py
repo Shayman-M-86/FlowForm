@@ -94,20 +94,20 @@ def test_check_email_verified_caches_unverified_result(monkeypatch: pytest.Monke
         "get_app_cache",
         lambda: SimpleNamespace(account=SimpleNamespace(email_verified=cache)),
     )
-    monkeypatch.setattr(
-        account_module.ur,
-        "set_email_verified",
-        Mock(side_effect=lambda actor, *, email_verified: setattr(actor, "email_verified", email_verified)),
+    set_email_verified = Mock(
+        side_effect=lambda actor, *, email_verified: setattr(actor, "email_verified", email_verified)
     )
-    monkeypatch.setattr(account_module, "commit_with_err_handle", Mock())
+    commit = Mock()
+    monkeypatch.setattr(account_module.ur, "set_email_verified", set_email_verified)
+    monkeypatch.setattr(account_module, "commit_with_err_handle", commit)
 
     service = UserAccountService()
 
     assert service.check_email_verified(Mock(), actor=user) is False
     assert service.check_email_verified(Mock(), actor=user) is False
     mgmt.get_user_email_verified.assert_called_once_with(user.auth0_user_id)
-    account_module.ur.set_email_verified.assert_not_called()
-    account_module.commit_with_err_handle.assert_not_called()
+    set_email_verified.assert_not_called()
+    commit.assert_not_called()
 
 
 def test_check_email_verified_persists_cached_verified_result(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -126,13 +126,15 @@ def test_check_email_verified_persists_cached_verified_result(monkeypatch: pytes
         "get_app_cache",
         lambda: SimpleNamespace(account=SimpleNamespace(email_verified=cache)),
     )
-    monkeypatch.setattr(account_module.ur, "set_email_verified", Mock())
-    monkeypatch.setattr(account_module, "commit_with_err_handle", Mock())
+    set_email_verified = Mock()
+    commit = Mock()
+    monkeypatch.setattr(account_module.ur, "set_email_verified", set_email_verified)
+    monkeypatch.setattr(account_module, "commit_with_err_handle", commit)
 
     service = UserAccountService()
 
     assert service.check_email_verified(db, actor=user) is True
     assert service.check_email_verified(db, actor=user) is True
     mgmt.get_user_email_verified.assert_called_once_with(user.auth0_user_id)
-    assert account_module.ur.set_email_verified.call_count == 2
-    assert account_module.commit_with_err_handle.call_count == 2
+    assert set_email_verified.call_count == 2
+    assert commit.call_count == 2

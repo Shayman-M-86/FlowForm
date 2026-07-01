@@ -578,7 +578,7 @@ CREATE TABLE survey_membership_roles (
 -- =========================================
 -- SESSION AND RESPONSE ENCRYPTION
 -- =========================================
--- Pseudonymous session tables; see docs/session-response-encryption/.
+-- Pseudonymous session tables; see docs/session-encryption/.
 
 CREATE TABLE project_subjects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

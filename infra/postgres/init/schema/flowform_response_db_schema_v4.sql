@@ -2,7 +2,7 @@
 -- SESSION AND RESPONSE ENCRYPTION
 -- =========================================
 -- Anonymous encrypted envelopes and current encrypted answer rows.
--- See docs/session-response-encryption/ for the broader design.
+-- See docs/session-encryption/ for the broader design.
 --
 -- Notes:
 -- - No foreign keys back to the core database. session_locator and

@@ -1,4 +1,4 @@
-# Answer Storage and Revisions
+# Answer Storage
 
 ## Purpose
 
@@ -6,68 +6,74 @@ This document explains how answers are represented once a session has a response
 
 ## Model
 
-The response side has three conceptual layers.
+The response side has two tables — see `07-storage-and-flows-reference.md`
+Section 3 for exact columns and constraints.
 
 `response_envelopes` holds one encrypted response container for one submission session.
 
-`response_answers` holds one logical answer slot per envelope and question locator.
+`response_answers` holds **one current row per answer locator**, primary
+keyed on `answer_locator`. There is no separate revision-history table.
 
-`response_answer_revisions` holds immutable encrypted revisions for that logical answer.
+## Current answer, not revision history
 
-## Canonical answer
+Each answer save overwrites the stored row for its answer locator via
+`upsert_current()` (`backend/app/repositories/response/response_answer_repo.py`,
+an `INSERT ... ON CONFLICT (answer_locator) DO UPDATE`). Old ciphertext is
+not retained — the database only ever holds the most recent encrypted
+value for a question within a session.
 
-The canonical answer is the latest revision pointed to by the logical answer row.
-
-This avoids scanning the full history every time the current answer state is needed.
-
-## Immutable history
-
-Answer revisions are append-only.
-
-When a respondent changes an answer, the old ciphertext stays in history and a new encrypted revision is added. The logical answer row moves its latest pointer forward.
+There is no revision number, no "latest pointer" column, and no history
+table to page through. Anything needing prior answer states (e.g. audit or
+compliance requirements) would need a new capability — it does not exist
+today.
 
 ## Clearing an answer
 
-Clearing an answer is not deletion.
+Clearing an answer is not deletion of the row.
 
-A clear operation creates a new encrypted revision with a cleared state and a null answer value. Earlier revisions remain unchanged.
+A clear operation encrypts a payload with a cleared state and a null answer
+value, then upserts it into the same `response_answers` row — overwriting
+whatever was there before, the same as any other answer change.
 
-## First save
+## Save (first or changed answer)
 
-On first save for a question:
+There is a single write path, not separate first-save/changed-answer cases:
 
-- derive the answer locator;
-- create the logical answer row if it does not exist;
-- create revision 1;
-- set the latest pointer to revision 1.
+- derive the answer locator from `(session_id, question_node_id,
+  linkage_key_version)`;
+- encrypt the answer payload with a fresh nonce;
+- upsert the row for that answer locator — inserts if it does not exist
+  yet, otherwise overwrites `ciphertext`, `nonce`, `client_mutation_id`,
+  and `updated_at`.
 
-Simultaneous first saves must be handled by the unique logical answer constraint. The losing writer reloads the stored logical answer row and continues through the normal revision path.
-
-## Changed answer
-
-On a changed answer:
-
-- find the logical answer row by envelope and answer locator;
-- lock it;
-- read the current latest revision number;
-- insert the next revision number;
-- move the latest pointer forward.
-
-Revision numbers must be sequential within one logical answer.
+Simultaneous first saves for the same answer locator are handled by the
+`ON CONFLICT` clause itself — the database resolves the race, not
+application-level locking.
 
 ## Idempotency
 
-Each answer mutation must carry a client mutation ID.
+Each answer mutation may carry a client mutation ID (`client_mutation_id`
+is nullable on `response_answers`).
 
-The same mutation ID for the same logical answer must return the existing saved revision rather than creating a duplicate revision.
+If the stored row already has the same client mutation ID as the incoming
+request, the save should return the existing stored row rather than
+re-encrypting and writing again — see `03-session-envelope-lifecycle.md`
+Section 3, steps 2-3.
 
-This protects against network retries, browser retries, and lost HTTP responses.
+This protects against network retries, browser retries, and lost HTTP
+responses.
 
 ## Concurrency
 
-The logical answer row is the concurrency boundary.
+The `answer_locator` primary key and `ON CONFLICT DO UPDATE` are the
+concurrency boundary — there is no separate revision-number counter to
+lock around. Two concurrent saves for the same answer locator race on the
+upsert itself; the last write wins, consistent with there being no
+revision history to preserve.
 
-Lock the logical answer row when calculating the next revision number. Use the unique answer locator constraint for simultaneous first saves. Treat retries with the same client mutation ID as idempotent, not conflicting.
+`uq_response_answers_envelope_id_nonce` still guards against nonce reuse
+within an envelope across separate writes (AES-GCM safety) — see
+`05-crypto-key-model.md`.
 
 ## Validation rule
 

@@ -2,7 +2,7 @@
 
 This folder defines the target shape of FlowForm's encrypted response system.
 
-It is intentionally narrower than the older session-response-encryption notes. It does not re-document subject resolution, link access, survey visibility, and participant assignment. Those flows are upstream decisions that have already produced a valid submission session context.
+It is intentionally narrower than a full response-encryption design doc. It does not re-document subject resolution, link access, survey visibility, and participant assignment. Those flows are upstream decisions that have already produced a valid submission session context.
 
 ## Purpose
 
@@ -49,6 +49,7 @@ Those policies are upstream. This service starts after access and subject resolu
 - `04-answer-revisions.md` — answer slots, immutable revisions, clearing, idempotency, and concurrency.
 - `05-crypto-key-model.md` — key hierarchy (KMS → survey branch key → session DEK), AES-GCM, AAD, caching, and rotation.
 - `06-failure-and-logging-rules.md` — cross-database ordering, failure handling, observability, and privacy rules.
+- `07-storage-and-flows-reference.md` — exact table columns/constraints and respondent-facing flow file paths, verified against current schema and code.
 
 ## Agent rule
 

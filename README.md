@@ -245,23 +245,25 @@ This keeps route files small and makes business logic easier to test, reuse, and
 
 FlowForm uses two PostgreSQL databases.
 
-| Database   | Purpose                                                                                |
-| ---------- | -------------------------------------------------------------------------------------- |
-| `core`     | Users, projects, surveys, versions, roles, links, permissions, and submission metadata |
-| `response` | Raw response payloads and answer data                                                  |
+| Database   | Purpose                                                                                       |
+| ---------- | --------------------------------------------------------------------------------------------- |
+| `core`     | Users, projects, surveys, versions, roles, links, permissions, subjects, and session metadata |
+| `response` | Encrypted response envelopes and answer payloads only                                         |
 
-The response database does not store real user IDs. Instead, response records are linked back to core submission metadata through `core_submission_id`.
+The response database does not store real user IDs, project IDs, survey IDs, or plaintext question IDs. There are no cross-database SQL foreign keys — the two sides are linked only through HMAC-derived opaque locators computed from a versioned linkage secret:
 
 ```text
-core.survey_submissions.id
-  ↔ response.submissions.core_submission_id
+core.submission_sessions  →  session_locator  →  response.response_envelopes
+core (question node)      →  answer_locator   →  response.response_answers
 ```
+
+Answer payloads are also encrypted at rest using a per-survey KMS-wrapped branch key that locally wraps a per-session data encryption key (AES-256-GCM), so no plaintext answer is ever visible to the response database. See [docs/session-encryption/](docs/session-encryption/) for the full design.
 
 Cross-database orchestration lives in the service layer. This keeps privacy-sensitive writes explicit and avoids hidden coupling between the two databases.
 
 ### Why this matters
 
-This design makes FlowForm better suited for sensitive data collection because identifying application data and raw answers are not stored together by default.
+This design makes FlowForm better suited for sensitive data collection because identifying application data and raw answers are not stored together by default, and even a full compromise of the response database exposes only encrypted, unlinkable blobs.
 
 ---
 

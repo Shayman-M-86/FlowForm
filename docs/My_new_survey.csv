@@ -1,6 +1,0 @@
-session_id,status,started_at,completed_at,question_key,answer_family,answer_state,answer_value
-85232e2b-ec23-4673-be93-14435eb9cf64,completed,2026-06-25T10:03:24.253628+00:00,2026-06-25T10:03:35.460005+00:00,question_id_1,choice,answered,{'selected': ['A']}
-85232e2b-ec23-4673-be93-14435eb9cf64,completed,2026-06-25T10:03:24.253628+00:00,2026-06-25T10:03:35.460005+00:00,question_id_2,choice,answered,{'selected': ['A']}
-74d6ccf8-e745-4191-87a1-f339b59b48ae,completed,2026-06-25T09:55:49.741569+00:00,2026-06-25T09:55:52.928326+00:00,question_id_1,choice,answered,{'selected': ['A']}
-e5b9053d-b131-4718-b31e-dfe09ab38d4e,completed,2026-06-25T09:46:36.978177+00:00,2026-06-25T09:46:53.533045+00:00,question_id_1,choice,answered,{'selected': ['A']}
-e5b9053d-b131-4718-b31e-dfe09ab38d4e,completed,2026-06-25T09:46:36.978177+00:00,2026-06-25T09:46:53.533045+00:00,question_id_2,choice,answered,{'selected': ['A']}
