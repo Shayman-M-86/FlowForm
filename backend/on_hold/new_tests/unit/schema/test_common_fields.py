@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from typing import Any, cast
 
 import pytest
 from pydantic import BaseModel, TypeAdapter, ValidationError
@@ -17,7 +16,7 @@ from app.schema.api.common.fields import (
     SchemaIdStr,
     Slug,
 )
-from app.schema.api.requests.survey_responses import ListSurveyResponsesRequest
+from app.schema.api.requests.survey_results import ListSubjectsRequest
 
 
 def test_normalised_email_strips_and_lowercases() -> None:
@@ -86,21 +85,12 @@ def test_future_expires_at_requires_aware_future_datetime() -> None:
         adapter.validate_python(datetime.now())
 
 
-def test_list_responses_request_applies_pagination_defaults() -> None:
-    """Response listing should use shared pagination defaults."""
-    payload = ListSurveyResponsesRequest.model_validate({})
+def test_list_subjects_request_applies_pagination_defaults() -> None:
+    """Subject listing should use shared pagination defaults."""
+    payload = ListSubjectsRequest.model_validate({})
 
     assert payload.page == limits.LIST_PAGE_DEFAULT
     assert payload.page_size == limits.LIST_PAGE_SIZE_DEFAULT
-    assert payload.status is None
-
-
-def test_list_responses_request_rejects_unknown_status() -> None:
-    """Response listing should validate the session status filter."""
-    with pytest.raises(ValidationError) as exc_info:
-        ListSurveyResponsesRequest.model_validate({"status": cast(Any, "not_a_status")})
-
-    assert exc_info.value.errors()[0]["loc"] == ("status",)
 
 
 class _PaginationProbe(BaseModel):
@@ -111,6 +101,6 @@ class _PaginationProbe(BaseModel):
 def test_pagination_fields_reject_values_outside_shared_bounds() -> None:
     """Shared pagination constants should define the accepted request range."""
     with pytest.raises(ValidationError):
-        ListSurveyResponsesRequest.model_validate({"page": 0})
+        ListSubjectsRequest.model_validate({"page": 0})
     with pytest.raises(ValidationError):
-        ListSurveyResponsesRequest.model_validate({"page_size": limits.LIST_PAGE_SIZE_MAX + 1})
+        ListSubjectsRequest.model_validate({"page_size": limits.LIST_PAGE_SIZE_MAX + 1})

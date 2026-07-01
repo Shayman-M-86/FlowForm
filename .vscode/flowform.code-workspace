@@ -37,6 +37,7 @@
             "**/.nox/**",
             "**/htmlcov/**",
             "**/node_modules/**",
+            "**/tools/mcp/**",
             "${workspaceFolder:frontend}/**"
         ],
         "python-hover.diagnostics.enabled": false,
