@@ -3,7 +3,7 @@ extends:
 
 apis:
   main:
-    root: backend/openapi.yaml
+    root: openapi.yaml
 
 rules:
   tag-description: warn

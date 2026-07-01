@@ -58,8 +58,8 @@ individual test cases.
   the current backend spec to another file for comparison.
 - `cd frontend/apps/studio-app && pnpm run openapi:check` - checks backend
   OpenAPI export drift and generated Studio `schema.ts` drift.
-- `npx @redocly/cli lint backend/openapi.yaml` - Redocly lint pass over the
-  generated OpenAPI YAML.
+- `cd backend && npx @redocly/cli lint openapi.yaml` - Redocly lint pass over
+  the generated OpenAPI YAML (uses `backend/.redocly.yaml`).
 - `cd frontend && pnpm run generate:types` - lower-level generated contract file
   update. Usually run through `sync-openapi.sh`, not directly.
 
