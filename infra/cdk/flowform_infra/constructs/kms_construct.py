@@ -1,4 +1,3 @@
-from aws_cdk import RemovalPolicy
 from aws_cdk import aws_kms as kms
 from constructs import Construct
 
@@ -6,7 +5,8 @@ from flowform_infra.config import EnvConfig
 
 
 class AppKmsKey(Construct):
-    """A single customer-managed KMS key used for app-level encryption
+    """A single customer-managed KMS key used for app-level encryption.
+
     (e.g. the session-linkage HMAC secret, at-rest encryption for
     Secrets Manager entries this stack owns).
     """

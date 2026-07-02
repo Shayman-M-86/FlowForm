@@ -3,9 +3,10 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_ssm as ssm
 from constructs import Construct
 
-from flowform_infra.config import EnvConfig
+from flowform_infra.config import DOMAIN_NAME, EnvConfig
 from flowform_infra.constructs.kms_construct import AppKmsKey
-from flowform_infra.constructs.secrets_construct import AppSecret
+from flowform_infra.constructs.secrets_construct import AppMultiSecret
+from flowform_infra.constructs.ses_construct import AppEmailIdentity
 
 # TODO(decision): dev already has a hand-created KMS key + Secrets Manager
 # secret (see infra/docker/.backend.env FLOWFORM_ENCRYPTION_KMS_KEY_ARN /
@@ -17,6 +18,13 @@ from flowform_infra.constructs.secrets_construct import AppSecret
 #   (b) let this stack create fresh resources and treat the current ones as
 #       legacy to be decommissioned.
 # Deferred intentionally — not resolved by this scaffold.
+#
+# Route53 + SES are also already hand-configured (hosted zone for
+# flow-form.com.au, domain-verified SES identity — see
+# FLOWFORM_EMAIL_FROM_ADDRESS in infra/docker/.backend.env). Unlike the KMS
+# key/secret above, these are only *imported by reference* below, never
+# created or modified by CDK — DNS and SES verification stay fully
+# out-of-band.
 
 
 class SecurityStack(Stack):
@@ -31,58 +39,45 @@ class SecurityStack(Stack):
 
         self.kms_key = AppKmsKey(self, "AppKmsKey", env_config=env_config).key
 
-        self.linkage_secret = AppSecret(
+        # Imported by reference only — CDK never creates/modifies the zone,
+        # its records, or SES verification. Later stacks (e.g.
+        # application_stack, for an ALB alias record) can take the hosted
+        # zone from the stack's public attribute.
+        self.email_identity = AppEmailIdentity(
+            self, "EmailIdentity", env_config=env_config, domain_name=DOMAIN_NAME
+        )
+
+        # App boot-time config, always read together by the running Flask
+        # service. Keyed on jsonKey so ECS can still map each value back
+        # out to its own env var (secretName:jsonKey::) without any change
+        # to how the app reads its settings.
+        self.app_secrets = AppMultiSecret(
             self,
-            "LinkageSecret",
+            "AppSecrets",
             env_config=env_config,
-            secret_name_suffix="linkage-secret",
-            description="HMAC secret used to derive opaque locators linking core/response DBs",
+            secret_name_suffix="app-secrets",
+            description=(
+                "Flask app secret key, Auth0 management secret, and the "
+                "core/response DB linkage HMAC secret"
+            ),
             encryption_key=self.kms_key,
+            keys=[
+                "app_secret_key",
+                "auth0_mgmt_secret",
+                "linkage_secret",
+            ],
         ).secret
 
-        self.app_secret_key = AppSecret(
+        # DB app-user passwords, grouped since both are needed together at
+        # boot and neither is meaningful on its own.
+        self.db_secrets = AppMultiSecret(
             self,
-            "AppSecretKey",
+            "DbSecrets",
             env_config=env_config,
-            secret_name_suffix="app-secret-key",
-            description="Flask FLOWFORM_APP_SECRET_KEY",
+            secret_name_suffix="db-secrets",
+            description="App-user passwords for the core and response Postgres databases",
             encryption_key=self.kms_key,
-        ).secret
-
-        self.auth0_client_secret = AppSecret(
-            self,
-            "Auth0ClientSecret",
-            env_config=env_config,
-            secret_name_suffix="auth0-client-secret",
-            description="Auth0 application client secret",
-            encryption_key=self.kms_key,
-        ).secret
-
-        self.auth0_mgmt_secret = AppSecret(
-            self,
-            "Auth0MgmtSecret",
-            env_config=env_config,
-            secret_name_suffix="auth0-mgmt-secret",
-            description="Auth0 Management API client secret",
-            encryption_key=self.kms_key,
-        ).secret
-
-        self.db_core_app_password = AppSecret(
-            self,
-            "DbCoreAppPassword",
-            env_config=env_config,
-            secret_name_suffix="db-core-app-password",
-            description="App-user password for the core Postgres database",
-            encryption_key=self.kms_key,
-        ).secret
-
-        self.db_response_app_password = AppSecret(
-            self,
-            "DbResponseAppPassword",
-            env_config=env_config,
-            secret_name_suffix="db-response-app-password",
-            description="App-user password for the response Postgres database",
-            encryption_key=self.kms_key,
+            keys=["db_core_app_password", "db_response_app_password"],
         ).secret
 
         # Non-secret config, readable without Secrets Manager decrypt perms.
@@ -100,6 +95,13 @@ class SecurityStack(Stack):
             string_value=env_config.region,
         )
 
+        ssm.StringParameter(
+            self,
+            "HostedZoneIdParam",
+            parameter_name=f"/flowform/{env_config.env_name}/hosted-zone-id",
+            string_value=self.email_identity.hosted_zone.hosted_zone_id,
+        )
+
         # Task role shape for the future ECS service (application_stack).
         # Scoped to read-only on exactly the secrets/params this stack owns.
         self.task_role = iam.Role(
@@ -109,14 +111,9 @@ class SecurityStack(Stack):
             description=f"Task role for the FlowForm API ({env_config.env_name})",
         )
 
-        for secret in (
-            self.linkage_secret,
-            self.app_secret_key,
-            self.auth0_client_secret,
-            self.auth0_mgmt_secret,
-            self.db_core_app_password,
-            self.db_response_app_password,
-        ):
+        for secret in (self.app_secrets, self.db_secrets):
             secret.grant_read(self.task_role)
 
         self.kms_key.grant_decrypt(self.task_role)
+
+        self.email_identity.grant_send(self.task_role)

@@ -10,20 +10,45 @@
 
 ## What `security_stack.py` creates
 
-Secrets Manager entries, named `flowform/<env>/<name>`:
+Two Secrets Manager entries, named `flowform/<env>/<name>`, each holding
+multiple values as a JSON blob (grouped by what's consumed together at
+runtime). ECS can still map an individual JSON key back out to its own env
+var via the `secretName:jsonKey::` ARN suffix, so application code reads
+each value the same way it would from a single-value secret.
 
-- `linkage-secret` — HMAC secret deriving opaque locators between the core
-  and response databases
-- `app-secret-key` — Flask `FLOWFORM_APP_SECRET_KEY`
-- `auth0-client-secret` — Auth0 application client secret
-- `auth0-mgmt-secret` — Auth0 Management API client secret
-- `db-core-app-password` / `db-response-app-password` — Postgres app-user
-  passwords
+- `app-secrets` — `app_secret_key` (Flask `FLOWFORM_APP_SECRET_KEY`),
+  `auth0_mgmt_secret` (Auth0 Management API client secret), and
+  `linkage_secret` (HMAC secret deriving opaque locators between the core
+  and response databases). There's no `auth0_client_secret` — the
+  user-facing Auth0 application (`FLOWFORM_AUTH0_CLIENT_ID`) is a
+  public/PKCE client with no client secret; only the Management API client
+  is confidential.
+- `db-secrets` — `db_core_app_password` / `db_response_app_password`,
+  Postgres app-user passwords
 
-CDK creates each secret with a **generated placeholder value**. The real
-value is set out-of-band (AWS Console, CLI `put-secret-value`, or a
-rotation Lambda later) — secret values never appear in code, in a
-synthesized CloudFormation template, or in git.
+CDK creates each secret with **generated placeholder values** for every
+key. The real values are set out-of-band (AWS Console, CLI
+`put-secret-value`, or a rotation Lambda later) — secret values never
+appear in code, in a synthesized CloudFormation template, or in git. See
+`scripts/seed-secrets.sh` for the seeding workflow.
+
+## Route53 + SES (imported, not created)
+
+`security_stack.py` also imports the already hand-configured Route53
+hosted zone for `flow-form.com.au`
+(`route53.HostedZone.from_lookup`) and grants the ECS task role
+`ses:SendEmail` / `ses:SendRawEmail` scoped to that domain's SES identity
+ARN. Unlike the KMS key/secret decision below, this is **not** a
+create-vs-import choice — CDK never creates or modifies the hosted zone or
+SES verification, only references them by domain name. The hosted zone ID
+is published as an SSM parameter (`/flowform/<env>/hosted-zone-id`) for
+later stacks (e.g. an ALB alias record in `application_stack.py`).
+
+Note: `HostedZone.from_lookup` performs a real AWS API call at synth time
+(cached in `cdk.context.json` after the first successful lookup), so
+`cdk synth`/`cdk deploy` need valid AWS credentials for the target account.
+Tests pre-seed a fake lookup result via CDK's context so `pytest` stays
+hermetic — see `tests/test_security_stack.py`.
 
 ## Open decision: existing dev KMS key / secret
 

@@ -18,6 +18,12 @@ class EnvConfig:
 # dev (see infra/docker/.backend.env FLOWFORM_ENCRYPTION_* ARNs).
 _DEFAULT_REGION = "ap-southeast-2"
 
+# Route53 hosted zone + SES domain identity, already configured by hand in
+# AWS (matches FLOWFORM_EMAIL_FROM_ADDRESS=no-reply@flow-form.com.au in
+# infra/docker/.backend.env). Same domain across all envs for now — revisit
+# if staging/prod end up on subdomains.
+DOMAIN_NAME = "flow-form.com.au"
+
 # dev account matches the one already visible in infra/docker/.backend.env's
 # ARNs. staging/prod are placeholders — TODO: confirm whether staging/prod
 # live in the same AWS account as dev or in separate accounts (common

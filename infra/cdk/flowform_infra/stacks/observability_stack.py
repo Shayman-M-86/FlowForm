@@ -12,9 +12,7 @@ from flowform_infra.config import EnvConfig
 
 
 class ObservabilityStack(Stack):
-    """CloudWatch log groups, alarms, and a dashboard for the other stacks'
-    resources.
-    """
+    """CloudWatch log groups, alarms, and a dashboard for the other stacks' resources."""
 
     def __init__(self, scope: Construct, construct_id: str, *, env_config: EnvConfig, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)

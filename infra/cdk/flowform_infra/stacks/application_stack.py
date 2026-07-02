@@ -14,6 +14,23 @@ from flowform_infra.stacks.network_stack import NetworkStack
 #   - aws_elasticloadbalancingv2.ApplicationLoadBalancer with HTTPS listener
 #   - health check against the Flask API's health endpoint
 #   - autoscaling policy (later, not this milestone)
+#
+# TODO(decision): secrets delivery into the container. Local Docker Compose
+# (infra/docker/docker-compose.dev.yml) mounts secrets as files at
+# /run/secrets/... and the backend reads them via *_FILE settings
+# (DatabaseSettings.app_password_file, AppSettings.secret_key_file — see
+# backend/app/core/config.py). Two ways to carry that into ECS, not yet
+# decided:
+#   (a) ECS-native `secrets:` block on the container definition — pulls each
+#       Secrets Manager JSON key (security_stack.app_secrets / db_secrets)
+#       into a plain env var at container start
+#       (valueFrom: ...:secret:flowform/<env>/app-secrets:app_secret_key::).
+#       Simpler, AWS-managed, but backend config would need a plain-env-var
+#       reading path added alongside the current *_FILE-only settings.
+#   (b) A sidecar/init container that fetches from Secrets Manager and
+#       writes to a shared volume mount, replicating the *_FILE pattern
+#       exactly. Zero backend code changes, more infra to maintain.
+# RDS credentials (db_secrets) hit the same fork.
 
 
 class ApplicationStack(Stack):
