@@ -1,0 +1,99 @@
+[project]
+name = "flowform-infra"
+version = "0.1.0"
+description = "FlowForm AWS infrastructure (CDK)"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "aws-cdk-lib>=2.170.0",
+    "constructs>=10.4.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.18.0",
+    "pytest>=9.0.3",
+    "ruff>=0.12.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.411",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["flowform_infra"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "SIM",
+    "C4",
+    "ARG",
+    "RUF",
+    "D",
+]
+ignore = [
+    "D100",
+    "D104",
+    "D105",
+    "D107",
+    "D203",
+    "D213",
+    "D102",
+    "D103",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Phase 2 admin response routes are contract-first stubs: handlers must declare
+# every path parameter for Flask binding and survey-access checks, but do not
+# consume all of them until the Phase 7 admin-read service lands.
+"app/api/v1/projects/survey_responses.py" = ["ARG001"]
+"tests/**/*.py" = ["D", "ARG001"]
+"migrations/**/*.py" = ["D"]
+"scripts/**/*.py" = ["D"]
+"**/__init__.py" = ["F401"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+docstring-code-format = true
+
+
+[tool.coverage.run]
+branch = true
+source = ["app"]
+omit = [
+    "tests/*",
+    "migrations/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

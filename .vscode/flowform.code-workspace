@@ -11,6 +11,10 @@
         {
             "name": "frontend",
             "path": "../frontend"
+        },
+        {
+            "name": "infra/cdk",
+            "path": "../infra/cdk"
         }
     ],
     "settings": {
@@ -23,7 +27,8 @@
             "${workspaceFolder:backend}"
         ],
         "python.analysis.include": [
-            "${workspaceFolder:backend}"
+            "${workspaceFolder:backend}",
+            "${workspaceFolder:infra/cdk}"
         ],
         "python.analysis.exclude": [
             "**/.git/**",
@@ -38,7 +43,11 @@
             "**/htmlcov/**",
             "**/node_modules/**",
             "**/tools/mcp/**",
-            "${workspaceFolder:frontend}/**"
+            "${workspaceFolder:frontend}/**",
+            "**/on_hold/**"
+        ],
+        "python.analysis.ignore": [
+            "**/on_hold/**"
         ],
         "python-hover.diagnostics.enabled": false,
         "python-hover.ui.showBadges": false,
@@ -71,7 +80,8 @@
             "**/.pytest_cache/**": true,
             "**/.mypy_cache/**": true,
             "**/.ruff_cache/**": true,
-            "**/node_modules/**": true
+            "**/node_modules/**": true,
+            "**/on_hold/**": true
         },
         "search.exclude": {
             "**/.venv": true,
@@ -81,6 +91,7 @@
             "**/.mypy_cache": true,
             "**/.ruff_cache": true,
             "**/node_modules": true,
+            "**/on_hold/**": true
         },
         "json.schemas": [
             {

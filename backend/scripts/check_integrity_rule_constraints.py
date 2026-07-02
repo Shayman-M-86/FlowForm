@@ -174,24 +174,24 @@ INTENTIONALLY_UNMAPPED_CONSTRAINTS: dict[str, str] = {
     # client input. If this FK fires, internal code passed a mismatched
     # (user_id, normalized_email) pair — a server bug, not a client conflict.
     # The unmatched-rule 500 is the correct signal; a rule here would obscure it.
-    "fk_project_subject_identities_user_email_matches": "normalized_email is service-derived from the user record; mismatch is a server bug",
+    "fk_project_subject_identities_user_email_matches": "normalized_email is service-derived from the user record; mismatch is a server bug",  # noqa: E501
     # Both CHECKs enforce the participant-assignment invariant that service code
     # validates before inserting a SurveyLink. Same pattern as
     # ck_surveys_public_requires_slug — if either fires, a code path bypassed
     # service-layer validation and the unmatched-rule 500 surfaces that.
-    "ck_survey_links_assigned_requires_participant": "link participant assignment is validated by service code before persistence",
-    "ck_survey_links_general_has_no_assignment": "link participant assignment is validated by service code before persistence",
+    "ck_survey_links_assigned_requires_participant": "link participant assignment is validated by service code before persistence",  # noqa: E501
+    "ck_survey_links_general_has_no_assignment": "link participant assignment is validated by service code before persistence",  # noqa: E501
     # Defence-in-depth email format/normalisation CHECK. Pydantic validates email
     # normalisation upstream; if this CHECK fires, a code path bypassed the schema.
     # Intentionally unmapped — the unmatched-rule 500 surfaces the bypass.
-    "ck_users_email_normalized": "email normalisation is validated by Pydantic upstream; this CHECK is defence-in-depth",
+    "ck_users_email_normalized": "email normalisation is validated by Pydantic upstream; this CHECK is defence-in-depth",  # noqa: E501
     # Exists solely to support the composite FK
     # fk_project_subject_identities_user_email_matches (Postgres requires a unique
     # index on the referenced columns). Not a standalone business constraint —
     # email uniqueness is already covered by users_email_key.
     # The _is_fk_support_unique heuristic misses (id, email) because neither
     # non-id column ends in _id; added explicitly here.
-    "uq_users_id_email": "FK-support UNIQUE for fk_project_subject_identities_user_email_matches; business email uniqueness covered by users_email_key",
+    "uq_users_id_email": "FK-support UNIQUE for fk_project_subject_identities_user_email_matches; business email uniqueness covered by users_email_key",  # noqa: E501
 }
 
 

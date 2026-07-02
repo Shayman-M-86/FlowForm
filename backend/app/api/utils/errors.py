@@ -162,3 +162,5 @@ def register_error_handlers(app: Flask) -> None:
             message="An unexpected error occurred.",
             status_code=500,
         )
+
+

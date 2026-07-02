@@ -42,6 +42,12 @@ ENV/
 env.bak/
 venv.bak/
 
+# Node
+node_modules/
+
+# CDK
+infra/cdk/cdk.out/
+
 # Environment files
 *.env
 .env

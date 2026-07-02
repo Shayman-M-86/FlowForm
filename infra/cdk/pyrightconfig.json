@@ -1,8 +1,8 @@
 {
     "include": [
-        "app",
+        "flowform_infra",
         "tests",
-        "scripts"
+        "app.py"
     ],
     "exclude": [
         "**/__pycache__",
@@ -11,11 +11,13 @@
         ".ruff_cache",
         "**/node_modules",
         "**/.*",
+        "cdk.out"
     ],
     "typeCheckingMode": "standard",
     "venvPath": ".",
     "venv": ".venv",
     "pythonVersion": "3.14",
     "reportMissingImports": true,
-    "reportMissingTypeStubs": false
+    "reportMissingTypeStubs": false,
+    "reportArgumentType": "none"
 }
