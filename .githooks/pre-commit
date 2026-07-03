@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "${REPO_ROOT}"
+
+echo "==> Checking OpenAPI spec and generated TypeScript..."
+bash scripts/shared_script/sync-openapi.sh --check

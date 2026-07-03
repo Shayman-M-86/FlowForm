@@ -48,8 +48,12 @@ individual test cases.
 
 - `bash scripts/shared_script/sync-openapi.sh` - preferred repo-level OpenAPI
   sync. It runs from anywhere and drives the Studio `openapi:generate` script,
-  which regenerates `backend/openapi.yaml`, Studio OpenAPI types, and shared
-  generated frontend contract files.
+  which regenerates `backend/openapi.yaml`, Studio OpenAPI types, shared
+  generated frontend contract files, and runs Redocly lint.
+- `bash scripts/shared_script/sync-openapi.sh --check` - preferred repo-level
+  generated contract drift check. It checks backend OpenAPI and Studio
+  `schema.ts` drift, runs Redocly lint, then verifies shared generated frontend
+  contract files.
 - `bash backend/scripts/export-openapi.sh` - backend-only OpenAPI export to
   `backend/openapi.yaml`.
 - `bash backend/scripts/export-openapi.sh --check` - backend-only OpenAPI drift
@@ -58,8 +62,9 @@ individual test cases.
   the current backend spec to another file for comparison.
 - `cd frontend/apps/studio-app && pnpm run openapi:check` - checks backend
   OpenAPI export drift and generated Studio `schema.ts` drift.
-- `cd backend && npx @redocly/cli lint openapi.yaml` - Redocly lint pass over
-  the generated OpenAPI YAML (uses `backend/.redocly.yaml`).
+- `cd frontend && pnpm exec redocly lint ../backend/openapi.yaml --config
+  ../backend/.redocly.yaml` - standalone Redocly lint pass over the generated
+  OpenAPI YAML. Usually run through `sync-openapi.sh`, not directly.
 - `cd frontend && pnpm run generate:types` - lower-level generated contract file
   update. Usually run through `sync-openapi.sh`, not directly.
 

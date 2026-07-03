@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@redocly/cli':
+        specifier: 2.34.0
+        version: 2.34.0
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.15
@@ -223,6 +226,9 @@ importers:
       react-router-dom:
         specifier: ^7.14.2
         version: 7.16.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      zod:
+        specifier: ^3.25.28
+        version: 3.25.76
     devDependencies:
       '@types/react':
         specifier: ^19.2.14
@@ -1668,6 +1674,11 @@ packages:
 
   '@redocly/ajv@8.11.2':
     resolution: {integrity: sha512-io1JpnwtIcvojV7QKDUSIuMN/ikdOUd1ReEnUnMKGfDVridQZ31J0MmIuqwuRjWDZfmvr+Q0MqCcfHM2gTivOg==}
+
+  '@redocly/cli@2.34.0':
+    resolution: {integrity: sha512-wlEy03fyf+xrEatHbSSLFGP7T8slYwyJHO6xooArvUOntiGRMPuTGivaSPhxx+f2bFhe69zDDzDy51+CsvJ/zw==}
+    engines: {node: '>=22.12.0 || >=20.19.0 <21.0.0', npm: '>=10'}
+    hasBin: true
 
   '@redocly/config@0.22.0':
     resolution: {integrity: sha512-gAy93Ddo01Z3bHuVdPWfCwzgfaYgMdaZPcfL7JZ7hWJoK9V0lXDbigTWkhiPFAaLWzbOJ+kbUQG1+XwIm0KRGQ==}
@@ -5823,6 +5834,8 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
       uri-js-replace: 1.0.1
+
+  '@redocly/cli@2.34.0': {}
 
   '@redocly/config@0.22.0': {}
 
