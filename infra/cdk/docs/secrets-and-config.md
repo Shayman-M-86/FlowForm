@@ -5,6 +5,7 @@
 | Location | What goes here | Managed by |
 |---|---|---|
 | Local `.env` / Docker secrets (`infra/docker/`) | Local dev only — never real prod credentials | Manual, gitignored |
+| `infra/cdk/.env.<env>` | Per-env Auth0 public config (read at synth) + secret values staged for `seed-secrets.sh` | Manual, gitignored (`.env.dev.example` is the template) |
 | SSM Parameter Store | Non-secret config (KMS key ARN, region) | `security_stack.py` |
 | Secrets Manager | Actual secret values (passwords, client secrets) | `security_stack.py` (shape only — see below) |
 
@@ -36,9 +37,11 @@ appear in code, in a synthesized CloudFormation template, or in git. See
 
 `security_stack.py` also imports the already hand-configured Route53
 hosted zone for `flow-form.com.au`
-(`route53.HostedZone.from_lookup`) and grants the ECS task role
+(`route53.HostedZone.from_lookup`) and grants the app IAM role
 `ses:SendEmail` / `ses:SendRawEmail` scoped to that domain's SES identity
-ARN. Unlike the KMS key/secret decision below, this is **not** a
+ARN. (The app role is assumed by ECS tasks in staging/prod; in dev it's
+assumable by principals in the dev account, so the locally hosted backend
+can `sts:AssumeRole` into the same scoped access.) Unlike the KMS key/secret decision below, this is **not** a
 create-vs-import choice — CDK never creates or modifies the hosted zone or
 SES verification, only references them by domain name. The hosted zone ID
 is published as an SSM parameter (`/flowform/<env>/hosted-zone-id`) for
@@ -50,22 +53,28 @@ Note: `HostedZone.from_lookup` performs a real AWS API call at synth time
 Tests pre-seed a fake lookup result via CDK's context so `pytest` stays
 hermetic — see `tests/test_security_stack.py`.
 
-## Open decision: existing dev KMS key / secret
+## Resolved: existing dev KMS key / secret → create fresh
 
-`infra/docker/.backend.env` already references a live KMS key and a
-Secrets Manager secret for dev
-(`FLOWFORM_ENCRYPTION_KMS_KEY_ARN`, `FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN`).
-`security_stack.py` currently creates a **new** key and secrets rather than
-importing those. Before deploying this stack to the real `dev` account,
-decide:
+`infra/docker/.backend.env` references a hand-created KMS key and Secrets
+Manager secret for dev (`FLOWFORM_ENCRYPTION_KMS_KEY_ARN`,
+`FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN`). Decision: `security_stack.py`
+always **creates fresh** resources — there is no import-by-ARN path, so a
+brand-new AWS account bootstraps with zero special cases.
 
-- **Import** the existing ARNs (`kms.Key.from_key_arn`,
-  `secretsmanager.Secret.from_secret_complete_arn`) so CDK adopts what's
-  already running, or
-- **Create fresh** resources here and decommission/rotate off the old ones.
+Dev cutover steps (one-time, after the first `cdk deploy -c env=dev`):
 
-This is flagged with a `# TODO(decision)` comment at the top of
-`security_stack.py`.
+1. Seed the new secrets (`scripts/seed-secrets.sh --env dev --send`).
+2. Update `.backend.env`'s `FLOWFORM_ENCRYPTION_*` ARNs to the new
+   resources.
+3. **Reseed local dev data** — existing rows' opaque locators were derived
+   from the old linkage HMAC secret, so cross-DB lookups on them break.
+   Dev data is disposable; this is expected.
+4. Delete the old hand-created key and secret.
+
+Prod's "never recreate" guarantee doesn't need an import path: it comes
+from `RemovalPolicy.RETAIN` plus never renaming the KMS/secret construct
+IDs in `security_stack.py` (a rename forces CloudFormation to replace the
+resource).
 
 ## Flagged follow-up: rotate what's currently on disk
 

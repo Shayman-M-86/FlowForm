@@ -8,30 +8,34 @@ from flowform_infra.constructs.kms_construct import AppKmsKey
 from flowform_infra.constructs.secrets_construct import AppMultiSecret
 from flowform_infra.constructs.ses_construct import AppEmailIdentity
 
-# TODO(decision): dev already has a hand-created KMS key + Secrets Manager
-# secret (see infra/docker/.backend.env FLOWFORM_ENCRYPTION_KMS_KEY_ARN /
-# FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN). Before deploying this stack to
-# dev, decide whether to:
-#   (a) import those existing resources by ARN (kms.Key.from_key_arn /
-#       secretsmanager.Secret.from_secret_complete_arn) so CDK adopts what's
-#       already there, or
-#   (b) let this stack create fresh resources and treat the current ones as
-#       legacy to be decommissioned.
-# Deferred intentionally — not resolved by this scaffold.
+# Decision (resolved): this stack always CREATES the KMS key and secrets —
+# no import-by-ARN path. Dev's hand-created key + linkage secret (the
+# FLOWFORM_ENCRYPTION_* ARNs in infra/docker/.backend.env) are legacy: after
+# the first dev deploy, point .backend.env at the new ARNs, reseed local dev
+# data (existing opaque locators were derived from the old HMAC secret, so
+# cross-DB lookups on old rows break — dev data is disposable), then delete
+# the old key/secret. Prod's "never recreate" guarantee comes from
+# RemovalPolicy.RETAIN plus never renaming these construct IDs (a rename
+# forces CloudFormation to replace the resource).
 #
-# Route53 + SES are also already hand-configured (hosted zone for
-# flow-form.com.au, domain-verified SES identity — see
-# FLOWFORM_EMAIL_FROM_ADDRESS in infra/docker/.backend.env). Unlike the KMS
-# key/secret above, these are only *imported by reference* below, never
-# created or modified by CDK — DNS and SES verification stay fully
-# out-of-band.
+# Route53 + SES are hand-configured (hosted zone for flow-form.com.au,
+# domain-verified SES identity) and only *imported by reference* below —
+# but for different reasons with different lifetimes:
+#   - Hosted zone: PERMANENTLY manual. Recreating a zone assigns new
+#     nameservers the registrar would have to be repointed at by hand, so
+#     the zone stays out of CDK by design (records inside it are fair game).
+#   - SES identity: manual FOR NOW. Planned to move into a shared CDK
+#     stack (ses.EmailIdentity + DKIM records, adopted via `cdk import`)
+#     when email infra is next touched.
+# Full list of hand-done steps: docs/manual-prerequisites.md.
 
 
 class SecurityStack(Stack):
-    """KMS keys, Secrets Manager entries, SSM parameters, and the IAM role.
-    
-    shapes that later stacks (application_stack) will attach to. This is
-    the foundation stack — everything else depends on it.
+    """KMS key, Secrets Manager entries, SSM parameters, and the app IAM role.
+
+    This is the foundation stack — everything else depends on it, and for
+    dev it is the ONLY stack deployed (the app/databases/frontends run
+    locally; see app.py).
     """
 
     def __init__(self, scope: Construct, construct_id: str, *, env_config: EnvConfig, **kwargs) -> None:
@@ -102,13 +106,24 @@ class SecurityStack(Stack):
             string_value=self.email_identity.hosted_zone.hosted_zone_id,
         )
 
-        # Task role shape for the future ECS service (application_stack).
-        # Scoped to read-only on exactly the secrets/params this stack owns.
+        # The role the running backend uses to reach KMS/secrets/SES, scoped
+        # to read-only on exactly the resources this stack owns. Who assumes
+        # it differs by environment:
+        #   - full deployments: the ECS task (application_stack)
+        #   - dev: the locally hosted backend — any principal in the dev
+        #     account can `sts:AssumeRole` it, so local AWS credentials get
+        #     the same scoped access an ECS task would, instead of carrying
+        #     broad user permissions.
+        if env_config.full_deployment:
+            assumed_by = iam.ServicePrincipal("ecs-tasks.amazonaws.com")
+        else:
+            assumed_by = iam.AccountPrincipal(env_config.account)
+
         self.task_role = iam.Role(
             self,
             "AppTaskRole",
-            assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
-            description=f"Task role for the FlowForm API ({env_config.env_name})",
+            assumed_by=assumed_by,
+            description=f"App role for the FlowForm API ({env_config.env_name})",
         )
 
         for secret in (self.app_secrets, self.db_secrets):

@@ -1,12 +1,12 @@
 import aws_cdk as cdk
-from aws_cdk.assertions import Template
+from aws_cdk.assertions import Match, Template
 
 from flowform_infra.config import DOMAIN_NAME, get_env_config
 from flowform_infra.stacks.security_stack import SecurityStack
 
 
-def _synth_dev_security_stack() -> Template:
-    env_config = get_env_config("dev")
+def _synth_security_stack(env_name: str) -> Template:
+    env_config = get_env_config(env_name)
     cdk_env = cdk.Environment(account=env_config.account, region=env_config.region)
 
     # HostedZone.from_lookup queries a context provider at synth time, which
@@ -33,20 +33,40 @@ def _synth_dev_security_stack() -> Template:
 
 
 def test_creates_one_kms_key_with_rotation_enabled():
-    template = _synth_dev_security_stack()
+    template = _synth_security_stack("dev")
     template.resource_count_is("AWS::KMS::Key", 1)
     template.has_resource_properties("AWS::KMS::Key", {"EnableKeyRotation": True})
 
 
 def test_creates_expected_secrets():
-    template = _synth_dev_security_stack()
+    template = _synth_security_stack("dev")
     # app-secrets (app_secret_key, auth0_mgmt_secret, linkage_secret) and
     # db-secrets (db_core_app_password, db_response_app_password)
     template.resource_count_is("AWS::SecretsManager::Secret", 2)
 
 
-def test_task_role_can_assume_from_ecs_tasks():
-    template = _synth_dev_security_stack()
+def test_dev_app_role_assumable_by_account_principal():
+    # dev's backend runs locally, so the role is assumable by principals in
+    # the dev account (via sts:AssumeRole) rather than by ECS tasks.
+    template = _synth_security_stack("dev")
+    template.has_resource_properties(
+        "AWS::IAM::Role",
+        {
+            "AssumeRolePolicyDocument": {
+                "Statement": [
+                    {
+                        "Action": "sts:AssumeRole",
+                        "Effect": "Allow",
+                        "Principal": {"AWS": Match.any_value()},
+                    }
+                ],
+            }
+        },
+    )
+
+
+def test_full_deployment_app_role_assumable_by_ecs_tasks():
+    template = _synth_security_stack("staging")
     template.has_resource_properties(
         "AWS::IAM::Role",
         {
@@ -64,6 +84,6 @@ def test_task_role_can_assume_from_ecs_tasks():
 
 
 def test_ssm_parameters_created():
-    template = _synth_dev_security_stack()
+    template = _synth_security_stack("dev")
     # kms-key-arn, aws-region, hosted-zone-id
     template.resource_count_is("AWS::SSM::Parameter", 3)
