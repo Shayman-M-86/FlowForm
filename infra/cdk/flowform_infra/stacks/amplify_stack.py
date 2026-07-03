@@ -19,11 +19,17 @@ _NODE_VERSION = "22.12.0"
 # corepack doesn't recognize yet), unrelated to this app's code.
 _PNPM_VERSION = "10.24.0"
 
+# The shell working directory persists across commands AND phases in an
+# Amplify build (confirmed from build logs: a second `cd frontend` in the
+# build phase failed because preBuild had already left the shell there).
+# So: cd once in preBuild, don't cd again in build, and anchor artifact/
+# cache paths at the repo root.
 _PREBUILD_COMMANDS = [
     f"nvm install {_NODE_VERSION}",
     f"nvm use {_NODE_VERSION}",
     f"npm install -g pnpm@{_PNPM_VERSION}",
-    "cd frontend && pnpm install --frozen-lockfile --store-dir .pnpm-store",
+    "cd frontend",
+    "pnpm install --frozen-lockfile --store-dir .pnpm-store",
 ]
 
 _CACHE_PATHS = [
@@ -45,7 +51,8 @@ def _build_spec(build_command: str, artifacts_base_directory: str) -> dict:
         "frontend": {
             "phases": {
                 "preBuild": {"commands": _PREBUILD_COMMANDS},
-                "build": {"commands": [f"cd frontend && {build_command}"]},
+                # Already inside frontend/ from preBuild (cwd persists).
+                "build": {"commands": [build_command]},
             },
             "artifacts": {"baseDirectory": artifacts_base_directory, "files": ["**/*"]},
             "cache": {"paths": _CACHE_PATHS},
@@ -118,7 +125,7 @@ class AmplifyStack(Stack):
             "PublicSite",
             env_config=env_config,
             app_name="public-site",
-            build_spec=_build_spec("pnpm run build:site", "apps/public-site/dist"),
+            build_spec=_build_spec("pnpm run build:site", "frontend/apps/public-site/dist"),
             custom_response_headers=_PUBLIC_SITE_HEADERS,
             domain_name=env_config.public_site_domain,
             extra_sub_domain_prefixes=env_config.public_site_extra_prefixes,
@@ -135,7 +142,7 @@ class AmplifyStack(Stack):
             "StudioApp",
             env_config=env_config,
             app_name="studio-app",
-            build_spec=_build_spec("pnpm run build:studio", "apps/studio-app/dist"),
+            build_spec=_build_spec("pnpm run build:studio", "frontend/apps/studio-app/dist"),
             custom_rules=[amplify_alpha.CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT],
             environment_variables=_studio_app_env_vars(env_config),
             domain_name=env_config.studio_domain,

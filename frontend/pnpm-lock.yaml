@@ -132,6 +132,9 @@ importers:
       '@tanstack/router-devtools':
         specifier: ^1.121.2
         version: 1.167.0(@tanstack/react-router@1.170.10(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(@tanstack/router-core@1.171.8)(csstype@3.2.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      lucide-react:
+        specifier: ^1.14.0
+        version: 1.17.0(react@19.2.6)
       openapi-fetch:
         specifier: ^0.17.0
         version: 0.17.0
