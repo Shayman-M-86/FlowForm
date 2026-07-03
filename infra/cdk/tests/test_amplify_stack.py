@@ -78,30 +78,19 @@ def test_prod_uses_main_branch():
     template.resource_properties_count_is("AWS::Amplify::Branch", {"BranchName": "main"}, 2)
 
 
-def test_build_specs_use_monorepo_format_with_app_root():
+def test_build_specs_use_single_app_format():
+    # Each Amplify app builds exactly one frontend, so the monorepo
+    # `applications:`/appRoot format adds nothing — a plain single-app
+    # spec that cds into the workspace root does the same job. (Note:
+    # these specs only apply because no amplify.yml is committed at the
+    # repo root — a committed file overrides App-resource build settings.)
     template = _synth_staging_amplify_stack()
     apps = template.find_resources("AWS::Amplify::App")
-    app_roots = set()
     for app in apps.values():
         build_spec = app["Properties"]["BuildSpec"]
-        assert "applications" in build_spec, "expected monorepo build-spec format"
-        for line in build_spec.splitlines():
-            if "appRoot:" in line:
-                app_roots.add(line.split("appRoot:")[1].strip())
-    assert app_roots == {"frontend/apps/public-site", "frontend/apps/studio-app"}
-
-
-def test_apps_set_monorepo_app_root_env_var():
-    template = _synth_staging_amplify_stack()
-    for app_root in ("frontend/apps/public-site", "frontend/apps/studio-app"):
-        template.has_resource_properties(
-            "AWS::Amplify::App",
-            {
-                "EnvironmentVariables": Match.array_with(
-                    [{"Name": "AMPLIFY_MONOREPO_APP_ROOT", "Value": app_root}]
-                )
-            },
-        )
+        assert "applications" not in build_spec
+        assert "appRoot" not in build_spec
+        assert "frontend:" in build_spec
 
 
 def test_studio_app_has_spa_rewrite_rule():

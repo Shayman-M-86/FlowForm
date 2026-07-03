@@ -42,8 +42,11 @@ holds the shared `AppAmplifyApp` construct they're both built from). The
 stack only exists for full deployments (staging/prod) — dev's frontends run
 on local Vite dev servers, so dev has no Amplify apps.
 
-- **public-site** — build spec mirrors the root-level `amplify.yml`
-  (now superseded by this stack) and `customHttp.yml`'s cache headers.
+- **public-site** — build spec and cache headers carried over from the
+  former root-level `amplify.yml`/`customHttp.yml`. Those files were
+  **deleted from the repo**: Amplify gives committed build-config files
+  precedence over App-resource settings, which silently shadowed every
+  CDK-deployed build-settings change. Don't reintroduce them.
 - **studio-app** — same pnpm/Node toolchain, `pnpm run build:studio`. Needs
   four `VITE_*` build-time env vars (Auth0 domain/client ID/audience, API
   base URL) set as plain `environment_variables` on the app, since they're

@@ -6,30 +6,30 @@ from flowform_infra.config import EnvConfig
 from flowform_infra.constructs.amplify_app_construct import AppAmplifyApp
 
 # Shared toolchain setup for both apps — mirrors the existing root-level
-# amplify.yml (currently public-site only). Both apps live in a pnpm
-# monorepo, so the build spec uses Amplify's monorepo format
-# (`applications:` + `appRoot`, paired with the AMPLIFY_MONOREPO_APP_ROOT
-# env var set in AppAmplifyApp). `cd ../..` from appRoot lands in the pnpm
-# workspace root (frontend/) to install once and build via a workspace
-# filter script, so both frontends share one convention.
+# amplify.yml (currently public-site only). Amplify clones the repo root
+# for each app (no monorepo appRoot — see AppAmplifyApp's docstring for
+# why), so commands `cd` straight into the pnpm workspace root (frontend/)
+# to install once and build via a workspace filter script.
 
 _NODE_VERSION = "22.12.0"
+# Matches frontend/package.json's "packageManager" field. Installed via npm
+# rather than `corepack enable` — corepack currently fails on Amplify's
+# build image with "Cannot find matching keyid" while verifying pnpm's
+# publish signature against npm's registry (an npm signing-key rotation
+# corepack doesn't recognize yet), unrelated to this app's code.
+_PNPM_VERSION = "10.24.0"
 
 _PREBUILD_COMMANDS = [
     f"nvm install {_NODE_VERSION}",
     f"nvm use {_NODE_VERSION}",
-    "corepack enable",
-    "cd ../.. && pnpm install --frozen-lockfile --store-dir .pnpm-store",
+    f"npm install -g pnpm@{_PNPM_VERSION}",
+    "cd frontend && pnpm install --frozen-lockfile --store-dir .pnpm-store",
 ]
 
 _CACHE_PATHS = [
-    "../../.pnpm-store/**/*",
-    "../../node_modules/**/*",
-    "node_modules/**/*",
+    "frontend/.pnpm-store/**/*",
+    "frontend/node_modules/**/*",
 ]
-
-_PUBLIC_SITE_APP_ROOT = "frontend/apps/public-site"
-_STUDIO_APP_ROOT = "frontend/apps/studio-app"
 
 # Repo connection (GitHub App flow — see AppAmplifyApp's docstring). The
 # PAT secret is shared across envs (same account) and must exist before
@@ -39,22 +39,17 @@ _GITHUB_REPOSITORY = "FlowForm"
 _GITHUB_TOKEN_SECRET_NAME = "flowform/shared/github-pat"
 
 
-def _build_spec(app_root: str, build_command: str) -> dict:
+def _build_spec(build_command: str, artifacts_base_directory: str) -> dict:
     return {
         "version": 1,
-        "applications": [
-            {
-                "appRoot": app_root,
-                "frontend": {
-                    "phases": {
-                        "preBuild": {"commands": _PREBUILD_COMMANDS},
-                        "build": {"commands": [f"cd ../.. && {build_command}"]},
-                    },
-                    "artifacts": {"baseDirectory": "dist", "files": ["**/*"]},
-                    "cache": {"paths": _CACHE_PATHS},
-                },
-            }
-        ],
+        "frontend": {
+            "phases": {
+                "preBuild": {"commands": _PREBUILD_COMMANDS},
+                "build": {"commands": [f"cd frontend && {build_command}"]},
+            },
+            "artifacts": {"baseDirectory": artifacts_base_directory, "files": ["**/*"]},
+            "cache": {"paths": _CACHE_PATHS},
+        },
     }
 
 
@@ -62,13 +57,11 @@ def _build_spec(app_root: str, build_command: str) -> dict:
 # for hashed/versioned assets, shorter stale-while-revalidate for images.
 _PUBLIC_SITE_HEADERS = [
     amplify_alpha.CustomResponseHeader(
-        app_root=_PUBLIC_SITE_APP_ROOT,
         pattern="/_astro/*",
         headers={"Cache-Control": "public, max-age=31536000, immutable"},
     ),
     *[
         amplify_alpha.CustomResponseHeader(
-            app_root=_PUBLIC_SITE_APP_ROOT,
             pattern=pattern,
             headers={"Cache-Control": "public, max-age=31536000, immutable"},
         )
@@ -76,7 +69,6 @@ _PUBLIC_SITE_HEADERS = [
     ],
     *[
         amplify_alpha.CustomResponseHeader(
-            app_root=_PUBLIC_SITE_APP_ROOT,
             pattern=pattern,
             headers={"Cache-Control": "public, max-age=86400, stale-while-revalidate=604800"},
         )
@@ -126,8 +118,7 @@ class AmplifyStack(Stack):
             "PublicSite",
             env_config=env_config,
             app_name="public-site",
-            app_root=_PUBLIC_SITE_APP_ROOT,
-            build_spec=_build_spec(_PUBLIC_SITE_APP_ROOT, "pnpm run build:site"),
+            build_spec=_build_spec("pnpm run build:site", "apps/public-site/dist"),
             custom_response_headers=_PUBLIC_SITE_HEADERS,
             domain_name=env_config.public_site_domain,
             extra_sub_domain_prefixes=env_config.public_site_extra_prefixes,
@@ -144,8 +135,7 @@ class AmplifyStack(Stack):
             "StudioApp",
             env_config=env_config,
             app_name="studio-app",
-            app_root=_STUDIO_APP_ROOT,
-            build_spec=_build_spec(_STUDIO_APP_ROOT, "pnpm run build:studio"),
+            build_spec=_build_spec("pnpm run build:studio", "apps/studio-app/dist"),
             custom_rules=[amplify_alpha.CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT],
             environment_variables=_studio_app_env_vars(env_config),
             domain_name=env_config.studio_domain,
