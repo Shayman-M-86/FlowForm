@@ -63,6 +63,13 @@ class AppAmplifyApp(Construct):
                 oauth_token=github_token,
             )
 
+        # AMPLIFY_DIFF_DEPLOY=false is set on every app for two reasons:
+        # skip-unchanged-build heuristics aren't wanted here, and it keeps
+        # the EnvironmentVariables template property non-empty. If the
+        # property is omitted (empty dict), CloudFormation leaves whatever
+        # env vars the live app already has instead of clearing them —
+        # stale values then survive deploys (observed: a leftover
+        # AMPLIFY_MONOREPO_APP_ROOT kept forcing monorepo build mode).
         self.app = amplify_alpha.App(
             self,
             "App",
@@ -71,7 +78,10 @@ class AppAmplifyApp(Construct):
             build_spec=codebuild.BuildSpec.from_object_to_yaml(build_spec),
             custom_response_headers=custom_response_headers,
             custom_rules=custom_rules,
-            environment_variables=environment_variables or {},
+            environment_variables={
+                "AMPLIFY_DIFF_DEPLOY": "false",
+                **(environment_variables or {}),
+            },
         )
 
         # The L2 provider only emits the legacy `OauthToken` property, but
