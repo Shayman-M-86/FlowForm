@@ -38,7 +38,9 @@ and repo access run through the installed GitHub App, not the token.
 
 One-time setup before the first staging/prod Amplify deploy:
 
-1. Create a GitHub PAT (classic, `repo` scope) at
+1. Create a GitHub PAT (classic, `repo` + `admin:repo_hook` scopes — Amplify
+   needs `admin:repo_hook` to list/create the repo's webhooks, `repo` alone
+   fails with "Resource not accessible by personal access token") at
    github.com/settings/tokens.
 2. Store it: `aws secretsmanager create-secret --name
    flowform/shared/github-pat --secret-string '<token>'`

@@ -19,6 +19,18 @@ class AppAmplifyApp(Construct):
     knows the legacy OAuth flow (`OauthToken`), so the property is
     remapped via an escape hatch below. The PAT secret must exist before
     deploy — see docs/manual-prerequisites.md.
+
+    Each app gets a plain, single-app `build_spec` (no `applications:`/
+    `appRoot` monorepo format) even though this is a pnpm workspace. Each
+    Amplify App here only ever builds one frontend, so monorepo app-root
+    matching adds nothing: the build_spec just `cd`s into the workspace
+    root and runs a pnpm filter script.
+
+    IMPORTANT: an `amplify.yml` (and `customHttp.yml`) committed at the
+    repo root takes precedence over anything set on the App resource —
+    Amplify silently ignores this construct's build_spec and headers if
+    those files exist on the built branch. They were removed from the repo
+    for exactly that reason; don't reintroduce them.
     """
 
     def __init__(
@@ -28,7 +40,6 @@ class AppAmplifyApp(Construct):
         *,
         env_config: EnvConfig,
         app_name: str,
-        app_root: str,
         build_spec: dict,
         custom_response_headers: list[amplify_alpha.CustomResponseHeader] | None = None,
         custom_rules: list[amplify_alpha.CustomRule] | None = None,
@@ -52,10 +63,6 @@ class AppAmplifyApp(Construct):
                 oauth_token=github_token,
             )
 
-        # AMPLIFY_MONOREPO_APP_ROOT tells Amplify which workspace app this
-        # is — required alongside the monorepo (`applications:`/`appRoot`)
-        # build-spec format, or builds run at repo root and find no
-        # artifacts.
         self.app = amplify_alpha.App(
             self,
             "App",
@@ -64,10 +71,7 @@ class AppAmplifyApp(Construct):
             build_spec=codebuild.BuildSpec.from_object_to_yaml(build_spec),
             custom_response_headers=custom_response_headers,
             custom_rules=custom_rules,
-            environment_variables={
-                "AMPLIFY_MONOREPO_APP_ROOT": app_root,
-                **(environment_variables or {}),
-            },
+            environment_variables=environment_variables or {},
         )
 
         # The L2 provider only emits the legacy `OauthToken` property, but
