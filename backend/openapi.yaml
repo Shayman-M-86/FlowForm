@@ -8428,6 +8428,14 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           examples:
+            unhandled_db_integrity:
+              summary: UnhandledDbIntegrityError
+              value:
+                code: UNHANDLED_DB_INTEGRITY_ERROR
+                message: An unexpected database integrity error occurred.
+                details:
+                  constraint_name: <example>
+                  error_key: <example>
             subject_resolution:
               summary: SubjectResolutionError
               value:
@@ -8463,14 +8471,6 @@ components:
               value:
                 code: EMAIL_RENDER_ERROR
                 message: Failed to render email template.
-            unhandled_db_integrity:
-              summary: UnhandledDbIntegrityError
-              value:
-                code: UNHANDLED_DB_INTEGRITY_ERROR
-                message: An unexpected database integrity error occurred.
-                details:
-                  constraint_name: <example>
-                  error_key: <example>
             linkage_key:
               summary: LinkageKeyError
               value:

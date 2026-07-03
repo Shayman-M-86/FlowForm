@@ -224,7 +224,7 @@ class FlowForm(BaseModel):
     server: ServerSettings = Field(default_factory=ServerSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
-    aws: AwsSettings
+    aws: AwsSettings 
     encryption: EncryptionSettings
     email: EmailSettings
 

@@ -76,6 +76,14 @@ def test_settings_loads_auth0_mgmt_from_flat_env(monkeypatch: pytest.MonkeyPatch
         "FLOWFORM_AUTH0_AUDIENCE": "https://api.example.test",
         "FLOWFORM_AUTH0_MGMT_ID": "management-client-id",
         "FLOWFORM_AUTH0_MGMT_SECRET": "management-client-secret",
+        "FLOWFORM_AWS_ACCESS_KEY_ID": "test-access-key",
+        "FLOWFORM_AWS_SECRET_ACCESS_KEY": "test-secret-key",
+        "FLOWFORM_ENCRYPTION_KMS_KEY_ARN": "arn:aws:kms:ap-southeast-2:000000000000:key/test",
+        "FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN": (
+            "arn:aws:secretsmanager:ap-southeast-2:000000000000:secret:flowform/test/linkage"
+        ),
+        "FLOWFORM_EMAIL_FROM_ADDRESS": "no-reply@example.com",
+        "FLOWFORM_EMAIL_ENABLED": "false",
         "DATABASE_CORE_APP_USER": "flowform_core_app",
         "DATABASE_CORE_HOST": "postgres-core",
         "DATABASE_CORE_NAME": "flowform_core",

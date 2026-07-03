@@ -13,6 +13,7 @@
         "generate:types": "node scripts/generate-types.mjs"
     },
     "devDependencies": {
+        "@redocly/cli": "2.34.0",
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",
         "openapi-typescript": "^7.13.0",

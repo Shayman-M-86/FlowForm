@@ -34,7 +34,7 @@ def _real_aws_available() -> bool:
     arn = os.environ.get("FLOWFORM_ENCRYPTION_KMS_KEY_ARN", "")
     if not arn:
         return False
-    env = os.environ.get("FLASK_ENV", os.environ.get("APP_ENV", ""))
+    env = os.environ.get("FLOWFORM_ENV", os.environ.get("FLASK_ENV", os.environ.get("APP_ENV", "")))
     return env not in ("test", "testing")
 
 
