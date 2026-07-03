@@ -33,6 +33,7 @@ they're visible to the test connection and we just look them up by name.
 
 from __future__ import annotations
 
+import os
 from collections.abc import Generator
 from datetime import UTC, datetime
 from typing import Any, NamedTuple
@@ -67,6 +68,20 @@ _MEMBER_SUB = "auth0|e2e-member"
 # Permissions the survey-link routes require (view for list, edit for
 # create/update/delete).
 _GRANTED_PERMISSIONS = (PERMISSIONS.survey.view, PERMISSIONS.survey.edit)
+
+_E2E_SETTINGS_DEFAULTS = {
+    "FLOWFORM_AWS_ACCESS_KEY_ID": "test-access-key",
+    "FLOWFORM_AWS_SECRET_ACCESS_KEY": "test-secret-key",
+    "FLOWFORM_ENCRYPTION_KMS_KEY_ARN": "arn:aws:kms:ap-southeast-2:000000000000:key/test",
+    "FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN": (
+        "arn:aws:secretsmanager:ap-southeast-2:000000000000:secret:flowform/test/linkage"
+    ),
+    "FLOWFORM_EMAIL_FROM_ADDRESS": "no-reply@example.com",
+    "FLOWFORM_EMAIL_ENABLED": "false",
+}
+
+for _name, _value in _E2E_SETTINGS_DEFAULTS.items():
+    os.environ.setdefault(_name, _value)
 
 
 class _NonClosingSession:
