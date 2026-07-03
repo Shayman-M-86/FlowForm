@@ -11,8 +11,10 @@ from app.crypto.models import (
     NewSessionKey,
     NewSessionLocator,
     PlaintextSessionKey,
+    PlaintextSurveyKey,
     SessionLocator,
     WrappedSessionKey,
+    WrappedSurveyKey,
 )
 from app.schema.orm.core import Project, ProjectRole, ResponseStore, Survey, SurveyVersion, User
 from tests.integration.core.factories import (
@@ -28,9 +30,11 @@ _FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=b"\xcc" * 32, aws_version_id="t
 _FAKE_SESSION_LOCATOR = SessionLocator(os.urandom(32))
 _FAKE_PLAINTEXT_DEK = PlaintextSessionKey(os.urandom(32))
 _FAKE_WRAPPED_DEK = WrappedSessionKey(b"\x02" * 64)
+_FAKE_WRAPPED_SURVEY_KEY = WrappedSurveyKey(b"\x03" * 64)
 
 _STARTER_MODULE = "app.services.public_submissions.core.actions.session_starter"
 _SESSION_KEY_MODULE = "app.crypto.session_key"
+_SURVEY_KEY_MODULE = "app.crypto.survey_key"
 
 
 @pytest.fixture(autouse=True)
@@ -61,6 +65,14 @@ def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         f"{_SESSION_KEY_MODULE}.resolve_existing_session_locator",
         lambda *_args, **_kwargs: (_FAKE_SESSION_LOCATOR, _FAKE_LINKAGE_KEY),
+    )
+    monkeypatch.setattr(
+        f"{_SURVEY_KEY_MODULE}.wrap_survey_key",
+        lambda _plaintext_key, _key_arn, _context, *, client=None: _FAKE_WRAPPED_SURVEY_KEY,
+    )
+    monkeypatch.setattr(
+        f"{_SURVEY_KEY_MODULE}.unwrap_survey_key",
+        lambda _wrapped_key, _key_arn, _context, *, client=None: PlaintextSurveyKey(os.urandom(32)),
     )
 
 
