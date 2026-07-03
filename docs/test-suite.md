@@ -50,7 +50,11 @@ individual test cases.
   sync. It runs from anywhere and drives the Studio `openapi:generate` script,
   which regenerates `backend/openapi.yaml`, Studio OpenAPI types, shared
   generated frontend contract files, and runs Redocly lint.
-- `bash scripts/shared_script/sync-openapi.sh --check` - preferred repo-level
+- `bash scripts/shared_script/check-openapi-contracts.sh` - preferred CI/CD and
+  pre-commit generated contract check. It runs the repo-level check path and
+  prints concise failure guidance with a full log path. The committed
+  `.githooks/pre-commit` hook delegates to this script.
+- `bash scripts/shared_script/sync-openapi.sh --check` - lower-level repo
   generated contract drift check. It checks backend OpenAPI and Studio
   `schema.ts` drift, runs Redocly lint, then verifies shared generated frontend
   contract files.
