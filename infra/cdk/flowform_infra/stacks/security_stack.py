@@ -3,7 +3,7 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_ssm as ssm
 from constructs import Construct
 
-from flowform_infra.config import DOMAIN_NAME, EnvConfig
+from flowform_infra.config import DOMAIN_NAME, GITHUB_OWNER, GITHUB_REPOSITORY, EnvConfig
 from flowform_infra.constructs.kms_construct import AppKmsKey
 from flowform_infra.constructs.secrets_construct import AppMultiSecret
 from flowform_infra.constructs.ses_construct import AppEmailIdentity
@@ -132,3 +132,43 @@ class SecurityStack(Stack):
         self.kms_key.grant_decrypt(self.task_role)
 
         self.email_identity.grant_send(self.task_role)
+
+        # GitHub Actions deploys the frontends (S3 sync + CloudFront
+        # invalidation) by assuming this role via OIDC — no long-lived AWS
+        # keys in GitHub. The role starts with no permissions; the frontend
+        # stack grants sync/invalidate/SSM-read on exactly its resources.
+        #
+        # The OIDC identity provider is an account-level singleton (one per
+        # provider URL), so only staging's stack creates it; prod imports it
+        # by its deterministic ARN and therefore deploys after staging.
+        if env_config.full_deployment:
+            if env_config.env_name == "staging":
+                oidc_provider_arn = iam.OpenIdConnectProvider(
+                    self,
+                    "GitHubOidcProvider",
+                    url="https://token.actions.githubusercontent.com",
+                    client_ids=["sts.amazonaws.com"],
+                ).open_id_connect_provider_arn
+            else:
+                oidc_provider_arn = (
+                    f"arn:aws:iam::{env_config.account}:oidc-provider/token.actions.githubusercontent.com"
+                )
+
+            self.frontend_deploy_role = iam.Role(
+                self,
+                "FrontendDeployRole",
+                # Deterministic name so the GitHub workflow can reference the
+                # role ARN without reading stack outputs.
+                role_name=f"flowform-{env_config.env_name}-frontend-deploy",
+                assumed_by=iam.FederatedPrincipal(
+                    oidc_provider_arn,
+                    conditions={
+                        "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
+                        "StringLike": {
+                            "token.actions.githubusercontent.com:sub": f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:*"
+                        },
+                    },
+                    assume_role_action="sts:AssumeRoleWithWebIdentity",
+                ),
+                description=f"GitHub Actions frontend deploy ({env_config.env_name})",
+            )

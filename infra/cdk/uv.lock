@@ -85,22 +85,6 @@ wheels = [
 ]
 
 [[package]]
-name = "aws-cdk-aws-amplify-alpha"
-version = "2.260.0a0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "aws-cdk-lib" },
-    { name = "constructs" },
-    { name = "jsii" },
-    { name = "publication" },
-    { name = "typeguard" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/38/e6/ae54336700c83105e5e19a9fe5c9e362b898fbd2bff2117b144ad9f3530d/aws_cdk_aws_amplify_alpha-2.260.0a0.tar.gz", hash = "sha256:555bcb7465b5733cddcfc57ae6f45870de0d17965743a17e2c044693a06aaddf", size = 141196, upload-time = "2026-06-16T23:36:46.666Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/d8/1b2df770d9dee9c5e4d5f987fe31017b720d10ee4f31a5c40f18fd795bcd/aws_cdk_aws_amplify_alpha-2.260.0a0-py3-none-any.whl", hash = "sha256:9437b8a414a7277a680eb2bd892b673b942412d024c58a4f44ae17099173f4a4", size = 139675, upload-time = "2026-06-16T23:35:47.223Z" },
-]
-
-[[package]]
 name = "aws-cdk-cloud-assembly-schema"
 version = "54.6.0"
 source = { registry = "https://pypi.org/simple" }
@@ -172,7 +156,6 @@ name = "flowform-infra"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "aws-cdk-aws-amplify-alpha" },
     { name = "aws-cdk-lib" },
     { name = "constructs" },
 ]
@@ -191,7 +174,6 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aws-cdk-aws-amplify-alpha", specifier = ">=2.170.0a0" },
     { name = "aws-cdk-lib", specifier = ">=2.170.0" },
     { name = "constructs", specifier = ">=10.4.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.18.0" },

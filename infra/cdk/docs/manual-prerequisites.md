@@ -18,8 +18,8 @@ the domain registration must point at them — so if CDK ever recreated the
 zone (stack rename, accidental destroy), DNS would silently break until
 the registrar was updated by hand anyway. The zone is a singleton with no
 config to drift; CDK only imports it (`HostedZone.from_lookup`). Records
-*inside* the zone (ALB aliases, Amplify domains, DKIM) are fair game for
-CDK.
+*inside* the zone (ALB aliases, CloudFront aliases, DKIM) are fair game
+for CDK.
 
 ### SES production access (sandbox exit)
 
@@ -28,37 +28,28 @@ addresses). Exiting requires a request to AWS support with a use-case
 description — no IaC tool can do this. Already done for the current
 account; repeat if the project ever moves/splits accounts.
 
-### Amplify ↔ GitHub: the PAT secret
+### GitHub Actions deploys (no stored AWS keys)
 
-The repo connection is CDK-managed via the GitHub App flow (the Amplify
-GitHub App is already installed on `Shayman-M-86/FlowForm` — that's how
-the original hand-made app connects). CDK supplies a GitHub personal
-access token from Secrets Manager at app creation; afterwards webhooks
-and repo access run through the installed GitHub App, not the token.
+Frontend deploys run from `.github/workflows/deploy.yml`, which assumes
+the CDK-created `flowform-<env>-frontend-deploy` role via GitHub's OIDC
+provider — nothing to set up in GitHub, and no AWS keys in GitHub
+secrets. The OIDC identity provider itself is created by **staging's**
+Security stack (it's an account-level singleton), so prod's Security
+stack deploys after staging's.
 
-One-time setup before the first staging/prod Amplify deploy:
-
-1. Create a GitHub PAT (classic, `repo` + `admin:repo_hook` scopes — Amplify
-   needs `admin:repo_hook` to list/create the repo's webhooks, `repo` alone
-   fails with "Resource not accessible by personal access token") at
-   github.com/settings/tokens.
-2. Store it: `aws secretsmanager create-secret --name
-   flowform/shared/github-pat --secret-string '<token>'`
-
-Keep the secret around — CloudFormation re-reads it on stack updates that
-touch the Amplify apps, so refresh it in Secrets Manager when the PAT
-expires. If the GitHub App ever needs (re)installing:
-github.com/apps/aws-amplify-ap-southeast-2.
+Historical note: the retired Amplify Hosting approach needed a GitHub PAT
+in Secrets Manager (`flowform/shared/github-pat`). Nothing CDK-managed
+uses it anymore — it can be deleted once the hand-made Amplify app is
+retired too.
 
 ### Prod apex cutover from the hand-made Amplify app
 
-A hostname can only be attached to one Amplify app at a time, and
-`flow-form.com.au` currently belongs to the original hand-made public-site
-Amplify app. Before the first **prod** deploy of the CDK Amplify stack,
-detach the domain from the old app (Amplify console → old app → Domain
-management → remove), then deploy — Amplify re-creates the DNS records
-pointing at the new app. Staging's hostnames are unclaimed, so staging
-needs no cutover.
+The apex DNS records for `flow-form.com.au` currently point at the
+original hand-made public-site Amplify app. Before the first **prod**
+deploy of the Frontend stack, remove that app's domain association
+(Amplify console → old app → Domain management → remove) so the CDK
+Route 53 aliases can claim the apex for CloudFront. Staging's hostnames
+are unclaimed, so staging needs no cutover.
 
 ### Auth0 tenant + applications
 
@@ -71,7 +62,7 @@ not at the raw `dev-....au.auth0.com` tenant domain. Its verification
 CNAME lives as a hand-made record in the Route 53 hosted zone; CDK must
 leave it alone.
 
-Per environment, before its first Amplify deploy:
+Per environment, before its first frontend deploy:
 
 1. Create the environment's Auth0 application (SPA/PKCE) and API audience.
 2. Set callback/logout URLs for that environment's hostnames.

@@ -13,7 +13,8 @@ secret values.
 | Network | `flowform_infra/stacks/network_stack.py` | Stub | staging/prod | VPC, subnets, security groups |
 | Database | `flowform_infra/stacks/database_stack.py` | Stub | staging/prod | RDS PostgreSQL (core + response) |
 | Application | `flowform_infra/stacks/application_stack.py` | Stub | staging/prod | ECS/Fargate + ALB running the Flask API |
-| Amplify | `flowform_infra/stacks/amplify_stack.py` | Built | staging/prod | Amplify Hosting apps for `public-site` and `studio-app` |
+| FrontendCert | `flowform_infra/stacks/frontend_cert_stack.py` | Built | staging/prod | ACM cert for CloudFront (us-east-1) |
+| Frontend | `flowform_infra/stacks/frontend_stack.py` | Built | staging/prod | S3 + CloudFront hosting for `public-site` and `studio-app` |
 | Observability | `flowform_infra/stacks/observability_stack.py` | Stub | staging/prod | CloudWatch log groups, alarms, dashboard |
 
 Security is deployed first — every other stack reads from it (KMS key,
@@ -28,53 +29,43 @@ See [`environments.md`](environments.md).
   Docker Compose (`infra/docker/`), untouched by this. See
   [`infra/docker_secrets_env_setup_flow_form.md`](../../docker_secrets_env_setup_flow_form.md).
 - **Sentry / PostHog** — external SaaS, not AWS resources.
-- **The GitHub repo connection for both Amplify apps** — see below.
 - **Everything hand-done that CDK assumes exists** (domain/hosted zone,
   SES identity + sandbox exit, Auth0, secret seeding, bootstrap) — the
   full checklist with reasons lives in
   [`manual-prerequisites.md`](manual-prerequisites.md).
 
-## public-site and studio-app on Amplify
+## public-site and studio-app on S3 + CloudFront
 
-`amplify_stack.py` creates two separate, fully CDK-managed Amplify Hosting
-apps — one per frontend (`flowform_infra/constructs/amplify_app_construct.py`
-holds the shared `AppAmplifyApp` construct they're both built from). The
-stack only exists for full deployments (staging/prod) — dev's frontends run
-on local Vite dev servers, so dev has no Amplify apps.
+`frontend_stack.py` hosts each frontend as a `StaticSiteApp`
+(`flowform_infra/constructs/static_site_construct.py`): a private S3
+bucket (all public access blocked, reachable only through CloudFront's
+Origin Access Control) behind a CloudFront distribution with SPA fallback
+(origin 403/404 → `/index.html`). Route 53 aliases point each domain at
+its distribution: staging gets `staging.flow-form.com.au` +
+`studio.staging.flow-form.com.au`; prod is configured as the apex
+(+`www`) + `studio.flow-form.com.au`. The ACM certificate lives in
+`frontend_cert_stack.py`, pinned to us-east-1 (a CloudFront requirement)
+and handed across via `cross_region_references`. These stacks only exist
+for full deployments — dev's frontends run on local Vite dev servers.
 
-- **public-site** — build spec and cache headers carried over from the
-  former root-level `amplify.yml`/`customHttp.yml`. Those files were
-  **deleted from the repo**: Amplify gives committed build-config files
-  precedence over App-resource settings, which silently shadowed every
-  CDK-deployed build-settings change. Don't reintroduce them.
-- **studio-app** — same pnpm/Node toolchain, `pnpm run build:studio`. Needs
-  four `VITE_*` build-time env vars (Auth0 domain/client ID/audience, API
-  base URL) set as plain `environment_variables` on the app, since they're
-  non-secret client-side config, not something Secrets Manager/SSM needs to
-  own. The Auth0 values come from `EnvConfig.auth0_public`, loaded at synth
-  time from the gitignored `infra/cdk/.env.<env>` file — the stack fails
-  synth with a clear error if that file (or its `AUTH0_*` keys) is
-  missing. **`VITE_API_BASE_URL` is still a
-  placeholder** (empty string) until `application_stack.py`'s ALB exists
-  and has a stable URL.
+This replaced an earlier Amplify Hosting approach; the earlier CDK-managed
+Amplify apps were destroyed and the original hand-made Amplify app still
+serves the prod apex until the cutover. Caveat for the first prod deploy:
+remove that app's domain association first so the CDK Route 53 aliases
+can claim the apex.
 
-**Custom domains** are CDK-managed via Amplify domain associations
-(`EnvConfig.public_site_domain` / `studio_domain`): staging gets
-`staging.flow-form.com.au` + `studio.staging.flow-form.com.au`; prod is
-configured as the apex (+`www`) + `studio.flow-form.com.au`. The hosted
-zone is in Route 53 in the same account, so Amplify creates the DNS and
-ACM-validation records itself — no manual DNS step. Caveat: a hostname
-can only be attached to one Amplify app at a time, and the apex currently
-belongs to the hand-made public-site app — the first prod deploy requires
-detaching it there first (the cutover).
-
-The GitHub repo connection (`Shayman-M-86/FlowForm`, branch `main`) is
-CDK-managed too, using the GitHub App flow: a PAT stored in Secrets
-Manager (`flowform/shared/github-pat`) is supplied at app creation via
-the CFN `AccessToken` property, after which webhooks run through the
-already-installed Amplify GitHub App rather than the token. The secret
-must exist before the first deploy — see
-[`manual-prerequisites.md`](manual-prerequisites.md).
+**Deploys** happen from GitHub Actions (`.github/workflows/deploy.yml`):
+the job assumes `flowform-<env>-frontend-deploy` via OIDC (created by
+`security_stack.py` — no AWS keys stored in GitHub), reads build config
+(`VITE_*` values, distribution IDs) from `/flowform/<env>/frontend/*` SSM
+parameters published by the frontend stack, builds both apps, then
+`aws s3 sync` (assets before `index.html`) and a CloudFront invalidation.
+The Auth0 values come from `EnvConfig.auth0_public`, loaded at synth time
+from the gitignored `infra/cdk/.env.<env>` file — the frontend stack fails
+synth with a clear error if that file (or its `AUTH0_*` keys) is missing.
+**`VITE_API_BASE_URL` points at the planned API hostname**
+(`api.<public-site-domain>`) which doesn't resolve until
+`application_stack.py`'s ALB exists.
 
 ## Regions and accounts
 

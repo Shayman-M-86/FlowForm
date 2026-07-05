@@ -8,6 +8,7 @@ AWS infrastructure for FlowForm, managed as code. See
 - [`secrets-and-config.md`](docs/secrets-and-config.md) — Secrets Manager vs SSM vs local `.env`
 - [`deployment.md`](docs/deployment.md) — bootstrap, deploy, teardown
 - [`manual-prerequisites.md`](docs/manual-prerequisites.md) — everything hand-done that CDK assumes exists
+- [`runbooks/`](docs/runbooks/) — copy-pasteable commands for common actions (teardown, frontend deploy)
 
 ## Quick start
 

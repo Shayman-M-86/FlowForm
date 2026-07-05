@@ -1,0 +1,96 @@
+# Frontend deploy: build both SPAs and publish to S3 + CloudFront.
+#
+# Credentials come from GitHub OIDC (no stored AWS keys): the job assumes
+# the flowform-<env>-frontend-deploy role created by the CDK security
+# stack, which is scoped to exactly S3 sync + CloudFront invalidation on
+# the two frontend distributions plus read of /flowform/<env>/frontend/*
+# SSM parameters (build-time config).
+#
+# Staging deploys on push to the staging branch. Prod is intentionally not
+# wired up yet — see infra/cdk/docs/implementation-sketch/.
+
+name: deploy
+
+on:
+  push:
+    branches: [staging]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-frontends-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-southeast-2
+  ENV_NAME: staging
+  DEPLOY_ROLE_ARN: arn:aws:iam::908123139858:role/flowform-staging-frontend-deploy
+
+jobs:
+  deploy-frontends:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+
+      # Same pnpm pin as frontend/package.json's packageManager field,
+      # installed via npm (not corepack — its registry signature check is
+      # currently broken; see infra/cdk docs).
+      - name: Install pnpm
+        run: npm install -g pnpm@10.24.0
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Read frontend build config from SSM
+        run: |
+          prefix="/flowform/${ENV_NAME}/frontend"
+          get() { aws ssm get-parameter --name "$prefix/$1" --query Parameter.Value --output text; }
+          {
+            echo "VITE_AUTH0_DOMAIN=$(get vite-auth0-domain)"
+            echo "VITE_AUTH0_CLIENT_ID=$(get vite-auth0-client-id)"
+            echo "VITE_AUTH0_AUDIENCE=$(get vite-auth0-audience)"
+            echo "VITE_API_BASE_URL=$(get vite-api-base-url)"
+            echo "PUBLIC_SITE_DISTRIBUTION_ID=$(get public-site-distribution-id)"
+            echo "STUDIO_APP_DISTRIBUTION_ID=$(get studio-app-distribution-id)"
+          } >> "$GITHUB_ENV"
+
+      - name: Build public-site
+        working-directory: frontend
+        run: pnpm run build:site
+
+      - name: Build studio-app
+        working-directory: frontend
+        run: pnpm run build:studio
+
+      # Assets first, index.html last: HTML references content-hashed asset
+      # filenames, so uploading it before its assets exist would briefly
+      # serve a page pointing at 404s.
+      - name: Publish public-site
+        run: |
+          bucket="s3://flowform-${ENV_NAME}-public-site"
+          aws s3 sync frontend/apps/public-site/dist/ "$bucket/" --delete --exclude index.html
+          aws s3 cp frontend/apps/public-site/dist/index.html "$bucket/index.html"
+          aws cloudfront create-invalidation --distribution-id "$PUBLIC_SITE_DISTRIBUTION_ID" --paths "/*"
+
+      - name: Publish studio-app
+        run: |
+          bucket="s3://flowform-${ENV_NAME}-studio-app"
+          aws s3 sync frontend/apps/studio-app/dist/ "$bucket/" --delete --exclude index.html
+          aws s3 cp frontend/apps/studio-app/dist/index.html "$bucket/index.html"
+          aws cloudfront create-invalidation --distribution-id "$STUDIO_APP_DISTRIBUTION_ID" --paths "/*"
