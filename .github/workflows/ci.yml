@@ -227,7 +227,7 @@ jobs:
 
       - name: Prepare CI Compose file
         run: |
-          COMPOSE_FILE_RUNTIME="$RUNNER_TEMP/docker-compose.test.ci.yml"
+          COMPOSE_FILE_RUNTIME="$GITHUB_WORKSPACE/infra/docker/docker-compose.test.ci.runtime.yml"
           cp "$COMPOSE_FILE" "$COMPOSE_FILE_RUNTIME"
           sed -i '\|flowform_backend_test_venv:/opt/flowform/backend-test-venv|d' "$COMPOSE_FILE_RUNTIME"
           sed -i '/^  flowform_backend_test_venv:$/d' "$COMPOSE_FILE_RUNTIME"
@@ -299,7 +299,9 @@ jobs:
 
       - name: Teardown
         if: always()
-        run: docker compose -f "$COMPOSE_FILE_RUNTIME" down -v --remove-orphans
+        run: |
+          docker compose -f "$COMPOSE_FILE_RUNTIME" down -v --remove-orphans
+          rm -f "$COMPOSE_FILE_RUNTIME"
 
   contracts:
     runs-on: ubuntu-latest
