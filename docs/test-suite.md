@@ -80,6 +80,8 @@ individual test cases.
   mode.
 - `cd frontend/apps/studio-app && pnpm run test:ui` - Studio Vitest UI.
 - `cd frontend/apps/studio-app && pnpm run lint` - Studio ESLint check.
+- `cd frontend/apps/public-site && pnpm run lint` - Public Site ESLint check
+  (flat config with `eslint-plugin-astro`).
 - `cd frontend/apps/studio-app && pnpm run routes` - regenerates the TanStack
   Router `routeTree.gen.ts` file after route changes.
 - `cd frontend && pnpm run build:studio` - Studio TypeScript project build plus
@@ -109,13 +111,14 @@ individual test cases.
 ## CI and Support Tasks
 
 - `.github/workflows/ci.yml` runs on pull requests and pushes to `main` /
-  `staging`: backend security (pip-audit + Bandit), backend ruff + mypy,
-  backend pytest with coverage in Docker, OpenAPI contract drift check,
-  Studio ESLint, Studio Vitest, separate production builds for both
-  frontends (`build-public-site`, `build-studio-app`), CDK pytest + ruff,
-  hermetic `cdk synth` of staging and dev, and a read-only `cdk diff`
-  against deployed staging (via the `flowform-staging-ci-preview` OIDC
-  role).
+  `staging`. Flow: `backend-security` (pip-audit + Bandit) gates
+  everything; then lint before test before build per area —
+  `backend-lint` (ruff + mypy) → `backend-test` (Docker pytest +
+  coverage); `studio-lint` → `studio-test` → `build-studio-app`;
+  `public-lint` → `build-public-site`; `contracts` (OpenAPI drift) in
+  parallel. CDK runs last: `cdk-checks` (pytest + ruff) → `cdk-synth`
+  (hermetic staging + dev synth) → `cdk-diff` (read-only against deployed
+  staging via the `flowform-staging-ci-preview` OIDC role).
 - `.github/workflows/deploy.yml` deploys both frontends to S3 + CloudFront
   on push to `staging` (OIDC role `flowform-staging-frontend-deploy`).
 - VS Code task `test-env: setup` starts the Docker test stack, syncs backend dev

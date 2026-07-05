@@ -1,14 +1,23 @@
 # CI: validation on pull requests and pushes to main/staging.
 #
-# Job map (all independent unless noted):
+# Flow — security gates everything, lint before test before build, CDK last:
+#
+#   backend-security
+#     ├─ backend-lint ──── backend-test ─────────────┐
+#     ├─ studio-lint ───── studio-test ── build-studio-app ─┤
+#     ├─ public-lint ───── build-public-site ─────────┤
+#     └─ contracts ────────────────────────────┤
+#                                              cdk-checks ── cdk-synth ── cdk-diff
+#
 #   backend-security    pip-audit + Bandit (scripts/backend/run_backend_security.sh)
-#   backend-static      ruff + mypy over backend/
-#   backend-test        pytest with coverage in the Docker test stack (needs backend-security)
-#   contracts           OpenAPI export drift + generated frontend contract check
+#   backend-lint        ruff + mypy over backend/
+#   backend-test        pytest with coverage in the Docker test stack
 #   studio-lint         studio-app ESLint
 #   studio-test         studio-app Vitest
-#   build-public-site   Astro production build
+#   public-lint         public-site ESLint (astro plugin)
 #   build-studio-app    tsc + Vite production build
+#   build-public-site   Astro production build
+#   contracts           OpenAPI export drift + generated frontend contract check
 #   cdk-checks          infra/cdk pytest + ruff
 #   cdk-synth           hermetic `cdk synth` of the staging architecture
 #   cdk-diff            `cdk diff` against deployed staging (read-only OIDC role)
@@ -44,8 +53,9 @@ jobs:
       - name: Run backend security checks
         run: ./scripts/backend/run_backend_security.sh
 
-  backend-static:
+  backend-lint:
     runs-on: ubuntu-latest
+    needs: backend-security
     permissions:
       contents: read
     defaults:
@@ -63,7 +73,7 @@ jobs:
 
   backend-test:
     runs-on: ubuntu-latest
-    needs: backend-security
+    needs: backend-lint
     environment: test
     permissions:
       contents: read
@@ -177,6 +187,7 @@ jobs:
 
   contracts:
     runs-on: ubuntu-latest
+    needs: backend-security
     permissions:
       contents: read
     steps:
@@ -199,6 +210,7 @@ jobs:
 
   studio-lint:
     runs-on: ubuntu-latest
+    needs: backend-security
     permissions:
       contents: read
     defaults:
@@ -220,8 +232,33 @@ jobs:
       - name: ESLint (studio-app)
         run: pnpm --filter @flowform/studio-app lint
 
+  public-lint:
+    runs-on: ubuntu-latest
+    needs: backend-security
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: ESLint (public-site)
+        run: pnpm --filter public-site lint
+
   studio-test:
     runs-on: ubuntu-latest
+    needs: studio-lint
     permissions:
       contents: read
     defaults:
@@ -245,6 +282,7 @@ jobs:
 
   build-public-site:
     runs-on: ubuntu-latest
+    needs: public-lint
     permissions:
       contents: read
     defaults:
@@ -270,6 +308,7 @@ jobs:
 
   build-studio-app:
     runs-on: ubuntu-latest
+    needs: studio-test
     permissions:
       contents: read
     defaults:
@@ -293,6 +332,7 @@ jobs:
 
   cdk-checks:
     runs-on: ubuntu-latest
+    needs: [backend-test, build-public-site, build-studio-app, contracts]
     permissions:
       contents: read
     defaults:
@@ -314,6 +354,7 @@ jobs:
   # these values ship in the built JS bundle anyway).
   cdk-synth:
     runs-on: ubuntu-latest
+    needs: cdk-checks
     permissions:
       contents: read
     defaults:
@@ -347,6 +388,7 @@ jobs:
   # mint OIDC tokens.
   cdk-diff:
     runs-on: ubuntu-latest
+    needs: cdk-synth
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
