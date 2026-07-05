@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-import hashlib
 import secrets
+from datetime import UTC, datetime
+from typing import Literal
+
+from sqlalchemy.orm import Session
 
 from app.schema.orm.core.audit_log import AuditLog
 from app.schema.orm.core.project import Project, ProjectRole
+from app.schema.orm.core.project_participant import ProjectParticipant
+from app.schema.orm.core.project_subject import ProjectSubject, ProjectSubjectIdentity
 from app.schema.orm.core.response_store import ResponseStore
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyPublicLink, SurveyRole
@@ -12,11 +17,8 @@ from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from app.schema.orm.core.user import User
 
 
-def make_token_pair() -> tuple[str, str, str]:
-    token = secrets.token_urlsafe(32)
-    token_prefix = token[:8]
-    token_hash = hashlib.sha256(token.encode()).hexdigest()
-    return token, token_prefix, token_hash
+def make_token() -> str:
+    return secrets.token_urlsafe(32)
 
 
 def make_user(
@@ -72,7 +74,15 @@ def make_survey(project_id: int, response_store_id: int, user_id: int, title: st
     return survey
 
 
-def make_survey_version(survey_id: int, user_id: int, version_number: int = 1, status: str = "draft") -> SurveyVersion:
+SurveyVersionStatus = Literal["draft", "published", "archived"]
+
+
+def make_survey_version(
+    survey_id: int,
+    user_id: int,
+    version_number: int = 1,
+    status: SurveyVersionStatus = "draft",
+) -> SurveyVersion:
     version = SurveyVersion()
     version.survey_id = survey_id
     version.version_number = version_number
@@ -81,14 +91,61 @@ def make_survey_version(survey_id: int, user_id: int, version_number: int = 1, s
     return version
 
 
-def make_survey_public_link(survey_id: int, name: str = "test link") -> SurveyPublicLink:
-    _, prefix, token_hash = make_token_pair()
+def make_survey_public_link(project_id: int, survey_id: int, name: str = "test link") -> SurveyPublicLink:
     link = SurveyPublicLink()
+    link.project_id = project_id
     link.survey_id = survey_id
     link.name = name
-    link.token_prefix = prefix
-    link.token_hash = token_hash
+    link.token = make_token()
+    link.assignment_source = "manual"
     return link
+
+
+def make_participant_chain(
+    db_session: Session,
+    *,
+    project_id: int,
+    subject_code: str = "subject-1",
+    normalized_email: str = "participant@example.com",
+    user_id: int | None = None,
+) -> ProjectParticipant:
+    """Create a subject + identity + participant chain for a link assignment.
+
+    Pass `user_id` to create an `authenticated_user` identity instead of an
+    `email` identity (for authenticated-link tests).
+    """
+    subject = ProjectSubject(project_id=project_id, subject_code=subject_code)
+    db_session.add(subject)
+    db_session.flush()
+
+    if user_id is not None:
+        identity = ProjectSubjectIdentity(
+            project_id=project_id,
+            project_subject_id=subject.id,
+            identity_type="authenticated_user",
+            user_id=user_id,
+            normalized_email=normalized_email,
+            verification_status="verified",
+            verified_at=datetime.now(UTC),
+        )
+    else:
+        identity = ProjectSubjectIdentity(
+            project_id=project_id,
+            project_subject_id=subject.id,
+            identity_type="email",
+            normalized_email=normalized_email,
+        )
+    db_session.add(identity)
+    db_session.flush()
+
+    participant = ProjectParticipant(
+        project_id=project_id,
+        project_subject_id=subject.id,
+        identity_id=identity.id,
+    )
+    db_session.add(participant)
+    db_session.flush()
+    return participant
 
 
 def make_survey_role(

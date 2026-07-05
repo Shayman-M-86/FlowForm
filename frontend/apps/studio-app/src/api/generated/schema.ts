@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/api/v1/auth/bootstrap-user": {
+    "/api/v1/account/bootstrap-user": {
         parameters: {
             query?: never;
             header?: never;
@@ -24,7 +24,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/health": {
+    "/api/v1/account/invitations": {
         parameters: {
             query?: never;
             header?: never;
@@ -32,10 +32,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Health check
-         * @description Health check
+         * Get my invitations
+         * @description Get my invitations
          */
-        get: operations["healthCheck"];
+        get: operations["getMyInvitations"];
         put?: never;
         post?: never;
         delete?: never;
@@ -44,7 +44,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/health/ready": {
+    "/api/v1/account/invitations/{invitation_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept invitation
+         * @description Accept invitation
+         */
+        post: operations["acceptInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account/invitations/{invitation_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline invitation
+         * @description Decline invitation
+         */
+        post: operations["declineInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account/invitations/resolve/{token}": {
         parameters: {
             query?: never;
             header?: never;
@@ -52,10 +92,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Readiness check
-         * @description Readiness check
+         * Resolve invitation by token
+         * @description Resolve invitation by token
          */
-        get: operations["readinessCheck"];
+        get: operations["resolveInvitation"];
         put?: never;
         post?: never;
         delete?: never;
@@ -64,7 +104,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/profile": {
+    "/api/v1/account/invitations/resolve/{token}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept invitation by token
+         * @description Accept invitation by token
+         */
+        post: operations["acceptInvitationByToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account/profile": {
         parameters: {
             query?: never;
             header?: never;
@@ -88,7 +148,7 @@ export interface paths {
         patch: operations["updateMyProfile"];
         trace?: never;
     };
-    "/api/v1/me/change-email": {
+    "/api/v1/account/change-email": {
         parameters: {
             query?: never;
             header?: never;
@@ -108,7 +168,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/change-username": {
+    "/api/v1/account/change-username": {
         parameters: {
             query?: never;
             header?: never;
@@ -128,7 +188,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/change-password": {
+    "/api/v1/account/change-password": {
         parameters: {
             query?: never;
             header?: never;
@@ -148,7 +208,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/clear-mfa": {
+    "/api/v1/account/clear-mfa": {
         parameters: {
             query?: never;
             header?: never;
@@ -168,7 +228,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/resend-verification": {
+    "/api/v1/account/resend-verification": {
         parameters: {
             query?: never;
             header?: never;
@@ -188,7 +248,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me": {
+    "/api/v1/account/check-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check email verification status
+         * @description Check email verification status
+         */
+        post: operations["checkVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account": {
         parameters: {
             query?: never;
             header?: never;
@@ -208,27 +288,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/invitations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get my invitations
-         * @description Get my invitations
-         */
-        get: operations["getMyInvitations"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/me/invitations/{invitation_id}/accept": {
+    "/api/v1/respondent/links/resolve": {
         parameters: {
             query?: never;
             header?: never;
@@ -238,17 +298,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Accept invitation
-         * @description Accept invitation
+         * Resolve survey access link
+         * @description Anonymous access is allowed for links that do not require authentication. If the resolved link requires authentication, a bearer token must be supplied.
          */
-        post: operations["acceptInvitation"];
+        post: operations["resolveLink"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/invitations/{invitation_id}/decline": {
+    "/api/v1/respondent/links/verification/link": {
         parameters: {
             query?: never;
             header?: never;
@@ -258,17 +318,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Decline invitation
-         * @description Decline invitation
+         * Verify authenticated survey link participant
+         * @description Verify the authenticated account against the participant assigned to an authenticated survey link. The account email must match the participant identity email before the participant is linked to the user.
          */
-        post: operations["declineInvitation"];
+        post: operations["verifyAuthenticatedLinkParticipant"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes": {
+    "/api/v1/respondent/surveys": {
         parameters: {
             query?: never;
             header?: never;
@@ -276,51 +336,19 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List survey content nodes
-         * @description List survey content nodes
+         * List public surveys
+         * @description List public surveys
          */
-        get: operations["listNodes"];
-        put?: never;
-        /**
-         * Create survey content node
-         * @description Create survey content node
-         */
-        post: operations["createNode"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get survey content node
-         * @description Get survey content node
-         */
-        get: operations["getNode"];
+        get: operations["listPublicSurveys"];
         put?: never;
         post?: never;
-        /**
-         * Delete survey content node
-         * @description Delete survey content node
-         */
-        delete: operations["deleteNode"];
+        delete?: never;
         options?: never;
         head?: never;
-        /**
-         * Update survey content node
-         * @description Update survey content node
-         */
-        patch: operations["updateNode"];
+        patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules": {
+    "/api/v1/respondent/surveys/{public_slug}": {
         parameters: {
             query?: never;
             header?: never;
@@ -328,23 +356,123 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List scoring rules
-         * @description List scoring rules
+         * Get public survey
+         * @description Get public survey
          */
-        get: operations["listScoringRules"];
+        get: operations["getPublicSurvey"];
         put?: never;
-        /**
-         * Create scoring rule
-         * @description Create scoring rule
-         */
-        post: operations["createScoringRule"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules/{scoring_rule_id}": {
+    "/api/v1/respondent/submission-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start submission session
+         * @description Start submission session
+         */
+        post: operations["startSubmissionSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/respondent/submission-sessions/current/answers/{question_node_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save submission session answer
+         * @description Save submission session answer
+         */
+        put: operations["saveSubmissionSessionAnswer"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/respondent/submission-sessions/current/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record submission session event
+         * @description Record submission session event
+         */
+        post: operations["recordSubmissionSessionEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/respondent/submission-sessions/current/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete submission session
+         * @description Complete submission session
+         */
+        post: operations["completeSubmissionSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project invitations
+         * @description List project invitations
+         */
+        get: operations["listInvitations"];
+        put?: never;
+        /**
+         * Invite project member
+         * @description Invite project member
+         */
+        post: operations["sendInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/invitations/{invitation_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -355,20 +483,156 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Delete scoring rule
-         * @description Delete scoring rule
+         * Revoke project invitation
+         * @description Revoke project invitation
          */
-        delete: operations["deleteScoringRule"];
+        delete: operations["revokeInvitation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project members
+         * @description List project members
+         */
+        get: operations["listMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/members/{membership_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove project member
+         * @description Remove project member
+         */
+        delete: operations["removeMember"];
         options?: never;
         head?: never;
         /**
-         * Update scoring rule
-         * @description Update scoring rule
+         * Update project member
+         * @description Update project member
          */
-        patch: operations["updateScoringRule"];
+        patch: operations["updateMember"];
         trace?: never;
     };
-    "/api/v1/projects": {
+    "/api/v1/studio/projects/{project_id}/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List participants
+         * @description List participants
+         */
+        get: operations["listParticipants"];
+        put?: never;
+        /**
+         * Create participant
+         * @description Create participant
+         */
+        post: operations["createParticipant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/participants/{participant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete participant
+         * @description Delete participant
+         */
+        delete: operations["deleteParticipant"];
+        options?: never;
+        head?: never;
+        /**
+         * Update participant
+         * @description Update participant
+         */
+        patch: operations["updateParticipant"];
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project roles
+         * @description List project roles
+         */
+        get: operations["listRoles"];
+        put?: never;
+        /**
+         * Create project role
+         * @description Create project role
+         */
+        post: operations["createRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/roles/{role_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete project role
+         * @description Delete project role
+         */
+        delete: operations["deleteRole"];
+        options?: never;
+        head?: never;
+        /**
+         * Update project role
+         * @description Update project role
+         */
+        patch: operations["updateRole"];
+        trace?: never;
+    };
+    "/api/v1/studio/projects": {
         parameters: {
             query?: never;
             header?: never;
@@ -392,7 +656,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}": {
+    "/api/v1/studio/projects/{project_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -420,7 +684,7 @@ export interface paths {
         patch: operations["updateProject"];
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/my-permissions": {
+    "/api/v1/studio/projects/{project_id}/my-permissions": {
         parameters: {
             query?: never;
             header?: never;
@@ -440,7 +704,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/members": {
+    "/api/v1/studio/projects/{project_id}/subjects": {
         parameters: {
             query?: never;
             header?: never;
@@ -448,10 +712,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List project members
-         * @description List project members
+         * List subjects
+         * @description List subjects
          */
-        get: operations["listMembers"];
+        get: operations["listSubjects"];
         put?: never;
         post?: never;
         delete?: never;
@@ -460,7 +724,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/invitations": {
+    "/api/v1/studio/projects/{project_id}/subjects/{subject_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -468,23 +732,47 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List project invitations
-         * @description List project invitations
+         * Get subject
+         * @description Get subject
          */
-        get: operations["listInvitations"];
+        get: operations["getSubject"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update subject
+         * @description Update subject
+         */
+        patch: operations["updateSubject"];
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List survey access links
+         * @description List survey access links
+         */
+        get: operations["listSurveyAccessLinks"];
         put?: never;
         /**
-         * Invite member
-         * @description Invite member
+         * Create survey access link
+         * @description Create survey access link
          */
-        post: operations["sendInvitation"];
+        post: operations["createSurveyAccessLink"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/invitations/{invitation_id}": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/links/{link_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -495,16 +783,20 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Revoke invitation
-         * @description Revoke invitation
+         * Delete survey access link
+         * @description Delete survey access link
          */
-        delete: operations["revokeInvitation"];
+        delete: operations["deleteSurveyAccessLink"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update survey access link
+         * @description Update survey access link
+         */
+        patch: operations["updateSurveyAccessLink"];
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/members/{membership_id}": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/links/{link_id}/send-email": {
         parameters: {
             query?: never;
             header?: never;
@@ -513,70 +805,18 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post?: never;
         /**
-         * Remove member
-         * @description Remove member
+         * Send survey link email
+         * @description Send survey link email
          */
-        delete: operations["removeMember"];
-        options?: never;
-        head?: never;
-        /**
-         * Update member
-         * @description Update member
-         */
-        patch: operations["updateMember"];
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/links": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List survey links
-         * @description List survey links
-         */
-        get: operations["listPublicLinks"];
-        put?: never;
-        /**
-         * Create survey link
-         * @description Create survey link
-         */
-        post: operations["createPublicLink"];
+        post: operations["sendSurveyLinkEmail"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/links/{link_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete survey link
-         * @description Delete survey link
-         */
-        delete: operations["deletePublicLink"];
-        options?: never;
-        head?: never;
-        /**
-         * Update survey link
-         * @description Update survey link
-         */
-        patch: operations["updatePublicLink"];
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/roles": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes": {
         parameters: {
             query?: never;
             header?: never;
@@ -584,47 +824,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List project roles
-         * @description List project roles
+         * List survey builder nodes
+         * @description List survey builder nodes
          */
-        get: operations["listRoles"];
+        get: operations["listNodes"];
         put?: never;
         /**
-         * Create project role
-         * @description Create project role
+         * Create survey builder node
+         * @description Create survey builder node
          */
-        post: operations["createRole"];
+        post: operations["createNode"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/roles/{role_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete project role
-         * @description Delete project role
-         */
-        delete: operations["deleteRole"];
-        options?: never;
-        head?: never;
-        /**
-         * Update project role
-         * @description Update project role
-         */
-        patch: operations["updateRole"];
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/submissions": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -632,39 +848,27 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List submissions
-         * @description List submissions
+         * Get survey builder node
+         * @description Get survey builder node
          */
-        get: operations["listSubmissions"];
+        get: operations["getNode"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/submissions/{submission_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
         /**
-         * Get submission
-         * @description Get submission
+         * Delete survey builder node
+         * @description Delete survey builder node
          */
-        get: operations["getSubmission"];
-        put?: never;
-        post?: never;
-        delete?: never;
+        delete: operations["deleteNode"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update survey builder node
+         * @description Update survey builder node
+         */
+        patch: operations["updateNode"];
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/members": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/members": {
         parameters: {
             query?: never;
             header?: never;
@@ -688,7 +892,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/members/{membership_id}": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/members/{membership_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -712,7 +916,87 @@ export interface paths {
         patch: operations["updateSurveyMemberRole"];
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/survey-roles": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List survey result subjects
+         * @description List survey result subjects
+         */
+        get: operations["listSurveyResultSubjects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/subjects/{subject_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get survey result subject tree
+         * @description Get survey result subject tree
+         */
+        get: operations["getSubjectTree"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export survey results
+         * @description Streams a CSV or JSON file attachment (one row per answer slot), not a JSON envelope. Use the `format` field on the request body to choose CSV or JSON.
+         */
+        post: operations["exportResults"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete survey response session
+         * @description Delete survey response session
+         */
+        delete: operations["deleteSession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/survey-roles": {
         parameters: {
             query?: never;
             header?: never;
@@ -736,7 +1020,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/survey-roles/{role_id}": {
+    "/api/v1/studio/projects/{project_id}/survey-roles/{role_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -760,7 +1044,7 @@ export interface paths {
         patch: operations["updateSurveyRole"];
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys": {
+    "/api/v1/studio/projects/{project_id}/surveys": {
         parameters: {
             query?: never;
             header?: never;
@@ -784,7 +1068,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -812,7 +1096,75 @@ export interface paths {
         patch: operations["updateSurvey"];
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/my-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my survey permissions
+         * @description Get my survey permissions
+         */
+        get: operations["getMySurveyPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List scoring rules
+         * @description List scoring rules
+         */
+        get: operations["listScoringRules"];
+        put?: never;
+        /**
+         * Create scoring rule
+         * @description Create scoring rule
+         */
+        post: operations["createScoringRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules/{scoring_rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete scoring rule
+         * @description Delete scoring rule
+         */
+        delete: operations["deleteScoringRule"];
+        options?: never;
+        head?: never;
+        /**
+         * Update scoring rule
+         * @description Update scoring rule
+         */
+        patch: operations["updateScoringRule"];
+        trace?: never;
+    };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions": {
         parameters: {
             query?: never;
             header?: never;
@@ -836,7 +1188,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/copy-to-draft": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/copy-to-draft": {
         parameters: {
             query?: never;
             header?: never;
@@ -856,7 +1208,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}": {
         parameters: {
             query?: never;
             header?: never;
@@ -876,7 +1228,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/publish": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/publish": {
         parameters: {
             query?: never;
             header?: never;
@@ -896,7 +1248,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/archive": {
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/archive": {
         parameters: {
             query?: never;
             header?: never;
@@ -916,7 +1268,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/public/surveys": {
+    "/api/v1/system/health": {
         parameters: {
             query?: never;
             header?: never;
@@ -924,10 +1276,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List public surveys
-         * @description List public surveys
+         * Health check
+         * @description Health check
          */
-        get: operations["listPublicSurveys"];
+        get: operations["healthCheck"];
         put?: never;
         post?: never;
         delete?: never;
@@ -936,7 +1288,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/public/surveys/{public_slug}": {
+    "/api/v1/system/health/ready": {
         parameters: {
             query?: never;
             header?: never;
@@ -944,10 +1296,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get public survey
-         * @description Get public survey
+         * Readiness check
+         * @description Readiness check
          */
-        get: operations["getPublicSurvey"];
+        get: operations["readinessCheck"];
         put?: never;
         post?: never;
         delete?: never;
@@ -956,27 +1308,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/public/links/resolve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Resolve survey link
-         * @description Anonymous access is allowed for links that do not require authentication. If the resolved link requires authentication, a bearer token must be supplied.
-         */
-        get: operations["resolveLink"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/submissions/slug": {
+    "/api/v1/system/health/test-email": {
         parameters: {
             query?: never;
             header?: never;
@@ -986,30 +1318,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create slug submission
-         * @description Create slug submission
+         * Test email sending
+         * @description Test email sending
          */
-        post: operations["createSlugSubmission"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/public/submissions/link": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create link submission
-         * @description Create link submission
-         */
-        post: operations["createLinkSubmission"];
+        post: operations["testEmail"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1039,10 +1351,10 @@ export interface components {
             id_token: string;
         };
         /**
-         * CurrentUserOut
+         * CurrentUserResponses
          * @description API response shape for a bootstrapped user.
          */
-        CurrentUserOut: {
+        CurrentUserResponses: {
             /** Id */
             id: number;
             /** Auth0 User Id */
@@ -1053,10 +1365,10 @@ export interface components {
             display_name: string | null;
         };
         /**
-         * ProjectOut
+         * ProjectResponses
          * @description API response shape for a project.
          */
-        ProjectOut: {
+        ProjectResponses: {
             /** Id */
             id: number;
             /** Name */
@@ -1072,21 +1384,128 @@ export interface components {
             created_at: string;
         };
         /**
-         * BootstrapUserOut
+         * BootstrapUserResponses
          * @description API response shape for a bootstrap-user request.
          */
-        BootstrapUserOut: {
+        BootstrapUserResponses: {
             /** Created */
             created: boolean;
-            user: components["schemas"]["CurrentUserOut"];
+            user: components["schemas"]["CurrentUserResponses"];
             /** @default null */
-            default_project: components["schemas"]["ProjectOut"] | null;
+            default_project: components["schemas"]["ProjectResponses"] | null;
         };
         /**
-         * CurrentUserProfileOut
+         * ProjectInvitationResponses
+         * @description API response shape for a project invitation.
+         */
+        ProjectInvitationResponses: {
+            /** Id */
+            id: number;
+            /** Project Id */
+            project_id: number;
+            /**
+             * Project Name
+             * @default null
+             */
+            project_name: string | null;
+            /** Invited Email */
+            invited_email: string;
+            /**
+             * Invite Message
+             * @default null
+             */
+            invite_message: string | null;
+            /** Invited By User Id */
+            invited_by_user_id: number | null;
+            /**
+             * Invited By Display
+             * @default null
+             */
+            invited_by_display: string | null;
+            /** Role Id */
+            role_id: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "accepted" | "declined" | "revoked";
+            /** Expires At */
+            expires_at: string | null;
+            /** Accepted At */
+            accepted_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * MemberUserResponses
+         * @description Embedded user details on a project member response.
+         */
+        MemberUserResponses: {
+            /** Id */
+            id: number;
+            /** Email */
+            email: string;
+            /** Display Name */
+            display_name: string | null;
+        };
+        /**
+         * ProjectMemberResponses
+         * @description API response shape for a project membership.
+         */
+        ProjectMemberResponses: {
+            /** Id */
+            id: number;
+            /** User Id */
+            user_id: number;
+            /** Project Id */
+            project_id: number;
+            /** Role Id */
+            role_id: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "suspended";
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            user: components["schemas"]["MemberUserResponses"];
+        };
+        /**
+         * PublicInvitationResolveResponse
+         * @description Public-facing response when resolving an invitation token.
+         */
+        PublicInvitationResolveResponse: {
+            /** Invited Email */
+            invited_email: string;
+            /** Project Name */
+            project_name: string;
+            /**
+             * Inviter Name
+             * @default null
+             */
+            inviter_name: string | null;
+            /**
+             * Expires At
+             * @default null
+             */
+            expires_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "accepted" | "declined" | "revoked";
+        };
+        /**
+         * CurrentUserProfileResponses
          * @description API response shape for the current user's profile.
          */
-        CurrentUserProfileOut: {
+        CurrentUserProfileResponses: {
             /** Id */
             id: number;
             /** Auth0 User Id */
@@ -1136,52 +1555,70 @@ export interface components {
             username: string;
         };
         /**
-         * PasswordChangeTicketOut
+         * PasswordChangeTicketResponses
          * @description Hosted Auth0 password-change ticket URL.
          */
-        PasswordChangeTicketOut: {
+        PasswordChangeTicketResponses: {
             /** Ticket Url */
             ticket_url: string;
         };
         /**
-         * ProjectInvitationOut
-         * @description API response shape for a project invitation.
+         * EmailVerificationCheckResponses
+         * @description Result of a live, on-demand email verification check against Auth0.
          */
-        ProjectInvitationOut: {
-            /** Id */
-            id: number;
-            /** Project Id */
-            project_id: number;
+        EmailVerificationCheckResponses: {
+            /** Email Verified */
+            email_verified: boolean;
+        };
+        /**
+         * ResolveSurveyAccessLinkTokenRequest
+         * @description Request body for resolving a respondent survey access link token.
+         */
+        ResolveSurveyAccessLinkTokenRequest: {
+            /** Token */
+            token: string;
+        };
+        /**
+         * SurveyAccessLinkResponse
+         * @description API response shape for a survey access link.
+         */
+        SurveyAccessLinkResponse: {
             /**
-             * Project Name
-             * @default null
+             * Id
+             * Format: uuid
              */
-            project_name: string | null;
-            /** Invited Email */
-            invited_email: string;
+            id: string;
+            /** Survey Id */
+            survey_id: number;
+            /** Name */
+            name: string;
+            /** Token */
+            token: string;
+            /** Is Active */
+            is_active: boolean;
             /**
-             * Invite Message
-             * @default null
-             */
-            invite_message: string | null;
-            /** Invited By User Id */
-            invited_by_user_id: number | null;
-            /**
-             * Invited By Display
-             * @default null
-             */
-            invited_by_display: string | null;
-            /** Role Id */
-            role_id: number | null;
-            /**
-             * Status
+             * Link Type
              * @enum {string}
              */
-            status: "pending" | "accepted" | "declined" | "revoked";
+            link_type: "general" | "private" | "authenticated";
+            /**
+             * Assignment Source
+             * @enum {string}
+             */
+            assignment_source: "manual" | "automated";
+            /** Assigned Participant Id */
+            assigned_participant_id: string | null;
+            /**
+             * Assigned Participant Email
+             * @default null
+             */
+            assigned_participant_email: string | null;
             /** Expires At */
             expires_at: string | null;
-            /** Accepted At */
-            accepted_at: string | null;
+            /** Used At */
+            used_at: string | null;
+            /** Emailed At */
+            emailed_at: string | null;
             /**
              * Created At
              * Format: date-time
@@ -1189,64 +1626,29 @@ export interface components {
             created_at: string;
         };
         /**
-         * MemberUserOut
-         * @description Embedded user details on a project member response.
+         * SurveyResponses
+         * @description API response shape for a survey.
          */
-        MemberUserOut: {
+        SurveyResponses: {
             /** Id */
             id: number;
-            /** Email */
-            email: string;
-            /** Display Name */
-            display_name: string | null;
-        };
-        /**
-         * ProjectMemberOut
-         * @description API response shape for a project membership.
-         */
-        ProjectMemberOut: {
-            /** Id */
-            id: number;
-            /** User Id */
-            user_id: number;
             /** Project Id */
             project_id: number;
-            /** Role Id */
-            role_id: number | null;
+            /** Title */
+            title: string;
             /**
-             * Status
+             * Visibility
              * @enum {string}
              */
-            status: "active" | "suspended";
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            user: components["schemas"]["MemberUserOut"];
-        };
-        /**
-         * NodeOut
-         * @description API response shape for a survey content node (question or rule).
-         */
-        NodeOut: {
-            /** Id */
-            id: number;
-            /** Survey Version Id */
-            survey_version_id: number;
-            /** Question Key */
-            question_key: string;
-            /** Sort Key */
-            sort_key: number;
-            /**
-             * Node Type
-             * @enum {string}
-             */
-            node_type: "question" | "rule";
-            /** Question Schema */
-            question_schema: {
-                [key: string]: unknown;
-            };
+            visibility: "private" | "link_only" | "public";
+            /** Public Slug */
+            public_slug: string | null;
+            /** Default Response Store Id */
+            default_response_store_id: number | null;
+            /** Published Version Id */
+            published_version_id: number | null;
+            /** Created By User Id */
+            created_by_user_id: number | null;
             /**
              * Created At
              * Format: date-time
@@ -1257,6 +1659,774 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * SurveyVersionResponses
+         * @description API response shape for a survey version.
+         */
+        SurveyVersionResponses: {
+            /** Id */
+            id: number;
+            /** Survey Id */
+            survey_id: number;
+            /** Version Number */
+            version_number: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "published" | "archived";
+            /** Compiled Schema */
+            compiled_schema: {
+                [key: string]: unknown;
+            } | null;
+            /** Published At */
+            published_at: string | null;
+            /** Created By User Id */
+            created_by_user_id: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * ResolveSurveyAccessLinkResponse
+         * @description API response shape for resolving a respondent survey access link token.
+         */
+        ResolveSurveyAccessLinkResponse: {
+            link: components["schemas"]["SurveyAccessLinkResponse"];
+            /** @default null */
+            survey: components["schemas"]["SurveyResponses"] | null;
+            /** @default null */
+            published_version: components["schemas"]["SurveyVersionResponses"] | null;
+        };
+        /**
+         * PaginatedPublicSurveysResponses
+         * @description API response shape for a paginated list of public surveys.
+         */
+        PaginatedPublicSurveysResponses: {
+            /** Items */
+            items: components["schemas"]["SurveyResponses"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * PublicSurveyResponses
+         * @description API response shape for a publicly accessible survey with its published version.
+         */
+        PublicSurveyResponses: {
+            survey: components["schemas"]["SurveyResponses"];
+            /** @default null */
+            published_version: components["schemas"]["SurveyVersionResponses"] | null;
+        };
+        /**
+         * LinkTokenAccess
+         * @description Access descriptor for starting a respondent session from a private link token.
+         */
+        LinkTokenAccess: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "link_token";
+            /** Token */
+            token: string;
+        };
+        /**
+         * PublicSlugAccess
+         * @description Access descriptor for starting a respondent session from a public survey slug.
+         */
+        PublicSlugAccess: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "public_slug";
+            /** Public Slug */
+            public_slug: string;
+        };
+        /**
+         * StartSubmissionSessionRequest
+         * @description Request body for starting or resuming a respondent submission session.
+         */
+        StartSubmissionSessionRequest: {
+            /** SessionStartAccess */
+            access: components["schemas"]["PublicSlugAccess"] | components["schemas"]["LinkTokenAccess"];
+        };
+        /**
+         * StartSubmissionSessionResponse
+         * @description Session start acknowledgement.
+         *
+         *     Survey schema delivery belongs to discovery and link-resolution flows,
+         *     not to session start.
+         */
+        StartSubmissionSessionResponse: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "in_progress" | "completed" | "abandoned";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Survey Version Id */
+            survey_version_id: number;
+            /** Subject Code */
+            subject_code: string;
+        };
+        /**
+         * ChoiceAnswerValue
+         * @description Answer value for a choice question.
+         */
+        ChoiceAnswerValue: {
+            /** Selected */
+            selected: string[];
+        };
+        /**
+         * DateFieldAnswerValue
+         * @description Answer value for a date field question.
+         */
+        DateFieldAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            field_type: "date";
+            /** Date */
+            date: string;
+        };
+        /**
+         * EmailFieldAnswerValue
+         * @description Answer value for an email field question.
+         */
+        EmailFieldAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            field_type: "email";
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+        };
+        /**
+         * EmojiRatingAnswerValue
+         * @description Answer value for an emoji rating question.
+         */
+        EmojiRatingAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            variant: "emoji";
+            /** Number */
+            number: number;
+        };
+        /**
+         * LongTextFieldAnswerValue
+         * @description Answer value for a long-text field question.
+         */
+        LongTextFieldAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            field_type: "long_text";
+            /** Text */
+            text: string;
+        };
+        /**
+         * MatchingAnswerPair
+         * @description One prompt-to-match pair in a matching answer.
+         */
+        MatchingAnswerPair: {
+            /** Prompt Id */
+            prompt_id: string;
+            /** Match Id */
+            match_id: string;
+        };
+        /**
+         * MatchingAnswerValue
+         * @description Answer value for a matching question.
+         */
+        MatchingAnswerValue: {
+            /** Pairs */
+            pairs: components["schemas"]["MatchingAnswerPair"][];
+        };
+        /**
+         * NumberFieldAnswerValue
+         * @description Answer value for a numeric field question.
+         */
+        NumberFieldAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            field_type: "number";
+            /** Number */
+            number: number;
+        };
+        /**
+         * PhoneFieldAnswerValue
+         * @description Answer value for a phone field question.
+         */
+        PhoneFieldAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            field_type: "phone";
+            /** Phone */
+            phone: string;
+        };
+        /**
+         * ShortTextFieldAnswerValue
+         * @description Answer value for a short-text field question.
+         */
+        ShortTextFieldAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            field_type: "short_text";
+            /** Text */
+            text: string;
+        };
+        /**
+         * SliderRatingAnswerValue
+         * @description Answer value for a slider rating question.
+         */
+        SliderRatingAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            variant: "slider";
+            /** Number */
+            number: number;
+        };
+        /**
+         * StarsRatingAnswerValue
+         * @description Answer value for a star rating question.
+         */
+        StarsRatingAnswerValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            variant: "stars";
+            /** Number */
+            number: number;
+        };
+        /**
+         * SaveSubmissionSessionAnswerRequest
+         * @description Request body for saving or clearing one respondent answer revision.
+         */
+        SaveSubmissionSessionAnswerRequest: {
+            /**
+             * Client Mutation Id
+             * Format: uuid
+             */
+            client_mutation_id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "answered" | "cleared";
+            /**
+             * Answer Family
+             * @default null
+             */
+            answer_family: ("choice" | "field" | "matching" | "rating") | null;
+            /**
+             * Answer Value
+             * @default null
+             */
+            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | null;
+        };
+        /**
+         * SubmissionSessionAnswerResponse
+         * @description Canonical latest answer state returned to a respondent.
+         */
+        SubmissionSessionAnswerResponse: {
+            /**
+             * Question Node Id
+             * Format: uuid
+             */
+            question_node_id: string;
+            /** Node Key */
+            node_key: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "answered" | "cleared";
+            /**
+             * Answer Family
+             * @default null
+             */
+            answer_family: ("choice" | "field" | "matching" | "rating") | null;
+            /**
+             * Answer Value
+             * @default null
+             */
+            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | null;
+            /**
+             * Client Mutation Id
+             * Format: uuid
+             */
+            client_mutation_id: string;
+            /**
+             * Saved At
+             * Format: date-time
+             */
+            saved_at: string;
+        };
+        /**
+         * SubmissionSessionEventRequest
+         * @description Request body for recording a respondent session event.
+         */
+        SubmissionSessionEventRequest: {
+            /**
+             * Event Type
+             * @constant
+             */
+            event_type: "question_viewed";
+            /**
+             * Question Node Id
+             * Format: uuid
+             */
+            question_node_id: string;
+        };
+        /**
+         * CompleteSubmissionSessionResponse
+         * @description Response body for an idempotent respondent session completion.
+         */
+        CompleteSubmissionSessionResponse: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "completed";
+            /**
+             * Completed At
+             * Format: date-time
+             */
+            completed_at: string;
+        };
+        /**
+         * SendInvitationRequest
+         * @description Request body for inviting a user to a project by email.
+         */
+        SendInvitationRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /**
+             * Role Id
+             * @default null
+             */
+            role_id: number | null;
+            /**
+             * Invite Message
+             * @default null
+             */
+            invite_message: string | null;
+        };
+        /**
+         * UpdateMemberRequest
+         * @description Request body for updating a project membership role and/or status.
+         *
+         *     Omit a field to leave it unchanged. Pass role_id: null to clear the role.
+         */
+        UpdateMemberRequest: {
+            /**
+             * Role Id
+             * @default null
+             */
+            role_id: number | null;
+            /**
+             * Status
+             * @default null
+             */
+            status: ("active" | "suspended") | null;
+        };
+        /**
+         * ParticipantResponses
+         * @description API response shape for a project participant.
+         */
+        ParticipantResponses: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Subject Id
+             * Format: uuid
+             */
+            subject_id: string;
+            /** Subject Code */
+            subject_code: string;
+            /** Email */
+            email: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ListParticipantsResponses
+         * @description API response shape for listing a project's participants.
+         */
+        ListParticipantsResponses: {
+            /** Participants */
+            participants: components["schemas"]["ParticipantResponses"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * CreateParticipantRequest
+         * @description Request body for creating a participant (subject + email identity + participant).
+         */
+        CreateParticipantRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /**
+             * Subject Code
+             * @default null
+             */
+            subject_code: string | null;
+        };
+        /**
+         * UpdateParticipantRequest
+         * @description Request body for updating a participant's assigned email and/or subject code.
+         */
+        UpdateParticipantRequest: {
+            /**
+             * Email
+             * @default null
+             */
+            email: string | null;
+            /**
+             * Subject Code
+             * @default null
+             */
+            subject_code: string | null;
+        };
+        /**
+         * ProjectRoleResponses
+         * @description API response shape for a project role.
+         */
+        ProjectRoleResponses: {
+            /** Id */
+            id: number;
+            /** Project Id */
+            project_id: number;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string | null;
+            /** Is System Role */
+            is_system_role: boolean;
+            /** Permissions */
+            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * CreateProjectRoleRequest
+         * @description Request body for creating a new project role.
+         */
+        CreateProjectRoleRequest: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
+            /** Permissions */
+            permissions?: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+        };
+        /**
+         * UpdateProjectRoleRequest
+         * @description Request body for updating a project role.
+         */
+        UpdateProjectRoleRequest: {
+            /**
+             * Name
+             * @default null
+             */
+            name: string | null;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
+            /**
+             * Permissions
+             * @default null
+             */
+            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
+        };
+        /**
+         * CreateProjectRequest
+         * @description Request body for creating a new project.
+         */
+        CreateProjectRequest: {
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+        };
+        /**
+         * MyProjectPermissionsResponses
+         * @description API response shape for the current user's effective permissions in a project.
+         */
+        MyProjectPermissionsResponses: {
+            /** Permissions */
+            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+        };
+        /**
+         * UpdateProjectRequest
+         * @description Request body for partially updating a project.
+         */
+        UpdateProjectRequest: {
+            /**
+             * Name
+             * @default null
+             */
+            name: string | null;
+            /**
+             * Slug
+             * @default null
+             */
+            slug: string | null;
+        };
+        /**
+         * SubjectResponse
+         * @description List-item shape for a project subject.
+         */
+        SubjectResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Subject Code */
+            subject_code: string;
+            /** Canonical Subject Id */
+            canonical_subject_id: string | null;
+            /** Is Participant */
+            is_participant: boolean;
+            /** Participant Id */
+            participant_id: string | null;
+            /** Active Identity Count */
+            active_identity_count: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ListSubjectsResponse
+         * @description Paginated project subject listing.
+         */
+        ListSubjectsResponse: {
+            /** Subjects */
+            subjects: components["schemas"]["SubjectResponse"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * SubjectIdentityResponse
+         * @description Read-only identity attached to a subject.
+         */
+        SubjectIdentityResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Identity Type */
+            identity_type: string;
+            /** Normalized Email */
+            normalized_email: string | null;
+            /** Verification Status */
+            verification_status: string;
+            /**
+             * Attached At
+             * Format: date-time
+             */
+            attached_at: string;
+            /** Revoked At */
+            revoked_at: string | null;
+        };
+        /**
+         * SubjectDetailResponse
+         * @description Detail shape for a single project subject.
+         */
+        SubjectDetailResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Subject Code */
+            subject_code: string;
+            /** Canonical Subject Id */
+            canonical_subject_id: string | null;
+            /** Is Participant */
+            is_participant: boolean;
+            /** Participant Id */
+            participant_id: string | null;
+            /** Identities */
+            identities: components["schemas"]["SubjectIdentityResponse"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * UpdateSubjectRequest
+         * @description Request body for updating a subject's code.
+         */
+        UpdateSubjectRequest: {
+            /** Subject Code */
+            subject_code: string;
+        };
+        /**
+         * ListSurveyAccessLinksResponse
+         * @description API response shape for listing survey access links for a survey.
+         */
+        ListSurveyAccessLinksResponse: {
+            /** Links */
+            links: components["schemas"]["SurveyAccessLinkResponse"][];
+        };
+        /**
+         * CreateSurveyAccessLinkRequest
+         * @description Request body for creating a new survey access link.
+         */
+        CreateSurveyAccessLinkRequest: {
+            /** Name */
+            name: string;
+            /**
+             * Link Type
+             * @default general
+             * @enum {string}
+             */
+            link_type: "general" | "private" | "authenticated";
+            /**
+             * Assignment Source
+             * @default manual
+             * @enum {string}
+             */
+            assignment_source: "manual" | "automated";
+            /**
+             * Assigned Participant Id
+             * @default null
+             */
+            assigned_participant_id: string | null;
+            /**
+             * Expires At
+             * @default null
+             */
+            expires_at: string | null;
+        };
+        /**
+         * CreateSurveyAccessLinkResponse
+         * @description API response shape for creating a survey access link.
+         */
+        CreateSurveyAccessLinkResponse: {
+            link: components["schemas"]["SurveyAccessLinkResponse"];
+            /** Url */
+            url: string;
+        };
+        /**
+         * UpdateSurveyAccessLinkRequest
+         * @description Request body for updating a survey access link.
+         */
+        UpdateSurveyAccessLinkRequest: {
+            /**
+             * Is Active
+             * @default null
+             */
+            is_active: boolean | null;
+            /**
+             * Name
+             * @default null
+             */
+            name: string | null;
+            /**
+             * Link Type
+             * @default null
+             */
+            link_type: ("general" | "private" | "authenticated") | null;
+            /**
+             * Assignment Source
+             * @default null
+             */
+            assignment_source: ("manual" | "automated") | null;
+            /**
+             * Assigned Participant Id
+             * @default null
+             */
+            assigned_participant_id: string | null;
+            /**
+             * Expires At
+             * @default null
+             */
+            expires_at: string | null;
+        };
+        /**
+         * SendSurveyLinkEmailResponse
+         * @description API response shape for sending a survey link email.
+         */
+        SendSurveyLinkEmailResponse: {
+            /**
+             * Message Id
+             * @default null
+             */
+            message_id: string | null;
         };
         /**
          * ChoiceConditionIn
@@ -1273,8 +2443,20 @@ export interface components {
             requirements: components["schemas"]["ChoiceRequirementsIn"];
         };
         /**
+         * ChoiceDefinitionIn
+         * @description definition block for a choice question.
+         */
+        ChoiceDefinitionIn: {
+            /** Min */
+            min: number;
+            /** Max */
+            max: number;
+            /** Options */
+            options: components["schemas"]["ChoiceOptionIn"][];
+        };
+        /**
          * ChoiceOptionIn
-         * @description Represents a single selectable option for a choice question.
+         * @description A single selectable option for a choice question.
          */
         ChoiceOptionIn: {
             /** Id */
@@ -1283,35 +2465,10 @@ export interface components {
             label: string;
         };
         /**
-         * ChoiceQuestionConfig
-         * @description Defines selection constraints and options for a choice question.
-         */
-        ChoiceQuestionConfig: {
-            /** Options */
-            options: components["schemas"]["ChoiceOptionIn"][];
-            /** Min Selected */
-            min_selected: number;
-            /** Max Selected */
-            max_selected: number;
-        };
-        /**
-         * ChoiceQuestionNestedIn
-         * @description Input for a choice question with nested schema/ui.
-         */
-        ChoiceQuestionNestedIn: {
-            schema: components["schemas"]["ChoiceQuestionConfig"];
-            /** Ui */
-            ui?: {
-                [key: string]: unknown;
-            };
-        };
-        /**
          * ChoiceQuestionSchemaIn
-         * @description Accepts an incoming choice-question schema payload (nested structure).
+         * @description Incoming choice-question content schema.
          */
         ChoiceQuestionSchemaIn: {
-            /** Id */
-            id: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -1324,28 +2481,19 @@ export interface components {
              * @default null
              */
             title: string | null;
-            choice: components["schemas"]["ChoiceQuestionNestedIn"];
+            definition: components["schemas"]["ChoiceDefinitionIn"];
         };
         /**
          * ChoiceRequirementsIn
          * @description Validation requirements for a choice-question condition.
          */
         ChoiceRequirementsIn: {
-            /**
-             * Required
-             * @default null
-             */
-            required: string[] | null;
-            /**
-             * Forbidden
-             * @default null
-             */
-            forbidden: string[] | null;
-            /**
-             * Any Of
-             * @default null
-             */
-            any_of: string[] | null;
+            /** Required */
+            required?: string[];
+            /** Forbidden */
+            forbidden?: string[];
+            /** Any Of */
+            any_of?: string[];
         };
         /**
          * DateFieldRequirementsIn
@@ -1353,8 +2501,8 @@ export interface components {
          */
         DateFieldRequirementsIn: {
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             type: "date";
             /**
@@ -1366,25 +2514,26 @@ export interface components {
             value: string;
         };
         /**
-         * ElseDoIn
-         * @description Represents the single navigation action performed by an else block.
+         * EndAndDiscardActionIn
+         * @description Navigation action that ends the survey and discards the response.
          */
-        ElseDoIn: {
-            /**
-             * Skip To
-             * @default null
-             */
-            skip_to: string | null;
-            /**
-             * End And Submit
-             * @default null
-             */
-            end_and_submit: boolean | null;
+        EndAndDiscardActionIn: {
             /**
              * End And Discard
-             * @default null
+             * @default true
              */
-            end_and_discard: boolean | null;
+            end_and_discard: boolean;
+        };
+        /**
+         * EndAndSubmitActionIn
+         * @description Navigation action that ends the survey and submits the response.
+         */
+        EndAndSubmitActionIn: {
+            /**
+             * End And Submit
+             * @default true
+             */
+            end_and_submit: boolean;
         };
         /**
          * FieldConditionIn
@@ -1402,31 +2551,22 @@ export interface components {
             requirements: components["schemas"]["NumberFieldRequirementsIn"] | components["schemas"]["DateFieldRequirementsIn"];
         };
         /**
-         * FieldQuestionConfig
-         * @description Defines the input type for a field-based question.
+         * FieldDefinitionIn
+         * @description definition block for a field question.
          */
-        FieldQuestionConfig: {
+        FieldDefinitionIn: {
             /**
              * Field Type
              * @enum {string}
              */
             field_type: "short_text" | "long_text" | "email" | "number" | "date" | "phone";
-        };
-        /**
-         * FieldQuestionNestedIn
-         * @description Input for a field question with nested schema/ui.
-         */
-        FieldQuestionNestedIn: {
-            schema: components["schemas"]["FieldQuestionConfig"];
-            ui?: components["schemas"]["FieldQuestionUIIn"];
+            ui?: components["schemas"]["FieldUIIn"];
         };
         /**
          * FieldQuestionSchemaIn
-         * @description Accepts an incoming field-question schema payload (nested structure).
+         * @description Incoming field-question content schema.
          */
         FieldQuestionSchemaIn: {
-            /** Id */
-            id: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -1439,13 +2579,13 @@ export interface components {
              * @default null
              */
             title: string | null;
-            field: components["schemas"]["FieldQuestionNestedIn"];
+            definition: components["schemas"]["FieldDefinitionIn"];
         };
         /**
-         * FieldQuestionUIIn
-         * @description Validates field question UI configuration.
+         * FieldUIIn
+         * @description UI block for a field question.
          */
-        FieldQuestionUIIn: {
+        FieldUIIn: {
             /**
              * Placeholder
              * @default
@@ -1467,8 +2607,18 @@ export interface components {
             requirements: components["schemas"]["MatchingRequirementsIn"];
         };
         /**
+         * MatchingDefinitionIn
+         * @description definition block for a matching question.
+         */
+        MatchingDefinitionIn: {
+            /** Prompts */
+            prompts: components["schemas"]["MatchingItemIn"][];
+            /** Matches */
+            matches: components["schemas"]["MatchingItemIn"][];
+        };
+        /**
          * MatchingItemIn
-         * @description Represents one item on either side of a matching question.
+         * @description One item on either side of a matching question.
          */
         MatchingItemIn: {
             /** Id */
@@ -1477,33 +2627,20 @@ export interface components {
             label: string;
         };
         /**
-         * MatchingQuestionConfig
-         * @description Defines the prompt and match item sets for a matching question.
+         * MatchingPairIn
+         * @description A single prompt-to-match pairing in a matching condition.
          */
-        MatchingQuestionConfig: {
-            /** Prompts */
-            prompts: components["schemas"]["MatchingItemIn"][];
-            /** Matches */
-            matches: components["schemas"]["MatchingItemIn"][];
-        };
-        /**
-         * MatchingQuestionNestedIn
-         * @description Input for a matching question with nested schema/ui.
-         */
-        MatchingQuestionNestedIn: {
-            schema: components["schemas"]["MatchingQuestionConfig"];
-            /** Ui */
-            ui?: {
-                [key: string]: unknown;
-            };
+        MatchingPairIn: {
+            /** Prompt Id */
+            prompt_id: string;
+            /** Match Id */
+            match_id: string;
         };
         /**
          * MatchingQuestionSchemaIn
-         * @description Accepts an incoming matching-question schema payload (nested structure).
+         * @description Incoming matching-question content schema.
          */
         MatchingQuestionSchemaIn: {
-            /** Id */
-            id: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -1516,7 +2653,7 @@ export interface components {
              * @default null
              */
             title: string | null;
-            matching: components["schemas"]["MatchingQuestionNestedIn"];
+            definition: components["schemas"]["MatchingDefinitionIn"];
         };
         /**
          * MatchingRequirementsIn
@@ -1524,9 +2661,7 @@ export interface components {
          */
         MatchingRequirementsIn: {
             /** Required */
-            required: {
-                [key: string]: string;
-            }[];
+            required: components["schemas"]["MatchingPairIn"][];
         };
         /**
          * NumberFieldRequirementsIn
@@ -1534,8 +2669,8 @@ export interface components {
          */
         NumberFieldRequirementsIn: {
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             type: "number";
             /**
@@ -1547,14 +2682,26 @@ export interface components {
             value: number;
         };
         /**
-         * RangeIn
-         * @description Defines min and max bounds for a rating question.
+         * QuestionNodeResponse
+         * @description API response shape for a question node.
          */
-        RangeIn: {
-            /** Min */
-            min: number;
-            /** Max */
-            max: number;
+        QuestionNodeResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Node Key */
+            node_key: string;
+            /** Sort Key */
+            sort_key: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            node_type: "question";
+            /** Content */
+            content: components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"];
         };
         /**
          * RatingConditionIn
@@ -1571,23 +2718,15 @@ export interface components {
             requirements: components["schemas"]["RatingRequirementsIn"];
         };
         /**
-         * RatingEmojiNestedIn
-         * @description Input for an emoji-style rating question.
+         * RatingEmojiDefinitionIn
+         * @description definition block for an emoji-style rating question.
          */
-        RatingEmojiNestedIn: {
+        RatingEmojiDefinitionIn: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            style: "emoji";
-            schema: components["schemas"]["RatingEmojiSchemaIn"];
-            ui: components["schemas"]["RatingUIIn"];
-        };
-        /**
-         * RatingEmojiSchemaIn
-         * @description Schema for emoji-style rating questions.
-         */
-        RatingEmojiSchemaIn: {
+            variant: "emoji";
             /**
              * Emoji List
              * @enum {string}
@@ -1598,14 +2737,13 @@ export interface components {
              * @default false
              */
             words: boolean;
+            ui: components["schemas"]["RatingUIIn"];
         };
         /**
          * RatingQuestionSchemaIn
-         * @description Accepts an incoming rating-question schema payload (nested structure).
+         * @description Incoming rating-question content schema.
          */
         RatingQuestionSchemaIn: {
-            /** Id */
-            id: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -1618,8 +2756,20 @@ export interface components {
              * @default null
              */
             title: string | null;
-            /** Rating */
-            rating: components["schemas"]["RatingSliderNestedIn"] | components["schemas"]["RatingEmojiNestedIn"] | components["schemas"]["RatingStarNestedIn"];
+            /** Definition */
+            definition: components["schemas"]["RatingSliderDefinitionIn"] | components["schemas"]["RatingStarDefinitionIn"] | components["schemas"]["RatingEmojiDefinitionIn"];
+        };
+        /**
+         * RatingRangeIn
+         * @description Range block for a slider rating — min, max, and step in one object.
+         */
+        RatingRangeIn: {
+            /** Min */
+            min: number;
+            /** Max */
+            max: number;
+            /** Step */
+            step: number;
         };
         /**
          * RatingRequirementsIn
@@ -1638,51 +2788,35 @@ export interface components {
             max: number | null;
         };
         /**
-         * RatingSliderNestedIn
-         * @description Input for a slider-style rating question.
+         * RatingSliderDefinitionIn
+         * @description definition block for a slider-style rating question.
          */
-        RatingSliderNestedIn: {
+        RatingSliderDefinitionIn: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            style: "slider";
-            schema: components["schemas"]["RatingSliderSchemaIn"];
+            variant: "slider";
+            range: components["schemas"]["RatingRangeIn"];
             ui: components["schemas"]["RatingUIIn"];
         };
         /**
-         * RatingSliderSchemaIn
-         * @description Schema for slider-style rating questions.
+         * RatingStarDefinitionIn
+         * @description definition block for a star-style rating question.
          */
-        RatingSliderSchemaIn: {
-            range: components["schemas"]["RangeIn"];
-            /** Step */
-            step: number;
-        };
-        /**
-         * RatingStarNestedIn
-         * @description Input for a star-style rating question.
-         */
-        RatingStarNestedIn: {
+        RatingStarDefinitionIn: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            style: "star";
-            schema: components["schemas"]["RatingStarSchemaIn"];
-            ui: components["schemas"]["RatingUIIn"];
-        };
-        /**
-         * RatingStarSchemaIn
-         * @description Schema for star-style rating questions.
-         */
-        RatingStarSchemaIn: {
+            variant: "stars";
             /** Stars */
             stars: number;
+            ui: components["schemas"]["RatingUIIn"];
         };
         /**
          * RatingUIIn
-         * @description Base UI for all rating questions — includes left/right labels.
+         * @description Left/right labels for all rating variants.
          */
         RatingUIIn: {
             /** Left Label */
@@ -1691,11 +2825,20 @@ export interface components {
             right_label: string;
         };
         /**
-         * RuleElseIn
-         * @description Represents the fallback action when a rule predicate does not match.
+         * RuleBranchIn
+         * @description Represents the effects applied by a then or else branch.
          */
-        RuleElseIn: {
-            do: components["schemas"]["ElseDoIn"];
+        RuleBranchIn: {
+            /**
+             * Set
+             * @default null
+             */
+            set: components["schemas"]["RuleSetItemIn"][] | null;
+            /**
+             * Do
+             * @default null
+             */
+            do: components["schemas"]["SkipToActionIn"] | components["schemas"]["EndAndSubmitActionIn"] | components["schemas"]["EndAndDiscardActionIn"] | null;
         };
         /**
          * RuleIfIn
@@ -1711,30 +2854,41 @@ export interface components {
             conditions: (components["schemas"]["ChoiceConditionIn"] | components["schemas"]["MatchingConditionIn"] | components["schemas"]["RatingConditionIn"] | components["schemas"]["FieldConditionIn"])[];
         };
         /**
+         * RuleNodeResponse
+         * @description API response shape for a rule node.
+         */
+        RuleNodeResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Node Key */
+            node_key: string;
+            /** Sort Key */
+            sort_key: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            node_type: "rule";
+            content: components["schemas"]["RuleSchemaIn"];
+        };
+        /**
          * RuleSchemaIn
          * @description Represents the full rule content stored in question_schema for a rule node.
          */
         RuleSchemaIn: {
-            /** Id */
-            id: string;
             if: components["schemas"]["RuleIfIn"];
-            then: components["schemas"]["RuleThenIn"];
+            then: components["schemas"]["RuleBranchIn"];
             /** @default null */
-            else: components["schemas"]["RuleElseIn"] | null;
+            else: components["schemas"]["RuleBranchIn"] | null;
         };
         /**
-         * RuleThenIn
-         * @description Represents the effects applied when a rule predicate matches.
+         * RuleSetItemIn
+         * @description Represents one visibility or required-state change applied by a branch.
          */
-        RuleThenIn: {
-            /** Set */
-            set: components["schemas"]["ThenSetItemIn"][];
-        };
-        /**
-         * ThenSetItemIn
-         * @description Represents one visibility or required-state effect in a then block.
-         */
-        ThenSetItemIn: {
+        RuleSetItemIn: {
             /** Target Id */
             target_id: string;
             /**
@@ -1749,25 +2903,80 @@ export interface components {
             required: boolean | null;
         };
         /**
-         * CreateNodeRequest
-         * @description Validates requests that create a new survey content node (question or rule).
+         * SkipToActionIn
+         * @description Navigation action that jumps to a specific question.
          */
-        CreateNodeRequest: {
+        SkipToActionIn: {
+            /** Skip To */
+            skip_to: string;
+        };
+        /** NodeResponses */
+        NodeResponses: components["schemas"]["QuestionNodeResponse"] | components["schemas"]["RuleNodeResponse"];
+        /**
+         * CreateQuestionNodeRequest
+         * @description Validates requests that create a new question node.
+         */
+        CreateQuestionNodeRequest: {
             /**
-             * Type
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Node Key */
+            node_key: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            type: "question" | "rule";
+            node_type: "question";
             /** Sort Key */
             sort_key: number;
             /** Content */
-            content: (components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"]) | components["schemas"]["RuleSchemaIn"];
+            content: components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"];
         };
+        /**
+         * CreateRuleNodeRequest
+         * @description Validates requests that create a new rule node.
+         */
+        CreateRuleNodeRequest: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Node Key */
+            node_key: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            node_type: "rule";
+            /** Sort Key */
+            sort_key: number;
+            content: components["schemas"]["RuleSchemaIn"];
+        };
+        /** CreateNodeRequest */
+        CreateNodeRequest: components["schemas"]["CreateQuestionNodeRequest"] | components["schemas"]["CreateRuleNodeRequest"];
         /**
          * UpdateNodeRequest
          * @description Validates partial updates to an existing survey content node.
          */
         UpdateNodeRequest: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Node Key
+             * @default null
+             */
+            node_key: string | null;
+            /**
+             * Node Type
+             * @default null
+             */
+            node_type: ("question" | "rule") | null;
             /**
              * Sort Key
              * @default null
@@ -1780,10 +2989,342 @@ export interface components {
             content: (components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"]) | components["schemas"]["RuleSchemaIn"] | null;
         };
         /**
-         * ScoringRuleOut
+         * SurveyMemberResponses
+         * @description Embedded user details on a survey member row.
+         */
+        SurveyMemberResponses: {
+            /** Id */
+            id: number;
+            /** User Id */
+            user_id: number;
+            /** Project Id */
+            project_id: number;
+            /** Role Id */
+            role_id: number | null;
+            /** Status */
+            status: string;
+        };
+        /**
+         * SurveyRoleResponses
+         * @description API response shape for a survey role.
+         */
+        SurveyRoleResponses: {
+            /** Id */
+            id: number;
+            /** Project Id */
+            project_id: number;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string | null;
+            /** Permissions */
+            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * SurveyMemberRoleResponses
+         * @description API response shape for a survey membership role assignment.
+         */
+        SurveyMemberRoleResponses: {
+            /** Project Id */
+            project_id: number;
+            /** Survey Id */
+            survey_id: number;
+            /** Membership Id */
+            membership_id: number;
+            /** Role Id */
+            role_id: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** @default null */
+            member: components["schemas"]["SurveyMemberResponses"] | null;
+            /** @default null */
+            role: components["schemas"]["SurveyRoleResponses"] | null;
+        };
+        /**
+         * AssignSurveyMemberRoleRequest
+         * @description Request body for assigning a survey role to a project member for a survey.
+         */
+        AssignSurveyMemberRoleRequest: {
+            /** Membership Id */
+            membership_id: number;
+            /** Role Id */
+            role_id: number;
+        };
+        /**
+         * UpdateSurveyMemberRoleRequest
+         * @description Request body for updating a survey member role assignment.
+         */
+        UpdateSurveyMemberRoleRequest: {
+            /** Role Id */
+            role_id: number;
+        };
+        /**
+         * SurveyAnswerSlotResponses
+         * @description One answer slot in an admin survey-results view, optionally decrypted.
+         */
+        SurveyAnswerSlotResponses: {
+            /**
+             * Question Node Id
+             * Format: uuid
+             */
+            question_node_id: string;
+            /**
+             * Question Key
+             * @default null
+             */
+            question_key: string | null;
+            /**
+             * Answer Family
+             * @default null
+             */
+            answer_family: ("choice" | "field" | "matching" | "rating") | null;
+            /** Has Encrypted Answer */
+            has_encrypted_answer: boolean;
+            /** Decrypted */
+            decrypted: boolean;
+            /**
+             * State
+             * @default null
+             */
+            state: ("answered" | "cleared") | null;
+            /**
+             * Answer Value
+             * @default null
+             */
+            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * SurveySessionEventResponses
+         * @description One timeline event for a session. Never carries answer values.
+         */
+        SurveySessionEventResponses: {
+            /**
+             * Event Type
+             * @enum {string}
+             */
+            event_type: "session_started" | "question_viewed" | "answer_saved" | "session_completed";
+            /**
+             * Question Node Id
+             * @default null
+             */
+            question_node_id: string | null;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+        };
+        /**
+         * SurveySessionResponses
+         * @description Admin-facing summary of one respondent submission session.
+         *
+         *     Sourced from core session metadata only; carries no decrypted answer
+         *     payloads and no response-database locators or crypto material.
+         */
+        SurveySessionResponses: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Survey Id */
+            survey_id: number;
+            /** Survey Version Id */
+            survey_version_id: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "in_progress" | "completed" | "abandoned";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Completed At
+             * @default null
+             */
+            completed_at: string | null;
+            /**
+             * Last Activity At
+             * Format: date-time
+             */
+            last_activity_at: string;
+        };
+        /**
+         * SurveySessionTreeResponses
+         * @description One session with its answer slots and optional event timeline.
+         */
+        SurveySessionTreeResponses: {
+            session: components["schemas"]["SurveySessionResponses"];
+            /** Answers */
+            answers: components["schemas"]["SurveyAnswerSlotResponses"][];
+            /**
+             * Events
+             * @default null
+             */
+            events: components["schemas"]["SurveySessionEventResponses"][] | null;
+        };
+        /**
+         * SurveySubjectResponses
+         * @description Admin-facing summary of one project subject.
+         */
+        SurveySubjectResponses: {
+            /**
+             * Subject Id
+             * Format: uuid
+             */
+            subject_id: string;
+            /** Subject Code */
+            subject_code: string;
+        };
+        /**
+         * SurveySubjectTreeResponses
+         * @description One subject with all of its sessions for a survey.
+         */
+        SurveySubjectTreeResponses: {
+            subject: components["schemas"]["SurveySubjectResponses"];
+            /** Sessions */
+            sessions: components["schemas"]["SurveySessionTreeResponses"][];
+        };
+        /**
+         * PaginatedSurveySubjectTreesResponses
+         * @description Paginated list of subject result trees.
+         */
+        PaginatedSurveySubjectTreesResponses: {
+            /** Items */
+            items: components["schemas"]["SurveySubjectTreeResponses"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Include Decrypted Answer Values */
+            include_decrypted_answer_values: boolean;
+        };
+        /**
+         * ExportSurveyResultsRequest
+         * @description Request body for exporting a survey's results.
+         */
+        ExportSurveyResultsRequest: {
+            /**
+             * Format
+             * @default csv
+             * @enum {string}
+             */
+            format: "csv" | "json";
+            /**
+             * Include Decrypted Answer Values
+             * @default false
+             */
+            include_decrypted_answer_values: boolean;
+            /**
+             * Session Ids
+             * @default null
+             */
+            session_ids: string[] | null;
+        };
+        /**
+         * CreateSurveyRoleRequest
+         * @description Request body for creating a survey role.
+         */
+        CreateSurveyRoleRequest: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
+            /** Permissions */
+            permissions?: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+        };
+        /**
+         * UpdateSurveyRoleRequest
+         * @description Request body for partially updating a survey role.
+         */
+        UpdateSurveyRoleRequest: {
+            /**
+             * Name
+             * @default null
+             */
+            name: string | null;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
+            /**
+             * Permissions
+             * @default null
+             */
+            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
+        };
+        /**
+         * CreateSurveyRequest
+         * @description Request body for creating a new survey.
+         */
+        CreateSurveyRequest: {
+            /** Title */
+            title: string;
+            /**
+             * Visibility
+             * @default private
+             * @enum {string}
+             */
+            visibility: "private" | "link_only" | "public";
+            /**
+             * Public Slug
+             * @default null
+             */
+            public_slug: string | null;
+        };
+        /**
+         * UpdateSurveyRequest
+         * @description Request body for partially updating a survey.
+         */
+        UpdateSurveyRequest: {
+            /**
+             * Title
+             * @default null
+             */
+            title: string | null;
+            /**
+             * Visibility
+             * @default null
+             */
+            visibility: ("private" | "link_only" | "public") | null;
+            /**
+             * Public Slug
+             * @default null
+             */
+            public_slug: string | null;
+        };
+        /**
+         * MySurveyPermissionsResponses
+         * @description API response shape for the current user's effective permissions on a survey.
+         */
+        MySurveyPermissionsResponses: {
+            /** Permissions */
+            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+        };
+        /**
+         * ScoringRuleResponses
          * @description API response shape for a scoring rule.
          */
-        ScoringRuleOut: {
+        ScoringRuleResponses: {
             /** Id */
             id: number;
             /** Survey Version Id */
@@ -1940,18 +3481,6 @@ export interface components {
             config: components["schemas"]["MatchingAnswerKeyConfig"];
         };
         /**
-         * MatchingPairIn
-         * @description Request model for a matching pair in matching answer key scoring.
-         *
-         *     Validates that both left and right IDs are non-blank strings.
-         */
-        MatchingPairIn: {
-            /** Left Id */
-            left_id: string;
-            /** Right Id */
-            right_id: string;
-        };
-        /**
          * NumericRangeScoreIn
          * @description Request model for a numeric range with associated score.
          *
@@ -2029,750 +3558,6 @@ export interface components {
              * @default null
              */
             scoring_schema: (components["schemas"]["ChoiceOptionMapScoringSchemaIn"] | components["schemas"]["MatchingAnswerKeyScoringSchemaIn"] | components["schemas"]["RatingDirectScoringSchemaIn"] | components["schemas"]["FieldNumericRangesScoringSchemaIn"]) | null;
-        };
-        /**
-         * CreateProjectRequest
-         * @description Request body for creating a new project.
-         */
-        CreateProjectRequest: {
-            /** Name */
-            name: string;
-            /** Slug */
-            slug: string;
-        };
-        /**
-         * MyProjectPermissionsOut
-         * @description API response shape for the current user's effective permissions in a project.
-         */
-        MyProjectPermissionsOut: {
-            /** Permissions */
-            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
-        };
-        /**
-         * UpdateProjectRequest
-         * @description Request body for partially updating a project.
-         */
-        UpdateProjectRequest: {
-            /**
-             * Name
-             * @default null
-             */
-            name: string | null;
-            /**
-             * Slug
-             * @default null
-             */
-            slug: string | null;
-        };
-        /**
-         * SendInvitationRequest
-         * @description Request body for inviting a user to a project by email.
-         */
-        SendInvitationRequest: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /**
-             * Role Id
-             * @default null
-             */
-            role_id: number | null;
-            /**
-             * Invite Message
-             * @default null
-             */
-            invite_message: string | null;
-        };
-        /**
-         * UpdateMemberRequest
-         * @description Request body for updating a project membership (role and/or status).
-         *
-         *     Omit a field to leave it unchanged. Pass role_id: null to clear the role.
-         */
-        UpdateMemberRequest: {
-            /**
-             * Role Id
-             * @default null
-             */
-            role_id: number | null;
-            /**
-             * Status
-             * @default null
-             */
-            status: ("active" | "suspended") | null;
-        };
-        /**
-         * PublicLinkOut
-         * @description API response shape for a survey link.
-         */
-        PublicLinkOut: {
-            /** Id */
-            id: number;
-            /** Survey Id */
-            survey_id: number;
-            /** Name */
-            name: string;
-            /** Token Prefix */
-            token_prefix: string;
-            /** Is Active */
-            is_active: boolean;
-            /** Requires Auth */
-            requires_auth: boolean;
-            /** Assigned Email */
-            assigned_email: string | null;
-            /** Expires At */
-            expires_at: string | null;
-            /** Used At */
-            used_at: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /**
-         * ListPublicLinksOut
-         * @description API response shape for listing all public links for a survey.
-         */
-        ListPublicLinksOut: {
-            /** Links */
-            links: components["schemas"]["PublicLinkOut"][];
-        };
-        /**
-         * CreatePublicLinkRequest
-         * @description Request body for creating a survey link.
-         */
-        CreatePublicLinkRequest: {
-            /** Name */
-            name: string;
-            /**
-             * Assigned Email
-             * @default null
-             */
-            assigned_email: string | null;
-            /**
-             * Requires Auth
-             * @default false
-             */
-            requires_auth: boolean;
-            /**
-             * Expires At
-             * @default null
-             */
-            expires_at: string | null;
-        };
-        /**
-         * CreatePublicLinkOut
-         * @description API response shape for creating a public link.
-         */
-        CreatePublicLinkOut: {
-            link: components["schemas"]["PublicLinkOut"];
-            /** Token */
-            token: string;
-            /** Url */
-            url: string;
-        };
-        /**
-         * UpdatePublicLinkRequest
-         * @description Request body for partially updating a survey link.
-         */
-        UpdatePublicLinkRequest: {
-            /**
-             * Is Active
-             * @default null
-             */
-            is_active: boolean | null;
-            /**
-             * Name
-             * @default null
-             */
-            name: string | null;
-            /**
-             * Assigned Email
-             * @default null
-             */
-            assigned_email: string | null;
-            /**
-             * Requires Auth
-             * @default null
-             */
-            requires_auth: boolean | null;
-            /**
-             * Expires At
-             * @default null
-             */
-            expires_at: string | null;
-        };
-        /**
-         * ProjectRoleOut
-         * @description API response shape for a project role.
-         */
-        ProjectRoleOut: {
-            /** Id */
-            id: number;
-            /** Project Id */
-            project_id: number;
-            /** Name */
-            name: string;
-            /** Description */
-            description: string | null;
-            /** Is System Role */
-            is_system_role: boolean;
-            /** Permissions */
-            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /**
-         * CreateProjectRoleRequest
-         * @description Request body for creating a project role.
-         */
-        CreateProjectRoleRequest: {
-            /** Name */
-            name: string;
-            /**
-             * Description
-             * @default null
-             */
-            description: string | null;
-            /** Permissions */
-            permissions?: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
-        };
-        /**
-         * UpdateProjectRoleRequest
-         * @description Request body for partially updating a project role.
-         */
-        UpdateProjectRoleRequest: {
-            /**
-             * Name
-             * @default null
-             */
-            name: string | null;
-            /**
-             * Description
-             * @default null
-             */
-            description: string | null;
-            /**
-             * Permissions
-             * @default null
-             */
-            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
-        };
-        /**
-         * CoreSubmissionOut
-         * @description API response shape for a core submission record.
-         */
-        CoreSubmissionOut: {
-            /** Id */
-            id: number;
-            /** Project Id */
-            project_id: number;
-            /** Survey Id */
-            survey_id: number;
-            /** Survey Version Id */
-            survey_version_id: number;
-            /** Response Store Id */
-            response_store_id: number;
-            /**
-             * Submission Channel
-             * @enum {string}
-             */
-            submission_channel: "link" | "slug" | "system";
-            /** Submitted By User Id */
-            submitted_by_user_id: number | null;
-            /** Survey Link Id */
-            survey_link_id: number | null;
-            /** @default null */
-            submitter: components["schemas"]["SubmitterOut"] | null;
-            /** Is Anonymous */
-            is_anonymous: boolean;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "pending" | "stored" | "failed";
-            /** Started At */
-            started_at: string | null;
-            /** Submitted At */
-            submitted_at: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /**
-         * SubmitterOut
-         * @description Lightweight submission submitter identity.
-         */
-        SubmitterOut: {
-            /** Id */
-            id: number;
-            /** Email */
-            email: string;
-            /** Display Name */
-            display_name: string | null;
-        };
-        /**
-         * PaginatedSubmissionsOut
-         * @description API response shape for a paginated list of submissions.
-         */
-        PaginatedSubmissionsOut: {
-            /** Items */
-            items: components["schemas"]["CoreSubmissionOut"][];
-            /** Total */
-            total: number;
-            /** Page */
-            page: number;
-            /** Page Size */
-            page_size: number;
-        };
-        /**
-         * AnswerOut
-         * @description API response shape for a single submission answer.
-         */
-        AnswerOut: {
-            /** Id */
-            id: number;
-            /** Question Key */
-            question_key: string;
-            /**
-             * Answer Family
-             * @enum {string}
-             */
-            answer_family: "choice" | "field" | "matching" | "rating";
-            /** Answer Value */
-            answer_value: {
-                [key: string]: unknown;
-            };
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /**
-         * LinkedSubmissionOut
-         * @description API response shape combining a core submission record with its answers.
-         */
-        LinkedSubmissionOut: {
-            core: components["schemas"]["CoreSubmissionOut"];
-            /** Answers */
-            answers: components["schemas"]["AnswerOut"][];
-        };
-        /**
-         * SurveyMemberOut
-         * @description Embedded user details on a survey member row.
-         */
-        SurveyMemberOut: {
-            /** Id */
-            id: number;
-            /** User Id */
-            user_id: number;
-            /** Project Id */
-            project_id: number;
-            /** Role Id */
-            role_id: number | null;
-            /** Status */
-            status: string;
-        };
-        /**
-         * SurveyRoleOut
-         * @description API response shape for a survey role.
-         */
-        SurveyRoleOut: {
-            /** Id */
-            id: number;
-            /** Project Id */
-            project_id: number;
-            /** Name */
-            name: string;
-            /** Description */
-            description: string | null;
-            /** Permissions */
-            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /**
-         * SurveyMemberRoleOut
-         * @description API response shape for a survey membership role assignment.
-         */
-        SurveyMemberRoleOut: {
-            /** Project Id */
-            project_id: number;
-            /** Survey Id */
-            survey_id: number;
-            /** Membership Id */
-            membership_id: number;
-            /** Role Id */
-            role_id: number;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** @default null */
-            member: components["schemas"]["SurveyMemberOut"] | null;
-            /** @default null */
-            role: components["schemas"]["SurveyRoleOut"] | null;
-        };
-        /**
-         * AssignSurveyMemberRoleRequest
-         * @description Request body for assigning a survey role to a project member for a survey.
-         */
-        AssignSurveyMemberRoleRequest: {
-            /** Membership Id */
-            membership_id: number;
-            /** Role Id */
-            role_id: number;
-        };
-        /**
-         * UpdateSurveyMemberRoleRequest
-         * @description Request body for updating a survey member role assignment.
-         */
-        UpdateSurveyMemberRoleRequest: {
-            /** Role Id */
-            role_id: number;
-        };
-        /**
-         * CreateSurveyRoleRequest
-         * @description Request body for creating a survey role.
-         */
-        CreateSurveyRoleRequest: {
-            /** Name */
-            name: string;
-            /**
-             * Description
-             * @default null
-             */
-            description: string | null;
-            /** Permissions */
-            permissions?: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
-        };
-        /**
-         * UpdateSurveyRoleRequest
-         * @description Request body for partially updating a survey role.
-         */
-        UpdateSurveyRoleRequest: {
-            /**
-             * Name
-             * @default null
-             */
-            name: string | null;
-            /**
-             * Description
-             * @default null
-             */
-            description: string | null;
-            /**
-             * Permissions
-             * @default null
-             */
-            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
-        };
-        /**
-         * SurveyOut
-         * @description API response shape for a survey.
-         */
-        SurveyOut: {
-            /** Id */
-            id: number;
-            /** Project Id */
-            project_id: number;
-            /** Title */
-            title: string;
-            /**
-             * Visibility
-             * @enum {string}
-             */
-            visibility: "private" | "link_only" | "public";
-            /** Public Slug */
-            public_slug: string | null;
-            /** Default Response Store Id */
-            default_response_store_id: number | null;
-            /** Published Version Id */
-            published_version_id: number | null;
-            /** Created By User Id */
-            created_by_user_id: number | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
-        /**
-         * CreateSurveyRequest
-         * @description Request body for creating a new survey.
-         */
-        CreateSurveyRequest: {
-            /** Title */
-            title: string;
-            /**
-             * Visibility
-             * @default private
-             * @enum {string}
-             */
-            visibility: "private" | "link_only" | "public";
-            /**
-             * Public Slug
-             * @default null
-             */
-            public_slug: string | null;
-        };
-        /**
-         * UpdateSurveyRequest
-         * @description Request body for partially updating a survey.
-         */
-        UpdateSurveyRequest: {
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
-            /**
-             * Visibility
-             * @default null
-             */
-            visibility: ("private" | "link_only" | "public") | null;
-            /**
-             * Public Slug
-             * @default null
-             */
-            public_slug: string | null;
-        };
-        /**
-         * SurveyVersionOut
-         * @description API response shape for a survey version.
-         */
-        SurveyVersionOut: {
-            /** Id */
-            id: number;
-            /** Survey Id */
-            survey_id: number;
-            /** Version Number */
-            version_number: number;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "draft" | "published" | "archived";
-            /** Compiled Schema */
-            compiled_schema: {
-                [key: string]: unknown;
-            } | null;
-            /** Published At */
-            published_at: string | null;
-            /** Created By User Id */
-            created_by_user_id: number | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
-        /**
-         * PaginatedPublicSurveysOut
-         * @description API response shape for a paginated list of public surveys.
-         */
-        PaginatedPublicSurveysOut: {
-            /** Items */
-            items: components["schemas"]["SurveyOut"][];
-            /** Total */
-            total: number;
-            /** Page */
-            page: number;
-            /** Page Size */
-            page_size: number;
-        };
-        /**
-         * PublicSurveyOut
-         * @description API response shape for a publicly accessible survey with its published version.
-         */
-        PublicSurveyOut: {
-            survey: components["schemas"]["SurveyOut"];
-            /** @default null */
-            published_version: components["schemas"]["SurveyVersionOut"] | null;
-        };
-        /**
-         * ResolveLinkOut
-         * @description API response shape for resolving a public link token.
-         */
-        ResolveLinkOut: {
-            link: components["schemas"]["PublicLinkOut"];
-            /** @default null */
-            survey: components["schemas"]["SurveyOut"] | null;
-            /** @default null */
-            published_version: components["schemas"]["SurveyVersionOut"] | null;
-        };
-        /**
-         * ChoiceAnswerIn
-         * @description A single answer payload for a choice-based question within a submission.
-         */
-        ChoiceAnswerIn: {
-            /** Question Key */
-            question_key: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            answer_family: "choice";
-            answer_value: components["schemas"]["ChoiceAnswerValue"];
-        };
-        /**
-         * ChoiceAnswerValue
-         * @description Answer value for choice-based questions, containing a list of selected option IDs.
-         */
-        ChoiceAnswerValue: {
-            /** Selected */
-            selected: string[];
-        };
-        /**
-         * FieldAnswerIn
-         * @description A single answer payload for an open-ended question within a submission.
-         */
-        FieldAnswerIn: {
-            /** Question Key */
-            question_key: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            answer_family: "field";
-            answer_value: components["schemas"]["FieldAnswerValue"];
-        };
-        /**
-         * FieldAnswerValue
-         * @description Answer value for open-ended questions, containing a free-form response.
-         */
-        FieldAnswerValue: {
-            /** Value */
-            value: string | number | boolean | null;
-        };
-        /**
-         * MatchPair
-         * @description A single pair of matched items for matching questions.
-         */
-        MatchPair: {
-            /** Left Id */
-            left_id: string;
-            /** Right Id */
-            right_id: string;
-        };
-        /**
-         * MatchingAnswerIn
-         * @description A single answer payload for a matching question within a submission.
-         */
-        MatchingAnswerIn: {
-            /** Question Key */
-            question_key: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            answer_family: "matching";
-            answer_value: components["schemas"]["MatchingAnswerValue"];
-        };
-        /**
-         * MatchingAnswerValue
-         * @description Answer value for matching questions, containing a list of matched pairs.
-         */
-        MatchingAnswerValue: {
-            /** Matches */
-            matches: components["schemas"]["MatchPair"][];
-        };
-        /**
-         * RatingAnswerIn
-         * @description A single answer payload for a rating question within a submission.
-         */
-        RatingAnswerIn: {
-            /** Question Key */
-            question_key: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            answer_family: "rating";
-            answer_value: components["schemas"]["RatingAnswerValue"];
-        };
-        /**
-         * RatingAnswerValue
-         * @description Answer value for rating questions, containing a numeric rating.
-         */
-        RatingAnswerValue: {
-            /** Value */
-            value: number;
-        };
-        /**
-         * SlugSubmissionRequest
-         * @description Request body for creating a public-slug survey submission.
-         */
-        SlugSubmissionRequest: {
-            /**
-             * Started At
-             * @default null
-             */
-            started_at: string | null;
-            /**
-             * Submitted At
-             * @default null
-             */
-            submitted_at: string | null;
-            /** Answers */
-            answers?: (components["schemas"]["ChoiceAnswerIn"] | components["schemas"]["FieldAnswerIn"] | components["schemas"]["MatchingAnswerIn"] | components["schemas"]["RatingAnswerIn"])[];
-            /** Metadata */
-            metadata?: {
-                [key: string]: unknown;
-            };
-            /** Public Slug */
-            public_slug: string;
-            /** Survey Version Id */
-            survey_version_id: number;
-        };
-        /**
-         * LinkSubmissionRequest
-         * @description Request body for creating a survey submission from an authenticated link.
-         */
-        LinkSubmissionRequest: {
-            /**
-             * Started At
-             * @default null
-             */
-            started_at: string | null;
-            /**
-             * Submitted At
-             * @default null
-             */
-            submitted_at: string | null;
-            /** Answers */
-            answers?: (components["schemas"]["ChoiceAnswerIn"] | components["schemas"]["FieldAnswerIn"] | components["schemas"]["MatchingAnswerIn"] | components["schemas"]["RatingAnswerIn"])[];
-            /** Metadata */
-            metadata?: {
-                [key: string]: unknown;
-            };
-            /** Token */
-            token: string;
-            /** Survey Version Id */
-            survey_version_id: number;
         };
     };
     responses: {
@@ -2856,112 +3641,137 @@ export interface components {
 }
 export type ErrorResponse = components['schemas']['ErrorResponse'];
 export type BootstrapUserRequest = components['schemas']['BootstrapUserRequest'];
-export type CurrentUserOut = components['schemas']['CurrentUserOut'];
-export type ProjectOut = components['schemas']['ProjectOut'];
-export type BootstrapUserOut = components['schemas']['BootstrapUserOut'];
-export type CurrentUserProfileOut = components['schemas']['CurrentUserProfileOut'];
+export type CurrentUserResponses = components['schemas']['CurrentUserResponses'];
+export type ProjectResponses = components['schemas']['ProjectResponses'];
+export type BootstrapUserResponses = components['schemas']['BootstrapUserResponses'];
+export type ProjectInvitationResponses = components['schemas']['ProjectInvitationResponses'];
+export type MemberUserResponses = components['schemas']['MemberUserResponses'];
+export type ProjectMemberResponses = components['schemas']['ProjectMemberResponses'];
+export type PublicInvitationResolveResponse = components['schemas']['PublicInvitationResolveResponse'];
+export type CurrentUserProfileResponses = components['schemas']['CurrentUserProfileResponses'];
 export type UpdateProfileRequest = components['schemas']['UpdateProfileRequest'];
 export type ChangeEmailRequest = components['schemas']['ChangeEmailRequest'];
 export type ChangeUsernameRequest = components['schemas']['ChangeUsernameRequest'];
-export type PasswordChangeTicketOut = components['schemas']['PasswordChangeTicketOut'];
-export type ProjectInvitationOut = components['schemas']['ProjectInvitationOut'];
-export type MemberUserOut = components['schemas']['MemberUserOut'];
-export type ProjectMemberOut = components['schemas']['ProjectMemberOut'];
-export type NodeOut = components['schemas']['NodeOut'];
+export type PasswordChangeTicketResponses = components['schemas']['PasswordChangeTicketResponses'];
+export type EmailVerificationCheckResponses = components['schemas']['EmailVerificationCheckResponses'];
+export type ResolveSurveyAccessLinkTokenRequest = components['schemas']['ResolveSurveyAccessLinkTokenRequest'];
+export type SurveyAccessLinkResponse = components['schemas']['SurveyAccessLinkResponse'];
+export type SurveyResponses = components['schemas']['SurveyResponses'];
+export type SurveyVersionResponses = components['schemas']['SurveyVersionResponses'];
+export type ResolveSurveyAccessLinkResponse = components['schemas']['ResolveSurveyAccessLinkResponse'];
+export type PaginatedPublicSurveysResponses = components['schemas']['PaginatedPublicSurveysResponses'];
+export type PublicSurveyResponses = components['schemas']['PublicSurveyResponses'];
+export type LinkTokenAccess = components['schemas']['LinkTokenAccess'];
+export type PublicSlugAccess = components['schemas']['PublicSlugAccess'];
+export type StartSubmissionSessionRequest = components['schemas']['StartSubmissionSessionRequest'];
+export type StartSubmissionSessionResponse = components['schemas']['StartSubmissionSessionResponse'];
+export type ChoiceAnswerValue = components['schemas']['ChoiceAnswerValue'];
+export type DateFieldAnswerValue = components['schemas']['DateFieldAnswerValue'];
+export type EmailFieldAnswerValue = components['schemas']['EmailFieldAnswerValue'];
+export type EmojiRatingAnswerValue = components['schemas']['EmojiRatingAnswerValue'];
+export type LongTextFieldAnswerValue = components['schemas']['LongTextFieldAnswerValue'];
+export type MatchingAnswerPair = components['schemas']['MatchingAnswerPair'];
+export type MatchingAnswerValue = components['schemas']['MatchingAnswerValue'];
+export type NumberFieldAnswerValue = components['schemas']['NumberFieldAnswerValue'];
+export type PhoneFieldAnswerValue = components['schemas']['PhoneFieldAnswerValue'];
+export type ShortTextFieldAnswerValue = components['schemas']['ShortTextFieldAnswerValue'];
+export type SliderRatingAnswerValue = components['schemas']['SliderRatingAnswerValue'];
+export type StarsRatingAnswerValue = components['schemas']['StarsRatingAnswerValue'];
+export type SaveSubmissionSessionAnswerRequest = components['schemas']['SaveSubmissionSessionAnswerRequest'];
+export type SubmissionSessionAnswerResponse = components['schemas']['SubmissionSessionAnswerResponse'];
+export type SubmissionSessionEventRequest = components['schemas']['SubmissionSessionEventRequest'];
+export type CompleteSubmissionSessionResponse = components['schemas']['CompleteSubmissionSessionResponse'];
+export type SendInvitationRequest = components['schemas']['SendInvitationRequest'];
+export type UpdateMemberRequest = components['schemas']['UpdateMemberRequest'];
+export type ParticipantResponses = components['schemas']['ParticipantResponses'];
+export type ListParticipantsResponses = components['schemas']['ListParticipantsResponses'];
+export type CreateParticipantRequest = components['schemas']['CreateParticipantRequest'];
+export type UpdateParticipantRequest = components['schemas']['UpdateParticipantRequest'];
+export type ProjectRoleResponses = components['schemas']['ProjectRoleResponses'];
+export type CreateProjectRoleRequest = components['schemas']['CreateProjectRoleRequest'];
+export type UpdateProjectRoleRequest = components['schemas']['UpdateProjectRoleRequest'];
+export type CreateProjectRequest = components['schemas']['CreateProjectRequest'];
+export type MyProjectPermissionsResponses = components['schemas']['MyProjectPermissionsResponses'];
+export type UpdateProjectRequest = components['schemas']['UpdateProjectRequest'];
+export type SubjectResponse = components['schemas']['SubjectResponse'];
+export type ListSubjectsResponse = components['schemas']['ListSubjectsResponse'];
+export type SubjectIdentityResponse = components['schemas']['SubjectIdentityResponse'];
+export type SubjectDetailResponse = components['schemas']['SubjectDetailResponse'];
+export type UpdateSubjectRequest = components['schemas']['UpdateSubjectRequest'];
+export type ListSurveyAccessLinksResponse = components['schemas']['ListSurveyAccessLinksResponse'];
+export type CreateSurveyAccessLinkRequest = components['schemas']['CreateSurveyAccessLinkRequest'];
+export type CreateSurveyAccessLinkResponse = components['schemas']['CreateSurveyAccessLinkResponse'];
+export type UpdateSurveyAccessLinkRequest = components['schemas']['UpdateSurveyAccessLinkRequest'];
+export type SendSurveyLinkEmailResponse = components['schemas']['SendSurveyLinkEmailResponse'];
 export type ChoiceConditionIn = components['schemas']['ChoiceConditionIn'];
+export type ChoiceDefinitionIn = components['schemas']['ChoiceDefinitionIn'];
 export type ChoiceOptionIn = components['schemas']['ChoiceOptionIn'];
-export type ChoiceQuestionConfig = components['schemas']['ChoiceQuestionConfig'];
-export type ChoiceQuestionNestedIn = components['schemas']['ChoiceQuestionNestedIn'];
 export type ChoiceQuestionSchemaIn = components['schemas']['ChoiceQuestionSchemaIn'];
 export type ChoiceRequirementsIn = components['schemas']['ChoiceRequirementsIn'];
 export type DateFieldRequirementsIn = components['schemas']['DateFieldRequirementsIn'];
-export type ElseDoIn = components['schemas']['ElseDoIn'];
+export type EndAndDiscardActionIn = components['schemas']['EndAndDiscardActionIn'];
+export type EndAndSubmitActionIn = components['schemas']['EndAndSubmitActionIn'];
 export type FieldConditionIn = components['schemas']['FieldConditionIn'];
-export type FieldQuestionConfig = components['schemas']['FieldQuestionConfig'];
-export type FieldQuestionNestedIn = components['schemas']['FieldQuestionNestedIn'];
+export type FieldDefinitionIn = components['schemas']['FieldDefinitionIn'];
 export type FieldQuestionSchemaIn = components['schemas']['FieldQuestionSchemaIn'];
-export type FieldQuestionUiIn = components['schemas']['FieldQuestionUIIn'];
+export type FieldUiIn = components['schemas']['FieldUIIn'];
 export type MatchingConditionIn = components['schemas']['MatchingConditionIn'];
+export type MatchingDefinitionIn = components['schemas']['MatchingDefinitionIn'];
 export type MatchingItemIn = components['schemas']['MatchingItemIn'];
-export type MatchingQuestionConfig = components['schemas']['MatchingQuestionConfig'];
-export type MatchingQuestionNestedIn = components['schemas']['MatchingQuestionNestedIn'];
+export type MatchingPairIn = components['schemas']['MatchingPairIn'];
 export type MatchingQuestionSchemaIn = components['schemas']['MatchingQuestionSchemaIn'];
 export type MatchingRequirementsIn = components['schemas']['MatchingRequirementsIn'];
 export type NumberFieldRequirementsIn = components['schemas']['NumberFieldRequirementsIn'];
-export type RangeIn = components['schemas']['RangeIn'];
+export type QuestionNodeResponse = components['schemas']['QuestionNodeResponse'];
 export type RatingConditionIn = components['schemas']['RatingConditionIn'];
-export type RatingEmojiNestedIn = components['schemas']['RatingEmojiNestedIn'];
-export type RatingEmojiSchemaIn = components['schemas']['RatingEmojiSchemaIn'];
+export type RatingEmojiDefinitionIn = components['schemas']['RatingEmojiDefinitionIn'];
 export type RatingQuestionSchemaIn = components['schemas']['RatingQuestionSchemaIn'];
+export type RatingRangeIn = components['schemas']['RatingRangeIn'];
 export type RatingRequirementsIn = components['schemas']['RatingRequirementsIn'];
-export type RatingSliderNestedIn = components['schemas']['RatingSliderNestedIn'];
-export type RatingSliderSchemaIn = components['schemas']['RatingSliderSchemaIn'];
-export type RatingStarNestedIn = components['schemas']['RatingStarNestedIn'];
-export type RatingStarSchemaIn = components['schemas']['RatingStarSchemaIn'];
+export type RatingSliderDefinitionIn = components['schemas']['RatingSliderDefinitionIn'];
+export type RatingStarDefinitionIn = components['schemas']['RatingStarDefinitionIn'];
 export type RatingUiIn = components['schemas']['RatingUIIn'];
-export type RuleElseIn = components['schemas']['RuleElseIn'];
+export type RuleBranchIn = components['schemas']['RuleBranchIn'];
 export type RuleIfIn = components['schemas']['RuleIfIn'];
+export type RuleNodeResponse = components['schemas']['RuleNodeResponse'];
 export type RuleSchemaIn = components['schemas']['RuleSchemaIn'];
-export type RuleThenIn = components['schemas']['RuleThenIn'];
-export type ThenSetItemIn = components['schemas']['ThenSetItemIn'];
+export type RuleSetItemIn = components['schemas']['RuleSetItemIn'];
+export type SkipToActionIn = components['schemas']['SkipToActionIn'];
+export type NodeResponses = components['schemas']['NodeResponses'];
+export type CreateQuestionNodeRequest = components['schemas']['CreateQuestionNodeRequest'];
+export type CreateRuleNodeRequest = components['schemas']['CreateRuleNodeRequest'];
 export type CreateNodeRequest = components['schemas']['CreateNodeRequest'];
 export type UpdateNodeRequest = components['schemas']['UpdateNodeRequest'];
-export type ScoringRuleOut = components['schemas']['ScoringRuleOut'];
+export type SurveyMemberResponses = components['schemas']['SurveyMemberResponses'];
+export type SurveyRoleResponses = components['schemas']['SurveyRoleResponses'];
+export type SurveyMemberRoleResponses = components['schemas']['SurveyMemberRoleResponses'];
+export type AssignSurveyMemberRoleRequest = components['schemas']['AssignSurveyMemberRoleRequest'];
+export type UpdateSurveyMemberRoleRequest = components['schemas']['UpdateSurveyMemberRoleRequest'];
+export type SurveyAnswerSlotResponses = components['schemas']['SurveyAnswerSlotResponses'];
+export type SurveySessionEventResponses = components['schemas']['SurveySessionEventResponses'];
+export type SurveySessionResponses = components['schemas']['SurveySessionResponses'];
+export type SurveySessionTreeResponses = components['schemas']['SurveySessionTreeResponses'];
+export type SurveySubjectResponses = components['schemas']['SurveySubjectResponses'];
+export type SurveySubjectTreeResponses = components['schemas']['SurveySubjectTreeResponses'];
+export type PaginatedSurveySubjectTreesResponses = components['schemas']['PaginatedSurveySubjectTreesResponses'];
+export type ExportSurveyResultsRequest = components['schemas']['ExportSurveyResultsRequest'];
+export type CreateSurveyRoleRequest = components['schemas']['CreateSurveyRoleRequest'];
+export type UpdateSurveyRoleRequest = components['schemas']['UpdateSurveyRoleRequest'];
+export type CreateSurveyRequest = components['schemas']['CreateSurveyRequest'];
+export type UpdateSurveyRequest = components['schemas']['UpdateSurveyRequest'];
+export type MySurveyPermissionsResponses = components['schemas']['MySurveyPermissionsResponses'];
+export type ScoringRuleResponses = components['schemas']['ScoringRuleResponses'];
 export type ChoiceOptionMapConfig = components['schemas']['ChoiceOptionMapConfig'];
 export type ChoiceOptionMapScoringSchemaIn = components['schemas']['ChoiceOptionMapScoringSchemaIn'];
 export type FieldNumericRangesConfig = components['schemas']['FieldNumericRangesConfig'];
 export type FieldNumericRangesScoringSchemaIn = components['schemas']['FieldNumericRangesScoringSchemaIn'];
 export type MatchingAnswerKeyConfig = components['schemas']['MatchingAnswerKeyConfig'];
 export type MatchingAnswerKeyScoringSchemaIn = components['schemas']['MatchingAnswerKeyScoringSchemaIn'];
-export type MatchingPairIn = components['schemas']['MatchingPairIn'];
 export type NumericRangeScoreIn = components['schemas']['NumericRangeScoreIn'];
 export type RatingDirectConfig = components['schemas']['RatingDirectConfig'];
 export type RatingDirectScoringSchemaIn = components['schemas']['RatingDirectScoringSchemaIn'];
 export type CreateScoringRuleRequest = components['schemas']['CreateScoringRuleRequest'];
 export type UpdateScoringRuleRequest = components['schemas']['UpdateScoringRuleRequest'];
-export type CreateProjectRequest = components['schemas']['CreateProjectRequest'];
-export type MyProjectPermissionsOut = components['schemas']['MyProjectPermissionsOut'];
-export type UpdateProjectRequest = components['schemas']['UpdateProjectRequest'];
-export type SendInvitationRequest = components['schemas']['SendInvitationRequest'];
-export type UpdateMemberRequest = components['schemas']['UpdateMemberRequest'];
-export type PublicLinkOut = components['schemas']['PublicLinkOut'];
-export type ListPublicLinksOut = components['schemas']['ListPublicLinksOut'];
-export type CreatePublicLinkRequest = components['schemas']['CreatePublicLinkRequest'];
-export type CreatePublicLinkOut = components['schemas']['CreatePublicLinkOut'];
-export type UpdatePublicLinkRequest = components['schemas']['UpdatePublicLinkRequest'];
-export type ProjectRoleOut = components['schemas']['ProjectRoleOut'];
-export type CreateProjectRoleRequest = components['schemas']['CreateProjectRoleRequest'];
-export type UpdateProjectRoleRequest = components['schemas']['UpdateProjectRoleRequest'];
-export type CoreSubmissionOut = components['schemas']['CoreSubmissionOut'];
-export type SubmitterOut = components['schemas']['SubmitterOut'];
-export type PaginatedSubmissionsOut = components['schemas']['PaginatedSubmissionsOut'];
-export type AnswerOut = components['schemas']['AnswerOut'];
-export type LinkedSubmissionOut = components['schemas']['LinkedSubmissionOut'];
-export type SurveyMemberOut = components['schemas']['SurveyMemberOut'];
-export type SurveyRoleOut = components['schemas']['SurveyRoleOut'];
-export type SurveyMemberRoleOut = components['schemas']['SurveyMemberRoleOut'];
-export type AssignSurveyMemberRoleRequest = components['schemas']['AssignSurveyMemberRoleRequest'];
-export type UpdateSurveyMemberRoleRequest = components['schemas']['UpdateSurveyMemberRoleRequest'];
-export type CreateSurveyRoleRequest = components['schemas']['CreateSurveyRoleRequest'];
-export type UpdateSurveyRoleRequest = components['schemas']['UpdateSurveyRoleRequest'];
-export type SurveyOut = components['schemas']['SurveyOut'];
-export type CreateSurveyRequest = components['schemas']['CreateSurveyRequest'];
-export type UpdateSurveyRequest = components['schemas']['UpdateSurveyRequest'];
-export type SurveyVersionOut = components['schemas']['SurveyVersionOut'];
-export type PaginatedPublicSurveysOut = components['schemas']['PaginatedPublicSurveysOut'];
-export type PublicSurveyOut = components['schemas']['PublicSurveyOut'];
-export type ResolveLinkOut = components['schemas']['ResolveLinkOut'];
-export type ChoiceAnswerIn = components['schemas']['ChoiceAnswerIn'];
-export type ChoiceAnswerValue = components['schemas']['ChoiceAnswerValue'];
-export type FieldAnswerIn = components['schemas']['FieldAnswerIn'];
-export type FieldAnswerValue = components['schemas']['FieldAnswerValue'];
-export type MatchPair = components['schemas']['MatchPair'];
-export type MatchingAnswerIn = components['schemas']['MatchingAnswerIn'];
-export type MatchingAnswerValue = components['schemas']['MatchingAnswerValue'];
-export type RatingAnswerIn = components['schemas']['RatingAnswerIn'];
-export type RatingAnswerValue = components['schemas']['RatingAnswerValue'];
-export type SlugSubmissionRequest = components['schemas']['SlugSubmissionRequest'];
-export type LinkSubmissionRequest = components['schemas']['LinkSubmissionRequest'];
 export type ResponseBadRequestError = components['responses']['BadRequestError'];
 export type ResponseUnauthorizedError = components['responses']['UnauthorizedError'];
 export type ResponseForbiddenError = components['responses']['ForbiddenError'];
@@ -2991,28 +3801,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BootstrapUserOut"];
+                    "application/json": components["schemas"]["BootstrapUserResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
-    healthCheck: {
+    getMyInvitations: {
         parameters: {
             query?: never;
             header?: never;
@@ -3026,31 +3828,57 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProjectInvitationResponses"][];
+                };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
-    readinessCheck: {
+    acceptInvitation: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                invitation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    declineInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitation_id: number;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -3062,21 +3890,73 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    resolveInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicInvitationResolveResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    acceptInvitationByToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3095,24 +3975,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CurrentUserProfileOut"];
+                    "application/json": components["schemas"]["CurrentUserProfileResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3135,24 +4007,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CurrentUserOut"];
+                    "application/json": components["schemas"]["CurrentUserResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3176,21 +4040,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3214,21 +4070,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3247,24 +4095,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PasswordChangeTicketOut"];
+                    "application/json": components["schemas"]["PasswordChangeTicketResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3284,21 +4124,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3318,21 +4150,41 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    checkVerification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailVerificationCheckResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3352,25 +4204,238 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
-    getMyInvitations: {
+    resolveLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveSurveyAccessLinkTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolveSurveyAccessLinkResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    verifyAuthenticatedLinkParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveSurveyAccessLinkTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyAccessLinkResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listPublicSurveys: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedPublicSurveysResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getPublicSurvey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                public_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicSurveyResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    startSubmissionSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartSubmissionSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartSubmissionSessionResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    saveSubmissionSessionAnswer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                question_node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveSubmissionSessionAnswerRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionSessionAnswerResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    recordSubmissionSessionEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmissionSessionEventRequest"];
+            };
+        };
+        responses: {
+            /** @description No content. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    completeSubmissionSession: {
         parameters: {
             query?: never;
             header?: never;
@@ -3385,33 +4450,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectInvitationOut"][];
+                    "application/json": components["schemas"]["CompleteSubmissionSessionResponse"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
-    acceptInvitation: {
+    listInvitations: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                invitation_id: number;
+                project_id: number;
             };
             cookie?: never;
         };
@@ -3423,32 +4480,59 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectMemberOut"];
+                    "application/json": components["schemas"]["ProjectInvitationResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
-    declineInvitation: {
+    sendInvitation: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendInvitationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectInvitationResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    revokeInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
                 invitation_id: number;
             };
             cookie?: never;
@@ -3462,21 +4546,815 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberResponses"][];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    removeMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listParticipants: {
+        parameters: {
+            query?: {
+                search?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListParticipantsResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateParticipantRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateParticipantRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRoleResponses"][];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProjectRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRoleResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                role_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                role_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProjectRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRoleResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listProjects: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponses"][];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProjectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProjectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getMyProjectPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyProjectPermissionsResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listSubjects: {
+        parameters: {
+            query?: {
+                canonical_status?: "canonical" | "alias" | "all";
+                is_participant?: boolean | null;
+                search?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListSubjectsResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getSubject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubjectDetailResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateSubject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSubjectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubjectDetailResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listSurveyAccessLinks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListSurveyAccessLinksResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createSurveyAccessLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSurveyAccessLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateSurveyAccessLinkResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteSurveyAccessLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateSurveyAccessLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSurveyAccessLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyAccessLinkResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    sendSurveyLinkEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendSurveyLinkEmailResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3499,24 +5377,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NodeOut"][];
+                    "application/json": components["schemas"]["NodeResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3543,24 +5413,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NodeOut"];
+                    "application/json": components["schemas"]["NodeResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3572,7 +5434,7 @@ export interface operations {
                 project_id: number;
                 survey_id: number;
                 version_number: number;
-                node_id: number;
+                node_id: string;
             };
             cookie?: never;
         };
@@ -3584,24 +5446,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NodeOut"];
+                    "application/json": components["schemas"]["NodeResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3613,7 +5467,7 @@ export interface operations {
                 project_id: number;
                 survey_id: number;
                 version_number: number;
-                node_id: number;
+                node_id: string;
             };
             cookie?: never;
         };
@@ -3626,21 +5480,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3652,7 +5498,7 @@ export interface operations {
                 project_id: number;
                 survey_id: number;
                 version_number: number;
-                node_id: number;
+                node_id: string;
             };
             cookie?: never;
         };
@@ -3668,24 +5514,600 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NodeOut"];
+                    "application/json": components["schemas"]["NodeResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listSurveyMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyMemberRoleResponses"][];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    assignSurveyMemberRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignSurveyMemberRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyMemberRoleResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    removeSurveyMemberRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateSurveyMemberRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSurveyMemberRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyMemberRoleResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listSurveyResultSubjects: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                include_decrypted_answer_values?: boolean;
+                include_events?: boolean;
+            };
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSurveySubjectTreesResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getSubjectTree: {
+        parameters: {
+            query?: {
+                include_decrypted_answer_values?: boolean;
+                include_events?: boolean;
+            };
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveySubjectTreeResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    exportResults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportSurveyResultsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listSurveyRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyRoleResponses"][];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createSurveyRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSurveyRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyRoleResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteSurveyRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                role_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateSurveyRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                role_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSurveyRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyRoleResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listSurveys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyResponses"][];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createSurvey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSurveyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getSurvey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteSurvey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateSurvey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSurveyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getMySurveyPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MySurveyPermissionsResponses"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3708,24 +6130,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ScoringRuleOut"][];
+                    "application/json": components["schemas"]["ScoringRuleResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3752,24 +6166,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ScoringRuleOut"];
+                    "application/json": components["schemas"]["ScoringRuleResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3794,21 +6200,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -3836,1422 +6234,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ScoringRuleOut"];
+                    "application/json": components["schemas"]["ScoringRuleResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listProjects: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectOut"][];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createProject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateProjectRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    getProject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    deleteProject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No content. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updateProject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateProjectRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    getMyProjectPermissions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MyProjectPermissionsOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listMembers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectMemberOut"][];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listInvitations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectInvitationOut"][];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    sendInvitation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SendInvitationRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectInvitationOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    revokeInvitation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                invitation_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    removeMember: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                membership_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updateMember: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                membership_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateMemberRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectMemberOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listPublicLinks: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListPublicLinksOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createPublicLink: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreatePublicLinkRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CreatePublicLinkOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    deletePublicLink: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                link_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No content. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updatePublicLink: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                link_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdatePublicLinkRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PublicLinkOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listRoles: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectRoleOut"][];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateProjectRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectRoleOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    deleteRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                role_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updateRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                role_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateProjectRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectRoleOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listSubmissions: {
-        parameters: {
-            query?: {
-                survey_id?: number | null;
-                status?: ("pending" | "stored" | "failed") | null;
-                submission_channel?: ("link" | "slug" | "system") | null;
-                page?: number;
-                page_size?: number;
-            };
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedSubmissionsOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    getSubmission: {
-        parameters: {
-            query?: {
-                include_answers?: boolean;
-                resolve_identity?: boolean;
-            };
-            header?: never;
-            path: {
-                project_id: number;
-                submission_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LinkedSubmissionOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listSurveyMembers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyMemberRoleOut"][];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    assignSurveyMemberRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AssignSurveyMemberRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyMemberRoleOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    removeSurveyMemberRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                membership_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updateSurveyMemberRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                membership_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateSurveyMemberRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyMemberRoleOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listSurveyRoles: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyRoleOut"][];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createSurveyRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateSurveyRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyRoleOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    deleteSurveyRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                role_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updateSurveyRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                role_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateSurveyRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyRoleOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listSurveys: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyOut"][];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createSurvey: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateSurveyRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    getSurvey: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    deleteSurvey: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No content. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updateSurvey: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateSurveyRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveyOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5273,24 +6265,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionOut"][];
+                    "application/json": components["schemas"]["SurveyVersionResponses"][];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5312,24 +6296,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionOut"];
+                    "application/json": components["schemas"]["SurveyVersionResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5352,24 +6328,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionOut"];
+                    "application/json": components["schemas"]["SurveyVersionResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5392,24 +6360,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionOut"];
+                    "application/json": components["schemas"]["SurveyVersionResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5432,24 +6392,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionOut"];
+                    "application/json": components["schemas"]["SurveyVersionResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -5472,33 +6424,22 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionOut"];
+                    "application/json": components["schemas"]["SurveyVersionResponses"];
                 };
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
-    listPublicSurveys: {
+    healthCheck: {
         parameters: {
-            query?: {
-                page?: number;
-                page_size?: number;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -5510,71 +6451,21 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["PaginatedPublicSurveysOut"];
-                };
+                content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
-    getPublicSurvey: {
+    readinessCheck: {
         parameters: {
             query?: never;
-            header?: never;
-            path: {
-                public_slug: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PublicSurveyOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    resolveLink: {
-        parameters: {
-            query: {
-                token: string;
-            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -5586,105 +6477,41 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["ResolveLinkOut"];
-                };
+                content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };
-    createSlugSubmission: {
+    testEmail: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SlugSubmissionRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful response. */
-            201: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["LinkedSubmissionOut"];
-                };
+                content?: never;
             };
-            /** @description Bad request. */
             400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
             401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
             403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
             404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
             409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
             422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
             429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createLinkSubmission: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LinkSubmissionRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LinkedSubmissionOut"];
-                };
-            };
-            /** @description Bad request. */
-            400: components["responses"]["BadRequestError"];
-            /** @description Authentication required or token invalid. */
-            401: components["responses"]["UnauthorizedError"];
-            /** @description Authenticated but not authorized for this resource. */
-            403: components["responses"]["ForbiddenError"];
-            /** @description Resource not found. */
-            404: components["responses"]["NotFoundError"];
-            /** @description Conflict with the current resource state. */
-            409: components["responses"]["ConflictError"];
-            /** @description Request was syntactically valid but semantically invalid. */
-            422: components["responses"]["ValidationError"];
-            /** @description Rate limit exceeded. */
-            429: components["responses"]["RateLimitError"];
-            /** @description Internal server error. */
             500: components["responses"]["InternalServerError"];
         };
     };

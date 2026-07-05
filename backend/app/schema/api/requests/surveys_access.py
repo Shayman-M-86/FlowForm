@@ -1,63 +1,25 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from app.domain.permissions import SurveyPermission
 from app.schema.api import limits
-from app.schema.api.requests.helpers import int_id_field, required_int_id_field
+from app.schema.api.common.fields import ProjectRoleDescription, ProjectRoleName
+from app.schema.api.common.validators import int_id_field, required_int_id_field
 
 
 class CreateSurveyRoleRequest(BaseModel):
     """Request body for creating a survey role."""
 
-    name: str = Field(max_length=limits.PROJECT_ROLE_NAME_MAX)
-    description: str | None = Field(default=None, max_length=limits.PROJECT_ROLE_DESCRIPTION_MAX)
-    permissions: set[SurveyPermission] = Field(
-        default_factory=set, max_length=limits.SURVEY_ROLE_PERMISSIONS_MAX
-    )
-
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, value: str) -> str:
-        value = value.strip()
-        if not value:
-            raise ValueError("Role name must not be blank.")
-        return value
-
-    @field_validator("description")
-    @classmethod
-    def validate_description(cls, value: str | None) -> str | None:
-        if value is not None:
-            value = value.strip()
-            if not value:
-                raise ValueError("Role description must not be blank.")
-        return value
+    name: ProjectRoleName
+    description: ProjectRoleDescription | None = None
+    permissions: set[SurveyPermission] = Field(default_factory=set, max_length=limits.SURVEY_ROLE_PERMISSIONS_MAX)
 
 
 class UpdateSurveyRoleRequest(BaseModel):
     """Request body for partially updating a survey role."""
 
-    name: str | None = Field(default=None, max_length=limits.PROJECT_ROLE_NAME_MAX)
-    description: str | None = Field(default=None, max_length=limits.PROJECT_ROLE_DESCRIPTION_MAX)
-    permissions: set[SurveyPermission] | None = Field(
-        default=None, max_length=limits.SURVEY_ROLE_PERMISSIONS_MAX
-    )
-
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, value: str | None) -> str | None:
-        if value is not None:
-            value = value.strip()
-            if not value:
-                raise ValueError("Role name must not be blank.")
-        return value
-
-    @field_validator("description")
-    @classmethod
-    def validate_description(cls, value: str | None) -> str | None:
-        if value is not None:
-            value = value.strip()
-            if not value:
-                raise ValueError("Role description must not be blank.")
-        return value
+    name: ProjectRoleName | None = None
+    description: ProjectRoleDescription | None = None
+    permissions: set[SurveyPermission] | None = Field(default=None, max_length=limits.SURVEY_ROLE_PERMISSIONS_MAX)
 
 
 class AssignSurveyMemberRoleRequest(BaseModel):

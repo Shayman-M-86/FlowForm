@@ -5,7 +5,7 @@ from typing import cast
 import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation, NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.survey_access import SurveyRole
@@ -14,7 +14,7 @@ from tests.integration.core.factories import make_project, make_survey_role
 
 
 def test_survey_role_can_be_created(
-    db_session: scoped_session[Session], project: Project
+    db_session: Session, project: Project
 ) -> None:
     """All fields are persisted and the server default populates created_at."""
     role = make_survey_role(project.id, name="reviewer")
@@ -29,7 +29,7 @@ def test_survey_role_can_be_created(
 
 
 def test_survey_role_unique_name_within_project(
-    db_session: scoped_session[Session], project: Project
+    db_session: Session, project: Project
 ) -> None:
     """Two survey roles in the same project cannot share a name."""
     role_a = make_survey_role(project.id, name="analyst")
@@ -53,7 +53,7 @@ def test_survey_role_unique_name_within_project(
 
 
 def test_survey_role_same_name_allowed_across_projects(
-    db_session: scoped_session[Session], user: User
+    db_session: Session, user: User
 ) -> None:
     """Role name uniqueness is scoped to a project — different projects may reuse names."""
     project_a = make_project(user.id, name="A", slug="sr-proj-a")
@@ -72,7 +72,7 @@ def test_survey_role_same_name_allowed_across_projects(
 
 
 def test_survey_role_requires_name(
-    db_session: scoped_session[Session], project: Project
+    db_session: Session, project: Project
 ) -> None:
     """name is NOT NULL — omitting it raises an IntegrityError."""
     role = SurveyRole()
@@ -94,7 +94,7 @@ def test_survey_role_requires_name(
 
 
 def test_survey_role_cascades_on_project_delete(
-    db_session: scoped_session[Session], user: User
+    db_session: Session, user: User
 ) -> None:
     """Deleting the project removes all its survey roles."""
     project = make_project(user.id, slug="sr-cascade-proj")
@@ -116,7 +116,7 @@ def test_survey_role_cascades_on_project_delete(
 
 
 def test_survey_role_description_is_persisted(
-    db_session: scoped_session[Session], project: Project
+    db_session: Session, project: Project
 ) -> None:
     """description is stored and round-trips correctly."""
     role = make_survey_role(project.id, name="desc-role", description="Handles survey review tasks.")
@@ -131,7 +131,7 @@ def test_survey_role_description_is_persisted(
 
 
 def test_survey_role_description_nullable(
-    db_session: scoped_session[Session], project: Project
+    db_session: Session, project: Project
 ) -> None:
     """description defaults to NULL when omitted."""
     role = make_survey_role(project.id, name="no-desc-role")
@@ -146,7 +146,7 @@ def test_survey_role_description_nullable(
 
 
 def test_survey_role_description_blank_rejected(
-    db_session: scoped_session[Session], project: Project
+    db_session: Session, project: Project
 ) -> None:
     """Blank/whitespace-only description violates the CHECK constraint."""
     role = make_survey_role(project.id, name="blank-desc-role", description="   ")
@@ -166,7 +166,7 @@ def test_survey_role_description_blank_rejected(
 
 
 def test_survey_role_description_too_long_rejected(
-    db_session: scoped_session[Session], project: Project
+    db_session: Session, project: Project
 ) -> None:
     """A description exceeding 500 characters violates the CHECK constraint."""
     role = make_survey_role(project.id, name="long-desc-role", description="x" * 501)

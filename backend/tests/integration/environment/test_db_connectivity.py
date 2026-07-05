@@ -1,4 +1,4 @@
-from helpers import current_database_name
+from tests.integration.environment.helpers import current_database_name
 
 
 def test_backend_can_connect_to_both_databases() -> None:

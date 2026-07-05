@@ -7,14 +7,14 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 COMPOSE_FILE="${REPO_ROOT}/infra/docker/docker-compose.dev.yml"
 CORE_LOAD_SCRIPT="${REPO_ROOT}/scripts/infra/load-core-mock-data.sh"
 RESPONSE_LOAD_SCRIPT="${REPO_ROOT}/scripts/infra/load-response-mock-data.sh"
-FRONTEND_DIR="${REPO_ROOT}/frontend/my-react-app"
+FRONTEND_DIR="${REPO_ROOT}/frontend"
 
 # Change these if your docker compose service names are different.
 CORE_DB_SERVICE="${CORE_DB_SERVICE:-postgres-core}"
 RESPONSE_DB_SERVICE="${RESPONSE_DB_SERVICE:-postgres-response}"
 
-FRONTEND_LOG="${REPO_ROOT}/frontend/my-react-app/.vite-dev.log"
-FRONTEND_PID_FILE="${REPO_ROOT}/frontend/my-react-app/.vite-dev.pid"
+FRONTEND_LOG="${REPO_ROOT}/frontend/.studio-dev.log"
+FRONTEND_PID_FILE="${REPO_ROOT}/frontend/.studio-dev.pid"
 
 log() {
   printf '\n[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
@@ -119,7 +119,8 @@ start_frontend() {
       . "$NVM_DIR/nvm.sh"
     fi
 
-    nohup npm run dev > "$FRONTEND_LOG" 2>&1 &
+    corepack enable >/dev/null 2>&1 || true
+    nohup pnpm run dev:studio > "$FRONTEND_LOG" 2>&1 &
     echo $! > "$FRONTEND_PID_FILE"
   )
 

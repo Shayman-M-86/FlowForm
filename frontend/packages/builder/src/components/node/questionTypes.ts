@@ -1,272 +1,61 @@
 /**
- * Shared types for survey question cards.
- *
- * Card components own their `content`: every card's `getData()` returns a
- * `QuestionContent` in the shape the spec expects. The page (orchestrator)
- * wraps that content with `{ type: "question", sort_key, content }` when
- * serializing — cards never produce the envelope themselves.
+ * Re-exports the generated API types from @flowform/schema and provides the
+ * builder-local aliases and unions used across the question/rule components.
  */
 
-export type QuestionFamily = "choice" | "matching" | "rating" | "field";
+export type {
+  ChoiceQuestionSchemaIn as ChoiceContent,
+  MatchingQuestionSchemaIn as MatchingContent,
+  RatingQuestionSchemaIn as RatingContent,
+  FieldQuestionSchemaIn as FieldContent,
+  ChoiceRequirementsIn as ChoiceRequirements,
+  MatchingRequirementsIn as MatchingRequirements,
+  RatingRequirementsIn as RatingRequirements,
+  RuleSetItemIn as RuleSetEntry,
+  RuleBranchIn as RuleBranch,
+  RuleSchemaIn as RuleContent,
+  CreateQuestionNodeRequest as QuestionNode,
+  CreateRuleNodeRequest as RuleNode,
+} from "@flowform/schema";
 
-/* ---------- Choice ------------------------------------------------------- */
+import type {
+  ChoiceQuestionSchemaIn,
+  MatchingQuestionSchemaIn,
+  RatingQuestionSchemaIn,
+  FieldQuestionSchemaIn,
+  ChoiceConditionIn,
+  MatchingConditionIn,
+  RatingConditionIn,
+  FieldConditionIn,
+  FieldDefinitionIn,
+  RatingEmojiDefinitionIn,
+  RuleIfIn,
+  NumberFieldRequirementsIn,
+  DateFieldRequirementsIn,
+  CreateQuestionNodeRequest,
+  CreateRuleNodeRequest,
+} from "@flowform/schema";
 
-export interface ChoiceOption {
-  id: string;
-  label: string;
-}
+export type EmojiListType = RatingEmojiDefinitionIn["emoji_list"];
 
-export interface ChoiceDefinition {
-  min: number;
-  max: number;
-  options: ChoiceOption[];
-}
+export type FieldType = FieldDefinitionIn["field_type"];
 
-export interface ChoiceContent {
-  id: string;
-  title: string;
-  label: string;
-  required?: boolean;
-  family: "choice";
-  definition: ChoiceDefinition;
-}
+export type FieldNumberOperator = NumberFieldRequirementsIn["operator"];
 
-/* ---------- Matching ----------------------------------------------------- */
+export type FieldDateOperator = DateFieldRequirementsIn["operator"];
 
-export interface MatchingPrompt {
-  id: string;
-  label: string;
-}
-
-export interface MatchingMatch {
-  id: string;
-  label: string;
-}
-
-export interface MatchingDefinition {
-  prompts: MatchingPrompt[];
-  matches: MatchingMatch[];
-}
-
-export interface MatchingContent {
-  id: string;
-  title: string;
-  label: string;
-  required?: boolean;
-  family: "matching";
-  definition: MatchingDefinition;
-}
-
-/* ---------- Rating ------------------------------------------------------- */
-
-export type RatingVariant = "slider" | "emoji" | "star";
-
-export type EmojiListType = "sad_to_happy" | "angry_to_happy" | "disgust_to_happy";
-
-export interface RatingSliderDefinition {
-  variant: "slider";
-  range: {
-    min: number;
-    max: number;
-    step: number;
-  };
-  ui: {
-    left_label: string;
-    right_label: string;
-  };
-}
-
-export interface RatingEmojiDefinition {
-  variant: "emoji";
-  emoji_list: EmojiListType;
-  words: boolean;
-  ui: {
-    left_label: string;
-    right_label: string;
-  };
-}
-
-export interface RatingStarDefinition {
-  variant: "star";
-  stars: number;
-  ui: {
-    left_label: string;
-    right_label: string;
-  };
-}
-
-export type RatingDefinition =
-  | RatingSliderDefinition
-  | RatingEmojiDefinition
-  | RatingStarDefinition;
-
-export interface RatingContent {
-  id: string;
-  title: string;
-  label: string;
-  required?: boolean;
-  family: "rating";
-  definition: RatingDefinition;
-}
-
-/* ---------- Field -------------------------------------------------------- */
-
-export type FieldType = "short_text" | "long_text" | "email" | "phone" | "number" | "date";
-
-export interface FieldDefinition {
-  field_type: FieldType;
-  ui: {
-    placeholder?: string;
-  };
-}
-
-export interface FieldContent {
-  id: string;
-  title: string;
-  label: string;
-  required?: boolean;
-  family: "field";
-  definition: FieldDefinition;
-}
-
-/* ---------- Union -------------------------------------------------------- */
+export type RuleMatch = RuleIfIn["match"];
 
 export type QuestionContent =
-  | ChoiceContent
-  | MatchingContent
-  | RatingContent
-  | FieldContent;
-
-/* ---------- Rules -------------------------------------------------------- */
-
-export type RuleMatch = "ALL" | "ANY" | "NONE";
-
-export interface ChoiceRequirements {
-  required?: string[];
-  forbidden?: string[];
-  any_of?: string[];
-}
-
-export interface MatchingPair {
-  [promptId: string]: string;
-}
-
-export interface MatchingRequirements {
-  required?: MatchingPair[];
-}
-
-export interface RatingRequirements {
-  min?: number;
-  max?: number;
-}
-
-export type FieldNumberOperator = "LT" | "LTE" | "GT" | "GTE" | "EQ" | "NEQ";
-export type FieldDateOperator = "before" | "after";
-
-export interface FieldNumberRequirements {
-  type: "short_text" | "long_text" | "email" | "phone" | "number";
-  operator: FieldNumberOperator;
-  value: number | string;
-}
-
-export interface FieldDateRequirements {
-  type: "date";
-  operator: FieldDateOperator;
-  value: string;
-}
-
-export type FieldRequirements = FieldNumberRequirements | FieldDateRequirements;
-
-export interface ChoiceCondition {
-  source_id: string;
-  family: "choice";
-  requirements: ChoiceRequirements;
-}
-
-export interface MatchingCondition {
-  source_id: string;
-  family: "matching";
-  requirements: MatchingRequirements;
-}
-
-export interface RatingCondition {
-  source_id: string;
-  family: "rating";
-  requirements: RatingRequirements;
-}
-
-export interface FieldCondition {
-  source_id: string;
-  family: "field";
-  requirements: FieldRequirements;
-}
+  | ChoiceQuestionSchemaIn
+  | MatchingQuestionSchemaIn
+  | RatingQuestionSchemaIn
+  | FieldQuestionSchemaIn;
 
 export type RuleCondition =
-  | ChoiceCondition
-  | MatchingCondition
-  | RatingCondition
-  | FieldCondition;
+  | ChoiceConditionIn
+  | MatchingConditionIn
+  | RatingConditionIn
+  | FieldConditionIn;
 
-export interface RuleSetEntry {
-  target_id: string;
-  visible?: boolean;
-  required?: boolean;
-}
-
-export type RuleDoAction =
-  | { skip_to: string }
-  | { end_and_submit: true }
-  | { end_and_discard: true };
-
-export interface RuleThen {
-  set?: RuleSetEntry[];
-  do?: RuleDoAction;
-}
-
-export interface RuleElse {
-  do?: RuleDoAction;
-}
-
-export interface RuleContent {
-  id: string;
-  if: {
-    match: RuleMatch;
-    conditions: RuleCondition[];
-  };
-  then: RuleThen;
-  else?: RuleElse;
-}
-
-/* ---------- Envelopes (owned by the page) ------------------------------- */
-
-export interface QuestionNode {
-  type: "question";
-  sort_key: number;
-  content: QuestionContent;
-}
-
-export interface RuleNode {
-  type: "rule";
-  sort_key: number;
-  content: RuleContent;
-}
-
-export type SurveyNode = QuestionNode | RuleNode;
-
-/* ---------- Narrowing helpers ------------------------------------------- */
-
-export function isChoiceContent(content: QuestionContent): content is ChoiceContent {
-  return content.family === "choice";
-}
-
-export function isMatchingContent(content: QuestionContent): content is MatchingContent {
-  return content.family === "matching";
-}
-
-export function isRatingContent(content: QuestionContent): content is RatingContent {
-  return content.family === "rating";
-}
-
-export function isFieldContent(content: QuestionContent): content is FieldContent {
-  return content.family === "field";
-}
+export type SurveyNode = CreateQuestionNodeRequest | CreateRuleNodeRequest;

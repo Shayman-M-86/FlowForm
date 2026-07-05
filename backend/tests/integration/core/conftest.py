@@ -1,8 +1,21 @@
 from __future__ import annotations
 
-import pytest  # type: ignore[import]
-from sqlalchemy.orm import Session, scoped_session
+import os
+from unittest.mock import MagicMock
 
+import pytest  # type: ignore[import]
+from sqlalchemy.orm import Session
+
+from app.crypto.models import (
+    LinkageKey,
+    NewSessionKey,
+    NewSessionLocator,
+    PlaintextSessionKey,
+    PlaintextSurveyKey,
+    SessionLocator,
+    WrappedSessionKey,
+    WrappedSurveyKey,
+)
 from app.schema.orm.core import Project, ProjectRole, ResponseStore, Survey, SurveyVersion, User
 from tests.integration.core.factories import (
     make_project,
@@ -13,9 +26,58 @@ from tests.integration.core.factories import (
     make_user,
 )
 
+_FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=b"\xcc" * 32, aws_version_id="test-version")
+_FAKE_SESSION_LOCATOR = SessionLocator(os.urandom(32))
+_FAKE_PLAINTEXT_DEK = PlaintextSessionKey(os.urandom(32))
+_FAKE_WRAPPED_DEK = WrappedSessionKey(b"\x02" * 64)
+_FAKE_WRAPPED_SURVEY_KEY = WrappedSurveyKey(b"\x03" * 64)
+
+_STARTER_MODULE = "app.services.public_submissions.core.actions.session_starter"
+_SESSION_KEY_MODULE = "app.crypto.session_key"
+_SURVEY_KEY_MODULE = "app.crypto.survey_key"
+
+
+@pytest.fixture(autouse=True)
+def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Auto-mock crypto module calls so existing core tests run without AWS."""
+    monkeypatch.setattr(
+        f"{_STARTER_MODULE}.load_current_linkage_key",
+        lambda *_args, **_kwargs: _FAKE_LINKAGE_KEY,
+    )
+    monkeypatch.setattr(
+        f"{_STARTER_MODULE}.derive_session_locator",
+        lambda _sid, _key: NewSessionLocator(
+            linkage_key_version=1,
+            session_locator=_FAKE_SESSION_LOCATOR,
+        ),
+    )
+    monkeypatch.setattr(
+        f"{_STARTER_MODULE}.start_plaintext_survey_key_load",
+        lambda *_args, **_kwargs: MagicMock(return_value=os.urandom(32)),
+    )
+    monkeypatch.setattr(
+        f"{_STARTER_MODULE}.create_session_key",
+        lambda *_args, **_kwargs: NewSessionKey(
+            plaintext_key=_FAKE_PLAINTEXT_DEK,
+            wrapped_key=_FAKE_WRAPPED_DEK,
+        ),
+    )
+    monkeypatch.setattr(
+        f"{_SESSION_KEY_MODULE}.resolve_existing_session_locator",
+        lambda *_args, **_kwargs: (_FAKE_SESSION_LOCATOR, _FAKE_LINKAGE_KEY),
+    )
+    monkeypatch.setattr(
+        f"{_SURVEY_KEY_MODULE}.wrap_survey_key",
+        lambda _plaintext_key, _key_arn, _context, *, client=None: _FAKE_WRAPPED_SURVEY_KEY,  # noqa: ARG005
+    )
+    monkeypatch.setattr(
+        f"{_SURVEY_KEY_MODULE}.unwrap_survey_key",
+        lambda _wrapped_key, _key_arn, _context, *, client=None: PlaintextSurveyKey(os.urandom(32)),  # noqa: ARG005
+    )
+
 
 @pytest.fixture
-def user(db_session: scoped_session[Session]) -> User:
+def user(db_session: Session) -> User:
     user = make_user()
     db_session.add(user)
     db_session.flush()
@@ -23,7 +85,7 @@ def user(db_session: scoped_session[Session]) -> User:
 
 
 @pytest.fixture
-def project(user: User, db_session: scoped_session[Session]) -> Project:
+def project(user: User, db_session: Session) -> Project:
     project = make_project(user.id)
     db_session.add(project)
     db_session.flush()
@@ -31,7 +93,7 @@ def project(user: User, db_session: scoped_session[Session]) -> Project:
 
 
 @pytest.fixture
-def project_role(project: Project, db_session: scoped_session[Session]) -> ProjectRole:
+def project_role(project: Project, db_session: Session) -> ProjectRole:
     role = make_project_role(project.id)
     db_session.add(role)
     db_session.flush()
@@ -39,7 +101,7 @@ def project_role(project: Project, db_session: scoped_session[Session]) -> Proje
 
 
 @pytest.fixture
-def response_store(project: Project, user: User, db_session: scoped_session[Session]) -> ResponseStore:
+def response_store(project: Project, user: User, db_session: Session) -> ResponseStore:
     store = make_response_store(project.id, user.id)
     db_session.add(store)
     db_session.flush()
@@ -51,7 +113,7 @@ def survey(
     project: Project,
     response_store: ResponseStore,
     user: User,
-    db_session: scoped_session[Session],
+    db_session: Session,
 ) -> Survey:
     survey = make_survey(project.id, response_store.id, user.id)
     db_session.add(survey)
@@ -60,7 +122,7 @@ def survey(
 
 
 @pytest.fixture
-def survey_version(survey: Survey, user: User, db_session: scoped_session[Session]) -> SurveyVersion:
+def survey_version(survey: Survey, user: User, db_session: Session) -> SurveyVersion:
     version = make_survey_version(survey.id, user.id)
     db_session.add(version)
     db_session.flush()

@@ -1,9 +1,23 @@
 ---
-paths: backend/app/**
+paths: backend/app/{*.py,core/**,db/**,logging/**,middleware/**,openapi/**,utils/**}
 ---
 
 # backend/app/
 
-_Last updated: 2026-05-27 by /repomap_
+Top-level app infrastructure: factory, config, extensions, middleware,
+OpenAPI, logging, DB wiring, and small shared helpers.
 
-The top-level Flask application package. It exposes a single `create_app` factory (in `app/core/factory.py`) that wires together extensions, dual-database sessions (core + response), the v1 API blueprint, rate limiting, error handlers, and seed data. Subdirectories follow a strict layered architecture: `api`, `core`, `db`, `domain`, `gateway`, `logging`, `middleware`, `openapi`, `repositories`, `schema`, `services`, and `utils`.
+`create_app` is the composition root. It wires the app together, but should not
+own feature workflows.
+
+Keep this area focused on application plumbing:
+
+- app factory and config
+- extension singletons and request lifecycle
+- DB session helpers and transaction utilities
+- middleware, URL converters, and rate limiting
+- OpenAPI registration/export
+- logging and audit hooks
+
+Do not add feature-specific orchestration here. Put that in `services/`, with
+local persistence hidden behind `repositories/`.

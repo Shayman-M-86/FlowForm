@@ -5,7 +5,7 @@ from typing import cast
 import pytest  # type: ignore[import]
 from psycopg.errors import CheckViolation, NotNullViolation, UniqueViolation
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.schema.orm.core.survey import SurveyVersion
 from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
@@ -21,7 +21,7 @@ from tests.integration.core.factories import (
 # ---------------------------------------------------------------------------
 
 
-def test_survey_question_can_be_created(db_session: scoped_session[Session], survey_version: SurveyVersion) -> None:
+def test_survey_question_can_be_created(db_session: Session, survey_version: SurveyVersion) -> None:
     """All fields are persisted and server defaults populate created_at and updated_at."""
     schema = {"family": "field", "label": "Name", "schema": {"field_type": "text"}, "ui": {}}
     question = make_survey_question(survey_version.id, question_key="q1", question_schema=schema)
@@ -40,7 +40,7 @@ def test_survey_question_can_be_created(db_session: scoped_session[Session], sur
 
 
 def test_survey_question_unique_key_within_version(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """Two questions in the same survey version cannot share a question_key."""
     q_a = make_survey_question(survey_version.id, question_key="dup")
@@ -56,14 +56,15 @@ def test_survey_question_unique_key_within_version(
     orig = cast(UniqueViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
     assert constraint == "uq_survey_questions_survey_version_id_question_key", (
-        f"Expected constraint 'uq_survey_questions_survey_version_id_question_key', got '{constraint}'\nDB error: {exc_info.value}"
+        f"Expected constraint 'uq_survey_questions_survey_version_id_question_key', got '{constraint}'\n"
+        f"DB error: {exc_info.value}"
     )
 
     db_session.rollback()
 
 
 def test_survey_question_same_key_allowed_across_versions(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """The same question_key may appear in different survey versions."""
     assert survey_version.created_by_user_id is not None
@@ -80,7 +81,7 @@ def test_survey_question_same_key_allowed_across_versions(
 
 
 def test_survey_question_requires_question_key(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """question_key is NOT NULL — omitting it raises an IntegrityError."""
     question = make_survey_question(survey_version.id)
@@ -100,7 +101,7 @@ def test_survey_question_requires_question_key(
 
 
 def test_survey_question_rejects_non_object_schema(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """question_schema must be a JSON object — arrays and scalars are rejected."""
     question = make_survey_question(survey_version.id)
@@ -121,7 +122,7 @@ def test_survey_question_rejects_non_object_schema(
 
 
 def test_survey_question_rejects_invalid_type(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """question_schema->>'family' must be one of: choice, field, matching, rating."""
     question = make_survey_question(
@@ -136,14 +137,15 @@ def test_survey_question_rejects_invalid_type(
     orig = cast(CheckViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
     assert constraint == "ck_survey_questions_question_family_valid", (
-        f"Expected constraint 'ck_survey_questions_question_family_valid', got '{constraint}'\nDB error: {exc_info.value}"
+        f"Expected constraint 'ck_survey_questions_question_family_valid', got '{constraint}'\n"
+        f"DB error: {exc_info.value}"
     )
 
     db_session.rollback()
 
 
 def test_survey_question_cascades_on_version_delete(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """Deleting the survey version removes all its questions."""
     question = make_survey_question(survey_version.id)
@@ -165,7 +167,7 @@ def test_survey_question_cascades_on_version_delete(
 # ---------------------------------------------------------------------------
 
 
-def test_survey_rule_can_be_created(db_session: scoped_session[Session], survey_version: SurveyVersion) -> None:
+def test_survey_rule_can_be_created(db_session: Session, survey_version: SurveyVersion) -> None:
     """Rule nodes are persisted as SurveyQuestion rows with node_type='rule'."""
     schema = {"id": "r1", "if": {"match": "ALL", "conditions": []}, "then": {"set": []}}
     rule = make_survey_rule(survey_version.id, rule_key="r1", rule_schema=schema)
@@ -183,7 +185,7 @@ def test_survey_rule_can_be_created(db_session: scoped_session[Session], survey_
 
 
 def test_survey_rule_unique_key_within_version(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """Two rule nodes in the same survey version cannot share a question_key."""
     r_a = make_survey_rule(survey_version.id, rule_key="dup", sort_key=500000)
@@ -199,14 +201,15 @@ def test_survey_rule_unique_key_within_version(
     orig = cast(UniqueViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
     assert constraint == "uq_survey_questions_survey_version_id_question_key", (
-        f"Expected constraint 'uq_survey_questions_survey_version_id_question_key', got '{constraint}'\nDB error: {exc_info.value}"
+        f"Expected constraint 'uq_survey_questions_survey_version_id_question_key', got '{constraint}'\n"
+        f"DB error: {exc_info.value}"
     )
 
     db_session.rollback()
 
 
 def test_survey_rule_same_key_allowed_across_versions(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """The same rule_key may appear in different survey versions."""
     assert survey_version.created_by_user_id is not None
@@ -222,7 +225,7 @@ def test_survey_rule_same_key_allowed_across_versions(
     assert r_a.id != r_b.id, f"Expected distinct IDs across versions, got id={r_a.id!r} for both"
 
 
-def test_survey_rule_requires_question_key(db_session: scoped_session[Session], survey_version: SurveyVersion) -> None:
+def test_survey_rule_requires_question_key(db_session: Session, survey_version: SurveyVersion) -> None:
     """question_key is NOT NULL on rule nodes."""
     rule = make_survey_rule(survey_version.id)
     rule.question_key = None  # type: ignore[assignment]
@@ -240,7 +243,7 @@ def test_survey_rule_requires_question_key(db_session: scoped_session[Session], 
     db_session.rollback()
 
 
-def test_survey_rule_accepts_object_schema(db_session: scoped_session[Session], survey_version: SurveyVersion) -> None:
+def test_survey_rule_accepts_object_schema(db_session: Session, survey_version: SurveyVersion) -> None:
     """Rule nodes with a valid object schema are persisted correctly."""
     schema = {"id": "r1", "if": {"match": "ALL", "conditions": []}, "then": {"set": []}}
     rule = make_survey_rule(survey_version.id, rule_schema=schema)
@@ -250,7 +253,7 @@ def test_survey_rule_accepts_object_schema(db_session: scoped_session[Session], 
 
 
 def test_survey_rule_cascades_on_version_delete(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """Deleting the survey version removes all its rule nodes."""
     rule = make_survey_rule(survey_version.id)
@@ -272,7 +275,7 @@ def test_survey_rule_cascades_on_version_delete(
 # ---------------------------------------------------------------------------
 
 
-def test_survey_scoring_rule_can_be_created(db_session: scoped_session[Session], survey_version: SurveyVersion) -> None:
+def test_survey_scoring_rule_can_be_created(db_session: Session, survey_version: SurveyVersion) -> None:
     """All fields are persisted and server defaults populate created_at and updated_at."""
     schema = {"target": "q1", "bucket": "total", "strategy": "rating_direct", "config": {}}
     scoring_rule = make_survey_scoring_rule(survey_version.id, scoring_key="s1", scoring_schema=schema)
@@ -291,7 +294,7 @@ def test_survey_scoring_rule_can_be_created(db_session: scoped_session[Session],
 
 
 def test_survey_scoring_rule_unique_key_within_version(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """Two scoring rules in the same survey version cannot share a scoring_key."""
     s_a = make_survey_scoring_rule(survey_version.id, scoring_key="dup")
@@ -307,14 +310,15 @@ def test_survey_scoring_rule_unique_key_within_version(
     orig = cast(UniqueViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
     assert constraint == "uq_survey_scoring_rules_survey_version_id_scoring_key", (
-        f"Expected constraint 'uq_survey_scoring_rules_survey_version_id_scoring_key', got '{constraint}'\nDB error: {exc_info.value}"
+        f"Expected constraint 'uq_survey_scoring_rules_survey_version_id_scoring_key', got '{constraint}'\n"
+        f"DB error: {exc_info.value}"
     )
 
     db_session.rollback()
 
 
 def test_survey_scoring_rule_same_key_allowed_across_versions(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """The same scoring_key may appear in different survey versions."""
     assert survey_version.created_by_user_id is not None
@@ -331,7 +335,7 @@ def test_survey_scoring_rule_same_key_allowed_across_versions(
 
 
 def test_survey_scoring_rule_requires_scoring_key(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """scoring_key is NOT NULL — omitting it raises an IntegrityError."""
     scoring_rule = make_survey_scoring_rule(survey_version.id)
@@ -351,7 +355,7 @@ def test_survey_scoring_rule_requires_scoring_key(
 
 
 def test_survey_scoring_rule_rejects_non_object_schema(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """scoring_schema must be a JSON object — arrays and scalars are rejected."""
     scoring_rule = make_survey_scoring_rule(survey_version.id)
@@ -372,7 +376,7 @@ def test_survey_scoring_rule_rejects_non_object_schema(
 
 
 def test_survey_scoring_rule_cascades_on_version_delete(
-    db_session: scoped_session[Session], survey_version: SurveyVersion
+    db_session: Session, survey_version: SurveyVersion
 ) -> None:
     """Deleting the survey version removes all its scoring rules."""
     scoring_rule = make_survey_scoring_rule(survey_version.id)

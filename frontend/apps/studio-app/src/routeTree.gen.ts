@@ -9,235 +9,266 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as UiTestIndexRouteImport } from './routes/ui-test/index'
-import { Route as UiTest2IndexRouteImport } from './routes/ui-test-2/index'
-import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
-import { Route as AccountIndexRouteImport } from './routes/account/index'
-import { Route as ProjectsSlugRouteImport } from './routes/projects/$slug'
-import { Route as ProjectsSlugIndexRouteImport } from './routes/projects/$slug/index'
-import { Route as ProjectsSlugSurveysRouteImport } from './routes/projects/$slug/surveys'
-import { Route as ProjectsSlugSettingsRouteImport } from './routes/projects/$slug/settings'
-import { Route as ProjectsSlugRolesRouteImport } from './routes/projects/$slug/roles'
-import { Route as ProjectsSlugMembersRouteImport } from './routes/projects/$slug/members'
-import { Route as ProjectsSlugSurveysIndexRouteImport } from './routes/projects/$slug/surveys/index'
-import { Route as ProjectsSlugSurveysSurveySlugRouteImport } from './routes/projects/$slug/surveys/$surveySlug'
-import { Route as ProjectsSlugSurveysSurveySlugIndexRouteImport } from './routes/projects/$slug/surveys/$surveySlug/index'
-import { Route as ProjectsSlugSurveysSurveySlugVersionsRouteImport } from './routes/projects/$slug/surveys/$surveySlug/versions'
-import { Route as ProjectsSlugSurveysSurveySlugSettingsRouteImport } from './routes/projects/$slug/surveys/$surveySlug/settings'
-import { Route as ProjectsSlugSurveysSurveySlugRolesRouteImport } from './routes/projects/$slug/surveys/$surveySlug/roles'
-import { Route as ProjectsSlugSurveysSurveySlugResponsesRouteImport } from './routes/projects/$slug/surveys/$surveySlug/responses'
-import { Route as ProjectsSlugSurveysSurveySlugOverviewRouteImport } from './routes/projects/$slug/surveys/$surveySlug/overview'
-import { Route as ProjectsSlugSurveysSurveySlugMembersRouteImport } from './routes/projects/$slug/surveys/$surveySlug/members'
-import { Route as ProjectsSlugSurveysSurveySlugLinksRouteImport } from './routes/projects/$slug/surveys/$surveySlug/links'
-import { Route as ProjectsSlugSurveysSurveySlugBuilderRouteImport } from './routes/projects/$slug/surveys/$surveySlug/builder'
-import { Route as ProjectsSlugSurveysSurveySlugAccessRouteImport } from './routes/projects/$slug/surveys/$surveySlug/access'
+import { Route as StudioRouteImport } from './routes/_studio'
+import { Route as RespondentRouteImport } from './routes/_respondent'
+import { Route as PublicRouteImport } from './routes/_public'
+import { Route as StudioIndexRouteImport } from './routes/_studio/index'
+import { Route as StudioUiTestIndexRouteImport } from './routes/_studio/ui-test/index'
+import { Route as StudioUiTest2IndexRouteImport } from './routes/_studio/ui-test-2/index'
+import { Route as StudioProjectsIndexRouteImport } from './routes/_studio/projects/index'
+import { Route as StudioAccountIndexRouteImport } from './routes/_studio/account/index'
+import { Route as StudioProjectsSlugRouteImport } from './routes/_studio/projects/$slug'
+import { Route as RespondentRespondTokenRouteImport } from './routes/_respondent/respond/$token'
+import { Route as PublicInvitationsTokenRouteImport } from './routes/_public/invitations/$token'
+import { Route as StudioProjectsSlugIndexRouteImport } from './routes/_studio/projects/$slug/index'
+import { Route as StudioProjectsSlugSurveysRouteImport } from './routes/_studio/projects/$slug/surveys'
+import { Route as StudioProjectsSlugSubjectsRouteImport } from './routes/_studio/projects/$slug/subjects'
+import { Route as StudioProjectsSlugSettingsRouteImport } from './routes/_studio/projects/$slug/settings'
+import { Route as StudioProjectsSlugRolesRouteImport } from './routes/_studio/projects/$slug/roles'
+import { Route as StudioProjectsSlugMembersRouteImport } from './routes/_studio/projects/$slug/members'
+import { Route as StudioProjectsSlugSurveysIndexRouteImport } from './routes/_studio/projects/$slug/surveys/index'
+import { Route as StudioProjectsSlugSurveysSurveySlugRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug'
+import { Route as StudioProjectsSlugSurveysSurveySlugIndexRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/index'
+import { Route as StudioProjectsSlugSurveysSurveySlugVersionsRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/versions'
+import { Route as StudioProjectsSlugSurveysSurveySlugSettingsRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/settings'
+import { Route as StudioProjectsSlugSurveysSurveySlugRolesRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/roles'
+import { Route as StudioProjectsSlugSurveysSurveySlugResponsesRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/responses'
+import { Route as StudioProjectsSlugSurveysSurveySlugOverviewRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/overview'
+import { Route as StudioProjectsSlugSurveysSurveySlugBuilderRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/builder'
+import { Route as StudioProjectsSlugSurveysSurveySlugAccessRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/access'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const StudioRoute = StudioRouteImport.update({
+  id: '/_studio',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UiTestIndexRoute = UiTestIndexRouteImport.update({
+const RespondentRoute = RespondentRouteImport.update({
+  id: '/_respondent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicRoute = PublicRouteImport.update({
+  id: '/_public',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudioIndexRoute = StudioIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StudioRoute,
+} as any)
+const StudioUiTestIndexRoute = StudioUiTestIndexRouteImport.update({
   id: '/ui-test/',
   path: '/ui-test/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => StudioRoute,
 } as any)
-const UiTest2IndexRoute = UiTest2IndexRouteImport.update({
+const StudioUiTest2IndexRoute = StudioUiTest2IndexRouteImport.update({
   id: '/ui-test-2/',
   path: '/ui-test-2/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => StudioRoute,
 } as any)
-const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
+const StudioProjectsIndexRoute = StudioProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => StudioRoute,
 } as any)
-const AccountIndexRoute = AccountIndexRouteImport.update({
+const StudioAccountIndexRoute = StudioAccountIndexRouteImport.update({
   id: '/account/',
   path: '/account/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => StudioRoute,
 } as any)
-const ProjectsSlugRoute = ProjectsSlugRouteImport.update({
+const StudioProjectsSlugRoute = StudioProjectsSlugRouteImport.update({
   id: '/projects/$slug',
   path: '/projects/$slug',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => StudioRoute,
 } as any)
-const ProjectsSlugIndexRoute = ProjectsSlugIndexRouteImport.update({
+const RespondentRespondTokenRoute = RespondentRespondTokenRouteImport.update({
+  id: '/respond/$token',
+  path: '/respond/$token',
+  getParentRoute: () => RespondentRoute,
+} as any)
+const PublicInvitationsTokenRoute = PublicInvitationsTokenRouteImport.update({
+  id: '/invitations/$token',
+  path: '/invitations/$token',
+  getParentRoute: () => PublicRoute,
+} as any)
+const StudioProjectsSlugIndexRoute = StudioProjectsSlugIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => ProjectsSlugRoute,
+  getParentRoute: () => StudioProjectsSlugRoute,
 } as any)
-const ProjectsSlugSurveysRoute = ProjectsSlugSurveysRouteImport.update({
-  id: '/surveys',
-  path: '/surveys',
-  getParentRoute: () => ProjectsSlugRoute,
-} as any)
-const ProjectsSlugSettingsRoute = ProjectsSlugSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => ProjectsSlugRoute,
-} as any)
-const ProjectsSlugRolesRoute = ProjectsSlugRolesRouteImport.update({
-  id: '/roles',
-  path: '/roles',
-  getParentRoute: () => ProjectsSlugRoute,
-} as any)
-const ProjectsSlugMembersRoute = ProjectsSlugMembersRouteImport.update({
-  id: '/members',
-  path: '/members',
-  getParentRoute: () => ProjectsSlugRoute,
-} as any)
-const ProjectsSlugSurveysIndexRoute =
-  ProjectsSlugSurveysIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => ProjectsSlugSurveysRoute,
+const StudioProjectsSlugSurveysRoute =
+  StudioProjectsSlugSurveysRouteImport.update({
+    id: '/surveys',
+    path: '/surveys',
+    getParentRoute: () => StudioProjectsSlugRoute,
   } as any)
-const ProjectsSlugSurveysSurveySlugRoute =
-  ProjectsSlugSurveysSurveySlugRouteImport.update({
-    id: '/$surveySlug',
-    path: '/$surveySlug',
-    getParentRoute: () => ProjectsSlugSurveysRoute,
+const StudioProjectsSlugSubjectsRoute =
+  StudioProjectsSlugSubjectsRouteImport.update({
+    id: '/subjects',
+    path: '/subjects',
+    getParentRoute: () => StudioProjectsSlugRoute,
   } as any)
-const ProjectsSlugSurveysSurveySlugIndexRoute =
-  ProjectsSlugSurveysSurveySlugIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => ProjectsSlugSurveysSurveySlugRoute,
-  } as any)
-const ProjectsSlugSurveysSurveySlugVersionsRoute =
-  ProjectsSlugSurveysSurveySlugVersionsRouteImport.update({
-    id: '/versions',
-    path: '/versions',
-    getParentRoute: () => ProjectsSlugSurveysSurveySlugRoute,
-  } as any)
-const ProjectsSlugSurveysSurveySlugSettingsRoute =
-  ProjectsSlugSurveysSurveySlugSettingsRouteImport.update({
+const StudioProjectsSlugSettingsRoute =
+  StudioProjectsSlugSettingsRouteImport.update({
     id: '/settings',
     path: '/settings',
-    getParentRoute: () => ProjectsSlugSurveysSurveySlugRoute,
+    getParentRoute: () => StudioProjectsSlugRoute,
   } as any)
-const ProjectsSlugSurveysSurveySlugRolesRoute =
-  ProjectsSlugSurveysSurveySlugRolesRouteImport.update({
-    id: '/roles',
-    path: '/roles',
-    getParentRoute: () => ProjectsSlugSurveysSurveySlugRoute,
-  } as any)
-const ProjectsSlugSurveysSurveySlugResponsesRoute =
-  ProjectsSlugSurveysSurveySlugResponsesRouteImport.update({
-    id: '/responses',
-    path: '/responses',
-    getParentRoute: () => ProjectsSlugSurveysSurveySlugRoute,
-  } as any)
-const ProjectsSlugSurveysSurveySlugOverviewRoute =
-  ProjectsSlugSurveysSurveySlugOverviewRouteImport.update({
-    id: '/overview',
-    path: '/overview',
-    getParentRoute: () => ProjectsSlugSurveysSurveySlugRoute,
-  } as any)
-const ProjectsSlugSurveysSurveySlugMembersRoute =
-  ProjectsSlugSurveysSurveySlugMembersRouteImport.update({
+const StudioProjectsSlugRolesRoute = StudioProjectsSlugRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => StudioProjectsSlugRoute,
+} as any)
+const StudioProjectsSlugMembersRoute =
+  StudioProjectsSlugMembersRouteImport.update({
     id: '/members',
     path: '/members',
-    getParentRoute: () => ProjectsSlugSurveysSurveySlugRoute,
+    getParentRoute: () => StudioProjectsSlugRoute,
   } as any)
-const ProjectsSlugSurveysSurveySlugLinksRoute =
-  ProjectsSlugSurveysSurveySlugLinksRouteImport.update({
-    id: '/links',
-    path: '/links',
-    getParentRoute: () => ProjectsSlugSurveysSurveySlugRoute,
+const StudioProjectsSlugSurveysIndexRoute =
+  StudioProjectsSlugSurveysIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => StudioProjectsSlugSurveysRoute,
   } as any)
-const ProjectsSlugSurveysSurveySlugBuilderRoute =
-  ProjectsSlugSurveysSurveySlugBuilderRouteImport.update({
+const StudioProjectsSlugSurveysSurveySlugRoute =
+  StudioProjectsSlugSurveysSurveySlugRouteImport.update({
+    id: '/$surveySlug',
+    path: '/$surveySlug',
+    getParentRoute: () => StudioProjectsSlugSurveysRoute,
+  } as any)
+const StudioProjectsSlugSurveysSurveySlugIndexRoute =
+  StudioProjectsSlugSurveysSurveySlugIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
+  } as any)
+const StudioProjectsSlugSurveysSurveySlugVersionsRoute =
+  StudioProjectsSlugSurveysSurveySlugVersionsRouteImport.update({
+    id: '/versions',
+    path: '/versions',
+    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
+  } as any)
+const StudioProjectsSlugSurveysSurveySlugSettingsRoute =
+  StudioProjectsSlugSurveysSurveySlugSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
+  } as any)
+const StudioProjectsSlugSurveysSurveySlugRolesRoute =
+  StudioProjectsSlugSurveysSurveySlugRolesRouteImport.update({
+    id: '/roles',
+    path: '/roles',
+    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
+  } as any)
+const StudioProjectsSlugSurveysSurveySlugResponsesRoute =
+  StudioProjectsSlugSurveysSurveySlugResponsesRouteImport.update({
+    id: '/responses',
+    path: '/responses',
+    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
+  } as any)
+const StudioProjectsSlugSurveysSurveySlugOverviewRoute =
+  StudioProjectsSlugSurveysSurveySlugOverviewRouteImport.update({
+    id: '/overview',
+    path: '/overview',
+    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
+  } as any)
+const StudioProjectsSlugSurveysSurveySlugBuilderRoute =
+  StudioProjectsSlugSurveysSurveySlugBuilderRouteImport.update({
     id: '/builder',
     path: '/builder',
-    getParentRoute: () => ProjectsSlugSurveysSurveySlugRoute,
+    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
   } as any)
-const ProjectsSlugSurveysSurveySlugAccessRoute =
-  ProjectsSlugSurveysSurveySlugAccessRouteImport.update({
+const StudioProjectsSlugSurveysSurveySlugAccessRoute =
+  StudioProjectsSlugSurveysSurveySlugAccessRouteImport.update({
     id: '/access',
     path: '/access',
-    getParentRoute: () => ProjectsSlugSurveysSurveySlugRoute,
+    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/projects/$slug': typeof ProjectsSlugRouteWithChildren
-  '/account/': typeof AccountIndexRoute
-  '/projects/': typeof ProjectsIndexRoute
-  '/ui-test-2/': typeof UiTest2IndexRoute
-  '/ui-test/': typeof UiTestIndexRoute
-  '/projects/$slug/members': typeof ProjectsSlugMembersRoute
-  '/projects/$slug/roles': typeof ProjectsSlugRolesRoute
-  '/projects/$slug/settings': typeof ProjectsSlugSettingsRoute
-  '/projects/$slug/surveys': typeof ProjectsSlugSurveysRouteWithChildren
-  '/projects/$slug/': typeof ProjectsSlugIndexRoute
-  '/projects/$slug/surveys/$surveySlug': typeof ProjectsSlugSurveysSurveySlugRouteWithChildren
-  '/projects/$slug/surveys/': typeof ProjectsSlugSurveysIndexRoute
-  '/projects/$slug/surveys/$surveySlug/access': typeof ProjectsSlugSurveysSurveySlugAccessRoute
-  '/projects/$slug/surveys/$surveySlug/builder': typeof ProjectsSlugSurveysSurveySlugBuilderRoute
-  '/projects/$slug/surveys/$surveySlug/links': typeof ProjectsSlugSurveysSurveySlugLinksRoute
-  '/projects/$slug/surveys/$surveySlug/members': typeof ProjectsSlugSurveysSurveySlugMembersRoute
-  '/projects/$slug/surveys/$surveySlug/overview': typeof ProjectsSlugSurveysSurveySlugOverviewRoute
-  '/projects/$slug/surveys/$surveySlug/responses': typeof ProjectsSlugSurveysSurveySlugResponsesRoute
-  '/projects/$slug/surveys/$surveySlug/roles': typeof ProjectsSlugSurveysSurveySlugRolesRoute
-  '/projects/$slug/surveys/$surveySlug/settings': typeof ProjectsSlugSurveysSurveySlugSettingsRoute
-  '/projects/$slug/surveys/$surveySlug/versions': typeof ProjectsSlugSurveysSurveySlugVersionsRoute
-  '/projects/$slug/surveys/$surveySlug/': typeof ProjectsSlugSurveysSurveySlugIndexRoute
+  '/': typeof StudioIndexRoute
+  '/invitations/$token': typeof PublicInvitationsTokenRoute
+  '/respond/$token': typeof RespondentRespondTokenRoute
+  '/projects/$slug': typeof StudioProjectsSlugRouteWithChildren
+  '/account/': typeof StudioAccountIndexRoute
+  '/projects/': typeof StudioProjectsIndexRoute
+  '/ui-test-2/': typeof StudioUiTest2IndexRoute
+  '/ui-test/': typeof StudioUiTestIndexRoute
+  '/projects/$slug/members': typeof StudioProjectsSlugMembersRoute
+  '/projects/$slug/roles': typeof StudioProjectsSlugRolesRoute
+  '/projects/$slug/settings': typeof StudioProjectsSlugSettingsRoute
+  '/projects/$slug/subjects': typeof StudioProjectsSlugSubjectsRoute
+  '/projects/$slug/surveys': typeof StudioProjectsSlugSurveysRouteWithChildren
+  '/projects/$slug/': typeof StudioProjectsSlugIndexRoute
+  '/projects/$slug/surveys/$surveySlug': typeof StudioProjectsSlugSurveysSurveySlugRouteWithChildren
+  '/projects/$slug/surveys/': typeof StudioProjectsSlugSurveysIndexRoute
+  '/projects/$slug/surveys/$surveySlug/access': typeof StudioProjectsSlugSurveysSurveySlugAccessRoute
+  '/projects/$slug/surveys/$surveySlug/builder': typeof StudioProjectsSlugSurveysSurveySlugBuilderRoute
+  '/projects/$slug/surveys/$surveySlug/overview': typeof StudioProjectsSlugSurveysSurveySlugOverviewRoute
+  '/projects/$slug/surveys/$surveySlug/responses': typeof StudioProjectsSlugSurveysSurveySlugResponsesRoute
+  '/projects/$slug/surveys/$surveySlug/roles': typeof StudioProjectsSlugSurveysSurveySlugRolesRoute
+  '/projects/$slug/surveys/$surveySlug/settings': typeof StudioProjectsSlugSurveysSurveySlugSettingsRoute
+  '/projects/$slug/surveys/$surveySlug/versions': typeof StudioProjectsSlugSurveysSurveySlugVersionsRoute
+  '/projects/$slug/surveys/$surveySlug/': typeof StudioProjectsSlugSurveysSurveySlugIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/account': typeof AccountIndexRoute
-  '/projects': typeof ProjectsIndexRoute
-  '/ui-test-2': typeof UiTest2IndexRoute
-  '/ui-test': typeof UiTestIndexRoute
-  '/projects/$slug/members': typeof ProjectsSlugMembersRoute
-  '/projects/$slug/roles': typeof ProjectsSlugRolesRoute
-  '/projects/$slug/settings': typeof ProjectsSlugSettingsRoute
-  '/projects/$slug': typeof ProjectsSlugIndexRoute
-  '/projects/$slug/surveys': typeof ProjectsSlugSurveysIndexRoute
-  '/projects/$slug/surveys/$surveySlug/access': typeof ProjectsSlugSurveysSurveySlugAccessRoute
-  '/projects/$slug/surveys/$surveySlug/builder': typeof ProjectsSlugSurveysSurveySlugBuilderRoute
-  '/projects/$slug/surveys/$surveySlug/links': typeof ProjectsSlugSurveysSurveySlugLinksRoute
-  '/projects/$slug/surveys/$surveySlug/members': typeof ProjectsSlugSurveysSurveySlugMembersRoute
-  '/projects/$slug/surveys/$surveySlug/overview': typeof ProjectsSlugSurveysSurveySlugOverviewRoute
-  '/projects/$slug/surveys/$surveySlug/responses': typeof ProjectsSlugSurveysSurveySlugResponsesRoute
-  '/projects/$slug/surveys/$surveySlug/roles': typeof ProjectsSlugSurveysSurveySlugRolesRoute
-  '/projects/$slug/surveys/$surveySlug/settings': typeof ProjectsSlugSurveysSurveySlugSettingsRoute
-  '/projects/$slug/surveys/$surveySlug/versions': typeof ProjectsSlugSurveysSurveySlugVersionsRoute
-  '/projects/$slug/surveys/$surveySlug': typeof ProjectsSlugSurveysSurveySlugIndexRoute
+  '/': typeof StudioIndexRoute
+  '/invitations/$token': typeof PublicInvitationsTokenRoute
+  '/respond/$token': typeof RespondentRespondTokenRoute
+  '/account': typeof StudioAccountIndexRoute
+  '/projects': typeof StudioProjectsIndexRoute
+  '/ui-test-2': typeof StudioUiTest2IndexRoute
+  '/ui-test': typeof StudioUiTestIndexRoute
+  '/projects/$slug/members': typeof StudioProjectsSlugMembersRoute
+  '/projects/$slug/roles': typeof StudioProjectsSlugRolesRoute
+  '/projects/$slug/settings': typeof StudioProjectsSlugSettingsRoute
+  '/projects/$slug/subjects': typeof StudioProjectsSlugSubjectsRoute
+  '/projects/$slug': typeof StudioProjectsSlugIndexRoute
+  '/projects/$slug/surveys': typeof StudioProjectsSlugSurveysIndexRoute
+  '/projects/$slug/surveys/$surveySlug/access': typeof StudioProjectsSlugSurveysSurveySlugAccessRoute
+  '/projects/$slug/surveys/$surveySlug/builder': typeof StudioProjectsSlugSurveysSurveySlugBuilderRoute
+  '/projects/$slug/surveys/$surveySlug/overview': typeof StudioProjectsSlugSurveysSurveySlugOverviewRoute
+  '/projects/$slug/surveys/$surveySlug/responses': typeof StudioProjectsSlugSurveysSurveySlugResponsesRoute
+  '/projects/$slug/surveys/$surveySlug/roles': typeof StudioProjectsSlugSurveysSurveySlugRolesRoute
+  '/projects/$slug/surveys/$surveySlug/settings': typeof StudioProjectsSlugSurveysSurveySlugSettingsRoute
+  '/projects/$slug/surveys/$surveySlug/versions': typeof StudioProjectsSlugSurveysSurveySlugVersionsRoute
+  '/projects/$slug/surveys/$surveySlug': typeof StudioProjectsSlugSurveysSurveySlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/projects/$slug': typeof ProjectsSlugRouteWithChildren
-  '/account/': typeof AccountIndexRoute
-  '/projects/': typeof ProjectsIndexRoute
-  '/ui-test-2/': typeof UiTest2IndexRoute
-  '/ui-test/': typeof UiTestIndexRoute
-  '/projects/$slug/members': typeof ProjectsSlugMembersRoute
-  '/projects/$slug/roles': typeof ProjectsSlugRolesRoute
-  '/projects/$slug/settings': typeof ProjectsSlugSettingsRoute
-  '/projects/$slug/surveys': typeof ProjectsSlugSurveysRouteWithChildren
-  '/projects/$slug/': typeof ProjectsSlugIndexRoute
-  '/projects/$slug/surveys/$surveySlug': typeof ProjectsSlugSurveysSurveySlugRouteWithChildren
-  '/projects/$slug/surveys/': typeof ProjectsSlugSurveysIndexRoute
-  '/projects/$slug/surveys/$surveySlug/access': typeof ProjectsSlugSurveysSurveySlugAccessRoute
-  '/projects/$slug/surveys/$surveySlug/builder': typeof ProjectsSlugSurveysSurveySlugBuilderRoute
-  '/projects/$slug/surveys/$surveySlug/links': typeof ProjectsSlugSurveysSurveySlugLinksRoute
-  '/projects/$slug/surveys/$surveySlug/members': typeof ProjectsSlugSurveysSurveySlugMembersRoute
-  '/projects/$slug/surveys/$surveySlug/overview': typeof ProjectsSlugSurveysSurveySlugOverviewRoute
-  '/projects/$slug/surveys/$surveySlug/responses': typeof ProjectsSlugSurveysSurveySlugResponsesRoute
-  '/projects/$slug/surveys/$surveySlug/roles': typeof ProjectsSlugSurveysSurveySlugRolesRoute
-  '/projects/$slug/surveys/$surveySlug/settings': typeof ProjectsSlugSurveysSurveySlugSettingsRoute
-  '/projects/$slug/surveys/$surveySlug/versions': typeof ProjectsSlugSurveysSurveySlugVersionsRoute
-  '/projects/$slug/surveys/$surveySlug/': typeof ProjectsSlugSurveysSurveySlugIndexRoute
+  '/_public': typeof PublicRouteWithChildren
+  '/_respondent': typeof RespondentRouteWithChildren
+  '/_studio': typeof StudioRouteWithChildren
+  '/_studio/': typeof StudioIndexRoute
+  '/_public/invitations/$token': typeof PublicInvitationsTokenRoute
+  '/_respondent/respond/$token': typeof RespondentRespondTokenRoute
+  '/_studio/projects/$slug': typeof StudioProjectsSlugRouteWithChildren
+  '/_studio/account/': typeof StudioAccountIndexRoute
+  '/_studio/projects/': typeof StudioProjectsIndexRoute
+  '/_studio/ui-test-2/': typeof StudioUiTest2IndexRoute
+  '/_studio/ui-test/': typeof StudioUiTestIndexRoute
+  '/_studio/projects/$slug/members': typeof StudioProjectsSlugMembersRoute
+  '/_studio/projects/$slug/roles': typeof StudioProjectsSlugRolesRoute
+  '/_studio/projects/$slug/settings': typeof StudioProjectsSlugSettingsRoute
+  '/_studio/projects/$slug/subjects': typeof StudioProjectsSlugSubjectsRoute
+  '/_studio/projects/$slug/surveys': typeof StudioProjectsSlugSurveysRouteWithChildren
+  '/_studio/projects/$slug/': typeof StudioProjectsSlugIndexRoute
+  '/_studio/projects/$slug/surveys/$surveySlug': typeof StudioProjectsSlugSurveysSurveySlugRouteWithChildren
+  '/_studio/projects/$slug/surveys/': typeof StudioProjectsSlugSurveysIndexRoute
+  '/_studio/projects/$slug/surveys/$surveySlug/access': typeof StudioProjectsSlugSurveysSurveySlugAccessRoute
+  '/_studio/projects/$slug/surveys/$surveySlug/builder': typeof StudioProjectsSlugSurveysSurveySlugBuilderRoute
+  '/_studio/projects/$slug/surveys/$surveySlug/overview': typeof StudioProjectsSlugSurveysSurveySlugOverviewRoute
+  '/_studio/projects/$slug/surveys/$surveySlug/responses': typeof StudioProjectsSlugSurveysSurveySlugResponsesRoute
+  '/_studio/projects/$slug/surveys/$surveySlug/roles': typeof StudioProjectsSlugSurveysSurveySlugRolesRoute
+  '/_studio/projects/$slug/surveys/$surveySlug/settings': typeof StudioProjectsSlugSurveysSurveySlugSettingsRoute
+  '/_studio/projects/$slug/surveys/$surveySlug/versions': typeof StudioProjectsSlugSurveysSurveySlugVersionsRoute
+  '/_studio/projects/$slug/surveys/$surveySlug/': typeof StudioProjectsSlugSurveysSurveySlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/invitations/$token'
+    | '/respond/$token'
     | '/projects/$slug'
     | '/account/'
     | '/projects/'
@@ -246,14 +277,13 @@ export interface FileRouteTypes {
     | '/projects/$slug/members'
     | '/projects/$slug/roles'
     | '/projects/$slug/settings'
+    | '/projects/$slug/subjects'
     | '/projects/$slug/surveys'
     | '/projects/$slug/'
     | '/projects/$slug/surveys/$surveySlug'
     | '/projects/$slug/surveys/'
     | '/projects/$slug/surveys/$surveySlug/access'
     | '/projects/$slug/surveys/$surveySlug/builder'
-    | '/projects/$slug/surveys/$surveySlug/links'
-    | '/projects/$slug/surveys/$surveySlug/members'
     | '/projects/$slug/surveys/$surveySlug/overview'
     | '/projects/$slug/surveys/$surveySlug/responses'
     | '/projects/$slug/surveys/$surveySlug/roles'
@@ -263,6 +293,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/invitations/$token'
+    | '/respond/$token'
     | '/account'
     | '/projects'
     | '/ui-test-2'
@@ -270,12 +302,11 @@ export interface FileRouteTypes {
     | '/projects/$slug/members'
     | '/projects/$slug/roles'
     | '/projects/$slug/settings'
+    | '/projects/$slug/subjects'
     | '/projects/$slug'
     | '/projects/$slug/surveys'
     | '/projects/$slug/surveys/$surveySlug/access'
     | '/projects/$slug/surveys/$surveySlug/builder'
-    | '/projects/$slug/surveys/$surveySlug/links'
-    | '/projects/$slug/surveys/$surveySlug/members'
     | '/projects/$slug/surveys/$surveySlug/overview'
     | '/projects/$slug/surveys/$surveySlug/responses'
     | '/projects/$slug/surveys/$surveySlug/roles'
@@ -284,289 +315,357 @@ export interface FileRouteTypes {
     | '/projects/$slug/surveys/$surveySlug'
   id:
     | '__root__'
-    | '/'
-    | '/projects/$slug'
-    | '/account/'
-    | '/projects/'
-    | '/ui-test-2/'
-    | '/ui-test/'
-    | '/projects/$slug/members'
-    | '/projects/$slug/roles'
-    | '/projects/$slug/settings'
-    | '/projects/$slug/surveys'
-    | '/projects/$slug/'
-    | '/projects/$slug/surveys/$surveySlug'
-    | '/projects/$slug/surveys/'
-    | '/projects/$slug/surveys/$surveySlug/access'
-    | '/projects/$slug/surveys/$surveySlug/builder'
-    | '/projects/$slug/surveys/$surveySlug/links'
-    | '/projects/$slug/surveys/$surveySlug/members'
-    | '/projects/$slug/surveys/$surveySlug/overview'
-    | '/projects/$slug/surveys/$surveySlug/responses'
-    | '/projects/$slug/surveys/$surveySlug/roles'
-    | '/projects/$slug/surveys/$surveySlug/settings'
-    | '/projects/$slug/surveys/$surveySlug/versions'
-    | '/projects/$slug/surveys/$surveySlug/'
+    | '/_public'
+    | '/_respondent'
+    | '/_studio'
+    | '/_studio/'
+    | '/_public/invitations/$token'
+    | '/_respondent/respond/$token'
+    | '/_studio/projects/$slug'
+    | '/_studio/account/'
+    | '/_studio/projects/'
+    | '/_studio/ui-test-2/'
+    | '/_studio/ui-test/'
+    | '/_studio/projects/$slug/members'
+    | '/_studio/projects/$slug/roles'
+    | '/_studio/projects/$slug/settings'
+    | '/_studio/projects/$slug/subjects'
+    | '/_studio/projects/$slug/surveys'
+    | '/_studio/projects/$slug/'
+    | '/_studio/projects/$slug/surveys/$surveySlug'
+    | '/_studio/projects/$slug/surveys/'
+    | '/_studio/projects/$slug/surveys/$surveySlug/access'
+    | '/_studio/projects/$slug/surveys/$surveySlug/builder'
+    | '/_studio/projects/$slug/surveys/$surveySlug/overview'
+    | '/_studio/projects/$slug/surveys/$surveySlug/responses'
+    | '/_studio/projects/$slug/surveys/$surveySlug/roles'
+    | '/_studio/projects/$slug/surveys/$surveySlug/settings'
+    | '/_studio/projects/$slug/surveys/$surveySlug/versions'
+    | '/_studio/projects/$slug/surveys/$surveySlug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  ProjectsSlugRoute: typeof ProjectsSlugRouteWithChildren
-  AccountIndexRoute: typeof AccountIndexRoute
-  ProjectsIndexRoute: typeof ProjectsIndexRoute
-  UiTest2IndexRoute: typeof UiTest2IndexRoute
-  UiTestIndexRoute: typeof UiTestIndexRoute
+  PublicRoute: typeof PublicRouteWithChildren
+  RespondentRoute: typeof RespondentRouteWithChildren
+  StudioRoute: typeof StudioRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_studio': {
+      id: '/_studio'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof StudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_respondent': {
+      id: '/_respondent'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof RespondentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_public': {
+      id: '/_public'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_studio/': {
+      id: '/_studio/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof StudioIndexRouteImport
+      parentRoute: typeof StudioRoute
     }
-    '/ui-test/': {
-      id: '/ui-test/'
+    '/_studio/ui-test/': {
+      id: '/_studio/ui-test/'
       path: '/ui-test'
       fullPath: '/ui-test/'
-      preLoaderRoute: typeof UiTestIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof StudioUiTestIndexRouteImport
+      parentRoute: typeof StudioRoute
     }
-    '/ui-test-2/': {
-      id: '/ui-test-2/'
+    '/_studio/ui-test-2/': {
+      id: '/_studio/ui-test-2/'
       path: '/ui-test-2'
       fullPath: '/ui-test-2/'
-      preLoaderRoute: typeof UiTest2IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof StudioUiTest2IndexRouteImport
+      parentRoute: typeof StudioRoute
     }
-    '/projects/': {
-      id: '/projects/'
+    '/_studio/projects/': {
+      id: '/_studio/projects/'
       path: '/projects'
       fullPath: '/projects/'
-      preLoaderRoute: typeof ProjectsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof StudioProjectsIndexRouteImport
+      parentRoute: typeof StudioRoute
     }
-    '/account/': {
-      id: '/account/'
+    '/_studio/account/': {
+      id: '/_studio/account/'
       path: '/account'
       fullPath: '/account/'
-      preLoaderRoute: typeof AccountIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof StudioAccountIndexRouteImport
+      parentRoute: typeof StudioRoute
     }
-    '/projects/$slug': {
-      id: '/projects/$slug'
+    '/_studio/projects/$slug': {
+      id: '/_studio/projects/$slug'
       path: '/projects/$slug'
       fullPath: '/projects/$slug'
-      preLoaderRoute: typeof ProjectsSlugRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof StudioProjectsSlugRouteImport
+      parentRoute: typeof StudioRoute
     }
-    '/projects/$slug/': {
-      id: '/projects/$slug/'
+    '/_respondent/respond/$token': {
+      id: '/_respondent/respond/$token'
+      path: '/respond/$token'
+      fullPath: '/respond/$token'
+      preLoaderRoute: typeof RespondentRespondTokenRouteImport
+      parentRoute: typeof RespondentRoute
+    }
+    '/_public/invitations/$token': {
+      id: '/_public/invitations/$token'
+      path: '/invitations/$token'
+      fullPath: '/invitations/$token'
+      preLoaderRoute: typeof PublicInvitationsTokenRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_studio/projects/$slug/': {
+      id: '/_studio/projects/$slug/'
       path: '/'
       fullPath: '/projects/$slug/'
-      preLoaderRoute: typeof ProjectsSlugIndexRouteImport
-      parentRoute: typeof ProjectsSlugRoute
+      preLoaderRoute: typeof StudioProjectsSlugIndexRouteImport
+      parentRoute: typeof StudioProjectsSlugRoute
     }
-    '/projects/$slug/surveys': {
-      id: '/projects/$slug/surveys'
+    '/_studio/projects/$slug/surveys': {
+      id: '/_studio/projects/$slug/surveys'
       path: '/surveys'
       fullPath: '/projects/$slug/surveys'
-      preLoaderRoute: typeof ProjectsSlugSurveysRouteImport
-      parentRoute: typeof ProjectsSlugRoute
+      preLoaderRoute: typeof StudioProjectsSlugSurveysRouteImport
+      parentRoute: typeof StudioProjectsSlugRoute
     }
-    '/projects/$slug/settings': {
-      id: '/projects/$slug/settings'
+    '/_studio/projects/$slug/subjects': {
+      id: '/_studio/projects/$slug/subjects'
+      path: '/subjects'
+      fullPath: '/projects/$slug/subjects'
+      preLoaderRoute: typeof StudioProjectsSlugSubjectsRouteImport
+      parentRoute: typeof StudioProjectsSlugRoute
+    }
+    '/_studio/projects/$slug/settings': {
+      id: '/_studio/projects/$slug/settings'
       path: '/settings'
       fullPath: '/projects/$slug/settings'
-      preLoaderRoute: typeof ProjectsSlugSettingsRouteImport
-      parentRoute: typeof ProjectsSlugRoute
+      preLoaderRoute: typeof StudioProjectsSlugSettingsRouteImport
+      parentRoute: typeof StudioProjectsSlugRoute
     }
-    '/projects/$slug/roles': {
-      id: '/projects/$slug/roles'
+    '/_studio/projects/$slug/roles': {
+      id: '/_studio/projects/$slug/roles'
       path: '/roles'
       fullPath: '/projects/$slug/roles'
-      preLoaderRoute: typeof ProjectsSlugRolesRouteImport
-      parentRoute: typeof ProjectsSlugRoute
+      preLoaderRoute: typeof StudioProjectsSlugRolesRouteImport
+      parentRoute: typeof StudioProjectsSlugRoute
     }
-    '/projects/$slug/members': {
-      id: '/projects/$slug/members'
+    '/_studio/projects/$slug/members': {
+      id: '/_studio/projects/$slug/members'
       path: '/members'
       fullPath: '/projects/$slug/members'
-      preLoaderRoute: typeof ProjectsSlugMembersRouteImport
-      parentRoute: typeof ProjectsSlugRoute
+      preLoaderRoute: typeof StudioProjectsSlugMembersRouteImport
+      parentRoute: typeof StudioProjectsSlugRoute
     }
-    '/projects/$slug/surveys/': {
-      id: '/projects/$slug/surveys/'
+    '/_studio/projects/$slug/surveys/': {
+      id: '/_studio/projects/$slug/surveys/'
       path: '/'
       fullPath: '/projects/$slug/surveys/'
-      preLoaderRoute: typeof ProjectsSlugSurveysIndexRouteImport
-      parentRoute: typeof ProjectsSlugSurveysRoute
+      preLoaderRoute: typeof StudioProjectsSlugSurveysIndexRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysRoute
     }
-    '/projects/$slug/surveys/$surveySlug': {
-      id: '/projects/$slug/surveys/$surveySlug'
+    '/_studio/projects/$slug/surveys/$surveySlug': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug'
       path: '/$surveySlug'
       fullPath: '/projects/$slug/surveys/$surveySlug'
-      preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugRouteImport
-      parentRoute: typeof ProjectsSlugSurveysRoute
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysRoute
     }
-    '/projects/$slug/surveys/$surveySlug/': {
-      id: '/projects/$slug/surveys/$surveySlug/'
+    '/_studio/projects/$slug/surveys/$surveySlug/': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/'
       path: '/'
       fullPath: '/projects/$slug/surveys/$surveySlug/'
-      preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugIndexRouteImport
-      parentRoute: typeof ProjectsSlugSurveysSurveySlugRoute
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugIndexRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
     }
-    '/projects/$slug/surveys/$surveySlug/versions': {
-      id: '/projects/$slug/surveys/$surveySlug/versions'
+    '/_studio/projects/$slug/surveys/$surveySlug/versions': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/versions'
       path: '/versions'
       fullPath: '/projects/$slug/surveys/$surveySlug/versions'
-      preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugVersionsRouteImport
-      parentRoute: typeof ProjectsSlugSurveysSurveySlugRoute
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugVersionsRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
     }
-    '/projects/$slug/surveys/$surveySlug/settings': {
-      id: '/projects/$slug/surveys/$surveySlug/settings'
+    '/_studio/projects/$slug/surveys/$surveySlug/settings': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/settings'
       path: '/settings'
       fullPath: '/projects/$slug/surveys/$surveySlug/settings'
-      preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugSettingsRouteImport
-      parentRoute: typeof ProjectsSlugSurveysSurveySlugRoute
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugSettingsRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
     }
-    '/projects/$slug/surveys/$surveySlug/roles': {
-      id: '/projects/$slug/surveys/$surveySlug/roles'
+    '/_studio/projects/$slug/surveys/$surveySlug/roles': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/roles'
       path: '/roles'
       fullPath: '/projects/$slug/surveys/$surveySlug/roles'
-      preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugRolesRouteImport
-      parentRoute: typeof ProjectsSlugSurveysSurveySlugRoute
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugRolesRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
     }
-    '/projects/$slug/surveys/$surveySlug/responses': {
-      id: '/projects/$slug/surveys/$surveySlug/responses'
+    '/_studio/projects/$slug/surveys/$surveySlug/responses': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/responses'
       path: '/responses'
       fullPath: '/projects/$slug/surveys/$surveySlug/responses'
-      preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugResponsesRouteImport
-      parentRoute: typeof ProjectsSlugSurveysSurveySlugRoute
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugResponsesRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
     }
-    '/projects/$slug/surveys/$surveySlug/overview': {
-      id: '/projects/$slug/surveys/$surveySlug/overview'
+    '/_studio/projects/$slug/surveys/$surveySlug/overview': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/overview'
       path: '/overview'
       fullPath: '/projects/$slug/surveys/$surveySlug/overview'
-      preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugOverviewRouteImport
-      parentRoute: typeof ProjectsSlugSurveysSurveySlugRoute
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugOverviewRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
     }
-    '/projects/$slug/surveys/$surveySlug/members': {
-      id: '/projects/$slug/surveys/$surveySlug/members'
-      path: '/members'
-      fullPath: '/projects/$slug/surveys/$surveySlug/members'
-      preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugMembersRouteImport
-      parentRoute: typeof ProjectsSlugSurveysSurveySlugRoute
-    }
-    '/projects/$slug/surveys/$surveySlug/links': {
-      id: '/projects/$slug/surveys/$surveySlug/links'
-      path: '/links'
-      fullPath: '/projects/$slug/surveys/$surveySlug/links'
-      preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugLinksRouteImport
-      parentRoute: typeof ProjectsSlugSurveysSurveySlugRoute
-    }
-    '/projects/$slug/surveys/$surveySlug/builder': {
-      id: '/projects/$slug/surveys/$surveySlug/builder'
+    '/_studio/projects/$slug/surveys/$surveySlug/builder': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/builder'
       path: '/builder'
       fullPath: '/projects/$slug/surveys/$surveySlug/builder'
-      preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugBuilderRouteImport
-      parentRoute: typeof ProjectsSlugSurveysSurveySlugRoute
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugBuilderRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
     }
-    '/projects/$slug/surveys/$surveySlug/access': {
-      id: '/projects/$slug/surveys/$surveySlug/access'
+    '/_studio/projects/$slug/surveys/$surveySlug/access': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/access'
       path: '/access'
       fullPath: '/projects/$slug/surveys/$surveySlug/access'
-      preLoaderRoute: typeof ProjectsSlugSurveysSurveySlugAccessRouteImport
-      parentRoute: typeof ProjectsSlugSurveysSurveySlugRoute
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugAccessRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
     }
   }
 }
 
-interface ProjectsSlugSurveysSurveySlugRouteChildren {
-  ProjectsSlugSurveysSurveySlugAccessRoute: typeof ProjectsSlugSurveysSurveySlugAccessRoute
-  ProjectsSlugSurveysSurveySlugBuilderRoute: typeof ProjectsSlugSurveysSurveySlugBuilderRoute
-  ProjectsSlugSurveysSurveySlugLinksRoute: typeof ProjectsSlugSurveysSurveySlugLinksRoute
-  ProjectsSlugSurveysSurveySlugMembersRoute: typeof ProjectsSlugSurveysSurveySlugMembersRoute
-  ProjectsSlugSurveysSurveySlugOverviewRoute: typeof ProjectsSlugSurveysSurveySlugOverviewRoute
-  ProjectsSlugSurveysSurveySlugResponsesRoute: typeof ProjectsSlugSurveysSurveySlugResponsesRoute
-  ProjectsSlugSurveysSurveySlugRolesRoute: typeof ProjectsSlugSurveysSurveySlugRolesRoute
-  ProjectsSlugSurveysSurveySlugSettingsRoute: typeof ProjectsSlugSurveysSurveySlugSettingsRoute
-  ProjectsSlugSurveysSurveySlugVersionsRoute: typeof ProjectsSlugSurveysSurveySlugVersionsRoute
-  ProjectsSlugSurveysSurveySlugIndexRoute: typeof ProjectsSlugSurveysSurveySlugIndexRoute
+interface PublicRouteChildren {
+  PublicInvitationsTokenRoute: typeof PublicInvitationsTokenRoute
 }
 
-const ProjectsSlugSurveysSurveySlugRouteChildren: ProjectsSlugSurveysSurveySlugRouteChildren =
-  {
-    ProjectsSlugSurveysSurveySlugAccessRoute:
-      ProjectsSlugSurveysSurveySlugAccessRoute,
-    ProjectsSlugSurveysSurveySlugBuilderRoute:
-      ProjectsSlugSurveysSurveySlugBuilderRoute,
-    ProjectsSlugSurveysSurveySlugLinksRoute:
-      ProjectsSlugSurveysSurveySlugLinksRoute,
-    ProjectsSlugSurveysSurveySlugMembersRoute:
-      ProjectsSlugSurveysSurveySlugMembersRoute,
-    ProjectsSlugSurveysSurveySlugOverviewRoute:
-      ProjectsSlugSurveysSurveySlugOverviewRoute,
-    ProjectsSlugSurveysSurveySlugResponsesRoute:
-      ProjectsSlugSurveysSurveySlugResponsesRoute,
-    ProjectsSlugSurveysSurveySlugRolesRoute:
-      ProjectsSlugSurveysSurveySlugRolesRoute,
-    ProjectsSlugSurveysSurveySlugSettingsRoute:
-      ProjectsSlugSurveysSurveySlugSettingsRoute,
-    ProjectsSlugSurveysSurveySlugVersionsRoute:
-      ProjectsSlugSurveysSurveySlugVersionsRoute,
-    ProjectsSlugSurveysSurveySlugIndexRoute:
-      ProjectsSlugSurveysSurveySlugIndexRoute,
-  }
-
-const ProjectsSlugSurveysSurveySlugRouteWithChildren =
-  ProjectsSlugSurveysSurveySlugRoute._addFileChildren(
-    ProjectsSlugSurveysSurveySlugRouteChildren,
-  )
-
-interface ProjectsSlugSurveysRouteChildren {
-  ProjectsSlugSurveysSurveySlugRoute: typeof ProjectsSlugSurveysSurveySlugRouteWithChildren
-  ProjectsSlugSurveysIndexRoute: typeof ProjectsSlugSurveysIndexRoute
+const PublicRouteChildren: PublicRouteChildren = {
+  PublicInvitationsTokenRoute: PublicInvitationsTokenRoute,
 }
 
-const ProjectsSlugSurveysRouteChildren: ProjectsSlugSurveysRouteChildren = {
-  ProjectsSlugSurveysSurveySlugRoute:
-    ProjectsSlugSurveysSurveySlugRouteWithChildren,
-  ProjectsSlugSurveysIndexRoute: ProjectsSlugSurveysIndexRoute,
+const PublicRouteWithChildren =
+  PublicRoute._addFileChildren(PublicRouteChildren)
+
+interface RespondentRouteChildren {
+  RespondentRespondTokenRoute: typeof RespondentRespondTokenRoute
 }
 
-const ProjectsSlugSurveysRouteWithChildren =
-  ProjectsSlugSurveysRoute._addFileChildren(ProjectsSlugSurveysRouteChildren)
-
-interface ProjectsSlugRouteChildren {
-  ProjectsSlugMembersRoute: typeof ProjectsSlugMembersRoute
-  ProjectsSlugRolesRoute: typeof ProjectsSlugRolesRoute
-  ProjectsSlugSettingsRoute: typeof ProjectsSlugSettingsRoute
-  ProjectsSlugSurveysRoute: typeof ProjectsSlugSurveysRouteWithChildren
-  ProjectsSlugIndexRoute: typeof ProjectsSlugIndexRoute
+const RespondentRouteChildren: RespondentRouteChildren = {
+  RespondentRespondTokenRoute: RespondentRespondTokenRoute,
 }
 
-const ProjectsSlugRouteChildren: ProjectsSlugRouteChildren = {
-  ProjectsSlugMembersRoute: ProjectsSlugMembersRoute,
-  ProjectsSlugRolesRoute: ProjectsSlugRolesRoute,
-  ProjectsSlugSettingsRoute: ProjectsSlugSettingsRoute,
-  ProjectsSlugSurveysRoute: ProjectsSlugSurveysRouteWithChildren,
-  ProjectsSlugIndexRoute: ProjectsSlugIndexRoute,
-}
-
-const ProjectsSlugRouteWithChildren = ProjectsSlugRoute._addFileChildren(
-  ProjectsSlugRouteChildren,
+const RespondentRouteWithChildren = RespondentRoute._addFileChildren(
+  RespondentRouteChildren,
 )
 
+interface StudioProjectsSlugSurveysSurveySlugRouteChildren {
+  StudioProjectsSlugSurveysSurveySlugAccessRoute: typeof StudioProjectsSlugSurveysSurveySlugAccessRoute
+  StudioProjectsSlugSurveysSurveySlugBuilderRoute: typeof StudioProjectsSlugSurveysSurveySlugBuilderRoute
+  StudioProjectsSlugSurveysSurveySlugOverviewRoute: typeof StudioProjectsSlugSurveysSurveySlugOverviewRoute
+  StudioProjectsSlugSurveysSurveySlugResponsesRoute: typeof StudioProjectsSlugSurveysSurveySlugResponsesRoute
+  StudioProjectsSlugSurveysSurveySlugRolesRoute: typeof StudioProjectsSlugSurveysSurveySlugRolesRoute
+  StudioProjectsSlugSurveysSurveySlugSettingsRoute: typeof StudioProjectsSlugSurveysSurveySlugSettingsRoute
+  StudioProjectsSlugSurveysSurveySlugVersionsRoute: typeof StudioProjectsSlugSurveysSurveySlugVersionsRoute
+  StudioProjectsSlugSurveysSurveySlugIndexRoute: typeof StudioProjectsSlugSurveysSurveySlugIndexRoute
+}
+
+const StudioProjectsSlugSurveysSurveySlugRouteChildren: StudioProjectsSlugSurveysSurveySlugRouteChildren =
+  {
+    StudioProjectsSlugSurveysSurveySlugAccessRoute:
+      StudioProjectsSlugSurveysSurveySlugAccessRoute,
+    StudioProjectsSlugSurveysSurveySlugBuilderRoute:
+      StudioProjectsSlugSurveysSurveySlugBuilderRoute,
+    StudioProjectsSlugSurveysSurveySlugOverviewRoute:
+      StudioProjectsSlugSurveysSurveySlugOverviewRoute,
+    StudioProjectsSlugSurveysSurveySlugResponsesRoute:
+      StudioProjectsSlugSurveysSurveySlugResponsesRoute,
+    StudioProjectsSlugSurveysSurveySlugRolesRoute:
+      StudioProjectsSlugSurveysSurveySlugRolesRoute,
+    StudioProjectsSlugSurveysSurveySlugSettingsRoute:
+      StudioProjectsSlugSurveysSurveySlugSettingsRoute,
+    StudioProjectsSlugSurveysSurveySlugVersionsRoute:
+      StudioProjectsSlugSurveysSurveySlugVersionsRoute,
+    StudioProjectsSlugSurveysSurveySlugIndexRoute:
+      StudioProjectsSlugSurveysSurveySlugIndexRoute,
+  }
+
+const StudioProjectsSlugSurveysSurveySlugRouteWithChildren =
+  StudioProjectsSlugSurveysSurveySlugRoute._addFileChildren(
+    StudioProjectsSlugSurveysSurveySlugRouteChildren,
+  )
+
+interface StudioProjectsSlugSurveysRouteChildren {
+  StudioProjectsSlugSurveysSurveySlugRoute: typeof StudioProjectsSlugSurveysSurveySlugRouteWithChildren
+  StudioProjectsSlugSurveysIndexRoute: typeof StudioProjectsSlugSurveysIndexRoute
+}
+
+const StudioProjectsSlugSurveysRouteChildren: StudioProjectsSlugSurveysRouteChildren =
+  {
+    StudioProjectsSlugSurveysSurveySlugRoute:
+      StudioProjectsSlugSurveysSurveySlugRouteWithChildren,
+    StudioProjectsSlugSurveysIndexRoute: StudioProjectsSlugSurveysIndexRoute,
+  }
+
+const StudioProjectsSlugSurveysRouteWithChildren =
+  StudioProjectsSlugSurveysRoute._addFileChildren(
+    StudioProjectsSlugSurveysRouteChildren,
+  )
+
+interface StudioProjectsSlugRouteChildren {
+  StudioProjectsSlugMembersRoute: typeof StudioProjectsSlugMembersRoute
+  StudioProjectsSlugRolesRoute: typeof StudioProjectsSlugRolesRoute
+  StudioProjectsSlugSettingsRoute: typeof StudioProjectsSlugSettingsRoute
+  StudioProjectsSlugSubjectsRoute: typeof StudioProjectsSlugSubjectsRoute
+  StudioProjectsSlugSurveysRoute: typeof StudioProjectsSlugSurveysRouteWithChildren
+  StudioProjectsSlugIndexRoute: typeof StudioProjectsSlugIndexRoute
+}
+
+const StudioProjectsSlugRouteChildren: StudioProjectsSlugRouteChildren = {
+  StudioProjectsSlugMembersRoute: StudioProjectsSlugMembersRoute,
+  StudioProjectsSlugRolesRoute: StudioProjectsSlugRolesRoute,
+  StudioProjectsSlugSettingsRoute: StudioProjectsSlugSettingsRoute,
+  StudioProjectsSlugSubjectsRoute: StudioProjectsSlugSubjectsRoute,
+  StudioProjectsSlugSurveysRoute: StudioProjectsSlugSurveysRouteWithChildren,
+  StudioProjectsSlugIndexRoute: StudioProjectsSlugIndexRoute,
+}
+
+const StudioProjectsSlugRouteWithChildren =
+  StudioProjectsSlugRoute._addFileChildren(StudioProjectsSlugRouteChildren)
+
+interface StudioRouteChildren {
+  StudioIndexRoute: typeof StudioIndexRoute
+  StudioProjectsSlugRoute: typeof StudioProjectsSlugRouteWithChildren
+  StudioAccountIndexRoute: typeof StudioAccountIndexRoute
+  StudioProjectsIndexRoute: typeof StudioProjectsIndexRoute
+  StudioUiTest2IndexRoute: typeof StudioUiTest2IndexRoute
+  StudioUiTestIndexRoute: typeof StudioUiTestIndexRoute
+}
+
+const StudioRouteChildren: StudioRouteChildren = {
+  StudioIndexRoute: StudioIndexRoute,
+  StudioProjectsSlugRoute: StudioProjectsSlugRouteWithChildren,
+  StudioAccountIndexRoute: StudioAccountIndexRoute,
+  StudioProjectsIndexRoute: StudioProjectsIndexRoute,
+  StudioUiTest2IndexRoute: StudioUiTest2IndexRoute,
+  StudioUiTestIndexRoute: StudioUiTestIndexRoute,
+}
+
+const StudioRouteWithChildren =
+  StudioRoute._addFileChildren(StudioRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  ProjectsSlugRoute: ProjectsSlugRouteWithChildren,
-  AccountIndexRoute: AccountIndexRoute,
-  ProjectsIndexRoute: ProjectsIndexRoute,
-  UiTest2IndexRoute: UiTest2IndexRoute,
-  UiTestIndexRoute: UiTestIndexRoute,
+  PublicRoute: PublicRouteWithChildren,
+  RespondentRoute: RespondentRouteWithChildren,
+  StudioRoute: StudioRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

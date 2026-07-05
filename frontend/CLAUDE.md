@@ -1,6 +1,6 @@
 # FlowForm Frontend — Claude Code Guide
 
-The frontend is an npm workspaces monorepo with two apps and four shared packages.
+The frontend is a pnpm workspaces monorepo with two apps and five shared packages.
 
 ---
 
@@ -27,22 +27,22 @@ The frontend is an npm workspaces monorepo with two apps and four shared package
 Run from `frontend/`:
 
 ```bash
-npm run dev:studio          # Studio dev server on :5174
-npm run dev:site            # Public site dev server
-npm run build:studio        # Production build for Studio
-npm run build:site          # Production build for public site
+pnpm run dev:studio         # Studio dev server on :5174
+pnpm run dev:site           # Public site dev server
+pnpm run build:studio       # Production build for Studio
+pnpm run build:site         # Production build for public site
 ```
 
 Run from the app directory directly:
 
 ```bash
 # Studio
-npm run routes              # Regenerate TanStack Router routeTree.gen.ts
-npm run lint                # ESLint
+pnpm run routes             # Regenerate TanStack Router routeTree.gen.ts
+pnpm run lint               # ESLint
 
 # Public site
-npm run astro dev
-npm run astro build
+pnpm run astro dev
+pnpm run astro build
 ```
 
 ---
@@ -91,7 +91,8 @@ JSON at `<backend>/openapi.json` for human browsing.
 
 ## Key conventions
 
-- Package manager: **npm** (native workspaces) — do not use pnpm or yarn
+- Package manager: **pnpm** (native workspaces via `pnpm-workspace.yaml`) — do not use npm or yarn
+- Dependency freshness gate: `minimumReleaseAge: 10080` in `pnpm-workspace.yaml` enforces a 7-day release age before new package versions can install
 - TypeScript strict mode throughout; `noUnusedLocals` and `noUnusedParameters` enforced
 - Packages are consumed as **source** via tsconfig path aliases and Vite resolve.alias —
   there is no build/publish step to run when editing a package locally

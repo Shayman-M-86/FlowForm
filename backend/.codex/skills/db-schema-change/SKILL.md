@@ -13,7 +13,7 @@ examples.
 
 1. **SQL schema** - `infra/postgres/init/schema/flowform_{core,response}_db_schema_v4.sql`. Runtime source of truth. Constraint names matter: `integrity_rules.py` keys off them exactly. Follow `sqlalchemy_constraint_naming_rules.md` in the same dir.
 
-2. **ORM models** - `app/schema/orm/{core,response}/`. Column types and `__table_args__` mirror the SQL. Core and response models never share base or relationship.
+2. **ORM models** - `app/schema/orm/{core,response}/`. Column types/nullability/defaults match the SQL, but `__table_args__` is not a full mirror: the DB is built from SQL (never from ORM metadata), so keep only what SQLAlchemy needs - foreign keys and the composite UNIQUEs that composite FKs target. CHECKs and non-FK UNIQUEs live in SQL only. Core and response models never share base or relationship.
 
 3. **Mock data** - `infra/postgres/flowform_{core,response}_mock_data.sql`. Every CHECK / FK / UNIQUE in the schema must be satisfied by the seed rows. New NOT NULL column: fill every existing `INSERT`. New CHECK: audit every existing row. Removed column: strip from `INSERT` and `setval(...)` lines.
 

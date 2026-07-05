@@ -3,21 +3,19 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
-    CheckConstraint,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
     Identity,
-    Index,
     Integer,
     Text,
     UniqueConstraint,
-    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
+from app.schema.enums import SurveyVersionStatus, SurveyVisibility
 from app.schema.orm.base import TimestampMixin
 
 if TYPE_CHECKING:
@@ -32,7 +30,7 @@ class Survey(TimestampMixin, CoreBase):
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
-    visibility: Mapped[str] = mapped_column(Text, default="private", nullable=False)
+    visibility: Mapped[SurveyVisibility] = mapped_column(Text, default="private", nullable=False)
     public_slug: Mapped[str | None] = mapped_column(Text, unique=True, nullable=True)
     default_response_store_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     published_version_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
@@ -40,14 +38,9 @@ class Survey(TimestampMixin, CoreBase):
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
         UniqueConstraint("project_id", "id", name="uq_surveys_project_id_id"),
-        CheckConstraint("visibility IN ('private', 'link_only', 'public')", name="visibility_valid"),
-        CheckConstraint("visibility <> 'public' OR public_slug IS NOT NULL", name="public_requires_slug"),
-        CheckConstraint(
-            "public_slug IS NULL OR visibility = 'public'",
-            name="slug_requires_public_visibility",
-        ),
         ForeignKeyConstraint(
             ["default_response_store_id"],
             ["response_stores.id"],
@@ -99,7 +92,7 @@ class SurveyVersion(TimestampMixin, CoreBase):
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     survey_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
-    status: Mapped[str] = mapped_column(Text, default="draft", nullable=False)
+    status: Mapped[SurveyVersionStatus] = mapped_column(Text, default="draft", nullable=False)
     compiled_schema: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by_user_id: Mapped[int | None] = mapped_column(
@@ -107,21 +100,9 @@ class SurveyVersion(TimestampMixin, CoreBase):
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
         UniqueConstraint("survey_id", "id", name="uq_survey_versions_survey_id_id"),
-        UniqueConstraint("survey_id", "version_number", name="uq_survey_versions_survey_id_version_number"),
-        CheckConstraint("status IN ('draft', 'published', 'archived')", name="status_valid"),
-        CheckConstraint("version_number > 0", name="version_number_positive"),
-        CheckConstraint(
-            "status <> 'published' OR (compiled_schema IS NOT NULL AND published_at IS NOT NULL)",
-            name="published_requires_schema_and_timestamp",
-        ),
-        Index(
-            "uq_survey_versions_one_published",
-            "survey_id",
-            unique=True,
-            postgresql_where=text("status = 'published' AND deleted_at IS NULL"),
-        ),
     )
 
     survey: Mapped[Survey] = relationship(

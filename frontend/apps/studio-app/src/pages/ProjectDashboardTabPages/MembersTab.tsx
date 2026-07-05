@@ -1,8 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Button, Badge, Card, Input, LargeInput, Modal, Select, Spinner, Table, Toast, type TableColumn } from '@flowform/ui'
-import { useProjectMembers, useProjectInvitations, useSendInvitation, useDeleteProjectMember, useRevokeInvitation, useUpdateProjectMember } from '@/api/project/members/hooks'
-import type { ProjectInvitationOut, ProjectMemberOut } from '@/api/project/members/types'
-import { getInviteErrorMessage } from '@/api/errors'
+import { useProjectMembers, useProjectInvitations, useSendInvitation, useDeleteProjectMember, useRevokeInvitation, useUpdateProjectMember } from '@/api/hooks/members'
+import type { ProjectInvitationOut, ProjectMemberOut } from '@/api/hooks/members'
 import { RoleEditorModal, type RoleEditorState } from './RoleEditorModal'
 import type { CustomRole } from './RolesTab'
 import { normalizePermissionKeys, type PermissionKey } from './roleDefinitions'
@@ -11,8 +10,8 @@ import { MemberRoleActions } from '@/components/MemberRoleActions'
 import { PermissionBadge } from '@/components/PermissionBadge'
 import { RoleBadgePreview } from '@/components/RoleBadgePreview'
 import { PERMISSION_GROUPS } from './RolesTab'
-import { useProjectRoles, useCreateProjectRole } from '@/api/project/roles/hooks'
-import { useHasProjectPermission } from '@/api/project/permissions/hooks'
+import { useProjectRoles, useCreateProjectRole } from '@/api/hooks/roles'
+import { useHasProjectPermission } from '@/api/hooks/permissions'
 
 type Props = { projectId: number }
 type ProjectMemberRole = CustomRole & { isSystemRole: boolean }
@@ -89,7 +88,7 @@ export function MembersTab({ projectId }: Props) {
     let resolvedId = editingRole.id
     if (editingRole.custom) {
       try {
-        const created = await createProjectRole.mutateAsync({ name: next.name, permissions: next.permissions })
+        const created = await createProjectRole.mutateAsync({ name: next.name, description: null, permissions: next.permissions })
         resolvedId = String(created.id)
       } catch {
         return
@@ -245,7 +244,7 @@ export function MembersTab({ projectId }: Props) {
         )
       },
     },
-  ], [addCustomRole, assignableRoles, renderProjectPermissions, roleById, updateMember])
+  ], [addCustomRole, assignableRoles, canManageMembers, canManageRoles, renderProjectPermissions, roleById, updateMember])
 
   const invitationColumns = useMemo<TableColumn<ProjectInvitationOut>[]>(() => [
     {
@@ -273,7 +272,7 @@ export function MembersTab({ projectId }: Props) {
         </Button>
       ) : null,
     },
-  ], [])
+  ], [canManageMembers])
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -392,7 +391,7 @@ export function MembersTab({ projectId }: Props) {
           />
           {sendInvitation.isError && (
             <p className="text-sm text-destructive">
-              {getInviteErrorMessage(sendInvitation.error)}
+              {(sendInvitation.error as { message?: string } | null)?.message ?? 'Failed to send invitation.'}
             </p>
           )}
         </div>

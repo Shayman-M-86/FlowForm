@@ -36,3 +36,9 @@ def normalize_display_name(*, claims: Mapping[str, Any]) -> str | None:
     """Return a normalized optional display name from ID-token claims."""
     name = claims.get("name")
     return name.strip() if isinstance(name, str) and name.strip() else None
+
+
+def extract_email_verified(*, claims: Mapping[str, Any]) -> bool:
+    """Return the ID-token email_verified claim, defaulting to False."""
+    verified = claims.get("email_verified", False)
+    return bool(verified) if isinstance(verified, bool) else False

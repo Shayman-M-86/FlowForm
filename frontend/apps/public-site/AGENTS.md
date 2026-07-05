@@ -20,9 +20,9 @@ experience. Built with **Astro 6** - not a React SPA.
 ## Commands
 
 ```bash
-npm run astro dev       # dev server
-npm run astro build     # production build
-npm run astro preview   # preview built output
+pnpm run astro dev      # dev server
+pnpm run astro build    # production build
+pnpm run astro preview  # preview built output
 ```
 
 ---

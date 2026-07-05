@@ -2,7 +2,7 @@ import sys
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
-HEALTHCHECK_URL = "http://127.0.0.1:5000/api/v1/health/ready"
+HEALTHCHECK_URL = "http://127.0.0.1:5000/api/v1/system/health/ready"
 TIMEOUT_SECONDS = 3
 
 

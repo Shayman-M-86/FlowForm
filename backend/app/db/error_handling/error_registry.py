@@ -102,7 +102,6 @@ def commit_with_err_handle(db: Session, *, contexts: Iterable[RuleContext] | Non
         raise UnhandledDbIntegrityError(
             constraint_name=get_constraint_name(exc),
             error_key=error_key,
-            context_summary=context_summary,
         ) from exc
     except Exception:
         db.rollback()
@@ -154,5 +153,4 @@ def flush_with_err_handle(db: Session, *, contexts: Iterable[RuleContext] | None
         raise UnhandledDbIntegrityError(
             constraint_name=get_constraint_name(exc),
             error_key=error_key,
-            context_summary=context_summary,
         ) from exc

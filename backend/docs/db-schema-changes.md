@@ -53,9 +53,14 @@ Things to consider:
 - **Column shape matches the SQL.** Types, nullability, defaults. The SQL
   file is authoritative at runtime; ORM mismatches surface as test
   failures or runtime errors.
-- **`__table_args__` mirrors CHECKs.** Useful for tests that build the
-  schema from metadata and for SQLAlchemy's reflection. Keep it in sync
-  but treat the SQL as the source of truth.
+- **`__table_args__` carries only what the ORM needs — not a full mirror.**
+  The DB is built from the SQL files, never from ORM metadata, so the ORM
+  does not need to redeclare every constraint. Keep only the constraints
+  SQLAlchemy actually uses: foreign keys (required by `relationship()`) and
+  the composite UNIQUEs that composite FKs target. CHECK constraints and
+  non-FK-referenced UNIQUEs live in the SQL schema only (the source of
+  truth). Adding a CHECK or a standalone UNIQUE does **not** require an
+  `__table_args__` entry.
 - **No cross-DB relationships.** Core and response models share only the
   integer link `core.survey_submissions.id ↔ response.submissions.core_submission_id`.
 - **No business logic in models.** Hybrid properties for read-only derived

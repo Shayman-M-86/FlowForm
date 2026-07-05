@@ -53,22 +53,28 @@ const ogImage = `${SITE_URL}/FlowForm_logo.png`;
     <!-- Inline theme-init: apply .dark before first paint to avoid flash -->
     <script is:inline>
       (function () {
-        var mq = window.matchMedia('(prefers-color-scheme: dark)');
-        var resolveTheme = function () {
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        const resolveTheme = function () {
           try {
-            var stored = localStorage.getItem('flowform.theme');
+            const stored = localStorage.getItem('flowform.theme');
             if (stored === 'dark' || stored === 'light') return stored;
-          } catch (_) {}
+          } catch {
+            // localStorage can be unavailable in private or restricted contexts.
+          }
           // No explicit user preference — follow the OS
           return mq.matches ? 'dark' : 'light';
         };
-        var apply = function (theme) {
+        const apply = function (theme) {
           document.documentElement.classList.toggle('dark', theme === 'dark');
         };
         apply(resolveTheme());
         // Re-apply when OS light/dark mode changes, but only if user hasn't overridden
         mq.addEventListener('change', function () {
-          try { if (localStorage.getItem('flowform.theme')) return; } catch (_) {}
+          try {
+            if (localStorage.getItem('flowform.theme')) return;
+          } catch {
+            // localStorage can be unavailable in private or restricted contexts.
+          }
           apply(mq.matches ? 'dark' : 'light');
         });
       })();

@@ -2,10 +2,9 @@ import './index.css'
 import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Auth0Provider } from '@auth0/auth0-react'
-import { QueryClientProvider } from '@tanstack/react-query'
+import { QueryProvider } from './app/providers/QueryProvider'
 import { RouterProvider } from '@tanstack/react-router'
 import { ThemeProvider } from '@flowform/ui'
-import { queryClient } from './lib/queryClient'
 import { router } from './lib/router'
 
 const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN as string
@@ -33,7 +32,7 @@ createRoot(document.getElementById('root')!).render(
       cacheLocation="localstorage"
       useRefreshTokens={true}
     >
-      <QueryClientProvider client={queryClient}>
+      <QueryProvider>
         <ThemeProvider>
           <RouterProvider router={router} />
         </ThemeProvider>
@@ -42,7 +41,7 @@ createRoot(document.getElementById('root')!).render(
             <ReactQueryDevtools />
           </Suspense>
         )}
-      </QueryClientProvider>
+      </QueryProvider>
     </Auth0Provider>
   </StrictMode>,
 )

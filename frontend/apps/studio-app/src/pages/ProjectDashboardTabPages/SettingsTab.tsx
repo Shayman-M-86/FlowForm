@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { Button, Card, Input, Modal, Spinner, Toast } from '@flowform/ui'
-import { useProject, useUpdateProject, useDeleteProject } from '@/api/project/projects/hooks'
-import { useHasProjectPermission } from '@/api/project/permissions/hooks'
+import { useProject, useUpdateProject, useDeleteProject } from '@/api/hooks/projects'
+import { useHasProjectPermission } from '@/api/hooks/permissions'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
 function toUrlSafeName(value: string) {

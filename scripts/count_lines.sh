@@ -48,6 +48,7 @@ find "$REPO_ROOT" \
   ! -iname "*.min.css" \
   ! -iname "*.map" \
   ! -iname "package-lock.json" \
+  ! -iname "pnpm-lock.yaml" \
   ! -iname "openapi.yaml" \
   ! -iname "openapi.json" \
   ! -path "*/api/generated/*" \

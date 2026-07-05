@@ -1,11 +1,12 @@
-import hashlib
 import secrets
+import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
+from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
 from app.schema.orm.core.survey_access import SurveyLink
 
 _TOKEN_BYTES = 32
@@ -18,18 +19,15 @@ class _UnsetType:
 _UNSET = _UnsetType()
 
 
-def _make_token() -> tuple[str, str, str]:
-    token = secrets.token_urlsafe(_TOKEN_BYTES)
-    prefix = token[:8]
-    token_hash = hashlib.sha256(token.encode()).hexdigest()
-    return token, prefix, token_hash
+def _make_token() -> str:
+    return secrets.token_urlsafe(_TOKEN_BYTES)
 
 
 def list_links(db: Session, survey_id: int) -> list[SurveyLink]:
     return list(db.scalars(select(SurveyLink).where(SurveyLink.survey_id == survey_id)))
 
 
-def get_link(db: Session, survey_id: int, link_id: int) -> SurveyLink | None:
+def get_link(db: Session, survey_id: int, link_id: uuid.UUID) -> SurveyLink | None:
     return db.scalar(
         select(SurveyLink).where(
             SurveyLink.survey_id == survey_id,
@@ -41,26 +39,29 @@ def get_link(db: Session, survey_id: int, link_id: int) -> SurveyLink | None:
 def create_link(
     db: Session,
     *,
+    project_id: int,
     survey_id: int,
     name: str,
-    assigned_email: str | None,
-    requires_auth: bool,
+    link_type: SurveyLinkType,
+    assignment_source: SurveyLinkAssignmentSource,
+    assigned_participant_id: uuid.UUID | None,
     expires_at: datetime | None,
-) -> tuple[SurveyLink, str]:
-    token, prefix, token_hash = _make_token()
+) -> SurveyLink:
+    token = _make_token()
 
     link = SurveyLink(
+        project_id=project_id,
         survey_id=survey_id,
         name=name,
-        token_prefix=prefix,
-        token_hash=token_hash,
-        assigned_email=assigned_email,
-        requires_auth=requires_auth,
+        token=token,
+        link_type=link_type,
+        assignment_source=assignment_source,
+        assigned_participant_id=assigned_participant_id,
         expires_at=expires_at,
     )
     db.add(link)
     flush_with_err_handle(db, contexts=[link])
-    return link, token
+    return link
 
 
 def update_link(
@@ -69,8 +70,9 @@ def update_link(
     link: SurveyLink,
     is_active: bool | None = None,
     name: str | None = None,
-    requires_auth: bool | None = None,
-    assigned_email: str | None | _UnsetType = _UNSET,
+    link_type: SurveyLinkType | _UnsetType = _UNSET,
+    assignment_source: SurveyLinkAssignmentSource | _UnsetType = _UNSET,
+    assigned_participant_id: uuid.UUID | None | _UnsetType = _UNSET,
     expires_at: datetime | None | _UnsetType = _UNSET,
 ) -> SurveyLink:
     if is_active is not None:
@@ -79,11 +81,14 @@ def update_link(
     if name is not None:
         link.name = name
 
-    if requires_auth is not None:
-        link.requires_auth = requires_auth
+    if not isinstance(link_type, _UnsetType):
+        link.link_type = link_type
 
-    if not isinstance(assigned_email, _UnsetType):
-        link.assigned_email = assigned_email
+    if not isinstance(assignment_source, _UnsetType):
+        link.assignment_source = assignment_source
+
+    if not isinstance(assigned_participant_id, _UnsetType):
+        link.assigned_participant_id = assigned_participant_id
 
     if not isinstance(expires_at, _UnsetType):
         link.expires_at = expires_at
@@ -100,23 +105,26 @@ def mark_used(db: Session, *, link: SurveyLink) -> SurveyLink:
     return link
 
 
+def mark_used_and_deactivate(db: Session, *, link: SurveyLink) -> SurveyLink:
+    """Mark a link as used and deactivate it."""
+    if link.used_at is None:
+        link.used_at = datetime.now(UTC)
+    link.is_active = False
+    flush_with_err_handle(db, contexts=[link])
+    return link
+
+
 def delete_link(db: Session, link: SurveyLink) -> None:
     db.delete(link)
     flush_with_err_handle(db, contexts=[link])
 
 
 def resolve_token(db: Session, token: str) -> SurveyLink | None:
-    if len(token) < 8:
+    if not token:
         return None
 
-    prefix = token[:8]
-    token_hash = hashlib.sha256(token.encode()).hexdigest()
-
     return db.scalar(
-        select(SurveyLink).where(
-            SurveyLink.token_prefix == prefix,
-            SurveyLink.token_hash == token_hash,
-        )
+        select(SurveyLink).where(SurveyLink.token == token)
     )
 
 

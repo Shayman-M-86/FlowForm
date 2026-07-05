@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import pytest  # type: ignore[import]
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
-from app.domain.errors import UserBootstrapConflictError
 from app.schema.orm.core.user import User
 from app.services.users import UserService
 from tests.integration.core.factories import make_user
 
 
-def test_bootstrap_user_creates_user(db_session: scoped_session[Session]) -> None:
+def test_bootstrap_user_creates_user(db_session: Session) -> None:
     """bootstrap_user creates a local user row for a new Auth0 subject."""
     service = UserService()
 
@@ -25,10 +23,27 @@ def test_bootstrap_user_creates_user(db_session: scoped_session[Session]) -> Non
     assert user.auth0_user_id == "auth0|bootstrap-new"
     assert user.email == "bootstrap-new@example.com"
     assert user.display_name == "Bootstrap New"
+    assert user.email_verified is False
+
+
+def test_bootstrap_user_creates_user_with_email_verified_true(db_session: Session) -> None:
+    """bootstrap_user threads email_verified through on the create path."""
+    service = UserService()
+
+    user, created = service.bootstrap_user(
+        db_session, # type: ignore
+        auth0_user_id="auth0|bootstrap-verified",
+        email="bootstrap-verified@example.com",
+        display_name="Bootstrap Verified",
+        email_verified=True,
+    )
+
+    assert created is True
+    assert user.email_verified is True
 
 
 def test_bootstrap_user_updates_existing_user(
-    db_session: scoped_session[Session],
+    db_session: Session,
 ) -> None:
     """bootstrap_user syncs email and display name for an existing Auth0 subject."""
     existing = make_user(
@@ -53,12 +68,13 @@ def test_bootstrap_user_updates_existing_user(
     assert refreshed is not None
     assert refreshed.email == "new@example.com"
     assert refreshed.display_name == "New Name"
+    assert refreshed.email_verified is False
 
 
-def test_bootstrap_user_raises_conflict_for_duplicate_email(
-    db_session: scoped_session[Session],
+def test_bootstrap_user_allows_duplicate_email_for_new_identity(
+    db_session: Session,
 ) -> None:
-    """bootstrap_user returns a clean conflict error when email uniqueness is violated."""
+    """A second Auth0 identity sharing an email bootstraps into its own user row."""
     existing = make_user(
         auth0_user_id="auth0|bootstrap-email-existing",
         email="duplicate@example.com",
@@ -69,10 +85,13 @@ def test_bootstrap_user_raises_conflict_for_duplicate_email(
 
     service = UserService()
 
-    with pytest.raises(UserBootstrapConflictError):
-        service.bootstrap_user(
-            db_session, # type: ignore
-            auth0_user_id="auth0|bootstrap-email-other",
-            email="duplicate@example.com",
-            display_name="Other",
-        )
+    user, created = service.bootstrap_user(
+        db_session,  # type: ignore
+        auth0_user_id="auth0|bootstrap-email-other",
+        email="duplicate@example.com",
+        display_name="Other",
+    )
+
+    assert created is True
+    assert user.id != existing.id
+    assert user.email == existing.email

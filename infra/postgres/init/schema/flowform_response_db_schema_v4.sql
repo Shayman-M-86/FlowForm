@@ -1,176 +1,105 @@
 -- =========================================
--- FLOWFORM RESPONSE DATABASE SCHEMA (TIGHTENED)
+-- SESSION AND RESPONSE ENCRYPTION
 -- =========================================
--- Purpose:
--- - stores sensitive submission payloads separately from the core app database
--- - designed to work with platform-managed or customer-managed Postgres databases
+-- Anonymous encrypted envelopes and current encrypted answer rows.
+-- See docs/session-encryption/ for the broader design.
 --
 -- Notes:
--- - no foreign keys back to the core database because this is a separate database
--- - core_submission_id links this record back to survey_submissions.id in the core DB
--- - question_key ties answers to the frozen survey version used at submission time
--- - database checks below tighten answer shape validation, but backend validation against
---   the frozen compiled_schema must still be treated as the final authority
+-- - No foreign keys back to the core database. session_locator and
+--   answer_locator are HMAC-derived lookups; this database does not know
+--   who the respondent is.
 
 -- =========================================
 -- HELPERS
 -- =========================================
-
-CREATE OR REPLACE FUNCTION jsonb_has_exact_keys(data JSONB, expected_keys TEXT[])
-RETURNS BOOLEAN AS $$
-    SELECT
-        COALESCE(
-            ARRAY(SELECT key FROM jsonb_each(data) ORDER BY key),
-            ARRAY[]::TEXT[]
-        )
-        =
-        COALESCE(
-            ARRAY(SELECT key FROM unnest(expected_keys) AS key ORDER BY key),
-            ARRAY[]::TEXT[]
-        );
-$$ LANGUAGE sql IMMUTABLE;
-
-CREATE OR REPLACE FUNCTION jsonb_array_is_text_array(data JSONB)
-RETURNS BOOLEAN AS $$
-    SELECT
-        jsonb_typeof(data) = 'array'
-        AND NOT EXISTS (
-            SELECT 1
-            FROM jsonb_array_elements(data) AS elem
-            WHERE jsonb_typeof(elem) <> 'string'
-        );
-$$ LANGUAGE sql IMMUTABLE;
-
-CREATE OR REPLACE FUNCTION jsonb_is_scalar_or_null(data JSONB)
-RETURNS BOOLEAN AS $$
-    SELECT jsonb_typeof(data) IN ('string', 'number', 'boolean', 'null');
-$$ LANGUAGE sql IMMUTABLE;
-
-CREATE OR REPLACE FUNCTION jsonb_matching_matches_valid(data JSONB)
-RETURNS BOOLEAN AS $$
-    SELECT
-        jsonb_typeof(data) = 'array'
-        AND NOT EXISTS (
-            SELECT 1
-            FROM jsonb_array_elements(data) AS elem
-            WHERE jsonb_typeof(elem) <> 'object'
-               OR NOT jsonb_has_exact_keys(elem, ARRAY['left_id', 'right_id'])
-               OR jsonb_typeof(elem->'left_id') <> 'string'
-               OR jsonb_typeof(elem->'right_id') <> 'string'
-        );
-$$ LANGUAGE sql IMMUTABLE;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- =========================================
--- SUBMISSIONS
+-- RESPONSE ENVELOPES
 -- =========================================
 
-CREATE TABLE submissions (
-    id BIGSERIAL PRIMARY KEY,
-    core_submission_id BIGINT NOT NULL UNIQUE,
-    survey_id BIGINT NOT NULL,
-    survey_version_id BIGINT NOT NULL,
-    project_id BIGINT NOT NULL,
-    pseudonymous_subject_id UUID,
-    is_anonymous BOOLEAN NOT NULL DEFAULT FALSE,
-    submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    metadata JSONB,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT ck_submissions_metadata_is_object
-        CHECK (metadata IS NULL OR jsonb_typeof(metadata) = 'object')
+CREATE TABLE response_envelopes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    -- Hidden cross-database lookup. Derived from the core
+    -- submission_sessions.id using an external linkage secret.
+    session_locator BYTEA NOT NULL,
+
+    -- Identifies the external linkage-secret version used to derive the
+    -- session locator and answer locators.
+    linkage_key_version SMALLINT NOT NULL,
+
+    -- Encrypted copy of the session-specific Data Encryption Key.
+    -- This DEK is wrapped locally by the survey branch key, not directly by KMS.
+    wrapped_session_dek BYTEA NOT NULL,
+
+    -- Identifies the local authenticated-encryption format and algorithm.
+    crypto_version SMALLINT NOT NULL,
+
+    CONSTRAINT uq_response_envelopes_session_locator
+        UNIQUE (session_locator),
+
+    CONSTRAINT ck_response_envelopes_session_locator_len
+        CHECK (octet_length(session_locator) = 32),
+
+    CONSTRAINT ck_response_envelopes_linkage_key_version_valid
+        CHECK (linkage_key_version > 0),
+
+    CONSTRAINT ck_response_envelopes_wrapped_session_dek_len
+        CHECK (octet_length(wrapped_session_dek) > 0),
+
+    CONSTRAINT ck_response_envelopes_crypto_version_valid
+        CHECK (crypto_version > 0)
 );
 
 -- =========================================
--- SUBMISSION ANSWERS
+-- RESPONSE ANSWERS
 -- =========================================
--- answer_value is JSONB because answer shapes differ by question family.
--- Examples:
--- choice:   {"selected": ["a2"]}
--- field:    {"value": "name@example.com"}
--- matching: {"matches": [{"left_id": "c1", "right_id": "r1"}]}
--- rating:   {"value": 8}
 
-CREATE TABLE submission_answers (
-    id BIGSERIAL PRIMARY KEY,
-    submission_id BIGINT NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
-    question_key TEXT NOT NULL,
-    answer_family TEXT NOT NULL,
-    answer_value JSONB NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+CREATE TABLE response_answers (
+    -- Opaque HMAC-derived lookup generated from the core answer slot UUID.
+    answer_locator BYTEA NOT NULL,
 
-    CONSTRAINT ck_submission_answers_answer_family_valid
-        CHECK (answer_family IN ('choice', 'field', 'matching', 'rating')),
+    -- Groups this current answer under one anonymous response envelope.
+    envelope_id UUID NOT NULL,
 
-    CONSTRAINT ck_submission_answers_answer_value_is_object
-        CHECK (jsonb_typeof(answer_value) = 'object'),
+    -- Encrypted payload containing the real question-node UUID, answer state
+    -- and answer value.
+    ciphertext BYTEA NOT NULL,
 
-    CONSTRAINT ck_submission_answers_choice_shape_valid
-        CHECK (
-            answer_family <> 'choice'
-            OR (
-                jsonb_has_exact_keys(answer_value, ARRAY['selected'])
-                AND jsonb_array_is_text_array(answer_value->'selected')
-            )
-        ),
+    -- Fresh nonce generated for this encrypted current answer.
+    nonce BYTEA NOT NULL,
 
-    CONSTRAINT ck_submission_answers_field_shape_valid 
-        CHECK (
-            answer_family <> 'field'
-            OR (
-                jsonb_has_exact_keys (answer_value, ARRAY['value'])
-                AND jsonb_is_scalar_or_null (answer_value -> 'value')
-            )
-        ),
+    -- Client-supplied idempotency key for the save request that produced
+    -- the current answer row.
+    client_mutation_id UUID,
 
-    CONSTRAINT ck_submission_answers_matching_shape_valid
-    CHECK (
-        answer_family <> 'matching'
-        OR (
-            jsonb_has_exact_keys(answer_value, ARRAY['matches'])
-            AND jsonb_matching_matches_valid(answer_value->'matches')
-        )
-    ),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT ck_submission_answers_rating_shape_valid
-        CHECK (
-            answer_family <> 'rating'
-            OR (
-                jsonb_has_exact_keys(answer_value, ARRAY['value'])
-                AND jsonb_typeof(answer_value->'value') = 'number'
-            )
-        ),
+    CONSTRAINT pk_response_answers
+        PRIMARY KEY (answer_locator),
 
-    CONSTRAINT uq_submission_answers_question
-        UNIQUE (submission_id, question_key)
-);
--- =========================================
--- SUBMISSION EVENTS
--- =========================================
--- Useful for debugging async delivery / write failures / retries.
+    CONSTRAINT fk_response_answers_envelope_id__response_envelopes
+        FOREIGN KEY (envelope_id)
+        REFERENCES response_envelopes (id)
+        ON DELETE CASCADE,
 
-CREATE TABLE submission_events (
-    id BIGSERIAL PRIMARY KEY,
-    submission_id BIGINT NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
-    event_type TEXT NOT NULL,
-    event_payload JSONB,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT ck_submission_events_event_payload_is_object
-        CHECK (event_payload IS NULL OR jsonb_typeof(event_payload) = 'object')
+    CONSTRAINT ck_response_answers_answer_locator_len
+        CHECK (octet_length(answer_locator) = 32),
+
+    CONSTRAINT ck_response_answers_nonce_len
+        CHECK (octet_length(nonce) = 12),
+
+    CONSTRAINT ck_response_answers_ciphertext_non_empty
+        CHECK (octet_length(ciphertext) > 0),
+
+    -- Prevents nonce reuse under the same session DEK.
+    CONSTRAINT uq_response_answers_envelope_id_nonce
+        UNIQUE (envelope_id, nonce)
 );
 
 -- =========================================
 -- INDEXES
 -- =========================================
 
-CREATE INDEX idx_submissions_survey ON submissions(survey_id);
-CREATE INDEX idx_submissions_survey_version ON submissions(survey_version_id);
-CREATE INDEX idx_submissions_project ON submissions(project_id);
-CREATE INDEX idx_submissions_pseudonymous_subject ON submissions(pseudonymous_subject_id);
-CREATE INDEX idx_submissions_submitted_at ON submissions(submitted_at);
-
-CREATE INDEX idx_submission_answers_submission ON submission_answers(submission_id);
-CREATE INDEX idx_submission_answers_question_key ON submission_answers(question_key);
-CREATE INDEX idx_submission_answers_answer_family ON submission_answers(answer_family);
-CREATE INDEX idx_submission_answers_answer_value_gin ON submission_answers USING GIN (answer_value);
-
-CREATE INDEX idx_submission_events_submission ON submission_events(submission_id);
-CREATE INDEX idx_submission_events_type ON submission_events(event_type);
+CREATE INDEX idx_response_answers_envelope ON response_answers(envelope_id);

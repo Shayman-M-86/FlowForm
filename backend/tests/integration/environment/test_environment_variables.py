@@ -1,8 +1,7 @@
 import logging
 
-from helpers import read_env
-
 from app.core.config import Settings, get_settings
+from tests.integration.environment.helpers import read_env
 
 logger = logging.getLogger("app.tests.integration.environment.test_environment_variables")
 

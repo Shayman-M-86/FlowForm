@@ -10,7 +10,7 @@ from app.schema.api import limits
 from app.schema.orm.core.survey_access import SurveyMembershipRole, SurveyRole
 
 
-class SurveyRoleOut(BaseModel):
+class SurveyRoleResponses(BaseModel):
     """API response shape for a survey role."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -23,12 +23,10 @@ class SurveyRoleOut(BaseModel):
     created_at: datetime
 
     @classmethod
-    def from_orm_with_permissions(cls, role: SurveyRole) -> SurveyRoleOut:
+    def from_orm_with_permissions(cls, role: SurveyRole) -> SurveyRoleResponses:
         allowed_permissions = {*PERMISSIONS.survey.values(), *PERMISSIONS.submission.values()}
         permissions = [
-            cast(SurveyPermission, p.name)
-            for p in getattr(role, "permissions", [])
-            if p.name in allowed_permissions
+            cast(SurveyPermission, p.name) for p in getattr(role, "permissions", []) if p.name in allowed_permissions
         ]
         return cls.model_construct(
             id=role.id,
@@ -40,7 +38,7 @@ class SurveyRoleOut(BaseModel):
         )
 
 
-class SurveyMemberOut(BaseModel):
+class SurveyMemberResponses(BaseModel):
     """Embedded user details on a survey member row."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -52,7 +50,7 @@ class SurveyMemberOut(BaseModel):
     status: str
 
 
-class SurveyMemberRoleOut(BaseModel):
+class SurveyMemberRoleResponses(BaseModel):
     """API response shape for a survey membership role assignment."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -62,13 +60,13 @@ class SurveyMemberRoleOut(BaseModel):
     membership_id: int
     role_id: int
     created_at: datetime
-    member: SurveyMemberOut | None = None
-    role: SurveyRoleOut | None = None
+    member: SurveyMemberResponses | None = None
+    role: SurveyRoleResponses | None = None
 
     @classmethod
-    def from_assignment(cls, smr: SurveyMembershipRole) -> SurveyMemberRoleOut:
+    def from_assignment(cls, smr: SurveyMembershipRole) -> SurveyMemberRoleResponses:
         member_out = (
-            SurveyMemberOut(
+            SurveyMemberResponses(
                 id=smr.membership.id,
                 user_id=smr.membership.user_id,
                 project_id=smr.membership.project_id,
@@ -78,7 +76,7 @@ class SurveyMemberRoleOut(BaseModel):
             if smr.membership is not None
             else None
         )
-        role_out = SurveyRoleOut.from_orm_with_permissions(smr.role) if smr.role is not None else None
+        role_out = SurveyRoleResponses.from_orm_with_permissions(smr.role) if smr.role is not None else None
         return cls(
             project_id=smr.project_id,
             survey_id=smr.survey_id,

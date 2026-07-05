@@ -48,7 +48,7 @@ export function MultiChoiceFormFiller({
       <div
         className="flex w-full flex-col items-center gap-3"
         role={isSingleSelect ? "radiogroup" : "group"}
-        aria-label={question.title}
+        aria-label={question.title ?? undefined}
       >
         {question.definition.options.map((option) => {
           const isSelected = value.includes(option.id);

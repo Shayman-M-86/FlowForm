@@ -18,11 +18,11 @@ import tomllib
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
 from pathlib import Path
-from typing import Any, get_args, get_origin
+from typing import Any, Literal, get_args, get_origin
 
 from apispec import APISpec
 from flask import Blueprint, Flask, jsonify
-from pydantic import BaseModel
+from pydantic import BaseModel, TypeAdapter
 from werkzeug.routing import Rule
 
 from app.openapi.errors import (
@@ -108,7 +108,6 @@ _FORMAT_STRING_MAX_LENGTHS = {
 
 _STRING_FIELD_MAX_LENGTHS = {
     "answer_family": limits.SCHEMA_ID_MAX,
-    "assigned_email": limits.EMAIL_MAX,
     "auth0_user_id": limits.AUTH0_USER_ID_MAX,
     "code": limits.ERROR_CODE_MAX,
     "display_name": limits.PROJECT_NAME_MAX,
@@ -125,37 +124,31 @@ _STRING_FIELD_MAX_LENGTHS = {
     "style": limits.SCHEMA_ID_MAX,
     "title": limits.SURVEY_TITLE_MAX,
     "token": limits.TOKEN_MAX,
-    "token_prefix": limits.TOKEN_PREFIX_MAX,
     "type": limits.SCHEMA_ID_MAX,
     "url": limits.URL_MAX,
 }
 
 _COMPONENT_STRING_FIELD_MAX_LENGTHS = {
-    "CurrentUserOut": {
+    "CurrentUserResponses": {
         "auth0_user_id": limits.AUTH0_USER_ID_MAX,
         "email": limits.EMAIL_MAX,
     },
-    "ProjectOut": {
+    "ProjectResponses": {
         "name": limits.PROJECT_NAME_MAX,
         "slug": limits.SLUG_MAX,
     },
-    "ProjectRoleOut": {
+    "ProjectRoleResponses": {
         "description": limits.PROJECT_ROLE_DESCRIPTION_MAX,
     },
-    "PublicLinkCreatedOut": {
+    "SurveyAccessLinkResponse": {
         "name": limits.PUBLIC_LINK_NAME_MAX,
         "token": limits.TOKEN_MAX,
-        "token_prefix": limits.TOKEN_PREFIX_MAX,
     },
-    "PublicLinkOut": {
-        "name": limits.PUBLIC_LINK_NAME_MAX,
-        "token_prefix": limits.TOKEN_PREFIX_MAX,
-    },
-    "SurveyOut": {
+    "SurveyResponses": {
         "public_slug": limits.SLUG_MAX,
         "title": limits.SURVEY_TITLE_MAX,
     },
-    "SurveyRoleOut": {
+    "SurveyRoleResponses": {
         "description": limits.PROJECT_ROLE_DESCRIPTION_MAX,
     },
 }
@@ -368,18 +361,35 @@ def _apply_string_max_lengths(
             _apply_string_max_lengths(value, component_name=component_name, property_name=property_name)
 
 
-def _register_model(spec: APISpec, model: type[BaseModel]) -> str:
-    """Register a Pydantic model and any nested ``$defs`` with the spec.
+def _register_model(
+    spec: APISpec,
+    model: Any,
+    mode: Literal["validation", "serialization"] = "validation",
+) -> str:
+    """Register a Pydantic model (or ``TypeAdapter`` type) with the spec.
 
-    Returns the component name (the model's ``__name__``) so callers can build
-    a ``$ref``. Safe to call repeatedly for the same model.
+    Accepts either a ``BaseModel`` subclass or an ``Annotated`` type alias.
+    For ``Annotated`` unions the schema title is used as the component name.
+
+    ``mode`` selects which alias set the JSON schema reflects: request models
+    are registered in ``"validation"`` mode (input aliases) and response models
+    in ``"serialization"`` mode (output aliases), so the spec matches the
+    field names that actually cross the wire in each direction.
+
+    Returns the component name so callers can build a ``$ref``. Safe to call
+    repeatedly for the same model.
     """
-    name = model.__name__
+    if isinstance(model, type) and issubclass(model, BaseModel):
+        name = model.__name__
+        schema = model.model_json_schema(ref_template="#/components/schemas/{model}", mode=mode)
+    else:
+        schema = TypeAdapter(model).json_schema(ref_template="#/components/schemas/{model}", mode=mode)
+        name = schema.get("title", repr(model))
+
     existing = spec.to_dict().get("components", {}).get("schemas", {})
     if name in existing:
         return name
 
-    schema = model.model_json_schema(ref_template="#/components/schemas/{model}")
     defs = schema.pop("$defs", {})
 
     for def_name, def_schema in defs.items():
@@ -394,18 +404,20 @@ def _schema_for_response_model(spec: APISpec, model: Any) -> dict[str, Any]:
     origin = get_origin(model)
     args = get_args(model)
 
-    if origin is list and len(args) == 1 and isinstance(args[0], type) and issubclass(args[0], BaseModel):
-        item_name = _register_model(spec, args[0])
+    if origin is list and len(args) == 1:
+        item_name = _register_model(spec, args[0], mode="serialization")
         return {
             "type": "array",
             "items": {"$ref": f"#/components/schemas/{item_name}"},
         }
 
     if isinstance(model, type) and issubclass(model, BaseModel):
-        response_name = _register_model(spec, model)
+        response_name = _register_model(spec, model, mode="serialization")
         return {"$ref": f"#/components/schemas/{response_name}"}
 
-    raise TypeError(f"Unsupported OpenAPI response model: {model!r}")
+    # Annotated discriminated union (e.g. NodeResponses)
+    response_name = _register_model(spec, model, mode="serialization")
+    return {"$ref": f"#/components/schemas/{response_name}"}
 
 
 def _query_parameters_for_model(model: type[BaseModel]) -> list[dict[str, Any]]:
@@ -444,6 +456,8 @@ def _build_operation(
         "description": description,
         "tags": list(route.tags) if route.tags else [],
     }
+    if route.rbac is not None:
+        operation["x-flowform-rbac"] = route.rbac.to_openapi()
     if route.auth == "none":
         operation["security"] = []
     elif route.auth == "optional":
@@ -574,6 +588,7 @@ def build_spec(app: Flask) -> dict[str, Any]:
                 description=route.description,
                 auth=route.auth,
                 handler_qualname=route.handler_qualname,
+                rbac=route.rbac,
             )
             openapi_path, path_params = _normalize_openapi_path(path)
             operation = _build_operation(

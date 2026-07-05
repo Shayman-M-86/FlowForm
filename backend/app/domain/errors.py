@@ -110,13 +110,35 @@ class LinkAssignmentMismatchError(AppError):
 
 
 class LinkAuthAssignmentRequiredError(AppError):
-    """Error raised when an authenticated link is not assigned to an email."""
+    """Error raised when an authenticated link is not assigned to a participant."""
 
     def __init__(self) -> None:
         super().__init__(
             status_code=422,
-            code="LINK_ASSIGNED_EMAIL_REQUIRED",
-            message="Links that require authentication must be assigned to an email.",
+            code="LINK_ASSIGNED_PARTICIPANT_REQUIRED",
+            message="Links that require authentication must be assigned to a participant.",
+        )
+
+
+class LinkNoRecipientError(AppError):
+    """Error raised when trying to email a link that has no assigned participant."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=422,
+            code="LINK_NO_RECIPIENT",
+            message="Cannot send email for a link without an assigned participant.",
+        )
+
+
+class LinkParticipantVerificationRequiredError(AppError):
+    """Error raised when an authenticated link's participant is not user-linked."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="LINK_PARTICIPANT_VERIFICATION_REQUIRED",
+            message="This link's participant must complete verification before this link can be used.",
         )
 
 
@@ -143,13 +165,13 @@ class LinkAlreadyUsedError(AppError):
 
 
 class PrivateSurveyAssignedEmailRequiredError(AppError):
-    """Error raised when a private survey link is not assigned to a specific email."""
+    """Error raised when a private survey link is not assigned to a participant."""
 
     def __init__(self) -> None:
         super().__init__(
             status_code=422,
-            code="ASSIGNED_EMAIL_REQUIRED",
-            message="Private surveys require links assigned to a specific email.",
+            code="ASSIGNED_PARTICIPANT_REQUIRED",
+            message="Private surveys require links assigned to a participant.",
         )
 
 
@@ -266,17 +288,6 @@ class ProjectSlugConflictError(AppError):
             status_code=409,
             code="CONFLICT",
             message="Conflict — a project with that slug already exists",
-        )
-
-
-class UserBootstrapConflictError(AppError):
-    """Error raised when user bootstrap conflicts with an existing local identity."""
-
-    def __init__(self, *, email: str) -> None:
-        super().__init__(
-            status_code=409,
-            code="CONFLICT",
-            message=f"Conflict — a user with email '{email}' already exists",
         )
 
 
@@ -427,6 +438,53 @@ class UserNotFoundError(AppError):
         )
 
 
+class SubjectNotFoundError(AppError):
+    """Error raised when a project subject cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="SUBJECT_NOT_FOUND", message="Subject not found.")
+
+
+class ParticipantNotFoundError(AppError):
+    """Error raised when a project participant cannot be found."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="PARTICIPANT_NOT_FOUND", message="Participant not found.")
+
+
+class ParticipantIdentityNotVerifiableError(AppError):
+    """Error raised when a participant does not have an email identity to verify."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=409,
+            code="PARTICIPANT_IDENTITY_NOT_VERIFIABLE",
+            message="Participant identity cannot be verified from an account email.",
+        )
+
+
+class ParticipantIdentityEmailMismatchError(AppError):
+    """Error raised when the authenticated user's email does not match the participant identity."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="PARTICIPANT_EMAIL_MISMATCH",
+            message="Authenticated account email does not match the participant identity email.",
+        )
+
+
+class ParticipantIdentityUserMismatchError(AppError):
+    """Error raised when a participant identity is already linked to another user."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="PARTICIPANT_USER_MISMATCH",
+            message="Participant identity is linked to a different authenticated user.",
+        )
+
+
 class InvitationNotFoundError(AppError):
     """Error raised when an invitation cannot be found."""
 
@@ -464,6 +522,17 @@ class AlreadyAMemberError(AppError):
             status_code=409,
             code="ALREADY_A_MEMBER",
             message="This user is already a member of the project.",
+        )
+
+
+class EmailNotVerifiedError(AppError):
+    """Error raised when an action requires a verified email but the actor's is not."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="EMAIL_NOT_VERIFIED",
+            message="Please verify your email address before accepting this invitation.",
         )
 
 
@@ -566,3 +635,110 @@ class ManagementApiCallError(AppError):
             code="MGMT_API_ERROR",
             message="Account management could not be completed at this time.",
         )
+
+
+class SubjectResolutionError(AppError):
+    """Server-invariant error: a referenced project subject could not be resolved.
+
+    Raised when a link/identity/token points at a project_subject_id but the row
+    does not resolve under the expected project. The schema's composite foreign
+    keys make this unreachable today; the guard exists so a future schema change
+    fails loudly instead of silently downgrading a known respondent to anonymous.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=500,
+            code="SUBJECT_RESOLUTION_FAILED",
+            message="A referenced respondent subject could not be resolved.",
+        )
+
+
+class SessionStartError(AppError):
+    """Raised when session start fails during envelope creation."""
+
+    def __init__(self, message: str = "Session start failed.") -> None:
+        super().__init__(
+            status_code=500,
+            code="SESSION_START_FAILED",
+            message=message,
+        )
+
+
+class SessionNotFoundError(AppError):
+    """Raised when no session matches the browser resume token."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=404,
+            code="SESSION_NOT_FOUND",
+            message="Session not found.",
+        )
+
+
+class SessionExpiredError(AppError):
+    """Raised when the session has passed its expiry time."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=403,
+            code="SESSION_EXPIRED",
+            message="This session has expired.",
+        )
+
+
+class SessionInvalidError(AppError):
+    """Raised when the session is in an invalid state for the requested operation."""
+
+    def __init__(self, message: str = "Session is not in a valid state.") -> None:
+        super().__init__(
+            status_code=409,
+            code="SESSION_INVALID",
+            message=message,
+        )
+
+
+class EnvelopeNotFoundError(AppError):
+    """Raised when the response envelope cannot be found for a session locator."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=500,
+            code="ENVELOPE_NOT_FOUND",
+            message="Response envelope not found.",
+        )
+
+
+class AnswerSaveError(AppError):
+    """Raised when an answer save operation fails."""
+
+    def __init__(self, message: str = "Answer save failed.") -> None:
+        super().__init__(
+            status_code=500,
+            code="ANSWER_SAVE_FAILED",
+            message=message,
+        )
+
+
+class QuestionNotInVersionError(AppError):
+    """Raised when a question node ID does not belong to the frozen survey version."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=400,
+            code="QUESTION_NOT_IN_VERSION",
+            message="Question does not belong to this survey version.",
+        )
+
+
+class CompletionValidationError(AppError):
+    """Raised when completion validation fails (missing required answers, etc.)."""
+
+    def __init__(self, message: str = "Completion validation failed.") -> None:
+        super().__init__(
+            status_code=400,
+            code="COMPLETION_VALIDATION_FAILED",
+            message=message,
+        )
+
+

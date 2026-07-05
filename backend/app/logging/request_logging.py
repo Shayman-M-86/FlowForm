@@ -26,16 +26,20 @@ def log_request(response, duration_seconds: float | None = None) -> None:
         "remote_addr": ip,
     }
 
-    if duration_seconds is not None:
-        extra["duration_ms"] = round(duration_seconds * 1000, 2)
+    duration_ms = round(duration_seconds * 1000, 2) if duration_seconds is not None else None
+    if duration_ms is not None:
+        extra["duration_ms"] = duration_ms
+
+    message = "%s | %s %s -> %s"
+    args: tuple[Any, ...] = (ip, request.method, request.path, response.status_code)
+    if duration_ms is not None:
+        message = f"{message} duration_ms=%s"
+        args = (*args, duration_ms)
 
     HTTP_LOGGER.log(
         log_level,
-        "%s | %s %s -> %s",
-        ip,
-        request.method,
-        request.path,
-        response.status_code,
+        message,
+        *args,
         extra=extra,
     )
 
@@ -49,14 +53,15 @@ def register_request_logging(app: Flask, *, include_duration: bool) -> None:
     """
     if app.extensions.get("request_logging_registered"):
         return
-    
-    logger.debug(f"Registering before_request logging (include_duration={include_duration})")
+
+    logger.debug("Registering before_request logging (include_duration=%s)", include_duration)
+
     @app.before_request
     def before_request_logging() -> None:
         g.request_id = str(uuid.uuid4())
-        if include_duration:
-            g.request_started_at = time.perf_counter()
-    
+        g.request_started_at = time.perf_counter()
+        g.request_last_timing_at = g.request_started_at
+
     logger.debug("Registering after request hook for request logging")
     @app.after_request
     def after_request_logging(response):

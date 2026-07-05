@@ -11,9 +11,11 @@ Two distinct shapes:
 - ``UnhandledDbIntegrityError`` — a Postgres constraint violation that
   matched no rule. Reaching this almost always means a new rule is needed
   or that an upstream layer (Pydantic / domain rule) was bypassed. Always
-  500; the ``details`` payload includes the failing constraint name and a
-  summary of the contexts passed to the commit/flush helper so operators
-  can find the bypassed path.
+  500; the client-facing ``details`` payload carries only the failing
+  constraint name and error key. The context summary of the offending rows
+  is *not* returned to the client (it could echo internal identifiers);
+  operators find the bypassed path via the matching ``logger.exception``
+  call in ``error_registry.py``, which logs the (client-safe) context.
 """
 
 from __future__ import annotations
@@ -62,8 +64,12 @@ class UnhandledDbIntegrityError(AppError):
         *,
         constraint_name: str | None,
         error_key: str | None,
-        context_summary: dict[str, Any] | None = None,
     ) -> None:
+        # NOTE: the offending rows' context summary is deliberately *not*
+        # included here. ``details`` is serialised straight to the client, and
+        # even a client-safe summary should not be echoed back on an
+        # unexpected 500. Operators get the context from the matching
+        # ``logger.exception`` call in ``error_registry.py`` instead.
         super().__init__(
             status_code=500,
             code="UNHANDLED_DB_INTEGRITY_ERROR",
@@ -71,6 +77,5 @@ class UnhandledDbIntegrityError(AppError):
             details={
                 "constraint_name": constraint_name,
                 "error_key": error_key,
-                "context": context_summary or {},
             },
         )

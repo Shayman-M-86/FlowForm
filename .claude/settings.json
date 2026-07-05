@@ -4,8 +4,8 @@
       "Bash(/path/to/FlowForm/tools/mcp/run.sh)",
       "Read(/home/shayman86/my-repos/FlowForm/**)",
       "Edit(/home/shayman86/my-repos/FlowForm/**)",
+      
       "Write(/home/shayman86/my-repos/FlowForm/**)",
-
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
@@ -24,7 +24,6 @@
       "Bash(stat:*)",
       "Bash(file:*)",
       "Bash(xargs:*)",
-
       "Bash(git status:*)",
       "Bash(git log:*)",
       "Bash(git diff:*)",
@@ -36,7 +35,6 @@
       "Bash(git rev-parse:*)",
       "Bash(git shortlog:*)",
       "Bash(git tag:*)",
-
       "Bash(docker ps:*)",
       "Bash(docker inspect:*)",
       "Bash(docker logs:*)",
@@ -48,11 +46,9 @@
       "Bash(docker compose -f infra/docker/docker-compose.test.yml stop:*)",
       "Bash(docker compose -f infra/docker/docker-compose.test.yml build:*)",
       "Bash(docker exec flowform-backend-test:*)",
-
       "Bash(bash backend/scripts/run-tests-fast.sh:*)",
-      "Bash(bash backend/scripts/run-tests-rebuild-teardown.sh:*)",
+      "Bash(bash backend/scripts/run-tests.sh:*)",
       "Bash(bash backend/scripts/pip-audit.sh:*)",
-
       "Bash(uv run:*)",
       "Bash(uv --version)",
       "Bash(uv pip compile:*)",
@@ -64,7 +60,6 @@
       "Bash(uv run pytest tests/unit:*)",
       "Bash(python -m pytest tests/unit:*)",
       "Bash(python3 -m pytest tests/unit:*)",
-
       "Bash(npm run dev:studio:*)",
       "Bash(npm run dev:site:*)",
       "Bash(npm run build:studio:*)",
@@ -75,18 +70,39 @@
       "Bash(npm run lint:*)",
       "Bash(npm run routes:*)",
       "Bash(npx tsc --noEmit:*)",
+      "Bash(node scripts/generate-types.mjs:*)",
       "Bash(npx tsc -b:*)",
       "Bash(npx tsr generate:*)",
       "Bash(npx astro check:*)",
       "Bash(npx astro info:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Read(**/node_modules/**/*.d.ts)",
+      "Read(**/node_modules/**/package.json)",
+      "Bash(rmdir:*)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)",
+      "Bash(bash .claude/workflows/*/scripts/*.sh:*)",
+      "Read(.claude/workflows/**)",
+      "Write(.claude/workflows/**)",
+      "Edit(.claude/workflows/**)",
+      "Read(.claude/skills/**)",
+      "Write(.claude/skills/**)",
+      "Edit(.claude/skills/**)",
+      "Read(.claude/rules/**)",
+      "Write(.claude/rules/**)",
+      "Edit(.claude/rules/**)",
+      "Read(.claude/commands/**)",
+      "Write(.claude/commands/**)",
+      "Edit(.claude/commands/**)",
+      "Read(.claude/agents/**)",
+      "Write(.claude/agents/**)",
+      "Edit(.claude/agents/**)"
+
     ],
     "deny": [
-      "Bash(rmdir:*)",
       "Bash(rm -rf:*)",
       "Bash(shred:*)",
       "Bash(truncate:*)",
-
       "Bash(git push:*)",
       "Bash(git push --force:*)",
       "Bash(git reset:*)",
@@ -98,15 +114,12 @@
       "Bash(git commit --amend:*)",
       "Bash(git branch -D:*)",
       "Bash(git tag -d:*)",
-
       "Bash(docker rm:*)",
       "Bash(docker rmi:*)",
       "Bash(docker volume rm:*)",
       "Bash(docker system prune:*)",
       "Bash(docker kill:*)",
       "Bash(docker stop:*)",
-      "Bash(docker compose -f infra/docker/docker-compose.dev.yml:*)",
-
       "Bash(curl:*)",
       "Bash(wget:*)",
       "Bash(nc:*)",
@@ -114,19 +127,10 @@
       "Bash(ssh:*)",
       "Bash(scp:*)",
       "Bash(rsync:*)",
-
       "Bash(sudo:*)",
       "Bash(su:*)",
       "Bash(chmod:*)",
       "Bash(chown:*)",
-
-      "Bash(uv run ruff check --fix:*)",
-      "Bash(uv run ruff format:*)",
-      "Bash(uv add:*)",
-      "Bash(uv remove:*)",
-      "Bash(pip install:*)",
-      "Bash(pip uninstall:*)",
-
       "Bash(psql:*)",
       "Bash(pg_dump:*)",
       "Bash(pg_restore:*)",
@@ -135,7 +139,6 @@
       "Bash(uv run flask db upgrade:*)",
       "Bash(uv run flask db downgrade:*)",
       "Bash(uv run flask db stamp:*)",
-
       "Bash(npm install:*)",
       "Bash(npm install --save:*)",
       "Bash(npm install --save-dev:*)",
@@ -147,19 +150,7 @@
       "Bash(npm pack:*)",
       "Bash(npm link:*)",
       "Bash(rm -rf node_modules:*)",
-      "Bash(rm -rf */node_modules:*)",
-
-      "Bash(cat .env:*)",
-      "Bash(cat **/.env:*)",
-      "Edit(**/.env*)",
-      "Write(**/.env*)",
-
-      "Read(**/node_modules/**)",
-      "Read(**/.venv/**)",
-      "Read(**/dist/**)",
-      "Read(**/build/**)",
-      "Read(**/frontend/apps/studio-app/src/api/generated/**)",
-      "Read(**/frontend/apps/studio-app/src/routeTree.gen.ts)"
+      "Bash(rm -rf */node_modules:*)"
     ]
   },
   "hooks": {
@@ -169,7 +160,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json; print(json.load(sys.stdin).get('file_path',''))\"); case \"$FILE\" in *.py) if [ -x /tmp/flowform-venv/bin/ruff ]; then VIRTUAL_ENV=/tmp/flowform-venv /tmp/flowform-venv/bin/ruff check --fix \"$FILE\" 2>/dev/null; fi ;; esac"
+            "command": "python3 -c \"\nimport sys, json, subprocess, os\ndata = json.load(sys.stdin)\nf = data.get('tool_input', {}).get('file_path', '')\nif not f.endswith('.py'): sys.exit(0)\nbackend = '/home/shayman86/my-repos/FlowForm/backend'\nif not f.startswith(backend): sys.exit(0)\nsubprocess.run(['uv', 'run', '--extra', 'dev', 'python', '-m', 'py_compile', f], cwd=backend, capture_output=True)\nsubprocess.run(['uv', 'run', '--extra', 'dev', 'ruff', 'check', '--fix', '--unfixable', 'F401,F811', f], cwd=backend, capture_output=True)\n\"",
+            "statusMessage": "py_compile + ruff --fix"
           }
         ]
       }

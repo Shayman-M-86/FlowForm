@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { Badge, Button, Card, Input, Modal, Toast } from '@flowform/ui'
-import { useCurrentUser } from '@/auth/useCurrentUser'
+import { useCurrentUser } from '@/auth/UserContext'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 import {
   useChangePassword,
+  useCheckVerification,
   useDeleteAccount,
   useMyProfile,
   useResendVerification,
   useUpdateProfile,
-} from '@/api/me/hooks'
+} from '@/api/hooks/me'
 
 function SettingsSection({
   title,
@@ -62,6 +63,10 @@ export function AccountSettingsPage() {
   const updateProfile = useUpdateProfile()
   const changePassword = useChangePassword()
   const resendVerification = useResendVerification()
+  // Only runs while the profile shows unverified; the policy's staleTime +
+  // cooldownMs (queryPolicy.ts) handle the once-a-minute, refetch-on-mount/
+  // focus cadence automatically.
+  useCheckVerification(profile.data?.email_verified === false)
   const deleteAccount = useDeleteAccount()
 
   const profileDisplayName = profile.data?.display_name ?? ctx?.displayName ?? ''
@@ -71,9 +76,12 @@ export function AccountSettingsPage() {
   const { user, avatarUrl } = ctx
   const updateCurrentUser = ctx.updateUser
   const email = profile.data?.email ?? auth0User?.email ?? user.email
-  const emailVerified = typeof auth0User?.email_verified === 'boolean'
-    ? auth0User.email_verified
-    : profile.data?.email_verified ?? false
+  // Prefer the backend's durable value (kept fresh by useCheckVerification)
+  // over the SPA's cached Auth0 token claim, which only updates on token
+  // refresh/re-login and can otherwise mask a verification that already
+  // happened.
+  const emailVerified = profile.data?.email_verified
+    ?? (typeof auth0User?.email_verified === 'boolean' ? auth0User.email_verified : false)
   const draftDisplayName = draftDisplayNameOverride ?? profileDisplayName
   const displayName = draftDisplayName.trim() || email
   const canDeleteConfirm = deleteConfirm.trim() === email

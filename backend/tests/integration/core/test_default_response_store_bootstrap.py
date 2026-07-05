@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session, scoped_session
+from sqlalchemy.orm import Session
 
 from app.repositories import projects_repo
 from app.repositories.response_stores_repo import (
@@ -16,7 +16,7 @@ from tests.integration.core.factories import make_project, make_survey, make_sur
 
 
 def test_create_project_bootstraps_platform_primary_response_store(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user,
 ) -> None:
     project = projects_repo.create_project(
@@ -42,7 +42,7 @@ def test_create_project_bootstraps_platform_primary_response_store(
 
 
 def test_create_survey_backfills_missing_project_response_store(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user,
 ) -> None:
     project = make_project(user.id, name="Legacy Project", slug="legacy-project")
@@ -50,9 +50,8 @@ def test_create_survey_backfills_missing_project_response_store(
     db_session.flush()
 
     service = SurveyService()
-    survey = SurveyService.create_survey.__wrapped__(  # type: ignore
-        service,
-        db=db_session,
+    survey = service.create_survey(
+        db=db_session,  # type: ignore[arg-type]
         project_id=project.id,
         data=CreateSurveyRequest(title="Survey Without Store"),
         actor=user,
@@ -67,7 +66,7 @@ def test_create_survey_backfills_missing_project_response_store(
 
 
 def test_publish_version_backfills_missing_survey_response_store(
-    db_session: scoped_session[Session],
+    db_session: Session,
     user,
 ) -> None:
     project = make_project(user.id, name="Publish Project", slug="publish-project")
@@ -88,9 +87,8 @@ def test_publish_version_backfills_missing_survey_response_store(
     db_session.flush()
 
     service = SurveyService()
-    published = SurveyService.publish_version.__wrapped__(  # type: ignore
-        service,
-        db=db_session,
+    published = service.publish_version(
+        db=db_session, # type: ignore[arg-type]
         project_id=project.id,
         survey_id=survey.id,
         version_number=1,

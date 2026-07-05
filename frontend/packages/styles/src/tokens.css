@@ -22,7 +22,7 @@
   --destructive-foreground: rgb(255 255 255);
 
   --secondary-foreground: rgb(96 155 223);
-  --radius: 0.535rem;
+  --radius: 0.785rem;
 
   --font-sans:
     "Geist",
@@ -84,6 +84,8 @@
   --input: rgb(244 244 244 / 93.4%);
   --ring: rgb(161 161 161);
 
+  --agnostic: rgb(246, 246, 248);
+
   /* Used by the new ui-action system to derive hover / press / active states. */
   --ui-state-mix: black;
   --ui-subtle-state-rgb: 0 0 0;
@@ -129,9 +131,11 @@
   --soft-foreground: rgb(200, 200, 200);
   --muted-accent-foreground: rgb(220, 220, 220);
   --accent-foreground: rgb(255, 255, 255);
-  --border: rgb(255 255 255 / 0.09);
+  --border: rgba(197, 197, 197, 0.061);
   --input: rgb(42 42 45 / 93.7%);
   --ring: rgb(117 117 117);
+
+  --agnostic: rgb(72, 73, 75);
 
   /* Used by the new ui-action system to derive hover / press / active states. */
   --ui-state-mix: white;

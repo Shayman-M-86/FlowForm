@@ -9,6 +9,7 @@ from typing import Any, Literal, cast
 from flask import Flask, current_app
 from pydantic import (
     BaseModel,
+    EmailStr,
     Field,
     SecretStr,
     ValidationError,
@@ -64,10 +65,7 @@ class DatabaseSettings(BaseModel):
 
         missing = [key for key, value in required_parts.items() if value is None]
         if missing:
-            raise ValueError(
-                "Provide either database.url or all database parts. "
-                f"Missing: {', '.join(missing)}"
-            )
+            raise ValueError(f"Provide either database.url or all database parts. Missing: {', '.join(missing)}")
 
         return self
 
@@ -83,10 +81,33 @@ class DatabaseSettings(BaseModel):
             f"{self.app_user}:{self.password.get_secret_value()}"  # type: ignore
             f"@{self.host}:{self.port}/{self.name}"
         )
-    
+
     @property
     def url(self) -> str:
         return str(self.dsn_url)
+
+
+class AwsSettings(BaseModel):
+    """Shared AWS runtime settings used by app services."""
+
+    region: str = "ap-southeast-2"
+
+    access_key_id: SecretStr
+    secret_access_key: SecretStr
+
+
+class EmailSettings(BaseModel):
+    """Email delivery settings for AWS SES."""
+    from_address: EmailStr 
+    from_name: str = "FlowForm"
+    reply_to_address: EmailStr | None = None
+
+    configuration_set_name: str | None = None
+    enabled: bool = True
+
+    recipient_cooldown_seconds: int = 3600
+    global_rate_limit: int = 50
+    global_rate_window_seconds: int = 60
 
 
 class ServerSettings(BaseModel):
@@ -94,6 +115,7 @@ class ServerSettings(BaseModel):
 
     host: str = "127.0.0.1"
     port: int = 5000
+    site_url: str = "http://localhost:5174"
 
 
 class Auth0MgmtSettings(BaseModel):
@@ -154,13 +176,29 @@ class AppSettings(BaseModel):
         return self
 
 
+class EncryptionSettings(BaseModel):
+    """AWS encryption settings for session response encryption."""
+
+    # KMS key used to wrap/unwrap per-session DEKs
+    kms_key_arn: str
+
+    # Secrets Manager secret holding versioned linkage keys as JSON:
+    # {"version": N, "secret_b64": "..."}. AWSCURRENT stage = active key.
+    linkage_secret_arn: str
+
+    # How long (seconds) to cache linkage keys in memory before re-fetching
+    linkage_key_cache_ttl_seconds: float = 1800.0
+    key_cache_enabled: bool = True  
+
+
+
 class RateLimitSettings(BaseModel):
     """Global rate limiting configuration."""
 
     enabled: bool = True
-    max_requests: int = 20
+    max_requests: int = 30
     window_seconds: int = 5
-    ignored_paths: list[str] = Field(default_factory=lambda: ["/api/v1/health"])
+    ignored_paths: list[str] = Field(default_factory=lambda: ["/api/v1/system/health"])
 
 
 class LoggingSettings(BaseModel):
@@ -176,6 +214,7 @@ class LoggingSettings(BaseModel):
     requests: bool = True  # Whether to log HTTP requests
     duration: bool = False  # Whether to log request duration
 
+
 class FlowForm(BaseModel):
     """Top-level application settings loaded from environment variables."""
 
@@ -185,6 +224,9 @@ class FlowForm(BaseModel):
     server: ServerSettings = Field(default_factory=ServerSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
+    aws: AwsSettings 
+    encryption: EncryptionSettings
+    email: EmailSettings
 
 
 class DataBase(BaseModel):
@@ -294,7 +336,6 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
         if isinstance(value, SecretStr):
             value = value.get_secret_value()
         app.config[key] = value
-
 
     app.extensions["settings"] = settings
 

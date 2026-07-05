@@ -1,45 +1,40 @@
-# FlowForm — Claude Code Guide
+# FlowForm Claude Guide
 
-## What is FlowForm?
+## What Is FlowForm?
 
-FlowForm is a survey platform. Teams use it to create and publish surveys,
-collect responses from end users, and review the results. The **Studio** app
-is the back-office dashboard where authenticated users manage projects,
-design surveys, and track responses. The **Public Site** is what respondents
-see — the form-filling experience delivered to end users.
+FlowForm is a survey platform for creating surveys, publishing them, collecting
+responses, and reviewing results.
 
-The backend exposes a REST API consumed by both apps. Responses are stored
-with privacy in mind: submission payloads are isolated in a separate database
-and tied to respondents via a pseudonymous UUID rather than a real user ID.
+- **Studio** is the authenticated dashboard for project and survey management.
+- **Public Site** is the respondent-facing form experience.
+- **Backend** is the REST API used by both apps.
 
 ---
 
-## Repo layout
+## Repo Layout
 
 ```text
 FlowForm/
-├── backend/        Flask API — see backend/CLAUDE.md
-└── frontend/       JS monorepo — see frontend/CLAUDE.md
+├── backend/        Flask API - see backend/CLAUDE.md
+└── frontend/       JS monorepo - see frontend/CLAUDE.md
     ├── apps/
-    │   ├── studio-app/     Admin dashboard — see frontend/apps/studio-app/CLAUDE.md
-    │   └── public-site/    Marketing + form-filler — see frontend/apps/public-site/CLAUDE.md
-    └── packages/           Shared libs — see frontend/packages/CLAUDE.md
+    │   ├── studio-app/     Admin dashboard - see frontend/apps/studio-app/CLAUDE.md
+    │   └── public-site/    Marketing + form-filler - see frontend/apps/public-site/CLAUDE.md
+    └── packages/           Shared libs - see frontend/packages/CLAUDE.md
 ```
 
 ---
 
-## Architecture in brief
+## Architecture
 
-**Backend** is a Flask app managed with **uv**. It uses two PostgreSQL
-databases (`core` and `response`) with strict separation: `core` holds survey
-structure and user data; `response` holds raw submission payloads. They are
-linked only by a shared integer
-(`core.survey_submissions.id ↔ response.submissions.core_submission_id`).
-Cross-db orchestration lives exclusively in `services/`. The response DB
-never stores a real `user_id` — only a stable pseudonymous UUID.
+**Backend:** Flask with `uv`, PostgreSQL split into `core` and `response`
+with no cross-db SQL foreign keys — the two sides are linked via
+HMAC-derived opaque locators, and cross-db work is kept in `services/`. See
+[docs/session-encryption/](docs/session-encryption/) for the full model and
+[backend/CLAUDE.md](backend/CLAUDE.md) for backend details.
 
-**Frontend** is a Vite/React 19 monorepo. Studio is an authenticated SPA for
-survey management. Public site is the end-user form-filling experience.
+**Frontend:** Vite/React 19 monorepo. Studio handles authenticated survey
+management; Public Site handles form delivery and response capture.
 
 ---
 

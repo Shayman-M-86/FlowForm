@@ -1,13 +1,23 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session  # noqa: I001
 
+from app.cache import get_app_cache
+from app.crypto._internal.client_extension import get_crypto_clients
+from app.crypto.survey_key import (
+    create_wrapped_survey_key,
+    wrapped_survey_key_exists,
+)
 from app.db.error_handling import commit_with_err_handle
 from app.domain import survey_rules, version_rules
-from app.domain.permissions import PERMISSIONS
-from app.repositories import content_repo, response_stores_repo, surveys_repo
+from app.domain.errors import SurveyNotFoundError, VersionNotFoundError
+from app.domain.guards import ensure_present
+from app.repositories import (
+    content_repo as cr,
+    response_stores_repo as rsr,
+    surveys_repo as sr,
+)
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.user import User
-from app.services.access.access_service import require_project_permission, require_survey_permission
 
 
 class SurveyService:
@@ -20,7 +30,7 @@ class SurveyService:
         project_id: int,
         created_by_user_id: int | None,
     ) -> int:
-        store = response_stores_repo.get_or_create_platform_primary_store(
+        store = rsr.get_or_create_platform_primary_store(
             db,
             project_id,
             created_by_user_id=created_by_user_id,
@@ -45,18 +55,16 @@ class SurveyService:
         )
 
     # ── Surveys ───────────────────────────────────────────────────────────────
-    @require_project_permission(PERMISSIONS.survey.view)
     def list_surveys(self, db: Session, *, project_id: int, actor: User) -> list[Survey]:  # noqa: ARG002
-        return surveys_repo.list_surveys(db, project_id)
+        return sr.list_surveys(db, project_id)
 
-    @require_project_permission(PERMISSIONS.survey.create)
     def create_survey(self, db: Session, *, project_id: int, data: CreateSurveyRequest, actor: User) -> Survey:
         default_response_store_id = self._ensure_project_default_response_store_id(
             db,
             project_id=project_id,
             created_by_user_id=actor.id,
         )
-        survey = surveys_repo.create_survey(
+        survey = sr.create_survey(
             db,
             project_id,
             data,
@@ -66,22 +74,18 @@ class SurveyService:
         commit_with_err_handle(db, contexts=[survey])
         return survey
 
-    @require_survey_permission(PERMISSIONS.survey.view)
     def get_survey(self, db: Session, *, project_id: int, survey_id: int, actor: User) -> Survey:  # noqa: ARG002
-        return survey_rules.ensure_not_none(
-            survey=surveys_repo.get_survey(db, project_id, survey_id),
-            survey_id=survey_id,
-            project_id=project_id,
+        return ensure_present(
+            sr.get_survey(db, project_id, survey_id),
+            error=SurveyNotFoundError(survey_id=survey_id, project_id=project_id),
         )
 
     def _get_survey(self, db: Session, project_id: int, survey_id: int) -> Survey:
-        return survey_rules.ensure_not_none(
-            survey=surveys_repo.get_survey(db, project_id, survey_id),
-            survey_id=survey_id,
-            project_id=project_id,
+        return ensure_present(
+            sr.get_survey(db, project_id, survey_id),
+            error=SurveyNotFoundError(survey_id=survey_id, project_id=project_id),
         )
 
-    @require_survey_permission(PERMISSIONS.survey.edit)
     def update_survey(
         self,
         db: Session,
@@ -104,33 +108,29 @@ class SurveyService:
             public_slug=merged_public_slug,
         )
 
-        updated = surveys_repo.update_survey(db, survey, data)
+        updated = sr.update_survey(db, survey, data)
         commit_with_err_handle(db, contexts=[updated])
         return updated
 
-    @require_survey_permission(PERMISSIONS.survey.delete)
     def delete_survey(self, db: Session, project_id: int, survey_id: int, actor: User) -> None:  # noqa: ARG002
         survey = self._get_survey(db, project_id, survey_id)
         survey_rules.ensure_can_delete_survey(survey)
-        surveys_repo.delete_survey(db, survey)
+        sr.delete_survey(db, survey)
         commit_with_err_handle(db, contexts=[survey])
 
     # ── Survey versions ───────────────────────────────────────────────────────
 
     def _get_version(self, db: Session, project_id: int, survey_id: int, version_number: int) -> SurveyVersion:
-        version = version_rules.ensure_not_none(
-            version=surveys_repo.get_version(db, project_id, survey_id, version_number),
-            version_number=version_number,
-            survey_id=survey_id,
+        version = ensure_present(
+            sr.get_version(db, project_id, survey_id, version_number),
+            error=VersionNotFoundError(survey_id=survey_id, version_number=version_number),
         )
         return version
 
-    @require_survey_permission(PERMISSIONS.survey.view)
     def list_versions(self, db: Session, project_id: int, survey_id: int, actor: User) -> list[SurveyVersion]:  # noqa: ARG002
         self._get_survey(db, project_id, survey_id)
-        return surveys_repo.list_versions(db, survey_id)
+        return sr.list_versions(db, survey_id)
 
-    @require_survey_permission(PERMISSIONS.survey.view)
     def get_version(
         self,
         db: Session,
@@ -142,14 +142,12 @@ class SurveyService:
         self._get_survey(db, project_id, survey_id)
         return self._get_version(db, project_id, survey_id, version_number)
 
-    @require_survey_permission(PERMISSIONS.survey.create)
     def create_version(self, db: Session, project_id: int, survey_id: int, actor: User) -> SurveyVersion:  # noqa: ARG002
         self._get_survey(db, project_id, survey_id)
-        version = surveys_repo.create_version(db, survey_id)
+        version = sr.create_version(db, survey_id)
         commit_with_err_handle(db, contexts=[version])
         return version
 
-    @require_survey_permission(PERMISSIONS.survey.create)
     def copy_version_to_draft(
         self,
         db: Session,
@@ -161,15 +159,13 @@ class SurveyService:
         self._get_survey(db, project_id, survey_id)
         source_version = self._get_version(db, project_id, survey_id, version_number)
 
-        draft = surveys_repo.create_version(db, survey_id, created_by_user_id=actor.id)
-        content_repo.clone_questions(db, source_version, draft)
-        content_repo.clone_rules(db, source_version, draft)
-        content_repo.clone_scoring_rules(db, source_version, draft)
+        draft = sr.create_version(db, survey_id, created_by_user_id=actor.id)
+        cr.clone_nodes(db, source_version, draft)
+        cr.clone_scoring_rules(db, source_version, draft)
 
         commit_with_err_handle(db, contexts=[draft])
         return draft
 
-    @require_survey_permission(PERMISSIONS.survey.publish)
     def publish_version(
         self,
         db: Session,
@@ -183,15 +179,20 @@ class SurveyService:
 
         version_rules.ensure_is_draft(version=version)
 
-        questions = content_repo.list_questions(db, version.id)
+        questions = cr.list_nodes(db, version.id)
         version_rules.ensure_has_questions(questions=questions)
 
-        all_nodes = content_repo.list_nodes(db, version.id)
-        scoring_rules = content_repo.list_scoring_rules(db, version.id)
+        all_nodes = cr.list_nodes(db, version.id)
+        scoring_rules = cr.list_scoring_rules(db, version.id)
 
         compiled = {
             "nodes": [
-                {"type": n.node_type, "sort_key": n.sort_key, "content": n.question_schema}
+                {
+                    "node_id": str(n.id),
+                    "type": n.node_type,
+                    "sort_key": n.sort_key,
+                    "content": n.question_schema,
+                }
                 for n in all_nodes
             ],
             "scoring_rules": [
@@ -203,12 +204,32 @@ class SurveyService:
             survey=survey,
             created_by_user_id=actor.id,
         )
+        self._ensure_survey_encryption_key(
+            db,
+            project_id=survey.project_id,
+            survey_id=survey.id,
+        )
 
-        result = surveys_repo.publish_version(db, survey, version, compiled)
+        result = sr.publish_version(db, survey, version, compiled)
         commit_with_err_handle(db, contexts=[result, survey, version])
         return result
 
-    @require_survey_permission(PERMISSIONS.survey.archive)
+    def _ensure_survey_encryption_key(
+        self,
+        db: Session,
+        *,
+        project_id: int,
+        survey_id: int,
+    ) -> None:
+        cache = get_app_cache()
+        clients = get_crypto_clients()
+        if wrapped_survey_key_exists(db, project_id=project_id, survey_id=survey_id, cache=cache):
+            return
+
+        create_wrapped_survey_key(
+            db, project_id=project_id, survey_id=survey_id, cache=cache, clients=clients,
+        )
+
     def archive_version(
         self,
         db: Session,
@@ -222,11 +243,11 @@ class SurveyService:
         version_rules.ensure_can_archive(version=version)
         if survey.published_version_id == version.id:
             version_rules.ensure_is_published(version=version)
-            result = surveys_repo.unpublish_version(db, survey, version)
+            result = sr.unpublish_version(db, survey, version)
             commit_with_err_handle(db, contexts=[result, version, survey])
             return result
 
         version_rules.ensure_is_not_active_published(survey=survey, version=version)
-        result = surveys_repo.archive_version(db, version)
+        result = sr.archive_version(db, version)
         commit_with_err_handle(db, contexts=[result, version, survey])
         return result

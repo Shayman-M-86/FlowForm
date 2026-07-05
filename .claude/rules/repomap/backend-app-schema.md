@@ -4,6 +4,16 @@ paths: backend/app/schema/**
 
 # backend/app/schema/
 
-_Last updated: 2026-05-27 by /repomap_
+Schema code: shapes backend accept, return, persist.
 
-Holds two distinct schema sub-layers: `orm/` contains SQLAlchemy mapped model classes (split into `core/` and `response/` sub-packages mirroring the two databases), and `api/` contains request/response validation schemas with `enums.py` (Literal type aliases for all domain enums) and `limits.py` (field-length and count constants drawn from `PERMISSIONS`). ORM models use a shared `TimestampMixin` for `created_at`/`updated_at` columns maintained by DB triggers; the `Survey` model illustrates CHECK constraints and composite FKs enforced at the SQLAlchemy level.
+Keep halves distinct:
+
+- `api/` holds Pydantic request/response contracts.
+- `orm/` holds SQLAlchemy mappings.
+- `enums.py` and `api/limits.py` keep shared contract values explicit.
+
+DB SQL files = migration source of truth. ORM metadata: model what app needs for relationships, flush behavior, local validation. Not second migration system.
+
+SQL schema files live in `infra/postgres/init/schema/`.
+
+No import ORM models into Pydantic schemas. Keep API contracts stable even when persistence details move.

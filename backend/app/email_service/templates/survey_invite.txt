@@ -1,0 +1,16 @@
+FlowForm survey invitation
+
+Hi {{ recipient_name or "there" }},
+
+You have been invited to complete:
+
+{{ survey_name }}
+
+Start survey:
+{{ survey_url }}
+
+{% if expires_at -%}
+This invitation expires on {{ expires_at.strftime("%d %b %Y at %I:%M %p") }}.
+{%- endif %}
+
+If you were not expecting this email, you can safely ignore it.

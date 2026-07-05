@@ -1,17 +1,23 @@
 import { Link, useParams } from '@tanstack/react-router'
 import { Card, Badge, Button } from '@flowform/ui'
-import { getMockSurvey, getMockVersionsForSurvey } from '@/api/mockData'
+import { useProject } from '@/api/hooks/projects'
+import { useSurvey } from '@/api/hooks/surveys'
+import { useSurveyVersions } from '@/api/hooks/versions'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
 export function SurveyOverviewTab() {
   useRenderDebug('SurveyOverviewTab')
-  const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/overview' })
-  const survey = getMockSurvey(slug, surveySlug)
-  const versions = getMockVersionsForSurvey(surveySlug)
-  const recentVersions = versions.slice(0, 3)
+  const { slug, surveySlug } = useParams({ from: '/_studio/projects/$slug/surveys/$surveySlug/overview' })
 
-  const isPublished = survey?.publishedVersionNumber != null
-  const hasDraft = survey?.draftVersionNumber != null
+  const { data: project } = useProject(slug)
+  const { data: survey } = useSurvey(slug, surveySlug)
+  const { data: versions = [] } = useSurveyVersions(project?.id ?? 0, survey?.id ?? 0)
+
+  const recentVersions = versions.slice(0, 3)
+  const publishedVersion = versions.find((v) => v.status === 'published')
+  const draftVersion = versions.find((v) => v.status === 'draft')
+  const isPublished = publishedVersion != null
+  const hasDraft = draftVersion != null
 
   return (
     <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
@@ -31,19 +37,15 @@ export function SurveyOverviewTab() {
             {isPublished && (
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Published version</span>
-                <span className="font-medium text-foreground">v{survey!.publishedVersionNumber}</span>
+                <span className="font-medium text-foreground">v{publishedVersion.version_number}</span>
               </div>
             )}
             {hasDraft && (
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Active draft</span>
-                <span className="font-medium text-foreground">v{survey!.draftVersionNumber}</span>
+                <span className="font-medium text-foreground">v{draftVersion.version_number}</span>
               </div>
             )}
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Responses</span>
-              <span className="font-medium text-foreground">{survey?.responses ?? 0}</span>
-            </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Public access</span>
               <span className="font-medium text-foreground">{isPublished ? 'Active' : 'None'}</span>
@@ -66,7 +68,7 @@ export function SurveyOverviewTab() {
                 Preview live survey
               </Button>
             )}
-            <Link to="/projects/$slug/surveys/$surveySlug/links" params={{ slug, surveySlug }}>
+            <Link to="/projects/$slug/surveys/$surveySlug/access" params={{ slug, surveySlug }}>
               <Button variant="secondary" size="sm" className="w-full justify-start">
                 Manage public links
               </Button>
@@ -78,7 +80,7 @@ export function SurveyOverviewTab() {
             </Link>
             {hasDraft && (
               <Button variant="primary" size="sm" className="w-full justify-start">
-                Publish v{survey!.draftVersionNumber}
+                Publish v{draftVersion.version_number}
               </Button>
             )}
           </div>
@@ -93,18 +95,18 @@ export function SurveyOverviewTab() {
             {recentVersions.map((v) => (
               <div key={v.id} className="flex items-start gap-3">
                 <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                  {v.versionNumber}
+                  {v.version_number}
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm text-foreground">
-                    {v.status === 'draft' ? `v${v.versionNumber} draft edited` : `v${v.versionNumber} ${v.status}`}
+                    {v.status === 'draft' ? `v${v.version_number} draft edited` : `v${v.version_number} ${v.status}`}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(v.publishedAt ?? v.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {new Date(v.published_at ?? v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                 </div>
                 <Badge
-                  variant={v.status === 'published' ? 'success' : v.status === 'draft' ? 'muted' : 'muted'}
+                  variant={v.status === 'published' ? 'success' : 'muted'}
                   size="xs"
                 >
                   {v.status}

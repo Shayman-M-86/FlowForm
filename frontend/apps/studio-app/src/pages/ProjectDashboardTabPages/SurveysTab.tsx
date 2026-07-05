@@ -3,9 +3,9 @@ import { Link } from '@tanstack/react-router'
 import { Badge, Button, Card, Modal, Spinner, Toast } from '@flowform/ui'
 import { CreateSurveyForm, type CreateSurveyFields } from '@/components/CreateSurveyForm'
 import { useRenderDebug } from '@/debug/useRenderDebug'
-import { useProject } from '@/api/project/projects/hooks'
-import { useCreateSurvey, useSurveys } from '@/api/project/surveys/hooks'
-import type { SurveyOut } from '@/api/project/surveys/types'
+import { useProject } from '@/api/hooks/projects'
+import { useCreateSurvey, useSurveys } from '@/api/hooks/surveys'
+import type { SurveyOut } from '@/api/hooks/surveys'
 
 const PROJECT_CREATED_KEY = 'flowform:project-created'
 
@@ -79,7 +79,7 @@ export function SurveysTab({ projectSlug }: SurveysTabProps) {
 
       {surveys.isLoading && (
         <div className="flex justify-center py-12">
-          <Spinner size="md" />
+          <Spinner size={24} />
         </div>
       )}
 

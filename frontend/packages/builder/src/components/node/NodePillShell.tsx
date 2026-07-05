@@ -32,8 +32,8 @@ type NodePillSettings = {
   onTagChange: (next: string) => void;
   titleValue: string;
   onTitleChange: (next: string) => void;
-  required: boolean;
-  onRequiredChange: (next: boolean) => void;
+  required?: boolean;
+  onRequiredChange?: (next: boolean) => void;
   idError?: string;
 };
 
@@ -176,11 +176,13 @@ export function NodePillTopbar({
               value={settings.titleValue}
               onChange={(event) => settings.onTitleChange(event.target.value)}
             />
-            <Toggle
-              label="Required"
-              checked={settings.required}
-              onChange={settings.onRequiredChange}
-            />
+            {settings.required !== undefined && settings.onRequiredChange && (
+              <Toggle
+                label="Required"
+                checked={settings.required}
+                onChange={settings.onRequiredChange}
+              />
+            )}
           </div>
         </Modal>
       )}
@@ -315,6 +317,7 @@ type QuestionFieldWithTitleProps = QuestionFieldProps & {
   onTitleChange?: (next: string) => void;
   titleMax?: number;
   showTitleEdit?: boolean;
+  validationError?: string;
 };
 
 export function NodePillQuestionField({
@@ -327,6 +330,7 @@ export function NodePillQuestionField({
   onTitleChange,
   titleMax = 80,
   showTitleEdit = false,
+  validationError,
 }: QuestionFieldWithTitleProps) {
   const [isTitleEditMode, setIsTitleEditMode] = useState(false);
   const hasTitle = titleValue !== undefined && onTitleChange !== undefined;
@@ -399,6 +403,7 @@ export function NodePillQuestionField({
       <div className="flex flex-col gap-2">
         <LargeInput
           className="w-full"
+          shellClassName={validationError ? "ring-2 ring-destructive ring-offset-0" : undefined}
           placeholder="Type your question here"
           rows={3}
           size="sm"
@@ -410,6 +415,9 @@ export function NodePillQuestionField({
           variant={isEditMode ? "secondary" : "ghost"}
           onChange={(event) => onChange(event.target.value)}
         />
+        {validationError && (
+          <span className="text-[0.78rem] text-destructive">{validationError}</span>
+        )}
         {isEditMode && value.length === max && (
           <span className={nodePillLimitTextClass}>
             Maximum {max} characters reached.

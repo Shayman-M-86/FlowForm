@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
-    CheckConstraint,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -17,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
+from app.schema.enums import ProjectInvitationStatus
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project import Project, ProjectRole
@@ -40,36 +40,19 @@ class ProjectInvitation(CoreBase):
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     invite_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    status: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'pending'"))
+    status: Mapped[ProjectInvitationStatus] = mapped_column(Text, nullable=False, server_default=text("'pending'"))
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     accepted_by_user_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    token_hash: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
-        CheckConstraint(
-            "status IN ('pending', 'accepted', 'declined', 'revoked')",
-            name="ck_project_invitations_status_valid",
-        ),
-        # uq_project_invitations_pending_project_email is a partial unique index
-        # (WHERE status = 'pending') defined in SQL only — SQLAlchemy __table_args__
-        # cannot express partial indexes, so it is not mirrored here.
-        CheckConstraint(
-            "char_length(btrim(invited_email)) BETWEEN 1 AND 254",
-            name="ck_project_invitations_email_len",
-        ),
-        CheckConstraint(
-            "invite_message IS NULL OR char_length(btrim(invite_message)) BETWEEN 1 AND 500",
-            name="ck_project_invitations_message_len",
-        ),
-        CheckConstraint(
-            "status <> 'accepted' OR (accepted_by_user_id IS NOT NULL AND accepted_at IS NOT NULL)",
-            name="ck_project_invitations_accepted_fields",
-        ),
         ForeignKeyConstraint(
             ["project_id", "role_id"],
             ["project_roles.project_id", "project_roles.id"],

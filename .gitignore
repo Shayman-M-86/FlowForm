@@ -18,6 +18,9 @@ lib/
 
 !frontend/packages/ui/src/lib/
 !frontend/packages/ui/src/lib/**
+!frontend/apps/studio-app/src/lib/**
+!frontend/apps/studio-app/src/lib/
+!frontend/apps/studio-app/tests/lib
 
 lib64/
 parts/
@@ -39,10 +42,18 @@ ENV/
 env.bak/
 venv.bak/
 
+# Node
+node_modules/
+
+# CDK
+infra/cdk/cdk.out/
+
 # Environment files
 *.env
 .env
 .env.*
+!.env.example
+!.env.*.example
 
 # Testing / coverage / caches
 .tox/

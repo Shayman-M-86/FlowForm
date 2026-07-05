@@ -147,6 +147,13 @@ def _instantiate_for_doc(cls: type[AppError]) -> AppError | None:
         logger.warning("Could not introspect signature for %s", cls.__name__)
         return None
 
+    # Resolve stringified annotations (from `from __future__ import annotations`)
+    # back to real types so _stub_value_for can match them.
+    try:
+        resolved_hints = inspect.get_annotations(cls.__init__, eval_str=True)
+    except Exception:
+        resolved_hints = {}
+
     kwargs: dict[str, Any] = {}
     for name, param in sig.parameters.items():
         if name == "self":
@@ -155,7 +162,8 @@ def _instantiate_for_doc(cls: type[AppError]) -> AppError | None:
             continue
         if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
             continue
-        kwargs[name] = _stub_value_for(param.annotation)
+        annotation = resolved_hints.get(name, param.annotation)
+        kwargs[name] = _stub_value_for(annotation)
 
     try:
         return cls(**kwargs)
@@ -250,13 +258,16 @@ def _build_pydantic_example() -> dict[str, Any]:
     validation fails to raise.
     """
     try:
+        from pydantic import TypeAdapter
+
         from app.schema.api.requests.content.node import CreateNodeRequest
+        _ta = TypeAdapter(CreateNodeRequest)
     except ImportError:
         logger.warning("Could not import CreateNodeRequest for 422 example")
         return _fallback_pydantic_example()
 
     try:
-        CreateNodeRequest.model_validate(
+        _ta.validate_python(
             {"type": "question", "sort_key": "not-an-int", "content": {}}
         )
     except ValidationError as exc:

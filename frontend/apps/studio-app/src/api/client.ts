@@ -1,22 +1,17 @@
-import type { ApiError } from './types'
+// frontend/apps/studio-app/src/api/client.ts
+import createFetchClient from 'openapi-fetch'
+import createQueryClient from 'openapi-react-query'
+import { authMiddleware } from './middleware/authMiddleware'
+import { createPermissionMiddleware } from './middleware/permissionMiddleware'
+import { queryClient } from '@/lib/query/queryClient'
+import type { paths } from './generated/schema'
 
-export class ApiRequestError extends Error {
-  public readonly status: number
-  public readonly error: ApiError
+export { initApiAuth } from './tokenProvider'
 
-  constructor(status: number, error: ApiError) {
-    super(error.message)
-    this.name = 'ApiRequestError'
-    this.status = status
-    this.error = error
-  }
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:5000'
 
-  get displayMessage(): string {
-    if (this.error.errors && this.error.errors.length > 0) {
-      return this.error.errors
-        .map((e) => (e.field ? `${e.field}: ${e.message}` : e.message))
-        .join('\n')
-    }
-    return this.error.message
-  }
-}
+export const apiClient = createFetchClient<paths>({ baseUrl: BASE_URL })
+apiClient.use(authMiddleware)
+apiClient.use(createPermissionMiddleware(queryClient))
+
+export const $api = createQueryClient(apiClient)

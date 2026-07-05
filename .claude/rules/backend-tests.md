@@ -4,16 +4,15 @@ paths: backend/tests/**/*.py
 
 # Backend test rules
 
-Always run tests with the `--ai` flag for compact output:
+Use backend test runner, keep output compact:
 
 ```bash
-bash backend/scripts/run-tests-rebuild-teardown.sh --ai
-bash backend/scripts/run-tests-rebuild-teardown.sh --ai -k "test_name"
+bash backend/scripts/run-tests.sh --ai
+bash backend/scripts/run-tests.sh --ai -k "test_name"
 ```
 
-- Filter with `-k` only — never pass file paths as filters
-- `run-tests-rebuild-teardown.sh` — full rebuild + teardown, clean state; use this by default
-- `run-tests-fast.sh` — reuses running containers; only for tight local iteration
+- Filter w/ `-k`, not file paths.
+- Prefer full runner unless narrower cmd already established.
 
 ## Session fixtures
 
@@ -24,4 +23,4 @@ bash backend/scripts/run-tests-rebuild-teardown.sh --ai -k "test_name"
 | `response_db_session` | Response-only tests |
 | `db_session` | Legacy single-session tests only |
 
-All sessions use savepoints — commits release savepoints, outer transaction rolls back on teardown.
+Fixture transactions savepoint-backed; test commits must not leak state.

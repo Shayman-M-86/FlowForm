@@ -32,7 +32,7 @@ export function isSurveyNodeArray(value: unknown): value is SurveyNode[] {
 
     const node = entry as Partial<SurveyNode> & { content?: unknown };
     return (
-      (node.type === "question" || node.type === "rule") &&
+      (node.node_type === "question" || node.node_type === "rule") &&
       typeof node.sort_key === "number" &&
       !!node.content &&
       typeof node.content === "object"

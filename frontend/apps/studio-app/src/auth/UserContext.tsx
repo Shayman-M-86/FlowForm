@@ -1,7 +1,19 @@
-import type { ReactNode } from 'react'
-import type { CurrentUserOut } from '@/api/generated/schema'
-import { UserContext } from './userContextCore'
-import type { UserContextValue } from './userContextCore'
+// frontend/apps/studio-app/src/auth/UserContext.tsx
+import { createContext, useContext, type ReactNode } from 'react'
+import type { CurrentUserResponses } from '@/api/generated/schema'
+
+export interface UserContextValue {
+  user: CurrentUserResponses
+  avatarUrl: string | null
+  displayName: string
+  updateUser: (user: CurrentUserResponses) => void
+}
+
+export const UserContext = createContext<UserContextValue | null>(null)
+
+export function useCurrentUser(): UserContextValue | null {
+  return useContext(UserContext)
+}
 
 export function UserProvider({
   user,
@@ -9,9 +21,9 @@ export function UserProvider({
   updateUser = () => {},
   children,
 }: {
-  user: CurrentUserOut
+  user: CurrentUserResponses
   avatarUrl: string | null
-  updateUser?: (user: CurrentUserOut) => void
+  updateUser?: (user: CurrentUserResponses) => void
   children: ReactNode
 }) {
   const value: UserContextValue = {

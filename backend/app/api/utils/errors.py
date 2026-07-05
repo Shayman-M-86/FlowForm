@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import HTTPException
 
 from app.api.utils.validation import normalize_pydantic_errors
-from app.core.errors import AppError
+from app.core.errors import AppError, RequestValidationError, ResponseValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -82,14 +82,49 @@ def register_error_handlers(app: Flask) -> None:
             headers=getattr(exc, "headers", None),
         )
 
-    @app.errorhandler(ValidationError)
-    def handle_validation_error(exc: ValidationError):
+
+    @app.errorhandler(RequestValidationError)
+    def handle_request_validation_error(exc: RequestValidationError):
         return _error_response(
             code="VALIDATION_ERROR",
             message="Request validation failed.",
             status_code=422,
-            details={"errors": normalize_pydantic_errors(exc)},
+            details={
+                "errors": normalize_pydantic_errors(
+                    exc.original_error,
+                ),
+            },
         )
+
+
+    @app.errorhandler(ResponseValidationError)
+    def handle_response_validation_error(exc: ResponseValidationError):
+        logger.exception(
+            "Response validation failed for schema %s",
+            exc.schema_name,
+            exc_info=exc,
+        )
+
+        return _error_response(
+            code="INTERNAL_SERVER_ERROR",
+            message="An unexpected error occurred.",
+            status_code=500,
+        )
+
+
+    @app.errorhandler(ValidationError)
+    def handle_unclassified_validation_error(exc: ValidationError):
+        logger.exception(
+            "Unclassified Pydantic validation error",
+            exc_info=exc,
+        )
+
+        return _error_response(
+            code="INTERNAL_SERVER_ERROR",
+            message="An unexpected error occurred.",
+            status_code=500,
+        )
+
 
     @app.errorhandler(HTTPException)
     def handle_http_exception(exc: HTTPException):
@@ -99,6 +134,7 @@ def register_error_handlers(app: Flask) -> None:
             message=exc.description or "",
             status_code=status,
         )
+
 
     @app.errorhandler(IntegrityError)
     def handle_integrity_error(exc: IntegrityError):
@@ -126,3 +162,5 @@ def register_error_handlers(app: Flask) -> None:
             message="An unexpected error occurred.",
             status_code=500,
         )
+
+

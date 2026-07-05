@@ -289,6 +289,11 @@ def test_management_token_response_requires_access_token(monkeypatch: pytest.Mon
     assert str(exc_info.value) == "Auth0 Management API request failed."
 
 
+_ALL_MGMT_SCOPES = (
+    "create:user_tickets create:users delete:guardian_enrollments delete:users read:users update:users"
+)
+
+
 def test_management_token_request_includes_required_scopes(monkeypatch: pytest.MonkeyPatch) -> None:
     class TokenResponse:
         ok = True
@@ -299,7 +304,7 @@ def test_management_token_request_includes_required_scopes(monkeypatch: pytest.M
             return {
                 "access_token": "access-token",
                 "expires_in": 3600,
-                "scope": "create:user_tickets create:users delete:guardian_enrollments delete:users update:users",
+                "scope": _ALL_MGMT_SCOPES,
             }
 
     captured: dict[str, object] = {}
@@ -323,7 +328,7 @@ def test_management_token_request_includes_required_scopes(monkeypatch: pytest.M
         "client_id": "client-id",
         "client_secret": "client-secret",
         "audience": "https://example.auth0.com/api/v2/",
-        "scope": "create:user_tickets create:users delete:guardian_enrollments delete:users update:users",
+        "scope": _ALL_MGMT_SCOPES,
     }
 
 
@@ -354,7 +359,7 @@ def test_management_token_response_requires_granted_scopes(monkeypatch: pytest.M
     assert exc_info.value.status_code == 200
     assert exc_info.value.provider_error == "missing_management_api_scope"
     assert exc_info.value.provider_message == (
-        "Management API token is missing required scope(s): create:user_tickets."
+        "Management API token is missing required scope(s): create:user_tickets, read:users."
     )
 
 

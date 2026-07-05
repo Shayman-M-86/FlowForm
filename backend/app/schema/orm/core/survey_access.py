@@ -1,28 +1,30 @@
+import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
-    CheckConstraint,
     Column,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
-    Identity,
     Table,
     Text,
     UniqueConstraint,
     func,
     text,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
+from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
 
 if TYPE_CHECKING:
     from app.schema.orm.core.permission import Permission
-    from app.schema.orm.core.project import ProjectMembership
+    from app.schema.orm.core.project import Project, ProjectMembership
+    from app.schema.orm.core.project_participant import ProjectParticipant
     from app.schema.orm.core.survey import Survey
 
 # Pure join table — no extra columns
@@ -55,13 +57,9 @@ class SurveyRole(CoreBase):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
         UniqueConstraint("project_id", "id", name="uq_survey_roles_project_id_id"),
-        UniqueConstraint("project_id", "name", name="uq_survey_roles_project_id_name"),
-        CheckConstraint(
-            "description IS NULL OR char_length(btrim(description)) BETWEEN 1 AND 500",
-            name="ck_survey_roles_description_len",
-        ),
     )
 
     permissions: Mapped[list[Permission]] = relationship("Permission", secondary=survey_role_permissions)
@@ -123,45 +121,66 @@ class SurveyMembershipRole(CoreBase):
 
 
 class SurveyLink(CoreBase):
-    """A bearer-token link granting authenticated survey access."""
+    """Bearer-token link granting survey access.
+
+    project_id is stored directly so the database can prove the link, its survey,
+    and its assigned participant all belong to the same project. A link's assigned
+    subject and email are not stored here — they are reached by joining through
+    the assigned participant.
+    """
 
     __tablename__ = "survey_links"
 
-    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    survey_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    survey_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
-    token_prefix: Mapped[str] = mapped_column(Text, nullable=False)
-    token_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    token: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=text("true"), nullable=False)
-    requires_auth: Mapped[bool] = mapped_column(Boolean, server_default=text("false"), nullable=False)
-    assigned_email: Mapped[str | None] = mapped_column(Text, nullable=True)
+    link_type: Mapped[SurveyLinkType] = mapped_column(Text, server_default=text("'general'"), nullable=False)
+    # How the assignment was created ('manual' | 'automated'). Informational only.
+    assignment_source: Mapped[SurveyLinkAssignmentSource] = mapped_column(Text, nullable=False)
+    # The sole assignment. A participant resolves to a subject AND an identity,
+    # so the link reaches both through this column alone.
+    assigned_participant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
-        UniqueConstraint("token_hash", name="uq_survey_links_token_hash"),
         UniqueConstraint("survey_id", "id", name="uq_survey_links_survey_id_id"),
-        UniqueConstraint("survey_id", "token_prefix", name="uq_survey_links_survey_id_token_prefix"),
-        CheckConstraint("char_length(token_prefix) BETWEEN 8 AND 32", name="ck_survey_links_token_prefix_len"),
-        CheckConstraint("char_length(token_hash) >= 32", name="ck_survey_links_token_hash_len"),
-        CheckConstraint(
-            "char_length(btrim(name)) BETWEEN 1 AND 120",
-            name="ck_survey_links_name_len",
+        ForeignKeyConstraint(
+            ["project_id", "survey_id"],
+            ["surveys.project_id", "surveys.id"],
+            ondelete="CASCADE",
+            name="fk_survey_links_survey_same_project",
         ),
-        # requires_auth links must be addressed to a specific email
-        CheckConstraint(
-            "NOT requires_auth OR assigned_email IS NOT NULL",
-            name="ck_survey_links_requires_auth_needs_assignment",
+        # RESTRICT is intentional: do not silently turn an assigned link into a
+        # general reusable link.
+        ForeignKeyConstraint(
+            ["project_id", "assigned_participant_id"],
+            ["project_participants.project_id", "project_participants.id"],
+            ondelete="RESTRICT",
+            name="fk_survey_links_assigned_participant_same_project",
         ),
     )
 
     @property
     def is_single_use(self) -> bool:
-        """Single-use is derived from having an assigned email."""
-        return self.assigned_email is not None
+        """Single-use is derived from carrying a participant assignment."""
+        return self.assigned_participant_id is not None
 
-    survey: Mapped[Survey] = relationship("Survey")
+    survey: Mapped[Survey] = relationship("Survey", foreign_keys=[project_id, survey_id], overlaps="project")
+    project: Mapped[Project] = relationship("Project", foreign_keys=[project_id], overlaps="survey")
+    assigned_participant: Mapped[ProjectParticipant | None] = relationship(
+        "ProjectParticipant",
+        foreign_keys=[project_id, assigned_participant_id],
+        overlaps="project,survey",
+    )
 
 
 SurveyPublicLink = SurveyLink

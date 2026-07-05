@@ -9,14 +9,13 @@ from app.domain.errors import (
     LinkExpiredError,
     LinkInactiveError,
     LinkNotFoundError,
+    LinkParticipantVerificationRequiredError,
+    PrivateSurveyAssignedEmailRequiredError,
 )
+from app.schema.orm.core.project_subject import ProjectSubjectIdentity
+from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.survey_access import SurveyLink
-
-
-def ensure_is_not_none(*, link: SurveyLink | None) -> SurveyLink:
-    if link is None:
-        raise LinkNotFoundError()
-    return link
+from app.schema.orm.core.user import User
 
 
 def ensure_is_active(*, link: SurveyLink) -> None:
@@ -30,29 +29,38 @@ def ensure_not_expired(*, link: SurveyLink) -> None:
 
 
 def ensure_not_used(*, link: SurveyLink) -> None:
-    """Single-use links (those with an assigned_email) cannot be used twice."""
+    """Single-use links, derived from participant assignment, cannot be used twice."""
     if link.is_single_use and link.used_at is not None:
         raise LinkAlreadyUsedError()
 
 
-def ensure_auth_satisfied(*, link: SurveyLink, actor_email: str | None) -> None:
+def ensure_auth_satisfied(*, link: SurveyLink, actor: User | None) -> None:
     """A link that requires auth must be accessed by an authenticated user."""
-    if link.requires_auth and actor_email is None:
+    if link.link_type == "authenticated" and actor is None:
         raise LinkAuthRequiredError()
 
 
-def ensure_actor_matches_assignment(*, link: SurveyLink, actor_email: str | None) -> None:
-    """If the link has an assigned email and an actor is present, they must match.
+def ensure_participant_identity_authenticated(*, identity: ProjectSubjectIdentity) -> None:
+    """Authenticated links require a participant identity already linked to a user."""
+    if identity.identity_type != "authenticated_user" or identity.user_id is None:
+        raise LinkParticipantVerificationRequiredError()
 
-    Anonymous access to an assigned link (private invite) is allowed when the link
-    does not require auth — the bearer-token possession is the proof of identity.
-    """
-    if link.assigned_email is None or actor_email is None:
-        return
-    if actor_email.strip().lower() != link.assigned_email.lower():
+
+def ensure_actor_matches_participant_identity(*, identity: ProjectSubjectIdentity, actor: User) -> None:
+    if identity.user_id != actor.id:
         raise LinkAssignmentMismatchError()
 
 
 def ensure_survey_id_matches(*, link: SurveyLink, survey_id: int) -> None:
     if link.survey_id != survey_id:
         raise LinkNotFoundError()
+
+
+def ensure_link_allowed_by_survey_visibility(*, survey: Survey, link: SurveyLink) -> None:
+    """A general (unassigned) link cannot be used to access a private survey.
+
+    Enforced at resolve/session-start time so that a survey visibility change
+    after link creation is still honoured.
+    """
+    if survey.visibility == "private" and link.link_type == "general":
+        raise PrivateSurveyAssignedEmailRequiredError()

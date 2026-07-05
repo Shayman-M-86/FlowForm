@@ -1,6 +1,6 @@
-import { useProject } from '@/api/project/projects/hooks'
-import { useMyProjectPermissions } from '@/api/project/permissions/hooks'
-import type { ProjectPermission } from '@/api/project/permissions/types'
+import { useProject } from '@/api/hooks/projects'
+import { useProjectPermissions } from '@/api/hooks/permissions'
+import type { ProjectPermission } from '@/api/hooks/permissions'
 import { useParams } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
@@ -14,7 +14,7 @@ export function ProjectPermissionGate({ anyOf, children }: Props) {
   const { slug } = useParams({ strict: false })
   const { data: project } = useProject(slug ?? null)
   const projectId = project?.id ?? null
-  const { data: permissions, isPending } = useMyProjectPermissions(projectId)
+  const { data: permissions, isPending } = useProjectPermissions(projectId)
 
   // While permissions are loading (first visit with no cache), render nothing
   // to avoid a flash of the restricted message.

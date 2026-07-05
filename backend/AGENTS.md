@@ -14,7 +14,7 @@ for architecture, layer rules, two-database design, and saga workflow docs.
 - **Auth0** - JWT access tokens (RS256), verified via JWKS; scope enforcement
   via `@auth.require_auth(scope)` decorator
 - **PostgreSQL** - two separate databases (`core` and `response`)
-- **mypy + ruff** - type checking and linting
+- **Pyright + Ruff** - type checking and linting
 
 All secrets come from environment variables; never hardcode credentials.
 
@@ -26,7 +26,7 @@ All secrets come from environment variables; never hardcode credentials.
 uv run flask run                        # dev server
 uv run ruff check .                     # lint
 uv run ruff format .                    # format
-uv run mypy .                           # type check
+uv run pyright                          # type check
 ```
 
 ### Running tests
@@ -36,19 +36,13 @@ Tests run inside Docker. Always use `--ai` for compact output.
 **Full rebuild + teardown** - clean state every run, use this by default:
 
 ```bash
-bash backend/scripts/run-tests-rebuild-teardown.sh --ai
-bash backend/scripts/run-tests-rebuild-teardown.sh --ai -k "test_submission_gateway"
-```
-
-**Fast run** - reuses running containers, faster for tight iteration cycles:
-
-```bash
-bash backend/scripts/run-tests-fast.sh
+bash backend/scripts/run-tests.sh --ai
+bash backend/scripts/run-tests.sh --ai -k "test_submission_gateway"
 ```
 
 Filter with `-k` only - never pass file paths as filters.
 
-Other useful flags for `run-tests-rebuild-teardown.sh`:
+Other useful flags for `run-tests.sh`:
 
 - `--logs=all` - print Docker logs from all services on failure
 - `--verbose` - full output, no spinner
@@ -66,7 +60,7 @@ JWKS endpoint, extracts claims, and stores them on `flask.g`. Use
 
 ## Conventions
 
-- Type hints everywhere; keep mypy clean
+- Type hints everywhere; keep Pyright clean
 - Pydantic schemas live in `schemas/` - never import ORM models into them
 - Routes stay thin - no SQL, no business logic
 - Cross-db orchestration belongs in `services/` only

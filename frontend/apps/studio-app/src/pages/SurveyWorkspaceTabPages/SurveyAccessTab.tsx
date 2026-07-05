@@ -25,32 +25,34 @@ import {
   LockKeyhole,
   MailCheck,
 } from 'lucide-react'
-import { useProject } from '@/api/project/projects/hooks'
-import { useProjectMembers } from '@/api/project/members/hooks'
-import { useProjectRoles } from '@/api/project/roles/hooks'
-import { useSurvey, useUpdateSurvey } from '@/api/project/surveys/hooks'
-import { useHasProjectPermission } from '@/api/project/permissions/hooks'
+import { useProject } from '@/api/hooks/projects'
+import { useProjectMembers } from '@/api/hooks/members'
+import { useProjectRoles } from '@/api/hooks/roles'
+import { useSurvey, useUpdateSurvey } from '@/api/hooks/surveys'
+import { useHasProjectPermission } from '@/api/hooks/permissions'
+import { useParticipants, useCreateParticipant } from '@/api/hooks/subjects'
 import {
   useCreatePublicLink,
   useDeletePublicLink,
   usePublicLinks,
+  useSendLinkEmail,
   useUpdatePublicLink,
-} from '@/api/survey/links/hooks'
+} from '@/api/hooks/links'
 import {
   useAssignSurveyMemberRole,
   useRemoveSurveyMemberRole,
   useSurveyMembers,
   useUpdateSurveyMemberRole,
-} from '@/api/survey/members/hooks'
+} from '@/api/hooks/survey-members'
 import {
   useCreateSurveyRole,
   useDeleteSurveyRole,
   useSurveyRoles,
   useUpdateSurveyRole,
-} from '@/api/survey/roles/hooks'
-import type { PublicLinkOut } from '@/api/survey/links/types'
-import type { ProjectMemberOut } from '@/api/project/members/types'
-import type { CreateSurveyRoleRequest } from '@/api/survey/roles/types'
+} from '@/api/hooks/survey-roles'
+import type { CreateSurveyRoleRequest } from '@/api/hooks/survey-roles'
+import type { SurveyAccessLinkOut } from '@/api/hooks/links'
+import type { ProjectMemberOut } from '@/api/hooks/members'
 import {
   LinkStateBadge,
   SurveyAccessModeSelector,
@@ -83,7 +85,7 @@ type CreatableLinkType = typeof CREATABLE_LINK_TYPES[number]
 type CreateLinkFormState = {
   type: CreatableLinkType
   name: string
-  assignedEmail: string
+  assignedParticipantId: string | null
   expiresAt: string
   requireAuthForGeneralLink: boolean
 }
@@ -102,10 +104,10 @@ function isCreatableLinkType(entry: SurveyAccessEntry): entry is CreatableLinkTy
 }
 
 function createDefaultLinkForm(type: CreatableLinkType): CreateLinkFormState {
-  return { type, name: '', assignedEmail: '', expiresAt: '', requireAuthForGeneralLink: false }
+  return { type, name: '', assignedParticipantId: null, expiresAt: '', requireAuthForGeneralLink: false }
 }
 
-function publicLinkStatus(link: PublicLinkOut): 'active' | 'disabled' | 'expired' {
+function publicLinkStatus(link: SurveyAccessLinkOut): 'active' | 'disabled' | 'expired' {
   if (link.expires_at && new Date(link.expires_at).getTime() < Date.now()) return 'expired'
   return link.is_active ? 'active' : 'disabled'
 }
@@ -305,25 +307,33 @@ function AccessSidebarSummary({
 
 // ── Links section ─────────────────────────────────────────────────────────────
 
-function linkUrl(link: PublicLinkOut): string {
-  return `${window.location.origin}/s/${link.token_prefix}`
+function linkUrl(link: SurveyAccessLinkOut): string {
+  return `${window.location.origin}/respond/${link.token}`
 }
 
 function LinkCard({
   link,
   canEdit,
+  projectId,
+  surveyId,
   onToggle,
   onDelete,
 }: {
-  link: PublicLinkOut
+  link: SurveyAccessLinkOut
   canEdit: boolean
-  onToggle: (linkId: number, isActive: boolean) => void
-  onDelete: (linkId: number) => void
+  projectId: number
+  surveyId: number
+  onToggle: (linkId: string, isActive: boolean) => void
+  onDelete: (linkId: string) => void
 }) {
   const status = publicLinkStatus(link)
   const moreRef = useRef<HTMLSpanElement>(null)
   const [moreOpen, setMoreOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [emailConfirmOpen, setEmailConfirmOpen] = useState(false)
+  const sendEmail = useSendLinkEmail(projectId, surveyId)
+  const [emailSent, setEmailSent] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
   const url = linkUrl(link)
 
   function copyLink() {
@@ -333,12 +343,13 @@ function LinkCard({
   }
 
   return (
+    <>
     <Card size="sm">
       <div className="grid gap-2">
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-wrap items-center gap-1.5">
             <LinkStateBadge state={status} />
-            {link.requires_auth && (
+            {link.link_type === 'authenticated' && (
               <Badge variant="muted" size="xs">Requires sign-in</Badge>
             )}
           </div>
@@ -352,10 +363,23 @@ function LinkCard({
           <div className="min-w-0 flex-1">
             <p className="min-w-3 text-sm font-medium text-foreground">{link.name}</p>
             <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-              {link.assigned_email && (
+              {link.assigned_participant_id && (
                 <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                   <MailCheck size={13} strokeWidth={2} aria-hidden="true" className="shrink-0 text-muted-foreground" />
-                  <span className="truncate">{link.assigned_email}</span>
+                  <span className="truncate">Assigned</span>
+                  {link.emailed_at && (
+                    <Badge variant="muted" size="xs">Emailed {formatDate(link.emailed_at)}</Badge>
+                  )}
+                  {canEdit && !link.emailed_at && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => { setEmailSent(false); setEmailError(null); setEmailConfirmOpen(true) }}
+                    >
+                      Email link
+                    </Button>
+                  )}
                 </div>
               )}
               <p className="min-w-[min(100%,16rem)] max-w-full truncate font-mono text-xs text-muted-foreground ml-auto text-right">
@@ -427,6 +451,22 @@ function LinkCard({
                           ),
                           onSelect: () => onToggle(link.id, !link.is_active),
                         },
+                        ...(link.assigned_participant_id && link.emailed_at ? [{
+                          key: 'resend-email',
+                          content: (
+                            <Button
+                              type="button"
+                              role="menuitem"
+                              variant="secondary"
+                              size="sm"
+                              className="w-full justify-start gap-2"
+                            >
+                              <MailCheck size={14} strokeWidth={2} aria-hidden="true" />
+                              <span>Resend email</span>
+                            </Button>
+                          ),
+                          onSelect: () => { setEmailSent(false); setEmailError(null); setEmailConfirmOpen(true) },
+                        }] : []),
                         {
                           key: 'delete',
                           content: (
@@ -453,6 +493,61 @@ function LinkCard({
         </div>
       </div>
     </Card>
+
+    {emailConfirmOpen && (
+      <Modal
+        open
+        onClose={() => setEmailConfirmOpen(false)}
+        title={link.emailed_at ? 'Resend survey link' : 'Send survey link'}
+        width={440}
+        footer={
+          emailSent ? (
+            <Button variant="primary" onClick={() => setEmailConfirmOpen(false)}>Done</Button>
+          ) : (
+            <>
+              <Button variant="secondary" onClick={() => setEmailConfirmOpen(false)} disabled={sendEmail.isPending}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                disabled={sendEmail.isPending}
+                onClick={() => {
+                  setEmailError(null)
+                  sendEmail.mutate(link.id, {
+                    onSuccess: () => setEmailSent(true),
+                    onError: (err) => {
+                      const body = err as { message?: string }
+                      setEmailError(body?.message ?? 'Failed to send email. Please try again.')
+                    },
+                  })
+                }}
+              >
+                {sendEmail.isPending ? 'Sending…' : link.emailed_at ? 'Resend email' : 'Send email'}
+              </Button>
+            </>
+          )
+        }
+      >
+        {emailSent ? (
+          <div className="flex items-center gap-2 text-sm text-foreground">
+            <CheckCircle2 size={16} className="shrink-0 text-emerald-500" />
+            <span>Email sent successfully.</span>
+          </div>
+        ) : (
+          <div className="grid gap-2">
+            <p className="text-sm text-foreground">
+              {link.emailed_at
+                ? <>Resend the survey link for <span className="font-semibold">{link.name}</span> to <span className="font-semibold">{link.assigned_participant_email}</span>? The previous email was sent on {formatDate(link.emailed_at)}.</>
+                : <>Send the survey link for <span className="font-semibold">{link.name}</span> to <span className="font-semibold">{link.assigned_participant_email}</span>?</>}
+            </p>
+            {emailError && (
+              <p className="text-sm text-destructive">{emailError}</p>
+            )}
+          </div>
+        )}
+      </Modal>
+    )}
+  </>
   )
 }
 
@@ -481,19 +576,32 @@ function LinksSection({
   const firstCreateLinkType = allowedCreateLinkTypes[0] ?? 'authenticated_assigned_link'
 
   const [createLinkOpen, setCreateLinkOpen] = useState(false)
+  const [createdTokenUrl, setCreatedTokenUrl] = useState<string | null>(null)
   const [linkError, setLinkError] = useState<string | null>(null)
   const [form, setForm] = useState<CreateLinkFormState>(() => createDefaultLinkForm(firstCreateLinkType))
 
+  // ── Participant picker state ──────────────────────────────────────────────
+  const [participantSearch, setParticipantSearch] = useState('')
+  const [showNewParticipant, setShowNewParticipant] = useState(false)
+  const [newParticipantEmail, setNewParticipantEmail] = useState('')
+  const [newParticipantCode, setNewParticipantCode] = useState('')
+  const participantsQuery = useParticipants(projectId, { search: participantSearch.trim() || undefined, page_size: 50 })
+  const createParticipant = useCreateParticipant(projectId)
+
   const selectedLinkDef = SURVEY_ACCESS_ENTRIES[form.type]
-  const requiresAssignedEmail = form.type !== 'general_link'
+  const requiresParticipant = form.type !== 'general_link'
   const requiresAuth = form.type === 'authenticated_assigned_link'
-  const canCreate = form.name.trim().length > 0 && (!requiresAssignedEmail || form.assignedEmail.trim().length > 0)
+  const canCreate = form.name.trim().length > 0 && (!requiresParticipant || form.assignedParticipantId != null)
   const canAddLinks = canEdit && savedAccessMode !== 'private' && allowedCreateLinkTypes.length > 0
 
   function openModal() {
     const type = allowedCreateLinkTypes[0]
     if (!type) return
     setForm(createDefaultLinkForm(type))
+    setParticipantSearch('')
+    setShowNewParticipant(false)
+    setNewParticipantEmail('')
+    setNewParticipantCode('')
     setCreateLinkOpen(true)
   }
 
@@ -501,23 +609,25 @@ function LinksSection({
     if (!canCreate) return
     setLinkError(null)
     try {
-      await createLink.mutateAsync({
+      const result = await createLink.mutateAsync({
         name: form.name.trim(),
-        assigned_email: requiresAssignedEmail ? form.assignedEmail.trim() : null,
+        link_type: requiresAuth || form.requireAuthForGeneralLink ? 'authenticated' : form.type === 'private_invite_link' ? 'private' : 'general',
+        assignment_source: 'manual',
+        assigned_participant_id: form.assignedParticipantId,
         expires_at: form.expiresAt ? `${form.expiresAt}T00:00:00Z` : null,
-        requires_auth: requiresAuth || form.requireAuthForGeneralLink,
       })
       setCreateLinkOpen(false)
+      setCreatedTokenUrl(`${window.location.origin}/respond/${result.link.token}`)
     } catch {
       setLinkError('Failed to create link. Please try again.')
     }
   }
 
-  function handleToggle(linkId: number, isActive: boolean) {
-    updateLink.mutate({ linkId, body: { is_active: isActive } })
+  function handleToggle(linkId: string, isActive: boolean) {
+    updateLink.mutate({ linkId, body: { is_active: isActive, name: null, link_type: null, assignment_source: null, assigned_participant_id: null, expires_at: null } })
   }
 
-  function handleDelete(linkId: number) {
+  function handleDelete(linkId: string) {
     deleteLink.mutate(linkId)
   }
 
@@ -604,7 +714,7 @@ function LinksSection({
       ) : links.length > 0 ? (
         <CardStack gap="sm">
           {links.map((link) => (
-            <LinkCard key={link.id} link={link} canEdit={canEdit} onToggle={handleToggle} onDelete={handleDelete} />
+            <LinkCard key={link.id} link={link} canEdit={canEdit} projectId={projectId} surveyId={surveyId} onToggle={handleToggle} onDelete={handleDelete} />
           ))}
         </CardStack>
       ) : canEdit ? (
@@ -628,7 +738,8 @@ function LinksSection({
         open={createLinkOpen}
         onClose={() => setCreateLinkOpen(false)}
         title="Create access link"
-        width={560}
+        className="max-h-[90dvh]"
+        width={640}
         footer={
           <>
             <Button variant="secondary" onClick={() => setCreateLinkOpen(false)}>Cancel</Button>
@@ -655,7 +766,7 @@ function LinksSection({
               setForm((current) => ({
                 ...current,
                 type: nextType,
-                assignedEmail: nextType === 'general_link' ? '' : current.assignedEmail,
+                assignedParticipantId: nextType === 'general_link' ? null : current.assignedParticipantId,
                 requireAuthForGeneralLink: nextType === 'general_link' ? current.requireAuthForGeneralLink : false,
               }))
             }}
@@ -678,17 +789,98 @@ function LinksSection({
             onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))}
           />
 
-          {requiresAssignedEmail && (
-            <Input
-              label="Assigned participant email"
-              type="email"
-              value={form.assignedEmail}
-              placeholder="participant@example.com"
-              hint={requiresAuth
-                ? 'The participant must sign in with this email before using the link.'
-                : 'Assigned to this participant but does not require sign-in.'}
-              onChange={(e) => setForm((current) => ({ ...current, assignedEmail: e.target.value }))}
-            />
+          {requiresParticipant && (
+            <div className="grid gap-3">
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Input
+                    label="Search participants"
+                    placeholder="Filter by email or code…"
+                    value={participantSearch}
+                    onChange={(e) => setParticipantSearch(e.target.value)}
+                  />
+                </div>
+                <Button variant="secondary" size="md" onClick={() => setShowNewParticipant(true)}>
+                  New participant
+                </Button>
+              </div>
+
+              <Select
+                label="Assign to participant"
+                value={form.assignedParticipantId ?? ''}
+                onValueChange={(value) => setForm((current) => ({ ...current, assignedParticipantId: value || null }))}
+                options={[
+                  { value: '', label: 'Select a participant…' },
+                  ...(participantsQuery.data?.participants ?? []).map((p) => ({
+                    value: p.id,
+                    label: `${p.email ?? 'No email'} — ${p.subject_code}`,
+                  })),
+                ]}
+              />
+
+              <Modal
+                open={showNewParticipant}
+                onClose={() => setShowNewParticipant(false)}
+                title="Create new participant"
+                width={420}
+                footer={(
+                  <div className="flex w-full items-center justify-between gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setShowNewParticipant(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      disabled={!newParticipantEmail.trim() || createParticipant.isPending}
+                      onClick={() => {
+                        createParticipant.mutate(
+                          { email: newParticipantEmail.trim(), subject_code: newParticipantCode.trim() || null },
+                          {
+                            onSuccess: (data) => {
+                              setForm((current) => ({ ...current, assignedParticipantId: data.id }))
+                              setNewParticipantEmail('')
+                              setNewParticipantCode('')
+                              setShowNewParticipant(false)
+                            },
+                          },
+                        )
+                      }}
+                    >
+                      {createParticipant.isPending ? 'Creating…' : 'Create & select'}
+                    </Button>
+                  </div>
+                )}
+              >
+                <div className="grid gap-3">
+                  <Input
+                    label="Email address"
+                    type="email"
+                    value={newParticipantEmail}
+                    onChange={(e) => setNewParticipantEmail(e.target.value)}
+                    placeholder="name@example.com"
+                  />
+                  <Input
+                    label="Subject code (optional)"
+                    value={newParticipantCode}
+                    onChange={(e) => setNewParticipantCode(e.target.value)}
+                    placeholder="sub_xxx"
+                  />
+                  {createParticipant.isError && (
+                    <p className="text-sm text-destructive">
+                      {(createParticipant.error as { message?: string } | null)?.message ?? 'Failed to create participant.'}
+                    </p>
+                  )}
+                </div>
+              </Modal>
+
+              {form.assignedParticipantId && (
+                <p className="text-xs text-muted-foreground">
+                  {requiresAuth
+                    ? 'The participant must sign in with their email before using the link.'
+                    : 'Assigned to this participant but does not require sign-in.'}
+                </p>
+              )}
+            </div>
           )}
 
           {form.type === 'general_link' && (
@@ -708,7 +900,38 @@ function LinksSection({
           />
         </div>
       </Modal>
+
+      <CreatedTokenModal url={createdTokenUrl} onClose={() => setCreatedTokenUrl(null)} />
     </div>
+  )
+}
+
+function CreatedTokenModal({ url, onClose }: { url: string | null; onClose: () => void }) {
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    if (!url) return
+    navigator.clipboard.writeText(url).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Modal open={url != null} onClose={onClose} title="Link created" width={560}
+      footer={<Button variant="primary" onClick={onClose}>Done</Button>}
+    >
+      <div className="grid gap-3">
+        <p className="text-sm text-muted-foreground">
+          Copy this link now — the full token will not be shown again.
+        </p>
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 overflow-hidden">
+          <code className="min-w-0 flex-1 truncate text-sm block">{url}</code>
+          <Button variant="ghost" size="sm" className="shrink-0" onClick={handleCopy}>
+            {copied ? 'Copied!' : 'Copy'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   )
 }
 
@@ -1139,12 +1362,11 @@ function SurveyRolesReferenceCard({ projectId, canEdit }: { projectId: number; c
 
 export function SurveyAccessTab() {
   useRenderDebug('SurveyAccessTab')
-  const { slug, surveySlug } = useParams({ from: '/projects/$slug/surveys/$surveySlug/access' })
+  const { slug, surveySlug } = useParams({ from: '/_studio/projects/$slug/surveys/$surveySlug/access' })
 
   const { data: project } = useProject(slug)
-  const surveyProjectRef = project?.id ?? null
-  const { data: survey } = useSurvey(surveyProjectRef, surveySlug)
-  const updateSurvey = useUpdateSurvey(project?.id ?? slug, surveySlug)
+  const { data: survey } = useSurvey(slug, surveySlug)
+  const updateSurvey = useUpdateSurvey(project?.id ?? null, surveySlug)
   const [accessToast, setAccessToast] = useState<{ message: string; variant: 'success' | 'error' } | null>(null)
 
   const projectId = project?.id ?? 0

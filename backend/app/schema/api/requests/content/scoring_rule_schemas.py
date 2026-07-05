@@ -5,7 +5,7 @@ from typing import Annotated, Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schema.api import limits
-from app.schema.api.enums import (
+from app.schema.enums import (
     ChoiceOptionMapStrategy,
     FieldNumericRangesStrategy,
     MatchingAnswerKeyStrategy,

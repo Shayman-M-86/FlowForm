@@ -1,0 +1,14 @@
+Verify your FlowForm email address
+
+Hi {{ recipient_name or "there" }},
+
+Please verify your email address to continue using FlowForm.
+
+Verify email:
+{{ verify_url }}
+
+{% if expires_at -%}
+This verification link expires on {{ expires_at.strftime("%d %b %Y at %I:%M %p") }}.
+{%- endif %}
+
+If you were not expecting this email, you can safely ignore it.

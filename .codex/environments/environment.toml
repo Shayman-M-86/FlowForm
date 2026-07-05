@@ -8,5 +8,5 @@ script = ""
 [[actions]]
 name = "test script"
 icon = "test"
-command = "bash \"/home/shayman86/my-repos/FlowForm/backend/scripts/run-tests-rebuild-teardown.sh"
+command = "bash \"/home/shayman86/my-repos/FlowForm/backend/scripts/run-tests.sh"
 platform = "linux"

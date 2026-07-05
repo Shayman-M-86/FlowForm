@@ -200,7 +200,7 @@ FlowForm
 ```text
 FlowForm/
 ├── backend/                Flask API (Python 3.14+, uv)
-└── frontend/               npm workspaces monorepo
+└── frontend/               pnpm workspaces monorepo
     ├── apps/
     │   ├── studio-app/     Management dashboard
     │   └── public-site/    Marketing site + public form filler
@@ -245,23 +245,25 @@ This keeps route files small and makes business logic easier to test, reuse, and
 
 FlowForm uses two PostgreSQL databases.
 
-| Database   | Purpose                                                                                |
-| ---------- | -------------------------------------------------------------------------------------- |
-| `core`     | Users, projects, surveys, versions, roles, links, permissions, and submission metadata |
-| `response` | Raw response payloads and answer data                                                  |
+| Database   | Purpose                                                                                       |
+| ---------- | --------------------------------------------------------------------------------------------- |
+| `core`     | Users, projects, surveys, versions, roles, links, permissions, subjects, and session metadata |
+| `response` | Encrypted response envelopes and answer payloads only                                         |
 
-The response database does not store real user IDs. Instead, response records are linked back to core submission metadata through `core_submission_id`.
+The response database does not store real user IDs, project IDs, survey IDs, or plaintext question IDs. There are no cross-database SQL foreign keys — the two sides are linked only through HMAC-derived opaque locators computed from a versioned linkage secret:
 
 ```text
-core.survey_submissions.id
-  ↔ response.submissions.core_submission_id
+core.submission_sessions  →  session_locator  →  response.response_envelopes
+core (question node)      →  answer_locator   →  response.response_answers
 ```
+
+Answer payloads are also encrypted at rest using a per-survey KMS-wrapped branch key that locally wraps a per-session data encryption key (AES-256-GCM), so no plaintext answer is ever visible to the response database. See [docs/session-encryption/](docs/session-encryption/) for the full design.
 
 Cross-database orchestration lives in the service layer. This keeps privacy-sensitive writes explicit and avoids hidden coupling between the two databases.
 
 ### Why this matters
 
-This design makes FlowForm better suited for sensitive data collection because identifying application data and raw answers are not stored together by default.
+This design makes FlowForm better suited for sensitive data collection because identifying application data and raw answers are not stored together by default, and even a full compromise of the response database exposes only encrypted, unlinkable blobs.
 
 ---
 
@@ -285,7 +287,7 @@ This protects historical response data from becoming inconsistent when the surve
 
 ## Frontend architecture
 
-The frontend is an npm workspaces monorepo split into apps and shared packages.
+The frontend is a pnpm workspaces monorepo split into apps and shared packages.
 
 ### Studio app
 
@@ -340,7 +342,7 @@ This keeps the product consistent across Studio, the public site, and the respon
 | Styling            | Tailwind v4, design tokens, `@flowform/styles`                    |
 | Shared UI          | `@flowform/ui`                                                    |
 | Builder/runtime    | `@flowform/builder`                                               |
-| Package management | uv for backend, npm workspaces for frontend                       |
+| Package management | uv for backend, pnpm workspaces for frontend                      |
 | API contract       | OpenAPI 3.1, `openapi-typescript`                                 |
 
 ---
@@ -408,16 +410,18 @@ Allow automatic tasks when prompted, or press `Ctrl+Shift+B` to run the build ta
 Run tests inside Docker:
 
 ```bash
-bash backend/scripts/run-tests-rebuild-teardown.sh --ai
-bash backend/scripts/run-tests-rebuild-teardown.sh --ai -k "test_name"
+bash backend/scripts/run-tests.sh --ai
+bash backend/scripts/run-tests.sh --ai -k "test_name"
 ```
 
 ### Frontend dev servers
 
 ```bash
 cd frontend
-npm run dev:studio    # Studio app — http://localhost:5174
-npm run dev:site      # Public site — http://localhost:4321
+corepack enable
+pnpm install
+pnpm run dev:studio   # Studio app — http://localhost:5174
+pnpm run dev:site     # Public site — http://localhost:4321
 ```
 
 ---
