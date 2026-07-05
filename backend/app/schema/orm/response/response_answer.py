@@ -33,7 +33,7 @@ class ResponseAnswer(ResponseBase):
         UniqueConstraint("envelope_id", "nonce", name="uq_response_answers_envelope_id_nonce"),
     )
 
-    envelope: Mapped["ResponseEnvelope"] = relationship(
+    envelope: Mapped[ResponseEnvelope] = relationship(
         "ResponseEnvelope",
         back_populates="answers",
         foreign_keys=[envelope_id],

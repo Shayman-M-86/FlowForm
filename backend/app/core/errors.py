@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Any
+
 from pydantic import ValidationError
 
 # ----------------------------------------------------------
@@ -70,6 +71,7 @@ class AuthError(AppError):
     ) -> None:
         super().__init__(message=message, code=code, status_code=status_code, details=details or {})
         self.headers = headers or {}
+
 
 class RequestValidationError(Exception):
     """The client request does not satisfy the endpoint schema."""

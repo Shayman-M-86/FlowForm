@@ -28,7 +28,7 @@ individual test cases.
 
 - `cd backend && uv run ruff check .` - backend lint check.
 - `cd backend && uv run ruff format .` - backend formatter.
-- `cd backend && uv run mypy .` - backend type check named by the backend guide.
+- `cd backend && uv run pyright` - backend type check used by Pylance.
 - `git diff --check` - repo-wide whitespace/conflict-marker check before
   finishing schema or generated-file-heavy edits.
 
@@ -102,6 +102,7 @@ individual test cases.
 - `cd infra/cdk && uv run pytest -q` - synth-time assertions over the CDK
   stacks (security, frontend).
 - `cd infra/cdk && uv run ruff check flowform_infra tests app.py` - CDK lint.
+- `cd infra/cdk && uv run pyright` - CDK type check.
 - `cd infra/cdk && npx cdk synth -c env=staging --quiet` - synthesize the
   staging architecture (hermetic once `cdk.context.json` is committed and
   `.env.staging` exists).
@@ -113,14 +114,17 @@ individual test cases.
 - `.github/workflows/ci.yml` runs on pull requests and pushes to `main` /
   `staging`. Flow: `backend-security` (pip-audit + Bandit) gates
   everything; then lint before test before build per area —
-  `backend-lint` (ruff + mypy) → `backend-test` (Docker pytest +
+  `backend-lint` (Ruff + Pyright) → `backend-test` (Docker pytest +
   coverage); `studio-lint` → `studio-test` → `build-studio-app`;
   `public-lint` → `build-public-site`; `contracts` (OpenAPI drift) in
-  parallel. CDK runs last: `cdk-checks` (pytest + ruff) → `cdk-synth`
+  parallel. CDK runs last: `cdk-checks` (pytest + Ruff + Pyright) → `cdk-synth`
   (hermetic staging + dev synth) → `cdk-diff` (read-only against deployed
   staging via the `flowform-staging-ci-preview` OIDC role).
 - `.github/workflows/deploy.yml` deploys both frontends to S3 + CloudFront
-  on push to `staging` (OIDC role `flowform-staging-frontend-deploy`).
+  after CI completes **successfully** on `staging` (`workflow_run` trigger —
+  deploys the exact commit CI validated; OIDC role
+  `flowform-staging-frontend-deploy`). Also manually runnable via
+  workflow dispatch.
 - VS Code task `test-env: setup` starts the Docker test stack, syncs backend dev
   and test dependencies inside the backend test container, and verifies the
   container Python.

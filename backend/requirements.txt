@@ -20,10 +20,14 @@ blinker==1.9.0
     # via flask
 boto3==1.43.40
     # via backend (pyproject.toml)
+boto3-stubs==1.43.40
+    # via backend (pyproject.toml)
 botocore==1.43.40
     # via
     #   boto3
     #   s3transfer
+botocore-stubs==1.43.14
+    # via boto3-stubs
 cachetools==5.5.2
     # via backend (pyproject.toml)
 certifi==2026.2.25
@@ -95,8 +99,6 @@ joserfc==1.7.2
     # via
     #   backend (pyproject.toml)
     #   authlib
-librt==0.8.1
-    # via mypy
 mako==1.3.12
     # via
     #   backend (pyproject.toml)
@@ -107,17 +109,19 @@ markupsafe==3.0.3
     #   jinja2
     #   mako
     #   werkzeug
-mypy==1.20.0
+mypy-boto3-kms==1.43.12
+    # via boto3-stubs
+mypy-boto3-secretsmanager==1.43.0
+    # via boto3-stubs
+mypy-boto3-sesv2==1.43.18
     # via backend (pyproject.toml)
-mypy-extensions==1.1.0
-    # via mypy
+nodeenv==1.10.0
+    # via pyright
 packaging==26.0
     # via
     #   apispec
     #   gunicorn
     #   pytest
-pathspec==1.0.4
-    # via mypy
 pluggy==1.6.0
     # via
     #   pytest
@@ -140,6 +144,8 @@ pygments==2.20.0
     # via
     #   backend (pyproject.toml)
     #   pytest
+pyright==1.1.411
+    # via backend (pyproject.toml)
 pytest==9.0.3
     # via
     #   backend (pyproject.toml)
@@ -171,12 +177,16 @@ sqlalchemy==2.0.48
     #   sqlalchemy-utils
 sqlalchemy-utils==0.42.1
     # via backend (pyproject.toml)
+types-awscrt==0.34.1
+    # via botocore-stubs
+types-s3transfer==0.16.0
+    # via boto3-stubs
 typing-extensions==4.15.0
     # via
     #   alembic
-    #   mypy
     #   pydantic
     #   pydantic-core
+    #   pyright
     #   sqlalchemy
     #   typing-inspection
 typing-inspection==0.4.2

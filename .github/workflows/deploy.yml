@@ -6,17 +6,22 @@
 # the two frontend distributions plus read of /flowform/<env>/frontend/*
 # SSM parameters (build-time config).
 #
-# Staging deploys on push to the staging branch. Prod is intentionally not
+# Staging deploys are gated on CI: this workflow fires only when the CI
+# workflow COMPLETES on the staging branch (workflow_run trigger), and the
+# job bails unless CI concluded successfully. It checks out the exact
+# commit CI validated (workflow_run.head_sha), so a newer unvalidated push
+# can never sneak into a deploy. Note: this means a deploy happens after
+# every green CI run on staging, not just frontend-touching ones — a
+# redundant sync/invalidation is harmless. Prod is intentionally not
 # wired up yet — see infra/cdk/docs/implementation-sketch/.
 
 name: deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [staging]
-    paths:
-      - "frontend/**"
-      - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
 permissions:
@@ -24,7 +29,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: deploy-frontends-${{ github.ref }}
+  group: deploy-frontends-staging
   cancel-in-progress: false
 
 env:
@@ -35,8 +40,17 @@ env:
 jobs:
   deploy-frontends:
     runs-on: ubuntu-latest
+    # Manual dispatch always runs; workflow_run only deploys a green CI.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v4
+        with:
+          # For workflow_run events, deploy the exact commit CI validated
+          # (the event's default checkout would be the branch tip, which
+          # may already have newer, unvalidated commits).
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - uses: actions/setup-node@v4
         with:

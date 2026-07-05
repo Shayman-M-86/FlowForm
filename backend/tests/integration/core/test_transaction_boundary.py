@@ -113,6 +113,7 @@ def test_second_start_on_consumed_link_raises_already_used(
     starter = SessionStarter()
 
     starter.start(db_session, db_session, payload=payload, actor=None)
+    assert link.used_at is not None, "first start must consume the private link"
 
     with pytest.raises(LinkAlreadyUsedError):
         starter.start(db_session, db_session, payload=payload, actor=None)

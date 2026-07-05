@@ -30,9 +30,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "boto3-stubs[kms,secretsmanager]>=1.43.36",
     "coverage[toml]>=7.10.0",
-    "mypy>=1.18.0",
+    "mypy-boto3-sesv2>=1.43.18",
     "pygments>=2.20.0",
+    "pyright>=1.1.408",
     "pytest>=9.0.3",
     "pytest-cov>=6.2.1",
     "pyyaml>=6.0.2",
@@ -126,11 +128,4 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
-]
-
-[dependency-groups]
-dev = [
-    "boto3-stubs[kms,secretsmanager]>=1.43.36",
-    "mypy-boto3-sesv2>=1.43.18",
-    "pyright>=1.1.408",
 ]

@@ -4,14 +4,16 @@ Publishing `public-site` and `studio-app` to S3 + CloudFront. Normally this
 happens automatically in CI; the manual path is for one-off pushes and
 debugging.
 
-## Automatic (CI)
+## Automatic (CI-gated)
 
-`.github/workflows/deploy.yml` runs on push to the `staging` branch (paths
-under `frontend/**`). It assumes the `flowform-staging-frontend-deploy`
-role via GitHub OIDC — no AWS keys in GitHub — reads build config from SSM,
-builds both apps, `s3 sync`s, and invalidates CloudFront. To trigger it
-without a code change, use the workflow's manual dispatch from the GitHub
-Actions UI.
+`.github/workflows/deploy.yml` runs when the CI workflow **completes
+successfully** on the `staging` branch (`workflow_run` trigger) — a failed
+CI run means no deploy, and the deploy checks out the exact commit CI
+validated. It assumes the `flowform-staging-frontend-deploy` role via
+GitHub OIDC — no AWS keys in GitHub — reads build config from SSM, builds
+both apps, `s3 sync`s, and invalidates CloudFront. To trigger it without a
+code change (bypassing the CI gate), use the workflow's manual dispatch
+from the GitHub Actions UI.
 
 ## Manual (from your machine)
 

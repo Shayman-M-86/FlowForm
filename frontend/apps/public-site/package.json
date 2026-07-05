@@ -14,7 +14,7 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/react": "^5.0.3",
+    "@astrojs/react": "^5.0.7",
     "@astrojs/sitemap": "^3.7.2",
     "@flowform/builder": "workspace:*",
     "@flowform/site-shell": "workspace:*",
@@ -24,7 +24,7 @@
     "@tailwindcss/vite": "^4.2.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "astro": "^6.1.8",
+    "astro": "^6.4.8",
     "lucide-react": ">=0.400.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",

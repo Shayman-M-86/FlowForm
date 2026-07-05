@@ -29,7 +29,7 @@ class LockedTTLCache[T]:
     def __init__(self, *, name: str, maxsize: int, ttl_seconds: int) -> None:
         self.name = name
         self.enabled = True
-        self._cache: TTLCache[Hashable, T] = TTLCache(
+        self._cache: TTLCache[Hashable, T] = TTLCache[Hashable, T](
             maxsize=maxsize,
             ttl=ttl_seconds,
         )
