@@ -225,10 +225,21 @@ jobs:
       - name: Generate env files
         run: ./scripts/infra/generate-env-files.sh
 
+      - name: Prepare CI Compose file
+        run: |
+          COMPOSE_FILE_RUNTIME="$RUNNER_TEMP/docker-compose.test.ci.yml"
+          cp "$COMPOSE_FILE" "$COMPOSE_FILE_RUNTIME"
+          sed -i '\|flowform_backend_test_venv:/opt/flowform/backend-test-venv|d' "$COMPOSE_FILE_RUNTIME"
+          sed -i '/^  flowform_backend_test_venv:$/d' "$COMPOSE_FILE_RUNTIME"
+          echo "COMPOSE_FILE_RUNTIME=$COMPOSE_FILE_RUNTIME" >> "$GITHUB_ENV"
+
       - name: Validate rendered Compose config
-        run: docker compose -f "$COMPOSE_FILE" config > /tmp/docker-compose.rendered.yml
+        run: docker compose -f "$COMPOSE_FILE_RUNTIME" config > /tmp/docker-compose.rendered.yml
 
       - name: Build backend test image
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -239,7 +250,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=flowform-backend-test,ignore-error=true
 
       - name: Start test environment
-        run: docker compose -f "$COMPOSE_FILE" up -d --no-build
+        run: docker compose -f "$COMPOSE_FILE_RUNTIME" up -d --no-build
 
       - name: Wait for backend-test container
         run: |
@@ -264,7 +275,7 @@ jobs:
 
       - name: Dump service logs
         if: failure()
-        run: docker compose -f "$COMPOSE_FILE" logs --no-color
+        run: docker compose -f "$COMPOSE_FILE_RUNTIME" logs --no-color
 
       - name: Upload coverage report
         if: always() && github.event_name == 'push'
@@ -288,7 +299,7 @@ jobs:
 
       - name: Teardown
         if: always()
-        run: docker compose -f "$COMPOSE_FILE" down -v --remove-orphans
+        run: docker compose -f "$COMPOSE_FILE_RUNTIME" down -v --remove-orphans
 
   contracts:
     runs-on: ubuntu-latest
