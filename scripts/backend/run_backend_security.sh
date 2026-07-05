@@ -35,23 +35,12 @@ install_uv_if_missing() {
   echo "==> Installed uv: $(uv --version)"
 }
 
-cleanup() {
-  echo "==> Uninstalling tools..."
-  uv tool uninstall pip-audit bandit || true
-}
-
-trap cleanup EXIT
-
 install_uv_if_missing
 
 cd "${BACKEND_DIR}"
 
 echo "==> Generating requirements.txt..."
 uv pip compile pyproject.toml --extra dev --extra test -o requirements.txt
-
-echo "==> Installing tools..."
-uv tool install pip-audit@latest
-uv tool install bandit@latest
 
 pip_audit_status=0
 bandit_app_status=0
