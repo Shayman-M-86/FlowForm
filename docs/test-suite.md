@@ -85,7 +85,7 @@ individual test cases.
 - `cd frontend && pnpm run build:studio` - Studio TypeScript project build plus
   Vite production build.
 - `cd frontend && pnpm run build:site` - Public Site Astro production build.
-  This is the frontend build used by GitHub Actions and Amplify.
+  This is the frontend build used by GitHub Actions.
 - `cd frontend/apps/public-site && pnpm run astro build` - app-local equivalent
   of the Public Site build.
 
@@ -95,12 +95,29 @@ individual test cases.
   CI. It compiles backend requirements, runs `pip-audit`, then runs Bandit over
   `backend/app` and `backend/tests`.
 
+## Infrastructure (CDK) Checks
+
+- `cd infra/cdk && uv run pytest -q` - synth-time assertions over the CDK
+  stacks (security, frontend).
+- `cd infra/cdk && uv run ruff check flowform_infra tests app.py` - CDK lint.
+- `cd infra/cdk && npx cdk synth -c env=staging --quiet` - synthesize the
+  staging architecture (hermetic once `cdk.context.json` is committed and
+  `.env.staging` exists).
+- `cd infra/cdk && npx cdk diff -c env=staging` - compare synthesized
+  architecture against what's deployed (needs AWS credentials).
+
 ## CI and Support Tasks
 
-- `.github/workflows/ci.yml` runs three main validation jobs: backend security,
-  backend pytest with coverage in Docker, and Public Site frontend build.
-- `amplify.yml` installs frontend dependencies and runs
-  `cd frontend && pnpm run build:site` for the Public Site deployment build.
+- `.github/workflows/ci.yml` runs on pull requests and pushes to `main` /
+  `staging`: backend security (pip-audit + Bandit), backend ruff + mypy,
+  backend pytest with coverage in Docker, OpenAPI contract drift check,
+  Studio ESLint, Studio Vitest, separate production builds for both
+  frontends (`build-public-site`, `build-studio-app`), CDK pytest + ruff,
+  hermetic `cdk synth` of staging and dev, and a read-only `cdk diff`
+  against deployed staging (via the `flowform-staging-ci-preview` OIDC
+  role).
+- `.github/workflows/deploy.yml` deploys both frontends to S3 + CloudFront
+  on push to `staging` (OIDC role `flowform-staging-frontend-deploy`).
 - VS Code task `test-env: setup` starts the Docker test stack, syncs backend dev
   and test dependencies inside the backend test container, and verifies the
   container Python.

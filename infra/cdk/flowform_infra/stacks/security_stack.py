@@ -154,21 +154,35 @@ class SecurityStack(Stack):
                     f"arn:aws:iam::{env_config.account}:oidc-provider/token.actions.githubusercontent.com"
                 )
 
+            github_actions_principal = iam.FederatedPrincipal(
+                oidc_provider_arn,
+                conditions={
+                    "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
+                    "StringLike": {
+                        "token.actions.githubusercontent.com:sub": f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:*"
+                    },
+                },
+                assume_role_action="sts:AssumeRoleWithWebIdentity",
+            )
+
             self.frontend_deploy_role = iam.Role(
                 self,
                 "FrontendDeployRole",
                 # Deterministic name so the GitHub workflow can reference the
                 # role ARN without reading stack outputs.
                 role_name=f"flowform-{env_config.env_name}-frontend-deploy",
-                assumed_by=iam.FederatedPrincipal(
-                    oidc_provider_arn,
-                    conditions={
-                        "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
-                        "StringLike": {
-                            "token.actions.githubusercontent.com:sub": f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:*"
-                        },
-                    },
-                    assume_role_action="sts:AssumeRoleWithWebIdentity",
-                ),
+                assumed_by=github_actions_principal,
                 description=f"GitHub Actions frontend deploy ({env_config.env_name})",
+            )
+
+            # Read-only role for CI preview work (`cdk diff` describes the
+            # deployed stacks to compare against the synthesized templates).
+            # Same OIDC trust as the deploy role, but no write access at all.
+            self.ci_preview_role = iam.Role(
+                self,
+                "CiPreviewRole",
+                role_name=f"flowform-{env_config.env_name}-ci-preview",
+                assumed_by=github_actions_principal,
+                managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("ReadOnlyAccess")],
+                description=f"GitHub Actions read-only CI preview, e.g. cdk diff ({env_config.env_name})",
             )

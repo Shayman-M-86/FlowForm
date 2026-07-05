@@ -157,6 +157,14 @@ def test_staging_security_creates_github_oidc_and_deploy_role():
         env=cdk.Environment(account=env_config.account, region=env_config.region),
     )
     template = Template.from_stack(stack)
+    # Read-only CI preview role (cdk diff) with the same OIDC trust.
+    template.has_resource_properties(
+        "AWS::IAM::Role",
+        {
+            "RoleName": "flowform-staging-ci-preview",
+            "ManagedPolicyArns": Match.any_value(),
+        },
+    )
     template.has_resource_properties(
         "AWS::IAM::Role",
         {
