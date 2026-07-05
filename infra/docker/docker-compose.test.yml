@@ -79,6 +79,7 @@ services:
       retries: 10
 
   backend-test:
+    image: flowform-backend-test:ci
     build:
       context: ../..
       dockerfile: infra/docker/backend.test.Dockerfile

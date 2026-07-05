@@ -1,35 +1,31 @@
 # CI: validation on pull requests and pushes to main/staging.
 #
-# Flow — security gates each area, lint before test before build, CDK last:
+# Flow — security gates each area; lint before test before build where ordered:
 #
 #   backend-security
-#     ├─ backend-lint ──┐
-#     └─ backend-test   │  (lint and tests in parallel)
-#                       │
-#   frontend-security   │
-#     ├─ studio-lint ── studio-test ── build-studio-app
-#     └─ public-lint ── build-public-site
-#                       │
+#     ├─ backend-lint
+#     ├─ backend-test   (lint and tests in parallel)
+#     └─ cdk  (checks → synth → diff in one job)
+#
+#   frontend-security
+#     ├─ studio  (lint → test → build in one job)
+#     └─ public-site  (lint → build in one job)
+#
 #   backend-security + frontend-security
-#     └─ contracts ─────┤
-#                       └─ cdk  (checks → synth → diff in one job,
-#                                gated on contracts + backend-lint only)
+#     └─ contracts  (when backend/studio contract surfaces change)
 #
 #   backend-security    pip-audit + Bandit (scripts/backend/run_backend_security.sh)
 #   frontend-security   pnpm audit, failing only on High/Critical vulnerabilities
 #   backend-lint        Ruff + Pyright over backend/
 #   backend-test        pytest with coverage in the Docker test stack
-#   studio-lint         studio-app ESLint
-#   studio-test         studio-app Vitest
-#   public-lint         public-site ESLint (astro plugin)
-#   build-studio-app    tsc + Vite production build
-#   build-public-site   Astro production build
+#   studio              studio-app ESLint + Vitest + production build
+#   public-site         public-site ESLint (astro plugin) + production build
 #   contracts           OpenAPI export drift + generated frontend contract check
 #   cdk                 infra/cdk pytest + Ruff + Pyright, hermetic `cdk synth`
 #                       (staging + dev), then `cdk diff` against deployed
 #                       staging (read-only OIDC role; skipped on fork PRs)
 #
-# Deploys are NOT here — see deploy.yml (frontends, on push to staging).
+# Deploys are NOT here — see deploy.yml (frontends, after green staging CI).
 
 name: CI
 
@@ -43,7 +39,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   COMPOSE_FILE: infra/docker/docker-compose.test.yml
   BACKEND_CONTAINER: flowform-backend-test
-  NODE_VERSION: "22.12.0"
+  NODE_VERSION: "22"
   PNPM_VERSION: "10.24.0"
 
 concurrency:
@@ -57,11 +53,77 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
       - name: Run backend security checks
         run: ./scripts/backend/run_backend_security.sh
 
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      studio: ${{ steps.filter.outputs.studio }}
+      public_site: ${{ steps.filter.outputs.public_site }}
+      contracts: ${{ steps.filter.outputs.contracts }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'push'
+        with:
+          fetch-depth: 2
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          base: ${{ github.ref_name }}
+          filters: |
+            frontend:
+              - 'frontend/apps/studio-app/**'
+              - 'frontend/apps/public-site/**'
+              - 'frontend/packages/builder/**'
+              - 'frontend/packages/schema/**'
+              - 'frontend/packages/site-shell/**'
+              - 'frontend/packages/styles/**'
+              - 'frontend/packages/ui/**'
+              - 'frontend/scripts/**'
+              - 'frontend/package.json'
+              - 'frontend/pnpm-lock.yaml'
+              - 'frontend/tsconfig.base.json'
+            studio:
+              - 'frontend/apps/studio-app/**'
+              - 'frontend/packages/builder/**'
+              - 'frontend/packages/schema/**'
+              - 'frontend/packages/site-shell/**'
+              - 'frontend/packages/styles/**'
+              - 'frontend/packages/ui/**'
+              - 'frontend/package.json'
+              - 'frontend/pnpm-lock.yaml'
+              - 'frontend/tsconfig.base.json'
+            public_site:
+              - 'frontend/apps/public-site/**'
+              - 'frontend/packages/builder/**'
+              - 'frontend/packages/site-shell/**'
+              - 'frontend/packages/styles/**'
+              - 'frontend/packages/ui/**'
+              - 'frontend/package.json'
+              - 'frontend/pnpm-lock.yaml'
+              - 'frontend/tsconfig.base.json'
+            contracts:
+              - 'backend/app/**'
+              - 'backend/openapi.yaml'
+              - 'backend/scripts/export-openapi.sh'
+              - 'scripts/shared_script/**'
+              - 'frontend/apps/studio-app/src/api/**'
+              - 'frontend/apps/studio-app/package.json'
+              - 'frontend/packages/schema/**'
+              - 'frontend/scripts/**'
+              - 'frontend/package.json'
+              - 'frontend/pnpm-lock.yaml'
+
   frontend-security:
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     permissions:
       contents: read
     defaults:
@@ -78,8 +140,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies safely for audit
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Audit frontend dependencies
         run: pnpm audit --audit-level high
 
@@ -163,11 +225,32 @@ jobs:
       - name: Generate env files
         run: ./scripts/infra/generate-env-files.sh
 
-      - name: Validate rendered Compose config
-        run: docker compose -f "$COMPOSE_FILE" config > /tmp/docker-compose.rendered.yml
+      - name: Prepare CI Compose file
+        run: |
+          COMPOSE_FILE_RUNTIME="$GITHUB_WORKSPACE/infra/docker/docker-compose.test.ci.runtime.yml"
+          cp "$COMPOSE_FILE" "$COMPOSE_FILE_RUNTIME"
+          sed -i '\|flowform_backend_test_venv:/opt/flowform/backend-test-venv|d' "$COMPOSE_FILE_RUNTIME"
+          sed -i '/^  flowform_backend_test_venv:$/d' "$COMPOSE_FILE_RUNTIME"
+          echo "COMPOSE_FILE_RUNTIME=$COMPOSE_FILE_RUNTIME" >> "$GITHUB_ENV"
 
-      - name: Build and start test environment
-        run: docker compose -f "$COMPOSE_FILE" up -d --build
+      - name: Validate rendered Compose config
+        run: docker compose -f "$COMPOSE_FILE_RUNTIME" config > /tmp/docker-compose.rendered.yml
+
+      - name: Build backend test image
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: infra/docker/backend.test.Dockerfile
+          tags: flowform-backend-test:ci
+          load: true
+          cache-from: type=gha,scope=flowform-backend-test
+          cache-to: type=gha,mode=max,scope=flowform-backend-test,ignore-error=true
+
+      - name: Start test environment
+        run: docker compose -f "$COMPOSE_FILE_RUNTIME" up -d --no-build
 
       - name: Wait for backend-test container
         run: |
@@ -192,10 +275,10 @@ jobs:
 
       - name: Dump service logs
         if: failure()
-        run: docker compose -f "$COMPOSE_FILE" logs --no-color
+        run: docker compose -f "$COMPOSE_FILE_RUNTIME" logs --no-color
 
       - name: Upload coverage report
-        if: always()
+        if: always() && github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
@@ -216,11 +299,14 @@ jobs:
 
       - name: Teardown
         if: always()
-        run: docker compose -f "$COMPOSE_FILE" down -v --remove-orphans
+        run: |
+          docker compose -f "$COMPOSE_FILE_RUNTIME" down -v --remove-orphans
+          rm -f "$COMPOSE_FILE_RUNTIME"
 
   contracts:
     runs-on: ubuntu-latest
-    needs: [backend-security, frontend-security]
+    if: needs.changes.outputs.contracts == 'true'
+    needs: [backend-security, changes]
     permissions:
       contents: read
     steps:
@@ -244,9 +330,10 @@ jobs:
       - name: OpenAPI contract drift check
         run: bash scripts/shared_script/check-openapi-contracts.sh
 
-  studio-lint:
+  studio:
     runs-on: ubuntu-latest
-    needs: frontend-security
+    if: needs.changes.outputs.studio == 'true'
+    needs: [frontend-security, changes]
     permissions:
       contents: read
     defaults:
@@ -267,10 +354,15 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: ESLint (studio-app)
         run: pnpm --filter @flowform/studio-app lint
+      - name: Vitest (studio-app)
+        run: pnpm --filter @flowform/studio-app test
+      - name: Build studio-app
+        run: pnpm run build:studio
 
-  public-lint:
+  public-site:
     runs-on: ubuntu-latest
-    needs: frontend-security
+    if: needs.changes.outputs.public_site == 'true'
+    needs: [frontend-security, changes]
     permissions:
       contents: read
     defaults:
@@ -291,80 +383,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: ESLint (public-site)
         run: pnpm --filter public-site lint
-
-  studio-test:
-    runs-on: ubuntu-latest
-    needs: studio-lint
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-          run_install: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Vitest (studio-app)
-        run: pnpm --filter @flowform/studio-app test
-
-  build-public-site:
-    runs-on: ubuntu-latest
-    needs: public-lint
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-          run_install: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
       - name: Clear Astro build cache
         run: rm -rf apps/public-site/node_modules/.astro
       - name: Build public-site
         run: pnpm run build:site
-
-  build-studio-app:
-    runs-on: ubuntu-latest
-    needs: studio-test
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-          run_install: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Build studio-app
-        run: pnpm run build:studio
 
   # One job for the whole CDK pipeline (checks → synth → diff) so the
   # checkout / uv sync / CDK CLI install happen once instead of three times.
@@ -373,12 +395,14 @@ jobs:
   # cdk.context.json, and the Auth0 public config comes from repo variables
   # (non-secret — these values ship in the built JS bundle anyway).
   #
-  # Diff assumes the read-only flowform-staging-ci-preview role via OIDC
-  # and is informational (cdk diff exits 0 on differences). Fork PRs can't
-  # mint OIDC tokens, so the credential + diff steps are skipped for them.
+  # Diff assumes the read-only flowform-staging-ci-preview role via OIDC.
+  # CI uses template-only diff because the default change-set mode spends
+  # extra time trying to publish assets and assume bootstrap roles that this
+  # preview role intentionally cannot use. Fork PRs can't mint OIDC tokens,
+  # so the credential + diff steps are skipped for them.
   cdk:
     runs-on: ubuntu-latest
-    needs: [contracts, backend-lint]
+    needs: backend-security
     permissions:
       contents: read
       id-token: write
@@ -394,10 +418,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: infra/cdk/package-lock.json
       - name: Install CDK CLI
-        run: npm install -g aws-cdk
+        run: npm ci --prefer-offline --no-audit --fund=false
       - name: Sync CDK dependencies
-        run: uv sync --extra dev
+        run: uv sync --frozen --extra dev
       - name: Pytest (synth-time assertions)
         run: uv run pytest -q
       - name: Ruff
@@ -411,10 +437,8 @@ jobs:
           AUTH0_CLIENT_ID=${{ vars.STAGING_AUTH0_CLIENT_ID }}
           AUTH0_AUDIENCE=${{ vars.STAGING_AUTH0_AUDIENCE }}
           EOF
-      - name: Synth staging
-        run: cdk synth -c env=staging --quiet
       - name: Synth dev
-        run: cdk synth -c env=dev --quiet
+        run: npx --no-install cdk synth -c env=dev --quiet
       - uses: aws-actions/configure-aws-credentials@v4
         if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
         with:
@@ -422,4 +446,4 @@ jobs:
           aws-region: ap-southeast-2
       - name: Diff staging
         if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-        run: cdk diff -c env=staging
+        run: npx --no-install cdk diff -c env=staging --method=template

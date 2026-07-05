@@ -114,13 +114,14 @@ individual test cases.
 - `.github/workflows/ci.yml` runs on pull requests and pushes to `main` /
   `staging`. Flow: `backend-security` (pip-audit + Bandit) gates the
   backend side, with `backend-lint` (Ruff + Pyright) and `backend-test`
-  (Docker pytest + coverage) running in parallel after it;
+  (Buildx-cached Docker test image, then Docker pytest + coverage) running
+  in parallel after it;
   `frontend-security` (pnpm audit) gates the frontend side, then
   `studio-lint` → `studio-test` → `build-studio-app` and `public-lint` →
   `build-public-site`; `contracts` (OpenAPI drift) needs both security
-  jobs. CDK runs as a single `cdk` job once `contracts` and `backend-lint`
-  are green: pytest + Ruff + Pyright, hermetic `cdk synth` of staging and
-  dev, then `cdk diff` against deployed staging (read-only
+  jobs. CDK runs as a single `cdk` job as soon as `backend-security` is
+  green: pytest + Ruff + Pyright, hermetic `cdk synth` of staging and dev,
+  then `cdk diff` against deployed staging (read-only
   `flowform-staging-ci-preview` OIDC role; the diff steps are skipped on
   fork PRs).
 - `.github/workflows/deploy.yml` deploys both frontends to S3 + CloudFront
