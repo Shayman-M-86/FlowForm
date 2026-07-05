@@ -1,3 +1,36 @@
+# CI: validation on pull requests and pushes to main/staging.
+#
+# Flow — security gates each area, lint before test before build, CDK last:
+#
+#   backend-security
+#     ├─ backend-lint ──┐
+#     └─ backend-test   │  (lint and tests in parallel)
+#                       │
+#   frontend-security   │
+#     ├─ studio-lint ── studio-test ── build-studio-app
+#     └─ public-lint ── build-public-site
+#                       │
+#   backend-security + frontend-security
+#     └─ contracts ─────┤
+#                       └─ cdk  (checks → synth → diff in one job,
+#                                gated on contracts + backend-lint only)
+#
+#   backend-security    pip-audit + Bandit (scripts/backend/run_backend_security.sh)
+#   frontend-security   pnpm audit, failing only on High/Critical vulnerabilities
+#   backend-lint        Ruff + Pyright over backend/
+#   backend-test        pytest with coverage in the Docker test stack
+#   studio-lint         studio-app ESLint
+#   studio-test         studio-app Vitest
+#   public-lint         public-site ESLint (astro plugin)
+#   build-studio-app    tsc + Vite production build
+#   build-public-site   Astro production build
+#   contracts           OpenAPI export drift + generated frontend contract check
+#   cdk                 infra/cdk pytest + Ruff + Pyright, hermetic `cdk synth`
+#                       (staging + dev), then `cdk diff` against deployed
+#                       staging (read-only OIDC role; skipped on fork PRs)
+#
+# Deploys are NOT here — see deploy.yml (frontends, on push to staging).
+
 name: CI
 
 on:
@@ -10,42 +43,76 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   COMPOSE_FILE: infra/docker/docker-compose.test.yml
   BACKEND_CONTAINER: flowform-backend-test
+  NODE_VERSION: "22.12.0"
+  PNPM_VERSION: "10.24.0"
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  security:
+  backend-security:
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
-
-    defaults:
-      run:
-        shell: bash
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Run backend security checks
         run: ./scripts/backend/run_backend_security.sh
 
-
-  test:
+  frontend-security:
     runs-on: ubuntu-latest
-    needs: security
-    environment: test
-
     permissions:
       contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Audit frontend dependencies
+        run: pnpm audit --audit-level high
 
+  backend-lint:
+    runs-on: ubuntu-latest
+    needs: backend-security
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Sync backend dependencies
+        run: uv sync --extra dev
+      - name: Ruff
+        run: uv run ruff check .
+      - name: Pyright
+        run: uv run pyright
+
+  backend-test:
+    runs-on: ubuntu-latest
+    needs: backend-security
+    environment: test
+    permissions:
+      contents: read
     defaults:
       run:
         shell: bash
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -93,10 +160,6 @@ jobs:
 
           chmod 0444 "$FLOWFORM_SECRET_DIR"/*.secret.txt
 
-      - name: Debug secret file perms
-        run: |
-          ls -l "$FLOWFORM_SECRET_DIR"
-
       - name: Generate env files
         run: ./scripts/infra/generate-env-files.sh
 
@@ -105,12 +168,6 @@ jobs:
 
       - name: Build and start test environment
         run: docker compose -f "$COMPOSE_FILE" up -d --build
-      
-      - name: Check coverage inside container
-        run: docker exec flowform-backend-test ls -lah /app
-      
-      - name: Find coverage files
-        run: docker exec flowform-backend-test find /app -name "*coverage*"
 
       - name: Wait for backend-test container
         run: |
@@ -161,41 +218,208 @@ jobs:
         if: always()
         run: docker compose -f "$COMPOSE_FILE" down -v --remove-orphans
 
-
-  frontend-build:
+  contracts:
     runs-on: ubuntu-latest
-    needs: security
-
+    needs: [backend-security, frontend-security]
     permissions:
       contents: read
-
-    defaults:
-      run:
-        shell: bash
-        working-directory: frontend
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
-          version: 10.24.0
+          version: ${{ env.PNPM_VERSION }}
           run_install: false
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22.12.0
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+      - name: OpenAPI contract drift check
+        run: bash scripts/shared_script/check-openapi-contracts.sh
 
+  studio-lint:
+    runs-on: ubuntu-latest
+    needs: frontend-security
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: ESLint (studio-app)
+        run: pnpm --filter @flowform/studio-app lint
 
+  public-lint:
+    runs-on: ubuntu-latest
+    needs: frontend-security
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: ESLint (public-site)
+        run: pnpm --filter public-site lint
+
+  studio-test:
+    runs-on: ubuntu-latest
+    needs: studio-lint
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Vitest (studio-app)
+        run: pnpm --filter @flowform/studio-app test
+
+  build-public-site:
+    runs-on: ubuntu-latest
+    needs: public-lint
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: Clear Astro build cache
         run: rm -rf apps/public-site/node_modules/.astro
-
-      - name: Build public site
+      - name: Build public-site
         run: pnpm run build:site
+
+  build-studio-app:
+    runs-on: ubuntu-latest
+    needs: studio-test
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build studio-app
+        run: pnpm run build:studio
+
+  # One job for the whole CDK pipeline (checks → synth → diff) so the
+  # checkout / uv sync / CDK CLI install happen once instead of three times.
+  #
+  # Synth is hermetic: the hosted-zone lookup is served from the committed
+  # cdk.context.json, and the Auth0 public config comes from repo variables
+  # (non-secret — these values ship in the built JS bundle anyway).
+  #
+  # Diff assumes the read-only flowform-staging-ci-preview role via OIDC
+  # and is informational (cdk diff exits 0 on differences). Fork PRs can't
+  # mint OIDC tokens, so the credential + diff steps are skipped for them.
+  cdk:
+    runs-on: ubuntu-latest
+    needs: [contracts, backend-lint]
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: infra/cdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: infra/cdk/uv.lock
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install CDK CLI
+        run: npm install -g aws-cdk
+      - name: Sync CDK dependencies
+        run: uv sync --extra dev
+      - name: Pytest (synth-time assertions)
+        run: uv run pytest -q
+      - name: Ruff
+        run: uv run ruff check flowform_infra tests app.py
+      - name: Pyright
+        run: uv run pyright
+      - name: Write staging env config from repo variables
+        run: |
+          cat > .env.staging <<EOF
+          AUTH0_DOMAIN=${{ vars.STAGING_AUTH0_DOMAIN }}
+          AUTH0_CLIENT_ID=${{ vars.STAGING_AUTH0_CLIENT_ID }}
+          AUTH0_AUDIENCE=${{ vars.STAGING_AUTH0_AUDIENCE }}
+          EOF
+      - name: Synth staging
+        run: cdk synth -c env=staging --quiet
+      - name: Synth dev
+        run: cdk synth -c env=dev --quiet
+      - uses: aws-actions/configure-aws-credentials@v4
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        with:
+          role-to-assume: arn:aws:iam::908123139858:role/flowform-staging-ci-preview
+          aws-region: ap-southeast-2
+      - name: Diff staging
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        run: cdk diff -c env=staging

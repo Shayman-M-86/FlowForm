@@ -30,6 +30,8 @@ import {
 } from '@/lib/storage'
 
 const SORT_KEY_STEP = 100_000
+const EMPTY_VERSIONS: SurveyVersionOut[] = []
+const EMPTY_NODE_OUTS: NodeOut[] = []
 
 type ToastState = {
   variant: ToastVariant
@@ -151,7 +153,7 @@ export function useSurveyBuilderController() {
   const canArchive = useHasProjectPermission(projectId, 'survey:archive')
 
   const versionsQuery = useSurveyVersions(projectId ?? 0, surveyId)
-  const versions = versionsQuery.data ?? []
+  const versions = versionsQuery.data ?? EMPTY_VERSIONS
   const defaultVersion = pickDefaultVersion(versions)
 
   const [selectedVersionId, setSelectedVersionId] = useState<number | null>(null)
@@ -163,7 +165,7 @@ export function useSurveyBuilderController() {
   }, [defaultVersion, selectedVersionId, versions])
 
   const nodesQuery = useSurveyNodes(projectId, surveyId > 0 ? surveyId : null, selectedVersion?.version_number ?? null)
-  const backendNodes = nodesQuery.data ?? []
+  const backendNodes = nodesQuery.data ?? EMPTY_NODE_OUTS
 
   const createVersion = useCreateSurveyVersion(projectId ?? 0, surveyId)
   const copyVersion = useCopyVersionToDraft(projectId ?? 0, surveyId)

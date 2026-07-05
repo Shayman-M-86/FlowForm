@@ -23,7 +23,9 @@ function simulateMount(key: string, cooldownMs: number): boolean {
     const all = getStamps()
     all[key] = Date.now()
     localStorage.setItem(STORAGE_KEY, JSON.stringify(all))
-  } catch {}
+  } catch {
+    // The cooldown gate is best-effort when localStorage is unavailable.
+  }
   return true
 }
 

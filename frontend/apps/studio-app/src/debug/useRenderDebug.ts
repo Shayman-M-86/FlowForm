@@ -7,13 +7,15 @@ export function useRenderDebug<T extends Record<string, unknown>>(
   const renderCount = useRef(0);
   const previousProps = useRef<T | undefined>(undefined);
 
-  if (import.meta.env.DEV) {
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+
     renderCount.current += 1;
 
     console.log(
       `[render] ${componentName} rendered ${renderCount.current} time(s)`
     );
-  }
+  });
 
   useEffect(() => {
     if (!import.meta.env.DEV || !props) return;

@@ -5569,6 +5569,7 @@ components:
       title: SubjectResponse
       type: object
     ListSubjectsResponse:
+      description: Paginated project subject listing.
       properties:
         subjects:
           items:

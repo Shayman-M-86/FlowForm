@@ -14,7 +14,9 @@ function readStore(): Record<string, number> {
 function writeStore(store: Record<string, number>): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
-  } catch {}
+  } catch {
+    // Cooldowns are best-effort when localStorage is unavailable.
+  }
 }
 
 // Returns the ms remaining in the cooldown window (0 if none).
@@ -40,5 +42,7 @@ export function recordFetchStarted(queryKey: QueryKey): void {
 export function clearQueryCooldowns(): void {
   try {
     localStorage.removeItem(STORAGE_KEY)
-  } catch {}
+  } catch {
+    // Cooldowns are best-effort when localStorage is unavailable.
+  }
 }

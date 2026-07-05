@@ -44,9 +44,9 @@ class SubmissionAnswerSlot(CoreBase):
         ),
     )
 
-    session: Mapped["SubmissionSession"] = relationship(
+    session: Mapped[SubmissionSession] = relationship(
         "SubmissionSession", foreign_keys=[submission_session_id]
     )
-    question: Mapped["SurveyQuestion"] = relationship(
+    question: Mapped[SurveyQuestion] = relationship(
         "SurveyQuestion", foreign_keys=[survey_version_id, question_node_id]
     )

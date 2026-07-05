@@ -41,15 +41,14 @@ class EnvConfig:
     # (db_instance_class, auth0_public) are unused until this is True.
     full_deployment: bool
     db_instance_class: str
-    # Build-time env vars for the Amplify-hosted studio-app. None for dev
-    # (no Amplify app; local frontend env files own these). For staging/prod
-    # this is filled at lookup time from the gitignored `.env.<env>` file
-    # (AUTH0_DOMAIN / AUTH0_CLIENT_ID / AUTH0_AUDIENCE) — see
-    # get_env_config(); the Amplify stack fails synth if it's still None.
+    # Build-time env vars for the studio-app SPA, published as SSM params by
+    # the frontend stack for CI builds. None for dev (local frontend env
+    # files own these). For staging/prod this is filled at lookup time from
+    # the gitignored `.env.<env>` file (AUTH0_DOMAIN / AUTH0_CLIENT_ID /
+    # AUTH0_AUDIENCE) — see get_env_config(); the frontend stack fails synth
+    # if it's still None.
     auth0_public: Auth0PublicConfig | None = None
-    # Custom domains for the Amplify apps (None = no domain association).
-    # The hosted zone is in Route 53 in this same account, so Amplify
-    # creates the DNS + ACM-validation records automatically.
+    # Custom domains for the CloudFront distributions (frontend_stack.py).
     public_site_domain: str | None = None
     # Extra subdomain prefixes on public_site_domain beyond the root
     # (e.g. ("www",) for prod).
@@ -68,6 +67,11 @@ _DEFAULT_REGION = "ap-southeast-2"
 # if staging/prod end up on subdomains.
 DOMAIN_NAME = "flow-form.com.au"
 
+# Source repo, used for the GitHub Actions OIDC trust condition on the
+# frontend-deploy role (security_stack.py).
+GITHUB_OWNER = "Shayman-M-86"
+GITHUB_REPOSITORY = "FlowForm"
+
 # Decision (resolved): all environments share this single AWS account —
 # isolation comes from per-env resource naming (flowform/<env>/... secrets
 # and params, per-env KMS keys/stacks), not account boundaries. For a solo
@@ -81,7 +85,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
     # dev is deliberately tiny in AWS: local Docker Compose hosts the app
     # and both databases, so the only cloud resources are the ones the
     # backend can't fake locally (KMS key, Secrets Manager entries, SES
-    # send permission). No VPC, RDS, ECS, or Amplify.
+    # send permission). No VPC, RDS, ECS, or frontend hosting.
     "dev": EnvConfig(
         env_name="dev",
         account=_ACCOUNT,
@@ -94,7 +98,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
     ),
     # staging doubles as the shared integration environment — the one
     # non-prod cloud deployment. Anything that would want a "deployed dev"
-    # (Amplify branch previews, integration testing against real ECS/RDS)
+    # (frontend previews, integration testing against real ECS/RDS)
     # happens here instead of in a second paid-for environment.
     "staging": EnvConfig(
         env_name="staging",
@@ -118,10 +122,10 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         full_deployment=True,
         db_instance_class="db.t4g.medium",
         auth0_public=None,  # loaded from .env.prod by get_env_config()
-        # NOTE: the apex is currently attached to the hand-made Amplify
-        # public-site app — a domain can only belong to one Amplify app at
-        # a time, so the first prod deploy requires detaching it from the
-        # old app first (the cutover).
+        # NOTE: the apex DNS records currently point at the hand-made
+        # Amplify public-site app — the first prod deploy requires removing
+        # that app's domain association first so Route 53 aliases can point
+        # at the new CloudFront distribution (the cutover).
         public_site_domain=DOMAIN_NAME,
         public_site_extra_prefixes=("www",),
         studio_domain=f"studio.{DOMAIN_NAME}",
@@ -148,7 +152,7 @@ def _load_auth0_public(env_name: str, env_dir: Path) -> Auth0PublicConfig | None
     These values are public (they ship in the built JS bundle), but keeping
     them out of git means the repo carries no live tenant/client identifiers
     and each machine/CI job states its own. Returns None when the file or
-    any key is missing — the Amplify stack turns that into a fail-early
+    any key is missing — the frontend stack turns that into a fail-early
     synth error for full-deployment envs.
     """
     env_file = env_dir / f".env.{env_name}"

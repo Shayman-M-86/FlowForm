@@ -11,11 +11,15 @@ export function getActiveProjectSlug(): string | null {
 export function setActiveProjectSlug(slug: string): void {
   try {
     localStorage.setItem(KEY, slug)
-  } catch {}
+  } catch {
+    // Active project memory is best-effort when localStorage is unavailable.
+  }
 }
 
 export function clearActiveProjectSlug(): void {
   try {
     localStorage.removeItem(KEY)
-  } catch {}
+  } catch {
+    // Active project memory is best-effort when localStorage is unavailable.
+  }
 }

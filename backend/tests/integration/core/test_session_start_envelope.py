@@ -220,15 +220,20 @@ class TestPreCommitEnvelopeFailureRollback:
         _fail_response_commit_once(monkeypatch)
 
         patches = _mock_crypto_for_start()
-        with patches[0], patches[1], patches[2], patches[3]:
-            with pytest.raises(SessionStartError, match="Failed to create response envelope"):
-                starter = SessionStarter()
-                starter.start(
-                    db_sessions.core,
-                    db_sessions.response,
-                    payload=_slug_payload("response-commit-fail-test"),
-                    actor=None,
-                )
+        with (
+            patches[0],
+            patches[1],
+            patches[2],
+            patches[3],
+            pytest.raises(SessionStartError, match="Failed to create response envelope"),
+        ):
+            starter = SessionStarter()
+            starter.start(
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("response-commit-fail-test"),
+                actor=None,
+            )
 
         session = db_sessions.core.scalar(
             select(SubmissionSession).where(SubmissionSession.survey_id == survey_id)
@@ -263,15 +268,20 @@ class TestCoreCommitFailureAfterEnvelopeCreation:
         self._patch_fail_core_commit(monkeypatch)
 
         patches = _mock_crypto_for_start()
-        with patches[0], patches[1], patches[2], patches[3]:
-            with pytest.raises(SessionStartError, match="Core commit failed"):
-                starter = SessionStarter()
-                starter.start(
-                    db_sessions.core,
-                    db_sessions.response,
-                    payload=_slug_payload("core-fail-test"),
-                    actor=None,
-                )
+        with (
+            patches[0],
+            patches[1],
+            patches[2],
+            patches[3],
+            pytest.raises(SessionStartError, match="Core commit failed"),
+        ):
+            starter = SessionStarter()
+            starter.start(
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("core-fail-test"),
+                actor=None,
+            )
 
     def test_core_commit_failure_cleans_up_orphan_envelope(
         self,

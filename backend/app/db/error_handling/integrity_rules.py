@@ -810,7 +810,7 @@ SUBMISSION_EVENT_RULES: tuple[DbErrorRule, ...] = (
 SURVEY_QUESTION_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
         "survey_questions_pkey",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda _ctx, _exc: DbIntegrityError(
             409,
             "NODE_ID_CONFLICT",
             "A node with this ID already exists.",
@@ -969,7 +969,7 @@ SURVEY_MEMBERSHIP_ROLE_RULES: tuple[DbErrorRule, ...] = (
 PROJECT_INVITATION_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
         "uq_project_invitations_token_hash",
-        lambda ctx, _exc: DbIntegrityError(
+        lambda _ctx, _exc: DbIntegrityError(
             500,
             "INVITATION_TOKEN_COLLISION",
             "Invitation token collision — retry the request.",

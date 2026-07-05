@@ -80,6 +80,8 @@ class SubjectDetailResponse(BaseModel):
 
 
 class ListSubjectsResponse(BaseModel):
+    """Paginated project subject listing."""
+
     subjects: list[SubjectResponse]
     total: int
     page: int

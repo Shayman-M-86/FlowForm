@@ -28,7 +28,7 @@ individual test cases.
 
 - `cd backend && uv run ruff check .` - backend lint check.
 - `cd backend && uv run ruff format .` - backend formatter.
-- `cd backend && uv run mypy .` - backend type check named by the backend guide.
+- `cd backend && uv run pyright` - backend type check used by Pylance.
 - `git diff --check` - repo-wide whitespace/conflict-marker check before
   finishing schema or generated-file-heavy edits.
 
@@ -80,12 +80,14 @@ individual test cases.
   mode.
 - `cd frontend/apps/studio-app && pnpm run test:ui` - Studio Vitest UI.
 - `cd frontend/apps/studio-app && pnpm run lint` - Studio ESLint check.
+- `cd frontend/apps/public-site && pnpm run lint` - Public Site ESLint check
+  (flat config with `eslint-plugin-astro`).
 - `cd frontend/apps/studio-app && pnpm run routes` - regenerates the TanStack
   Router `routeTree.gen.ts` file after route changes.
 - `cd frontend && pnpm run build:studio` - Studio TypeScript project build plus
   Vite production build.
 - `cd frontend && pnpm run build:site` - Public Site Astro production build.
-  This is the frontend build used by GitHub Actions and Amplify.
+  This is the frontend build used by GitHub Actions.
 - `cd frontend/apps/public-site && pnpm run astro build` - app-local equivalent
   of the Public Site build.
 
@@ -95,12 +97,37 @@ individual test cases.
   CI. It compiles backend requirements, runs `pip-audit`, then runs Bandit over
   `backend/app` and `backend/tests`.
 
+## Infrastructure (CDK) Checks
+
+- `cd infra/cdk && uv run pytest -q` - synth-time assertions over the CDK
+  stacks (security, frontend).
+- `cd infra/cdk && uv run ruff check flowform_infra tests app.py` - CDK lint.
+- `cd infra/cdk && uv run pyright` - CDK type check.
+- `cd infra/cdk && npx cdk synth -c env=staging --quiet` - synthesize the
+  staging architecture (hermetic once `cdk.context.json` is committed and
+  `.env.staging` exists).
+- `cd infra/cdk && npx cdk diff -c env=staging` - compare synthesized
+  architecture against what's deployed (needs AWS credentials).
+
 ## CI and Support Tasks
 
-- `.github/workflows/ci.yml` runs three main validation jobs: backend security,
-  backend pytest with coverage in Docker, and Public Site frontend build.
-- `amplify.yml` installs frontend dependencies and runs
-  `cd frontend && pnpm run build:site` for the Public Site deployment build.
+- `.github/workflows/ci.yml` runs on pull requests and pushes to `main` /
+  `staging`. Flow: `backend-security` (pip-audit + Bandit) gates the
+  backend side, with `backend-lint` (Ruff + Pyright) and `backend-test`
+  (Docker pytest + coverage) running in parallel after it;
+  `frontend-security` (pnpm audit) gates the frontend side, then
+  `studio-lint` → `studio-test` → `build-studio-app` and `public-lint` →
+  `build-public-site`; `contracts` (OpenAPI drift) needs both security
+  jobs. CDK runs as a single `cdk` job once `contracts` and `backend-lint`
+  are green: pytest + Ruff + Pyright, hermetic `cdk synth` of staging and
+  dev, then `cdk diff` against deployed staging (read-only
+  `flowform-staging-ci-preview` OIDC role; the diff steps are skipped on
+  fork PRs).
+- `.github/workflows/deploy.yml` deploys both frontends to S3 + CloudFront
+  after CI completes **successfully** on `staging` (`workflow_run` trigger —
+  deploys the exact commit CI validated; OIDC role
+  `flowform-staging-frontend-deploy`). Also manually runnable via
+  workflow dispatch.
 - VS Code task `test-env: setup` starts the Docker test stack, syncs backend dev
   and test dependencies inside the backend test container, and verifies the
   container Python.

@@ -4,9 +4,10 @@ import os
 import aws_cdk as cdk
 
 from flowform_infra.config import get_env_config
-from flowform_infra.stacks.amplify_stack import AmplifyStack
 from flowform_infra.stacks.application_stack import ApplicationStack
 from flowform_infra.stacks.database_stack import DatabaseStack
+from flowform_infra.stacks.frontend_cert_stack import FrontendCertStack
+from flowform_infra.stacks.frontend_stack import FrontendStack
 from flowform_infra.stacks.network_stack import NetworkStack
 from flowform_infra.stacks.observability_stack import ObservabilityStack
 from flowform_infra.stacks.security_stack import SecurityStack
@@ -64,12 +65,28 @@ if env_config.full_deployment:
     application_stack.add_dependency(security_stack)
     application_stack.add_dependency(database_stack)
 
-    amplify_stack = AmplifyStack(
+    # CloudFront only accepts ACM certs from us-east-1, so the cert lives
+    # in its own stack there; cross_region_references wires it into the
+    # frontend stack in the app region.
+    frontend_cert_stack = FrontendCertStack(
         app,
-        f"{name_prefix}-Amplify",
+        f"{name_prefix}-FrontendCert",
         env_config=env_config,
-        env=cdk_env,
+        env=cdk.Environment(account=env_config.account, region="us-east-1"),
+        cross_region_references=True,
     )
+
+    frontend_stack = FrontendStack(
+        app,
+        f"{name_prefix}-Frontend",
+        env_config=env_config,
+        certificate=frontend_cert_stack.certificate,
+        deploy_role=security_stack.frontend_deploy_role,
+        env=cdk_env,
+        cross_region_references=True,
+    )
+    frontend_stack.add_dependency(frontend_cert_stack)
+    frontend_stack.add_dependency(security_stack)
 
     observability_stack = ObservabilityStack(
         app,
@@ -83,7 +100,8 @@ if env_config.full_deployment:
         network_stack,
         database_stack,
         application_stack,
-        amplify_stack,
+        frontend_cert_stack,
+        frontend_stack,
         observability_stack,
     ]
 

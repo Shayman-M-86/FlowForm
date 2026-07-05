@@ -8,33 +8,39 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "lint": "eslint .",
     "preview": "astro preview",
     "serve": "serve dist --config \"$PWD/serve.json\" --debug",
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/react": "^5.0.3",
+    "@astrojs/react": "^5.0.7",
     "@astrojs/sitemap": "^3.7.2",
     "@flowform/builder": "workspace:*",
     "@flowform/site-shell": "workspace:*",
     "@flowform/styles": "workspace:*",
     "@flowform/ui": "workspace:*",
+    "@lucide/astro": "^1.17.0",
     "@tailwindcss/vite": "^4.2.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "astro": "^6.1.8",
+    "astro": "^6.4.8",
+    "lucide-react": ">=0.400.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "@lucide/astro": "^1.17.0",
-    "lucide-react": ">=0.400.0",
     "react-router-dom": "^7.14.2",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@pinegrow/piny-astro": "^1.0.8",
     "@types/node": "^25.6.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-astro": "^1.7.0",
+    "globals": "^17.6.0",
     "micromorph": "^0.4.5",
-    "serve": "^14.2.5"
+    "serve": "^14.2.5",
+    "typescript-eslint": "^8.60.0"
   }
 }

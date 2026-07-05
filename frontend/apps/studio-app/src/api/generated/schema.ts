@@ -2262,7 +2262,10 @@ export interface components {
              */
             created_at: string;
         };
-        /** ListSubjectsResponse */
+        /**
+         * ListSubjectsResponse
+         * @description Paginated project subject listing.
+         */
         ListSubjectsResponse: {
             /** Subjects */
             subjects: components["schemas"]["SubjectResponse"][];

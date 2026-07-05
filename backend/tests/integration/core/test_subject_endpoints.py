@@ -118,6 +118,7 @@ class TestListSubjectsRepository:
             db_session, project_id=project.id, canonical_status="all"
         )
         assert total == 2
+        assert len(rows) == 2
 
     def test_is_participant_filter_true(
         self, db_session: Session, project: Project
@@ -181,6 +182,7 @@ class TestListSubjectsRepository:
             db_session, project_id=project.id, search="revoked"
         )
         assert total == 0
+        assert rows == []
 
     def test_active_identity_count_excludes_revoked(
         self, db_session: Session, project: Project

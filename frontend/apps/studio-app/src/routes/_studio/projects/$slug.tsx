@@ -61,6 +61,26 @@ function ProjectLayout() {
     { id: 'settings', label: 'Settings', disabled: !canEditSettings && !canDeleteProject, tooltip: 'You need project:edit or project:delete permission to access settings.' },
   ]
 
+  const handleTabChange = (id: string) => {
+    switch (id) {
+      case 'surveys':
+        void navigate({ to: '/projects/$slug/surveys', params: { slug } })
+        break
+      case 'subjects':
+        void navigate({ to: '/projects/$slug/subjects', params: { slug } })
+        break
+      case 'members':
+        void navigate({ to: '/projects/$slug/members', params: { slug } })
+        break
+      case 'roles':
+        void navigate({ to: '/projects/$slug/roles', params: { slug } })
+        break
+      case 'settings':
+        void navigate({ to: '/projects/$slug/settings', params: { slug } })
+        break
+    }
+  }
+
   return (
     <main className="page-main">
       <Breadcrumb segments={[
@@ -77,7 +97,7 @@ function ProjectLayout() {
         <TabSelector
           items={tabs}
           activeId={activeTab}
-          onChange={(id) => navigate({ to: `/projects/${slug}/${id}` as any })}
+          onChange={handleTabChange}
         />
       </div>
 

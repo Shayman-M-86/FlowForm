@@ -267,6 +267,7 @@ def test_public_slug_logged_in_different_canonical_token_merges_and_rotates(
     session = _session_for_survey(db_session, survey.id)
     assert session is not None
     assert session.project_subject_id == identity_subject.id, "identity subject must win"
+    assert browser_token, "browser session token must be issued"
 
     # rotate: new token issued for final (identity) subject.
     assert recognition_token is not None, "new recognition token must be issued after rotation"
@@ -312,6 +313,7 @@ def test_general_link_no_actor_valid_token_uses_token_subject(
     assert session is not None
     assert session.project_subject_id == existing_subject.id, "must reuse token subject"
     assert _link.used_at is None, "general link must not be consumed"
+    assert browser_token, "browser session token must be issued"
     assert recognition_token == existing_raw, "mark_used returns existing raw"
 
 
@@ -356,6 +358,7 @@ def test_general_link_logged_in_different_canonical_token_merges_and_rotates(
     assert session is not None
     assert session.project_subject_id == identity_subject.id, "identity subject must win"
     assert _link.used_at is None, "general link must not be consumed"
+    assert browser_token, "browser session token must be issued"
     assert recognition_token is not None and recognition_token != old_raw, "token must be rotated"
 
     db_session.refresh(token_subject)
@@ -401,6 +404,7 @@ def test_private_link_no_token_uses_assigned_subject_and_consumes_link(
     assert session is not None
     assert session.project_subject_id == participant.project_subject_id, "assigned subject must be used"
     assert link.used_at is not None, "private link must be consumed on session start"
+    assert browser_token, "browser session token must be issued"
     assert recognition_token is not None, "recognition token must be issued for assigned subject"
 
 
@@ -446,6 +450,7 @@ def test_private_link_different_canonical_token_merges_rotates_and_consumes(
     assert session is not None
     assert session.project_subject_id == participant.project_subject_id, "assigned subject must win"
     assert link.used_at is not None, "private link must be consumed"
+    assert browser_token, "browser session token must be issued"
     assert recognition_token is not None and recognition_token != old_raw, "token must be rotated"
 
     db_session.refresh(stray_subject)
@@ -540,6 +545,7 @@ def test_authenticated_link_matching_identity_no_token_creates_session(
     assert session is not None
     assert session.project_subject_id == participant.project_subject_id, "assigned subject must be used"
     assert link.used_at is not None, "authenticated link must be consumed on session start"
+    assert browser_token, "browser session token must be issued"
     assert recognition_token is not None, "recognition token must be issued"
 
 
@@ -590,6 +596,7 @@ def test_authenticated_link_matching_identity_different_token_merges_and_rotates
     assert session is not None
     assert session.project_subject_id == participant.project_subject_id
     assert link.used_at is not None
+    assert browser_token, "browser session token must be issued"
     assert recognition_token is not None and recognition_token != old_raw
 
     db_session.refresh(stray_subject)
@@ -674,6 +681,7 @@ def test_general_link_no_actor_no_token_creates_anonymous_subject_issues_token(
     assert session is not None
     assert session.project_subject_id is not None, "new anonymous subject must be created"
     assert link.used_at is None, "general link must not be consumed"
+    assert browser_token, "browser session token must be issued"
     assert recognition_token is not None, "recognition token must be issued for new anonymous subject"
 
 
@@ -703,6 +711,7 @@ def test_general_link_logged_in_no_token_creates_identity_subject(
     assert session is not None
     assert session.project_subject_id is not None
     assert link.used_at is None, "general link must not be consumed"
+    assert browser_token, "browser session token must be issued"
     assert recognition_token is not None, "token must be issued for new identity subject"
 
     identity = sub_id.get_active_user_identity(db_session, project_id=survey.project_id, user_id=user.id)
@@ -743,6 +752,7 @@ def test_public_slug_logged_in_same_canonical_token_mark_used(
     session = _session_for_survey(db_session, survey.id)
     assert session is not None
     assert session.project_subject_id == identity_subject.id
+    assert browser_token, "browser session token must be issued"
     assert recognition_token == existing_raw, "same-canonical: existing token returned unchanged"
 
 
@@ -776,6 +786,7 @@ def test_general_link_logged_in_same_canonical_token_mark_used(
     assert session is not None
     assert session.project_subject_id == identity_subject.id
     assert link.used_at is None
+    assert browser_token, "browser session token must be issued"
     assert recognition_token == existing_raw, "same-canonical: existing token returned unchanged"
 
 

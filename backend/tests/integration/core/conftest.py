@@ -68,11 +68,11 @@ def _mock_session_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setattr(
         f"{_SURVEY_KEY_MODULE}.wrap_survey_key",
-        lambda _plaintext_key, _key_arn, _context, *, client=None: _FAKE_WRAPPED_SURVEY_KEY,
+        lambda _plaintext_key, _key_arn, _context, *, client=None: _FAKE_WRAPPED_SURVEY_KEY,  # noqa: ARG005
     )
     monkeypatch.setattr(
         f"{_SURVEY_KEY_MODULE}.unwrap_survey_key",
-        lambda _wrapped_key, _key_arn, _context, *, client=None: PlaintextSurveyKey(os.urandom(32)),
+        lambda _wrapped_key, _key_arn, _context, *, client=None: PlaintextSurveyKey(os.urandom(32)),  # noqa: ARG005
     )
 
 

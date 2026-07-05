@@ -13,7 +13,7 @@ for architecture, layer rules, database separation, and saga workflow docs.
 - **Pydantic v2** request/response schemas
 - **Auth0** RS256 JWTs via JWKS; scopes via `@auth.require_auth(scope)`
 - **PostgreSQL** split into `core` and `response`
-- **mypy + ruff** for type checks and linting
+- **Pyright + Ruff** for type checks and linting
 
 Secrets come from environment variables. Never hardcode credentials.
 
@@ -25,7 +25,7 @@ Secrets come from environment variables. Never hardcode credentials.
 uv run flask run                        # dev server
 uv run ruff check .                     # lint
 uv run ruff format .                    # format
-uv run mypy .                           # type check
+uv run pyright                          # type check
 ```
 
 ### Tests
@@ -73,7 +73,7 @@ claims on `flask.g`, and exposes the Auth0 subject through
 
 ## Conventions
 
-- Type hints everywhere; keep mypy clean
+- Type hints everywhere; keep Pyright clean
 - Pydantic schemas live in `schemas/`; never import ORM models into them
 - Routes stay thin: no SQL, no business logic
 - Cross-db orchestration belongs in `services/` only

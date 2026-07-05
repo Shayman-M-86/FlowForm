@@ -43,9 +43,11 @@ deliberate, so a deploy can't go out with missing Auth0 config.
 
 For full deployments (staging/prod), `app.py` wires explicit stack
 dependencies: Security → Network → Database → Application →
-Observability, with Amplify deployed independently (it doesn't depend on
-the VPC/database/ECS chain). `cdk deploy` (no stack name) respects this
-order automatically. For dev only the Security stack exists.
+Observability, plus FrontendCert → Frontend (Frontend also depends on
+Security for the deploy role). `cdk deploy` (no stack name) respects this
+order automatically. Note `FrontendCert` lives in **us-east-1** (a
+CloudFront requirement) while everything else is in `ap-southeast-2`; CDK
+handles the cross-region wiring. For dev only the Security stack exists.
 
 ## Verifying a deploy
 
@@ -57,16 +59,11 @@ npx cdk synth -c env=dev > /dev/null && echo "synth OK"
 
 ## Tearing down
 
+See [`runbooks/teardown.md`](runbooks/teardown.md) for the full teardown
+runbook (whole-environment vs individual stacks, ordering, and the
+prod-retention / CloudFront / us-east-1 gotchas). Quick version:
+
 ```bash
-# dev has one stack:
-npx cdk destroy -c env=dev FlowForm-Dev-Security
-
-# staging/prod: reverse dependency order —
-npx cdk destroy -c env=staging FlowForm-Staging-Observability
-# ... then Application, Database, Amplify, Network ...
-npx cdk destroy -c env=staging FlowForm-Staging-Security
+npx cdk destroy -c env=staging --all     # whole environment
+npx cdk destroy -c env=dev FlowForm-Dev-Security   # dev's only stack
 ```
-
-`prod`'s KMS keys and secrets have `RemovalPolicy.RETAIN` — destroying the
-prod security stack will not delete them. This is intentional; delete them
-manually only if you're certain.

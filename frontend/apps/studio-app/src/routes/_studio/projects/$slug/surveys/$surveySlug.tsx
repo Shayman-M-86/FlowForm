@@ -41,6 +41,26 @@ function SurveyLayout() {
     { id: 'settings',  label: 'Settings',  disabled: !canEditSurvey && !canArchiveSurvey && !canDeleteSurvey && !canPublishSurvey,  tooltip: 'You need survey:edit, archive, delete, or publish permission to access settings.' },
   ]
 
+  const handleTabChange = (id: string) => {
+    switch (id) {
+      case 'overview':
+        void navigate({ to: '/projects/$slug/surveys/$surveySlug/overview', params: { slug, surveySlug } })
+        break
+      case 'builder':
+        void navigate({ to: '/projects/$slug/surveys/$surveySlug/builder', params: { slug, surveySlug } })
+        break
+      case 'access':
+        void navigate({ to: '/projects/$slug/surveys/$surveySlug/access', params: { slug, surveySlug } })
+        break
+      case 'responses':
+        void navigate({ to: '/projects/$slug/surveys/$surveySlug/responses', params: { slug, surveySlug } })
+        break
+      case 'settings':
+        void navigate({ to: '/projects/$slug/surveys/$surveySlug/settings', params: { slug, surveySlug } })
+        break
+    }
+  }
+
   return (
     <main className={isBuilderTab ? 'page-main page-main-builder' : 'page-main'}>
       <div className={isBuilderTab ? 'px-6 pt-14 md:px-16' : undefined}>
@@ -61,7 +81,7 @@ function SurveyLayout() {
           <TabSelector
             items={tabs}
             activeId={activeTab}
-            onChange={(id) => navigate({ to: `/projects/${slug}/surveys/${surveySlug}/${id}` as any })}
+            onChange={handleTabChange}
           />
         </div>
       </div>
