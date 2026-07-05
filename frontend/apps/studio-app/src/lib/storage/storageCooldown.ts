@@ -17,7 +17,9 @@ export function createStorageCooldown({ storageKey, cooldownMs }: StorageCooldow
       const all = getAll()
       all[key] = ts
       localStorage.setItem(storageKey, JSON.stringify(all))
-    } catch {}
+    } catch {
+      // Storage cooldowns are best-effort when localStorage is unavailable.
+    }
   }
 
   function isOnCooldown(key: string): boolean {

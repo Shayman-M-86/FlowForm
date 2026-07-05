@@ -171,7 +171,7 @@ interface Props {
   collapsed: boolean
 }
 
-export function SidebarNotifications({ collapsed: _collapsed }: Props) {
+export function SidebarNotifications({ collapsed }: Props) {
   const { data: invitations = [] } = useMyInvitations()
   const [open, setOpen] = useState(false)
   const count = invitations.length
@@ -198,6 +198,7 @@ export function SidebarNotifications({ collapsed: _collapsed }: Props) {
         className="sidebar-nav-item"
         data-active="false"
         disabled={count === 0}
+        title={collapsed ? 'Notifications' : undefined}
       >
         <span className="sidebar-nav-item__icon">
           <span className="relative inline-flex">

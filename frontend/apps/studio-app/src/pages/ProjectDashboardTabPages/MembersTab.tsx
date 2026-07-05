@@ -244,7 +244,7 @@ export function MembersTab({ projectId }: Props) {
         )
       },
     },
-  ], [addCustomRole, assignableRoles, renderProjectPermissions, roleById, updateMember])
+  ], [addCustomRole, assignableRoles, canManageMembers, canManageRoles, renderProjectPermissions, roleById, updateMember])
 
   const invitationColumns = useMemo<TableColumn<ProjectInvitationOut>[]>(() => [
     {
@@ -272,7 +272,7 @@ export function MembersTab({ projectId }: Props) {
         </Button>
       ) : null,
     },
-  ], [])
+  ], [canManageMembers])
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (

@@ -16,7 +16,9 @@ export function getBootstrappedUserId(): string | null {
 export function markBootstrapped(userId: string): void {
   try {
     window.sessionStorage.setItem(BOOTSTRAP_KEY, userId)
-  } catch {}
+  } catch {
+    // Session storage can be unavailable in private or restricted contexts.
+  }
 }
 
 export function clearBootstrapped(): void {
@@ -24,7 +26,9 @@ export function clearBootstrapped(): void {
     window.sessionStorage.removeItem(BOOTSTRAP_KEY)
     window.sessionStorage.removeItem(USER_KEY)
     window.sessionStorage.removeItem(AVATAR_KEY)
-  } catch {}
+  } catch {
+    // Session storage can be unavailable in private or restricted contexts.
+  }
 }
 
 export function saveUserToSession(user: CurrentUserResponses, avatarUrl: string | null): void {
@@ -35,7 +39,9 @@ export function saveUserToSession(user: CurrentUserResponses, avatarUrl: string 
     } else {
       window.sessionStorage.removeItem(AVATAR_KEY)
     }
-  } catch {}
+  } catch {
+    // Session storage can be unavailable in private or restricted contexts.
+  }
 }
 
 export function getUserFromSession(): CurrentUserResponses | null {

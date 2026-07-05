@@ -27,11 +27,15 @@ export function saveSurveyBuilderDraft(projectId: number, surveyId: number, vers
   try {
     const draft: SurveyBuilderDraftRecovery = { savedAt: Date.now(), nodes }
     localStorage.setItem(surveyBuilderDraftKey(projectId, surveyId, versionId), JSON.stringify(draft))
-  } catch {}
+  } catch {
+    // Draft recovery is best-effort when localStorage is unavailable.
+  }
 }
 
 export function clearSurveyBuilderDraft(projectId: number, surveyId: number, versionId: number): void {
   try {
     localStorage.removeItem(surveyBuilderDraftKey(projectId, surveyId, versionId))
-  } catch {}
+  } catch {
+    // Draft recovery is best-effort when localStorage is unavailable.
+  }
 }
