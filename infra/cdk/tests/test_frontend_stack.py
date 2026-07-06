@@ -142,6 +142,67 @@ def test_outputs_expose_bucket_and_distribution():
         assert fragment in joined, f"missing output {fragment}: {list(outputs)}"
 
 
+def test_caching_policies_shared_across_apps():
+    _, frontend = _synth_staging()
+    # One shared set of three tiers (immutable / media / html), not per-app.
+    frontend.resource_count_is("AWS::CloudFront::CachePolicy", 3)
+    frontend.resource_count_is("AWS::CloudFront::ResponseHeadersPolicy", 3)
+    for cache_control in (
+        "public, max-age=31536000, immutable",
+        "public, max-age=86400, stale-while-revalidate=604800",
+        "no-cache",
+    ):
+        frontend.has_resource_properties(
+            "AWS::CloudFront::ResponseHeadersPolicy",
+            {
+                "ResponseHeadersPolicyConfig": Match.object_like(
+                    {
+                        "CustomHeadersConfig": {
+                            "Items": [
+                                {"Header": "Cache-Control", "Override": True, "Value": cache_control}
+                            ]
+                        }
+                    }
+                )
+            },
+        )
+
+
+def test_immutable_behavior_matches_each_apps_hashed_assets_dir():
+    _, frontend = _synth_staging()
+    # public-site is Astro (/_astro/*), studio-app is Vite (/assets/*);
+    # fonts and images get behaviors on both distributions.
+    for app_pattern in ("/_astro/*", "/assets/*"):
+        frontend.has_resource_properties(
+            "AWS::CloudFront::Distribution",
+            {
+                "DistributionConfig": Match.object_like(
+                    {
+                        "CacheBehaviors": Match.array_with(
+                            [Match.object_like({"PathPattern": app_pattern})]
+                        )
+                    }
+                )
+            },
+        )
+    frontend.resource_properties_count_is(
+        "AWS::CloudFront::Distribution",
+        {
+            "DistributionConfig": Match.object_like(
+                {
+                    "CacheBehaviors": Match.array_with(
+                        [
+                            Match.object_like({"PathPattern": "*.woff2"}),
+                            Match.object_like({"PathPattern": "*.png"}),
+                        ]
+                    )
+                }
+            )
+        },
+        2,
+    )
+
+
 def test_missing_auth0_config_fails_synth():
     with pytest.raises(ValueError, match="auth0_public"):
         _synth_staging(_staging_config(auth0_public=None))

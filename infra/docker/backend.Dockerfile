@@ -26,4 +26,4 @@ COPY backend .
 
 EXPOSE 5000
 
-CMD ["uv", "run", "gunicorn", "-b", "0.0.0.0:5000", "wsgi:app"]
+CMD ["uv", "run", "gunicorn", "-c", "gunicorn.conf.py", "wsgi:app"]

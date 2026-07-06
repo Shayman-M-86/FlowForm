@@ -12,7 +12,7 @@ secret values.
 | Security | `flowform_infra/stacks/security_stack.py` | Built | all | KMS key, Secrets Manager entries, SSM params, app IAM role |
 | Network | `flowform_infra/stacks/network_stack.py` | Stub | staging/prod | VPC, subnets, security groups |
 | Database | `flowform_infra/stacks/database_stack.py` | Stub | staging/prod | RDS PostgreSQL (core + response) |
-| Application | `flowform_infra/stacks/application_stack.py` | Stub | staging/prod | ECS/Fargate + ALB running the Flask API |
+| Application | `flowform_infra/stacks/application_stack.py` | Stub | staging/prod | EC2 + Docker Compose (Caddy + Gunicorn) running the Flask API |
 | FrontendCert | `flowform_infra/stacks/frontend_cert_stack.py` | Built | staging/prod | ACM cert for CloudFront (us-east-1) |
 | Frontend | `flowform_infra/stacks/frontend_stack.py` | Built | staging/prod | S3 + CloudFront hosting for `public-site` and `studio-app` |
 | Observability | `flowform_infra/stacks/observability_stack.py` | Stub | staging/prod | CloudWatch log groups, alarms, dashboard |
@@ -22,6 +22,12 @@ app role, secret ARNs). **dev deploys the Security stack only**: the app,
 databases, and frontends run locally, so dev's AWS footprint is just the
 resources the backend can't fake locally (KMS, secrets, SES send access).
 See [`environments.md`](environments.md).
+
+The overall shape — single public EC2 with Caddy instead of ALB/ECS, no
+NAT Gateway, one small RDS instance — is a deliberate budget decision,
+not a stopgap. [`cost-model.md`](cost-model.md) records the monthly
+target, the isolation trade-off accepted, and the triggers for upgrading
+past it.
 
 ## What's NOT in CDK
 
@@ -65,7 +71,7 @@ from the gitignored `infra/cdk/.env.<env>` file — the frontend stack fails
 synth with a clear error if that file (or its `AUTH0_*` keys) is missing.
 **`VITE_API_BASE_URL` points at the planned API hostname**
 (`api.<public-site-domain>`) which doesn't resolve until
-`application_stack.py`'s ALB exists.
+`application_stack.py`'s EC2 instance and Route 53 record exist.
 
 ## Regions and accounts
 

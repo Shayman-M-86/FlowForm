@@ -1,0 +1,107 @@
+# FlowForm production stack for the EC2 host (Caddy + backend only).
+#
+# See infra/cdk/flowform_infra/stacks/application_stack.py for the full EC2
+# architecture. Two services run here: Caddy terminates TLS and reverse
+# proxies to the Flask/Gunicorn backend. Postgres does NOT run on the
+# instance — both logical databases live on RDS and are reached via the
+# DATABASE_*_HOST env vars below.
+#
+# Required environment (typically exported by the instance bootstrap):
+#   BACKEND_IMAGE            - ECR image ref for the Flask API
+#   API_DOMAIN               - public API hostname, e.g. api.flow-form.com.au
+#   FLOWFORM_SECRET_DIR      - dir holding the *.secret.txt files fetched from
+#                              Secrets Manager (mounted as file-based secrets)
+#   DATABASE_CORE_HOST / DATABASE_CORE_PORT / DATABASE_CORE_NAME /
+#     DATABASE_CORE_APP_USER          - RDS core connection settings
+#   DATABASE_RESPONSE_HOST / _PORT / _NAME / _APP_USER  - RDS response settings
+#   AWS_REGION               - for Caddy's Route 53 DNS-01 (via instance role /
+#                              IMDS; no static keys committed here)
+#
+# Secrets are sourced from files under FLOWFORM_SECRET_DIR, matching the
+# docker-compose.dev.yml pattern. Nothing sensitive is committed to the repo.
+#
+# Local semi-working variant: see docker-compose.ec2.local.yml.
+
+name: flowform-ec2
+
+services:
+  caddy:
+    image: ${CADDY_IMAGE:?set CADDY_IMAGE to the custom Caddy ECR ref}
+    container_name: flowform-caddy
+    restart: unless-stopped
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN}
+      # Caddy's route53 DNS provider reads AWS creds/region from the
+      # environment or instance role (IMDS). Region is passed explicitly.
+      AWS_REGION: ${AWS_REGION}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - flowform_ec2_net
+
+  backend:
+    image: ${BACKEND_IMAGE:?set BACKEND_IMAGE to the backend ECR ref}
+    container_name: flowform-backend
+    restart: unless-stopped
+    # No published ports: backend is only reachable via Caddy on the
+    # internal network.
+    environment:
+      PYTHONUNBUFFERED: "1"
+      FLOWFORM_ENV: prod
+
+      DATABASE_CORE_HOST: ${DATABASE_CORE_HOST:?set DATABASE_CORE_HOST}
+      DATABASE_CORE_PORT: ${DATABASE_CORE_PORT:-5432}
+      DATABASE_CORE_NAME: ${DATABASE_CORE_NAME}
+      DATABASE_CORE_APP_USER: ${DATABASE_CORE_APP_USER}
+
+      DATABASE_RESPONSE_HOST: ${DATABASE_RESPONSE_HOST:?set DATABASE_RESPONSE_HOST}
+      DATABASE_RESPONSE_PORT: ${DATABASE_RESPONSE_PORT:-5432}
+      DATABASE_RESPONSE_NAME: ${DATABASE_RESPONSE_NAME}
+      DATABASE_RESPONSE_APP_USER: ${DATABASE_RESPONSE_APP_USER}
+
+      DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
+      FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
+    # Runs the Gunicorn CMD baked into backend.Dockerfile.
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/healthcheck.py"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    secrets:
+      - DATABASE_CORE_APP_PASSWORD
+      - DATABASE_RESPONSE_APP_PASSWORD
+      - FLOWFORM_APP_SECRET_KEY
+    networks:
+      - flowform_ec2_net
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  flowform_ec2_net:
+    driver: bridge
+
+secrets:
+  DATABASE_CORE_APP_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_CORE_APP_PASSWORD.secret.txt
+  DATABASE_RESPONSE_APP_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_APP_PASSWORD.secret.txt
+  FLOWFORM_APP_SECRET_KEY:
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_APP_SECRET_KEY.secret.txt

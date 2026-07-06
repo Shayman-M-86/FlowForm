@@ -1,0 +1,106 @@
+# LOCAL standalone variant of docker-compose.ec2.yml.
+#
+# A self-contained copy of the production EC2 stack, edited so it launches on
+# a workstation with a single command and no external dependencies:
+#
+#   docker compose -f docker-compose.ec2.local.yml up -d --build
+#
+# Differences vs. docker-compose.ec2.yml:
+#   1. Caddy serves https://localhost with `tls internal` (self-signed CA)
+#      instead of ACME DNS-01 via Route 53 — no AWS creds / public DNS needed.
+#   2. Both images are BUILT locally instead of pulled from ECR.
+#   3. DB settings are placeholders and secrets come from the committed dev
+#      files, so no RDS / Secrets Manager is required.
+#
+# NOTE: there is no database in this stack, so the backend cannot actually
+# serve requests that touch the DB — this file exists to prove the
+# Caddy + backend pair builds and boots locally, not to be a working app.
+#
+# Verify Caddy is up and terminating TLS (‑k trusts the self-signed cert):
+#
+#   curl -k https://localhost/api/v1/system/health/ready
+
+name: flowform-ec2-local
+
+services:
+  caddy:
+    # Build the custom Caddy (route53 module) locally; the module is unused
+    # under `tls internal` but keeps the image identical to production.
+    image: flowform-caddy:local
+    build:
+      context: ../..
+      dockerfile: infra/docker/caddy.Dockerfile
+    container_name: flowform-caddy-local
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Localhost / tls internal Caddyfile instead of the DNS-01 production one.
+      - ./caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - flowform_ec2_net
+
+  backend:
+    image: flowform-backend:local
+    build:
+      context: ../..
+      dockerfile: infra/docker/backend.Dockerfile
+    container_name: flowform-backend-local
+    restart: unless-stopped
+    # No published ports: backend is only reachable via Caddy.
+    environment:
+      PYTHONUNBUFFERED: "1"
+      FLOWFORM_ENV: dev
+
+      # Placeholder DB settings — no database runs in this stack.
+      DATABASE_CORE_HOST: postgres-core
+      DATABASE_CORE_PORT: "5432"
+      DATABASE_CORE_NAME: flowform_core
+      DATABASE_CORE_APP_USER: flowform_core_app
+
+      DATABASE_RESPONSE_HOST: postgres-response
+      DATABASE_RESPONSE_PORT: "5432"
+      DATABASE_RESPONSE_NAME: flowform_response
+      DATABASE_RESPONSE_APP_USER: flowform_response_app
+
+      DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
+      FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
+    # Runs the Gunicorn CMD baked into backend.Dockerfile.
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/healthcheck.py"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    secrets:
+      - DATABASE_CORE_APP_PASSWORD
+      - DATABASE_RESPONSE_APP_PASSWORD
+      - FLOWFORM_APP_SECRET_KEY
+    networks:
+      - flowform_ec2_net
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  flowform_ec2_net:
+    driver: bridge
+
+secrets:
+  DATABASE_CORE_APP_PASSWORD:
+    file: ./secrets/DATABASE_CORE_APP_PASSWORD.dev.secret.txt
+  DATABASE_RESPONSE_APP_PASSWORD:
+    file: ./secrets/DATABASE_RESPONSE_APP_PASSWORD.dev.secret.txt
+  FLOWFORM_APP_SECRET_KEY:
+    file: ./secrets/FLOWFORM_APP_SECRET_KEY.dev.secret.txt

@@ -1,0 +1,20 @@
+# FlowForm API reverse proxy (LOCAL semi-working mode).
+#
+# Used by docker-compose.ec2.local.yml to exercise the Caddy + backend pair
+# on a workstation before RDS / EC2 exist. Differs from the production
+# Caddyfile only in TLS: it serves https://localhost with Caddy's internal
+# self-signed CA (`tls internal`) instead of ACME DNS-01 via Route 53, so no
+# AWS credentials or public DNS are required.
+#
+# Verify:  curl -k https://localhost/api/v1/system/health/ready
+
+localhost {
+	tls internal
+
+	reverse_proxy backend:5000
+
+	log {
+		output stdout
+		format console
+	}
+}

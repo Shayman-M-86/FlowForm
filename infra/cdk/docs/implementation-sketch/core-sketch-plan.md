@@ -2,6 +2,8 @@
 
 **Target architecture:** GitHub Actions (CI/CD) → CDK (infrastructure) → S3 + CloudFront + ACM + Route 53 (frontends) / EC2 + Docker Compose + Caddy + Gunicorn (backend) → RDS Postgres. Amplify is removed.
 
+This shape is budget-driven: single public EC2 instead of ECS/ALB, no NAT Gateway, one small RDS instance. The monthly cost target, the isolation trade-off it accepts, and the upgrade triggers are recorded in [cost-model.md](../cost-model.md).
+
 ## Phase 1 — CDK restructure (infra only, nothing deployed to prod yet)
 
 **1a. Retire the Amplify stack.** Delete `AmplifyStack` and `amplify_app_construct.py` from the CDK app, and remove the Amplify build configs from the repo (the recent commits touching `amplify.yml` become dead weight). Don't destroy the live Amplify app yet — that happens at cutover (Phase 5).

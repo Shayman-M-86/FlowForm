@@ -311,7 +311,6 @@ def get_settings() -> Settings:
         settings = cast(Any, Settings)()
     except ValidationError as exc:
         formatted = _format_settings_validation_error(exc)
-        logger.critical(formatted)
         raise ConfigError(formatted) from exc
 
     logger.info("Settings loaded for env=%s", settings.flowform.env)

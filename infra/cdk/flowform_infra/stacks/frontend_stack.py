@@ -6,7 +6,7 @@ from aws_cdk import aws_ssm as ssm
 from constructs import Construct
 
 from flowform_infra.config import DOMAIN_NAME, EnvConfig
-from flowform_infra.constructs.static_site_construct import StaticSiteApp
+from flowform_infra.constructs.static_site_construct import SiteCachingPolicies, StaticSiteApp
 
 
 class FrontendStack(Stack):
@@ -47,6 +47,10 @@ class FrontendStack(Stack):
 
         hosted_zone = route53.HostedZone.from_lookup(self, "HostedZone", domain_name=DOMAIN_NAME)
 
+        # One shared set of cache/response-header policies for both apps
+        # (they're account-scoped resources with a quota).
+        caching = SiteCachingPolicies(self, "Caching")
+
         self.public_site = StaticSiteApp(
             self,
             "PublicSite",
@@ -58,6 +62,8 @@ class FrontendStack(Stack):
             ),
             hosted_zone=hosted_zone,
             certificate=certificate,
+            caching=caching,
+            immutable_path_patterns=("/_astro/*",),
         )
 
         self.studio_app = StaticSiteApp(
@@ -68,6 +74,8 @@ class FrontendStack(Stack):
             domain_name=env_config.studio_domain,
             hosted_zone=hosted_zone,
             certificate=certificate,
+            caching=caching,
+            immutable_path_patterns=("/assets/*",),
         )
 
 

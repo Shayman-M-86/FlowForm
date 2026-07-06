@@ -45,7 +45,10 @@ Docker Compose
 
 The EC2 instance still has a public IP because the current plan deliberately
 avoids an ALB/ECS rewrite for the first staging rollout. The app container does
-not need a public port. Only Caddy binds to the host.
+not need a public port. Only Caddy binds to the host. This is a cost decision,
+not just a sequencing one — Caddy on the instance replaces an ALB entirely; see
+[cost-model.md](../cost-model.md) for the budget behind it and the triggers
+that would justify the ALB/private-subnet upgrade.
 
 ## Caddy Responsibilities
 
