@@ -61,34 +61,60 @@ Manager secret for dev (`FLOWFORM_ENCRYPTION_KMS_KEY_ARN`,
 always **creates fresh** resources — there is no import-by-ARN path, so a
 brand-new AWS account bootstraps with zero special cases.
 
-Dev cutover steps (one-time, after the first `cdk deploy -c env=dev`):
-
-1. Seed the new secrets (`scripts/seed-secrets.sh --env dev --send`).
-2. Update `.backend.env`'s `FLOWFORM_ENCRYPTION_*` ARNs to the new
-   resources.
-3. **Reseed local dev data** — existing rows' opaque locators were derived
-   from the old linkage HMAC secret, so cross-DB lookups on them break.
-   Dev data is disposable; this is expected.
-4. Delete the old hand-created key and secret.
+Dev cutover steps (one-time, after the first `cdk deploy -c env=dev`) —
+**completed 2026-07-07**: secrets seeded, `.backend.env` repointed at the
+CDK KMS key and linkage secret, dev data reseeded, legacy secret
+force-deleted and legacy KMS key scheduled for deletion (2026-07-14).
+Note the linkage secret is a **standalone versioned secret**
+(`flowform/<env>/linkage-secret`), not a key inside `app-secrets` — the
+backend rotates it by Secrets Manager version (AWSCURRENT = active), so
+it must own its version history.
 
 Prod's "never recreate" guarantee doesn't need an import path: it comes
 from `RemovalPolicy.RETAIN` plus never renaming the KMS/secret construct
 IDs in `security_stack.py` (a rename forces CloudFormation to replace the
 resource).
 
-## Flagged follow-up: rotate what's currently on disk
+## Flagged follow-up: rotate old local secrets
 
-`infra/docker/.backend.env` currently contains, in plaintext:
+`infra/docker/.backend.env` no longer stores raw secret values for the
+Auth0 Management API client. It still carries live resource identifiers
+such as the KMS key ARN and Secrets Manager secret ARN referenced above.
 
-- A live AWS IAM access key + secret key
-- The Auth0 Management API client secret
-- The KMS key ARN and Secrets Manager secret ARN referenced above
+The local Auth0 Management API client secret now follows the same Docker
+secret-file convention as DB passwords and the Flask secret key:
+`FLOWFORM_AUTH0_MGMT_SECRET_FILE` points at
+`/run/secrets/FLOWFORM_AUTH0_MGMT_SECRET`.
 
-This file is gitignored and has never been committed — nothing has leaked.
-But long-lived plaintext IAM credentials on a developer's disk are exactly
-what Secrets Manager + scoped IAM roles are meant to replace. Once
-`security_stack.py` is deployed and the application stack's ECS task role
-is live, plan to rotate the IAM access key and Auth0 management secret and
-stop needing static AWS credentials in local `.env` files at all (the local
-Docker backend can keep using them for now, since it isn't running as an
-ECS task).
+## Dev secrets: fetched or generated, assembled in tmpfs
+
+Dev secret values are split by ownership — Secrets Manager holds only
+what must persist or cannot be generated; machine-local throwaways are
+generated, never uploaded:
+
+| Value | Source | Why |
+|---|---|---|
+| `app_secret_key`, `auth0_mgmt_secret` | `flowform/dev/app-secrets` (Secrets Manager) | must persist / external value |
+| 4 local-Postgres passwords | `scripts/infra/generate-secrets.sh` → gitignored `infra/docker/secrets/` | dev-only throwaways; must survive reboots alongside the Postgres volume they initialised |
+
+`scripts/infra/fetch-dev-secrets.sh` assembles both into one place:
+
+```text
+app-secrets (SM, via aws login)  ─┐
+                                  ├→ $XDG_RUNTIME_DIR/flowform-secrets/  (tmpfs, 0600)
+generated DB passwords (local)   ─┘      ↓ FLOWFORM_SECRET_DIR
+                                    compose file-secrets → /run/secrets/* in containers
+```
+
+The script refuses to run if `XDG_RUNTIME_DIR` is unset or not tmpfs.
+tmpfs empties on reboot — re-run the script. `flowform/dev/db-secrets`
+deliberately holds empty placeholders: its real values only matter for
+staging/prod RDS. To rotate the local DB passwords, delete the
+`*.dev.secret.txt` files, re-run the fetch script, and reset the DB
+volumes (`docker compose down -v`) since Postgres was initialised with
+the old values.
+
+The env and secret files are gitignored and have never been committed —
+nothing has leaked. After moving a secret out of `.backend.env`, rotate the
+old local value when practical and keep using mounted secret files for local
+Docker parity with EC2.

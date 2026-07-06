@@ -17,6 +17,7 @@ REQUIRED_ENV_VARS = (
     "DATABASE_CORE_NAME",
     "DATABASE_CORE_APP_USER",
     "DATABASE_CORE_APP_PASSWORD_FILE",
+    "FLOWFORM_AUTH0_MGMT_SECRET_FILE",
     "DATABASE_RESPONSE_HOST",
     "DATABASE_RESPONSE_PORT",
     "DATABASE_RESPONSE_NAME",
@@ -45,7 +46,11 @@ def validate_test_environment() -> None:
             returncode=1,
         )
 
-    for env_name in ("DATABASE_CORE_APP_PASSWORD_FILE", "DATABASE_RESPONSE_APP_PASSWORD_FILE"):
+    for env_name in (
+        "DATABASE_CORE_APP_PASSWORD_FILE",
+        "DATABASE_RESPONSE_APP_PASSWORD_FILE",
+        "FLOWFORM_AUTH0_MGMT_SECRET_FILE",
+    ):
         secret_path = Path(read_env(env_name))
         if not secret_path.is_file():
             pytest.exit(

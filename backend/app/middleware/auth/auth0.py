@@ -374,7 +374,7 @@ class AuthExtension:
             logger.warning(
                 "Auth0 Management API client is not configured. "
                 "Account-management features will be unavailable. "
-                "Set FLOWFORM_AUTH0_MGMT_ID and FLOWFORM_AUTH0_MGMT_SECRET to enable them."
+                "Set FLOWFORM_AUTH0_MGMT_ID and FLOWFORM_AUTH0_MGMT_SECRET_FILE to enable them."
             )
 
     def _extract_bearer_token(self) -> str:

@@ -6,16 +6,32 @@
 # instance — both logical databases live on RDS and are reached via the
 # DATABASE_*_HOST env vars below.
 #
-# Required environment (typically exported by the instance bootstrap):
-#   BACKEND_IMAGE            - ECR image ref for the Flask API
+# Bootstrap contract (see the Secrets and Configuration Bootstrap section in
+# infra/cdk/docs/implementation-sketch/caddy-ec2-implementation-notes.md): a
+# host-side script, run at boot and on every deploy, uses the instance role to
+# materialise everything this file consumes. The containers never call
+# Secrets Manager/SSM for config themselves.
+#
+#   Secrets Manager -> ${FLOWFORM_SECRET_DIR}/<NAME>.secret.txt
+#       tmpfs mount (default /run/flowform/secrets), root-owned 0600
+#   SSM /flowform/<env>/backend/ -> /opt/flowform/backend.env
+#       non-secret config; used BOTH for compose interpolation and as the
+#       backend's env_file
+#
+#   docker compose --env-file /opt/flowform/backend.env \
+#     -f docker-compose.ec2.yml up -d
+#
+# Interpolation variables expected in that env file:
+#   BACKEND_IMAGE / CADDY_IMAGE  - ECR image refs
 #   API_DOMAIN               - public API hostname, e.g. api.flow-form.com.au
-#   FLOWFORM_SECRET_DIR      - dir holding the *.secret.txt files fetched from
-#                              Secrets Manager (mounted as file-based secrets)
+#   FLOWFORM_SECRET_DIR      - override for the tmpfs secrets dir if needed
 #   DATABASE_CORE_HOST / DATABASE_CORE_PORT / DATABASE_CORE_NAME /
 #     DATABASE_CORE_APP_USER          - RDS core connection settings
 #   DATABASE_RESPONSE_HOST / _PORT / _NAME / _APP_USER  - RDS response settings
 #   AWS_REGION               - for Caddy's Route 53 DNS-01 (via instance role /
 #                              IMDS; no static keys committed here)
+# plus the FLOWFORM_* backend config (Auth0 IDs, KMS key ARN, linkage secret
+# ARN, SES from-address, logging) that reaches the container via env_file.
 #
 # Secrets are sourced from files under FLOWFORM_SECRET_DIR, matching the
 # docker-compose.dev.yml pattern. Nothing sensitive is committed to the repo.
@@ -59,6 +75,15 @@ services:
     restart: unless-stopped
     # No published ports: backend is only reachable via Caddy on the
     # internal network.
+    #
+    # Non-secret FLOWFORM_* config (Auth0, KMS key ARN, linkage secret ARN,
+    # SES, logging) comes from the bootstrap-written env file — the backend
+    # fails config validation at startup without it. AWS credentials for the
+    # backend's own KMS/SES/Secrets calls come from the instance role via
+    # IMDS (requires the AwsSettings static-key fields to be made optional —
+    # see the TODO in infra/cdk/flowform_infra/stacks/application_stack.py).
+    env_file:
+      - ${FLOWFORM_BACKEND_ENV_FILE:-/opt/flowform/backend.env}
     environment:
       PYTHONUNBUFFERED: "1"
       FLOWFORM_ENV: prod
@@ -76,6 +101,7 @@ services:
       DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
       DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
       FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
+      FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET
     # Runs the Gunicorn CMD baked into backend.Dockerfile.
     healthcheck:
       test: ["CMD", "python", "/app/scripts/healthcheck.py"]
@@ -87,6 +113,7 @@ services:
       - DATABASE_CORE_APP_PASSWORD
       - DATABASE_RESPONSE_APP_PASSWORD
       - FLOWFORM_APP_SECRET_KEY
+      - FLOWFORM_AUTH0_MGMT_SECRET
     networks:
       - flowform_ec2_net
 
@@ -98,10 +125,14 @@ networks:
   flowform_ec2_net:
     driver: bridge
 
+# Default matches the bootstrap's tmpfs target: memory-backed, root-owned,
+# recreated on every boot/deploy — secret material never rests on EBS.
 secrets:
   DATABASE_CORE_APP_PASSWORD:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_CORE_APP_PASSWORD.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_CORE_APP_PASSWORD.secret.txt
   DATABASE_RESPONSE_APP_PASSWORD:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_APP_PASSWORD.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_RESPONSE_APP_PASSWORD.secret.txt
   FLOWFORM_APP_SECRET_KEY:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_APP_SECRET_KEY.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/FLOWFORM_APP_SECRET_KEY.secret.txt
+  FLOWFORM_AUTH0_MGMT_SECRET:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/FLOWFORM_AUTH0_MGMT_SECRET.secret.txt

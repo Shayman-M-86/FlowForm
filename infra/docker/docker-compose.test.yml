@@ -100,6 +100,7 @@ services:
       DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
 
       FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
+      FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET
     command: ["sh", "-lc", "tail -f /dev/null"]
     volumes:
       - ../../backend:/app
@@ -114,6 +115,7 @@ services:
       - DATABASE_CORE_APP_PASSWORD
       - DATABASE_RESPONSE_APP_PASSWORD
       - FLOWFORM_APP_SECRET_KEY
+      - FLOWFORM_AUTH0_MGMT_SECRET
     networks:
       - flowform_net
     ports:
@@ -142,3 +144,5 @@ secrets:
     file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_APP_PASSWORD.test.secret.txt
   FLOWFORM_APP_SECRET_KEY:
     file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_APP_SECRET_KEY.test.secret.txt
+  FLOWFORM_AUTH0_MGMT_SECRET:
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_AUTH0_MGMT_SECRET.test.secret.txt

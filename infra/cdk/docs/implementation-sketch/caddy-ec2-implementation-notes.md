@@ -147,6 +147,54 @@ The EC2 instance profile should grant only what the runtime needs:
 This lines up with [Phase 1c](core-sketch-plan.md#phase-1--cdk-restructure-infra-only-nothing-deployed-to-prod-yet)
 and the deploy mechanism in [Phase 2c](core-sketch-plan.md#phase-2--backend-runtime-on-ec2).
 
+## Secrets and Configuration Bootstrap
+
+Decision: the backend does **not** fetch its own config from Secrets
+Manager/SSM at startup (no boto3 config loader). Instead a host-side
+bootstrap script — run from user data at boot and re-run by the SSM deploy
+command — materialises everything the Compose stack needs, using the
+instance role:
+
+```text
+Instance bootstrap (instance role, no static keys)
+  ├── Secrets Manager  → /run/flowform/secrets/<NAME>.secret.txt
+  │     tmpfs mount, root-owned 0600 — memory-backed, never on EBS
+  └── SSM /flowform/<env>/backend/ → /opt/flowform/backend.env
+        non-secret FLOWFORM_* config + DB hosts/names/users + image refs
+
+docker compose --env-file /opt/flowform/backend.env \
+  -f docker-compose.ec2.yml up -d
+```
+
+Why this over in-app fetching:
+
+- **Dev/prod parity.** `backend/app/core/config.py` already loads the DB
+  passwords, Flask secret key, and Auth0 Management API client secret from
+  mounted files (`*_FILE` settings); dev Compose exercises the identical
+  path daily. No prod-only config code.
+- **Startup robustness.** Container restarts never depend on Secrets
+  Manager/SSM being reachable; AWS is touched once per deploy.
+- **tmpfs neutralises the "secrets on disk" objection.** The secret files
+  live in memory only and disappear on reboot (bootstrap re-creates them).
+
+The split follows the usual rule: credentials and keys in Secrets Manager
+(DB app passwords, Flask secret key, Auth0 Management API client secret),
+non-secret runtime config in SSM Parameter Store (Auth0 domain/audience/client
+IDs, KMS key ARN, linkage secret ARN, SES from-address, logging levels, RDS
+endpoints). Compose files reference only names and paths — see
+`infra/docker/docker-compose.ec2.yml`.
+
+Note that the backend still uses the instance role at runtime for its
+own AWS calls (KMS session encryption, the linkage-key secret, SES) —
+that is application behaviour, not config loading. **Known blocker:**
+`AwsSettings` currently requires static `access_key_id` /
+`secret_access_key` and passes them to boto3 explicitly, which prevents
+instance-role credentials. Make them optional (absent → boto3 default
+credential chain → IMDS) before the first EC2 deploy. This also means
+the backend container needs IMDS access — the same IMDSv2 hop-limit ≥ 2
+requirement already flagged for Caddy in
+[Certificate Flow](#certificate-flow).
+
 ## Compose and Caddyfile Sketch
 
 The production Compose file belongs under `infra/docker/`, as called out in

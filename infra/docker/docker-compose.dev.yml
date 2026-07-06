@@ -90,6 +90,14 @@ services:
     environment:
       PYTHONUNBUFFERED: "1"
       FLOWFORM_ENV: dev
+      # AWS credentials come from `aws login` (browser sign-in, no stored
+      # access keys): run `aws login --profile flowform-dev` on the host,
+      # then boto3 reads and auto-refreshes the temporary credentials via
+      # the mounts below. Sessions last up to 12h — re-run `aws login`
+      # when they expire. Fallback if login creds misbehave:
+      # scripts/dev/aws-dev-session.sh. On EC2 the same code path uses
+      # the instance role instead.
+      AWS_PROFILE: ${AWS_PROFILE:-flowform-dev}
       DATABASE_CORE_PORT: ${DATABASE_CORE_PORT}
       DATABASE_RESPONSE_PORT: ${DATABASE_RESPONSE_PORT}
 
@@ -97,11 +105,20 @@ services:
       DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
 
       FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
+      FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET
     command: uv run flask --debug run --host 0.0.0.0 --port 5000
     volumes:
       - ../../backend:/app
       - ../../backend/logs:/app/logs
       - flowform_backend_dev_venv:/opt/flowform/backend-venv
+      # `aws login` credentials for boto3 (container runs as root, so it
+      # looks in /root/.aws). Only the profile config and the login token
+      # cache are mounted — never ~/.aws/credentials, so no static key
+      # can leak into the container even if one exists on the host. The
+      # cache is writable because boto3 refreshes the ~15-min credentials
+      # in place.
+      - ~/.aws/config:/root/.aws/config:ro
+      - ~/.aws/login/cache:/root/.aws/login/cache
     ports:
       - "5000:5000"
     depends_on:
@@ -122,6 +139,7 @@ services:
       - DATABASE_CORE_APP_PASSWORD
       - DATABASE_RESPONSE_APP_PASSWORD
       - FLOWFORM_APP_SECRET_KEY
+      - FLOWFORM_AUTH0_MGMT_SECRET
     networks:
       - flowform_net_dev
 
@@ -138,6 +156,12 @@ networks:
         - subnet: 172.30.0.0/16
 
 
+# Run scripts/infra/fetch-dev-secrets.sh and set
+# FLOWFORM_SECRET_DIR="$XDG_RUNTIME_DIR/flowform-secrets" (export it from
+# your shell rc). The script assembles everything there: app secret key +
+# Auth0 mgmt secret fetched from Secrets Manager, the four local-Postgres
+# passwords generated on this machine (scripts/infra/generate-secrets.sh)
+# — dev-only throwaways that are never uploaded.
 secrets:
   DATABASE_CORE_INIT_PASSWORD:
     file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_CORE_INIT_PASSWORD.dev.secret.txt
@@ -149,3 +173,5 @@ secrets:
     file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_APP_PASSWORD.dev.secret.txt
   FLOWFORM_APP_SECRET_KEY:
     file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_APP_SECRET_KEY.dev.secret.txt
+  FLOWFORM_AUTH0_MGMT_SECRET:
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_AUTH0_MGMT_SECRET.dev.secret.txt

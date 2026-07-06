@@ -18,6 +18,7 @@ def test_backend_env_file_values_present() -> None:
 def test_backend_secret_file_vars_present() -> None:
     assert read_env("DATABASE_CORE_APP_PASSWORD_FILE") == "/run/secrets/DATABASE_CORE_APP_PASSWORD"
     assert read_env("DATABASE_RESPONSE_APP_PASSWORD_FILE") == "/run/secrets/DATABASE_RESPONSE_APP_PASSWORD"
+    assert read_env("FLOWFORM_AUTH0_MGMT_SECRET_FILE") == "/run/secrets/FLOWFORM_AUTH0_MGMT_SECRET"
 
 
 def test_environment_variables_from_settings() -> None:

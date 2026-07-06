@@ -24,6 +24,15 @@ from app.core.errors import ConfigError
 logger = logging.getLogger(__name__)
 
 
+def _load_secret_from_file(secret_file: str, *, label: str) -> SecretStr:
+    """Load a secret value from a mounted secret file."""
+    secret_path = Path(secret_file)
+    if not secret_path.is_file():
+        raise ValueError(f"{label} file not found: {secret_file}")
+
+    return SecretStr(secret_path.read_text(encoding="utf-8").strip())
+
+
 class DatabaseSettings(BaseModel):
     """Database connection settings for the application."""
 
@@ -43,11 +52,10 @@ class DatabaseSettings(BaseModel):
         if self.password is not None or self.app_password_file is None:
             return self
 
-        password_path = Path(self.app_password_file)
-        if not password_path.is_file():
-            raise ValueError(f"Database password file not found: {self.app_password_file}")
-
-        self.password = SecretStr(password_path.read_text(encoding="utf-8").strip())
+        self.password = _load_secret_from_file(
+            self.app_password_file,
+            label="Database password",
+        )
         return self
 
     @model_validator(mode="after")
@@ -92,8 +100,8 @@ class AwsSettings(BaseModel):
 
     region: str = "ap-southeast-2"
 
-    access_key_id: SecretStr
-    secret_access_key: SecretStr
+    access_key_id: SecretStr | None = None
+    secret_access_key: SecretStr | None = None
 
 
 class EmailSettings(BaseModel):
@@ -123,6 +131,38 @@ class Auth0MgmtSettings(BaseModel):
 
     id: str
     secret: SecretStr
+    secret_file: str | None = None
+
+    def __init__(
+        self,
+        *,
+        id: str,
+        secret: SecretStr | str | None = None,
+        secret_file: str | None = None,
+    ) -> None:
+        data: dict[str, Any] = {"id": id, "secret_file": secret_file}
+        if secret is not None:
+            data["secret"] = secret
+        super().__init__(**data)
+
+    @model_validator(mode="before")
+    @classmethod
+    def load_secret_from_file(cls, data: Any) -> Any:
+        """Load the Auth0 Management API secret from a mounted secret file."""
+        if not isinstance(data, dict) or data.get("secret") is not None:
+            return data
+
+        secret_file = data.get("secret_file")
+        if secret_file is None:
+            return data
+
+        return {
+            **data,
+            "secret": _load_secret_from_file(
+                str(secret_file),
+                label="Auth0 management secret",
+            ),
+        }
 
 
 class Auth0Settings(BaseModel):
@@ -141,7 +181,8 @@ class Auth0Settings(BaseModel):
 
         mgmt_id = data.get("mgmt_id")
         mgmt_secret = data.get("mgmt_secret")
-        if mgmt_id is None and mgmt_secret is None:
+        mgmt_secret_file = data.get("mgmt_secret_file")
+        if mgmt_id is None and mgmt_secret is None and mgmt_secret_file is None:
             return data
 
         return {
@@ -149,6 +190,7 @@ class Auth0Settings(BaseModel):
             "mgmt": {
                 "id": mgmt_id,
                 "secret": mgmt_secret,
+                "secret_file": mgmt_secret_file,
             },
         }
 
@@ -167,12 +209,10 @@ class AppSettings(BaseModel):
         Raises:
             ValueError: If the secret key file is not found.
         """
-        secret_key_path = Path(self.secret_key_file)
-
-        if not secret_key_path.is_file():
-            raise ValueError(f"Secret key file not found: {self.secret_key_file}")
-
-        self.secret_key = SecretStr(secret_key_path.read_text(encoding="utf-8").strip())
+        self.secret_key = _load_secret_from_file(
+            self.secret_key_file,
+            label="Secret key",
+        )
         return self
 
 

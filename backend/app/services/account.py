@@ -36,7 +36,7 @@ def _mgmt() -> ManagementApiClient:
     if auth.mgmt is None:
         logger.error(
             "Auth0 Management API client is not configured. "
-            "Set FLOWFORM_AUTH0_MGMT_ID and FLOWFORM_AUTH0_MGMT_SECRET."
+            "Set FLOWFORM_AUTH0_MGMT_ID and FLOWFORM_AUTH0_MGMT_SECRET_FILE."
         )
         raise ManagementApiUnavailableError()
     return auth.mgmt

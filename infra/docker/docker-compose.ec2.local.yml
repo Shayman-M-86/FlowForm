@@ -59,6 +59,14 @@ services:
     # instead of looping forever; transient crashes still get a few restarts.
     restart: on-failure:3
     # No published ports: backend is only reachable via Caddy.
+    #
+    # The gitignored dev env file supplies the required FLOWFORM_* config
+    # (Auth0, KMS/encryption ARNs, SES, logging) — without it the backend
+    # fails settings validation and exits before serving anything. This
+    # mirrors the production env_file (/opt/flowform/backend.env) written
+    # by the EC2 bootstrap; see docker-compose.ec2.yml.
+    env_file:
+      - ./.backend.env
     environment:
       PYTHONUNBUFFERED: "1"
       FLOWFORM_ENV: dev
@@ -77,6 +85,7 @@ services:
       DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
       DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
       FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
+      FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET
     # Runs the Gunicorn CMD baked into backend.Dockerfile.
     healthcheck:
       test: ["CMD", "python", "/app/scripts/healthcheck.py"]
@@ -88,6 +97,7 @@ services:
       - DATABASE_CORE_APP_PASSWORD
       - DATABASE_RESPONSE_APP_PASSWORD
       - FLOWFORM_APP_SECRET_KEY
+      - FLOWFORM_AUTH0_MGMT_SECRET
     networks:
       - flowform_ec2_net
 
@@ -106,3 +116,5 @@ secrets:
     file: ./secrets/DATABASE_RESPONSE_APP_PASSWORD.dev.secret.txt
   FLOWFORM_APP_SECRET_KEY:
     file: ./secrets/FLOWFORM_APP_SECRET_KEY.dev.secret.txt
+  FLOWFORM_AUTH0_MGMT_SECRET:
+    file: ./secrets/FLOWFORM_AUTH0_MGMT_SECRET.dev.secret.txt

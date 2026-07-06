@@ -38,10 +38,30 @@ from flowform_infra.stacks.network_stack import NetworkStack
 #     `docker compose pull && docker compose up -d` (no SSH from CI)
 #
 # Secrets delivery (resolved by choosing EC2): keep the existing *_FILE
-# pattern from docker-compose.dev.yml — a bootstrap step on the instance
-# fetches Secrets Manager values to files under a root-owned directory
-# and the Compose file mounts them as secrets at /run/secrets/..., so
-# backend/app/core/config.py needs no changes.
+# pattern from docker-compose.dev.yml. The instance bootstrap (user data /
+# SSM document, re-run on every deploy) does two fetches using the
+# instance role — the app containers never call Secrets Manager/SSM for
+# config themselves:
+#   1. Secrets Manager -> /run/flowform/secrets/<NAME>.secret.txt
+#      (DB app passwords, Flask secret key, Auth0 Management API client
+#      secret; tmpfs mount, root-owned 0600 — memory-backed, nothing rests
+#      on EBS, gone on reboot until bootstrap re-runs). Compose mounts
+#      these as file secrets at /run/secrets/..., identical to dev.
+#   2. SSM get-parameters-by-path /flowform/<env>/backend/ ->
+#      /opt/flowform/backend.env (non-secret FLOWFORM_* config: Auth0
+#      IDs, KMS key ARN, linkage secret ARN, SES from-address, logging,
+#      DB hosts/names/users). Compose is invoked with
+#      `--env-file /opt/flowform/backend.env` (interpolation) and the
+#      backend service also loads it via `env_file:` (container env).
+# See infra/docker/docker-compose.ec2.yml for the consuming side.
+#
+# TODO(backend, required before EC2 works): AwsSettings in
+# backend/app/core/config.py makes access_key_id/secret_access_key
+# required and app/aws/client_extension.py passes them to boto3
+# explicitly, which blocks instance-role credentials. Make the static
+# keys optional; when absent, fall through to boto3's default credential
+# chain (env -> profile -> IMDS) so EC2 uses the instance role and dev
+# keeps using its keys unchanged.
 
 
 class ApplicationStack(Stack):

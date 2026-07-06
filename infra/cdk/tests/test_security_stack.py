@@ -40,9 +40,10 @@ def test_creates_one_kms_key_with_rotation_enabled():
 
 def test_creates_expected_secrets():
     template = _synth_security_stack("dev")
-    # app-secrets (app_secret_key, auth0_mgmt_secret, linkage_secret) and
-    # db-secrets (db_core_app_password, db_response_app_password)
-    template.resource_count_is("AWS::SecretsManager::Secret", 2)
+    # app-secrets (app_secret_key, auth0_mgmt_secret), db-secrets
+    # (db_core_app_password, db_response_app_password), and the standalone
+    # versioned linkage secret
+    template.resource_count_is("AWS::SecretsManager::Secret", 3)
 
 
 def test_dev_app_role_assumable_by_account_principal():
@@ -65,7 +66,7 @@ def test_dev_app_role_assumable_by_account_principal():
     )
 
 
-def test_full_deployment_app_role_assumable_by_ecs_tasks():
+def test_full_deployment_app_role_assumable_by_ec2():
     template = _synth_security_stack("staging")
     template.has_resource_properties(
         "AWS::IAM::Role",
@@ -75,7 +76,7 @@ def test_full_deployment_app_role_assumable_by_ecs_tasks():
                     {
                         "Action": "sts:AssumeRole",
                         "Effect": "Allow",
-                        "Principal": {"Service": "ecs-tasks.amazonaws.com"},
+                        "Principal": {"Service": "ec2.amazonaws.com"},
                     }
                 ],
             }
@@ -85,5 +86,6 @@ def test_full_deployment_app_role_assumable_by_ecs_tasks():
 
 def test_ssm_parameters_created():
     template = _synth_security_stack("dev")
-    # kms-key-arn, aws-region, hosted-zone-id
-    template.resource_count_is("AWS::SSM::Parameter", 3)
+    # kms-key-arn, aws-region, hosted-zone-id, app-role-arn,
+    # linkage-secret-arn
+    template.resource_count_is("AWS::SSM::Parameter", 5)
