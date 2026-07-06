@@ -55,7 +55,9 @@ services:
       context: ../..
       dockerfile: infra/docker/backend.Dockerfile
     container_name: flowform-backend-local
-    restart: unless-stopped
+    # A config error exits code 3 and is not self-healing, so cap retries
+    # instead of looping forever; transient crashes still get a few restarts.
+    restart: on-failure:3
     # No published ports: backend is only reachable via Caddy.
     environment:
       PYTHONUNBUFFERED: "1"
