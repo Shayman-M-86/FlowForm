@@ -25,12 +25,15 @@ cd infra/cdk
 npx cdk synth -c env=dev        # preview the CloudFormation template
 npx cdk diff -c env=dev         # see what would change
 npx cdk deploy -c env=dev       # deploy all stacks
-npx cdk deploy -c env=dev FlowForm-Dev-Security   # deploy one stack
+npx cdk deploy -c env=dev FlowForm-Nonprod-Security   # deploy one stack
 ```
 
-For `dev` this deploys a single stack (`FlowForm-Dev-Security`) — dev's
-app, databases, and frontends run locally, so that's its whole AWS
-footprint (see [`environments.md`](environments.md)).
+For `dev` this deploys a single stack (`FlowForm-Nonprod-Security`) —
+dev's app, databases, and frontends run locally, so that's its whole AWS
+footprint (see [`environments.md`](environments.md)). The Security stack
+is shared with staging (the `nonprod` security scope: one KMS key, one
+secret set, one app role for both simulation envs), so deploying it from
+either env context updates the same stack.
 
 Swap `-c env=dev` for `-c env=staging` or `-c env=prod` when deploying
 those environments (all three share one AWS account — see
@@ -65,5 +68,5 @@ prod-retention / CloudFront / us-east-1 gotchas). Quick version:
 
 ```bash
 npx cdk destroy -c env=staging --all     # whole environment
-npx cdk destroy -c env=dev FlowForm-Dev-Security   # dev's only stack
+npx cdk destroy -c env=dev FlowForm-Nonprod-Security   # shared with staging — see teardown.md
 ```

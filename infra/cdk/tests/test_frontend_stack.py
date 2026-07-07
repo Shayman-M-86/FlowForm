@@ -5,7 +5,13 @@ import aws_cdk as cdk
 import pytest
 from aws_cdk.assertions import Match, Template
 
-from flowform_infra.config import DOMAIN_NAME, Auth0PublicConfig, EnvConfig, get_env_config
+from flowform_infra.config import (
+    DOMAIN_NAME,
+    Auth0PublicConfig,
+    EnvConfig,
+    get_env_config,
+    get_security_scope,
+)
 from flowform_infra.stacks.frontend_cert_stack import FrontendCertStack
 from flowform_infra.stacks.frontend_stack import FrontendStack
 from flowform_infra.stacks.security_stack import SecurityStack
@@ -49,7 +55,9 @@ def _synth_staging(env_config: EnvConfig | None = None) -> tuple[Template, Templ
             **_hosted_zone_context(env_config.account, "us-east-1"),
         }
     )
-    security = SecurityStack(app, "TestSecurity", env_config=env_config, env=app_env)
+    security = SecurityStack(
+        app, "TestSecurity", scope_config=get_security_scope(env_config), env=app_env
+    )
     cert = FrontendCertStack(
         app, "TestFrontendCert", env_config=env_config, env=cert_env, cross_region_references=True
     )
@@ -214,7 +222,7 @@ def test_staging_security_creates_github_oidc_and_deploy_role():
     stack = SecurityStack(
         app,
         "TestSecurity",
-        env_config=env_config,
+        scope_config=get_security_scope(env_config),
         env=cdk.Environment(account=env_config.account, region=env_config.region),
     )
     template = Template.from_stack(stack)

@@ -9,7 +9,7 @@ secret values.
 
 | Stack | File | Status | Envs | Purpose |
 |---|---|---|---|---|
-| Security | `flowform_infra/stacks/security_stack.py` | Built | all | KMS key, Secrets Manager entries, SSM params, app IAM role |
+| Security | `flowform_infra/stacks/security_stack.py` | Built | per scope: nonprod (dev+staging), prod | KMS key, Secrets Manager entries, SSM params, app IAM role — dev and staging share one `FlowForm-Nonprod-Security` stack (cost: no duplicate keys/secrets for simulation envs) |
 | Network | `flowform_infra/stacks/network_stack.py` | Stub | staging/prod | VPC, subnets, security groups |
 | Database | `flowform_infra/stacks/database_stack.py` | Stub | staging/prod | RDS PostgreSQL (core + response) |
 | Application | `flowform_infra/stacks/application_stack.py` | Stub | staging/prod | EC2 + Docker Compose (Caddy + Gunicorn) running the Flask API |

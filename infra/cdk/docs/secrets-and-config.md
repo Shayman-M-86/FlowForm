@@ -94,7 +94,7 @@ generated, never uploaded:
 
 | Value | Source | Why |
 |---|---|---|
-| `app_secret_key`, `auth0_mgmt_secret` | `flowform/dev/app-secrets` (Secrets Manager) | must persist / external value |
+| `app_secret_key`, `auth0_mgmt_secret` | `flowform/nonprod/app-secrets` (Secrets Manager) | must persist / external value |
 | 4 local-Postgres passwords | `scripts/infra/generate-secrets.sh` → gitignored `infra/docker/secrets/` | dev-only throwaways; must survive reboots alongside the Postgres volume they initialised |
 
 `scripts/infra/fetch-dev-secrets.sh` assembles both into one place:
@@ -107,9 +107,16 @@ generated DB passwords (local)   ─┘      ↓ FLOWFORM_SECRET_DIR
 ```
 
 The script refuses to run if `XDG_RUNTIME_DIR` is unset or not tmpfs.
-tmpfs empties on reboot — re-run the script. `flowform/dev/db-secrets`
+tmpfs empties on reboot — re-run the script. `flowform/nonprod/db-secrets`
 deliberately holds empty placeholders: its real values only matter for
-staging/prod RDS. To rotate the local DB passwords, delete the
+staging RDS.
+
+**Security scopes:** dev and staging share the `nonprod` security scope —
+one `FlowForm-Nonprod-Security` stack, one KMS key, one secret set
+(`flowform/nonprod/...`), one app role. They are simulation environments;
+duplicating paid resources between them bought nothing. Prod gets its own
+isolated `prod` scope. See `SecurityScopeConfig` in
+`flowform_infra/config/environments.py`. To rotate the local DB passwords, delete the
 `*.dev.secret.txt` files, re-run the fetch script, and reset the DB
 volumes (`docker compose down -v`) since Postgres was initialised with
 the old values.

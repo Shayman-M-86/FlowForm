@@ -38,13 +38,15 @@ npx cdk destroy -c env=staging \
   FlowForm-Staging-Application \
   FlowForm-Staging-Database \
   FlowForm-Staging-Network \
-  FlowForm-Staging-Security
+  FlowForm-Nonprod-Security
 ```
 
-**dev** has only one stack:
+**dev** has only one stack — and it's the SAME `FlowForm-Nonprod-Security`
+stack staging uses (shared nonprod security scope), so destroying it takes
+out dev's KMS/secrets/app-role AND staging's:
 
 ```bash
-npx cdk destroy -c env=dev FlowForm-Dev-Security
+npx cdk destroy -c env=dev FlowForm-Nonprod-Security
 ```
 
 ## Tear down individual stacks
@@ -67,10 +69,10 @@ pair is the whole footprint — `Frontend` then `FrontendCert`:
 npx cdk destroy -c env=staging FlowForm-Staging-Frontend FlowForm-Staging-FrontendCert
 ```
 
-`FlowForm-Staging-Security` is the foundation — everything depends on it,
-so it destroys **last**. Destroying it also removes the GitHub OIDC
-provider and the `flowform-<env>-frontend-deploy` role, which breaks CI
-deploys until the stack is recreated.
+`FlowForm-Nonprod-Security` is the foundation — everything (dev AND
+staging) depends on it, so it destroys **last**. Destroying it also
+removes the GitHub OIDC provider and the `flowform-staging-frontend-deploy`
+role, which breaks CI deploys until the stack is recreated.
 
 ## After a Frontend teardown: clean Route 53?
 

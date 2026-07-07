@@ -55,6 +55,38 @@ class EnvConfig:
     public_site_extra_prefixes: tuple[str, ...] = ()
     studio_domain: str | None = None
     tags: dict[str, str] = field(default_factory=dict)
+    # Which security scope this env's stacks draw from — see
+    # SecurityScopeConfig below. dev and staging share "nonprod".
+    security_scope: str = "nonprod"
+
+
+@dataclass(frozen=True)
+class SecurityScopeConfig:
+    """Inputs for a shared Security stack (KMS key, secrets, SSM, IAM).
+
+    dev and staging deliberately SHARE one security scope ("nonprod"): they
+    are simulation environments, so paying for two KMS keys and two sets of
+    Secrets Manager entries that hold equivalent throwaway material is
+    waste. Prod gets its own isolated scope.
+
+    Everything here must be derivable from the scope alone — the same
+    FlowForm-Nonprod-Security template is synthesized whether `-c env=dev`
+    or `-c env=staging` is active, and any env-dependent value would make
+    deploys from one context silently rewrite the other's resources.
+    """
+
+    scope_name: str  # resource namespace: flowform/<scope>/... and /flowform/<scope>/...
+    account: str
+    region: str
+    removal_policy: RemovalPolicy
+    # The env whose GitHub Actions deploy/CI roles live in this scope's
+    # stack (role names stay flowform-<env>-... so workflows don't change).
+    ci_env_name: str
+    # The OIDC identity provider is an account-level singleton; exactly one
+    # scope creates it, the others import it by its deterministic ARN.
+    creates_oidc_provider: bool
+    # Nonprod only: lets local dev credentials assume the app role.
+    local_dev_assume: bool
 
 
 # Region matches the KMS key / Secrets Manager secret already in use for
@@ -95,6 +127,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         full_deployment=False,
         db_instance_class="db.t4g.micro",  # unused while full_deployment=False
         tags={"flowform:env": "dev"},
+        security_scope="nonprod",
     ),
     # staging doubles as the shared integration environment — the one
     # non-prod cloud deployment. Anything that would want a "deployed dev"
@@ -112,6 +145,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         public_site_domain=f"staging.{DOMAIN_NAME}",
         studio_domain=f"studio.staging.{DOMAIN_NAME}",
         tags={"flowform:env": "staging"},
+        security_scope="nonprod",
     ),
     "prod": EnvConfig(
         env_name="prod",
@@ -130,8 +164,34 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         public_site_extra_prefixes=("www",),
         studio_domain=f"studio.{DOMAIN_NAME}",
         tags={"flowform:env": "prod"},
+        security_scope="prod",
     ),
 }
+
+_SECURITY_SCOPES: dict[str, SecurityScopeConfig] = {
+    "nonprod": SecurityScopeConfig(
+        scope_name="nonprod",
+        account=_ACCOUNT,
+        region=_DEFAULT_REGION,
+        removal_policy=RemovalPolicy.DESTROY,
+        ci_env_name="staging",
+        creates_oidc_provider=True,
+        local_dev_assume=True,
+    ),
+    "prod": SecurityScopeConfig(
+        scope_name="prod",
+        account=_ACCOUNT,
+        region=_DEFAULT_REGION,
+        removal_policy=RemovalPolicy.RETAIN,
+        ci_env_name="prod",
+        creates_oidc_provider=False,
+        local_dev_assume=False,
+    ),
+}
+
+
+def get_security_scope(env_config: EnvConfig) -> SecurityScopeConfig:
+    return _SECURITY_SCOPES[env_config.security_scope]
 
 
 def _parse_env_file(path: Path) -> dict[str, str]:

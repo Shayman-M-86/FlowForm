@@ -7,7 +7,9 @@ set -euo pipefail
 #   1. Shared/persistent values -> AWS Secrets Manager (fetched via your
 #      `aws login` session). Only what genuinely must persist or cannot
 #      be generated lives there:
-#        flowform/dev/app-secrets: app_secret_key, auth0_mgmt_secret
+#        flowform/nonprod/app-secrets: app_secret_key, auth0_mgmt_secret
+#      (dev and staging share the "nonprod" security scope — one KMS key
+#      and one secret set for both; see infra/cdk security_stack.py)
 #   2. Machine-local throwaways -> generated on this machine
 #      (scripts/infra/generate-secrets.sh, invoked below when any file
 #      is missing): the four local-Postgres passwords. They stay in
@@ -47,12 +49,15 @@ if ! findmnt -n -o FSTYPE --target "${XDG_RUNTIME_DIR}" 2>/dev/null | grep -q tm
 fi
 
 OUT_DIR="${FLOWFORM_SECRET_DIR:-${XDG_RUNTIME_DIR}/flowform-secrets}"
+# Secrets Manager namespace — dev shares the nonprod security scope with
+# staging; ENV_NAME still names the local files compose expects.
+SCOPE_NAME=nonprod
 
 command -v aws >/dev/null 2>&1 || { echo "error: aws CLI not found" >&2; exit 1; }
 
-echo "==> Fetching flowform/${ENV_NAME}/app-secrets"
+echo "==> Fetching flowform/${SCOPE_NAME}/app-secrets"
 APP_JSON="$(aws secretsmanager get-secret-value \
-  --secret-id "flowform/${ENV_NAME}/app-secrets" \
+  --secret-id "flowform/${SCOPE_NAME}/app-secrets" \
   --query SecretString --output text)"
 
 DB_PASSWORD_NAMES=(DATABASE_CORE_APP_PASSWORD DATABASE_CORE_INIT_PASSWORD
@@ -85,8 +90,11 @@ print(value, end="")
 write_key "${APP_JSON}" app_secret_key    FLOWFORM_APP_SECRET_KEY
 write_key "${APP_JSON}" auth0_mgmt_secret FLOWFORM_AUTH0_MGMT_SECRET
 
+# 644, not 600: the Postgres containers read these as the non-root
+# postgres user during initdb. They're machine-local throwaways, and the
+# 0700 tmpfs dir already blocks other host users.
 for name in "${DB_PASSWORD_NAMES[@]}"; do
-  install -m 600 "${DOCKER_DIR}/secrets/${name}.${ENV_NAME}.secret.txt" \
+  install -m 644 "${DOCKER_DIR}/secrets/${name}.${ENV_NAME}.secret.txt" \
     "${OUT_DIR}/${name}.${ENV_NAME}.secret.txt"
 done
 

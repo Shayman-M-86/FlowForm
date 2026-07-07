@@ -4,18 +4,27 @@ from aws_cdk import aws_secretsmanager as secretsmanager
 from aws_cdk import aws_ssm as ssm
 from constructs import Construct
 
-from flowform_infra.config import DOMAIN_NAME, GITHUB_OWNER, GITHUB_REPOSITORY, EnvConfig
+from flowform_infra.config import (
+    DOMAIN_NAME,
+    GITHUB_OWNER,
+    GITHUB_REPOSITORY,
+    SecurityScopeConfig,
+)
 from flowform_infra.constructs.kms_construct import AppKmsKey
 from flowform_infra.constructs.secrets_construct import AppMultiSecret
 from flowform_infra.constructs.ses_construct import AppEmailIdentity
 
+# This stack is deployed once per SECURITY SCOPE, not per environment:
+# dev and staging share "nonprod" (FlowForm-Nonprod-Security) because they
+# are simulation environments and duplicating KMS keys / Secrets Manager
+# entries between them is pure cost; prod gets its own isolated scope.
+# See SecurityScopeConfig in config/environments.py. Everything in here
+# must derive from scope_config alone so the template is identical no
+# matter which `-c env=...` context synthesized it.
+#
 # Decision (resolved): this stack always CREATES the KMS key and secrets —
-# no import-by-ARN path. Dev's hand-created key + linkage secret (the
-# FLOWFORM_ENCRYPTION_* ARNs in infra/docker/.backend.env) are legacy: after
-# the first dev deploy, point .backend.env at the new ARNs, reseed local dev
-# data (existing opaque locators were derived from the old HMAC secret, so
-# cross-DB lookups on old rows break — dev data is disposable), then delete
-# the old key/secret. Prod's "never recreate" guarantee comes from
+# no import-by-ARN path, so a brand-new AWS account bootstraps with zero
+# special cases. Prod's "never recreate" guarantee comes from
 # RemovalPolicy.RETAIN plus never renaming these construct IDs (a rename
 # forces CloudFormation to replace the resource).
 #
@@ -36,30 +45,44 @@ class SecurityStack(Stack):
 
     This is the foundation stack — everything else depends on it, and for
     dev it is the ONLY stack deployed (the app/databases/frontends run
-    locally; see app.py).
+    locally; see app.py). One instance serves every env in its scope.
     """
 
-    def __init__(self, scope: Construct, construct_id: str, *, env_config: EnvConfig, **kwargs) -> None:
+    def __init__(
+        self, scope: Construct, construct_id: str, *, scope_config: SecurityScopeConfig, **kwargs
+    ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        self.kms_key = AppKmsKey(self, "AppKmsKey", env_config=env_config).key
+        scope_name = scope_config.scope_name
+
+        self.kms_key = AppKmsKey(
+            self,
+            "AppKmsKey",
+            scope_name=scope_name,
+            removal_policy=scope_config.removal_policy,
+        ).key
 
         # Imported by reference only — CDK never creates/modifies the zone,
         # its records, or SES verification. Later stacks (e.g.
-        # application_stack, for an ALB alias record) can take the hosted
-        # zone from the stack's public attribute.
+        # application_stack, for the api.<domain> record) can take the
+        # hosted zone from the stack's public attribute.
         self.email_identity = AppEmailIdentity(
-            self, "EmailIdentity", env_config=env_config, domain_name=DOMAIN_NAME
+            self,
+            "EmailIdentity",
+            account=scope_config.account,
+            region=scope_config.region,
+            domain_name=DOMAIN_NAME,
         )
 
         # App boot-time config, always read together by the running Flask
-        # service. Keyed on jsonKey so ECS can still map each value back
-        # out to its own env var (secretName:jsonKey::) without any change
-        # to how the app reads its settings.
+        # service. Keyed on jsonKey so the EC2 bootstrap can still map each
+        # value back out to its own file/env var without any change to how
+        # the app reads its settings.
         self.app_secrets = AppMultiSecret(
             self,
             "AppSecrets",
-            env_config=env_config,
+            namespace=scope_name,
+            removal_policy=scope_config.removal_policy,
             secret_name_suffix="app-secrets",
             description="Flask app secret key and Auth0 management secret",
             encryption_key=self.kms_key,
@@ -81,10 +104,10 @@ class SecurityStack(Stack):
         self.linkage_secret = secretsmanager.Secret(
             self,
             "LinkageSecret",
-            secret_name=f"flowform/{env_config.env_name}/linkage-secret",
+            secret_name=f"flowform/{scope_name}/linkage-secret",
             description="Versioned core/response DB linkage HMAC secret",
             encryption_key=self.kms_key,
-            removal_policy=env_config.removal_policy,
+            removal_policy=scope_config.removal_policy,
             generate_secret_string=secretsmanager.SecretStringGenerator(
                 secret_string_template='{"version": 1}',
                 generate_string_key="secret_b64",
@@ -100,7 +123,8 @@ class SecurityStack(Stack):
         self.db_secrets = AppMultiSecret(
             self,
             "DbSecrets",
-            env_config=env_config,
+            namespace=scope_name,
+            removal_policy=scope_config.removal_policy,
             secret_name_suffix="db-secrets",
             description="App-user passwords for the core and response Postgres databases",
             encryption_key=self.kms_key,
@@ -111,15 +135,15 @@ class SecurityStack(Stack):
         ssm.StringParameter(
             self,
             "KmsKeyArnParam",
-            parameter_name=f"/flowform/{env_config.env_name}/kms-key-arn",
+            parameter_name=f"/flowform/{scope_name}/kms-key-arn",
             string_value=self.kms_key.key_arn,
         )
 
         ssm.StringParameter(
             self,
             "RegionParam",
-            parameter_name=f"/flowform/{env_config.env_name}/aws-region",
-            string_value=env_config.region,
+            parameter_name=f"/flowform/{scope_name}/aws-region",
+            string_value=scope_config.region,
         )
 
         # The ARN (not the value) — consumed by .backend.env in dev and the
@@ -127,37 +151,37 @@ class SecurityStack(Stack):
         ssm.StringParameter(
             self,
             "LinkageSecretArnParam",
-            parameter_name=f"/flowform/{env_config.env_name}/linkage-secret-arn",
+            parameter_name=f"/flowform/{scope_name}/linkage-secret-arn",
             string_value=self.linkage_secret.secret_arn,
         )
 
         ssm.StringParameter(
             self,
             "HostedZoneIdParam",
-            parameter_name=f"/flowform/{env_config.env_name}/hosted-zone-id",
+            parameter_name=f"/flowform/{scope_name}/hosted-zone-id",
             string_value=self.email_identity.hosted_zone.hosted_zone_id,
         )
 
         # The role the running backend uses to reach KMS/secrets/SES, scoped
         # to read-only on exactly the resources this stack owns. Who assumes
-        # it differs by environment:
-        #   - full deployments: the EC2 app instance (application_stack
-        #     wraps it in an instance profile)
-        #   - dev: the locally hosted backend — any principal in the dev
-        #     account can `sts:AssumeRole` it, so local AWS credentials
-        #     (an assume-role profile over `aws login`) get the same scoped
-        #     access the EC2 instance would, instead of carrying broad user
-        #     permissions.
-        if env_config.full_deployment:
-            assumed_by = iam.ServicePrincipal("ec2.amazonaws.com")
-        else:
-            assumed_by = iam.AccountPrincipal(env_config.account)
+        # it depends on the scope:
+        #   - always: the EC2 app instance (application_stack wraps it in an
+        #     instance profile) for the scope's deployed env(s)
+        #   - nonprod additionally: any principal in the account, so the
+        #     locally hosted dev backend (an assume-role profile over
+        #     `aws login`) gets the same scoped access the EC2 instance
+        #     would, instead of carrying broad user permissions.
+        assumed_by: iam.PrincipalBase = iam.ServicePrincipal("ec2.amazonaws.com")
+        if scope_config.local_dev_assume:
+            assumed_by = iam.CompositePrincipal(
+                assumed_by, iam.AccountPrincipal(scope_config.account)
+            )
 
         self.task_role = iam.Role(
             self,
             "AppTaskRole",
             assumed_by=assumed_by,
-            description=f"App role for the FlowForm API ({env_config.env_name})",
+            description=f"App role for the FlowForm API ({scope_name})",
         )
 
         for secret in (self.app_secrets, self.db_secrets, self.linkage_secret):
@@ -175,7 +199,7 @@ class SecurityStack(Stack):
         ssm.StringParameter(
             self,
             "AppRoleArnParam",
-            parameter_name=f"/flowform/{env_config.env_name}/app-role-arn",
+            parameter_name=f"/flowform/{scope_name}/app-role-arn",
             string_value=self.task_role.role_arn,
         )
 
@@ -183,52 +207,53 @@ class SecurityStack(Stack):
         # invalidation) by assuming this role via OIDC — no long-lived AWS
         # keys in GitHub. The role starts with no permissions; the frontend
         # stack grants sync/invalidate/SSM-read on exactly its resources.
+        # Role names keep the ENV name (flowform-staging-...), not the scope
+        # name, so the GitHub workflows never change.
         #
         # The OIDC identity provider is an account-level singleton (one per
-        # provider URL), so only staging's stack creates it; prod imports it
-        # by its deterministic ARN and therefore deploys after staging.
-        if env_config.full_deployment:
-            if env_config.env_name == "staging":
-                oidc_provider_arn = iam.OpenIdConnectProvider(
-                    self,
-                    "GitHubOidcProvider",
-                    url="https://token.actions.githubusercontent.com",
-                    client_ids=["sts.amazonaws.com"],
-                ).open_id_connect_provider_arn
-            else:
-                oidc_provider_arn = (
-                    f"arn:aws:iam::{env_config.account}:oidc-provider/token.actions.githubusercontent.com"
-                )
+        # provider URL), so exactly one scope creates it (nonprod); prod
+        # imports it by its deterministic ARN and deploys after nonprod.
+        if scope_config.creates_oidc_provider:
+            oidc_provider_arn = iam.OpenIdConnectProvider(
+                self,
+                "GitHubOidcProvider",
+                url="https://token.actions.githubusercontent.com",
+                client_ids=["sts.amazonaws.com"],
+            ).open_id_connect_provider_arn
+        else:
+            oidc_provider_arn = (
+                f"arn:aws:iam::{scope_config.account}:oidc-provider/token.actions.githubusercontent.com"
+            )
 
-            github_actions_principal = iam.FederatedPrincipal(
-                oidc_provider_arn,
-                conditions={
-                    "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
-                    "StringLike": {
-                        "token.actions.githubusercontent.com:sub": f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:*"
-                    },
+        github_actions_principal = iam.FederatedPrincipal(
+            oidc_provider_arn,
+            conditions={
+                "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
+                "StringLike": {
+                    "token.actions.githubusercontent.com:sub": f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:*"
                 },
-                assume_role_action="sts:AssumeRoleWithWebIdentity",
-            )
+            },
+            assume_role_action="sts:AssumeRoleWithWebIdentity",
+        )
 
-            self.frontend_deploy_role = iam.Role(
-                self,
-                "FrontendDeployRole",
-                # Deterministic name so the GitHub workflow can reference the
-                # role ARN without reading stack outputs.
-                role_name=f"flowform-{env_config.env_name}-frontend-deploy",
-                assumed_by=github_actions_principal,
-                description=f"GitHub Actions frontend deploy ({env_config.env_name})",
-            )
+        self.frontend_deploy_role = iam.Role(
+            self,
+            "FrontendDeployRole",
+            # Deterministic name so the GitHub workflow can reference the
+            # role ARN without reading stack outputs.
+            role_name=f"flowform-{scope_config.ci_env_name}-frontend-deploy",
+            assumed_by=github_actions_principal,
+            description=f"GitHub Actions frontend deploy ({scope_config.ci_env_name})",
+        )
 
-            # Read-only role for CI preview work (`cdk diff` describes the
-            # deployed stacks to compare against the synthesized templates).
-            # Same OIDC trust as the deploy role, but no write access at all.
-            self.ci_preview_role = iam.Role(
-                self,
-                "CiPreviewRole",
-                role_name=f"flowform-{env_config.env_name}-ci-preview",
-                assumed_by=github_actions_principal,
-                managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("ReadOnlyAccess")],
-                description=f"GitHub Actions read-only CI preview, e.g. cdk diff ({env_config.env_name})",
-            )
+        # Read-only role for CI preview work (`cdk diff` describes the
+        # deployed stacks to compare against the synthesized templates).
+        # Same OIDC trust as the deploy role, but no write access at all.
+        self.ci_preview_role = iam.Role(
+            self,
+            "CiPreviewRole",
+            role_name=f"flowform-{scope_config.ci_env_name}-ci-preview",
+            assumed_by=github_actions_principal,
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("ReadOnlyAccess")],
+            description=f"GitHub Actions read-only CI preview, e.g. cdk diff ({scope_config.ci_env_name})",
+        )

@@ -5,7 +5,9 @@ from .environments import (
     Auth0PublicConfig,
     EnvConfig,
     EnvName,
+    SecurityScopeConfig,
     get_env_config,
+    get_security_scope,
 )
 
 __all__ = [
@@ -15,5 +17,7 @@ __all__ = [
     "Auth0PublicConfig",
     "EnvConfig",
     "EnvName",
+    "SecurityScopeConfig",
     "get_env_config",
+    "get_security_scope",
 ]

@@ -1,12 +1,13 @@
 import aws_cdk as cdk
 from aws_cdk.assertions import Match, Template
 
-from flowform_infra.config import DOMAIN_NAME, get_env_config
+from flowform_infra.config import DOMAIN_NAME, get_env_config, get_security_scope
 from flowform_infra.stacks.security_stack import SecurityStack
 
 
 def _synth_security_stack(env_name: str) -> Template:
     env_config = get_env_config(env_name)
+    scope_config = get_security_scope(env_config)
     cdk_env = cdk.Environment(account=env_config.account, region=env_config.region)
 
     # HostedZone.from_lookup queries a context provider at synth time, which
@@ -28,8 +29,15 @@ def _synth_security_stack(env_name: str) -> Template:
             }
         }
     )
-    stack = SecurityStack(app, "TestSecurityStack", env_config=env_config, env=cdk_env)
+    stack = SecurityStack(app, "TestSecurityStack", scope_config=scope_config, env=cdk_env)
     return Template.from_stack(stack)
+
+
+def test_dev_and_staging_share_the_nonprod_scope_template():
+    # dev and staging draw from the same security scope — the templates
+    # synthesized under either env context must be byte-identical, or a
+    # deploy from one context would silently rewrite the other's resources.
+    assert _synth_security_stack("dev").to_json() == _synth_security_stack("staging").to_json()
 
 
 def test_creates_one_kms_key_with_rotation_enabled():
@@ -38,49 +46,61 @@ def test_creates_one_kms_key_with_rotation_enabled():
     template.has_resource_properties("AWS::KMS::Key", {"EnableKeyRotation": True})
 
 
-def test_creates_expected_secrets():
+def test_creates_expected_secrets_under_nonprod_namespace():
     template = _synth_security_stack("dev")
     # app-secrets (app_secret_key, auth0_mgmt_secret), db-secrets
     # (db_core_app_password, db_response_app_password), and the standalone
     # versioned linkage secret
     template.resource_count_is("AWS::SecretsManager::Secret", 3)
+    template.has_resource_properties(
+        "AWS::SecretsManager::Secret", {"Name": "flowform/nonprod/app-secrets"}
+    )
+    template.has_resource_properties(
+        "AWS::SecretsManager::Secret", {"Name": "flowform/nonprod/linkage-secret"}
+    )
 
 
-def test_dev_app_role_assumable_by_account_principal():
-    # dev's backend runs locally, so the role is assumable by principals in
-    # the dev account (via sts:AssumeRole) rather than by ECS tasks.
+def test_nonprod_app_role_assumable_by_ec2_and_account():
+    # One role serves both envs in the scope: staging's EC2 instance
+    # profile AND the locally hosted dev backend (account principals via
+    # sts:AssumeRole).
     template = _synth_security_stack("dev")
     template.has_resource_properties(
         "AWS::IAM::Role",
         {
             "AssumeRolePolicyDocument": {
-                "Statement": [
-                    {
-                        "Action": "sts:AssumeRole",
-                        "Effect": "Allow",
-                        "Principal": {"AWS": Match.any_value()},
-                    }
-                ],
+                "Statement": Match.array_with(
+                    [
+                        Match.object_like(
+                            {
+                                "Action": "sts:AssumeRole",
+                                "Effect": "Allow",
+                                "Principal": {"Service": "ec2.amazonaws.com"},
+                            }
+                        ),
+                        Match.object_like(
+                            {
+                                "Action": "sts:AssumeRole",
+                                "Effect": "Allow",
+                                "Principal": {"AWS": Match.any_value()},
+                            }
+                        ),
+                    ]
+                ),
             }
         },
     )
 
 
-def test_full_deployment_app_role_assumable_by_ec2():
-    template = _synth_security_stack("staging")
+def test_nonprod_creates_staging_named_ci_roles():
+    # Role names keep the env name (not the scope name) so the GitHub
+    # workflows reference stable ARNs.
+    template = _synth_security_stack("dev")
     template.has_resource_properties(
-        "AWS::IAM::Role",
-        {
-            "AssumeRolePolicyDocument": {
-                "Statement": [
-                    {
-                        "Action": "sts:AssumeRole",
-                        "Effect": "Allow",
-                        "Principal": {"Service": "ec2.amazonaws.com"},
-                    }
-                ],
-            }
-        },
+        "AWS::IAM::Role", {"RoleName": "flowform-staging-frontend-deploy"}
+    )
+    template.has_resource_properties(
+        "AWS::IAM::Role", {"RoleName": "flowform-staging-ci-preview"}
     )
 
 
@@ -89,3 +109,6 @@ def test_ssm_parameters_created():
     # kms-key-arn, aws-region, hosted-zone-id, app-role-arn,
     # linkage-secret-arn
     template.resource_count_is("AWS::SSM::Parameter", 5)
+    template.has_resource_properties(
+        "AWS::SSM::Parameter", {"Name": "/flowform/nonprod/kms-key-arn"}
+    )

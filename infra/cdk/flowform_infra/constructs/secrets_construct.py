@@ -1,10 +1,9 @@
 import json
 
+from aws_cdk import RemovalPolicy
 from aws_cdk import aws_kms as kms
 from aws_cdk import aws_secretsmanager as secretsmanager
 from constructs import Construct
-
-from flowform_infra.config import EnvConfig
 
 
 class AppMultiSecret(Construct):
@@ -28,7 +27,8 @@ class AppMultiSecret(Construct):
         scope: Construct,
         construct_id: str,
         *,
-        env_config: EnvConfig,
+        namespace: str,
+        removal_policy: RemovalPolicy,
         secret_name_suffix: str,
         description: str,
         encryption_key: kms.IKey,
@@ -39,10 +39,10 @@ class AppMultiSecret(Construct):
         self.secret = secretsmanager.Secret(
             self,
             "Secret",
-            secret_name=f"flowform/{env_config.env_name}/{secret_name_suffix}",
+            secret_name=f"flowform/{namespace}/{secret_name_suffix}",
             description=description,
             encryption_key=encryption_key,
-            removal_policy=env_config.removal_policy,
+            removal_policy=removal_policy,
             generate_secret_string=secretsmanager.SecretStringGenerator(
                 secret_string_template=json.dumps(dict.fromkeys(keys, "")),
                 generate_string_key=keys[0],

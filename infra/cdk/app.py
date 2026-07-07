@@ -3,7 +3,7 @@ import os
 
 import aws_cdk as cdk
 
-from flowform_infra.config import get_env_config
+from flowform_infra.config import get_env_config, get_security_scope
 from flowform_infra.stacks.application_stack import ApplicationStack
 from flowform_infra.stacks.database_stack import DatabaseStack
 from flowform_infra.stacks.frontend_cert_stack import FrontendCertStack
@@ -22,13 +22,21 @@ name_prefix = f"FlowForm-{env_config.env_name.capitalize()}"
 
 all_stacks: list[cdk.Stack] = []
 
+# The Security stack is per SCOPE, not per env: dev and staging share
+# FlowForm-Nonprod-Security (one KMS key / secret set for both — they're
+# simulation envs, duplicating paid resources buys nothing). Deploying it
+# from either `-c env=dev` or `-c env=staging` updates the same stack, and
+# SecurityStack derives everything from scope_config so both contexts
+# synthesize the identical template. It gets the scope tag, not the active
+# env's tag, for the same determinism reason.
+scope_config = get_security_scope(env_config)
 security_stack = SecurityStack(
     app,
-    f"{name_prefix}-Security",
-    env_config=env_config,
+    f"FlowForm-{scope_config.scope_name.capitalize()}-Security",
+    scope_config=scope_config,
     env=cdk_env,
 )
-all_stacks.append(security_stack)
+cdk.Tags.of(security_stack).add("flowform:env", scope_config.scope_name)
 
 # dev stops here: the app, both databases, and the frontends all run
 # locally (infra/docker/ + Vite dev servers), so dev's AWS footprint is the
