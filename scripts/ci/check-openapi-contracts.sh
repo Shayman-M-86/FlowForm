@@ -2,7 +2,7 @@
 # CI/CD and pre-commit friendly OpenAPI/generated-contract check.
 #
 # Run from anywhere:
-#   bash scripts/shared_script/check-openapi-contracts.sh
+#   bash scripts/ci/check-openapi-contracts.sh
 
 set -eu
 
@@ -14,7 +14,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 CHECK_LOG="$(mktemp "${TMPDIR:-/tmp}/flowform-openapi-contracts.XXXXXX.log")"
 
-if bash "${REPO_ROOT}/scripts/shared_script/sync-openapi.sh" --check >"${CHECK_LOG}" 2>&1; then
+if bash "${REPO_ROOT}/scripts/ci/sync-openapi.sh" --check >"${CHECK_LOG}" 2>&1; then
   rm -f "${CHECK_LOG}"
   exit 0
 fi
@@ -24,7 +24,7 @@ if grep -q "openapi.yaml is out of date" "${CHECK_LOG}"; then
 OpenAPI contract check failed: generated OpenAPI files are out of date.
 
 Run:
-  bash scripts/shared_script/sync-openapi.sh
+  bash scripts/ci/sync-openapi.sh
 
 Then stage the generated files and try again:
   git add backend/openapi.yaml \\
@@ -43,7 +43,7 @@ if grep -q "diff --git" "${CHECK_LOG}"; then
 OpenAPI contract check failed: generated frontend contract files changed.
 
 Run:
-  bash scripts/shared_script/sync-openapi.sh
+  bash scripts/ci/sync-openapi.sh
 
 Then stage the generated files and try again.
 

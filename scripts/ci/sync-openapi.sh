@@ -2,8 +2,8 @@
 # Regenerate openapi.yaml from Python sources, then generate TypeScript types.
 #
 # Run from anywhere:
-#   bash scripts/shared_script/sync-openapi.sh
-#   bash scripts/shared_script/sync-openapi.sh --check
+#   bash scripts/ci/sync-openapi.sh
+#   bash scripts/ci/sync-openapi.sh --check
 
 set -euo pipefail
 
@@ -14,7 +14,7 @@ if [[ "${1:-}" == "--" ]]; then shift; fi
 
 MODE="${1:-generate}"
 if [[ "${MODE}" != "generate" && "${MODE}" != "--check" ]]; then
-  echo "Usage: bash scripts/shared_script/sync-openapi.sh [--check]" >&2
+  echo "Usage: bash scripts/ci/sync-openapi.sh [--check]" >&2
   exit 2
 fi
 

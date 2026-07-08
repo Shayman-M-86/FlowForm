@@ -5,8 +5,8 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
 COMPOSE_FILE="${REPO_ROOT}/infra/docker/docker-compose.dev.yml"
-CORE_LOAD_SCRIPT="${REPO_ROOT}/scripts/infra/load-core-mock-data.sh"
-RESPONSE_LOAD_SCRIPT="${REPO_ROOT}/scripts/infra/load-response-mock-data.sh"
+CORE_LOAD_SCRIPT="${REPO_ROOT}/scripts/dev/load-core-mock-data.sh"
+RESPONSE_LOAD_SCRIPT="${REPO_ROOT}/scripts/dev/load-response-mock-data.sh"
 FRONTEND_DIR="${REPO_ROOT}/frontend"
 
 # Change these if your docker compose service names are different.

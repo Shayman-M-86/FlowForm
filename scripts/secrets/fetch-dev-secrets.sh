@@ -11,7 +11,7 @@ set -euo pipefail
 #      (dev and staging share the "nonprod" security scope — one KMS key
 #      and one secret set for both; see infra/cdk security_stack.py)
 #   2. Machine-local throwaways -> generated on this machine
-#      (scripts/infra/generate-secrets.sh, invoked below when any file
+#      (scripts/secrets/generate-secrets.sh, invoked below when any file
 #      is missing): the four local-Postgres passwords. They stay in
 #      gitignored infra/docker/secrets/ so they survive reboots alongside
 #      the Postgres volume they initialised (regenerating them requires a
@@ -24,7 +24,7 @@ set -euo pipefail
 # on EC2 the DB passwords come from the database stack/RDS instead.
 #
 # Usage:
-#   scripts/infra/fetch-dev-secrets.sh
+#   scripts/secrets/fetch-dev-secrets.sh
 #   FLOWFORM_SECRET_DIR="$XDG_RUNTIME_DIR/flowform-secrets" \
 #     docker compose -f infra/docker/docker-compose.dev.yml up -d
 #

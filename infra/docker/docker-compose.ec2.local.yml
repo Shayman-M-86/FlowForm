@@ -13,7 +13,7 @@
 #   - Squid is published on 127.0.0.1:3128 for workstation curl checks.
 #   - SQUID_APP_SOURCE_CIDR is intentionally broad inside local Docker only,
 #     because bridge-network container source addresses are dynamic.
-#   - Dev env/secrets are used; run scripts/infra/fetch-dev-secrets.sh first.
+#   - Dev env/secrets are used; run scripts/secrets/fetch-dev-secrets.sh first.
 #   - LOCAL_AUTH0_DOMAIN may be set to the dev tenant from .backend.env so the
 #     backend's startup validation can traverse Squid without changing the
 #     production allowed-domains.txt placeholder.

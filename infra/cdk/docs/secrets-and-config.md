@@ -31,7 +31,7 @@ CDK creates each secret with **generated placeholder values** for every
 key. The real values are set out-of-band (AWS Console, CLI
 `put-secret-value`, or a rotation Lambda later) — secret values never
 appear in code, in a synthesized CloudFormation template, or in git. See
-`scripts/seed-secrets.sh` for the seeding workflow.
+`infra/scripts/cdk/seed-secrets.sh` for the seeding workflow.
 
 ## Route53 + SES (imported, not created)
 
@@ -95,9 +95,9 @@ generated, never uploaded:
 | Value | Source | Why |
 |---|---|---|
 | `app_secret_key`, `auth0_mgmt_secret` | `flowform/nonprod/app-secrets` (Secrets Manager) | must persist / external value |
-| 4 local-Postgres passwords | `scripts/infra/generate-secrets.sh` → gitignored `infra/docker/secrets/` | dev-only throwaways; must survive reboots alongside the Postgres volume they initialised |
+| 4 local-Postgres passwords | `scripts/secrets/generate-secrets.sh` → gitignored `infra/docker/secrets/` | dev-only throwaways; must survive reboots alongside the Postgres volume they initialised |
 
-`scripts/infra/fetch-dev-secrets.sh` assembles both into one place:
+`scripts/secrets/fetch-dev-secrets.sh` assembles both into one place:
 
 ```text
 app-secrets (SM, via aws login)  ─┐

@@ -46,15 +46,15 @@ individual test cases.
 
 ## OpenAPI and Generated Contracts
 
-- `bash scripts/shared_script/sync-openapi.sh` - preferred repo-level OpenAPI
+- `bash scripts/ci/sync-openapi.sh` - preferred repo-level OpenAPI
   sync. It runs from anywhere and drives the Studio `openapi:generate` script,
   which regenerates `backend/openapi.yaml`, Studio OpenAPI types, shared
   generated frontend contract files, and runs Redocly lint.
-- `bash scripts/shared_script/check-openapi-contracts.sh` - preferred CI/CD and
+- `bash scripts/ci/check-openapi-contracts.sh` - preferred CI/CD and
   pre-commit generated contract check. It runs the repo-level check path and
   prints concise failure guidance with a full log path. The committed
   `.githooks/pre-commit` hook delegates to this script.
-- `bash scripts/shared_script/sync-openapi.sh --check` - lower-level repo
+- `bash scripts/ci/sync-openapi.sh --check` - lower-level repo
   generated contract drift check. It checks backend OpenAPI and Studio
   `schema.ts` drift, runs Redocly lint, then verifies shared generated frontend
   contract files.
@@ -93,7 +93,7 @@ individual test cases.
 
 ## Security Checks
 
-- `./scripts/backend/run_backend_security.sh` - backend security wrapper used by
+- `./backend/scripts/run_backend_security.sh` - backend security wrapper used by
   CI. It compiles backend requirements, runs `pip-audit`, then runs Bandit over
   `backend/app` and `backend/tests`.
 

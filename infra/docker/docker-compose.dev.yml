@@ -156,11 +156,11 @@ networks:
         - subnet: 172.30.0.0/16
 
 
-# Run scripts/infra/fetch-dev-secrets.sh and set
+# Run scripts/secrets/fetch-dev-secrets.sh and set
 # FLOWFORM_SECRET_DIR="$XDG_RUNTIME_DIR/flowform-secrets" (export it from
 # your shell rc). The script assembles everything there: app secret key +
 # Auth0 mgmt secret fetched from Secrets Manager, the four local-Postgres
-# passwords generated on this machine (scripts/infra/generate-secrets.sh)
+# passwords generated on this machine (scripts/secrets/generate-secrets.sh)
 # — dev-only throwaways that are never uploaded.
 secrets:
   DATABASE_CORE_INIT_PASSWORD:

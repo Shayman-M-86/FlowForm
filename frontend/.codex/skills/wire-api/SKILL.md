@@ -16,7 +16,7 @@ $ARGUMENTS
 Run this first, always — even if the user says the spec is up to date:
 
 ```bash
-bash scripts/shared_script/sync-openapi.sh
+bash scripts/ci/sync-openapi.sh
 ```
 
 This runs two things in sequence:

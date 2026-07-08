@@ -12,10 +12,12 @@ set -euo pipefail
 # asked to confirm y/n for each secret before it's written.
 #
 # Usage:
-#   scripts/seed-secrets.sh [--env dev] [--send]
+#   infra/scripts/cdk/seed-secrets.sh [--env dev] [--send]
 
 SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-CDK_ROOT="$(cd "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd)"
+# This script lives at infra/scripts/cdk/; the CDK root (where .env.<env>
+# lives) is infra/cdk/.
+CDK_ROOT="$(cd "$SCRIPT_DIR/../../cdk" >/dev/null 2>&1 && pwd)"
 
 ENV_NAME="dev"
 SEND=false

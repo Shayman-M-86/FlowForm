@@ -99,7 +99,7 @@ security
 Existing shape:
 
 - Check out the repo.
-- Run `./scripts/backend/run_backend_security.sh`.
+- Run `./backend/scripts/run_backend_security.sh`.
 
 Keep this job early and cheap. Other jobs should depend on it unless there is a
 good reason to run them in parallel.

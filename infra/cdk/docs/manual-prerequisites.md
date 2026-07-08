@@ -122,6 +122,6 @@ aws://908123139858/ap-southeast-2`. See
 CDK creates the Secrets Manager entries with **generated placeholder
 values only** — real values never pass through CDK or git. After the
 first deploy of an environment's Security stack, seed them:
-`scripts/seed-secrets.sh --env <env> --send` (values come from a
+`infra/scripts/cdk/seed-secrets.sh --env <env> --send` (values come from a
 gitignored `.env.<env>`; see `.env.dev.example` and
 [`secrets-and-config.md`](secrets-and-config.md)).

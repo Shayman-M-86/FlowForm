@@ -5,14 +5,14 @@ Only machine-local, regenerable values are produced here — the local
 Postgres passwords and (for test) the Flask secret key. Values that must
 persist or cannot be generated (Flask dev secret key, Auth0 management
 secret) live in AWS Secrets Manager and are fetched by
-scripts/infra/fetch-dev-secrets.sh instead.
+scripts/secrets/fetch-dev-secrets.sh instead.
 
 Prod values are deliberately NOT generatable: prod secrets are created and
 stored in Secrets Manager only, never as local files.
 
 Usage:
-    scripts/infra/generate-secrets.sh dev
-    scripts/infra/generate-secrets.sh test --output-dir "$FLOWFORM_SECRET_DIR"
+    scripts/secrets/generate-secrets.sh dev
+    scripts/secrets/generate-secrets.sh test --output-dir "$FLOWFORM_SECRET_DIR"
 
 Existing files are never overwritten; delete a file to rotate it.
 """
