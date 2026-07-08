@@ -6,6 +6,12 @@ the Caddy-specific parts of the plan: the EC2 application stack, the production
 Docker Compose runtime, Route 53 DNS-01 certificate issuance, and the locked-down
 network shape.
 
+Two deeper companions cover the implementation detail:
+[docker-hardening.md](docker-hardening.md) (Compose files, Caddyfile/Squid
+config, container constraints, proxy env plumbing) and
+[host-hardening.md](host-hardening.md) (Linux access paths, IMDSv2, host
+firewalls, patching, logging).
+
 ## Decision
 
 Run Caddy inside Docker Compose on the public EC2 application instance. Caddy is
@@ -29,26 +35,32 @@ Internet
 Route 53 A record: api.<domain> -> Elastic IP
   |
   v
-EC2 instance in public subnet
-  |
-  v
-Docker Compose
+PUBLIC proxy EC2 (public subnet)
   |-- Caddy container
-  |     |-- listens on public 443
+  |     |-- listens on public 443 (80 for redirect)
   |     |-- manages ACME certificates with Route 53 DNS-01
-  |     `-- reverse proxies to flask:8000
+  |     `-- reverse proxies to the app EC2's PRIVATE IP
   |
-  `-- Flask/Gunicorn container
-        |-- no public host port
-        `-- connects to RDS over the VPC
+  `-- Squid container (outbound forward proxy, port 3128
+        from the app security group only — see Egress Proxy below)
+  |
+  | private VPC route
+  v
+PRIVATE app EC2 (private subnet, no public IP, NO internet route)
+  `-- Docker Compose
+        `-- Flask/Gunicorn container
+              |-- reachable only from the proxy security group
+              |-- egress: proxy EC2 (Auth0 + AWS APIs), free S3
+              |   gateway endpoint (ECR layers), RDS — nothing else
+              `-- connects to RDS over the VPC
 ```
 
-The EC2 instance still has a public IP because the current plan deliberately
-avoids an ALB/ECS rewrite for the first staging rollout. The app container does
-not need a public port. Only Caddy binds to the host. This is a cost decision,
-not just a sequencing one — Caddy on the instance replaces an ALB entirely; see
-[cost-model.md](../cost-model.md) for the budget behind it and the triggers
-that would justify the ALB/private-subnet upgrade.
+Two instances, split by trust: the proxy box is the only internet-facing
+machine (inbound TLS termination AND allow-listed outbound), while the app
+box has no public IP and no route to the internet at all. There is still no
+ALB, no NAT Gateway, and no paid interface endpoints — the isolation costs
+one extra small instance; see [cost-model.md](../cost-model.md) for the
+budget and for why the endpoint-heavy variant of this design was rejected.
 
 ## Caddy Responsibilities
 
@@ -87,14 +99,18 @@ and [Risks / decisions](core-sketch-plan.md#risks--decisions-to-confirm-before-s
 
 ## Network Lockdown
 
-The practical first version is simple:
+Exact allowed paths — everything else denied:
 
 | Resource | Public inbound | Private inbound |
 |---|---:|---|
-| EC2 app instance | `443` from `0.0.0.0/0` | none required |
-| Caddy container | host-published `443` | Docker network to Flask |
-| Flask/Gunicorn container | none | Docker network from Caddy |
-| RDS Postgres | none | `5432` from EC2 security group |
+| Proxy EC2 (public subnet) | `80`/`443` from `0.0.0.0/0` | `3128` (Squid) from app SG only |
+| App EC2 (private subnet) | none — no public IP | backend port from proxy SG only |
+| RDS Postgres | none | `5432` from app SG only |
+
+Route tables are the load-bearing control: the private app subnet has **no**
+`0.0.0.0/0` route at all (no IGW, no NAT) — only local VPC routing and the
+free S3 gateway endpoint. Even a compromised container has no path to the
+internet except the allow-listed proxy.
 
 Do not publish the Flask/Gunicorn port on the EC2 host. In Compose, prefer
 `expose` for the backend container:
@@ -115,33 +131,65 @@ RDS should live in private subnets. Its security group should allow Postgres onl
 from the EC2 application security group, matching the database-stack direction
 in [Phase 1d](core-sketch-plan.md#phase-1--cdk-restructure-infra-only-nothing-deployed-to-prod-yet).
 
-## Outbound Access
+## Outbound Access and the Egress Proxy
 
-Even in the locked-down design, the EC2 host and containers need outbound access.
-Security groups are not domain-name firewalls, so the first staging version can
-use broad outbound HTTPS while keeping inbound strict.
-
-Recommended initial outbound rules:
+Security groups are not domain-name firewalls, so domain-level egress
+control lives in a forward proxy (Squid) on the proxy instance. The app
+instance has no internet route; ALL of its external traffic — including
+AWS API calls — goes through the proxy or fails.
 
 | Source | Destination | Port | Why |
 |---|---|---:|---|
-| EC2 / Caddy | Internet HTTPS | `443` | ACME provider and Route 53 API |
-| EC2 / containers | DNS resolver | `53` | Resolve AWS and ACME endpoints |
-| EC2 / Flask | RDS security group | `5432` | App database connections |
-| EC2 | AWS APIs | `443` | ECR pull, Secrets Manager, SSM, CloudWatch |
+| Proxy EC2 (Caddy) | Internet HTTPS | `443` | ACME provider and Route 53 API |
+| Proxy EC2 (Squid) | allow-listed domains | `443` | Auth0, AWS service endpoints, Sentry/PostHog if used |
+| App EC2 | Proxy EC2 SG | `3128` | forward proxy for all external traffic |
+| App EC2 | S3 gateway endpoint | `443` | ECR image layers (free endpoint; ECR stores layers in S3) |
+| App EC2 | RDS SG | `5432` | app database connections |
 
-A later hardening pass can replace some public AWS API access with VPC endpoints
-where it is worth the added complexity.
+Squid's allow-list (CONNECT/SNI-based): the Auth0 tenant + custom domain,
+and the regional AWS endpoints the app role actually uses —
+`secretsmanager`, `kms`, `email` (SES v2 API — note the backend sends via
+the **SESv2 API with boto3, not SMTP**), `ecr` auth, `ssm`, `sts`,
+`logs`.`ap-southeast-2.amazonaws.com`. Everything else is denied and
+logged.
+
+**Proxy configuration on the app instance** — the part that makes or
+breaks this design:
+
+- Docker daemon (`HTTP_PROXY`/`HTTPS_PROXY` in the systemd drop-in) for
+  ECR pulls; boto3/requests in the backend container via the same env
+  vars in the Compose file.
+- `NO_PROXY` must cover: `localhost,127.0.0.1,169.254.169.254` (IMDS —
+  identity breaks without it), the VPC CIDR (RDS + S3 gateway endpoint
+  traffic must NOT hairpin through the proxy), and Docker-internal
+  service names.
+- **Session Manager does not work through an HTTPS proxy.** Management
+  path for the private box is an **EC2 Instance Connect Endpoint**
+  (free) — or pay for the SSM interface-endpoint trio (~$22/month) if
+  EICE proves insufficient. The proxy box itself uses SSM normally.
+- Deploys to the app instance go via the chosen management path; image
+  pulls work because ECR *auth* rides the proxy and *layers* ride the S3
+  gateway endpoint.
+
+The Deferred Hardening section's VPC-endpoint upgrade remains available
+per service if proxying a particular AWS API becomes a recurring pain.
 
 ## IAM Boundary
 
-The EC2 instance profile should grant only what the runtime needs:
+Two instance profiles, split like the instances:
+
+**Proxy EC2 role** (internet-facing box gets the DNS power, nothing else):
 
 - Route 53 hosted-zone-scoped record changes for DNS-01 validation.
-- Read access to environment-specific Secrets Manager secrets and SSM
+- ECR pull for the Caddy/Squid images.
+- SSM Session Manager access (this box can use SSM normally).
+
+**App EC2 role** (= the security stack's existing `task_role`):
+
+- Read access to scope-specific Secrets Manager secrets and SSM
   parameters.
-- ECR image pull permissions for the backend and custom Caddy images.
-- SSM Session Manager access, avoiding SSH keys.
+- KMS encrypt/decrypt on the scope key; SES send.
+- ECR image pull permissions for the backend image.
 - CloudWatch logging permissions if Docker logs are shipped there.
 
 This lines up with [Phase 1c](core-sketch-plan.md#phase-1--cdk-restructure-infra-only-nothing-deployed-to-prod-yet)
