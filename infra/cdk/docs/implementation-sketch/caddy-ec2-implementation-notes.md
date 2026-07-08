@@ -10,7 +10,10 @@ Two deeper companions cover the implementation detail:
 [docker-hardening.md](docker-hardening.md) (Compose files, Caddyfile/Squid
 config, container constraints, proxy env plumbing) and
 [host-hardening.md](host-hardening.md) (Linux access paths, IMDSv2, host
-firewalls, patching, logging).
+firewalls, patching, logging). Use
+[ec2-compose-due-diligence-checklist.md](ec2-compose-due-diligence-checklist.md)
+as the staging-readiness checklist for the host/network/IAM pieces that Compose
+does not prove by itself.
 
 ## Decision
 
@@ -236,14 +239,11 @@ paths — see `infra/docker/docker-compose.proxy.yml` and
 
 Note that the backend still uses the instance role at runtime for its
 own AWS calls (KMS session encryption, the linkage-key secret, SES) —
-that is application behaviour, not config loading. **Known blocker:**
-`AwsSettings` currently requires static `access_key_id` /
-`secret_access_key` and passes them to boto3 explicitly, which prevents
-instance-role credentials. Make them optional (absent → boto3 default
-credential chain → IMDS) before the first EC2 deploy. This also means
-the backend container needs IMDS access — the same IMDSv2 hop-limit ≥ 2
-requirement already flagged for Caddy in
-[Certificate Flow](#certificate-flow).
+that is application behaviour, not config loading. `AwsSettings` already
+allows the static key fields to be absent, so boto3 can use the default
+credential chain and IMDS on EC2. This means the backend container needs
+IMDS access — the same IMDSv2 hop-limit ≥ 2 requirement already flagged
+for Caddy in [Certificate Flow](#certificate-flow).
 
 ## Compose and Caddyfile Sketch
 

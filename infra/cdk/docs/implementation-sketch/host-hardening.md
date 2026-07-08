@@ -3,7 +3,8 @@
 Companion to [caddy-ec2-implementation-notes.md](caddy-ec2-implementation-notes.md)
 (network shape) and [docker-hardening.md](docker-hardening.md) (what runs
 inside Docker). This doc covers the configuration of the Linux machines
-themselves.
+themselves. The staging proof checklist lives in
+[ec2-compose-due-diligence-checklist.md](ec2-compose-due-diligence-checklist.md).
 
 ## Both instances
 
@@ -62,8 +63,9 @@ Default-deny both directions, mirroring the security groups — the host
 firewall catches what a fat-fingered SG change would otherwise expose:
 
 - **Proxy**: inbound 80/443 from anywhere + 3128 from the app instance's
-  IP; outbound 443 (ACME, Route 53, allow-listed destinations Squid
-  dials), 5000 to the app instance, DNS/NTP.
+  IP; outbound 443 (ACME, Route 53, ECR auth/layers for proxy-side image
+  pulls, and allow-listed destinations Squid dials), 5000 to the app
+  instance, DNS/NTP.
 - **App**: inbound 5000 from the proxy IP + 22 from the EICE ENI;
   outbound 3128 to the proxy, 5432 to RDS, 443 to the S3 gateway
   endpoint prefix list, DNS to the VPC resolver (`10.0.0.2`), NTP to
@@ -108,6 +110,8 @@ firewall catches what a fat-fingered SG change would otherwise expose:
 - All egress knobs point at the proxy (daemon + containers), with
   `NO_PROXY` correct per docker-hardening.md — including the Python
   no-CIDR caveat.
+- Bootstrap runs under the same egress rule: SSM, Secrets Manager, KMS,
+  and ECR auth go through Squid; ECR layers use the S3 gateway endpoint.
 - Deploys: pull-and-restart only, driven over EICE/SSM-relay from CI;
   no git checkouts, no build artifacts, no leftover credentials.
 

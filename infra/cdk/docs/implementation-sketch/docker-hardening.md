@@ -5,6 +5,9 @@ Companion to [caddy-ec2-implementation-notes.md](caddy-ec2-implementation-notes.
 [host-hardening.md](host-hardening.md) (the Linux machines themselves).
 This doc covers what runs **inside Docker** on the two EC2 instances and
 how the containers are configured and constrained.
+For the operational checks that must still be proven in CDK, host bootstrap,
+IAM, and staging, see
+[ec2-compose-due-diligence-checklist.md](ec2-compose-due-diligence-checklist.md).
 
 Framing: Compose networking and file-secrets are conveniences here, not
 the security boundary. The real isolation comes from AWS route tables,
@@ -278,6 +281,20 @@ free gateway endpoint instead of hairpinning through Squid:
 }
 ```
 
+Host-side bootstrap on the app instance must use the same proxy path for
+AWS API calls before Compose starts. Export `HTTP_PROXY`/`HTTPS_PROXY`
+for the bootstrap process and keep `NO_PROXY` aligned with the daemon:
+IMDS, localhost, the VPC CIDR/RDS path, and the S3 gateway endpoint must
+stay direct. Bootstrap should fetch SSM parameters, Secrets Manager
+values, and any KMS decrypts through Squid; the app host should not get a
+temporary public route or direct internet egress just to bootstrap.
+
+The proxy instance is different: it is in the public subnet and may pull
+the Caddy image directly over outbound HTTPS using its instance role. Its
+host firewall/security group egress still needs to allow the specific
+paths required for ECR auth and image layers, plus ACME and Route 53 for
+Caddy.
+
 ## Rules
 
 1. **Fail closed.** If Squid is down, the app instance has no internet —
@@ -307,6 +324,12 @@ free gateway endpoint instead of hairpinning through Squid:
 From the app instance:
 
 ```bash
+# Docker daemon can authenticate to ECR through the proxy and pull layers
+# through the S3 gateway endpoint.
+docker pull <backend-image-ref>
+# Bootstrap can read config/secrets through the proxy.
+aws ssm get-parameter --name /flowform/<env>/backend/example --with-decryption
+aws secretsmanager get-secret-value --secret-id flowform/<scope>/app-secrets
 # allowed through Squid
 curl --proxy http://10.0.1.10:3128 https://<tenant>.au.auth0.com/.well-known/jwks.json
 # blocked by Squid (must fail)
