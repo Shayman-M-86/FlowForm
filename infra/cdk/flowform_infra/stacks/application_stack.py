@@ -1,6 +1,8 @@
 from aws_cdk import Stack
+from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_kms as kms
+from aws_cdk import aws_route53 as route53
 from constructs import Construct
 
 from flowform_infra.config import EnvConfig
@@ -87,6 +89,7 @@ class ApplicationStack(Stack):
         network_stack: NetworkStack,
         task_role: iam.IRole,
         kms_key: kms.Key,
+        hosted_zone: route53.IHostedZone | None = None,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -95,3 +98,113 @@ class ApplicationStack(Stack):
         self.network_stack = network_stack
         self.task_role = task_role
         self.kms_key = kms_key
+        self.hosted_zone = hosted_zone
+
+        self.proxy_role = iam.Role(
+            self,
+            "ProxyInstanceRole",
+            assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
+            description=f"Proxy EC2 role for FlowForm {env_config.env_name}",
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore")],
+        )
+
+        if hosted_zone is not None:
+            hosted_zone_arn = f"arn:aws:route53:::hostedzone/{hosted_zone.hosted_zone_id}"
+            self.proxy_role.add_to_policy(
+                iam.PolicyStatement(
+                    actions=[
+                        "route53:ChangeResourceRecordSets",
+                        "route53:ListResourceRecordSets",
+                    ],
+                    resources=[hosted_zone_arn],
+                )
+            )
+            self.proxy_role.add_to_policy(
+                iam.PolicyStatement(
+                    actions=["route53:GetChange"],
+                    resources=["arn:aws:route53:::change/*"],
+                )
+            )
+            self.proxy_role.add_to_policy(
+                iam.PolicyStatement(
+                    actions=["route53:ListHostedZonesByName"],
+                    resources=["*"],
+                )
+            )
+
+        self._grant_ecr_pull(self.proxy_role)
+
+        instance_type = ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE4_GRAVITON, ec2.InstanceSize.SMALL)
+        machine_image = ec2.MachineImage.latest_amazon_linux2023(cpu_type=ec2.AmazonLinuxCpuType.ARM_64)
+
+        self.proxy_instance = ec2.Instance(
+            self,
+            "ProxyInstance",
+            vpc=network_stack.vpc,
+            vpc_subnets=network_stack.proxy_subnets,
+            instance_name=f"flowform-{env_config.env_name}-proxy",
+            instance_type=instance_type,
+            machine_image=machine_image,
+            role=self.proxy_role,
+            security_group=network_stack.proxy_security_group,
+            associate_public_ip_address=True,
+            http_tokens=ec2.HttpTokens.REQUIRED,
+            http_put_response_hop_limit=2,
+        )
+
+        self.proxy_elastic_ip = ec2.CfnEIP(
+            self,
+            "ProxyElasticIp",
+            domain="vpc",
+            instance_id=self.proxy_instance.instance_id,
+        )
+
+        self.app_instance = ec2.Instance(
+            self,
+            "AppInstance",
+            vpc=network_stack.vpc,
+            vpc_subnets=network_stack.app_subnets,
+            instance_name=f"flowform-{env_config.env_name}-app",
+            instance_type=instance_type,
+            machine_image=machine_image,
+            role=task_role,
+            security_group=network_stack.app_security_group,
+            associate_public_ip_address=False,
+            http_tokens=ec2.HttpTokens.REQUIRED,
+            http_put_response_hop_limit=2,
+        )
+
+        # TODO: host bootstrap is intentionally deferred. The proxy host must
+        # write /opt/flowform/proxy.env and start docker-compose.proxy.yml;
+        # the app host must configure Docker's proxy, mount tmpfs secrets,
+        # write /opt/flowform/backend.env, and start docker-compose.app.yml.
+
+    def _grant_ecr_pull(self, role: iam.IRole) -> None:
+        """Grant enough ECR read access for EC2 hosts to pull FlowForm images."""
+        role.add_to_principal_policy(
+            iam.PolicyStatement(
+                actions=["ecr:GetAuthorizationToken"],
+                resources=["*"],
+            )
+        )
+        role.add_to_principal_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "ecr:BatchCheckLayerAvailability",
+                    "ecr:BatchGetImage",
+                    "ecr:GetDownloadUrlForLayer",
+                ],
+                # TODO: tighten to exact backend/caddy/squid repository ARNs
+                # when the ECR repositories are added to CDK. NOTE: the app
+                # box's task_role gets the matching grant in
+                # security_stack.py::_grant_backend_runtime_reads — keep both
+                # ECR wildcards in sync until real repo ARNs replace them.
+                resources=[
+                    self.format_arn(
+                        service="ecr",
+                        resource="repository",
+                        resource_name=f"flowform-{self.env_config.env_name}-*",
+                    )
+                ],
+            )
+        )

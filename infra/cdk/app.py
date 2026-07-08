@@ -67,6 +67,7 @@ if env_config.full_deployment:
         network_stack=network_stack,
         task_role=security_stack.task_role,
         kms_key=security_stack.kms_key,
+        hosted_zone=security_stack.email_identity.hosted_zone,
         env=cdk_env,
     )
     application_stack.add_dependency(network_stack)

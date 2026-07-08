@@ -48,9 +48,7 @@ class SecurityStack(Stack):
     locally; see app.py). One instance serves every env in its scope.
     """
 
-    def __init__(
-        self, scope: Construct, construct_id: str, *, scope_config: SecurityScopeConfig, **kwargs
-    ) -> None:
+    def __init__(self, scope: Construct, construct_id: str, *, scope_config: SecurityScopeConfig, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         scope_name = scope_config.scope_name
@@ -173,9 +171,7 @@ class SecurityStack(Stack):
         #     would, instead of carrying broad user permissions.
         assumed_by: iam.PrincipalBase = iam.ServicePrincipal("ec2.amazonaws.com")
         if scope_config.local_dev_assume:
-            assumed_by = iam.CompositePrincipal(
-                assumed_by, iam.AccountPrincipal(scope_config.account)
-            )
+            assumed_by = iam.CompositePrincipal(assumed_by, iam.AccountPrincipal(scope_config.account))
 
         self.task_role = iam.Role(
             self,
@@ -192,6 +188,7 @@ class SecurityStack(Stack):
         self.kms_key.grant_encrypt_decrypt(self.task_role)
 
         self.email_identity.grant_send(self.task_role)
+        self._grant_backend_runtime_reads(scope_config)
 
         # Published so consumers can find the role without hardcoding the
         # CDK-generated name: dev assume-role profiles (~/.aws/config
@@ -221,17 +218,13 @@ class SecurityStack(Stack):
                 client_ids=["sts.amazonaws.com"],
             ).open_id_connect_provider_arn
         else:
-            oidc_provider_arn = (
-                f"arn:aws:iam::{scope_config.account}:oidc-provider/token.actions.githubusercontent.com"
-            )
+            oidc_provider_arn = f"arn:aws:iam::{scope_config.account}:oidc-provider/token.actions.githubusercontent.com"
 
         github_actions_principal = iam.FederatedPrincipal(
             oidc_provider_arn,
             conditions={
                 "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
-                "StringLike": {
-                    "token.actions.githubusercontent.com:sub": f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:*"
-                },
+                "StringLike": {"token.actions.githubusercontent.com:sub": f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:*"},
             },
             assume_role_action="sts:AssumeRoleWithWebIdentity",
         )
@@ -256,4 +249,55 @@ class SecurityStack(Stack):
             assumed_by=github_actions_principal,
             managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("ReadOnlyAccess")],
             description=f"GitHub Actions read-only CI preview, e.g. cdk diff ({scope_config.ci_env_name})",
+        )
+
+    def _grant_backend_runtime_reads(self, scope_config: SecurityScopeConfig) -> None:
+        """Grant EC2 app-host reads that belong to the shared backend role."""
+        self.task_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "ssm:GetParameter",
+                    "ssm:GetParameters",
+                    "ssm:GetParametersByPath",
+                ],
+                resources=[
+                    self.format_arn(
+                        service="ssm",
+                        resource="parameter",
+                        resource_name=f"flowform/{scope_config.scope_name}/*",
+                    ),
+                    self.format_arn(
+                        service="ssm",
+                        resource="parameter",
+                        resource_name=f"flowform/{scope_config.ci_env_name}/*",
+                    ),
+                ],
+            )
+        )
+        self.task_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["ecr:GetAuthorizationToken"],
+                resources=["*"],
+            )
+        )
+        self.task_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "ecr:BatchCheckLayerAvailability",
+                    "ecr:BatchGetImage",
+                    "ecr:GetDownloadUrlForLayer",
+                ],
+                # TODO: tighten to the exact backend ECR repository ARN when
+                # the repository is added to CDK. NOTE: the proxy box's role
+                # gets the matching grant in
+                # application_stack.py::_grant_ecr_pull — keep both ECR
+                # wildcards in sync until real repo ARNs replace them.
+                resources=[
+                    self.format_arn(
+                        service="ecr",
+                        resource="repository",
+                        resource_name=f"flowform-{scope_config.ci_env_name}-*",
+                    )
+                ],
+            )
         )

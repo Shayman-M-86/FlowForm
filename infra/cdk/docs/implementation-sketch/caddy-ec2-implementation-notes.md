@@ -11,7 +11,7 @@ Two deeper companions cover the implementation detail:
 config, container constraints, proxy env plumbing) and
 [host-hardening.md](host-hardening.md) (Linux access paths, IMDSv2, host
 firewalls, patching, logging). Use
-[ec2-compose-checkpoint.md](ec2-compose-checkpoint.md) for the current
+[ec2-compose-checkpoint.md](checkpoints/ec2-compose-checkpoint.md) for the current
 Compose split handoff snapshot, and use
 [ec2-compose-due-diligence-checklist.md](ec2-compose-due-diligence-checklist.md)
 as the staging-readiness checklist for the host/network/IAM pieces that Compose
@@ -117,6 +117,14 @@ Route tables are the load-bearing control: the private app subnet has **no**
 `0.0.0.0/0` route at all (no IGW, no NAT) — only local VPC routing and the
 free S3 gateway endpoint. Even a compromised container has no path to the
 internet except the allow-listed proxy.
+
+The app security group still holds a few egress rules that are **not** the
+proxy path — DNS on `53` to the VPC resolver, NTP on `123` to the Amazon
+Time Sync link-local address (`169.254.169.123`), and `22` inbound from the
+EC2 Instance Connect Endpoint. These do not contradict "no internet route":
+every one of them terminates inside the VPC or at a link-local/AWS-managed
+address, never on the public internet. The only *internet-bound* egress the
+app box has is `3128` to Squid on the proxy.
 
 Do not publish the Flask/Gunicorn port on any public interface. In the private
 app Compose file, bind Gunicorn only to the app instance's private IP:

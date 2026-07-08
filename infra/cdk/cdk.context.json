@@ -6,5 +6,16 @@
   "hosted-zone:account=908123139858:domainName=flow-form.com.au:region=us-east-1": {
     "Id": "/hostedzone/Z01635091E8GCMFK61QNC",
     "Name": "flow-form.com.au."
-  }
+  },
+  "availability-zones:account=908123139858:region=ap-southeast-2": [
+    "ap-southeast-2a",
+    "ap-southeast-2b",
+    "ap-southeast-2c"
+  ],
+  "cc-api-provider:account=908123139858:expectedMatchCount=exactly-one:propertiesToReturn.0=PrefixListId:propertyMatch.PrefixListName=com.amazonaws.ap-southeast-2.s3:region=ap-southeast-2:typeName=AWS$:$:EC2$:$:PrefixList": [
+    {
+      "PrefixListId": "pl-6ca54005",
+      "Identifier": "pl-6ca54005"
+    }
+  ]
 }

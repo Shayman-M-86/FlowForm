@@ -112,3 +112,71 @@ def test_ssm_parameters_created():
     template.has_resource_properties(
         "AWS::SSM::Parameter", {"Name": "/flowform/nonprod/kms-key-arn"}
     )
+
+
+def test_app_role_has_scoped_bootstrap_reads_and_ecr_pull():
+    template = _synth_security_stack("dev")
+    template.has_resource_properties(
+        "AWS::IAM::Policy",
+        {
+            "PolicyDocument": {
+                "Statement": Match.array_with(
+                    [
+                        Match.object_like(
+                            {
+                                "Action": [
+                                    "ssm:GetParameter",
+                                    "ssm:GetParameters",
+                                    "ssm:GetParametersByPath",
+                                ],
+                                "Resource": Match.array_with(
+                                    [
+                                        {
+                                            "Fn::Join": [
+                                                "",
+                                                Match.array_with(
+                                                    [
+                                                        ":ssm:ap-southeast-2:908123139858:parameter/flowform/nonprod/*"
+                                                    ]
+                                                ),
+                                            ]
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                "",
+                                                Match.array_with(
+                                                    [
+                                                        ":ssm:ap-southeast-2:908123139858:parameter/flowform/staging/*"
+                                                    ]
+                                                ),
+                                            ]
+                                        },
+                                    ]
+                                ),
+                            }
+                        ),
+                        Match.object_like({"Action": "ecr:GetAuthorizationToken", "Resource": "*"}),
+                        Match.object_like(
+                            {
+                                "Action": [
+                                    "ecr:BatchCheckLayerAvailability",
+                                    "ecr:BatchGetImage",
+                                    "ecr:GetDownloadUrlForLayer",
+                                ],
+                                "Resource": {
+                                    "Fn::Join": [
+                                        "",
+                                        Match.array_with(
+                                            [
+                                                ":ecr:ap-southeast-2:908123139858:repository/flowform-staging-*"
+                                            ]
+                                        ),
+                                    ]
+                                },
+                            }
+                        ),
+                    ]
+                )
+            }
+        },
+    )
