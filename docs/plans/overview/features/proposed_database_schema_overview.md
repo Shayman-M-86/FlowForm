@@ -1,7 +1,9 @@
 # Proposed Database Schema Overview
 
 ## Goal
+
 Provide a clear and scalable database structure to support:
+
 - project-based RBAC
 - survey creation and management
 - public and link-based survey access
@@ -13,9 +15,11 @@ This schema is designed to stay simple initially, while allowing future expansio
 # 1. Core Entities
 
 ## Users
+
 Represents authenticated users from Auth0.
 
 Key fields:
+
 - auth0_user_id
 - email
 - display_name
@@ -23,9 +27,11 @@ Key fields:
 ---
 
 ## Projects
+
 Top-level container for all work.
 
 Key fields:
+
 - name
 - slug
 - created_by
@@ -33,12 +39,15 @@ Key fields:
 ---
 
 ## Project Memberships
+
 Links users to projects.
 
 Key idea:
+
 - one row per user per project
 
 Responsibilities:
+
 - tracks who belongs to a project
 - stores membership state (active, invited, etc.)
 
@@ -47,29 +56,35 @@ Responsibilities:
 # 2. RBAC (Roles & Permissions)
 
 ## Permissions
+
 A fixed catalog defined by the system.
 
 Examples:
+
 - project.read
 - project.update
 - survey.create
 - survey.update
 
 Key idea:
+
 - permissions are not user-defined
 
 ---
 
 ## Project Roles
+
 Defined per project.
 
 Examples:
+
 - owner
 - admin
 - editor
 - viewer
 
 Key idea:
+
 - each project can define its own roles
 
 ---
@@ -79,6 +94,7 @@ Key idea:
 Project roles are linked to permissions.
 
 Key idea:
+
 - roles define capabilities
 - permissions are reusable building blocks
 
@@ -89,6 +105,7 @@ Key idea:
 Memberships are assigned one or more roles.
 
 Key idea:
+
 - users inherit permissions through roles
 
 ---
@@ -96,15 +113,18 @@ Key idea:
 # 3. Surveys
 
 ## Surveys
+
 Represents a questionnaire inside a project.
 
 Key fields:
+
 - project_id
 - title
 - status (draft, published, archived)
 - visibility (private, link_only, public)
 
 Key idea:
+
 - surveys belong to a project
 - visibility controls public access
 
@@ -119,6 +139,7 @@ Three modes:
 - public → accessible to anyone
 
 Additional flags:
+
 - allow_public_responses
 
 ---
@@ -130,6 +151,7 @@ Additional flags:
 Each survey can optionally have a public identifier.
 
 Purpose:
+
 - safe external URLs
 - avoids exposing internal IDs
 
@@ -140,6 +162,7 @@ Purpose:
 Separate shareable links tied to a survey.
 
 Capabilities:
+
 - enable/disable access
 - expire links
 - control response permissions
@@ -153,6 +176,7 @@ Capabilities:
 Represents submitted answers to a survey.
 
 Supports:
+
 - authenticated submissions
 - anonymous submissions
 - tracking submission source (public link vs user)
@@ -180,19 +204,25 @@ Project → Surveys → Responses
 # 7. Design Principles
 
 ### 1. Membership is the core
+
 All project access flows through memberships.
 
 ### 2. Roles are flexible
+
 Projects can define their own roles using a fixed permission set.
 
 ### 3. Permissions are controlled
+
 Avoid dynamic or user-defined permission names.
 
 ### 4. Public access is separate
+
 Handled through survey visibility and sharing, not roles.
 
 ### 5. Keep it minimal first
+
 Start with:
+
 - memberships
 - project roles
 - role-permission mapping
@@ -216,9 +246,9 @@ Only introduce when necessary:
 # Summary
 
 This schema provides:
+
 - clear separation of concerns
 - flexible role management per project
 - simple public access model for surveys
 
 It is designed to be easy to reason about while supporting future growth.
-

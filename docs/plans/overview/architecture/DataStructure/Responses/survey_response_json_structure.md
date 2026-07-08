@@ -17,6 +17,7 @@ The stored JSON is **directly** one of the family-specific payloads below — th
 # 1. CHOICE
 
 Used for:
+
 - single select
 - multi select
 
@@ -27,6 +28,7 @@ Used for:
 ```
 
 Notes:
+
 - Always an array
 - Single select = one item
 - Multi select = multiple items
@@ -37,6 +39,7 @@ Notes:
 # 2. FIELD
 
 Used for:
+
 - text
 - email
 - number
@@ -49,6 +52,7 @@ Used for:
 ```
 
 Notes:
+
 - Type depends on `schema.field_type`
 - No extra metadata stored
 
@@ -57,6 +61,7 @@ Notes:
 # 3. MATCHING
 
 Used for:
+
 - pairing left items to right items
 
 ```json
@@ -68,6 +73,7 @@ Used for:
 ```
 
 Notes:
+
 - IDs must match `schema.left_items[].id` and `schema.right_items[].id`
 - One entry per matched pair
 
@@ -76,6 +82,7 @@ Notes:
 # 4. RATING
 
 Used for:
+
 - scales
 - sliders
 
@@ -86,6 +93,7 @@ Used for:
 ```
 
 Notes:
+
 - Must fall within `schema.min` and `schema.max`
 
 ---
@@ -113,7 +121,7 @@ Notes:
 ---
 
 This structure ensures:
+
 - consistency across all surveys
 - flexibility for dynamic schemas
 - clean separation between database schema (keys, families, metadata) and raw response payload
-

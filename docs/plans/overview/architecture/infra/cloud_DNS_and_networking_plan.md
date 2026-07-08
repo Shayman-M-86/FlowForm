@@ -1,9 +1,9 @@
 # Flow Form — Cloud DNS and Networking Plan
 
-
 ## DNS and Networking
 
 ### Domain Structure
+
 FlowForm will use a primary domain with separate subdomains for the frontend and backend services.
 
 Planned structure:
@@ -13,6 +13,7 @@ Planned structure:
 - *(optional later)* **auth.flowform.com** → Auth0 custom authentication domain
 
 ### DNS Management
+
 DNS will be managed using **Amazon Route 53**.
 
 Route 53 records will route traffic to the appropriate AWS services using alias records.
@@ -54,4 +55,3 @@ The application will redirect users to Auth0 for login and token issuance. After
 If a custom domain is used for Auth0 in the future, it may be configured as:
 
 - **auth.flowform.com** → Auth0 tenant
-

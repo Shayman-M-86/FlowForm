@@ -1,6 +1,7 @@
 ## Pass report
 
 Changed files:
+
 * `backend/app/services/public_submissions/core/session_starter.py` — pass both `session` and `access.link` (when present) as contexts to `commit_with_err_handle`, so constraint errors from the link row are translatable
 * `backend/tests/integration/core/test_transaction_boundary.py` — two new tests confirming link consumption commits atomically with session creation
 
@@ -11,13 +12,16 @@ Behavior implemented:
 * Error translation now covers link-side constraint violations (e.g. duplicate `used_at` on a race) in addition to session-side violations
 
 Tests run:
+
 * `bash backend/scripts/run-tests.sh --ai -k "test_transaction_boundary"` — 2 passed
 * `bash backend/scripts/run-tests.sh --ai -k "test_public_submission_access_grant or test_recognition_token_lookup or test_token_action or test_subject_resolution_result or test_transaction_boundary"` — 34 passed
 
 Failures or skipped validation:
+
 * none
 
 Trace notes:
+
 * route entry points touched: none
 * service methods touched: `SessionStarter.start` — `commit_with_err_handle` call updated to include `access.link` in contexts when present
 * repository helpers touched: none
@@ -28,9 +32,11 @@ Trace notes:
   * `test_second_start_on_consumed_link_raises_already_used` — asserts `LinkAlreadyUsedError` on a second start attempt, proving `used_at` was persisted by the first commit
 
 Remaining risks:
+
 * Merge block in `session_starter.py` still calls `subjects.get_subject` twice (for `merge_subject_id` and `merge_into_subject_id`) — low risk, no doc-driven reason to change now
 * `SubjectTokenService.issue()` and `rotate()` (ORM-arg methods) remain unused since pass 05 moved dispatch into `apply_token_action` — target 11 should remove them
 * `ProjectSubjectResolver` in `services/submissions/` is divergent from the new `SubjectResolver` — target 11 should decommission it
 
 Next recommended pass:
+
 * Target 08: verify `last_used_at` update path — docs require `last_used_at` to be updated when the recognition token participates in open-access subject resolution (public slug / general link), but not for assigned links

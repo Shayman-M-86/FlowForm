@@ -37,18 +37,22 @@ Defines how survey questions are structured using a shared JSON model with famil
 ### Families
 
 #### `choice`
+
 - Represents selectable options.
 - `schema` defines options and selection limits.
 
 #### `field`
+
 - Represents user input fields.
 - `schema` defines the input type.
 
 #### `matching`
+
 - Represents paired relationships.
 - `schema` defines two sets of items to match.
 
 #### `rating`
+
 - Represents numeric scales.
 - `schema` defines minimum and maximum values.
 
@@ -67,4 +71,3 @@ Defines how survey questions are structured using a shared JSON model with famil
 Questions are stored as JSON in `question_schema`.
 
 Families group questions by behaviour while allowing flexible configuration.
-

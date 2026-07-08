@@ -114,6 +114,7 @@ Relevant tables:
 - `survey_scoring_rules`
 
 #### Surveys
+
 A survey belongs to a project and contains the high-level metadata:
 
 - title
@@ -126,6 +127,7 @@ A survey belongs to a project and contains the high-level metadata:
 The visibility rules are enforced with checks, so the database itself helps keep public/link-only behavior consistent.
 
 #### Survey Versions
+
 Each survey can have many versions. A version has:
 
 - `version_number`
@@ -137,6 +139,7 @@ Each survey can have many versions. A version has:
 Only `survey_versions` use soft delete. This is a thoughtful decision because old versions may still be required to correctly interpret historical answers.
 
 #### Draft Components vs Published Artifact
+
 The design clearly distinguishes between:
 
 - **draft/build inputs**
@@ -175,12 +178,14 @@ The schema includes:
 - `response_subject_mappings`
 
 #### Public Links
+
 Public survey access is handled with token prefixes and token hashes.
 Only the hash is stored as the authoritative secret value.
 
 That is the right direction for bearer-token style access because it avoids storing raw tokens in the database.
 
 #### Pseudonymous Subjects
+
 `response_subject_mappings` allows a real internal user to be represented by a stable pseudonymous UUID within a project.
 
 This supports a privacy-preserving model where the response database can identify repeat subjects without storing their real user identity.
@@ -323,19 +328,24 @@ This is helpful for asynchronous submission pipelines and troubleshooting.
 ## Key Structural Strengths
 
 ### Strong separation of concerns
+
 The two-database split is clear and consistent.
 
 ### Good privacy posture
+
 Sensitive answers are separated from application governance data.
 Pseudonymous subject mapping supports anonymity and controlled re-identification boundaries.
 
 ### Strong publish/version model
+
 The design treats the published compiled schema as authoritative and protects it from accidental mutation.
 
 ### Defensive integrity constraints
+
 Composite foreign keys and check constraints help prevent cross-project and cross-survey mistakes.
 
 ### Flexible answer storage
+
 JSONB answer payloads allow different question families without exploding the schema into too many narrow answer tables.
 
 ---
@@ -343,13 +353,16 @@ JSONB answer payloads allow different question families without exploding the sc
 ## Important Tradeoffs
 
 ### 1. JSONB is flexible, but backend validation is still essential
+
 The response database validates shape, not full business meaning.
 The application must still validate answers against the frozen compiled schema.
 
 ### 2. Separate databases reduce direct relational guarantees across boundaries
+
 Because the response database is separate, cross-database integrity must be enforced by the application and write pipeline, not by SQL foreign keys.
 
 ### 3. Draft tables are build inputs, not historical truth
+
 The schema is designed so published history should be interpreted from `compiled_schema`, not by reconstructing meaning from draft question/rule tables later.
 
 This is the right choice, but it means the compile/publish pipeline becomes a critical application responsibility.
@@ -389,4 +402,3 @@ A simple way to think about the structure is:
 - **Pseudonymous IDs** allow privacy-preserving linkage when needed.
 
 That is the core shape of the system.
-

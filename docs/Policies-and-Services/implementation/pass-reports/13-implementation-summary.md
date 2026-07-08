@@ -127,6 +127,7 @@ One structural note (not a disagreement, but worth recording):
 ## Test count at end of pass 12
 
 67 integration tests passing across:
+
 - `test_public_submission_access_grant` (8)
 - `test_project_subject_identities` (1)
 - `test_token_action` (9)

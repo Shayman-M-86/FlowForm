@@ -1,6 +1,7 @@
 # Flow Form — Cloud Architecture and Infrastructure Plan
 
 ## Purpose
+
 This document gives a short overview of the planned cloud hosting and infrastructure approach for **FlowForm**.
 
 The goal is to keep the architecture modern, container-based, and reasonably cost-effective while still using production-style AWS services.
@@ -8,6 +9,7 @@ The goal is to keep the architecture modern, container-based, and reasonably cos
 ---
 
 ## Cloud Provider
+
 - **AWS**
 
 FlowForm will be hosted in AWS, with the frontend and backend deployed as separate services.
@@ -15,14 +17,17 @@ FlowForm will be hosted in AWS, with the frontend and backend deployed as separa
 ---
 
 ## Frontend Hosting
+
 - **React Single Page Application**
 - **Static hosting with Amazon S3**
 - **Content delivery through Amazon CloudFront**
 
 ### Planned Role
+
 The frontend will be built into static files and hosted in an S3 bucket.
 
 CloudFront will sit in front of S3 to provide:
+
 - fast global delivery
 - HTTPS support
 - caching of static assets
@@ -31,11 +36,13 @@ CloudFront will sit in front of S3 to provide:
 ---
 
 ## Backend Hosting
+
 - **Flask API**
 - **Containerized with Docker**
 - **Hosted on Amazon ECS with Fargate**
 
 ### Planned Role
+
 The backend will run as a containerized service and expose the application API used by the frontend.
 
 Amazon ECS Fargate is the preferred deployment target because it provides a good middle ground between simplicity and real-world AWS container infrastructure.
@@ -81,6 +88,7 @@ AWS infrastructure will trust and validate Auth0-issued tokens in the backend AP
 ---
 
 ## DNS and Networking
+
 - **Amazon Route 53** for DNS management
 - **CloudFront** for frontend routing and HTTPS
 - **Application Load Balancer** for backend API routing and HTTPS
@@ -88,6 +96,7 @@ AWS infrastructure will trust and validate Auth0-issued tokens in the backend AP
 - AWS Certificate Manager for TLS certificates
 
 ### Planned Role
+
 Route 53 will manage the DNS records for the FlowForm domain and route traffic to the appropriate AWS services.
 
 For more detailed DNS and networking plans, see the separate document: [Flow Form — Cloud DNS and Networking Plan](./flow_form_cloud_DNS_and_networking_plan.md)

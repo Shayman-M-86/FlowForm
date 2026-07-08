@@ -52,6 +52,7 @@ returning respondent be recognised as the same `ProjectSubject` across visits
 without requiring authentication.
 
 Key properties:
+
 - Only the hash is stored; the raw token never touches the database.
 - A token is a *candidate*, not an authority. `SubjectResolver` decides whether
   it wins, gets merged, or gets rotated.

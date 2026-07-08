@@ -20,6 +20,7 @@ bash scripts/shared_script/sync-openapi.sh
 ```
 
 This runs two things in sequence:
+
 - Exports `backend/openapi.yaml` from the Python sources
 - Generates `frontend/apps/studio-app/src/api/generated/schema.ts`
 
@@ -53,6 +54,7 @@ from `../generated/schema` — no hand-written types.
 ### 5. Update requests.ts
 
 Add a function for the new endpoint. Rules:
+
 - First argument is always `apiClient: OpenApiFetchClient`
 - Path string copied exactly from `schema.ts`
 - `if (error) throw error` after every call
@@ -61,6 +63,7 @@ Add a function for the new endpoint. Rules:
 ### 6. Update hooks.ts
 
 Add a `useQuery` or `useMutation` wrapper:
+
 - Call `useOpenApiClient()` internally
 - For mutations, call `queryClient.invalidateQueries` for all affected keys
   in `onSuccess`

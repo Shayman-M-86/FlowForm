@@ -11,6 +11,8 @@ Two deeper companions cover the implementation detail:
 config, container constraints, proxy env plumbing) and
 [host-hardening.md](host-hardening.md) (Linux access paths, IMDSv2, host
 firewalls, patching, logging). Use
+[ec2-compose-checkpoint.md](ec2-compose-checkpoint.md) for the current
+Compose split handoff snapshot, and use
 [ec2-compose-due-diligence-checklist.md](ec2-compose-due-diligence-checklist.md)
 as the staging-readiness checklist for the host/network/IAM pieces that Compose
 does not prove by itself.

@@ -3,6 +3,7 @@
 Pass: 03 — AWS Wiring and Crypto Smoke Test
 
 Changed files:
+
 * `backend/pyproject.toml` — added `boto3>=1.38.0` dependency
 * `backend/uv.lock` — regenerated with boto3 and transitive deps
 * `backend/app/core/config.py` — added `EncryptionSettings` model and `encryption` field on `FlowForm`
@@ -13,6 +14,7 @@ Changed files:
 * `infra/docker/.backend.env` — renamed AWS vars to `FLOWFORM_ENCRYPTION_*` prefix
 
 Behavior implemented:
+
 * `wrap_dek` / `unwrap_dek` call real KMS encrypt/decrypt with encryption context
 * `get_linkage_secret` fetches from Secrets Manager with optional `version_id` for rotation
 * `DekCache` is a thread-safe worker-local cache keyed by session locator bytes with TTL, explicit eviction, and clear-all
@@ -20,18 +22,22 @@ Behavior implemented:
 * AWS credentials passed as `SecretStr` to prevent accidental logging
 
 Tests run:
+
 * `bash backend/scripts/run-tests.sh --ai -k "dek_cache"` — 10 passed
 * `bash backend/scripts/run-tests.sh --ai -k "crypto_smoke"` — 2 passed
 * `bash backend/scripts/run-tests.sh --ai -k "crypto"` — 39 passed
 * `bash backend/scripts/run-tests.sh --ai` — 419 passed, 1 failed (pre-existing: `test_submission_session_response_omits_survey_schema_and_answers`)
 
 Failures or skipped validation:
+
 * 1 pre-existing failure in `tests/unit/test_submission_session_contracts.py::test_submission_session_response_omits_survey_schema_and_answers` — unrelated to this pass (survey schema field shape), last touched in commit `67b735b`.
 
 Policy change during pass:
+
 * Environment variable naming: all encryption env vars now use `FLOWFORM_ENCRYPTION_` prefix instead of bare `ENCRYPTION_*` / `AWS_*`. This aligns with the existing pydantic-settings `env_nested_delimiter="_"` convention used by all other `FLOWFORM_*` vars. Operator renamed vars in `.backend.env` accordingly.
 
 Trace notes:
+
 * entry points touched: none (no routes or services modified)
 * service methods touched: none
 * repository helpers touched: none
@@ -40,6 +46,7 @@ Trace notes:
 * tests that now describe behavior: `test_dek_cache.py` (10 unit tests), `test_crypto_smoke.py` (2 integration tests)
 
 Remaining risks:
+
 * boto3 client is created per-call in `kms.py` and `secrets.py`. For production throughput, a shared client or session-scoped client may be needed. This is an optimisation for a later pass or post-MVP.
 * `EncryptionSettings` is `Optional` on `FlowForm` — the app starts without encryption vars. Pass 04 should assert `settings.flowform.encryption is not None` at session-start time.
 

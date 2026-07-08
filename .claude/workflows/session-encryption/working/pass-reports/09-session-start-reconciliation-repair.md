@@ -3,11 +3,13 @@
 Pass: 09 — Session-Start Reconciliation Repair
 
 Changed files:
+
 * `backend/app/repositories/core/submission_sessions.py` — added `get_in_progress_sessions()` query helper
 * `backend/app/services/public_submissions/core/reconciliation.py` — new file, reconciliation service
 * `backend/tests/integration/response/test_session_start_reconciliation.py` — new file, integration tests
 
 Behavior implemented:
+
 * `reconcile_orphaned_sessions()` scans committed in-progress core sessions, derives session locators, checks the response DB for matching envelopes, and marks missing-envelope sessions as `abandoned`
 * Completed and already-abandoned sessions are excluded from scanning by the `get_in_progress_sessions()` query
 * Returns a structured `ReconciliationResult` with counts and safe session IDs for operator review
@@ -15,15 +17,19 @@ Behavior implemented:
 * Safe logging: only `session_id` and aggregate counts are logged; no locators, tokens, or key material
 
 Tests run:
+
 * `bash backend/scripts/run-tests.sh --ai -k "session_start_reconciliation or session_start_encryption"` — 14 passed
 
 Failures or skipped validation:
+
 * none
 
 Policy change during pass:
+
 * none
 
 Trace notes:
+
 * entry points touched: `reconcile_orphaned_sessions()` in `reconciliation.py`
 * service methods touched: `reconcile_orphaned_sessions()`
 * repository helpers touched: `get_in_progress_sessions()` in `submission_sessions.py`; `mark_abandoned()` (existing, called by reconciliation); `get_by_locator()` in `response_envelope_repo.py` (existing, called by reconciliation)
@@ -32,6 +38,7 @@ Trace notes:
 * tests that now describe behavior: `TestReconcileOrphanedSessions` (4 tests), `TestAbandonedSessionRejectedByLoader` (1 test), `TestKmsFailureStillRollsBack` (1 test)
 
 Remaining risks:
+
 * No scheduler or CLI runner for reconciliation — operator must call `reconcile_orphaned_sessions()` manually or wire it into a background task (out of scope per spec)
 * Orphan response envelopes without core sessions are not discovered by this reconciliation path — they rely on the existing compensating delete in `SessionStarter._compensate_orphan_envelope()`
 

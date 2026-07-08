@@ -80,6 +80,7 @@ Authenticated link adds an extra guard: logged-in user must match the assigned i
 ## Step 4 — Merge
 
 When a weaker subject loses:
+
 - `weaker.canonical_subject_id = stronger.id`
 - stronger subject remains canonical (`canonical_subject_id = null`)
 - never merge a subject into itself, never create chains
@@ -89,6 +90,7 @@ When a weaker subject loses:
 ## Step 5 — Identity write
 
 Only when `needs_identity_write = True` (two cases):
+
 - logged in, no token, no identity → new subject, create identity
 - logged in, valid token, no identity → attach identity to token subject
 

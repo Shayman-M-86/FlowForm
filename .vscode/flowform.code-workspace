@@ -21,6 +21,11 @@
         "workbench.colorCustomizations": {
             "statusBar.background": "#be1635"
         },
+        "markdownlint.config": {
+            "default": true,
+            "MD013": false,
+            "MD060": false
+        },
         "python.defaultInterpreterPath": "${workspaceFolder:backend}/.venv/bin/python",
         "python.envFile": "${workspaceFolder:backend}/.env.dev",
         "python.analysis.extraPaths": [

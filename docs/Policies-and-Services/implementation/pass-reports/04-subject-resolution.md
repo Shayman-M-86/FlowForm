@@ -1,12 +1,14 @@
 ## Pass report
 
 Changed files:
+
 * `backend/app/services/results.py` — added `TokenAction` type alias and `SubjectResolutionResult` dataclass
 * `backend/app/services/public_submissions/core/subject_resolver.py` — full rewrite: new `resolve()` signature takes flat scalar inputs; `resolve_assigned_subject`, `resolve_for_open_access`, `_reconcile_identity_and_token` return `SubjectResolutionResult`; added `_resolve_to_canonical` helper; removed all inline token and identity side effects
 * `backend/app/services/public_submissions/core/session_starter.py` — updated to call token lookup first, pass scalar fields to resolver, unpack `SubjectResolutionResult`; applies merge writes, identity writes, and token mechanics based on `token_action` before session create
 * `backend/tests/integration/core/test_subject_resolution_result.py` — new focused test file
 
 Behavior implemented:
+
 * `SubjectResolutionResult` carries: `final_subject_id`, `subject_source`, `token_action` (`issue|rotate|keep|mark_used|none`), `merge_subject_id`, `merge_into_subject_id`
 * `_resolve_to_canonical` follows `canonical_subject_id` one level before comparisons (doc: do not create canonical chains)
 * Open-access 7 cases from `logged-in-reconciliation.md` decision table all produce correct `token_action` and `merge_*` fields
@@ -16,13 +18,16 @@ Behavior implemented:
 * `session_starter.py`: merge write (`set_canonical_subject`) applied before token mechanics; identity write applied only when `subject_source == "authenticated_user"` and no existing identity; token mechanics dispatched on `token_action`
 
 Tests run:
+
 * `bash backend/scripts/run-tests.sh --ai -k "test_subject_resolution_result"` — 12 passed
 * `bash backend/scripts/run-tests.sh --ai -k "test_public_submission_access_grant or test_recognition_token_lookup"` — 11 passed (no regression)
 
 Failures or skipped validation:
+
 * none
 
 Trace notes:
+
 * route entry points touched: none
 * service methods touched:
   * `SubjectResolver.resolve` — new signature, dispatches on `access_method` string
@@ -49,9 +54,11 @@ Trace notes:
   * `test_assigned_subject_non_canonical_resolves_to_canonical`
 
 Remaining risks:
+
 * `session_starter.py` calls `subjects.get_subject` a second time for `issue`/`rotate` token action — the subject was already loaded during resolution but not threaded through. Low risk (subject is always present at this point) but an extra DB read. Target 05 or 07 can clean up.
 * `_reconcile_identity_and_token` case `(no identity, valid token)` returns `token_action="mark_used"` — but the doc table row "Yes | Valid | No | Token subject | Attach user identity to token subject; update token `last_used_at`" means identity attachment also happens. Orchestrator does write the identity in this case (checks `subject_source == "authenticated_user"` and no existing identity), but the check relies on a second `get_active_user_identity` call in orchestrator — that second call is correct but could be removed when orchestrator carries the identity result from resolution. Target 06 (session start orchestration) may address this.
 * Old `ProjectSubjectResolver` in `services/submissions/` is now divergent from the new `SubjectResolver`. Target 11 (stale modules) should decommission the old one.
 
 Next recommended pass:
+
 * Target 05: token action — `SubjectTokenService` should apply the `token_action` instruction from `SubjectResolutionResult` directly, cleaning up the dispatch logic in `session_starter.py` and removing the redundant `get_subject` DB calls.

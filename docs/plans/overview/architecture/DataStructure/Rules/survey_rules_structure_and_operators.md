@@ -61,6 +61,7 @@ Meaning:
 ### Fields
 
 #### `target`
+
 The question or entity the rule applies to.
 
 Examples:
@@ -72,9 +73,11 @@ Examples:
 For v1, targeting questions is enough.
 
 #### `condition`
+
 A boolean expression evaluated against current survey answers.
 
 #### `effects`
+
 The properties to apply when the condition evaluates to true.
 
 ---
@@ -199,6 +202,7 @@ Operators should be chosen based on the shape of the answer value.
 ### General Operators
 
 #### `equals`
+
 True if the answer exactly matches the value.
 
 Example:
@@ -212,9 +216,11 @@ Example:
 ```
 
 #### `not_equals`
+
 True if the answer does not exactly match the value.
 
 #### `is_answered`
+
 True if the answer exists and is not empty.
 
 Example:
@@ -227,6 +233,7 @@ Example:
 ```
 
 #### `is_empty`
+
 True if the answer does not exist or is empty.
 
 ---
@@ -234,6 +241,7 @@ True if the answer does not exist or is empty.
 ### Multi-Select Operators
 
 #### `contains`
+
 True if the answer array contains a single value.
 
 Example:
@@ -247,6 +255,7 @@ Example:
 ```
 
 #### `contains_any`
+
 True if the answer array contains at least one of the listed values.
 
 Example:
@@ -260,6 +269,7 @@ Example:
 ```
 
 #### `contains_all`
+
 True if the answer array contains all listed values.
 
 Example:
@@ -279,18 +289,23 @@ Example:
 Useful for number and rating questions.
 
 #### `gt`
+
 Greater than.
 
 #### `gte`
+
 Greater than or equal.
 
 #### `lt`
+
 Less than.
 
 #### `lte`
+
 Less than or equal.
 
 #### `between`
+
 True if a value falls within a range.
 
 Example:
@@ -321,14 +336,17 @@ Effects define what changes when the condition is true.
 ### Recommended v1 Effects
 
 #### `visible`
+
 Boolean.
 Controls whether the target question is shown.
 
 #### `required`
+
 Boolean.
 Controls whether the target question must be answered.
 
 #### `disabled`
+
 Boolean.
 Controls whether the target question can be interacted with.
 
@@ -464,12 +482,14 @@ CREATE TABLE survey_rules (
 For v1, support only:
 
 ### Condition groups
+
 - simple condition
 - `all`
 - `any`
 - `not`
 
 ### Operators
+
 - `equals`
 - `not_equals`
 - `is_answered`
@@ -484,6 +504,7 @@ For v1, support only:
 - `between`
 
 ### Effects
+
 - `visible`
 - `required`
 - `disabled`

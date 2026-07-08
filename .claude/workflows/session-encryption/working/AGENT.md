@@ -67,6 +67,7 @@ stubs inline. Do NOT re-read them — they are already in your context.
 ## Hard stops
 
 Stop and ask the operator if:
+
 - Source docs contradict each other
 - Code and source disagree in a way you cannot resolve by reading both
 - A required behavior is not yet implemented by a prior pass (dependency gap)

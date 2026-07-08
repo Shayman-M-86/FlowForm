@@ -110,31 +110,31 @@ private VPC — acceptable because it never crosses the public internet.
 
 ```caddyfile
 {
-	log {
-		output stdout
-		format json
-	}
+ log {
+  output stdout
+  format json
+ }
 }
 
 {$API_DOMAIN} {
-	encode zstd gzip
+ encode zstd gzip
 
-	tls {
-		dns route53
-	}
+ tls {
+  dns route53
+ }
 
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
-		X-Content-Type-Options "nosniff"
-		Referrer-Policy "strict-origin-when-cross-origin"
-		-Server
-	}
+ header {
+  Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  X-Content-Type-Options "nosniff"
+  Referrer-Policy "strict-origin-when-cross-origin"
+  -Server
+ }
 
-	reverse_proxy http://{$APP_PRIVATE_IP}:5000 {
-		health_uri /api/v1/system/health/ready
-		health_interval 30s
-		health_timeout 5s
-	}
+ reverse_proxy http://{$APP_PRIVATE_IP}:5000 {
+  health_uri /api/v1/system/health/ready
+  health_interval 30s
+  health_timeout 5s
+ }
 }
 ```
 
@@ -183,6 +183,7 @@ api.ecr.ap-southeast-2.amazonaws.com
 ```
 
 Notes:
+
 - `email.*` is the **SESv2 API** — the backend sends via boto3, not SMTP.
 - No `sts.*`: the app uses its instance role directly, nothing assumes
   roles at runtime.

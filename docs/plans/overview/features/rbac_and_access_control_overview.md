@@ -1,9 +1,11 @@
 # RBAC & Access Control Overview
 
 ## Goal
+
 Provide a clear, scalable structure for authentication and authorization across the platform.
 
 The system separates concerns into:
+
 - Identity & API-level authorization (Auth0)
 - Project-level RBAC (application database)
 - Survey-level access & public sharing (application logic)
@@ -17,6 +19,7 @@ The system separates concerns into:
 ```
 
 ### Flow
+
 1. User authenticates via Auth0
 2. API validates JWT + permissions
 3. App checks project membership + roles
@@ -27,12 +30,15 @@ The system separates concerns into:
 # 2. Auth0 (Global / API-Level Authorization)
 
 Auth0 is responsible for:
+
 - Authentication (login, identity)
 - Issuing JWT tokens
 - Enforcing broad API permissions
 
 ### Auth0 Permissions (Coarse-Grained)
+
 Examples:
+
 - `project:read`
 - `project:write`
 - `project:admin`
@@ -40,7 +46,9 @@ Examples:
 These control **which API endpoints a user can call**, not specific resources.
 
 ### Auth0 Roles (Optional)
+
 Examples:
+
 - `platform_admin`
 - `support_admin`
 - `user`
@@ -48,6 +56,7 @@ Examples:
 These are **global roles**, not tied to specific projects.
 
 ### Key Rule
+
 Auth0 answers:
 > "Can this user call this type of endpoint?"
 
@@ -58,6 +67,7 @@ Auth0 answers:
 Handled entirely in the application database.
 
 ### Core Concept
+
 Users belong to projects via memberships, and memberships have roles.
 
 ```
@@ -75,6 +85,7 @@ User → Membership → Project
 Defined per project.
 
 Examples:
+
 - `owner`
 - `admin`
 - `editor`
@@ -82,6 +93,7 @@ Examples:
 - `survey_manager`
 
 Project admins can:
+
 - create roles
 - assign permissions to roles
 - assign roles to users
@@ -93,6 +105,7 @@ Project admins can:
 Defined by developers as a fixed catalog.
 
 Examples:
+
 - `project.read`
 - `project.update`
 - `project.manage_members`
@@ -105,6 +118,7 @@ Examples:
 - `response.read`
 
 ### Key Rule
+
 Permissions are **not user-defined strings**.
 They come from a controlled list.
 
@@ -141,6 +155,7 @@ viewer:
 ---
 
 ## Key Rule
+
 Application RBAC answers:
 > "Can this user perform this action on this project?"
 
@@ -167,10 +182,12 @@ Each survey has a visibility mode:
 ## Public Access Capabilities
 
 Public users (non-members) may:
+
 - view survey
 - submit responses (if enabled)
 
 Public users may NOT:
+
 - edit surveys
 - delete surveys
 - manage roles
@@ -186,7 +203,9 @@ Surveys also have lifecycle state:
 - `archived`
 
 ### Rule
+
 Public access is only allowed when:
+
 - survey is `published`
 
 ---
@@ -196,9 +215,11 @@ Public access is only allowed when:
 Two approaches:
 
 ### 1. Slug-based access
+
 - `/s/{public_slug}`
 
 ### 2. Share links (recommended)
+
 - token-based links
 - can expire
 - can be revoked
@@ -206,6 +227,7 @@ Two approaches:
 ---
 
 ## Key Rule
+
 Survey access answers:
 > "Can this request access this specific survey without authentication?"
 
@@ -237,6 +259,7 @@ Survey access answers:
 ## Example: Submit Response
 
 Allow if:
+
 - survey is published
 - AND (
   - user has permission
@@ -248,20 +271,25 @@ Allow if:
 # 6. Design Principles
 
 ### 1. Separate concerns
+
 - Auth0 → identity + API access
 - DB → resource-level authorization
 
 ### 2. Roles over direct permissions
+
 - assign roles to users
 - assign permissions to roles
 
 ### 3. Keep permissions fixed
+
 - avoid dynamic permission creation
 
 ### 4. Public access is NOT a role
+
 - handled via visibility
 
 ### 5. Default + override model
+
 - project roles = default
 - survey visibility = override for public
 
@@ -272,13 +300,16 @@ Allow if:
 Add only if needed:
 
 ### Survey-specific roles
+
 - per-survey editors/viewers
 
 ### Advanced sharing
+
 - password-protected links
 - expiring links
 
 ### Multi-tenant controls
+
 - organization-level roles
 
 ---
@@ -290,7 +321,7 @@ Add only if needed:
 - Survey visibility controls **what the public can access**
 
 This layered approach keeps the system:
+
 - flexible
 - secure
 - easy to reason about
-

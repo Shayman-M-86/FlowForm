@@ -2,7 +2,7 @@
 
 This checklist can be used to track development progress for FlowForm V1.
 
-- [x] Project Setup 
+- [x] Project Setup
 
 - [x] Data Models
 
@@ -10,46 +10,46 @@ This checklist can be used to track development progress for FlowForm V1.
 
 #### Forms
 
-- 
+-
 
 #### Questions
 
-- 
+-
 
 #### Submissions
 
-- 
+-
 
 ### Rule Engine (V1)
 
-- 
+-
 
 ### Authentication
 
-- 
+-
 
 ### RBAC
 
-- 
+-
 
 ### Error Handling
 
-- 
+-
 
 ### Testing
 
-- 
+-
 
 ### Minimal Frontend
 
-- 
+-
 
 ### Deployment
 
-- 
+-
 
 ### Documentation
 
-- 
+-
 
 ---

@@ -1,6 +1,7 @@
 ## Pass report
 
 Changed files:
+
 * `backend/tests/integration/core/test_public_submission_access_grant.py` — added 4 error-case tests (unknown slug, unpublished survey, unknown token, inactive link); migrated from deleted `test_survey_access_resolver.py`
 * `backend/tests/integration/core/test_project_subject_identities.py` — new file, 1 test: `test_create_user_identity_sets_verified_email_fields` (migrated from deleted `test_project_subject_resolver.py`)
 * `backend/app/services/public_submissions/core/subject_token.py` — removed `issue()` and `rotate()` ORM-arg dead methods; removed now-unused `ProjectSubject` import
@@ -18,12 +19,15 @@ Behavior implemented:
 * `last_used_at` gap from pass 10 risk note: already closed by `TestApplyTokenActionMarkUsed.test_mark_used_updates_last_used_at_and_returns_existing_raw` — no new code needed
 
 Tests run:
+
 * `bash backend/scripts/run-tests.sh --ai -k "test_public_submission_access_grant or test_project_subject_identities or test_token_action or test_recognition_token_lookup or test_subject_resolution_result or test_transaction_boundary or test_authenticated_account_linking or test_session_start_response_contract or test_flow_matrix"` — 67 passed (was 56; +11 from new/migrated tests)
 
 Failures or skipped validation:
+
 * none
 
 Trace notes:
+
 * route entry points touched: none
 * service methods touched: `SubjectTokenService.issue()`, `SubjectTokenService.rotate()` — removed
 * repository helpers touched: none
@@ -37,7 +41,9 @@ Trace notes:
   * `test_create_user_identity_sets_verified_email_fields` — repository sets `identity_type`, `user_id`, `normalized_email`, `verification_status`, `verified_at`, `attached_at`
 
 Remaining risks:
+
 * none identified. All planned cleanup complete.
 
 Next recommended pass:
+
 * Implementation done — no further targets in plan. Consider a final regression run across full test suite.

@@ -1,6 +1,7 @@
 # Flow Form — CI/CD Pipeline Plan
 
 ## Purpose
+
 This document outlines the planned Continuous Integration and Continuous Deployment (CI/CD) pipeline for **FlowForm**.
 
 The goal is to automate testing, building, and deployment of both the frontend and backend services while keeping the system understandable and maintainable.

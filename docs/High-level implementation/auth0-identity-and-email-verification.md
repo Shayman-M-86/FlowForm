@@ -52,6 +52,7 @@ event streaming from Auth0.
 
 **Path 1 — Bell icon (authenticated, non-token):** The user sees a pending
 invitation in the sidebar. Accepting it requires:
+
 - Their logged-in email matches `invited_email` on the invitation, after normal
   email normalization/case handling.
 - Their email is verified (local flag checked first, live Auth0 fallback if not).
@@ -59,6 +60,7 @@ invitation in the sidebar. Accepting it requires:
 **Path 2 — Email link (token-based):** The user clicks a unique token URL from
 their inbox. Possessing and presenting the token *is* the proof of mailbox
 ownership, so:
+
 - Email match is still enforced (the logged-in user must match `invited_email`).
 - But verification is implicitly satisfied for FlowForm's invitation flow —
   clicking a link delivered to that inbox is proof enough. The app marks

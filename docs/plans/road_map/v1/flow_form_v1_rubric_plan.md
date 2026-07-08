@@ -1,9 +1,11 @@
 # FlowForm — V1 Rubric Plan
 
 ## Purpose
+
 This document defines the **Version 1 scope** of FlowForm for the Udacity capstone project.
 
 The goal of V1 is to:
+
 - meet the rubric requirements
 - keep the project realistically buildable in a limited time
 - preserve the real long-term FlowForm concept
@@ -16,6 +18,7 @@ V1 will focus on a **small but complete vertical slice** of the product.
 ## V1 Product Definition
 
 FlowForm V1 will be a **dynamic form platform** where:
+
 - an authenticated creator can create forms
 - forms can contain questions and answer options
 - forms can include simple conditional rules
@@ -33,9 +36,11 @@ The defining feature of V1 is:
 The project will be intentionally split into two layers:
 
 ### 1. Capstone V1
+
 A smaller version designed to satisfy the rubric and be completed in a reasonable timeframe.
 
 ### 2. Post-Capstone Expansion
+
 A larger portfolio version that builds on the same architecture after submission.
 
 This keeps the first release focused while preserving the larger product vision.
@@ -49,6 +54,7 @@ This keeps the first release focused while preserving the larger product vision.
 The backend is the core of the capstone submission.
 
 V1 must include:
+
 - Flask API
 - SQLAlchemy models
 - PostgreSQL database
@@ -67,6 +73,7 @@ V1 must include:
 V1 should keep the data model simple and structured.
 
 Recommended core entities:
+
 - **Form**
 - **Question**
 - **AnswerOption**
@@ -75,6 +82,7 @@ Recommended core entities:
 - **Response**
 
 ### Data Modeling Direction
+
 - Use a relational schema for forms, questions, answer options, submissions, and responses.
 - Store conditional rule definitions in JSON or JSONB.
 - Keep model helper methods for insert, update, delete, and serialization.
@@ -88,23 +96,29 @@ This matches the long-term architecture while keeping the implementation managea
 The rule engine must be intentionally limited.
 
 ### Initial Rule Goal
+
 Only implement enough dynamic behaviour to clearly prove the FlowForm concept.
 
 ### Recommended V1 Rule Features
+
 **Trigger**
+
 - `on_answer`
 
 **Condition operators**
+
 - `equals`
 - `not_equals`
 - optional: `contains`
 
 **Actions**
+
 - `show_question`
 - `hide_question`
 - optional: `end_form`
 
 ### Important Constraint
+
 Do **not** build a large generic rule engine for V1.
 
 The goal is simply to show that the form can change dynamically based on previous answers.
@@ -116,22 +130,26 @@ The goal is simply to show that the form can change dynamically based on previou
 V1 must satisfy the rubric requirements for Auth0 and role-based access control.
 
 ### Authentication
+
 - Auth0
 - OAuth 2.0 Authorization Code Grant with PKCE
 - OpenID Connect
 
 ### Required RBAC Structure
+
 At least **two roles** with clearly different permissions.
 
 Recommended roles:
 
 ### Creator
+
 - create forms
 - edit forms
 - delete forms
 - view submissions
 
 ### Participant
+
 - view published forms
 - submit responses
 
@@ -146,25 +164,31 @@ The API should be designed around the rubric requirements and the core FlowForm 
 ### Recommended Endpoints
 
 #### GET
+
 - `GET /forms`
 - `GET /forms/<id>`
 - `GET /forms/<id>/submissions`
 
 #### POST
+
 - `POST /forms`
 - `POST /forms/<id>/questions`
 - `POST /forms/<id>/submit`
 
 #### PATCH
+
 - `PATCH /forms/<id>`
 - `PATCH /questions/<id>`
 
 #### DELETE
+
 - `DELETE /forms/<id>`
 - optional: `DELETE /questions/<id>`
 
 ### Error Handling
+
 Return JSON errors for at least four status codes, such as:
+
 - 400
 - 401
 - 404
@@ -179,6 +203,7 @@ The frontend should remain **very small**.
 It should be a **React single page application**, but only include enough interface to demonstrate the product and support the capstone submission.
 
 ### Frontend Goals
+
 - Auth0 login redirect
 - basic authenticated user experience
 - simple form list page
@@ -187,6 +212,7 @@ It should be a **React single page application**, but only include enough interf
 - minimal respondent form fill flow
 
 ### Important Constraint
+
 The frontend is **not** the main focus of V1.
 
 It should support the backend and demonstrate the concept, but it should not become a major source of scope expansion.
@@ -196,6 +222,7 @@ It should support the backend and demonstrate the concept, but it should not bec
 ## 7. Hosting for V1
 
 For the long-term version of FlowForm, the planned hosting stack is:
+
 - React SPA on S3 + CloudFront
 - Flask API on ECS Fargate
 - PostgreSQL on RDS
@@ -204,6 +231,7 @@ For the long-term version of FlowForm, the planned hosting stack is:
 For the capstone submission, deployment should be chosen based on **submission certainty first**.
 
 ### V1 Hosting Priority
+
 - deploy the API live
 - make authentication testable
 - keep deployment reliable
@@ -216,7 +244,9 @@ If deployment becomes a blocker, simplify deployment for submission and move the
 ## Rubric Mapping
 
 ## Data Modeling
+
 V1 will satisfy this by:
+
 - defining relational SQLAlchemy models
 - using proper field types and keys
 - using model helper methods
@@ -224,14 +254,18 @@ V1 will satisfy this by:
 - serializing model data for API responses
 
 ## API Architecture
+
 V1 will satisfy this by:
+
 - using RESTful endpoints
 - implementing GET, POST, PATCH, and DELETE
 - supporting CRUD behaviour
 - returning JSON error responses
 
 ## Authentication and RBAC
+
 V1 will satisfy this by:
+
 - using Auth0
 - implementing a custom `@requires_auth` decorator
 - validating JWTs
@@ -239,19 +273,25 @@ V1 will satisfy this by:
 - defining at least two roles with distinct permissions
 
 ## Testing
+
 V1 will satisfy this by:
+
 - adding success and failure tests for each endpoint
 - adding RBAC tests for each role
 - validating expected API behaviour with unittest
 
 ## Deployment
+
 V1 will satisfy this by:
+
 - hosting the API live
 - documenting the live URL in the README
 - documenting authentication setup for reviewers
 
 ## Documentation and Code Quality
+
 V1 will satisfy this by:
+
 - using PEP 8 style
 - keeping code organized and DRY
 - storing secrets in environment variables
@@ -262,6 +302,7 @@ V1 will satisfy this by:
 ## What to Leave for Later
 
 The following features should be postponed until after submission unless the core version is already complete:
+
 - advanced scoring engine
 - visual rule builder
 - analytics dashboard
@@ -278,9 +319,11 @@ The following features should be postponed until after submission unless the cor
 ## Development Roadmap for V1
 
 ## Phase 1 — Project Skeleton
+
 Build the project foundation first.
 
 ### Deliverables
+
 - repository structure
 - Flask app setup
 - PostgreSQL connection
@@ -312,9 +355,11 @@ Use **Alembic** with SQLAlchemy to manage schema changes during development.
 This ensures the database schema can evolve safely as the project grows beyond V1.
 
 ## Phase 3 — Authentication and RBAC
+
 Add security early so protected endpoints are designed correctly.
 
 ### Deliverables
+
 - custom `@requires_auth` decorator
 - JWT validation
 - Auth0 permissions setup
@@ -322,9 +367,11 @@ Add security early so protected endpoints are designed correctly.
 - protected endpoints
 
 ## Phase 4 — Rule Engine V1
+
 Add the smallest possible dynamic rule behaviour.
 
 ### Deliverables
+
 - JSON rule schema for V1
 - rule parsing and validation
 - `on_answer` trigger support
@@ -332,18 +379,22 @@ Add the smallest possible dynamic rule behaviour.
 - simple rule evaluation in submission flow
 
 ## Phase 5 — Submission Flow
+
 Build the main product workflow.
 
 ### Deliverables
+
 - start form submission
 - submit answers
 - evaluate next visible questions
 - store submission and responses
 
 ## Phase 6 — Minimal Frontend
+
 Only after the backend workflow exists.
 
 ### Deliverables
+
 - login page or login button
 - basic form list screen
 - basic form detail screen
@@ -351,9 +402,11 @@ Only after the backend workflow exists.
 - minimal form completion flow
 
 ## Phase 7 — Testing and Documentation
+
 Stabilize the project before deployment.
 
 ### Deliverables
+
 - endpoint tests
 - RBAC tests
 - README
@@ -363,9 +416,11 @@ Stabilize the project before deployment.
 - reviewer authentication instructions
 
 ## Phase 8 — Deployment
+
 Deploy only after the core workflow is stable.
 
 ### Deliverables
+
 - live hosted API
 - working Auth0 configuration
 - public URL in README
@@ -396,6 +451,7 @@ This order keeps the rubric-critical parts first.
 The React SPA for V1 should stay intentionally narrow.
 
 Recommended pages or views:
+
 - login / logout
 - form list
 - form detail
@@ -415,6 +471,7 @@ The backend and dynamic form behaviour should remain the priority.
 After submission, FlowForm can expand into the larger portfolio version.
 
 ### Next likely improvements
+
 - richer rule engine
 - visual logic builder
 - quiz scoring
@@ -432,6 +489,7 @@ After submission, FlowForm can expand into the larger portfolio version.
 FlowForm V1 should be treated as a **focused capstone release**, not the full final product.
 
 The strongest approach is to build:
+
 - a solid backend API
 - a limited but real dynamic rule engine
 - Auth0 RBAC
@@ -440,4 +498,3 @@ The strongest approach is to build:
 - a very small React SPA that proves the concept
 
 This gives you the best chance of finishing the capstone well while still laying the foundation for a serious long-term portfolio project.
-

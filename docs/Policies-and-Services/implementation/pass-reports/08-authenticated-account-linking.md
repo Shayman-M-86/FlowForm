@@ -1,6 +1,7 @@
 ## Pass report
 
 Changed files:
+
 * `backend/app/services/results.py` — added `AccountLinkingResult` dataclass
 * `backend/app/services/public_submissions/api/survey_resolve.py` — fixed link_type guard; added recognition token reconciliation after identity linking; updated return type from `SurveyLink` to `AccountLinkingResult`; added `SubjectResolver` and `SubjectTokenService` collaborators
 * `backend/app/api/v1/public.py` — updated `verify_authenticated_link_participant` route to pass recognition cookie in, and set recognition cookie when token was rotated
@@ -16,13 +17,16 @@ Behavior implemented:
 * `AccountLinkingResult` carries `link` and `raw_recognition_token | None` so the route handler can conditionally set the cookie
 
 Tests run:
+
 * `bash backend/scripts/run-tests.sh --ai -k "test_authenticated_account_linking"` — 5 passed
 * `bash backend/scripts/run-tests.sh --ai -k "test_public_submission_access_grant or test_recognition_token_lookup or test_token_action or test_subject_resolution_result or test_transaction_boundary or test_authenticated_account_linking"` — 39 passed
 
 Failures or skipped validation:
+
 * none
 
 Trace notes:
+
 * route entry points touched: `POST /links/verification/link` (`verify_authenticated_link_participant` in `api/v1/public.py`)
 * service methods touched: `SurveyResolveService.verify_authenticated_link_participant` — full rewrite of return type and post-linking behavior
 * repository helpers touched: `project_subjects.get_subject`, `project_subjects.set_canonical_subject` (merge path only); `project_subject_tokens.create_token`, `get_active_token_for_subject`, `revoke_token` (via `apply_token_action`)
@@ -36,9 +40,11 @@ Trace notes:
   * `test_browser_token_different_subject_rotated` — confirms merge + rotate path, asserts `canonical_subject_id` on weaker subject
 
 Remaining risks:
+
 * `SubjectTokenService.issue()` and `rotate()` (ORM-arg methods) remain unused since pass 05 — target 11 should remove them
 * `ProjectSubjectResolver` in `services/submissions/` remains divergent from the new `SubjectResolver` — target 11 should decommission it
 * The merge and token writes are flushed before the commit in `verify_participant_for_user`, but they are not part of `commit_with_err_handle`'s context list — a constraint error on the token or merge row would surface as an unhandled DB error rather than a translated domain error
 
 Next recommended pass:
+
 * Target 09: verify `last_used_at` update path — docs require `last_used_at` to be updated when the recognition token participates in open-access subject resolution (public slug / general link), but not for assigned links

@@ -100,7 +100,7 @@ notes. It is a routing aid, not a replacement for the pass reports.
    - `backend/app/crypto/dek_cache.py`
    - `backend/app/crypto/kms.py`
 
-5. **Public answer route still placeholder**
+6. **Public answer route still placeholder**
    The public answer endpoint still returns a response-shaped placeholder rather
    than loading the session and delegating to the encrypted answer-save service.
    The API-facing session management method is also still a placeholder.
@@ -116,7 +116,7 @@ notes. It is a routing aid, not a replacement for the pass reports.
    - `backend/app/services/public_submissions/core/answer_save.py`
    - `backend/app/schema/api/requests/submission_sessions/`
 
-6. **Public event route still placeholder**
+7. **Public event route still placeholder**
    The public event endpoint parses the request and returns `204`, but it does
    not persist the core-side analytics event yet. Event write failures should
    remain secondary to the respondent flow when this is wired.
@@ -132,7 +132,7 @@ notes. It is a routing aid, not a replacement for the pass reports.
    - `backend/app/repositories/core/submission_events.py`
    - `backend/app/services/public_submissions/core/answer_save.py`
 
-7. **Admin survey-response API still contract stubs**
+8. **Admin survey-response API still contract stubs**
    Admin list/detail/history/export/delete routes authorize at the route layer,
    but still return placeholder data or no-op success. They need real service
    wiring that uses core metadata, locator derivation, and decrypt/delete paths.
@@ -148,7 +148,7 @@ notes. It is a routing aid, not a replacement for the pass reports.
    - `backend/app/services/public_submissions/core/deletion.py`
    - `backend/app/services/results.py`
 
-8. **Session-start reconciliation repair**
+9. **Session-start reconciliation repair**
    Pass 09 is intended to repair committed core sessions that have no matching
    response envelope by marking them `abandoned`. This keeps pre-core-commit
    rollback failures distinct from committed-but-unusable sessions.
@@ -164,7 +164,7 @@ notes. It is a routing aid, not a replacement for the pass reports.
    - `backend/app/services/public_submissions/core/session_loader.py`
    - `backend/app/repositories/core/submission_sessions.py`
 
-9. **Reconciliation scheduler or worker**
+10. **Reconciliation scheduler or worker**
    Pass 09 only scopes the service-level repair function and tests. A scheduler,
    CLI, or background worker for running reconciliation repeatedly remains a
    separate operational design task.
@@ -179,7 +179,7 @@ notes. It is a routing aid, not a replacement for the pass reports.
    - `docs/session-encryption/06-failure-and-logging-rules.md`
    - `backend/app/repositories/response/response_envelope_repo.py`
 
-10. **Real AWS/KMS validation**
+11. **Real AWS/KMS validation**
     Integration tests patch KMS and Secrets Manager calls, so they verify local
     call contracts but not real cloud behavior. Real validation requires
     operator-controlled AWS infrastructure and credentials.
@@ -190,12 +190,13 @@ notes. It is a routing aid, not a replacement for the pass reports.
     configured AWS credentials, starts a session, saves/decrypts an answer, and
     verifies wrap/unwrap/linkage-secret behavior without logging key material.
    Further context:
-   - `.claude/workflows/session-encryption/working/pass-reports/07-integration-tests-session-and-answers.md`
-   - `backend/app/crypto/kms.py`
-   - `backend/app/crypto/secrets.py`
-   - `backend/tests/integration/response/test_session_start_encryption.py`
 
-11. **Operator DB inspection and sign-off**
+- `.claude/workflows/session-encryption/working/pass-reports/07-integration-tests-session-and-answers.md`
+- `backend/app/crypto/kms.py`
+- `backend/app/crypto/secrets.py`
+- `backend/tests/integration/response/test_session_start_encryption.py`
+
+1. **Operator DB inspection and sign-off**
     The workflow still calls for human inspection/sign-off of the encrypted
     persistence behavior. Automated tests cover the main paths, but operator
     review is still a separate completion gate.
@@ -205,12 +206,13 @@ notes. It is a routing aid, not a replacement for the pass reports.
     scenarios, confirm no plaintext/key material or forbidden identifiers are
     stored in the wrong database, then record sign-off in the Pass 10 report.
    Further context:
-   - `.claude/workflows/session-encryption/working/pass-reports/07-integration-tests-session-and-answers.md`
-   - `.claude/workflows/session-encryption/working/targets/10-security-review-and-e2e/spec.md`
-   - `docs/session-encryption/02-storage-and-locators.md`
-   - `docs/session-encryption/06-failure-and-logging-rules.md`
 
-12. **True concurrency tests**
+- `.claude/workflows/session-encryption/working/pass-reports/07-integration-tests-session-and-answers.md`
+- `.claude/workflows/session-encryption/working/targets/10-security-review-and-e2e/spec.md`
+- `docs/session-encryption/02-storage-and-locators.md`
+- `docs/session-encryption/06-failure-and-logging-rules.md`
+
+1. **True concurrency tests**
     Duplicate/update tests currently cover sequential behavior. True concurrent
     first-save races need a multi-threaded or multi-process test harness with
     separate DB sessions.
@@ -221,12 +223,13 @@ notes. It is a routing aid, not a replacement for the pass reports.
     saves for the same answer locator from separate DB sessions and asserts one
     logical answer row, ordered revisions, and correct mutation-id handling.
    Further context:
-   - `.claude/workflows/session-encryption/working/pass-reports/07-integration-tests-session-and-answers.md`
-   - `backend/tests/integration/response/test_answer_save_encryption.py`
-   - `backend/app/repositories/response/response_answer_repo.py`
-   - `backend/app/repositories/response/response_answer_revision_repo.py`
 
-13. **Security review and final E2E pass**
+- `.claude/workflows/session-encryption/working/pass-reports/07-integration-tests-session-and-answers.md`
+- `backend/tests/integration/response/test_answer_save_encryption.py`
+- `backend/app/repositories/response/response_answer_repo.py`
+- `backend/app/repositories/response/response_answer_revision_repo.py`
+
+1. **Security review and final E2E pass**
     Pass 10 remains the final validation gate: security review, full submission
     session E2E tests, finding disposition, and operator sign-off readiness.
     Deferred because: it depends on Pass 09 and the remaining service/API wiring
@@ -235,13 +238,14 @@ notes. It is a routing aid, not a replacement for the pass reports.
     session E2E suite, disposition every finding as accept/fix/defer, fix any
     high-severity issues, and write the Pass 10 report.
    Further context:
-   - `.claude/workflows/session-encryption/working/targets/10-security-review-and-e2e/spec.md`
-   - `backend/app/services/public_submissions/`
-   - `backend/app/crypto/`
-   - `backend/app/repositories/response/`
-   - `backend/app/services/results.py`
 
-14. **Production KMS client optimization**
+- `.claude/workflows/session-encryption/working/targets/10-security-review-and-e2e/spec.md`
+- `backend/app/services/public_submissions/`
+- `backend/app/crypto/`
+- `backend/app/repositories/response/`
+- `backend/app/services/results.py`
+
+1. **Production KMS client optimization**
     KMS and Secrets Manager clients are currently created per call. For
     production throughput, shared or session-scoped clients may be needed after
     correctness and security are settled.
@@ -251,12 +255,13 @@ notes. It is a routing aid, not a replacement for the pass reports.
     clients per process/config while preserving test patchability and credential
     isolation.
    Further context:
-   - `.claude/workflows/session-encryption/working/pass-reports/03-aws-wiring-and-crypto-smoke-test.md`
-   - `backend/app/crypto/kms.py`
-   - `backend/app/crypto/secrets.py`
-   - `backend/app/core/config.py`
 
-15. **Crypto/KMS version rotation support**
+- `.claude/workflows/session-encryption/working/pass-reports/03-aws-wiring-and-crypto-smoke-test.md`
+- `backend/app/crypto/kms.py`
+- `backend/app/crypto/secrets.py`
+- `backend/app/core/config.py`
+
+1. **Crypto/KMS version rotation support**
     Crypto and KMS context versions are currently hardcoded in the service
     implementation. Future rotation support may need these values to come from
     config or persisted version metadata.
@@ -266,15 +271,16 @@ notes. It is a routing aid, not a replacement for the pass reports.
     linkage/KMS context versions, and hook session start, answer save,
     completion, and admin decrypt into version-aware helpers.
    Further context:
-   - `.claude/workflows/session-encryption/working/pass-reports/04-session-start.md`
-   - `backend/app/services/public_submissions/core/session_starter.py`
-   - `backend/app/services/public_submissions/core/completion.py`
-   - `backend/app/services/public_submissions/core/admin_decrypt.py`
-   - `docs/session-encryption/05-crypto-key-model.md`
+
+- `.claude/workflows/session-encryption/working/pass-reports/04-session-start.md`
+- `backend/app/services/public_submissions/core/session_starter.py`
+- `backend/app/services/public_submissions/core/completion.py`
+- `backend/app/services/public_submissions/core/admin_decrypt.py`
+- `docs/session-encryption/05-crypto-key-model.md`
 
 ## Older FlowForm Follow-Ups From Memory
 
-16. **General-access session-start subject policy**
+1. **General-access session-start subject policy**
     The general-access path still needs an explicit product/domain decision:
     remain anonymous or create a project subject at session start. Do not hide
     this behind a default while participant verification work is stabilizing.
@@ -284,12 +290,13 @@ notes. It is a routing aid, not a replacement for the pass reports.
     `SessionStarter`, `access_resolver`, and `subject_resolver` so the chosen
     behavior is applied consistently for public/general links.
    Further context:
-   - `backend/app/services/public_submissions/core/actions/session_starter.py`
-   - `backend/app/services/public_submissions/core/resolution/access_resolver.py`
-   - `backend/app/services/public_submissions/core/resolution/subject_resolver.py`
-   - `docs/session-encryption/07-storage-and-flows-reference.md`
 
-17. **Interrupted e2e fixture cleanup**
+- `backend/app/services/public_submissions/core/actions/session_starter.py`
+- `backend/app/services/public_submissions/core/resolution/access_resolver.py`
+- `backend/app/services/public_submissions/core/resolution/subject_resolver.py`
+- `docs/session-encryption/07-storage-and-flows-reference.md`
+
+1. **Interrupted e2e fixture cleanup**
     A prior diagnostic noted a likely `_ADMIN_SUB` versus `_MEMBER_SUB` mismatch
     in backend e2e fixtures. The suggested next step was a narrow fixture/import
     cleanup followed by a quick import or lint check.
@@ -299,11 +306,12 @@ notes. It is a routing aid, not a replacement for the pass reports.
     `_ADMIN_SUB`/`_MEMBER_SUB` usage if still present, then run a targeted e2e
     import or link-lifecycle test check.
    Further context:
-   - `backend/tests/e2e/conftest.py`
-   - `backend/tests/e2e/test_survey_link_lifecycle.py`
-   - `backend/tests/e2e/test_submission_session_start.py`
 
-18. **Frontend query and builder verification**
+- `backend/tests/e2e/conftest.py`
+- `backend/tests/e2e/test_survey_link_lifecycle.py`
+- `backend/tests/e2e/test_submission_session_start.py`
+
+1. **Frontend query and builder verification**
     Older frontend follow-ups include direct coverage for query policy,
     persistence, cooldown/cache ownership, and builder import validation around
     duplicate IDs, sort keys, rule direction, and payload limits.
@@ -313,9 +321,10 @@ notes. It is a routing aid, not a replacement for the pass reports.
     validation tests, then revisit route-consolidation UX, AGENTS drift, and
     bundle-size/code-splitting warnings.
    Further context:
-   - `frontend/apps/studio-app/src/lib/query/queryPolicy.ts`
-   - `frontend/packages/builder/src/components/Utils/ai-import/surveyNodeImport.ts`
-   - `frontend/apps/studio-app/src/lib/query/queryPersistence.ts`
-   - `frontend/apps/studio-app/src/lib/query/queryCooldown.ts`
-   - `frontend/apps/studio-app/src/lib/query/queryCacheOwner.ts`
-   - `frontend/apps/studio-app/AGENTS.md`
+
+- `frontend/apps/studio-app/src/lib/query/queryPolicy.ts`
+- `frontend/packages/builder/src/components/Utils/ai-import/surveyNodeImport.ts`
+- `frontend/apps/studio-app/src/lib/query/queryPersistence.ts`
+- `frontend/apps/studio-app/src/lib/query/queryCooldown.ts`
+- `frontend/apps/studio-app/src/lib/query/queryCacheOwner.ts`
+- `frontend/apps/studio-app/AGENTS.md`

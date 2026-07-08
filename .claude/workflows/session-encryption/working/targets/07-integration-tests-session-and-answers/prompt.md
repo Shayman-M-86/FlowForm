@@ -3,6 +3,7 @@
 Read `.claude/workflows/session-encryption/working/targets/07-integration-tests-session-and-answers/spec.md` in full before writing any code.
 
 Dependency checks:
+
 - Confirm `backend/app/services/public_submissions/core/answer_save.py` exists (pass 06). If not, stop.
 - Confirm `backend/app/services/public_submissions/core/session_loader.py` exists (pass 06). If not, stop.
 

@@ -83,4 +83,3 @@ The JSON stored in `answer_value` contains only the response payload.
 - `answer_value` is a minimal payload
 - Structure depends on `family`
 - All metadata is stored outside the JSON
-

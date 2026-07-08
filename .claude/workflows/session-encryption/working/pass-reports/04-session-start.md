@@ -3,6 +3,7 @@
 Pass: 04 — session-start
 
 Changed files:
+
 * `backend/app/services/public_submissions/core/session_starter.py` — wired response envelope creation into session start flow
 * `backend/app/services/public_submissions/api/session_management.py` — added `response_db` parameter to `start_session()`
 * `backend/app/api/v1/public.py` — route now passes `get_response_db()` to service
@@ -16,6 +17,7 @@ Changed files:
 * `backend/tests/unit/test_submission_session_contracts.py` — fixed pre-existing assertion for `survey_schema` field
 
 Behavior implemented:
+
 * After core session creation (flush, no commit), derives session locator via `derive_session_locator()`
 * Generates 32-byte plaintext DEK via `os.urandom(32)`
 * Wraps DEK with KMS via `wrap_dek()` using encryption context that includes session locator hex and KMS context version
@@ -26,17 +28,21 @@ Behavior implemented:
 * `SessionStartError` raised on envelope creation failure — translates `KmsError` and `LinkageSecretError`
 
 Tests run:
+
 * `bash backend/scripts/run-tests.sh --ai -k "session_start"` — 11 passed
 * `bash backend/scripts/run-tests.sh --ai -k "session_start or flow_matrix or submission_session or transaction_boundary"` — 66 passed
 * `bash backend/scripts/run-tests.sh --ai` — 425 passed (full suite, no regressions)
 
 Failures or skipped validation:
+
 * none
 
 Policy change during pass:
+
 * none
 
 Trace notes:
+
 * entry points touched: `start_submission_session()` route in `api/v1/public.py`
 * service methods touched: `SessionStarter.start()`, `SessionStarter._create_response_envelope()`, `SessionStarter._get_encryption_settings()`, `SessionManagementService.start_session()`
 * repository helpers touched: `submission_sessions.mark_abandoned()` (new)
@@ -45,6 +51,7 @@ Trace notes:
 * tests that now describe behavior: `test_session_start_envelope.py::TestSuccessfulSessionStart::test_session_start_creates_core_session_and_response_envelope`, `test_session_start_envelope.py::TestSuccessfulSessionStart::test_dek_cached_after_successful_start`, `test_session_start_envelope.py::TestEnvelopeFailureRollback::test_kms_failure_rolls_back_core_session`, `test_session_start_envelope.py::TestEnvelopeFailureRollback::test_linkage_secret_failure_rolls_back_core_session`, `test_session_start_envelope.py::TestEnvelopeFailureRollback::test_envelope_repo_failure_rolls_back_core_session`
 
 Remaining risks:
+
 * `mark_abandoned()` was added to `submission_sessions` repo but is not yet called from the session starter — the current failure path rolls back core (session never committed). It would be needed if a flow exists where core commits before response creation. Current design avoids this, but reconciliation pass should verify.
 * Existing integration and e2e tests use an autouse mock that patches `SessionStarter._create_response_envelope` — if that method's signature changes, all conftest mocks need updating.
 * The `_CRYPTO_VERSION` and `_KMS_CONTEXT_VERSION` constants are hardcoded in `session_starter.py`. Future rotation support may need these read from config.
