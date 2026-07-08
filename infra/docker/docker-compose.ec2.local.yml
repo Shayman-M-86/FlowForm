@@ -1,31 +1,27 @@
-# LOCAL standalone variant of docker-compose.ec2.yml.
+# LOCAL workstation proof for the split EC2 shape.
 #
-# A self-contained copy of the production EC2 stack, edited so it launches on
-# a workstation with a single command and no external dependencies:
+# Runs the proxy side (Caddy with tls internal + Squid) and the app side
+# (backend built locally) together, with local Postgres databases so the
+# readiness endpoint can return 200.
 #
-#   docker compose -f docker-compose.ec2.local.yml up -d --build
+#   FLOWFORM_SECRET_DIR="$XDG_RUNTIME_DIR/flowform-secrets" \
+#     docker compose -f infra/docker/docker-compose.ec2.local.yml up -d --build
 #
-# Differences vs. docker-compose.ec2.yml:
-#   1. Caddy serves https://localhost with `tls internal` (self-signed CA)
-#      instead of ACME DNS-01 via Route 53 — no AWS creds / public DNS needed.
-#   2. Both images are BUILT locally instead of pulled from ECR.
-#   3. DB settings are placeholders and secrets come from the committed dev
-#      files, so no RDS / Secrets Manager is required.
-#
-# NOTE: there is no database in this stack, so the backend cannot actually
-# serve requests that touch the DB — this file exists to prove the
-# Caddy + backend pair builds and boots locally, not to be a working app.
-#
-# Verify Caddy is up and terminating TLS (‑k trusts the self-signed cert):
-#
-#   curl -k https://localhost/api/v1/system/health/ready
+# Differences from EC2:
+#   - Caddy serves https://localhost with `tls internal`.
+#   - Backend and Caddy images build locally instead of pulling ECR refs.
+#   - Squid is published on 127.0.0.1:3128 for workstation curl checks.
+#   - SQUID_APP_SOURCE_CIDR is intentionally broad inside local Docker only,
+#     because bridge-network container source addresses are dynamic.
+#   - Dev env/secrets are used; run scripts/infra/fetch-dev-secrets.sh first.
+#   - LOCAL_AUTH0_DOMAIN may be set to the dev tenant from .backend.env so the
+#     backend's startup validation can traverse Squid without changing the
+#     production allowed-domains.txt placeholder.
 
 name: flowform-ec2-local
 
 services:
   caddy:
-    # Build the custom Caddy (route53 module) locally; the module is unused
-    # under `tls internal` but keeps the image identical to production.
     image: flowform-caddy:local
     build:
       context: ../..
@@ -33,88 +29,248 @@ services:
     container_name: flowform-caddy-local
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "80:80/tcp"
+      - "443:443/tcp"
     volumes:
-      # Localhost / tls internal Caddyfile instead of the DNS-01 production one.
       - ./caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:2019/config/"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
     networks:
-      - flowform_ec2_net
+      - proxy_net
+      - app_net
+
+  squid:
+    image: ubuntu/squid:latest
+    container_name: flowform-squid-local
+    restart: unless-stopped
+    environment:
+      SQUID_APP_SOURCE_CIDR: ${SQUID_APP_SOURCE_CIDR:-0.0.0.0/0}
+      LOCAL_AUTH0_DOMAIN: ${LOCAL_AUTH0_DOMAIN:-}
+    ports:
+      - "127.0.0.1:3128:3128/tcp"
+    volumes:
+      - ./squid/squid.conf:/etc/squid/squid.conf.template:ro
+      - ./squid/allowed-domains.txt:/etc/squid/allowed-domains.txt:ro
+      - squid_logs:/var/log/squid
+    read_only: true
+    tmpfs:
+      - /run
+      - /tmp
+      - /var/spool/squid
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    entrypoint:
+      - /bin/sh
+      - -ec
+    command:
+      - |
+        cp /etc/squid/allowed-domains.txt /tmp/allowed-domains.txt
+        if [ -n "$${LOCAL_AUTH0_DOMAIN:-}" ]; then
+          printf '%s\n' "$${LOCAL_AUTH0_DOMAIN}" >> /tmp/allowed-domains.txt
+        fi
+        sed \
+          -e "s|__APP_SOURCE_CIDR__|$${SQUID_APP_SOURCE_CIDR}|g" \
+          -e "s|/etc/squid/allowed-domains.txt|/tmp/allowed-domains.txt|g" \
+          /etc/squid/squid.conf.template > /tmp/squid.conf
+        exec squid -N -f /tmp/squid.conf
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - proxy_net
+      - app_net
+
+  postgres-core:
+    image: postgres:17
+    container_name: flowform-postgres-core-ec2-local
+    env_file:
+      - ./.db.core.env
+    environment:
+      DATABASE_INIT_TARGET: core
+      POSTGRES_USER: ${DATABASE_CORE_INIT_USER}
+      POSTGRES_DB: ${DATABASE_CORE_INIT_DB}
+      POSTGRES_PASSWORD_FILE: /run/secrets/DATABASE_CORE_INIT_PASSWORD
+      DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+    command:
+      - postgres
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+      - -c
+      - listen_addresses=*
+      - -c
+      - port=${DATABASE_CORE_PORT}
+    volumes:
+      - flowform_postgres_core_ec2_local_data:/var/lib/postgresql/data
+      - ../postgres/init:/docker-entrypoint-initdb.d
+      - ./postgres/pg_hba.ec2.local.conf:/etc/postgresql/pg_hba.conf:ro
+    secrets:
+      - DATABASE_CORE_INIT_PASSWORD
+      - DATABASE_CORE_APP_PASSWORD
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_CORE_INIT_USER} -d ${DATABASE_CORE_INIT_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app_net
+
+  postgres-response:
+    image: postgres:17
+    container_name: flowform-postgres-response-ec2-local
+    env_file:
+      - ./.db.response.env
+    environment:
+      DATABASE_INIT_TARGET: response
+      POSTGRES_USER: ${DATABASE_RESPONSE_INIT_USER}
+      POSTGRES_DB: ${DATABASE_RESPONSE_INIT_DB}
+      POSTGRES_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_INIT_PASSWORD
+      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
+    command:
+      - postgres
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+      - -c
+      - listen_addresses=*
+      - -c
+      - port=${DATABASE_RESPONSE_PORT}
+    volumes:
+      - flowform_postgres_response_ec2_local_data:/var/lib/postgresql/data
+      - ../postgres/init:/docker-entrypoint-initdb.d
+      - ./postgres/pg_hba.ec2.local.conf:/etc/postgresql/pg_hba.conf:ro
+    secrets:
+      - DATABASE_RESPONSE_INIT_PASSWORD
+      - DATABASE_RESPONSE_APP_PASSWORD
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_RESPONSE_INIT_USER} -d ${DATABASE_RESPONSE_INIT_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app_net
 
   backend:
     image: flowform-backend:local
     build:
       context: ../..
       dockerfile: infra/docker/backend.Dockerfile
-    container_name: flowform-backend-local
-    # A config error exits code 3 and is not self-healing, so cap retries
-    # instead of looping forever; transient crashes still get a few restarts.
+      args:
+        UV_SYNC_FLAGS: "--extra dev"
+    container_name: flowform-backend-ec2-local
     restart: on-failure:3
-    # No published ports: backend is only reachable via Caddy.
-    #
-    # The gitignored dev env file supplies the required FLOWFORM_* config
-    # (Auth0, KMS/encryption ARNs, SES, logging) — without it the backend
-    # fails settings validation and exits before serving anything. This
-    # mirrors the production env_file (/opt/flowform/backend.env) written
-    # by the EC2 bootstrap; see docker-compose.ec2.yml.
+    init: true
+    command: ["/opt/flowform/backend-venv/bin/gunicorn", "-c", "gunicorn.conf.py", "--worker-tmp-dir", "/tmp", "--no-control-socket", "wsgi:app"]
+    expose:
+      - "5000"
     env_file:
       - ./.backend.env
+      - ./.db.core.env
+      - ./.db.response.env
     environment:
       PYTHONUNBUFFERED: "1"
+      UV_CACHE_DIR: /tmp/uv-cache
       FLOWFORM_ENV: dev
-
-      # Placeholder DB settings — no database runs in this stack.
+      AWS_EC2_METADATA_DISABLED: "true"
+      HTTP_PROXY: "http://squid:3128"
+      HTTPS_PROXY: "http://squid:3128"
+      # Python requests/boto3 ignore CIDR entries in NO_PROXY. Use hostnames
+      # and suffixes for endpoints the backend itself dials.
+      NO_PROXY: "localhost,127.0.0.1,169.254.169.254,postgres-core,postgres-response"
       DATABASE_CORE_HOST: postgres-core
-      DATABASE_CORE_PORT: "5432"
-      DATABASE_CORE_NAME: flowform_core
-      DATABASE_CORE_APP_USER: flowform_core_app
-
       DATABASE_RESPONSE_HOST: postgres-response
-      DATABASE_RESPONSE_PORT: "5432"
-      DATABASE_RESPONSE_NAME: flowform_response
-      DATABASE_RESPONSE_APP_USER: flowform_response_app
-
+      # Local proof runs should not require a live Auth0 Management API secret.
+      # Leaving these unset makes the backend skip the management client while
+      # preserving the production *_FILE secret contract in docker-compose.app.yml.
+      FLOWFORM_AUTH0_MGMT_ID:
+      FLOWFORM_AUTH0_MGMT_SECRET_FILE:
       DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
       DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
       FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
-      FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET
-    # Runs the Gunicorn CMD baked into backend.Dockerfile.
+    secrets:
+      - DATABASE_CORE_APP_PASSWORD
+      - DATABASE_RESPONSE_APP_PASSWORD
+      - FLOWFORM_APP_SECRET_KEY
+      - FLOWFORM_AUTH0_MGMT_SECRET
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/logs
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
     healthcheck:
       test: ["CMD", "python", "/app/scripts/healthcheck.py"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 15s
-    secrets:
-      - DATABASE_CORE_APP_PASSWORD
-      - DATABASE_RESPONSE_APP_PASSWORD
-      - FLOWFORM_APP_SECRET_KEY
-      - FLOWFORM_AUTH0_MGMT_SECRET
+    depends_on:
+      postgres-core:
+        condition: service_healthy
+      postgres-response:
+        condition: service_healthy
+      squid:
+        condition: service_started
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
     networks:
-      - flowform_ec2_net
+      - app_net
 
 volumes:
   caddy_data:
   caddy_config:
+  squid_logs:
+  flowform_postgres_core_ec2_local_data:
+  flowform_postgres_response_ec2_local_data:
 
 networks:
-  flowform_ec2_net:
+  proxy_net:
     driver: bridge
+  app_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.60.0.0/16
 
 secrets:
+  DATABASE_CORE_INIT_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_CORE_INIT_PASSWORD.dev.secret.txt
   DATABASE_CORE_APP_PASSWORD:
-    file: ./secrets/DATABASE_CORE_APP_PASSWORD.dev.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_CORE_APP_PASSWORD.dev.secret.txt
+  DATABASE_RESPONSE_INIT_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_INIT_PASSWORD.dev.secret.txt
   DATABASE_RESPONSE_APP_PASSWORD:
-    file: ./secrets/DATABASE_RESPONSE_APP_PASSWORD.dev.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_APP_PASSWORD.dev.secret.txt
   FLOWFORM_APP_SECRET_KEY:
-    file: ./secrets/FLOWFORM_APP_SECRET_KEY.dev.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_APP_SECRET_KEY.dev.secret.txt
   FLOWFORM_AUTH0_MGMT_SECRET:
-    file: ./secrets/FLOWFORM_AUTH0_MGMT_SECRET.dev.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_AUTH0_MGMT_SECRET.dev.secret.txt

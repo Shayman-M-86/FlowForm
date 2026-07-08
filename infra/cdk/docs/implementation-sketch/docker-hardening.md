@@ -52,7 +52,7 @@ services:
       APP_PRIVATE_IP: ${APP_PRIVATE_IP:?}
       AWS_REGION: ${AWS_REGION}   # route53 provider via instance role/IMDS
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/Caddyfile.proxy:/etc/caddy/Caddyfile:ro
       - caddy_data:/data          # cert storage must survive restarts
       - caddy_config:/config
     read_only: true
@@ -66,16 +66,28 @@ services:
   squid:
     image: ubuntu/squid:latest
     restart: unless-stopped
+    environment:
+      SQUID_APP_SOURCE_CIDR: ${SQUID_APP_SOURCE_CIDR:?exact app EC2 source CIDR, usually APP_PRIVATE_IP/32}
     # Bound to the PRIVATE interface, never 0.0.0.0 — plus the security
     # group only admits 3128 from the app SG. Two layers, same rule.
     ports:
       - "${PROXY_PRIVATE_IP:?}:3128:3128/tcp"
     volumes:
-      - ./squid/squid.conf:/etc/squid/squid.conf:ro
+      - ./squid/squid.conf:/etc/squid/squid.conf.template:ro
       - ./squid/allowed-domains.txt:/etc/squid/allowed-domains.txt:ro
       - squid_logs:/var/log/squid
-    tmpfs: [/run, /tmp]
+    read_only: true
+    tmpfs: [/run, /tmp, /var/spool/squid]
+    cap_drop: [ALL]
+    # ubuntu/squid starts as root then drops to proxy; these are only for
+    # that privilege drop, not for binding low ports.
+    cap_add: [SETGID, SETUID]
     security_opt: ["no-new-privileges:true"]
+    entrypoint: ["/bin/sh", "-ec"]
+    command: >
+      sed "s|__APP_SOURCE_CIDR__|$${SQUID_APP_SOURCE_CIDR}|g"
+      /etc/squid/squid.conf.template > /tmp/squid.conf
+      && exec squid -N -f /tmp/squid.conf
     logging: {driver: json-file, options: {max-size: "10m", max-file: "5"}}
     networks: [proxy_net]
 
@@ -134,7 +146,7 @@ interception** (no SSL-Bump — invasive, detectable, unnecessary here).
 ```squidconf
 http_port 3128
 
-acl app_ec2 src 10.0.11.10/32
+acl app_ec2 src __APP_SOURCE_CIDR__
 acl SSL_ports port 443
 acl CONNECT method CONNECT
 acl allowed_domains dstdomain "/etc/squid/allowed-domains.txt"
@@ -164,13 +176,15 @@ kms.ap-southeast-2.amazonaws.com
 ssm.ap-southeast-2.amazonaws.com
 email.ap-southeast-2.amazonaws.com
 api.ecr.ap-southeast-2.amazonaws.com
-.dkr.ecr.ap-southeast-2.amazonaws.com
+<aws-account-id>.dkr.ecr.ap-southeast-2.amazonaws.com
 ```
 
 Notes:
 - `email.*` is the **SESv2 API** — the backend sends via boto3, not SMTP.
 - No `sts.*`: the app uses its instance role directly, nothing assumes
   roles at runtime.
+- No broad wildcards: replace the Auth0 tenant and ECR account placeholders
+  with exact hosts during bootstrap.
 - `logs.*` only if/when the CloudWatch agent or awslogs driver ships from
   this box.
 - Add Sentry/PostHog ingest hosts only if those integrations are enabled.
@@ -181,7 +195,7 @@ Notes:
 
 ```text
 /opt/flowform-app/
-  docker-compose.yml          # backend only (see docker-compose.ec2.yml split)
+  docker-compose.yml          # backend only (repo source: docker-compose.app.yml)
 /opt/flowform/backend.env     # non-secret FLOWFORM_* config, written by bootstrap from SSM
 /run/flowform/secrets/        # tmpfs; written by bootstrap from Secrets Manager
   DATABASE_CORE_APP_PASSWORD.secret.txt
@@ -194,8 +208,7 @@ Secret names, `*_FILE` env vars, and the tmpfs bootstrap all follow the
 existing convention (see the Secrets and Configuration Bootstrap section
 of the notes doc) — do not invent new names.
 
-Backend service sketch (delta on top of `docker-compose.ec2.yml`, which
-predates the two-instance split):
+Backend service sketch (`infra/docker/docker-compose.app.yml`):
 
 ```yaml
 services:
@@ -203,6 +216,7 @@ services:
     image: ${BACKEND_IMAGE:?}          # pin to @sha256: digest in prod
     restart: unless-stopped
     init: true
+    command: ["/opt/flowform/backend-venv/bin/gunicorn", "-c", "gunicorn.conf.py", "--worker-tmp-dir", "/tmp", "--no-control-socket", "wsgi:app"]
     # Bind to the private interface only — never 0.0.0.0. The SG only
     # admits 5000 from the proxy SG anyway; layers must agree.
     ports:
@@ -212,19 +226,20 @@ services:
     environment:
       HTTP_PROXY: "http://${PROXY_PRIVATE_IP}:3128"
       HTTPS_PROXY: "http://${PROXY_PRIVATE_IP}:3128"
+      UV_CACHE_DIR: /tmp/uv-cache
       # CAUTION: Python (requests/boto3) does NOT understand CIDR entries
       # in NO_PROXY — 10.0.0.0/16 is honored by the Go-based Docker
       # daemon but silently ignored by the app. Use hostname/suffix
       # entries for everything the backend itself dials.
       NO_PROXY: "localhost,127.0.0.1,169.254.169.254,.rds.amazonaws.com"
-      # *_FILE secret envs + FLOWFORM_ENV as in docker-compose.ec2.yml
+      # *_FILE secret envs + FLOWFORM_ENV as in docker-compose.app.yml
     secrets:
       - DATABASE_CORE_APP_PASSWORD
       - DATABASE_RESPONSE_APP_PASSWORD
       - FLOWFORM_APP_SECRET_KEY
       - FLOWFORM_AUTH0_MGMT_SECRET
     read_only: true
-    tmpfs: [/tmp]
+    tmpfs: [/tmp, /app/logs]
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     pids_limit: 256
@@ -237,10 +252,13 @@ services:
     logging: {driver: json-file, options: {max-size: "10m", max-file: "5"}}
 ```
 
-`read_only: true` prerequisite: prod logging must go to **stdout as
-JSON** (`FLOWFORM_LOGGING_LOG_JSON=true`, no `LOG_FILE`) instead of the
-dev `logs/app.log` file — stdout logging is the better production shape
-regardless (Docker owns rotation, CloudWatch can ship it).
+`read_only: true` prerequisite: prod app logging must go to **stdout as
+JSON** (`FLOWFORM_LOGGING_LOG_JSON=true`, no
+`FLOWFORM_LOGGING_LOG_FILE` / legacy `LOG_FILE`) instead of the dev
+`logs/app.log` file — stdout logging is the better production shape
+regardless (Docker owns rotation, CloudWatch can ship it). `/app/logs`
+is tmpfs only to satisfy the current bootstrap logger before settings are
+loaded; nothing should rely on it for durable logs.
 
 ### Docker daemon proxy (`/etc/docker/daemon.json` on the app instance)
 

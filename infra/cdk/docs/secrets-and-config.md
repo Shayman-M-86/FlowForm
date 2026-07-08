@@ -125,3 +125,15 @@ The env and secret files are gitignored and have never been committed —
 nothing has leaked. After moving a secret out of `.backend.env`, rotate the
 old local value when practical and keep using mounted secret files for local
 Docker parity with EC2.
+
+## EC2 Compose bootstrap contract
+
+The split EC2 runtime keeps the same secret-file convention. The proxy
+instance runs `infra/docker/docker-compose.proxy.yml` from a bootstrap-written
+proxy env file; the private app instance runs
+`infra/docker/docker-compose.app.yml` with
+`--env-file /opt/flowform/backend.env`. That backend env file must contain
+only non-secret config, image refs, private IPs, proxy settings, and logging
+settings. Keep production logging on stdout JSON
+(`FLOWFORM_LOGGING_LOG_JSON=true`) and leave `FLOWFORM_LOGGING_LOG_FILE`
+unset so `read_only: true` remains honest.

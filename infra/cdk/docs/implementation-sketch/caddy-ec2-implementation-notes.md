@@ -16,8 +16,8 @@ firewalls, patching, logging).
 
 Run Caddy inside Docker Compose on the public EC2 application instance. Caddy is
 the only public HTTP service for the backend. It terminates HTTPS, renews TLS
-certificates automatically, and reverse proxies requests over the private Docker
-network to the Flask/Gunicorn container.
+certificates automatically, and reverse proxies requests over the private VPC
+to the Flask/Gunicorn container on the app instance.
 
 This matches the main deployment plan's target backend architecture:
 Route 53 -> EC2 -> Docker Compose -> Caddy + Gunicorn -> RDS. See
@@ -68,7 +68,8 @@ Caddy should:
 
 - Receive public HTTPS traffic for `api.<domain>`.
 - Obtain and renew certificates with DNS-01 validation through Route 53.
-- Reverse proxy requests to the backend container, for example `flask:8000`.
+- Reverse proxy requests to the private app instance, for example
+  `http://{$APP_PRIVATE_IP}:5000`.
 - Keep Flask/Gunicorn private inside the Docker Compose network.
 - Avoid storing AWS credentials in files, images, or GitHub secrets.
 
@@ -112,19 +113,19 @@ Route tables are the load-bearing control: the private app subnet has **no**
 free S3 gateway endpoint. Even a compromised container has no path to the
 internet except the allow-listed proxy.
 
-Do not publish the Flask/Gunicorn port on the EC2 host. In Compose, prefer
-`expose` for the backend container:
-
-```yaml
-expose:
-  - "8000"
-```
-
-Do not use a host-published Flask port:
+Do not publish the Flask/Gunicorn port on any public interface. In the private
+app Compose file, bind Gunicorn only to the app instance's private IP:
 
 ```yaml
 ports:
-  - "8000:8000"
+  - "${APP_PRIVATE_IP:?}:5000:5000/tcp"
+```
+
+Do not use a broad host-published Flask port:
+
+```yaml
+ports:
+  - "0.0.0.0:5000:5000"
 ```
 
 RDS should live in private subnets. Its security group should allow Postgres only
@@ -149,9 +150,9 @@ AWS API calls — goes through the proxy or fails.
 Squid's allow-list (CONNECT/SNI-based): the Auth0 tenant + custom domain,
 and the regional AWS endpoints the app role actually uses —
 `secretsmanager`, `kms`, `email` (SES v2 API — note the backend sends via
-the **SESv2 API with boto3, not SMTP**), `ecr` auth, `ssm`, `sts`,
-`logs`.`ap-southeast-2.amazonaws.com`. Everything else is denied and
-logged.
+the **SESv2 API with boto3, not SMTP**), `api.ecr`, the exact account ECR
+registry host, and `ssm`. No `sts`, no `*.amazonaws.com`, and no
+`*.auth0.com` wholesale. Everything else is denied and logged.
 
 **Proxy configuration on the app instance** — the part that makes or
 breaks this design:
@@ -211,7 +212,7 @@ Instance bootstrap (instance role, no static keys)
         non-secret FLOWFORM_* config + DB hosts/names/users + image refs
 
 docker compose --env-file /opt/flowform/backend.env \
-  -f docker-compose.ec2.yml up -d
+  -f docker-compose.app.yml up -d
 ```
 
 Why this over in-app fetching:
@@ -229,8 +230,9 @@ The split follows the usual rule: credentials and keys in Secrets Manager
 (DB app passwords, Flask secret key, Auth0 Management API client secret),
 non-secret runtime config in SSM Parameter Store (Auth0 domain/audience/client
 IDs, KMS key ARN, linkage secret ARN, SES from-address, logging levels, RDS
-endpoints). Compose files reference only names and paths — see
-`infra/docker/docker-compose.ec2.yml`.
+endpoints, image refs, private IPs). Compose files reference only names and
+paths — see `infra/docker/docker-compose.proxy.yml` and
+`infra/docker/docker-compose.app.yml`.
 
 Note that the backend still uses the instance role at runtime for its
 own AWS calls (KMS session encryption, the linkage-key secret, SES) —
@@ -245,41 +247,30 @@ requirement already flagged for Caddy in
 
 ## Compose and Caddyfile Sketch
 
-The production Compose file belongs under `infra/docker/`, as called out in
-[Phase 2a](core-sketch-plan.md#phase-2--backend-runtime-on-ec2). It should have
-two services at first: Caddy and Flask/Gunicorn. RDS is external.
+The production Compose files belong under `infra/docker/`, as called out in
+[Phase 2a](core-sketch-plan.md#phase-2--backend-runtime-on-ec2). The proxy
+instance uses `docker-compose.proxy.yml` (Caddy + Squid); the private app
+instance uses `docker-compose.app.yml` (backend only). RDS is external.
 
 ```yaml
-services:
-  caddy:
-    image: <account>.dkr.ecr.<region>.amazonaws.com/flowform-caddy:<tag>
-    ports:
-      - "443:443"
-    volumes:
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - flask
+proxy EC2:
+  docker compose --env-file /opt/flowform/proxy.env \
+    -f docker-compose.proxy.yml up -d
 
-  flask:
-    image: <account>.dkr.ecr.<region>.amazonaws.com/flowform-backend:<tag>
-    expose:
-      - "8000"
-    env_file:
-      - /opt/flowform/backend.env
-
-volumes:
-  caddy_data:
-  caddy_config:
+app EC2:
+  docker compose --env-file /opt/flowform/backend.env \
+    -f docker-compose.app.yml up -d
 ```
 
 ```caddyfile
-api.flow-form.com.au {
+{$API_DOMAIN} {
     tls {
         dns route53
     }
 
-    reverse_proxy flask:8000
+    reverse_proxy http://{$APP_PRIVATE_IP}:5000 {
+        health_uri /api/v1/system/health/ready
+    }
 }
 ```
 
@@ -291,7 +282,7 @@ replacement.
 Validate this in staging before adding prod:
 
 - `api.<staging-domain>` resolves to the EC2 Elastic IP.
-- EC2 security group allows public `443` and does not allow public `8000` or
+- EC2 security group allows public `443` and does not allow public `5000` or
   `5432`.
 - RDS security group allows `5432` only from the EC2 app security group.
 - Caddy obtains a certificate with Route 53 DNS-01.
@@ -300,7 +291,7 @@ Validate this in staging before adding prod:
 - The Caddy container can access instance-role credentials through IMDS, or the
   chosen alternative credential path is documented.
 - `curl https://api.<staging-domain>/...` reaches the backend through Caddy.
-- `curl http://<ec2-ip>:8000` fails from the public internet.
+- `curl http://<app-private-ip>:5000` fails from outside the proxy path.
 - Flask/Gunicorn can connect to both FlowForm databases on RDS.
 - Deployment through SSM can pull images and restart Compose without SSH.
 

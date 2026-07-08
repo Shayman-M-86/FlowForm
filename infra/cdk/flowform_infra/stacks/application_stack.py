@@ -62,12 +62,13 @@ from flowform_infra.stacks.network_stack import NetworkStack
 #   2. SSM get-parameters-by-path /flowform/<scope>/backend/ ->
 #      /opt/flowform/backend.env (non-secret FLOWFORM_* config: Auth0
 #      IDs, KMS key ARN, linkage secret ARN, SES from-address, logging,
-#      DB hosts/names/users, HTTP(S)_PROXY/NO_PROXY). Compose is invoked
-#      with `--env-file /opt/flowform/backend.env` (interpolation) and
-#      the backend service also loads it via `env_file:` (container env).
-# See infra/docker/docker-compose.ec2.yml for the consuming side (needs a
-# split: the proxy instance runs caddy+squid, the app instance runs the
-# backend — the current single file predates the two-instance design).
+#      DB hosts/names/users, image refs, private IPs, HTTP(S)_PROXY/NO_PROXY).
+#      Compose is invoked with `--env-file /opt/flowform/backend.env`
+#      (interpolation) and the backend service also loads it via `env_file:`
+#      (container env).
+# See infra/docker/docker-compose.proxy.yml and docker-compose.app.yml for the
+# consuming side: the proxy instance runs Caddy+Squid, and the app instance
+# runs only the backend.
 #
 # Backend AWS calls (boto3 SESv2/KMS/Secrets Manager) use the instance
 # role via IMDS and honor HTTPS_PROXY from the environment — AwsSettings'

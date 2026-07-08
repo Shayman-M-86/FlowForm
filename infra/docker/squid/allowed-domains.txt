@@ -1,0 +1,7 @@
+<tenant>.au.auth0.com
+secretsmanager.ap-southeast-2.amazonaws.com
+kms.ap-southeast-2.amazonaws.com
+ssm.ap-southeast-2.amazonaws.com
+email.ap-southeast-2.amazonaws.com
+api.ecr.ap-southeast-2.amazonaws.com
+<aws-account-id>.dkr.ecr.ap-southeast-2.amazonaws.com

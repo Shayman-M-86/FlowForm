@@ -1,0 +1,83 @@
+# FlowForm private app EC2 stack.
+#
+# Bootstrap writes /opt/flowform/backend.env from SSM and materialises secret
+# files under FLOWFORM_SECRET_DIR (default /run/flowform/secrets) from Secrets
+# Manager. Staging and prod use this same Compose file; all environment
+# differences come from that bootstrap-written env file.
+#
+# Expected invocation on the app instance:
+#
+#   docker compose --env-file /opt/flowform/backend.env \
+#     -f docker-compose.app.yml up -d
+#
+# /opt/flowform/backend.env must include non-secret runtime config and compose
+# interpolation values such as BACKEND_IMAGE, APP_PRIVATE_IP, PROXY_PRIVATE_IP,
+# DB hosts/names/users, Auth0 IDs, KMS/linkage ARNs, SES config, and logging.
+# With read_only enabled, production logging must be stdout JSON:
+# FLOWFORM_LOGGING_LOG_JSON=true, and do not set FLOWFORM_LOGGING_LOG_FILE (or
+# any legacy LOG_FILE value). Docker owns log rotation below.
+
+name: flowform-app
+
+services:
+  backend:
+    image: ${BACKEND_IMAGE:?set BACKEND_IMAGE to the backend ECR ref}
+    restart: unless-stopped
+    init: true
+    command: ["/opt/flowform/backend-venv/bin/gunicorn", "-c", "gunicorn.conf.py", "--worker-tmp-dir", "/tmp", "--no-control-socket", "wsgi:app"]
+    # Bind to the app EC2 private interface only, never 0.0.0.0. The app
+    # security group should independently allow this port only from the proxy SG.
+    ports:
+      - "${APP_PRIVATE_IP:?set APP_PRIVATE_IP}:5000:5000/tcp"
+    env_file:
+      - /opt/flowform/backend.env
+    environment:
+      PYTHONUNBUFFERED: "1"
+      UV_CACHE_DIR: /tmp/uv-cache
+      HTTP_PROXY: "http://${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP}:3128"
+      HTTPS_PROXY: "http://${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP}:3128"
+      # CAUTION: Python requests/boto3 ignore CIDR entries in NO_PROXY. Use
+      # hostnames or suffixes here; the Docker daemon's no-proxy can still use
+      # VPC CIDRs in its host-level proxy config.
+      NO_PROXY: "localhost,127.0.0.1,169.254.169.254,.rds.amazonaws.com"
+      DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
+      FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
+      FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET
+    secrets:
+      - DATABASE_CORE_APP_PASSWORD
+      - DATABASE_RESPONSE_APP_PASSWORD
+      - FLOWFORM_APP_SECRET_KEY
+      - FLOWFORM_AUTH0_MGMT_SECRET
+    read_only: true
+    tmpfs:
+      - /tmp
+      # Current bootstrap logging opens logs/bootstrap.log before settings are
+      # loaded. Keep that write memory-backed while app logging stays on stdout.
+      - /app/logs
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/healthcheck.py"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+secrets:
+  DATABASE_CORE_APP_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_CORE_APP_PASSWORD.secret.txt
+  DATABASE_RESPONSE_APP_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_RESPONSE_APP_PASSWORD.secret.txt
+  FLOWFORM_APP_SECRET_KEY:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/FLOWFORM_APP_SECRET_KEY.secret.txt
+  FLOWFORM_AUTH0_MGMT_SECRET:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/FLOWFORM_AUTH0_MGMT_SECRET.secret.txt

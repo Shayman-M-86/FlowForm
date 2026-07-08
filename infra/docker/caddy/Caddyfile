@@ -1,9 +1,7 @@
-# FlowForm API reverse proxy (production / EC2).
+# FlowForm API reverse proxy (legacy single-host file).
 #
-# Serves https://api.<public_site_domain> and proxies to the backend
-# container on the internal Compose network. TLS certificates are obtained
-# via ACME DNS-01 through Route 53 (see caddy.Dockerfile for the module and
-# application_stack.py for the instance role that grants Route 53 access).
+# The split EC2 deployment uses caddy/Caddyfile.proxy via
+# docker-compose.proxy.yml. Keep this file only for older manual experiments.
 #
 # Parameterised via environment:
 #   API_DOMAIN  - the public API hostname, e.g. api.flow-form.com.au
