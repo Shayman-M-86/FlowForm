@@ -97,3 +97,7 @@ cover/
 *test.secret.txt
 *prod.secret.txt
 *dev.secret.txt
+infra/rehearsal/tls-shim/ca/rehearsal-ca.key
+infra/rehearsal/tls-shim/ca/rehearsal-ca.crt
+infra/rehearsal/tls-shim/ca/localstack.key
+infra/rehearsal/tls-shim/ca/localstack.crt

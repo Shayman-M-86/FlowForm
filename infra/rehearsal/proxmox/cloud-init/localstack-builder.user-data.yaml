@@ -57,13 +57,75 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
+  # --- TLS shim: front LocalStack with *.localstack.test on :443 so the app box
+  # reaches fake-AWS exactly like real AWS (CONNECT :443 via Squid → TLS → here).
+  # Pre-generated rehearsal cert/CA (throwaway); app box trusts ca/rehearsal-ca.crt.
+  - path: /opt/flowform/tls-shim/docker-compose.tls-shim.yml
+    permissions: '0644'
+    content: |
+      services:
+        tls-shim:
+          image: caddy:2-alpine
+          container_name: flowform-tls-shim
+          restart: unless-stopped
+          network_mode: host
+          volumes:
+            - /opt/flowform/tls-shim/Caddyfile:/etc/caddy/Caddyfile:ro
+            - /opt/flowform/tls-shim/certs:/etc/caddy/certs:ro
+            - tls_shim_data:/data
+            - tls_shim_config:/config
+          healthcheck:
+            test: ["CMD", "sh", "-c", "wget -q --no-check-certificate --header 'Host: ssm.localstack.test' -O /dev/null https://10.10.10.30/_localstack/health || exit 1"]
+            interval: 5s
+            timeout: 3s
+            retries: 20
+            start_period: 20s
+      volumes:
+        tls_shim_data:
+        tls_shim_config:
+
+  - path: /etc/systemd/system/flowform-tls-shim.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=FlowForm rehearsal TLS shim (fake-AWS TLS on :443)
+      Requires=docker.service flowform-localstack.service
+      After=docker.service flowform-localstack.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      WorkingDirectory=/opt/flowform/tls-shim
+      ExecStart=/usr/bin/docker compose -f /opt/flowform/tls-shim/docker-compose.tls-shim.yml up -d
+      ExecStop=/usr/bin/docker compose -f /opt/flowform/tls-shim/docker-compose.tls-shim.yml down
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # Caddyfile + pre-generated cert/key (base64; rehearsal throwaway CA).
+  - path: /opt/flowform/tls-shim/Caddyfile
+    permissions: '0644'
+    encoding: b64
+    content: IyBSZWhlYXJzYWwgVExTIHNoaW0g4oCUIHJ1bnMgb24gdGhlIGxzLXZtICgyMzApLCBiZXNpZGUgTG9jYWxTdGFjay4KIwojIE1ha2VzIHRoZSBmYWtlLUFXUyBlbmRwb2ludCBwcmVzZW50IFRMUyBvbiA6NDQzIHVuZGVyIFNOSSBuYW1lcywgc28gdGhlIGFwcAojIGJveCByZWFjaGVzIGl0IGV4YWN0bHkgdGhlIHdheSBpdCByZWFjaGVzIHJlYWwgQVdTOiBDT05ORUNUIDxob3N0Pjo0NDMg4oaSIFNxdWlkCiMgKFNOSSBhbGxvdy1saXN0KSDihpIgVExTIHR1bm5lbCDihpIgaGVyZSDihpIgdGVybWluYXRlIFRMUyDihpIgTG9jYWxTdGFjayA6NDU2Ni4KIwojIFRoZSBPTkxZIGRlbHRhcyBmcm9tIHByb2QgYXJlIHRoZSBob3N0bmFtZXMgKCoubG9jYWxzdGFjay50ZXN0KSBhbmQgYQojIHJlaGVhcnNhbC1vbmx5IENBIChjYS9yZWhlYXJzYWwtY2EuY3J0LCBhIHRocm93YXdheSBjb21taXR0ZWQgZm9yIHRoZSBsb2NhbAojIHJlaGVhcnNhbCkuIE5ldmVyIG1pc3Rha2UgdGhpcyBmb3IgcmVhbCBBV1MgcHJvb2YuCiMKIyBVc2VzIGEgUFJFLUdFTkVSQVRFRCBjZXJ0IChjYS9sb2NhbHN0YWNrLmNydCBzaWduZWQgYnkgY2EvcmVoZWFyc2FsLWNhLmNydCkgc28KIyB0aGUgYXBwIGJveCBjYW4gdHJ1c3QgdGhlIENBIHJvb3QgYmFrZWQgYXQgYnVpbGQgdGltZSDigJQgbm8gZmV0Y2gtZnJvbS1zaGltCiMgY2hpY2tlbi1hbmQtZWdnLiBUaGUgYXBwIGJveCBvbmx5IG5lZWRzIGNhL3JlaGVhcnNhbC1jYS5jcnQgaW4gaXRzIHRydXN0IHN0b3JlLgoKewoJYWRtaW4gb2ZmCglhdXRvX2h0dHBzIGRpc2FibGVfcmVkaXJlY3RzCn0KCnNlY3JldHNtYW5hZ2VyLmxvY2Fsc3RhY2sudGVzdCwgc3NtLmxvY2Fsc3RhY2sudGVzdCwga21zLmxvY2Fsc3RhY2sudGVzdCB7Cgl0bHMgL2V0Yy9jYWRkeS9jZXJ0cy9sb2NhbHN0YWNrLmNydCAvZXRjL2NhZGR5L2NlcnRzL2xvY2Fsc3RhY2sua2V5CgkjIExvY2FsU3RhY2sgcHVibGlzaGVzIG9uIHRoZSBwcml2YXRlIE5JQyAoMTAuMTAuMTAuMzA6NDU2NiksIG5vdCAxMjcuMC4wLjEuCglyZXZlcnNlX3Byb3h5IGh0dHA6Ly8xMC4xMC4xMC4zMDo0NTY2Cn0K
+  - path: /opt/flowform/tls-shim/certs/localstack.crt
+    permissions: '0644'
+    encoding: b64
+    content: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURpakNDQW5LZ0F3SUJBZ0lVYkxMTlRTcUtWYXd4bmE2dWFZQlZrUDEwaTRjd0RRWUpLb1pJaHZjTkFRRUwKQlFBd1NURXFNQ2dHQTFVRUF3d2hSbXh2ZDBadmNtMGdVbVZvWldGeWMyRnNJRU5CSUNoMGFISnZkMkYzWVhrcApNUnN3R1FZRFZRUUtEQkpHYkc5M1JtOXliU0JTWldobFlYSnpZV3d3SGhjTk1qWXdOekE1TVRBeE56RXhXaGNOCk16WXdOekEyTVRBeE56RXhXakFhTVJnd0ZnWURWUVFEREE5c2IyTmhiSE4wWVdOckxuUmxjM1F3Z2dFaU1BMEcKQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUUNodjhYRFBXNUdpdmRucnI3Q1lhTnNieEtYWUNmbQpQQ2lvOUM0US9FYjhjcXZhZ3NCZkgwMk5wWWN1Y2pTSzd1L2haOC9pMW50RmlYRUxVNEx1dlEwRHVpclZVUHFsCkNHd2R3MGdXTGNvYXBNSEFSdjFQRHBldWpGK3k1Ym5CeHR1T0phR0FuSzNaNXdvc2gwYnRaTlNxaUJzNmRlOUMKYzhqWkNDYW5nbVZ6d0tvYWRBelFSZzdOaDlrTnppeXUwaFVkY1JSemNyQ1VQcVZjc0x2R29HTjFyTmNReE5IUgpBdFlFSlJGN3dUODJuWTgrTXlsazg1bml3NW9OeG9hWHpRa1RmVUxkK2RrNDdYbzFsYXNMK1djY3dSKzA4bTBNCmFGZS9xdEs4dG83MnViYmdDMisyMzRwb0ZPZWg0RzZMWnhQdHZ2RG5SUlN4UWx2aUtFUGR3TzJoQWdNQkFBR2oKZ1pnd2daVXdVd1lEVlIwUkJFd3dTb0llYzJWamNtVjBjMjFoYm1GblpYSXViRzlqWVd4emRHRmpheTUwWlhOMApnaE56YzIwdWJHOWpZV3h6ZEdGamF5NTBaWE4wZ2hOcmJYTXViRzlqWVd4emRHRmpheTUwWlhOME1CMEdBMVVkCkRnUVdCQlE3UTFvTS81V0RtKzZQNDhDSjdEdmVkUlgyRERBZkJnTlZIU01FR0RBV2dCUWU1cXFLL1RuNmVwb0UKcDZHb1YvWVN1WHlLd1RBTkJna3Foa2lHOXcwQkFRc0ZBQU9DQVFFQWNpV1lUVUpIWVkzekpFdWRra2dJcTEyUQpDNUtmWE1od014SHZ3bWZ6Y083VS9uVmRsSmhQV1BtcDBDQUU0dlJTQmpNWkh3SlR1bVRCVk5TU0orckwyQ3lBCit1bS9RWmtMY3o0eXdiRlBRRmNRL05pMGFlZlVkcWQvWVVLa1FRVU5DSW5tOEliWndCVU43WnVXQmVDRE0zNmgKVW1tK2lXR1JKL0VmV3U5eHJjbmxrSzZyemxWYWdpVHovNVZPbENHVmNhUXpHVjB4SHlVUUJ6NjlFLy9lenBwZgptMG9aTWxMUzVadFVMMUloWkVFYjdDMUxyeWdCR2pUdTFWSmJWejhFRkVzNWhzYzYxbHQrQTVFTTFpd0Q5RFBWCklJczAxUU1KQVIrV0JqQXlRRGdCOVZ3ZUtEbitIdUlHZTEvWGo0TVM4TnNzYU1iSkFPVHF3SFY0Q3gyM0lRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+  - path: /opt/flowform/tls-shim/certs/localstack.key
+    permissions: '0600'
+    encoding: b64
+    content: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2h2OFhEUFc1R2l2ZG4KcnI3Q1lhTnNieEtYWUNmbVBDaW85QzRRL0ViOGNxdmFnc0JmSDAyTnBZY3VjalNLN3UvaFo4L2kxbnRGaVhFTApVNEx1dlEwRHVpclZVUHFsQ0d3ZHcwZ1dMY29hcE1IQVJ2MVBEcGV1akYreTVibkJ4dHVPSmFHQW5LM1o1d29zCmgwYnRaTlNxaUJzNmRlOUNjOGpaQ0NhbmdtVnp3S29hZEF6UVJnN05oOWtOeml5dTBoVWRjUlJ6Y3JDVVBxVmMKc0x2R29HTjFyTmNReE5IUkF0WUVKUkY3d1Q4Mm5ZOCtNeWxrODVuaXc1b054b2FYelFrVGZVTGQrZGs0N1hvMQpsYXNMK1djY3dSKzA4bTBNYUZlL3F0Szh0bzcydWJiZ0MyKzIzNHBvRk9laDRHNkxaeFB0dnZEblJSU3hRbHZpCktFUGR3TzJoQWdNQkFBRUNnZ0VBRm9jc1p3RisyRWRtL0U0TDFwZEh3NFN0Z2wrTG54Y0xrMkNUQVVoSjBNT3oKUGl5NDJMd2c0K29hbGw3NkJNeG1UNjdTOXZxUzBtcTVUOFVJREVmN2NJOUtMa29TNXMvSFV5dmk0SktYRkEwLwpjN3JQY1dhTVoyeTRzQ1RXaHUvZDg0SGlrNzcrdmNYZWxtTnUvd1hCL2FYQVRtejZSU0gxa1k0cVBXbG9ITzRQClVTRkxhSWUwZ0V6WnA5QjQvVHlXOU91Vm16R25nM0lUWlVQMUlKSHVETVpobEd0KzNvVksrMWYrK3JpdFlOYzkKalE4Sy8xdDRSUThUWCtPVVErcThGVlk0eTlGdW1EUnNibjRhRTZNMGUrTUlqNDRkOS9aeWRHVUJxWUNJd2ZhcApQS0YwZ1VaOGpjMXdYUVNCMFd2TWpwTVJxTExRb3laa2ViZkwzTnJHY3dLQmdRRGFHYS9YY0FwWEM4Q1QwTnppClRDWmxPNHlCWFFjY0Jud0g1TTBqSVZrbi9xMHgreEZPSVU3U2VkcjdIODRLM0Z2eDA5TTI4MmpIOEQwcEx5bjYKVkx3ZHlZOWdBenVYNFI5K25ReUlUUkVIWVRuREtlNmIwVk1kRWRyZ3JEc2F2RkgyMEphQmNmYkpyQytjYXNHQQpOamxzbkxtd2RyT1lNSnltVnczaG5vY1Fhd0tCZ1FDOTIwVTIrWXRGQjVSMko3amFjOHBqTFJMc3Rkd08xMXIyCkV6VXREaTJwQldqQzBJVE9ETklzTXRHbkx0M0FTYnFxTTJsQzdlS3dpZnVvSGQ3cUpYZld3SnRuVDNJbVpEdXoKTHVZdm54d00xY2VIR2JqeFpJckZ6bFpsbS8zektQMnQwbjVDK0tOYVdseG1vSDBxY0FCS0pxT3NQdno4cHBmRApGaWNSVkd6Tkl3S0JnUURFQzk3eVN2WWdkS0h3dlFnd0tyOUF0QnlDbERxMXlHWnBPaFBqaGpCOE1RTkNNQ3JJCkRreXFDWHI3elFVSzRqV0wxUnJCQkYrbGlaK1FpNkt5TU1UQUNkUmxPOEt2clY4QUV1K1cvWjlYQU9CSlBFSU4Kc2tXQmxmRW5qK201Q0pxc3Y2YnFTS1RMZDRsOGtzSEpHL1RXV3JMWG1udXBTOWtqOUpDM3hDWW9iUUtCZ0M4Ugp4Yjh6Ynd2V0xVQjk2SjZBUnBULy84a2Y3VWJnclhTRW5wSmxDWHoyRWxyNlIzS3VTdzBhTEZBK2xrdXQrOUZtCm5ab3lVQmxrbkRlNThDSXMxK0V1TDFrVm9UOVRhbG1xTHZkdmd3ekxrNFF6SkY3MGhsTTBMTWRVUFVtanlBRG8KUnRWanYxd1BPd2xXa0xHTXd3V2ZQc1RkZU90S2dpV2p3RnZUaW9YeEFvR0FaVVBTZEhXTFA3bTdjNVMrUDlmTgpCdDQ0N1J1OVp4N1hqWlMxeWFOVFFwaTUvMXBRYkFobFI0YVI0ZFhKYVFMMHlaV01aNzY5azZ0NDllY0lzQmRTCmpieU8yT2NxUkFXUnlNcTA4UXJCS1krbTNMMEFHeFl6bEc4OGN5eDdwdURVS0NzT0h5bXVFZHIrTFQwdnQ4ZXEKWlovZzh6MFNBSWVDbmZsNGpiemVlakE9Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
+
 runcmd:
-  # --- bake: pull the LocalStack image into the local cache ---
+  # --- bake: pull LocalStack + the TLS-shim (caddy) images into the local cache ---
   - docker pull localstack/localstack:3
-  # sanity: fail the build (no poweroff) if the image isn't present
+  - docker pull caddy:2-alpine
+  # sanity: fail the build (no poweroff) if the images aren't present
   - docker image inspect localstack/localstack:3 >/dev/null
-  # enable the boot service (starts on the NEXT boot = the ls-vm clone's boot)
+  - docker image inspect caddy:2-alpine >/dev/null
+  # enable the boot services (start on the NEXT boot = the ls-vm clone's boot)
   - systemctl enable flowform-localstack.service
+  - systemctl enable flowform-tls-shim.service
   # --- SEAL: clean so clones start fresh, then power off as the done-signal ---
   - cloud-init clean --logs
   - truncate -s 0 /etc/machine-id

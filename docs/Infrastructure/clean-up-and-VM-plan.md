@@ -126,8 +126,8 @@ Staging EC2       = prove the AWS TRUST BOUNDARY (IMDS + hop-limit 2, real
 - Existing VM 100 "Ubuntu" (stopped) — avoid that ID. Use template **9000**
   (confirmed free) and VMs **210** (proxy) / **220** (app) / **230**
   (localstack).
-- Host tooling: `qm`, `wget`, `qemu-img` present; **`virt-customize` absent** —
-  `create-template.sh` installs `libguestfs-tools` on first run.
+- Host tooling: `qm`, `wget`, `qemu-img` present. (No `libguestfs`/`virt-*`
+  needed — templates self-provision via cloud-init, not offline image editing.)
 
 ## Repository organization for the rehearsal
 
@@ -339,9 +339,19 @@ Proxmox VE (192.168.68.88)
   the dev box, read back with plain `aws`.
 - ✅ **Dev box** static `192.168.68.100` + baked `~/.aws/{config,credentials}`
   (plain `aws` → LocalStack, no flags). `ssh flowform@192.168.68.100`.
-- ⏳ Remaining: TLS shim (`*.localstack.test` SNI so app-box AWS rides Squid),
-  rehearsal squid allow-list + `/etc/hosts`, cloud-init bootstrap user-data for
-  proxy/app.
+- ✅ **TLS shim** (`tls-shim/`, baked into 9001) — Caddy on the ls-vm terminates
+  TLS on :443 for `secretsmanager/ssm/kms.localstack.test`, reverse-proxies to
+  LocalStack `10.10.10.30:4566`. Pre-generated **rehearsal CA** (`tls-shim/ca/`,
+  throwaway) signs the SNI cert; app box trusts `rehearsal-ca.crt` (no fetch-from-
+  shim chicken-and-egg). systemd unit `flowform-tls-shim.service` auto-starts it
+  after LocalStack. **Proven from the dev box:** `aws --endpoint-url
+  https://ssm.localstack.test ...` and `https://secretsmanager.localstack.test`
+  return the seeded values over HTTPS; cert validates against the rehearsal CA
+  (`Verify return code: 0`). (Gotcha fixed: Caddy must proxy `10.10.10.30:4566`,
+  not `127.0.0.1` — LocalStack binds the private NIC.)
+- ⏳ Remaining: app box (trust rehearsal CA + `/etc/hosts` `*.localstack.test` →
+  10.10.10.30 + `~/.aws` HTTPS endpoints), rehearsal squid allow-list incl.
+  `*.localstack.test`, cloud-init bootstrap user-data for proxy/app.
 
 Files under `infra/rehearsal/`:
 - `cloud-init/app.user-data.yaml` — `write_files` drops the bootstrap scripts +

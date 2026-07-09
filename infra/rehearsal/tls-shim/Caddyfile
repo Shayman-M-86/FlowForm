@@ -1,0 +1,24 @@
+# Rehearsal TLS shim — runs on the ls-vm (230), beside LocalStack.
+#
+# Makes the fake-AWS endpoint present TLS on :443 under SNI names, so the app
+# box reaches it exactly the way it reaches real AWS: CONNECT <host>:443 → Squid
+# (SNI allow-list) → TLS tunnel → here → terminate TLS → LocalStack :4566.
+#
+# The ONLY deltas from prod are the hostnames (*.localstack.test) and a
+# rehearsal-only CA (ca/rehearsal-ca.crt, a throwaway committed for the local
+# rehearsal). Never mistake this for real AWS proof.
+#
+# Uses a PRE-GENERATED cert (ca/localstack.crt signed by ca/rehearsal-ca.crt) so
+# the app box can trust the CA root baked at build time — no fetch-from-shim
+# chicken-and-egg. The app box only needs ca/rehearsal-ca.crt in its trust store.
+
+{
+	admin off
+	auto_https disable_redirects
+}
+
+secretsmanager.localstack.test, ssm.localstack.test, kms.localstack.test {
+	tls /etc/caddy/certs/localstack.crt /etc/caddy/certs/localstack.key
+	# LocalStack publishes on the private NIC (10.10.10.30:4566), not 127.0.0.1.
+	reverse_proxy http://10.10.10.30:4566
+}
