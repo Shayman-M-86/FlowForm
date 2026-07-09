@@ -65,21 +65,26 @@ if [[ "${WITH_DEV_BOX}" == "1" ]]; then
   qm status "${DEV_TEMPLATE_VMID}" >/dev/null 2>&1 || die "dev template ${DEV_TEMPLATE_VMID} not found — run create-dev-template.sh first"
 fi
 
-# Render the app-box cloud-init from the real repo files and install it as a PVE
-# snippet. `create-vms.sh` runs on the PVE host from a synced copy of this dir, so
-# the sibling cloud-init/ files (template + render script + repo sources) are here.
+# Render the app + proxy cloud-init from the real repo files and install them as
+# PVE snippets. `create-vms.sh` runs on the PVE host from a synced copy, so the
+# sibling cloud-init/ files (templates + render script) are here; the render
+# script reaches the repo sources via REPO_ROOT (sync from the repo root — see
+# README — or export REPO_ROOT).
 APP_USERDATA_REF=""
-render_app_userdata() {
+PROXY_USERDATA_REF=""
+render_userdata() {
   local ci_dir="${SCRIPT_DIR}/cloud-init"
-  local rendered="${ci_dir}/app.user-data.rendered.yaml"
   [[ -x "${ci_dir}/render-user-data.sh" ]] || die "missing ${ci_dir}/render-user-data.sh"
-  log "rendering app-box cloud-init from repo sources"
+  log "rendering app + proxy cloud-init from repo sources"
   "${ci_dir}/render-user-data.sh" || die "render-user-data.sh failed"
-  APP_USERDATA_REF="$(tb_install_snippet "${rendered}" flowform-app.user-data.yaml)" \
+  APP_USERDATA_REF="$(tb_install_snippet "${ci_dir}/app.user-data.rendered.yaml" flowform-app.user-data.yaml)" \
     || die "installing app user-data snippet failed (run setup-host.sh?)"
-  log "app user-data snippet: ${APP_USERDATA_REF}"
+  PROXY_USERDATA_REF="$(tb_install_snippet "${ci_dir}/proxy.user-data.rendered.yaml" flowform-proxy.user-data.yaml)" \
+    || die "installing proxy user-data snippet failed (run setup-host.sh?)"
+  log "app   user-data snippet: ${APP_USERDATA_REF}"
+  log "proxy user-data snippet: ${PROXY_USERDATA_REF}"
 }
-render_app_userdata
+render_userdata
 
 # Inject the host's SSH key(s) into every clone so we can log in as 'flowform'.
 # (create-template baked no keys; cloud-init sets them per-clone.)
@@ -109,12 +114,16 @@ clone_vm() {
 }
 
 # --- proxy-vm (210): LAN + private, the ONLY box with an internet route ---
+# Boots the rendered proxy user-data (--cicustom): trust CA, resolve the fake-AWS
+# SNI names, bring up registry:2 + the prod proxy stack (Caddy tls-internal +
+# Squid rehearsal allow-list) via bootstrap-proxy.sh.
 if clone_vm "${PROXY_VMID}" "flowform-rehearsal-proxy" "${TEMPLATE_VMID}"; then
   qm set "${PROXY_VMID}" \
     --net0 "virtio,bridge=${LAN_BRIDGE}" \
     --net1 "virtio,bridge=${PRIV_BRIDGE}" \
     --ipconfig0 "ip=dhcp" \
     --ipconfig1 "ip=10.10.10.10/${PRIV_CIDR}" \
+    --cicustom "user=${PROXY_USERDATA_REF}" \
     --ciuser flowform --cipassword "rehearsal" \
     "${SSHKEYS_ARGS[@]}"
   qm start "${PROXY_VMID}"

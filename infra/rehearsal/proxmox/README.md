@@ -76,11 +76,16 @@ VMs:
 ./create-dev-template.sh          # 9002 dev  (clones 9000)
 
 # 2. Clone + start the VMs. Idempotent (skips existing); --force reclones.
-#    WITH_DEV_BOX=1 also creates the dev workbench (240).
+#    Renders the app + proxy cloud-init from the real repo files first, then
+#    attaches them via --cicustom. WITH_DEV_BOX=1 also creates the workbench (240).
+#      proxy (210): registry:2 + Caddy(tls-internal) + Squid(rehearsal allow-list)
+#      app   (220): trust CA, /etc/hosts, insecure-registry, run bootstrap-app.sh
 WITH_DEV_BOX=1 ./create-vms.sh
 
-# ...rehearse: seed LocalStack (../fixtures/localstack/seed-localstack.sh),
-#    then Phase 4 verify.sh...
+# ...rehearse (from the dev box or proxy):
+#    - seed the private registry:  ../fixtures/registry/seed-registry.sh   (on 210)
+#    - seed LocalStack:            ../fixtures/localstack/seed-localstack.sh
+#    - then Phase 4 verify.sh...
 
 # 3. Tear the VMs down (templates + bridges kept).
 ./destroy-vms.sh

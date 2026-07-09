@@ -51,6 +51,20 @@ write_files:
     owner: root:root
     content: __DOCKER_COMPOSE_APP_B64__
 
+  # --- rehearsal-only: trust the private HTTP registry -------------------------
+  # bootstrap-app.sh pulls BACKEND_IMAGE from 10.10.10.10:5000 (plain HTTP on the
+  # private net). Docker refuses HTTP registries unless listed as insecure. This
+  # is a REHEARSAL delta (prod pulls ECR over HTTPS, no daemon.json entry). It
+  # must exist BEFORE bootstrap-app.sh restarts the daemon (for its proxy drop-in)
+  # so the setting is live for the compose pull — the runcmd order guarantees that.
+  - path: /etc/docker/daemon.json
+    permissions: '0644'
+    owner: root:root
+    content: |
+      {
+        "insecure-registries": ["10.10.10.10:5000"]
+      }
+
   # --- env consumed by the bootstrap runcmd ------------------------------------
   # Per-service endpoints (option chosen: AWS_ENDPOINT_URL_<SERVICE>) so each
   # AWS service call goes to its own SNI hostname. AWS CLI v2 >= 2.13 honours

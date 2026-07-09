@@ -1,0 +1,140 @@
+#cloud-config
+# ===========================================================================
+# Proxy-box (210) runtime cloud-init — the PUBLIC entry + egress gateway.
+# ===========================================================================
+# This is a TEMPLATE. `render-user-data.sh` fills the __*_B64__ placeholders with
+# the base64 of the REAL repo files (single source of truth) and emits
+# `proxy.user-data.rendered.yaml`, which `create-vms.sh` attaches via --cicustom.
+# NEVER edit the .rendered.yaml by hand — re-render instead.
+#
+# The proxy box is the ONLY VM with an internet route (net0 on vmbr0). It:
+#   1. Runs registry:2 (10.10.10.10:5000) — images enter the rehearsal here and
+#      are re-served on the private net so the offline app box can pull them.
+#   2. Runs the REAL prod proxy stack (Caddy + Squid) via bootstrap-proxy.sh,
+#      with a rehearsal OVERRIDE that swaps only the two configs that can't work
+#      offline: Caddy TLS (route53 → internal) and the Squid allow-list
+#      (real AWS → *.localstack.test). Prod compose + prod configs are untouched.
+#
+# Repo layout on the box mirrors the real tree so relative bind-mounts and
+# bootstrap-proxy.sh's REPO_ROOT math (scripts/bootstrap → ../../..) both work:
+#   /opt/flowform/repo/infra/scripts/bootstrap/bootstrap-proxy.sh
+#   /opt/flowform/repo/infra/docker/{docker-compose.proxy.yml,caddy/,squid/}
+#   /opt/flowform/repo/infra/rehearsal/{docker-compose.proxy.rehearsal.yml,caddy/,squid/}
+#
+# Shape note: this is the proxy analogue of the future CDK ec2.UserData.
+
+write_files:
+  # --- rehearsal CA: trusted so the shim's *.localstack.test cert validates ---
+  - path: /usr/local/share/ca-certificates/flowform-rehearsal-ca.crt
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: __REHEARSAL_CA_CRT_B64__
+
+  # --- real bootstrap script (rendered from infra/scripts/bootstrap/) ----------
+  - path: /opt/flowform/repo/infra/scripts/bootstrap/bootstrap-proxy.sh
+    encoding: b64
+    permissions: '0755'
+    owner: root:root
+    content: __BOOTSTRAP_PROXY_SH_B64__
+
+  # --- prod proxy compose (base) + its prod config files (kept, referenced by
+  #     the override which only swaps two of them) -------------------------------
+  - path: /opt/flowform/repo/infra/docker/docker-compose.proxy.yml
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: __DOCKER_COMPOSE_PROXY_B64__
+  - path: /opt/flowform/repo/infra/docker/squid/squid.conf
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: __SQUID_CONF_B64__
+
+  # --- rehearsal override + the two rehearsal configs it swaps in --------------
+  - path: /opt/flowform/repo/infra/rehearsal/docker-compose.proxy.rehearsal.yml
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: __DOCKER_COMPOSE_PROXY_REHEARSAL_B64__
+  - path: /opt/flowform/repo/infra/rehearsal/caddy/Caddyfile.proxy
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: __CADDYFILE_PROXY_REHEARSAL_B64__
+  - path: /opt/flowform/repo/infra/rehearsal/squid/allowed-domains.rehearsal.txt
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: __SQUID_ALLOWED_DOMAINS_REHEARSAL_B64__
+
+  # --- rehearsal-only: trust the private HTTP registry it hosts ----------------
+  # The proxy runs registry:2 on 10.10.10.10:5000 (plain HTTP) and PUSHES images
+  # to it (seed-registry.sh). Its own daemon must trust that HTTP registry. Same
+  # rehearsal delta as the app box (prod uses ECR/HTTPS). No daemon restart is
+  # needed here for registry ops (the daemon reads insecure-registries live on
+  # reload), but registry:2 itself only serves HTTP — that's fine on the private
+  # net. bootstrap-proxy.sh does NOT restart the daemon, so reload it in runcmd.
+  - path: /etc/docker/daemon.json
+    permissions: '0644'
+    owner: root:root
+    content: |
+      {
+        "insecure-registries": ["10.10.10.10:5000"]
+      }
+
+  # --- registry:2 fixture ------------------------------------------------------
+  - path: /opt/flowform/repo/infra/rehearsal/fixtures/registry/docker-compose.registry.yml
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: __DOCKER_COMPOSE_REGISTRY_B64__
+
+  # --- env consumed by the proxy bootstrap runcmd ------------------------------
+  # The proxy holds NO app secrets. It talks to fake-AWS the same prod-shaped way
+  # (per-service SNI endpoints) to read its OWN /flowform/<scope>/proxy/* params.
+  # Since the proxy box HAS internet + is on the private net, it reaches the shim
+  # on 10.10.10.30 directly; the *.localstack.test names resolve via /etc/hosts.
+  - path: /etc/flowform/bootstrap-proxy.env
+    permissions: '0644'
+    owner: root:root
+    content: |
+      FLOWFORM_SCOPE=nonprod
+      AWS_REGION=ap-southeast-2
+      PROXY_PRIVATE_IP=10.10.10.10
+      APP_PRIVATE_IP=10.10.10.20
+      # proxy stack image + public API host (else must come from SSM)
+      CADDY_IMAGE=caddy:2-alpine
+      API_DOMAIN=api.localstack.test
+      # run the REAL prod proxy compose PLUS the rehearsal override (':'-separated
+      # -f list; docker compose resolves relative mounts against the FIRST file's
+      # dir = infra/docker/, which is why the override uses ../rehearsal/ paths).
+      COMPOSE_FILE=/opt/flowform/repo/infra/docker/docker-compose.proxy.yml:/opt/flowform/repo/infra/rehearsal/docker-compose.proxy.rehearsal.yml
+      # per-service fake-AWS endpoints (each = its own SNI)
+      AWS_ENDPOINT_URL_SECRETS_MANAGER=https://secretsmanager.localstack.test
+      AWS_ENDPOINT_URL_SSM=https://ssm.localstack.test
+      AWS_ENDPOINT_URL_KMS=https://kms.localstack.test
+      AWS_ACCESS_KEY_ID=test
+      AWS_SECRET_ACCESS_KEY=test
+
+  - path: /opt/flowform/scripts/run-bootstrap-proxy.sh
+    permissions: '0755'
+    owner: root:root
+    content: |
+      #!/usr/bin/env bash
+      set -Eeuo pipefail
+      set -a; . /etc/flowform/bootstrap-proxy.env; set +a
+      # registry first (images enter the rehearsal here), then the proxy stack.
+      docker compose -f /opt/flowform/repo/infra/rehearsal/fixtures/registry/docker-compose.registry.yml up -d
+      exec /opt/flowform/repo/infra/scripts/bootstrap/bootstrap-proxy.sh
+
+runcmd:
+  # Trust the rehearsal CA (the proxy box also dials the shim's *.localstack.test).
+  - [ update-ca-certificates ]
+  # Resolve the fake-AWS SNI names to the ls-vm.
+  - [ bash, -c, "grep -q localstack.test /etc/hosts || echo '10.10.10.30 secretsmanager.localstack.test ssm.localstack.test kms.localstack.test' >> /etc/hosts" ]
+  # Make the daemon pick up insecure-registries (written above) before it pushes
+  # to / pulls from the private HTTP registry. reload is enough for this key.
+  - [ systemctl, reload-or-restart, docker ]
+  # Bring up registry + the prod proxy stack (Caddy + Squid) the prod way.
+  - [ /opt/flowform/scripts/run-bootstrap-proxy.sh ]
