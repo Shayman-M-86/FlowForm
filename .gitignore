@@ -97,7 +97,12 @@ cover/
 *test.secret.txt
 *prod.secret.txt
 *dev.secret.txt
-infra/rehearsal/tls-shim/ca/rehearsal-ca.key
-infra/rehearsal/tls-shim/ca/rehearsal-ca.crt
-infra/rehearsal/tls-shim/ca/localstack.key
-infra/rehearsal/tls-shim/ca/localstack.crt
+
+# NOTE: the rehearsal TLS-shim CA (infra/rehearsal/tls-shim/ca/*.crt/.key) is a
+# DELIBERATELY COMMITTED THROWAWAY — it only signs *.localstack.test on an
+# un-routed private net and is trusted only inside the rehearsal. See
+# infra/rehearsal/tls-shim/README.md. It is NOT ignored so a fresh checkout can
+# build template 9001 and render the app user-data without regenerating certs.
+
+# Rendered cloud-init artifacts (generated from *.template by render-user-data.sh)
+infra/rehearsal/proxmox/cloud-init/*.rendered.yaml

@@ -15,9 +15,15 @@ set -Eeuo pipefail
 # Static IPs via cloud-init ipconfig (no DHCP on the private net). Idempotent:
 # existing VMIDs are skipped unless --force (destroy + reclone).
 #
-# NOTE: until Phase 3 provides cloud-init user-data (--cicustom), these boot
-# into the bare golden image. That first boot is a CONNECTIVITY SMOKE TEST
-# (prove the isolation), not a bootstrap run. Re-run after wiring user-data.
+# The app box (220) boots with cloud-init user-data (--cicustom) that trusts the
+# rehearsal CA, resolves the *.localstack.test SNI names to the ls-vm, and runs
+# bootstrap-app.sh. That user-data is RENDERED from the real repo files by
+# cloud-init/render-user-data.sh (single source of truth) — this script renders
+# it and installs it as a PVE snippet before cloning 220.
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/template-build.sh
+. "${SCRIPT_DIR}/lib/template-build.sh"
 
 TEMPLATE_VMID="${TEMPLATE_VMID:-9000}"        # golden base → proxy + app
 LS_TEMPLATE_VMID="${LS_TEMPLATE_VMID:-9001}"  # golden + localstack pre-pulled → ls-vm
@@ -59,6 +65,22 @@ if [[ "${WITH_DEV_BOX}" == "1" ]]; then
   qm status "${DEV_TEMPLATE_VMID}" >/dev/null 2>&1 || die "dev template ${DEV_TEMPLATE_VMID} not found — run create-dev-template.sh first"
 fi
 
+# Render the app-box cloud-init from the real repo files and install it as a PVE
+# snippet. `create-vms.sh` runs on the PVE host from a synced copy of this dir, so
+# the sibling cloud-init/ files (template + render script + repo sources) are here.
+APP_USERDATA_REF=""
+render_app_userdata() {
+  local ci_dir="${SCRIPT_DIR}/cloud-init"
+  local rendered="${ci_dir}/app.user-data.rendered.yaml"
+  [[ -x "${ci_dir}/render-user-data.sh" ]] || die "missing ${ci_dir}/render-user-data.sh"
+  log "rendering app-box cloud-init from repo sources"
+  "${ci_dir}/render-user-data.sh" || die "render-user-data.sh failed"
+  APP_USERDATA_REF="$(tb_install_snippet "${rendered}" flowform-app.user-data.yaml)" \
+    || die "installing app user-data snippet failed (run setup-host.sh?)"
+  log "app user-data snippet: ${APP_USERDATA_REF}"
+}
+render_app_userdata
+
 # Inject the host's SSH key(s) into every clone so we can log in as 'flowform'.
 # (create-template baked no keys; cloud-init sets them per-clone.)
 SSHKEYS_ARGS=()
@@ -99,10 +121,15 @@ if clone_vm "${PROXY_VMID}" "flowform-rehearsal-proxy" "${TEMPLATE_VMID}"; then
 fi
 
 # --- app-vm (220): private NIC ONLY, NO gateway → structurally offline ----
+# Boots the rendered app user-data (--cicustom): trust rehearsal CA, resolve the
+# *.localstack.test SNI names to the ls-vm, run bootstrap-app.sh. bootstrap-app.sh
+# needs the proxy (210) + ls-vm (230) up to reach fake-AWS through Squid → shim,
+# so its egress/AWS steps only fully succeed once those are running and seeded.
 if clone_vm "${APP_VMID}" "flowform-rehearsal-app" "${TEMPLATE_VMID}"; then
   qm set "${APP_VMID}" \
     --net0 "virtio,bridge=${PRIV_BRIDGE}" \
     --ipconfig0 "ip=10.10.10.20/${PRIV_CIDR}" \
+    --cicustom "user=${APP_USERDATA_REF}" \
     --ciuser flowform --cipassword "rehearsal" \
     "${SSHKEYS_ARGS[@]}"
   qm start "${APP_VMID}"

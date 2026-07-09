@@ -98,6 +98,11 @@
             "**/node_modules": true,
             "**/on_hold/**": true
         },
+        // cloud-init user-data files use a .template extension but are NOT
+        // CloudFormation; exclude them so cfn-lint stops emitting false E1001s.
+        "cfnLint.ignoreTemplates": [
+            "**/infra/rehearsal/proxmox/cloud-init/*.template"
+        ],
         "json.schemas": [
             {
                 "fileMatch": [".mcp.json"],

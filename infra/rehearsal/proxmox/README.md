@@ -110,8 +110,13 @@ WITH_DEV_BOX=1 ./create-vms.sh
   fails closed if `vmbr10` is missing.
 - Template disks live on `ZFS-RAIDZ`; clones are full clones on the same pool.
 - The scripts reference sibling `cloud-init/` + `lib/` files, so run them from a
-  synced copy of this directory on the host (e.g. `rsync infra/rehearsal/ →
-  root@host:/root/flowform-rehearsal/`), not piped over stdin.
+  synced copy on the host, not piped over stdin. **Sync from the REPO ROOT**, not
+  just `infra/rehearsal/` — `create-vms.sh` renders the app user-data from
+  `infra/scripts/bootstrap/bootstrap-app.sh` and `infra/docker/docker-compose.app.yml`,
+  which live *outside* `infra/rehearsal/`. E.g. `rsync -a --relative
+  infra/{rehearsal,scripts/bootstrap,docker} root@host:/root/flowform/` then run
+  from `/root/flowform/infra/rehearsal/proxmox/`. (Or set `REPO_ROOT=` to point
+  the render script at the sources explicitly.)
 
 ## Files
 
@@ -124,4 +129,6 @@ WITH_DEV_BOX=1 ./create-vms.sh
 | `create-vms.sh` | clone + configure + start 210/220/230 (+240 if `WITH_DEV_BOX=1`) | `--force` reclones |
 | `destroy-vms.sh` | stop + destroy 210/220/230/240 (templates kept) | n/a |
 | `cloud-init/*-builder.user-data.yaml` | per-template self-provision instructions | — |
+| `cloud-init/app.user-data.yaml.template` | app-box (220) runtime cloud-init: trust CA, `/etc/hosts`, run `bootstrap-app.sh` | — |
+| `cloud-init/render-user-data.sh` | renders the app template → `.rendered.yaml` by injecting the real repo files | idempotent |
 | `lib/template-build.sh` | shared build helpers (install snippet, wait-stopped, finalize) | — |
