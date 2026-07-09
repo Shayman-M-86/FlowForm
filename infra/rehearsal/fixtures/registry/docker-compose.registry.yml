@@ -1,0 +1,25 @@
+# Private image registry for the rehearsal (runs on proxy-vm / 10.10.10.10).
+#
+# The proxy box is the ONLY VM with internet, so it's where images enter the
+# rehearsal. It pulls public images (localstack, the backend base, etc.) from
+# Docker Hub, and re-serves them on the private net so the offline app-vm and
+# ls-vm can pull WITHOUT internet — mirroring how the real app box pulls
+# BACKEND_IMAGE from ECR and never from the internet.
+#
+# Plain HTTP on :5000. The private VMs must trust it as an "insecure registry"
+# (private net, no TLS) — set in each VM's /etc/docker/daemon.json via cloud-init.
+
+services:
+  registry:
+    image: registry:2
+    container_name: flowform-registry
+    restart: unless-stopped
+    ports:
+      - "10.10.10.10:5000:5000"   # bind the private NIC so offline VMs can reach it
+    environment:
+      - REGISTRY_STORAGE_DELETE_ENABLED=true
+    volumes:
+      - registry-data:/var/lib/registry
+
+volumes:
+  registry-data:

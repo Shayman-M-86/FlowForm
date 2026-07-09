@@ -95,12 +95,21 @@ Staging EC2       = prove the AWS TRUST BOUNDARY (IMDS + hop-limit 2, real
   the local rehearsal fronts LocalStack with a TLS shim so app-box AWS calls
   ride Squid.
 
-  **Local bake mechanics (decided):** `create-template.sh` uses
-  **`virt-customize`** (from `libguestfs-tools`) to bake packages into the
-  Ubuntu 24.04 cloud image **offline** — no VM boot, no temporary egress cycle,
-  closest to how Packer/Image Builder work. Template disk lives on
-  **`ZFS-RAIDZ`**; cloud-init snippets on `local`. Docker is installed from
-  Docker's official apt repo (Compose plugin included). Template = VMID **9000**.
+  **Local bake mechanics (decided 2026-07-09, revised):** ALL templates build via
+  **cloud-init self-provisioning** — one uniform pattern. The host script drives
+  only the `qm` lifecycle (create/clone → resize disk → attach a
+  `*-builder.user-data.yaml` via `--cicustom` → boot → wait for `stopped` →
+  `qm template`); the builder user-data installs everything, cleans, then
+  `poweroff` (the poweroff is the host-observable done-signal). No `virt-customize`
+  (offline editing broke boot via GPT partition reorder), no `qm guest exec` (bare
+  cloud image has no agent — chicken-and-egg), no SSH. Disk grown by `qm disk
+  resize` + cloud-init growpart (boot-safe). Shared orchestration in
+  `proxmox/lib/template-build.sh`; user-data in `proxmox/cloud-init/`. Template
+  disk on **`ZFS-RAIDZ`**; snippets on `local`. **Three templates only:** 9000
+  golden (host deps incl. AWS CLI), 9001 ls-vm (localstack pre-pulled), 9002 dev
+  (operator extras). proxy(210)/app(220) clone bare 9000 — role setup is the
+  thing under test, done at runtime by the bootstrap scripts. See
+  `infra/rehearsal/IMAGE-BAKING.md`.
 - **Fake AWS: LocalStack** (Secrets Manager, SSM, KMS) on its own VM. Bootstrap
   runs *real* `aws` CLI calls against it via `BOOTSTRAP_ENDPOINT_URL`, so the
   AWS code path is exercised, not stubbed.
@@ -108,13 +117,17 @@ Staging EC2       = prove the AWS TRUST BOUNDARY (IMDS + hop-limit 2, real
 
 ### Discovered host facts (survey, this session)
 
-- Bridges: only `vmbr0` exists → **we must create `vmbr10`** (private, no
-  gateway) as an explicit user-approved step.
+- Bridges: `vmbr0` (LAN uplink) + **`vmbr10` created 2026-07-09** by
+  `setup-host.sh` (private, no ports, no gateway). `vmbr0` and VM 100 untouched.
 - Storage: `local-lvm` (lvmthin, empty — VM disks), `local` (dir — ISOs,
-  snippets/cloud-init user-data), `ZFS-RAIDZ` (large, spare). `synology` NFS is
+  snippets/cloud-init user-data; **`snippets` content enabled 2026-07-09**),
+  `ZFS-RAIDZ` (large, spare — **holds the template disk**). `synology` NFS is
   offline — ignore.
-- Existing VM 100 "Ubuntu" (stopped) — avoid that ID. Use template **9000** and
-  VMs **210** (proxy) / **220** (app) / **230** (localstack).
+- Existing VM 100 "Ubuntu" (stopped) — avoid that ID. Use template **9000**
+  (confirmed free) and VMs **210** (proxy) / **220** (app) / **230**
+  (localstack).
+- Host tooling: `qm`, `wget`, `qemu-img` present; **`virt-customize` absent** —
+  `create-template.sh` installs `libguestfs-tools` on first run.
 
 ## Repository organization for the rehearsal
 
@@ -254,21 +267,81 @@ Proxmox VE (192.168.68.88)
 
 **Step-by-step (each host mutation proposed, then run with the user):**
 
-1. **Create `vmbr10`** — private bridge, no ports, no gateway
-   (`/etc/network/interfaces` + `ifreload -a`, or via the UI if preferred).
-   Read-back to confirm before proceeding.
-2. **Golden template (VMID 9000)** — `infra/rehearsal/proxmox/create-template.sh`:
-   download Ubuntu 24.04 cloud image, `qm create` + `qm importdisk` to
-   `local-lvm`, attach cloud-init drive, bake packages (Docker, Compose plugin,
-   AWS CLI, curl, jq, nftables) via a `cloud-init` vendor snippet or a
-   first-boot-then-template step, `qm template`.
-3. **Create + start the three VMs** — `create-vms.sh`: `qm clone 9000 → 210/220/230`,
-   set NICs/bridges/`ipconfigN`/`cicustom` per VM, start. Idempotency guards
-   (skip if VMID exists). `destroy-vms.sh` tears them down (template kept).
+1. ✅ **DONE 2026-07-09** — `setup-host.sh` created `vmbr10` (private, no ports,
+   no gateway) and enabled `snippets` content on `local`. Read-back confirmed;
+   `vmbr0` and VM 100 untouched. Reversible via `setup-host.sh --undo`.
+2. ✅ **DONE 2026-07-09** — Three templates built via the uniform **cloud-init
+   self-provision** pattern (host drives `qm` lifecycle; builder user-data
+   installs + cleans + `poweroff`; host waits for `stopped` → `qm template`).
+   Verified: 9000 golden has Docker 29.6.1 + Compose v5.3.1 + AWS CLI 2.35.19 +
+   qemu-guest-agent, root fs 15G; 9001 has localstack pre-pulled; 9002 has
+   git/yq/awslocal. All on `ZFS-RAIDZ`.
+   - `create-template.sh` + `cloud-init/golden-builder.user-data.yaml` → **9000**
+   - `create-localstack-template.sh` + `cloud-init/localstack-builder…` → **9001**
+   - `create-dev-template.sh` + `cloud-init/dev-builder…` → **9002**
+   - Shared orchestration: `proxmox/lib/template-build.sh`.
+   (Earlier `virt-customize`/`virt-resize` attempt abandoned — offline partition
+   reorder broke boot; guest-exec hit the no-agent chicken-and-egg + `qm shutdown`
+   hangs. cloud-init avoids all three.) Each script `--force` rebuilds; refuses if
+   the VMID exists.
+   Golden builder also drops `/etc/cloud/cloud.cfg.d/99-flowform-no-apt.cfg`
+   (`package_update/upgrade: false`, `preserve_sources_list`) so CLONES don't run
+   cloud-init's default apt refresh at boot — the offline app/ls boxes otherwise
+   wasted ~3.5min hammering DNS timeouts against unreachable mirrors. After the
+   fix the app box reaches its guest agent in ~1s with zero apt-fetch errors.
+3. **Create + start the three VMs** — `create-vms.sh` + `destroy-vms.sh`
+   (written, syntax-clean). Static IPs via cloud-init ipconfig (no DHCP on the
+   private net); app-vm gets NO gateway → structurally offline. Host SSH keys
+   injected into clones. Idempotent (skip existing; `--force` reclones).
+
+   ✅ **DONE 2026-07-09.** (Was briefly blocked by host BIOS: `SVM disabled (by
+   BIOS) in MSR_VM_CR` → no `/dev/kvm`. Resolved by enabling **SVM Mode** in
+   BIOS + reboot; `/dev/kvm` + `kvm_amd` now present, nested virt on.) All three
+   VMs run: 210 proxy (`192.168.68.75` LAN + `10.10.10.10` priv), 220 app
+   (`10.10.10.20` priv ONLY), 230 localstack (`10.10.10.30` priv ONLY).
+   **Isolation verified via guest agent:** app-vm 220 has NO default route and
+   `curl https://1.1.1.1` → `000`/FAILED; proxy-vm 210 has a default route and
+   reaches the internet (`301`). The core "app box is structurally offline"
+   property is proven on real VMs.
 4. `README.md` under `infra/rehearsal/proxmox/` — bridge setup, VMID
    conventions, run order, and the hard-boundary section.
 
 ## Phase 3 — cloud-init user-data + rehearsal fixtures (⏳)
+
+**Progress 2026-07-09:**
+- ✅ **Template baking pattern generalised** — `infra/rehearsal/IMAGE-BAKING.md`
+  documents "bake online, run offline": every template built once with temporary
+  full internet, everything downloaded/initialised, temp NIC stripped, then
+  `qm template`. Rule of thumb: bake scaffolding + host deps into templates;
+  deliver the thing-under-test (app image) at runtime via the registry.
+- ✅ **ls-vm template 9001** — `create-localstack-template.sh` clones 9000, temp
+  internet, `docker pull localstack/localstack:3` (2.08GB), seals offline.
+  `create-vms.sh` now clones 230 from 9001 (via `LS_TEMPLATE_VMID`); 210/220 stay
+  on 9000.
+- ✅ **LocalStack fixture proven** — `fixtures/localstack/docker-compose.localstack.yml`
+  (binds `10.10.10.30:4566`, services=secretsmanager,ssm,kms). 230 boots FULLY
+  OFFLINE (`curl 1.1.1.1 → 000`) and starts LocalStack from the baked image with
+  zero network fetch; health shows secretsmanager/ssm/kms/sts **available**.
+- ✅ **Private registry fixture** — `fixtures/registry/` (registry:2 on proxy
+  10.10.10.10:5000, `seed-registry.sh`). Up and reachable; reserved for the
+  backend image path. NOTE: consuming daemons need `insecure-registries` in
+  daemon.json (plain HTTP on the private net) — to be set via cloud-init.
+- ✅ **LocalStack auto-start** — `localstack-builder.user-data.yaml` bakes a
+  `flowform-localstack.service` (systemd oneshot, `docker compose up`) + the
+  compose file into template 9001, enabled for the clone's boot. Verified: fresh
+  230 auto-starts LocalStack, healthy in ~36s, no manual step.
+- ✅ **`seed-localstack.sh`** (`fixtures/localstack/`) — seeds EXACTLY the bootstrap
+  contract (traced from bootstrap-app/proxy): SM `app-secrets`
+  {app_secret_key,auth0_mgmt_secret} + `db-secrets` {db_core/response_app_password};
+  SSM `/flowform/nonprod/backend/*` (log config, FLOWFORM_ENV, BACKEND_IMAGE) and
+  `/proxy/*` (CADDY_IMAGE, API_DOMAIN). Throwaway values; create-or-update
+  idempotent; re-run after each ls-vm reboot (PERSISTENCE=0). Proven: seeded from
+  the dev box, read back with plain `aws`.
+- ✅ **Dev box** static `192.168.68.100` + baked `~/.aws/{config,credentials}`
+  (plain `aws` → LocalStack, no flags). `ssh flowform@192.168.68.100`.
+- ⏳ Remaining: TLS shim (`*.localstack.test` SNI so app-box AWS rides Squid),
+  rehearsal squid allow-list + `/etc/hosts`, cloud-init bootstrap user-data for
+  proxy/app.
 
 Files under `infra/rehearsal/`:
 - `cloud-init/app.user-data.yaml` — `write_files` drops the bootstrap scripts +

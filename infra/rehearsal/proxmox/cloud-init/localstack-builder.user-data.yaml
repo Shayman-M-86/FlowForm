@@ -1,0 +1,74 @@
+#cloud-config
+# LocalStack template BUILDER user-data (rehearsal only).
+#
+# Clones of the golden template already have Docker + the guest agent. This
+# builder pulls the LocalStack image into the local Docker cache (so the offline
+# ls-vm can start it with no network) AND bakes a systemd unit that brings
+# LocalStack up on every boot — so a fresh ls-vm (230) auto-starts LocalStack
+# with no manual `docker compose up`. Then it cleans and powers off; the host
+# (create-localstack-template.sh) waits for 'stopped'.
+
+write_files:
+  # Compose for LocalStack, baked so the boot service can bring it up offline.
+  # Mirrors fixtures/localstack/docker-compose.localstack.yml. Binds the private
+  # NIC (:4566) so app/dev VMs reach it; PERSISTENCE=0 → re-seed after reboot.
+  - path: /opt/flowform/docker-compose.localstack.yml
+    permissions: '0644'
+    content: |
+      services:
+        localstack:
+          image: localstack/localstack:3
+          container_name: flowform-localstack
+          restart: unless-stopped
+          ports:
+            - "10.10.10.30:4566:4566"
+          environment:
+            - SERVICES=secretsmanager,ssm,kms
+            - DEBUG=0
+            - PERSISTENCE=0
+            - EAGER_SERVICE_LOADING=1
+          volumes:
+            - "/var/run/docker.sock:/var/run/docker.sock"
+          healthcheck:
+            test: ["CMD", "curl", "-fsS", "http://localhost:4566/_localstack/health"]
+            interval: 5s
+            timeout: 3s
+            retries: 20
+            start_period: 30s
+
+  # systemd unit: bring the LocalStack compose stack up on boot (offline-safe;
+  # image is baked into the cache). oneshot + RemainAfterExit so `up -d` runs once.
+  - path: /etc/systemd/system/flowform-localstack.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=FlowForm rehearsal LocalStack (fake AWS)
+      Requires=docker.service
+      After=docker.service network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      WorkingDirectory=/opt/flowform
+      ExecStart=/usr/bin/docker compose -f /opt/flowform/docker-compose.localstack.yml up -d
+      ExecStop=/usr/bin/docker compose -f /opt/flowform/docker-compose.localstack.yml down
+
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  # --- bake: pull the LocalStack image into the local cache ---
+  - docker pull localstack/localstack:3
+  # sanity: fail the build (no poweroff) if the image isn't present
+  - docker image inspect localstack/localstack:3 >/dev/null
+  # enable the boot service (starts on the NEXT boot = the ls-vm clone's boot)
+  - systemctl enable flowform-localstack.service
+  # --- SEAL: clean so clones start fresh, then power off as the done-signal ---
+  - cloud-init clean --logs
+  - truncate -s 0 /etc/machine-id
+  - rm -f /var/lib/dbus/machine-id
+  - poweroff
+
+# If the pull fails, cloud-init never reaches poweroff → the VM stays running →
+# the host's wait-for-stopped loop times out → build fails loudly.
