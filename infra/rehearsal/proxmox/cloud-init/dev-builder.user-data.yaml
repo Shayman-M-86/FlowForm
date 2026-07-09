@@ -33,6 +33,17 @@ write_files:
       aws_access_key_id = test
       aws_secret_access_key = test
 
+  # Dev-box ONLY: trust the rehearsal's private HTTP registry so the operator can
+  # `docker push` the backend image to 10.10.10.10:5000 (build-and-push-backend.sh).
+  # Rehearsal delta — prod pushes to ECR over HTTPS. Baked here (persistent dev-box
+  # property), unlike app/proxy which get it via their runtime cloud-init.
+  - path: /etc/docker/daemon.json
+    permissions: '0644'
+    content: |
+      {
+        "insecure-registries": ["10.10.10.10:5000"]
+      }
+
 runcmd:
   # awslocal: thin AWS CLI wrapper preset for the rehearsal LocalStack endpoint.
   - pip install --break-system-packages awscli-local || pipx install awscli-local || true

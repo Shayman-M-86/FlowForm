@@ -97,7 +97,17 @@ write_files:
       set -Eeuo pipefail
       # Load the rehearsal env (endpoints, IPs, scope) then run the REAL script.
       set -a; . /etc/flowform/bootstrap-app.env; set +a
-      exec /opt/flowform/scripts/bootstrap/bootstrap-app.sh
+      # On first boot the backend image may not be in the registry yet (the
+      # operator pushes it from the dev box AFTER the VMs come up). bootstrap's
+      # final compose-up then fails to pull — expected, not a regression. Emit a
+      # clear hint and preserve the real exit code so the failure is still visible.
+      if ! /opt/flowform/scripts/bootstrap/bootstrap-app.sh; then
+        rc=$?
+        echo "[run-bootstrap-app] bootstrap-app.sh exited ${rc}." >&2
+        echo "[run-bootstrap-app] If it failed pulling ${BACKEND_IMAGE}, push it from the" >&2
+        echo "[run-bootstrap-app] dev box (build-and-push-backend.sh) then re-run THIS script." >&2
+        exit "${rc}"
+      fi
 
 runcmd:
   # 1. Trust the rehearsal CA so the shim's TLS validates like real AWS TLS.

@@ -29,7 +29,8 @@ Proxmox VE (192.168.68.88)
   Bridges:  vmbr0  = LAN/internet (pre-existing)
             vmbr10 = private rehearsal net, NO uplink, NO gateway
   ┌ proxy-vm  (210)  NIC0 vmbr0 (DHCP) + NIC1 vmbr10   10.10.10.10  — HAS internet
-  │    registry:2, Caddy+Squid (bootstrap-proxy.sh). Egress gateway for the app box.
+  │    cloud-init → registry:2 + bootstrap-proxy.sh → Caddy (tls internal) + Squid
+  │    (rehearsal allow-list: *.localstack.test). Egress gateway for the app box.
   ├ app-vm    (220)  NIC0 vmbr10 ONLY, NO gateway      10.10.10.20  — NO internet
   │    cloud-init → bootstrap-app.sh → docker-compose.app.yml
   ├ ls-vm     (230)  NIC0 vmbr10 ONLY                  10.10.10.30  — private only
@@ -59,7 +60,7 @@ VMs:
 | 210  | proxy-vm | 9000 | dual-homed; egress gateway; role config from bootstrap at runtime |
 | 220  | app-vm | 9000 | private only; offline by construction; the box under test |
 | 230  | ls-vm | 9001 | private only; LocalStack + TLS shim auto-start on boot |
-| 240  | dev-vm | 9002 | out-of-scope workbench; static LAN `192.168.68.100`; `WITH_DEV_BOX=1` |
+| 240  | dev-vm | 9002 | out-of-scope workbench; static LAN `192.168.68.100`; `WITH_DEV_BOX=1`; builds+pushes the backend image (trusts the private registry) |
 | 100  | (yours) | — | pre-existing "Ubuntu" VM — untouched by these scripts |
 
 ## Run order
@@ -82,10 +83,16 @@ VMs:
 #      app   (220): trust CA, /etc/hosts, insecure-registry, run bootstrap-app.sh
 WITH_DEV_BOX=1 ./create-vms.sh
 
-# ...rehearse (from the dev box or proxy):
-#    - seed the private registry:  ../fixtures/registry/seed-registry.sh   (on 210)
-#    - seed LocalStack:            ../fixtures/localstack/seed-localstack.sh
+# ...rehearse:
+#    - build + push the backend image  ../fixtures/registry/build-and-push-backend.sh
+#         (on the DEV BOX 240 — needs the repo synced there; pushes to 10.10.10.10:5000)
+#    - seed the private registry        ../fixtures/registry/seed-registry.sh   (on 210)
+#    - seed LocalStack                  ../fixtures/localstack/seed-localstack.sh (dev box)
 #    - then Phase 4 verify.sh...
+#
+# The app box (220) pulls BACKEND_IMAGE=10.10.10.10:5000/flowform-backend:rehearsal
+# at bootstrap, so the image must be pushed BEFORE 220's bootstrap compose-up
+# succeeds (re-run bootstrap-app.sh on 220 after pushing if it raced ahead).
 
 # 3. Tear the VMs down (templates + bridges kept).
 ./destroy-vms.sh
@@ -106,6 +113,16 @@ WITH_DEV_BOX=1 ./create-vms.sh
 
 ## Prerequisites / gotchas
 
+- **Backend image staging (dev box).** The dev box (240) builds + pushes the
+  backend image to the private registry (`build-and-push-backend.sh`). It needs
+  the repo synced there (it has `git` + internet — `git clone` or `rsync`), and
+  its template (9002) bakes `insecure-registries: 10.10.10.10:5000` so the push
+  works. If you built 9002 before that was added, rebuild it:
+  `./create-dev-template.sh --force`.
+- **App box image-pull ordering.** 220 boots and runs `bootstrap-app.sh` before
+  the operator pushes the image, so its first compose-up fails to pull — expected.
+  Push the image (dev box), then re-run `/opt/flowform/scripts/run-bootstrap-app.sh`
+  on 220 (SSH via dev box). The bootstrap is idempotent.
 - **Host virtualization must be enabled.** If `qm start` fails with *"KVM
   virtualisation configured, but not available"*, enable **SVM** (AMD) / **VT-x**
   (Intel) in the host BIOS and reboot — `dmesg | grep -i 'disabled by BIOS'`
@@ -134,6 +151,7 @@ WITH_DEV_BOX=1 ./create-vms.sh
 | `create-vms.sh` | clone + configure + start 210/220/230 (+240 if `WITH_DEV_BOX=1`) | `--force` reclones |
 | `destroy-vms.sh` | stop + destroy 210/220/230/240 (templates kept) | n/a |
 | `cloud-init/*-builder.user-data.yaml` | per-template self-provision instructions | — |
-| `cloud-init/app.user-data.yaml.template` | app-box (220) runtime cloud-init: trust CA, `/etc/hosts`, run `bootstrap-app.sh` | — |
-| `cloud-init/render-user-data.sh` | renders the app template → `.rendered.yaml` by injecting the real repo files | idempotent |
+| `cloud-init/app.user-data.yaml.template` | app-box (220) cloud-init: trust CA, `/etc/hosts`, insecure-registry, run `bootstrap-app.sh` | — |
+| `cloud-init/proxy.user-data.yaml.template` | proxy-box (210) cloud-init: trust CA, registry:2, run `bootstrap-proxy.sh` (Caddy tls-internal + Squid rehearsal allow-list) | — |
+| `cloud-init/render-user-data.sh` | renders every `*.template` → `.rendered.yaml` by injecting the real repo files (single source of truth) | idempotent |
 | `lib/template-build.sh` | shared build helpers (install snippet, wait-stopped, finalize) | — |
