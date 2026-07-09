@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Build the ls-vm template (VMID 9001) — golden 9000 PLUS the LocalStack image
-# pre-pulled (run ON the PVE host). LocalStack is fake-AWS scaffolding, baked into
-# the image it runs on rather than delivered via the private registry (that path
-# is reserved for the real backend image). The app VM (from 9000) never carries it.
+# Build the aws-fixtures template (VMID 9001) — golden 9000 PLUS every always-on
+# fake-AWS backend pre-pulled + auto-starting (run ON the PVE host):
+#   LocalStack (Secrets Manager/SSM/KMS), the TLS shim (Caddy), and registry:2
+#   (fake ECR). These are fake-AWS scaffolding, baked into the image they run on.
+# The registry HOSTS the real backend image at runtime, but registry:2 itself is
+# scaffolding, so it's baked here — keeping the proxy box egress-only. The app VM
+# (from 9000) carries none of this; it only PULLS the backend image from .30:5000.
 #
 # Same pattern as all templates: clone 9000 → attach localstack-builder.user-data
-# → boot → cloud-init pulls the image, cleans, powers off → host waits for
+# → boot → cloud-init pulls the images, cleans, powers off → host waits for
 # 'stopped' → template. No qm guest exec in the bake path.
 #
 # Idempotent: refuses if 9001 exists (use --force to rebuild).

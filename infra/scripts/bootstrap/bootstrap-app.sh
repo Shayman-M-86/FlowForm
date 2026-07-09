@@ -55,6 +55,10 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # infra/scripts/bootstrap -> repo root is three up.
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
 COMPOSE_FILE="${COMPOSE_FILE:-${REPO_ROOT}/infra/docker/docker-compose.app.yml}"
+# Optional override compose file (rehearsal). Layered on with a second -f below.
+# Empty in prod, so behaviour is exactly the single-file case. Prod-safe seam,
+# like BOOTSTRAP_ENDPOINT_URL.
+COMPOSE_OVERRIDE_FILE="${COMPOSE_OVERRIDE_FILE:-}"
 
 # AWS CLI endpoint override is the sole rehearsal seam.
 AWS_ARGS=(--region "${AWS_REGION}")
@@ -218,12 +222,19 @@ render_backend_env() {
 # ---------------------------------------------------------------------------
 compose_up() {
   [[ -f "${COMPOSE_FILE}" ]] || die "compose file not found: ${COMPOSE_FILE}"
+  # Base compose, plus an optional override with a second -f (prod leaves
+  # COMPOSE_OVERRIDE_FILE empty → exactly the single-file case).
+  local compose_args=(-f "${COMPOSE_FILE}")
+  if [[ -n "${COMPOSE_OVERRIDE_FILE}" ]]; then
+    [[ -f "${COMPOSE_OVERRIDE_FILE}" ]] || die "compose override not found: ${COMPOSE_OVERRIDE_FILE}"
+    compose_args+=(-f "${COMPOSE_OVERRIDE_FILE}")
+  fi
   if [[ "${DRY_RUN}" == "1" ]]; then
-    log "DRY_RUN: would run: docker compose --env-file ${BACKEND_ENV} -f ${COMPOSE_FILE} up -d"
+    log "DRY_RUN: would run: docker compose --env-file ${BACKEND_ENV} ${compose_args[*]} up -d"
     return
   fi
   FLOWFORM_SECRET_DIR="${SECRET_DIR}" \
-    docker compose --env-file "${BACKEND_ENV}" -f "${COMPOSE_FILE}" up -d
+    docker compose --env-file "${BACKEND_ENV}" "${compose_args[@]}" up -d
   log "app compose stack started"
 }
 

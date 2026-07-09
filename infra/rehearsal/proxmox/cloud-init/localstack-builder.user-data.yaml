@@ -1,12 +1,19 @@
 #cloud-config
-# LocalStack template BUILDER user-data (rehearsal only).
+# aws-fixtures template (9001) BUILDER user-data (rehearsal only).
 #
-# Clones of the golden template already have Docker + the guest agent. This
-# builder pulls the LocalStack image into the local Docker cache (so the offline
-# ls-vm can start it with no network) AND bakes a systemd unit that brings
-# LocalStack up on every boot — so a fresh ls-vm (230) auto-starts LocalStack
-# with no manual `docker compose up`. Then it cleans and powers off; the host
-# (create-localstack-template.sh) waits for 'stopped'.
+# Builds the always-on fake-AWS box (the ls-vm / aws-fixtures-vm, 230). Clones of
+# the golden template already have Docker + the guest agent. This builder pulls
+# the fixture images into the local Docker cache (so the offline box starts with
+# no network) AND bakes systemd units that bring each up on every boot — so a
+# fresh 230 auto-starts all fake-AWS backends with no manual `docker compose up`:
+#   flowform-localstack.service  → LocalStack  :4566  (Secrets Manager/SSM/KMS)
+#   flowform-tls-shim.service    → TLS shim    :443   (*.localstack.test)
+#   flowform-registry.service    → registry:2  :5000  (fake ECR — backend image)
+# Then it cleans and powers off; create-localstack-template.sh waits for 'stopped'.
+#
+# The registry lives HERE (not on the proxy) so the proxy box stays egress-only
+# and the registry is always-on during isolation runs. The dev box builds+pushes
+# the backend image INTO this registry; the app box pulls it from here.
 
 write_files:
   # Compose for LocalStack, baked so the boot service can bring it up offline.
@@ -102,6 +109,46 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
+  # --- registry (fake ECR): baked so the offline box serves it on :5000 -------
+  # Mirrors fixtures/registry/docker-compose.registry.yml. The dev box pushes the
+  # backend image here; the app box pulls it. Persistent volume so a pushed image
+  # survives box reboots (unlike LocalStack's PERSISTENCE=0 secrets).
+  - path: /opt/flowform/registry/docker-compose.registry.yml
+    permissions: '0644'
+    content: |
+      services:
+        registry:
+          image: registry:2
+          container_name: flowform-registry
+          restart: unless-stopped
+          ports:
+            - "10.10.10.30:5000:5000"
+          environment:
+            - REGISTRY_STORAGE_DELETE_ENABLED=true
+          volumes:
+            - registry-data:/var/lib/registry
+      volumes:
+        registry-data:
+
+  - path: /etc/systemd/system/flowform-registry.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=FlowForm rehearsal registry (fake ECR)
+      Requires=docker.service
+      After=docker.service network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      WorkingDirectory=/opt/flowform/registry
+      ExecStart=/usr/bin/docker compose -f /opt/flowform/registry/docker-compose.registry.yml up -d
+      ExecStop=/usr/bin/docker compose -f /opt/flowform/registry/docker-compose.registry.yml down
+
+      [Install]
+      WantedBy=multi-user.target
+
   # Caddyfile + pre-generated cert/key (base64; rehearsal throwaway CA).
   - path: /opt/flowform/tls-shim/Caddyfile
     permissions: '0644'
@@ -117,15 +164,19 @@ write_files:
     content: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2h2OFhEUFc1R2l2ZG4KcnI3Q1lhTnNieEtYWUNmbVBDaW85QzRRL0ViOGNxdmFnc0JmSDAyTnBZY3VjalNLN3UvaFo4L2kxbnRGaVhFTApVNEx1dlEwRHVpclZVUHFsQ0d3ZHcwZ1dMY29hcE1IQVJ2MVBEcGV1akYreTVibkJ4dHVPSmFHQW5LM1o1d29zCmgwYnRaTlNxaUJzNmRlOUNjOGpaQ0NhbmdtVnp3S29hZEF6UVJnN05oOWtOeml5dTBoVWRjUlJ6Y3JDVVBxVmMKc0x2R29HTjFyTmNReE5IUkF0WUVKUkY3d1Q4Mm5ZOCtNeWxrODVuaXc1b054b2FYelFrVGZVTGQrZGs0N1hvMQpsYXNMK1djY3dSKzA4bTBNYUZlL3F0Szh0bzcydWJiZ0MyKzIzNHBvRk9laDRHNkxaeFB0dnZEblJSU3hRbHZpCktFUGR3TzJoQWdNQkFBRUNnZ0VBRm9jc1p3RisyRWRtL0U0TDFwZEh3NFN0Z2wrTG54Y0xrMkNUQVVoSjBNT3oKUGl5NDJMd2c0K29hbGw3NkJNeG1UNjdTOXZxUzBtcTVUOFVJREVmN2NJOUtMa29TNXMvSFV5dmk0SktYRkEwLwpjN3JQY1dhTVoyeTRzQ1RXaHUvZDg0SGlrNzcrdmNYZWxtTnUvd1hCL2FYQVRtejZSU0gxa1k0cVBXbG9ITzRQClVTRkxhSWUwZ0V6WnA5QjQvVHlXOU91Vm16R25nM0lUWlVQMUlKSHVETVpobEd0KzNvVksrMWYrK3JpdFlOYzkKalE4Sy8xdDRSUThUWCtPVVErcThGVlk0eTlGdW1EUnNibjRhRTZNMGUrTUlqNDRkOS9aeWRHVUJxWUNJd2ZhcApQS0YwZ1VaOGpjMXdYUVNCMFd2TWpwTVJxTExRb3laa2ViZkwzTnJHY3dLQmdRRGFHYS9YY0FwWEM4Q1QwTnppClRDWmxPNHlCWFFjY0Jud0g1TTBqSVZrbi9xMHgreEZPSVU3U2VkcjdIODRLM0Z2eDA5TTI4MmpIOEQwcEx5bjYKVkx3ZHlZOWdBenVYNFI5K25ReUlUUkVIWVRuREtlNmIwVk1kRWRyZ3JEc2F2RkgyMEphQmNmYkpyQytjYXNHQQpOamxzbkxtd2RyT1lNSnltVnczaG5vY1Fhd0tCZ1FDOTIwVTIrWXRGQjVSMko3amFjOHBqTFJMc3Rkd08xMXIyCkV6VXREaTJwQldqQzBJVE9ETklzTXRHbkx0M0FTYnFxTTJsQzdlS3dpZnVvSGQ3cUpYZld3SnRuVDNJbVpEdXoKTHVZdm54d00xY2VIR2JqeFpJckZ6bFpsbS8zektQMnQwbjVDK0tOYVdseG1vSDBxY0FCS0pxT3NQdno4cHBmRApGaWNSVkd6Tkl3S0JnUURFQzk3eVN2WWdkS0h3dlFnd0tyOUF0QnlDbERxMXlHWnBPaFBqaGpCOE1RTkNNQ3JJCkRreXFDWHI3elFVSzRqV0wxUnJCQkYrbGlaK1FpNkt5TU1UQUNkUmxPOEt2clY4QUV1K1cvWjlYQU9CSlBFSU4Kc2tXQmxmRW5qK201Q0pxc3Y2YnFTS1RMZDRsOGtzSEpHL1RXV3JMWG1udXBTOWtqOUpDM3hDWW9iUUtCZ0M4Ugp4Yjh6Ynd2V0xVQjk2SjZBUnBULy84a2Y3VWJnclhTRW5wSmxDWHoyRWxyNlIzS3VTdzBhTEZBK2xrdXQrOUZtCm5ab3lVQmxrbkRlNThDSXMxK0V1TDFrVm9UOVRhbG1xTHZkdmd3ekxrNFF6SkY3MGhsTTBMTWRVUFVtanlBRG8KUnRWanYxd1BPd2xXa0xHTXd3V2ZQc1RkZU90S2dpV2p3RnZUaW9YeEFvR0FaVVBTZEhXTFA3bTdjNVMrUDlmTgpCdDQ0N1J1OVp4N1hqWlMxeWFOVFFwaTUvMXBRYkFobFI0YVI0ZFhKYVFMMHlaV01aNzY5azZ0NDllY0lzQmRTCmpieU8yT2NxUkFXUnlNcTA4UXJCS1krbTNMMEFHeFl6bEc4OGN5eDdwdURVS0NzT0h5bXVFZHIrTFQwdnQ4ZXEKWlovZzh6MFNBSWVDbmZsNGpiemVlakE9Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
 
 runcmd:
-  # --- bake: pull LocalStack + the TLS-shim (caddy) images into the local cache ---
+  # --- bake: pull the fixture images into the local cache (LocalStack, TLS-shim
+  #     caddy, registry) so the offline box starts them with no network ---
   - docker pull localstack/localstack:3
   - docker pull caddy:2-alpine
+  - docker pull registry:2
   # sanity: fail the build (no poweroff) if the images aren't present
   - docker image inspect localstack/localstack:3 >/dev/null
   - docker image inspect caddy:2-alpine >/dev/null
-  # enable the boot services (start on the NEXT boot = the ls-vm clone's boot)
+  - docker image inspect registry:2 >/dev/null
+  # enable the boot services (start on the NEXT boot = the aws-fixtures clone's boot)
   - systemctl enable flowform-localstack.service
   - systemctl enable flowform-tls-shim.service
+  - systemctl enable flowform-registry.service
   # --- SEAL: clean so clones start fresh, then power off as the done-signal ---
   - cloud-init clean --logs
   - truncate -s 0 /etc/machine-id

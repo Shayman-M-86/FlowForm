@@ -7,7 +7,7 @@ set -Eeuo pipefail
 #
 # WHERE THIS RUNS: the dev box (240) — the dual-homed operator workbench. It has
 # internet (to pull the base image + uv), reaches the registry on the private net
-# (10.10.10.10:5000), and has Docker + the repo. It is NOT part of the isolation
+# (10.10.10.30:5000), and has Docker + the repo. It is NOT part of the isolation
 # under test; it's the human's staging hands. (You can also run it from any host
 # with Docker + a route to the registry and a repo checkout.)
 #
@@ -22,7 +22,7 @@ set -Eeuo pipefail
 # Idempotent: re-running rebuilds (Docker layer cache makes it cheap) and
 # re-pushes; an unchanged image is a no-op push.
 
-REGISTRY="${REGISTRY:-10.10.10.10:5000}"
+REGISTRY="${REGISTRY:-10.10.10.30:5000}"
 IMAGE_NAME="${IMAGE_NAME:-flowform-backend}"
 IMAGE_TAG="${IMAGE_TAG:-rehearsal}"
 DEST="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
@@ -39,9 +39,9 @@ DOCKERFILE="${REPO_ROOT}/infra/docker/backend.Dockerfile"
 [[ -f "${DOCKERFILE}" ]] || die "backend Dockerfile not found at ${DOCKERFILE} (REPO_ROOT=${REPO_ROOT}; sync the repo to the dev box or set REPO_ROOT=)"
 command -v docker >/dev/null 2>&1 || die "docker not found on this box"
 
-# Registry must be up (the proxy box's registry:2). Fail early with a clear hint.
+# Registry must be up (fake ECR on the aws-fixtures-vm, 230). Fail early clearly.
 if ! curl -fsS "http://${REGISTRY}/v2/" >/dev/null 2>&1; then
-  die "registry not reachable at http://${REGISTRY}/v2/ — is proxy-vm (210) up with registry:2? (bring up docker-compose.registry.yml there)"
+  die "registry not reachable at http://${REGISTRY}/v2/ — is the aws-fixtures-vm (230) up? registry:2 auto-starts there via flowform-registry.service (baked into template 9001)."
 fi
 
 log "building ${DEST} from ${DOCKERFILE} (context=${REPO_ROOT}, --no-dev prod image)"

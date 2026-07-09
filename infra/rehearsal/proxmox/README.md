@@ -28,15 +28,19 @@ the staging smoke test's job — see the due-diligence checklist.
 Proxmox VE (192.168.68.88)
   Bridges:  vmbr0  = LAN/internet (pre-existing)
             vmbr10 = private rehearsal net, NO uplink, NO gateway
-  ┌ proxy-vm  (210)  NIC0 vmbr0 (DHCP) + NIC1 vmbr10   10.10.10.10  — HAS internet
-  │    cloud-init → registry:2 + bootstrap-proxy.sh → Caddy (tls internal) + Squid
+  ┌ proxy-vm       (210)  NIC0 vmbr0 (DHCP) + NIC1 vmbr10  10.10.10.10 — HAS internet
+  │    EGRESS-ONLY. cloud-init → bootstrap-proxy.sh → Caddy (tls internal) + Squid
   │    (rehearsal allow-list: *.localstack.test). Egress gateway for the app box.
-  ├ app-vm    (220)  NIC0 vmbr10 ONLY, NO gateway      10.10.10.20  — NO internet
-  │    cloud-init → bootstrap-app.sh → docker-compose.app.yml
-  ├ ls-vm     (230)  NIC0 vmbr10 ONLY                  10.10.10.30  — private only
-  │    LocalStack (Secrets Manager, SSM, KMS) + TLS shim (*.localstack.test:443)
-  └ dev-vm    (240)  NIC0 vmbr0 (static .100) + vmbr10 10.10.10.40  — OUT OF SCOPE
-       operator workbench (awscli/awslocal/git); toggle off for clean runs
+  ├ app-vm         (220)  NIC0 vmbr10 ONLY, NO gateway     10.10.10.20 — NO internet
+  │    cloud-init → bootstrap-app.sh → docker-compose.app.yml (pulls image from .30)
+  ├ aws-fixtures   (230)  NIC0 vmbr10 ONLY                 10.10.10.30 — private only
+  │    ALL always-on fake-AWS backends (baked into 9001, auto-start):
+  │      :4566 LocalStack (Secrets Manager, SSM, KMS)
+  │      :443  TLS shim   (*.localstack.test)
+  │      :5000 registry   (fake ECR — the backend image)
+  └ dev-vm         (240)  NIC0 vmbr0 (static .100) + vmbr10 10.10.10.40 — OUT OF SCOPE
+       operator workbench (awscli/awslocal/git/docker); builds + pushes the backend
+       image to the .30 registry; toggle off for clean runs
 ```
 
 The app box's isolation is **structural**: its only NIC is on `vmbr10` (no uplink,
@@ -50,17 +54,17 @@ Templates (never started, only cloned):
 | VMID | Template | Contents |
 |---|---|---|
 | 9000 | golden | host deps: Docker + Compose, AWS CLI, qemu-guest-agent, base tools |
-| 9001 | ls-vm | 9000 + LocalStack image + TLS shim (Caddy) + auto-start systemd units |
-| 9002 | dev | 9000 + operator extras (git, yq, awslocal, ~/.aws → LocalStack) |
+| 9001 | aws-fixtures | 9000 + LocalStack + TLS shim (Caddy) + registry:2 (fake ECR) + auto-start systemd units |
+| 9002 | dev | 9000 + operator extras (git, yq, awslocal, docker registry trust, ~/.aws → LocalStack) |
 
 VMs:
 
 | VMID | Role | Clones | Notes |
 |---|---|---|---|
-| 210  | proxy-vm | 9000 | dual-homed; egress gateway; role config from bootstrap at runtime |
+| 210  | proxy-vm | 9000 | dual-homed; **egress-only** (Squid + Caddy); role config from bootstrap at runtime |
 | 220  | app-vm | 9000 | private only; offline by construction; the box under test |
-| 230  | ls-vm | 9001 | private only; LocalStack + TLS shim auto-start on boot |
-| 240  | dev-vm | 9002 | out-of-scope workbench; static LAN `192.168.68.100`; `WITH_DEV_BOX=1`; builds+pushes the backend image (trusts the private registry) |
+| 230  | aws-fixtures-vm | 9001 | private only; LocalStack + TLS shim + registry (fake ECR) auto-start on boot |
+| 240  | dev-vm | 9002 | out-of-scope workbench; static LAN `192.168.68.100`; `WITH_DEV_BOX=1`; builds+pushes the backend image (trusts the .30 registry) |
 | 100  | (yours) | — | pre-existing "Ubuntu" VM — untouched by these scripts |
 
 ## Run order
@@ -73,24 +77,23 @@ VMs:
 #    cleans, powers off; the script waits for 'stopped' then `qm template`.
 #    --force rebuilds. (See ../IMAGE-BAKING.md for the pattern.)
 ./create-template.sh              # 9000 golden
-./create-localstack-template.sh   # 9001 ls-vm (clones 9000)
+./create-localstack-template.sh   # 9001 aws-fixtures (clones 9000)
 ./create-dev-template.sh          # 9002 dev  (clones 9000)
 
 # 2. Clone + start the VMs. Idempotent (skips existing); --force reclones.
 #    Renders the app + proxy cloud-init from the real repo files first, then
 #    attaches them via --cicustom. WITH_DEV_BOX=1 also creates the workbench (240).
-#      proxy (210): registry:2 + Caddy(tls-internal) + Squid(rehearsal allow-list)
+#      proxy (210): Caddy(tls-internal) + Squid(rehearsal allow-list) — egress only
 #      app   (220): trust CA, /etc/hosts, insecure-registry, run bootstrap-app.sh
 WITH_DEV_BOX=1 ./create-vms.sh
 
-# ...rehearse:
+# ...rehearse (from the DEV BOX 240 — it has internet + reaches the private net):
 #    - build + push the backend image  ../fixtures/registry/build-and-push-backend.sh
-#         (on the DEV BOX 240 — needs the repo synced there; pushes to 10.10.10.10:5000)
-#    - seed the private registry        ../fixtures/registry/seed-registry.sh   (on 210)
-#    - seed LocalStack                  ../fixtures/localstack/seed-localstack.sh (dev box)
+#         (pushes to the fake-ECR registry on the aws-fixtures-vm, 10.10.10.30:5000)
+#    - seed LocalStack                  ../fixtures/localstack/seed-localstack.sh
 #    - then Phase 4 verify.sh...
 #
-# The app box (220) pulls BACKEND_IMAGE=10.10.10.10:5000/flowform-backend:rehearsal
+# The app box (220) pulls BACKEND_IMAGE=10.10.10.30:5000/flowform-backend:rehearsal
 # at bootstrap, so the image must be pushed BEFORE 220's bootstrap compose-up
 # succeeds (re-run bootstrap-app.sh on 220 after pushing if it raced ahead).
 
@@ -116,7 +119,7 @@ WITH_DEV_BOX=1 ./create-vms.sh
 - **Backend image staging (dev box).** The dev box (240) builds + pushes the
   backend image to the private registry (`build-and-push-backend.sh`). It needs
   the repo synced there (it has `git` + internet — `git clone` or `rsync`), and
-  its template (9002) bakes `insecure-registries: 10.10.10.10:5000` so the push
+  its template (9002) bakes `insecure-registries: 10.10.10.30:5000` so the push
   works. If you built 9002 before that was added, rebuild it:
   `./create-dev-template.sh --force`.
 - **App box image-pull ordering.** 220 boots and runs `bootstrap-app.sh` before
@@ -152,6 +155,6 @@ WITH_DEV_BOX=1 ./create-vms.sh
 | `destroy-vms.sh` | stop + destroy 210/220/230/240 (templates kept) | n/a |
 | `cloud-init/*-builder.user-data.yaml` | per-template self-provision instructions | — |
 | `cloud-init/app.user-data.yaml.template` | app-box (220) cloud-init: trust CA, `/etc/hosts`, insecure-registry, run `bootstrap-app.sh` | — |
-| `cloud-init/proxy.user-data.yaml.template` | proxy-box (210) cloud-init: trust CA, registry:2, run `bootstrap-proxy.sh` (Caddy tls-internal + Squid rehearsal allow-list) | — |
+| `cloud-init/proxy.user-data.yaml.template` | proxy-box (210) cloud-init: trust CA, run `bootstrap-proxy.sh` (Caddy tls-internal + Squid rehearsal allow-list) — egress only | — |
 | `cloud-init/render-user-data.sh` | renders every `*.template` → `.rendered.yaml` by injecting the real repo files (single source of truth) | idempotent |
 | `lib/template-build.sh` | shared build helpers (install snippet, wait-stopped, finalize) | — |

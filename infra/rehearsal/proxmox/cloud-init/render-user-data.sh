@@ -41,7 +41,9 @@ declare -A PLACEHOLDERS=(
   [__CADDYFILE_PROXY_REHEARSAL_B64__]="infra/rehearsal/caddy/Caddyfile.proxy"
   [__SQUID_CONF_B64__]="infra/docker/squid/squid.conf"
   [__SQUID_ALLOWED_DOMAINS_REHEARSAL_B64__]="infra/rehearsal/squid/allowed-domains.rehearsal.txt"
-  [__DOCKER_COMPOSE_REGISTRY_B64__]="infra/rehearsal/fixtures/registry/docker-compose.registry.yml"
+  # NOTE: the registry (fake ECR) is no longer carried by any runtime user-data —
+  # it's baked into template 9001 (aws-fixtures-vm) and auto-starts there. So no
+  # __DOCKER_COMPOSE_REGISTRY_B64__ placeholder here.
 )
 
 # base64 -w0 = single line (cloud-init wants the content on one logical line).

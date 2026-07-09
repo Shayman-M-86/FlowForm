@@ -118,7 +118,7 @@ via private endpoints.
 ### backend image → private registry, NOT a template
 
 The real backend/app image is delivered at runtime through the private registry
-(`registry:2` on the proxy, `10.10.10.10:5000`) so we rehearse "offline private
+(`registry:2` on the aws-fixtures-vm, `10.10.10.30:5000`) so we rehearse "offline private
 box pulls an approved image from a trusted source" (locally the registry; in
 prod, ECR). Pulling the app image is a thing the real bootstrap does. See
 `fixtures/registry/`.

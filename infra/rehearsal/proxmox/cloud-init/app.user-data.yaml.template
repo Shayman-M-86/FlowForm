@@ -52,7 +52,7 @@ write_files:
     content: __DOCKER_COMPOSE_APP_B64__
 
   # --- rehearsal-only: trust the private HTTP registry -------------------------
-  # bootstrap-app.sh pulls BACKEND_IMAGE from 10.10.10.10:5000 (plain HTTP on the
+  # bootstrap-app.sh pulls BACKEND_IMAGE from 10.10.10.30:5000 (plain HTTP on the
   # private net). Docker refuses HTTP registries unless listed as insecure. This
   # is a REHEARSAL delta (prod pulls ECR over HTTPS, no daemon.json entry). It
   # must exist BEFORE bootstrap-app.sh restarts the daemon (for its proxy drop-in)
@@ -62,7 +62,7 @@ write_files:
     owner: root:root
     content: |
       {
-        "insecure-registries": ["10.10.10.10:5000"]
+        "insecure-registries": ["10.10.10.30:5000"]
       }
 
   # --- env consumed by the bootstrap runcmd ------------------------------------
@@ -78,12 +78,22 @@ write_files:
       AWS_REGION=ap-southeast-2
       APP_PRIVATE_IP=10.10.10.20
       PROXY_PRIVATE_IP=10.10.10.10
-      # rehearsal image ref (proxy-box registry:2)
-      BACKEND_IMAGE=10.10.10.10:5000/flowform-backend:rehearsal
+      # rehearsal image ref (fake-ECR registry on the aws-fixtures-vm, 230)
+      BACKEND_IMAGE=10.10.10.30:5000/flowform-backend:rehearsal
+      # explicit compose path: the script is baked at /opt/flowform/scripts/... so
+      # its own REPO_ROOT math (../../..) would look under /opt, not where we put
+      # the compose file. Point at the baked location directly.
+      COMPOSE_FILE=/opt/flowform/repo/infra/docker/docker-compose.app.yml
       # per-service fake-AWS endpoints (each = its own SNI → own Squid tunnel)
       AWS_ENDPOINT_URL_SECRETS_MANAGER=https://secretsmanager.localstack.test
       AWS_ENDPOINT_URL_SSM=https://ssm.localstack.test
       AWS_ENDPOINT_URL_KMS=https://kms.localstack.test
+      # AWS CLI v2 ships its OWN CA bundle and ignores the system trust store, so
+      # it wouldn't trust the rehearsal CA (added via update-ca-certificates). Point
+      # it at the system bundle, which now includes the rehearsal CA. REHEARSAL
+      # delta — prod leaves this UNSET (real AWS TLS validates against the public
+      # CAs the CLI already bundles).
+      AWS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
       # dummy creds — LocalStack ignores validity but the SDK requires presence
       AWS_ACCESS_KEY_ID=test
       AWS_SECRET_ACCESS_KEY=test

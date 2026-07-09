@@ -15,7 +15,7 @@ set -Eeuo pipefail
 #     /flowform/<scope>/proxy/*     CADDY_IMAGE, API_DOMAIN
 #
 # Values are REHEARSAL THROWAWAYS — never real secrets. LocalStack has
-# PERSISTENCE=0, so re-run this after every ls-vm reboot.
+# PERSISTENCE=0, so re-run this after every aws-fixtures-vm reboot.
 #
 # Idempotent: create-or-update for every secret/param.
 
@@ -23,9 +23,10 @@ set -Eeuo pipefail
 LS_ENDPOINT="${AWS_ENDPOINT_URL:-http://10.10.10.30:4566}"
 REGION="${AWS_DEFAULT_REGION:-ap-southeast-2}"
 
-# BACKEND_IMAGE / CADDY_IMAGE default to the private registry on the proxy — the
-# rehearsal delivers the backend image via registry, not SSM. Overridable.
-BACKEND_IMAGE="${BACKEND_IMAGE:-10.10.10.10:5000/flowform-backend:rehearsal}"
+# BACKEND_IMAGE / CADDY_IMAGE default to the fake-ECR registry on the
+# aws-fixtures-vm (.30:5000) — the rehearsal delivers the backend image via that
+# registry, not SSM. Overridable.
+BACKEND_IMAGE="${BACKEND_IMAGE:-10.10.10.30:5000/flowform-backend:rehearsal}"
 CADDY_IMAGE="${CADDY_IMAGE:-caddy:2-alpine}"
 API_DOMAIN="${API_DOMAIN:-api.localstack.test}"
 
@@ -78,11 +79,55 @@ put_secret "flowform/${FLOWFORM_SCOPE}/db-secrets" \
   "$(printf '{"db_core_app_password":"%s","db_response_app_password":"%s"}' "$(rand 16)" "$(rand 16)")"
 
 # --- SSM: backend/ (non-secret config the app renders into backend.env) ----
+# This is the FULL config the backend needs to pass startup validation (env=prod).
+# The backend's /health/ready only does a real `SELECT 1` on the two DBs; it does
+# NOT call Auth0/KMS/SES at readiness. So Auth0/encryption/email values only need
+# to be WELL-FORMED (validate as strings/ARNs), not functional — they're stubs /
+# dev-tenant throwaways here. The DB parts, by contrast, ARE real (point at the
+# app-box Postgres containers from docker-compose.app.rehearsal.yml).
 BP="/flowform/${FLOWFORM_SCOPE}/backend"
-put_param "${BP}/FLOWFORM_LOGGING_LOG_JSON"  "true"
-put_param "${BP}/FLOWFORM_LOGGING_LOG_LEVEL" "INFO"
-put_param "${BP}/FLOWFORM_ENV"               "${FLOWFORM_SCOPE}"
-put_param "${BP}/BACKEND_IMAGE"              "${BACKEND_IMAGE}"
+
+# logging (all optional; set for parity with the real env). Note: the key is
+# FLOWFORM_LOGGING_LEVEL, not _LOG_LEVEL.
+put_param "${BP}/FLOWFORM_LOGGING_LOG_JSON" "true"
+put_param "${BP}/FLOWFORM_LOGGING_LEVEL"    "INFO"
+
+# FLOWFORM_ENV is the app's RUNTIME MODE (dev|test|prod) — a different axis from
+# FLOWFORM_SCOPE (nonprod|prod, the secrets/param namespace). The rehearsal boots
+# the prod runtime shape, so this is 'prod', NOT the scope. Overridable.
+put_param "${BP}/FLOWFORM_ENV"    "${FLOWFORM_ENV:-prod}"
+put_param "${BP}/BACKEND_IMAGE"   "${BACKEND_IMAGE}"
+
+# Auth0 — dev-tenant throwaways (readiness doesn't call Auth0). MGMT secret comes
+# from app-secrets (materialised to a tmpfs file), not here.
+put_param "${BP}/FLOWFORM_AUTH0_DOMAIN"    "${FLOWFORM_AUTH0_DOMAIN:-dev-rehearsal.au.auth0.com}"
+put_param "${BP}/FLOWFORM_AUTH0_AUDIENCE"  "${FLOWFORM_AUTH0_AUDIENCE:-https://flowform.auth.api}"
+put_param "${BP}/FLOWFORM_AUTH0_CLIENT_ID" "${FLOWFORM_AUTH0_CLIENT_ID:-rehearsalClientId0000000000000000}"
+put_param "${BP}/FLOWFORM_AUTH0_MGMT_ID"   "${FLOWFORM_AUTH0_MGMT_ID:-rehearsalMgmtId000000000000000000}"
+
+# AWS + email (well-formed; not exercised at readiness).
+put_param "${BP}/FLOWFORM_AWS_REGION"        "${REGION}"
+put_param "${BP}/FLOWFORM_EMAIL_FROM_ADDRESS" "${FLOWFORM_EMAIL_FROM_ADDRESS:-no-reply@rehearsal.test}"
+
+# Encryption — well-formed ARNs. These validate as strings at startup; readiness
+# does not perform a KMS decrypt. Shaped like real ARNs so the config model accepts
+# them. (A fuller rehearsal could create a real LocalStack KMS key + linkage secret
+# and use those ARNs; not needed for a green /health/ready.)
+put_param "${BP}/FLOWFORM_ENCRYPTION_KMS_KEY_ARN" \
+  "${FLOWFORM_ENCRYPTION_KMS_KEY_ARN:-arn:aws:kms:${REGION}:000000000000:key/00000000-0000-0000-0000-000000000000}"
+put_param "${BP}/FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN" \
+  "${FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN:-arn:aws:secretsmanager:${REGION}:000000000000:secret:flowform/${FLOWFORM_SCOPE}/linkage-secret}"
+
+# Database parts — REAL. Point at the app-box Postgres containers (service names
+# core-db / response-db from docker-compose.app.rehearsal.yml). The app_user +
+# db name must match what those containers are initialised with; the password is
+# the same tmpfs secret both sides read.
+put_param "${BP}/DATABASE_CORE_HOST"         "${DATABASE_CORE_HOST:-core-db}"
+put_param "${BP}/DATABASE_CORE_NAME"         "flowform_core"
+put_param "${BP}/DATABASE_CORE_APP_USER"     "flowform_core_app"
+put_param "${BP}/DATABASE_RESPONSE_HOST"     "${DATABASE_RESPONSE_HOST:-response-db}"
+put_param "${BP}/DATABASE_RESPONSE_NAME"     "flowform_response"
+put_param "${BP}/DATABASE_RESPONSE_APP_USER" "flowform_response_app"
 
 # --- SSM: proxy/ (CADDY_IMAGE + API_DOMAIN required by bootstrap-proxy) -----
 PP="/flowform/${FLOWFORM_SCOPE}/proxy"

@@ -34,21 +34,23 @@ write_files:
       aws_secret_access_key = test
 
   # Dev-box ONLY: trust the rehearsal's private HTTP registry so the operator can
-  # `docker push` the backend image to 10.10.10.10:5000 (build-and-push-backend.sh).
+  # `docker push` the backend image to 10.10.10.30:5000 (build-and-push-backend.sh).
   # Rehearsal delta — prod pushes to ECR over HTTPS. Baked here (persistent dev-box
   # property), unlike app/proxy which get it via their runtime cloud-init.
   - path: /etc/docker/daemon.json
     permissions: '0644'
     content: |
       {
-        "insecure-registries": ["10.10.10.10:5000"]
+        "insecure-registries": ["10.10.10.30:5000"]
       }
 
 runcmd:
   # awslocal: thin AWS CLI wrapper preset for the rehearsal LocalStack endpoint.
   - pip install --break-system-packages awscli-local || pipx install awscli-local || true
-  # the flowform user must own its ~/.aws (write_files runs as root)
-  - chown -R flowform:flowform /home/flowform/.aws
+  # write_files runs as root and can leave the whole home root-owned, so the
+  # flowform user can't write its own $HOME (breaks rsync/git checkout of the repo
+  # for build-and-push-backend.sh). Fix ownership of the entire home, not just .aws.
+  - chown -R flowform:flowform /home/flowform
   # sanity: fail the build (no poweroff) if core tools are missing
   - git --version
   - /usr/local/bin/aws --version

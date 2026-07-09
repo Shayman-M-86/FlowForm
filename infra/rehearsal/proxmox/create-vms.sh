@@ -115,7 +115,7 @@ clone_vm() {
 
 # --- proxy-vm (210): LAN + private, the ONLY box with an internet route ---
 # Boots the rendered proxy user-data (--cicustom): trust CA, resolve the fake-AWS
-# SNI names, bring up registry:2 + the prod proxy stack (Caddy tls-internal +
+# SNI names, bring up the prod proxy stack (Caddy tls-internal +
 # Squid rehearsal allow-list) via bootstrap-proxy.sh.
 if clone_vm "${PROXY_VMID}" "flowform-rehearsal-proxy" "${TEMPLATE_VMID}"; then
   qm set "${PROXY_VMID}" \
