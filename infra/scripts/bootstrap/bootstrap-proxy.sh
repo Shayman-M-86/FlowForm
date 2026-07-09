@@ -22,6 +22,10 @@ set -Eeuo pipefail
 #   API_DOMAIN              public API hostname (else must come from SSM)
 #   BOOTSTRAP_ENDPOINT_URL  AWS endpoint override (rehearsal: LocalStack)
 #   COMPOSE_FILE            defaults to the repo's docker-compose.proxy.yml
+#   COMPOSE_OVERRIDE_FILE   optional extra compose file layered on top with a
+#                           second -f (empty in prod; rehearsal uses it to swap
+#                           the Caddy TLS + Squid allow-list configs). This is a
+#                           prod-safe seam, like BOOTSTRAP_ENDPOINT_URL.
 #   BOOTSTRAP_DRY_RUN=1     print intended actions, change nothing
 
 log() { printf '[bootstrap-proxy %s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
@@ -38,6 +42,8 @@ PROXY_ENV="/opt/flowform/proxy.env"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
 COMPOSE_FILE="${COMPOSE_FILE:-${REPO_ROOT}/infra/docker/docker-compose.proxy.yml}"
+# Optional override compose file (rehearsal). Assembled into the -f list below.
+COMPOSE_OVERRIDE_FILE="${COMPOSE_OVERRIDE_FILE:-}"
 
 AWS_ARGS=(--region "${AWS_REGION}")
 if [[ -n "${BOOTSTRAP_ENDPOINT_URL:-}" ]]; then
@@ -95,11 +101,18 @@ render_proxy_env() {
 
 compose_up() {
   [[ -f "${COMPOSE_FILE}" ]] || die "compose file not found: ${COMPOSE_FILE}"
+  # Base compose, plus an optional override layered on with a second -f (prod
+  # leaves COMPOSE_OVERRIDE_FILE empty, so this is exactly the single-file case).
+  local compose_args=(-f "${COMPOSE_FILE}")
+  if [[ -n "${COMPOSE_OVERRIDE_FILE}" ]]; then
+    [[ -f "${COMPOSE_OVERRIDE_FILE}" ]] || die "compose override not found: ${COMPOSE_OVERRIDE_FILE}"
+    compose_args+=(-f "${COMPOSE_OVERRIDE_FILE}")
+  fi
   if [[ "${DRY_RUN}" == "1" ]]; then
-    log "DRY_RUN: would run: docker compose --env-file ${PROXY_ENV} -f ${COMPOSE_FILE} up -d"
+    log "DRY_RUN: would run: docker compose --env-file ${PROXY_ENV} ${compose_args[*]} up -d"
     return
   fi
-  docker compose --env-file "${PROXY_ENV}" -f "${COMPOSE_FILE}" up -d
+  docker compose --env-file "${PROXY_ENV}" "${compose_args[@]}" up -d
   log "proxy compose stack started"
 }
 

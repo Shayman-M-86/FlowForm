@@ -106,10 +106,12 @@ write_files:
       # proxy stack image + public API host (else must come from SSM)
       CADDY_IMAGE=caddy:2-alpine
       API_DOMAIN=api.localstack.test
-      # run the REAL prod proxy compose PLUS the rehearsal override (':'-separated
-      # -f list; docker compose resolves relative mounts against the FIRST file's
-      # dir = infra/docker/, which is why the override uses ../rehearsal/ paths).
-      COMPOSE_FILE=/opt/flowform/repo/infra/docker/docker-compose.proxy.yml:/opt/flowform/repo/infra/rehearsal/docker-compose.proxy.rehearsal.yml
+      # run the REAL prod proxy compose (base) PLUS the rehearsal override, each
+      # as its own -f (bootstrap-proxy.sh assembles them). docker compose resolves
+      # relative mounts against the FIRST/base file's dir = infra/docker/, which is
+      # why the override's paths are written ../rehearsal/... .
+      COMPOSE_FILE=/opt/flowform/repo/infra/docker/docker-compose.proxy.yml
+      COMPOSE_OVERRIDE_FILE=/opt/flowform/repo/infra/rehearsal/docker-compose.proxy.rehearsal.yml
       # per-service fake-AWS endpoints (each = its own SNI)
       AWS_ENDPOINT_URL_SECRETS_MANAGER=https://secretsmanager.localstack.test
       AWS_ENDPOINT_URL_SSM=https://ssm.localstack.test
