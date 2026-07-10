@@ -62,6 +62,21 @@ not at the raw `dev-....au.auth0.com` tenant domain. Its verification
 CNAME lives as a hand-made record in the Route 53 hosted zone; CDK must
 leave it alone.
 
+The backend needs **both** domains because Auth0 does not serve the
+Management API (`/api/v2`) on custom domains — a token request there fails
+with `access_denied: Service not enabled within domain`. So per env, set
+two backend SSM params under `/flowform/<scope>/backend/`:
+
+- `FLOWFORM_AUTH0_DOMAIN` → the **custom** domain (`auth.flow-form.com.au`),
+  so token `iss` validation matches the frontend's tokens.
+- `FLOWFORM_AUTH0_MGMT_DOMAIN` → the **canonical** tenant
+  (`dev-....au.auth0.com`), used only by the Management API client. If
+  omitted, the mgmt client falls back to `FLOWFORM_AUTH0_DOMAIN` (correct
+  only for tenants without a custom domain).
+
+The egress allow-list (`infra/docker/squid/allowed-domains.txt`) must admit
+both hosts for the same reason.
+
 Per environment, before its first frontend deploy:
 
 1. Create the environment's Auth0 application (SPA/PKCE) and API audience.

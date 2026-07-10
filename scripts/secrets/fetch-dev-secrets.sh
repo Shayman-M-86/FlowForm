@@ -72,7 +72,20 @@ for name in "${DB_PASSWORD_NAMES[@]}"; do
   fi
 done
 
-rm -rf "${OUT_DIR}"
+# If a prior `docker compose up` ran while OUT_DIR was empty/missing, the
+# Docker daemon (root) auto-creates the six missing bind-mount sources as
+# root-owned directories. We can't rm those as an unprivileged user, and
+# leaving them makes compose try to mount a dir onto a file. Detect that
+# case and stop with an actionable message instead of a confusing
+# permission-denied from `rm`.
+if ! rm -rf "${OUT_DIR}" 2>/dev/null; then
+  echo "error: cannot clear ${OUT_DIR} — it contains files owned by another" >&2
+  echo "       user (almost certainly root-owned stubs the Docker daemon" >&2
+  echo "       created when compose started with this dir empty)." >&2
+  echo "       Remove it and re-run this script:" >&2
+  echo "         sudo rm -rf ${OUT_DIR}" >&2
+  exit 1
+fi
 mkdir -p "${OUT_DIR}"
 chmod 700 "${OUT_DIR}"
 umask 177
@@ -98,5 +111,23 @@ for name in "${DB_PASSWORD_NAMES[@]}"; do
     "${OUT_DIR}/${name}.${ENV_NAME}.secret.txt"
 done
 
-echo "==> Wrote $(ls "${OUT_DIR}" | wc -l) secret files to ${OUT_DIR}"
+# Verify every expected secret is a non-empty regular file before we hand
+# the dir to compose. A partial write here (e.g. an interrupted fetch) that
+# left a name missing would otherwise let the Docker daemon re-create it as
+# a root-owned dir on the next `up`, restarting the corruption cycle.
+expected=(
+  FLOWFORM_APP_SECRET_KEY
+  FLOWFORM_AUTH0_MGMT_SECRET
+  "${DB_PASSWORD_NAMES[@]}"
+)
+for name in "${expected[@]}"; do
+  f="${OUT_DIR}/${name}.${ENV_NAME}.secret.txt"
+  if [[ ! -f "${f}" || ! -s "${f}" ]]; then
+    echo "error: ${f} is missing or empty after write — aborting so compose" >&2
+    echo "       is never started against an incomplete secret dir." >&2
+    exit 1
+  fi
+done
+
+echo "==> Wrote ${#expected[@]} secret files to ${OUT_DIR}"
 echo "==> Run compose with: FLOWFORM_SECRET_DIR=${OUT_DIR}"

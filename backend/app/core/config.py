@@ -132,6 +132,13 @@ class Auth0MgmtSettings(BaseModel):
     id: str
     secret: SecretStr
     secret_file: str | None = None
+    # Canonical tenant domain (e.g. dev-xxx.au.auth0.com) for the Management
+    # API. Auth0 does NOT serve /api/v2 on custom domains — requesting a token
+    # for https://<custom-domain>/api/v2/ fails with "Service not enabled
+    # within domain". When the login/issuer domain is a custom domain, set this
+    # to the canonical tenant so the mgmt client uses it. Falls back to the
+    # issuer domain when unset (tenants without a custom domain).
+    domain: str | None = None
 
     def __init__(
         self,
@@ -139,8 +146,13 @@ class Auth0MgmtSettings(BaseModel):
         id: str,
         secret: SecretStr | str | None = None,
         secret_file: str | None = None,
+        domain: str | None = None,
     ) -> None:
-        data: dict[str, Any] = {"id": id, "secret_file": secret_file}
+        data: dict[str, Any] = {
+            "id": id,
+            "secret_file": secret_file,
+            "domain": domain,
+        }
         if secret is not None:
             data["secret"] = secret
         super().__init__(**data)
@@ -182,6 +194,7 @@ class Auth0Settings(BaseModel):
         mgmt_id = data.get("mgmt_id")
         mgmt_secret = data.get("mgmt_secret")
         mgmt_secret_file = data.get("mgmt_secret_file")
+        mgmt_domain = data.get("mgmt_domain")
         if mgmt_id is None and mgmt_secret is None and mgmt_secret_file is None:
             return data
 
@@ -191,6 +204,7 @@ class Auth0Settings(BaseModel):
                 "id": mgmt_id,
                 "secret": mgmt_secret,
                 "secret_file": mgmt_secret_file,
+                "domain": mgmt_domain,
             },
         }
 

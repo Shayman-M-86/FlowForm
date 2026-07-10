@@ -182,6 +182,7 @@ def test_init_app_validates_management_client(
                 mgmt=SimpleNamespace(
                     id="client-id",
                     secret=SecretStr("client-secret"),
+                    domain=None,
                 ),
             )
         )
@@ -192,9 +193,52 @@ def test_init_app_validates_management_client(
     auth_extension.init_app(flask_app)
 
     assert isinstance(auth_extension.mgmt, FakeManagementApiClient)
+    # mgmt.domain unset -> mgmt client falls back to the issuer domain.
     assert auth_extension.mgmt.domain == "example.auth0.com"
     assert auth_extension.mgmt.client_id == "client-id"
     assert auth_extension.mgmt.client_secret == "client-secret"
+    assert auth_extension.mgmt.validated is True
+
+
+def test_init_app_mgmt_uses_canonical_domain_when_set(
+    auth_extension: AuthExtension,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """With a custom issuer domain, the mgmt client uses the canonical tenant."""
+
+    class FakeManagementApiClient:
+        validated = False
+
+        def __init__(self, *, domain: str, client_id: str, client_secret: str) -> None:
+            self.domain = domain
+            self.client_id = client_id
+            self.client_secret = client_secret
+
+        def validate_connection(self) -> None:
+            self.validated = True
+
+    flask_app = Flask(__name__)
+    flask_app.extensions["settings"] = SimpleNamespace(
+        flowform=SimpleNamespace(
+            auth0=SimpleNamespace(
+                audience="https://api.example.test",
+                domain="auth.custom.example",
+                mgmt=SimpleNamespace(
+                    id="client-id",
+                    secret=SecretStr("client-secret"),
+                    domain="tenant.au.auth0.com",
+                ),
+            )
+        )
+    )
+    monkeypatch.setattr(auth0_module, "ApiClient", lambda _options: object())
+    monkeypatch.setattr(auth0_module, "ManagementApiClient", FakeManagementApiClient)
+
+    auth_extension.init_app(flask_app)
+
+    assert isinstance(auth_extension.mgmt, FakeManagementApiClient)
+    # Issuer stays custom; mgmt client targets the canonical tenant instead.
+    assert auth_extension.mgmt.domain == "tenant.au.auth0.com"
     assert auth_extension.mgmt.validated is True
 
 
@@ -222,6 +266,7 @@ def test_init_app_rejects_failed_management_validation(
                 mgmt=SimpleNamespace(
                     id="client-id",
                     secret=SecretStr("client-secret"),
+                    domain=None,
                 ),
             )
         )

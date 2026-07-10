@@ -100,10 +100,13 @@ put_param "${BP}/BACKEND_IMAGE"   "${BACKEND_IMAGE}"
 
 # Auth0 — dev-tenant throwaways (readiness doesn't call Auth0). MGMT secret comes
 # from app-secrets (materialised to a tmpfs file), not here.
-put_param "${BP}/FLOWFORM_AUTH0_DOMAIN"    "${FLOWFORM_AUTH0_DOMAIN:-dev-rehearsal.au.auth0.com}"
-put_param "${BP}/FLOWFORM_AUTH0_AUDIENCE"  "${FLOWFORM_AUTH0_AUDIENCE:-https://flowform.auth.api}"
-put_param "${BP}/FLOWFORM_AUTH0_CLIENT_ID" "${FLOWFORM_AUTH0_CLIENT_ID:-rehearsalClientId0000000000000000}"
-put_param "${BP}/FLOWFORM_AUTH0_MGMT_ID"   "${FLOWFORM_AUTH0_MGMT_ID:-rehearsalMgmtId000000000000000000}"
+put_param "${BP}/FLOWFORM_AUTH0_DOMAIN"      "${FLOWFORM_AUTH0_DOMAIN:-dev-rehearsal.au.auth0.com}"
+# Canonical tenant for the Management API (/api/v2 is not served on custom
+# domains); mirrors the real backend config shape.
+put_param "${BP}/FLOWFORM_AUTH0_MGMT_DOMAIN" "${FLOWFORM_AUTH0_MGMT_DOMAIN:-dev-rehearsal.au.auth0.com}"
+put_param "${BP}/FLOWFORM_AUTH0_AUDIENCE"    "${FLOWFORM_AUTH0_AUDIENCE:-https://flowform.auth.api}"
+put_param "${BP}/FLOWFORM_AUTH0_CLIENT_ID"   "${FLOWFORM_AUTH0_CLIENT_ID:-rehearsalClientId0000000000000000}"
+put_param "${BP}/FLOWFORM_AUTH0_MGMT_ID"     "${FLOWFORM_AUTH0_MGMT_ID:-rehearsalMgmtId000000000000000000}"
 
 # AWS + email (well-formed; not exercised at readiness).
 put_param "${BP}/FLOWFORM_AWS_REGION"        "${REGION}"

@@ -173,6 +173,7 @@ access_log stdio:/var/log/squid/access.log
 time. Never `.amazonaws.com` or `.auth0.com` wholesale:
 
 ```text
+auth.flow-form.com.au
 <tenant>.au.auth0.com
 secretsmanager.ap-southeast-2.amazonaws.com
 kms.ap-southeast-2.amazonaws.com

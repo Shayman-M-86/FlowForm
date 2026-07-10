@@ -351,8 +351,12 @@ class AuthExtension:
 
         mgmt_settings = self.settings.flowform.auth0.mgmt
         if mgmt_settings is not None:
+            # The Management API (/api/v2) is not served on Auth0 custom
+            # domains, so use the canonical tenant domain when one is
+            # configured; otherwise fall back to the issuer domain.
+            mgmt_domain = mgmt_settings.domain or self.settings.flowform.auth0.domain
             mgmt_client = ManagementApiClient(
-                domain=self.settings.flowform.auth0.domain,
+                domain=mgmt_domain,
                 client_id=mgmt_settings.id,
                 client_secret=mgmt_settings.secret.get_secret_value(),
             )
