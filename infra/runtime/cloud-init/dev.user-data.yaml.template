@@ -1,0 +1,12 @@
+#cloud-config
+# Optional developer workbench first-boot configuration. The base image already
+# contains Docker, Compose, AWS CLI, nftables and common directories.
+packages: []
+write_files:
+  - path: /etc/flowform/dev-workbench.env
+    permissions: '0644'
+    owner: root:root
+    content: |
+      FLOWFORM_REHEARSAL_DEV=1
+runcmd:
+  - [ bash, -lc, "install -d -o flowform -g flowform /home/flowform || true" ]

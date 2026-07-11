@@ -1,0 +1,76 @@
+#cloud-config
+# Runtime LocalStack/fixtures VM. The base Packer image already has Docker.
+write_files:
+  - path: /opt/flowform/localstack/docker-compose.localstack.yml
+    encoding: b64
+    permissions: '0644'
+    content: __DOCKER_COMPOSE_LOCALSTACK_B64__
+  - path: /opt/flowform/registry/docker-compose.registry.yml
+    encoding: b64
+    permissions: '0644'
+    content: __DOCKER_COMPOSE_REGISTRY_B64__
+  - path: /opt/flowform/tls-shim/docker-compose.tls-shim.yml
+    encoding: b64
+    permissions: '0644'
+    content: __DOCKER_COMPOSE_TLS_SHIM_B64__
+  - path: /opt/flowform/tls-shim/Caddyfile
+    encoding: b64
+    permissions: '0644'
+    content: __TLS_SHIM_CADDYFILE_B64__
+  - path: /opt/flowform/tls-shim/ca/localstack.crt
+    encoding: b64
+    permissions: '0644'
+    content: __LOCALSTACK_CRT_B64__
+  - path: /opt/flowform/tls-shim/ca/localstack.key
+    encoding: b64
+    permissions: '0600'
+    content: __LOCALSTACK_KEY_B64__
+  - path: /etc/systemd/system/flowform-localstack.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=FlowForm rehearsal LocalStack
+      Requires=docker.service
+      After=docker.service network-online.target
+      Wants=network-online.target
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/bin/docker compose -f /opt/flowform/localstack/docker-compose.localstack.yml up -d
+      ExecStop=/usr/bin/docker compose -f /opt/flowform/localstack/docker-compose.localstack.yml down
+      [Install]
+      WantedBy=multi-user.target
+  - path: /etc/systemd/system/flowform-registry.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=FlowForm rehearsal registry
+      Requires=docker.service
+      After=docker.service network-online.target
+      Wants=network-online.target
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/bin/docker compose -f /opt/flowform/registry/docker-compose.registry.yml up -d
+      ExecStop=/usr/bin/docker compose -f /opt/flowform/registry/docker-compose.registry.yml down
+      [Install]
+      WantedBy=multi-user.target
+  - path: /etc/systemd/system/flowform-tls-shim.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=FlowForm rehearsal TLS shim
+      Requires=docker.service flowform-localstack.service
+      After=docker.service flowform-localstack.service
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/bin/docker compose -f /opt/flowform/tls-shim/docker-compose.tls-shim.yml up -d
+      ExecStop=/usr/bin/docker compose -f /opt/flowform/tls-shim/docker-compose.tls-shim.yml down
+      [Install]
+      WantedBy=multi-user.target
+runcmd:
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, enable, --now, flowform-localstack.service ]
+  - [ systemctl, enable, --now, flowform-registry.service ]
+  - [ systemctl, enable, --now, flowform-tls-shim.service ]

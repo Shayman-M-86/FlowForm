@@ -129,9 +129,9 @@ Docker parity with EC2.
 ## EC2 Compose bootstrap contract
 
 The split EC2 runtime keeps the same secret-file convention. The proxy
-instance runs `infra/docker/docker-compose.proxy.yml` from a bootstrap-written
+instance runs `infra/runtime/compose/docker-compose.proxy.yml` from a bootstrap-written
 proxy env file; the private app instance runs
-`infra/docker/docker-compose.app.yml` with
+`infra/runtime/compose/docker-compose.app.yml` with
 `--env-file /opt/flowform/backend.env`. That backend env file must contain
 only non-secret config, image refs, private IPs, proxy settings, and logging
 settings. Keep production logging on stdout JSON

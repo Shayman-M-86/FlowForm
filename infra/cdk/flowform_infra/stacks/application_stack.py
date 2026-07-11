@@ -68,7 +68,7 @@ from flowform_infra.stacks.network_stack import NetworkStack
 #      Compose is invoked with `--env-file /opt/flowform/backend.env`
 #      (interpolation) and the backend service also loads it via `env_file:`
 #      (container env).
-# See infra/docker/docker-compose.proxy.yml and docker-compose.app.yml for the
+# See infra/runtime/compose/docker-compose.proxy.yml and docker-compose.app.yml for the
 # consuming side: the proxy instance runs Caddy+Squid, and the app instance
 # runs only the backend.
 #
@@ -134,8 +134,19 @@ class ApplicationStack(Stack):
 
         self._grant_ecr_pull(self.proxy_role)
 
-        instance_type = ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE4_GRAVITON, ec2.InstanceSize.SMALL)
-        machine_image = ec2.MachineImage.latest_amazon_linux2023(cpu_type=ec2.AmazonLinuxCpuType.ARM_64)
+        instance_type = ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.SMALL)
+        if env_config.ec2_base_ami_id:
+            machine_image = ec2.MachineImage.generic_linux({env_config.region: env_config.ec2_base_ami_id})
+        elif env_config.ec2_base_ami_ssm_parameter:
+            machine_image = ec2.MachineImage.from_ssm_parameter(
+                env_config.ec2_base_ami_ssm_parameter,
+                os=ec2.OperatingSystemType.LINUX,
+            )
+        else:
+            raise ValueError(
+                f"EnvConfig for '{env_config.env_name}' must provide a Packer-built EC2 base AMI "
+                "via ec2_base_ami_id or ec2_base_ami_ssm_parameter"
+            )
 
         self.proxy_instance = ec2.Instance(
             self,
@@ -174,7 +185,7 @@ class ApplicationStack(Stack):
             http_put_response_hop_limit=2,
         )
 
-        # TODO: host bootstrap is intentionally deferred. The proxy host must
+        # Runtime user-data/bootstrap wiring is intentionally separate from the image. The proxy host must
         # write /opt/flowform/proxy.env and start docker-compose.proxy.yml;
         # the app host must configure Docker's proxy, mount tmpfs secrets,
         # write /opt/flowform/backend.env, and start docker-compose.app.yml.

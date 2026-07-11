@@ -12,7 +12,7 @@
 | Phase | What | State |
 |---|---|---|
 | 0 | Script reorganization | ✅ done |
-| 1 | Production bootstrap scripts (`infra/scripts/bootstrap/`) | ✅ done |
+| 1 | Production bootstrap scripts (`infra/runtime/bootstrap/`) | ✅ done |
 | 2 | Proxmox topology + VM creation | ⏳ next — step-by-step |
 | 3 | cloud-init user-data + LocalStack/registry/TLS-shim fixtures | ⏳ |
 | 4 | `verify.sh` assertion harness | ⏳ |
@@ -25,8 +25,8 @@
 The split-EC2 runtime (public **proxy box**: Caddy + Squid; private **app box**:
 backend only) is fully described in CDK, and both production Compose files
 exist and are hardened:
-- `infra/docker/docker-compose.proxy.yml` (Caddy + Squid)
-- `infra/docker/docker-compose.app.yml` (backend only)
+- `infra/runtime/compose/docker-compose.proxy.yml` (Caddy + Squid)
+- `infra/runtime/compose/docker-compose.app.yml` (backend only)
 
 But the CDK `ApplicationStack` boots instances into **nothing** — there is a
 `TODO: host bootstrap is intentionally deferred` at
@@ -109,7 +109,7 @@ Staging EC2       = prove the AWS TRUST BOUNDARY (IMDS + hop-limit 2, real
   golden (host deps incl. AWS CLI), 9001 ls-vm (localstack pre-pulled), 9002 dev
   (operator extras). proxy(210)/app(220) clone bare 9000 — role setup is the
   thing under test, done at runtime by the bootstrap scripts. See
-  `infra/rehearsal/IMAGE-BAKING.md`.
+  `infra/images/README.md`.
 - **Fake AWS: LocalStack** (Secrets Manager, SSM, KMS) on its own VM. Bootstrap
   runs *real* `aws` CLI calls against it via `BOOTSTRAP_ENDPOINT_URL`, so the
   AWS code path is exercised, not stubbed.
@@ -137,7 +137,7 @@ Decided: **minimal reorg** — leave `infra/docker/`, `infra/cdk/`,
 tree:
 
 ```text
-infra/rehearsal/          # local-Proxmox-ONLY, disposable
+infra/environments/rehearsal/          # local-Proxmox-ONLY, disposable
   proxmox/     create-template.sh, create-vms.sh, destroy-vms.sh, README.md
   cloud-init/  app.user-data.yaml, proxy.user-data.yaml, localstack.user-data.yaml
   fixtures/    seed-localstack.sh, build-and-push-image.sh
@@ -147,20 +147,20 @@ infra/rehearsal/          # local-Proxmox-ONLY, disposable
   README.md
 ```
 
-**The rule that keeps it clean:** everything under `infra/rehearsal/` is
+**The rule that keeps it clean:** everything under `infra/environments/rehearsal/` is
 local-only and disposable. Anything it needs that is ALSO a real production
 artifact — the compose stacks (`infra/docker/docker-compose.{app,proxy}.yml`),
-the bootstrap scripts (`infra/scripts/bootstrap/*`), `Caddyfile.proxy`,
+the bootstrap scripts (`infra/runtime/bootstrap/*`), `Caddyfile.proxy`,
 `squid.conf` — it **references by path, never copies**. Deleting
-`infra/rehearsal/` must leave production completely unaffected; that is the
+`infra/environments/rehearsal/` must leave production completely unaffected; that is the
 test of whether a file belongs there. Dependency direction is one-way:
-`rehearsal/` → `infra/scripts/bootstrap/` → `infra/docker/*compose*`. Nothing
+`rehearsal/` → `infra/runtime/bootstrap/` → `infra/runtime/compose/*`. Nothing
 production depends back down into `rehearsal/`.
 
 ## Fidelity constraint to keep honest
 
 Squid allows `CONNECT` only to **443** and allow-lists by **TLS SNI**
-(`infra/docker/squid/squid.conf`). LocalStack serves plain HTTP on `:4566`. To
+(`infra/runtime/config/squid/squid.conf`). LocalStack serves plain HTTP on `:4566`. To
 keep "app-box AWS calls ride Squid" TRUE (routing-enforced: the app VM has no
 route to LocalStack except via the proxy), front LocalStack with a **TLS
 terminator presenting SNI names** in a rehearsal allow-list
@@ -202,7 +202,7 @@ compose files. Verified: `git grep` for old paths is clean, `bash -n` passes on
 all scripts, `fetch-dev-secrets.sh` still resolves its sibling call, 27 CDK
 tests green.
 
-> Note: the bootstrap scripts landed in **`infra/scripts/bootstrap/`** (beside
+> Note: the bootstrap scripts landed in **`infra/runtime/bootstrap/`** (beside
 > `infra/scripts/cdk/`), not the `scripts/bootstrap/` shown in the original
 > draft — they run on servers, so they belong with infra ops, fully out of the
 > root `scripts/` tree.
@@ -211,7 +211,7 @@ tests green.
 
 ## Phase 1 — Production bootstrap scripts ✅ DONE
 
-`infra/scripts/bootstrap/bootstrap-app.sh` and `bootstrap-proxy.sh`. Both are
+`infra/runtime/bootstrap/bootstrap-app.sh` and `bootstrap-proxy.sh`. Both are
 idempotent, fail-closed, and have a `BOOTSTRAP_DRY_RUN=1` mode. The single
 prod-vs-rehearsal seam is `BOOTSTRAP_ENDPOINT_URL` (unset → real AWS; set →
 LocalStack via proxy).
@@ -239,7 +239,7 @@ from `/flowform/<scope>/proxy/*` + host-known IPs (incl.
 
 Verified: `bash -n` clean; dry-run exercised locally (correct output, zero
 side effects, compose-file path resolves three-up from
-`infra/scripts/bootstrap/`).
+`infra/runtime/bootstrap/`).
 
 > **Contract the bootstrap defines that CDK does not fulfil yet:** it reads
 > config from SSM `/flowform/<scope>/backend/*` and `/flowform/<scope>/proxy/*`.
@@ -303,13 +303,13 @@ Proxmox VE (192.168.68.88)
    `curl https://1.1.1.1` → `000`/FAILED; proxy-vm 210 has a default route and
    reaches the internet (`301`). The core "app box is structurally offline"
    property is proven on real VMs.
-4. `README.md` under `infra/rehearsal/proxmox/` — bridge setup, VMID
+4. `README.md` under `infra/proxmox/` — bridge setup, VMID
    conventions, run order, and the hard-boundary section.
 
 ## Phase 3 — cloud-init user-data + rehearsal fixtures (⏳)
 
 **Progress 2026-07-09:**
-- ✅ **Template baking pattern generalised** — `infra/rehearsal/IMAGE-BAKING.md`
+- ✅ **Template baking pattern generalised** — `infra/images/README.md`
   documents "bake online, run offline": every template built once with temporary
   full internet, everything downloaded/initialised, temp NIC stripped, then
   `qm template`. Rule of thumb: bake scaffolding + host deps into templates;
@@ -353,7 +353,7 @@ Proxmox VE (192.168.68.88)
   10.10.10.30 + `~/.aws` HTTPS endpoints), rehearsal squid allow-list incl.
   `*.localstack.test`, cloud-init bootstrap user-data for proxy/app.
 
-Files under `infra/rehearsal/`:
+Files under `infra/environments/rehearsal/`:
 - `cloud-init/app.user-data.yaml` — `write_files` drops the bootstrap scripts +
   rehearsal CA + `/etc/hosts` for `*.localstack.test`; `runcmd` runs
   `bootstrap-app.sh` with `BOOTSTRAP_ENDPOINT_URL`/`PROXY_PRIVATE_IP` set.
@@ -366,13 +366,13 @@ Files under `infra/rehearsal/`:
   secrets. Values are throwaways from `scripts/secrets/generate-secrets.sh`.
 - `squid/allowed-domains.rehearsal.txt` — prod allow-list **plus**
   `*.localstack.test` + registry host. Prod
-  `infra/docker/squid/allowed-domains.txt` is NOT modified.
+  `infra/runtime/config/squid/allowed-domains.txt` is NOT modified.
 - `tls-shim/` — stunnel or `caddy tls internal` fronting LocalStack with the
   three SNI names; generated rehearsal CA (trusted on app-vm only).
 - `build-and-push-image.sh` — build the backend image, push to the proxy VM's
   `registry:2`, print the digest for `BACKEND_IMAGE`.
 
-## Phase 4 — Assertion harness `infra/rehearsal/verify.sh` (⏳)
+## Phase 4 — Assertion harness `infra/environments/rehearsal/verify.sh` (⏳)
 
 Runs over SSH against the VMs and FAILS loudly on regression:
 
@@ -393,7 +393,7 @@ Runs over SSH against the VMs and FAILS loudly on regression:
 
 ## Phase 5 — Docs (⏳)
 
-- `infra/rehearsal/README.md` — run instructions + hard-boundary section (does
+- `infra/environments/rehearsal/README.md` — run instructions + hard-boundary section (does
   NOT prove: IMDS/hop-limit-2, real route tables, SG enforcement, S3 gateway
   endpoint layer path, DNS-01, RDS isolation → pointer to the staging
   smoke-test section of the due-diligence checklist).
@@ -424,6 +424,6 @@ test's job.
 
 - Create the SSM `/flowform/<scope>/{backend,proxy}/*` param paths in CDK
   (the contract the bootstrap already consumes).
-- Wire the proven `infra/scripts/bootstrap/*` into CDK `ApplicationStack` as
+- Wire the proven `infra/runtime/bootstrap/*` into CDK `ApplicationStack` as
   `ec2.UserData.for_linux()` (the deferred app-stack TODO).
 - Real-ECR pull + the staging smoke test.

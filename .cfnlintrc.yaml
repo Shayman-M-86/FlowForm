@@ -2,4 +2,4 @@
 # The .template extension makes cfn-lint auto-detect them as CFN and emit
 # false E1001 errors (e.g. "'write_files' was unexpected").
 ignore_templates:
-  - infra/rehearsal/proxmox/cloud-init/*.template
+  - infra/runtime/cloud-init/*.template

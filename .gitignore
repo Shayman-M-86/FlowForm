@@ -15,6 +15,8 @@ eggs/
 .eggs/
 develop-eggs/
 lib/
+!infra/proxmox/lib/
+!infra/proxmox/lib/*.sh
 
 !frontend/packages/ui/src/lib/
 !frontend/packages/ui/src/lib/**
@@ -98,11 +100,25 @@ cover/
 *prod.secret.txt
 *dev.secret.txt
 
-# NOTE: the rehearsal TLS-shim CA (infra/rehearsal/tls-shim/ca/*.crt/.key) is a
+# NOTE: the rehearsal TLS-shim CA (infra/environments/rehearsal/fixtures/tls-shim/ca/*.crt/.key) is a
 # DELIBERATELY COMMITTED THROWAWAY — it only signs *.localstack.test on an
 # un-routed private net and is trusted only inside the rehearsal. See
-# infra/rehearsal/tls-shim/README.md. It is NOT ignored so a fresh checkout can
+# infra/environments/rehearsal/fixtures/tls-shim/README.md. It is NOT ignored so a fresh checkout can
 # build template 9001 and render the app user-data without regenerating certs.
 
 # Rendered cloud-init artifacts (generated from *.template by render-user-data.sh)
+infra/runtime/cloud-init/*.rendered.yaml
 infra/rehearsal/proxmox/cloud-init/*.rendered.yaml
+
+# Packer local image-build artifacts and credentials
+*.pkrvars.hcl
+!*.pkrvars.hcl.example
+.packer.d/
+packer_cache/
+**/packer_cache/
+packer-manifest.json
+**/packer-manifest.json
+*.pem
+*.key.local
+infra/images/manifests/*.json
+!infra/images/manifests/README.md

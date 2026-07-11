@@ -244,8 +244,8 @@ The split follows the usual rule: credentials and keys in Secrets Manager
 non-secret runtime config in SSM Parameter Store (Auth0 domain/audience/client
 IDs, KMS key ARN, linkage secret ARN, SES from-address, logging levels, RDS
 endpoints, image refs, private IPs). Compose files reference only names and
-paths — see `infra/docker/docker-compose.proxy.yml` and
-`infra/docker/docker-compose.app.yml`.
+paths — see `infra/runtime/compose/docker-compose.proxy.yml` and
+`infra/runtime/compose/docker-compose.app.yml`.
 
 Note that the backend still uses the instance role at runtime for its
 own AWS calls (KMS session encryption, the linkage-key secret, SES) —

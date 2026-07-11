@@ -16,20 +16,20 @@ intended edits in this pass are this file and a small link from
 
 Runtime Compose files:
 
-- `infra/docker/docker-compose.proxy.yml` - public proxy EC2 runtime.
-- `infra/docker/docker-compose.app.yml` - private app EC2 runtime.
+- `infra/runtime/compose/docker-compose.proxy.yml` - public proxy EC2 runtime.
+- `infra/runtime/compose/docker-compose.app.yml` - private app EC2 runtime.
 - `infra/docker/docker-compose.ec2.local.yml` - workstation proof of the split
   with local Caddy, Squid, backend, and Postgres containers.
 
 Proxy/app support files:
 
-- `infra/docker/caddy/Caddyfile.proxy` - production proxy Caddyfile using
+- `infra/runtime/config/caddy/Caddyfile.proxy` - production proxy Caddyfile using
   Route 53 DNS-01 and the app private IP as upstream.
 - `infra/docker/caddy/Caddyfile.local` - local proof Caddyfile using
   `tls internal` and the local backend service name.
-- `infra/docker/squid/squid.conf` - fail-closed CONNECT proxy policy rendered
+- `infra/runtime/config/squid/squid.conf` - fail-closed CONNECT proxy policy rendered
   with the exact app source CIDR.
-- `infra/docker/squid/allowed-domains.txt` - strict starting allow-list for
+- `infra/runtime/config/squid/allowed-domains.txt` - strict starting allow-list for
   Auth0 and the required regional AWS service hosts.
 - `infra/docker/postgres/pg_hba.ec2.local.conf` - local-only Postgres access
   rule for the Compose proof network.
@@ -133,7 +133,7 @@ env CADDY_IMAGE=example.com/flowform-caddy:test \
   PROXY_PRIVATE_IP=10.0.1.10 \
   APP_PRIVATE_IP=10.0.11.10 \
   SQUID_APP_SOURCE_CIDR=10.0.11.10/32 \
-  docker compose -f infra/docker/docker-compose.proxy.yml config -q
+  docker compose -f infra/runtime/compose/docker-compose.proxy.yml config -q
 ```
 
 ```bash
@@ -141,7 +141,7 @@ env BACKEND_IMAGE=example.com/flowform-backend:test \
   APP_PRIVATE_IP=10.0.11.10 \
   PROXY_PRIVATE_IP=10.0.1.10 \
   FLOWFORM_SECRET_DIR=/tmp/flowform-compose-check-secrets \
-  docker compose -f infra/docker/docker-compose.app.yml \
+  docker compose -f infra/runtime/compose/docker-compose.app.yml \
     config --no-env-resolution -q
 ```
 

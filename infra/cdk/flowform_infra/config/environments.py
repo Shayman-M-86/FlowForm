@@ -58,6 +58,14 @@ class EnvConfig:
     # Which security scope this env's stacks draw from — see
     # SecurityScopeConfig below. dev and staging share "nonprod".
     security_scope: str = "nonprod"
+    # Packer-built EC2 base image contract. CDK must consume this explicit AMI
+    # reference instead of selecting an unrelated latest base image. Prefer
+    # publishing infra/images/manifests/packer-manifest.json output to this SSM
+    # parameter after an AWS image build.
+    ec2_base_ami_ssm_parameter: str | None = None
+    # Optional direct AMI ID override for tests/break-glass deployments. If set,
+    # ApplicationStack uses it instead of the SSM parameter.
+    ec2_base_ami_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -128,6 +136,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         db_instance_class="db.t4g.micro",  # unused while full_deployment=False
         tags={"flowform:env": "dev"},
         security_scope="nonprod",
+        ec2_base_ami_ssm_parameter="/flowform/dev/ec2/baseAmiId",
     ),
     # staging doubles as the shared integration environment — the one
     # non-prod cloud deployment. Anything that would want a "deployed dev"
@@ -146,6 +155,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         studio_domain=f"studio.staging.{DOMAIN_NAME}",
         tags={"flowform:env": "staging"},
         security_scope="nonprod",
+        ec2_base_ami_ssm_parameter="/flowform/staging/ec2/baseAmiId",
     ),
     "prod": EnvConfig(
         env_name="prod",
@@ -165,6 +175,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         studio_domain=f"studio.{DOMAIN_NAME}",
         tags={"flowform:env": "prod"},
         security_scope="prod",
+        ec2_base_ami_ssm_parameter="/flowform/prod/ec2/baseAmiId",
     ),
 }
 

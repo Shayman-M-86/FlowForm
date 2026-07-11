@@ -1,0 +1,101 @@
+# FlowForm public proxy EC2 stack.
+#
+# Bootstrap writes the env file consumed by docker compose. Staging and prod use
+# this same file; differences such as image digests, private IPs, AWS region,
+# API domain, and the exact Squid source CIDR come from the bootstrap env file.
+#
+# Expected invocation on the proxy instance:
+#
+#   docker compose --env-file /opt/flowform/proxy.env \
+#     -f docker-compose.proxy.yml up -d
+#
+# Required env:
+#   CADDY_IMAGE              - ECR ref for the xcaddy + route53 image
+#   API_DOMAIN               - public API hostname, e.g. api.flow-form.com.au
+#   AWS_REGION               - Route 53 provider region context
+#   PROXY_PRIVATE_IP         - private IP to bind Squid on
+#   APP_PRIVATE_IP           - private app EC2 IP for Caddy upstream
+#   SQUID_APP_SOURCE_CIDR    - exact app source CIDR, usually <APP_PRIVATE_IP>/32
+
+name: flowform-proxy
+
+services:
+  caddy:
+    image: ${CADDY_IMAGE:?set CADDY_IMAGE to the custom Caddy ECR ref}
+    restart: unless-stopped
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN}
+      APP_PRIVATE_IP: ${APP_PRIVATE_IP:?set APP_PRIVATE_IP}
+      AWS_REGION: ${AWS_REGION:?set AWS_REGION}
+    ports:
+      - "80:80/tcp"
+      - "443:443/tcp"
+    volumes:
+      - ../config/caddy/Caddyfile.proxy:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - proxy_net
+
+  squid:
+    image: ubuntu/squid:latest
+    restart: unless-stopped
+    environment:
+      SQUID_APP_SOURCE_CIDR: ${SQUID_APP_SOURCE_CIDR:?set exact app source CIDR, usually APP_PRIVATE_IP/32}
+    # Bound to the proxy EC2 private interface only. The security group must
+    # also admit 3128 only from the app EC2 security group.
+    ports:
+      - "${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP}:3128:3128/tcp"
+    volumes:
+      - ../config/squid/squid.conf:/etc/squid/squid.conf.template:ro
+      - ../config/squid/allowed-domains.txt:/etc/squid/allowed-domains.txt:ro
+      - squid_logs:/var/log/squid
+    read_only: true
+    tmpfs:
+      - /run
+      - /tmp
+      - /var/spool/squid
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    entrypoint:
+      - /bin/sh
+      - -ec
+    command:
+      - |
+        sed "s|__APP_SOURCE_CIDR__|$${SQUID_APP_SOURCE_CIDR}|g" /etc/squid/squid.conf.template > /tmp/squid.conf
+        exec squid -N -f /tmp/squid.conf
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - proxy_net
+
+networks:
+  proxy_net:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  squid_logs:

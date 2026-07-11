@@ -187,3 +187,24 @@ def test_proxy_role_has_hosted_zone_scoped_route53_change_access():
             }
         },
     )
+
+
+def test_application_instances_use_packer_ami_ssm_parameter_not_latest_base_image():
+    template = _synth_application_stack()
+    rendered = template.to_json()
+    ami_parameters = {
+        logical_id: value
+        for logical_id, value in rendered["Parameters"].items()
+        if value.get("Type") == "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    }
+
+    assert len(ami_parameters) == 1
+    parameter_logical_id, parameter = next(iter(ami_parameters.items()))
+    assert parameter["Default"] == "/flowform/staging/ec2/baseAmiId"
+
+    instance_image_ids = [
+        resource["Properties"]["ImageId"]
+        for resource in rendered["Resources"].values()
+        if resource["Type"] == "AWS::EC2::Instance"
+    ]
+    assert instance_image_ids == [{"Ref": parameter_logical_id}] * 2

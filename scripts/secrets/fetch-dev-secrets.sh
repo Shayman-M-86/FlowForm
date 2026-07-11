@@ -49,6 +49,24 @@ if ! findmnt -n -o FSTYPE --target "${XDG_RUNTIME_DIR}" 2>/dev/null | grep -q tm
 fi
 
 OUT_DIR="${FLOWFORM_SECRET_DIR:-${XDG_RUNTIME_DIR}/flowform-secrets}"
+# Privileged cleanup below is intentionally restricted to a child of the
+# caller's runtime directory. This keeps a mistyped FLOWFORM_SECRET_DIR from
+# turning the recovery path into an unrestricted `sudo rm -rf`.
+RUNTIME_DIR_REAL="$(realpath -e -- "${XDG_RUNTIME_DIR}")"
+OUT_DIR_REAL="$(realpath -m -- "${OUT_DIR}")"
+case "${OUT_DIR_REAL}" in
+  "${RUNTIME_DIR_REAL}"/*) ;;
+  *)
+    echo "error: FLOWFORM_SECRET_DIR must be below ${RUNTIME_DIR_REAL}" >&2
+    echo "       got: ${OUT_DIR_REAL}" >&2
+    exit 1
+    ;;
+esac
+if [[ "${OUT_DIR_REAL}" == "${RUNTIME_DIR_REAL}" ]]; then
+  echo "error: refusing to use the runtime directory itself for secrets" >&2
+  exit 1
+fi
+OUT_DIR="${OUT_DIR_REAL}"
 # Secrets Manager namespace — dev shares the nonprod security scope with
 # staging; ENV_NAME still names the local files compose expects.
 SCOPE_NAME=nonprod
@@ -72,22 +90,19 @@ for name in "${DB_PASSWORD_NAMES[@]}"; do
   fi
 done
 
-# If a prior `docker compose up` ran while OUT_DIR was empty/missing, the
-# Docker daemon (root) auto-creates the six missing bind-mount sources as
-# root-owned directories. We can't rm those as an unprivileged user, and
-# leaving them makes compose try to mount a dir onto a file. Detect that
-# case and stop with an actionable message instead of a confusing
-# permission-denied from `rm`.
+# If Compose ran before the secret files existed, Docker may have created
+# root-owned directories at the file paths. Try normal cleanup first. If that
+# fails, remove the validated tmpfs child with sudo so recovery is part of this
+# script instead of a separate manual `sudo rm -rf` step.
 if ! rm -rf "${OUT_DIR}" 2>/dev/null; then
-  echo "error: cannot clear ${OUT_DIR} — it contains files owned by another" >&2
-  echo "       user (almost certainly root-owned stubs the Docker daemon" >&2
-  echo "       created when compose started with this dir empty)." >&2
-  echo "       Remove it and re-run this script:" >&2
-  echo "         sudo rm -rf ${OUT_DIR}" >&2
-  exit 1
+  command -v sudo >/dev/null 2>&1 || {
+    echo "error: ${OUT_DIR} requires privileged cleanup, but sudo was not found" >&2
+    exit 1
+  }
+  echo "==> Removing Docker-created root-owned secret stubs (sudo required)"
+  sudo rm -rf -- "${OUT_DIR}"
 fi
-mkdir -p "${OUT_DIR}"
-chmod 700 "${OUT_DIR}"
+install -d -m 700 -- "${OUT_DIR}"
 umask 177
 
 write_key() { # $1=json blob  $2=json key  $3=file name
