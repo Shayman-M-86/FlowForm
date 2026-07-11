@@ -28,9 +28,7 @@ services:
       - flowform_postgres_core_data:/var/lib/postgresql/data
       - ../postgres/init:/docker-entrypoint-initdb.d
       - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
-    secrets:
-      - DATABASE_CORE_INIT_PASSWORD
-      - DATABASE_CORE_APP_PASSWORD
+      - ${FLOWFORM_SECRET_DIR:-./secrets}:/run/secrets:ro
     networks:
       - flowform_net_dev
     healthcheck:
@@ -65,9 +63,7 @@ services:
       - flowform_postgres_response_data:/var/lib/postgresql/data
       - ../postgres/init:/docker-entrypoint-initdb.d
       - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
-    secrets:
-      - DATABASE_RESPONSE_INIT_PASSWORD
-      - DATABASE_RESPONSE_APP_PASSWORD
+      - ${FLOWFORM_SECRET_DIR:-./secrets}:/run/secrets:ro
     networks:
       - flowform_net_dev
     healthcheck:
@@ -119,6 +115,7 @@ services:
       # in place.
       - ~/.aws/config:/root/.aws/config:ro
       - ~/.aws/login/cache:/root/.aws/login/cache
+      - ${FLOWFORM_SECRET_DIR:-./secrets}:/run/secrets:ro
     ports:
       - "5000:5000"
     depends_on:
@@ -135,11 +132,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    secrets:
-      - DATABASE_CORE_APP_PASSWORD
-      - DATABASE_RESPONSE_APP_PASSWORD
-      - FLOWFORM_APP_SECRET_KEY
-      - FLOWFORM_AUTH0_MGMT_SECRET
     networks:
       - flowform_net_dev
 
@@ -161,17 +153,7 @@ networks:
 # your shell rc). The script assembles everything there: app secret key +
 # Auth0 mgmt secret fetched from Secrets Manager, the four local-Postgres
 # passwords generated on this machine (scripts/secrets/generate-secrets.sh)
-# — dev-only throwaways that are never uploaded.
-secrets:
-  DATABASE_CORE_INIT_PASSWORD:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_CORE_INIT_PASSWORD.dev.secret.txt
-  DATABASE_CORE_APP_PASSWORD:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_CORE_APP_PASSWORD.dev.secret.txt
-  DATABASE_RESPONSE_INIT_PASSWORD:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_INIT_PASSWORD.dev.secret.txt
-  DATABASE_RESPONSE_APP_PASSWORD:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_APP_PASSWORD.dev.secret.txt
-  FLOWFORM_APP_SECRET_KEY:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_APP_SECRET_KEY.dev.secret.txt
-  FLOWFORM_AUTH0_MGMT_SECRET:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_AUTH0_MGMT_SECRET.dev.secret.txt
+# — dev-only throwaways that are never uploaded. The complete directory is
+# mounted read-only at /run/secrets instead of using Compose's per-file secret
+# mounts. Docker Desktop otherwise creates a separate WSL bind proxy for every
+# file, which can retain the wrong file/directory type after secrets refresh.
