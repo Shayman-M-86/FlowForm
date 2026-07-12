@@ -1,14 +1,20 @@
 ---
-title: Secrets And Configuration
+title: Secrets and configuration
 document_type: workflow
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [configuration, security]
 related_code: []
-related_docs: []
+related_docs:
+  - "Local development"
+  - "Configuration implementation"
+  - "Configuration catalogue"
+  - "Environment variables"
+  - "Security model"
 ---
 
-# Secrets And Configuration
+# Secrets and configuration
 Describes the end-to-end workflow for secrets and configuration.
 
 ## Trigger
@@ -36,6 +42,9 @@ This section will list exact commands that prove the workflow works.
 TODO: Verify this against the current implementation.
 
 ## Related documents
-This section will connect the workflow to architecture, domains, and references.
-TODO: Verify this against the current implementation.
 
+- [[Local development]]
+- [[Configuration implementation]]
+- [[Configuration catalogue]]
+- [[Environment variables]]
+- [[Security model]]

@@ -4,8 +4,14 @@ document_type: planning-index
 status: scaffold
 authority: planning
 verified_against_commit: null
+tags: [meta]
 related_code: []
-related_docs: ["../50-decisions/README.md", "../00-overview/documentation-model.md"]
+related_docs:
+  - "Active plans"
+  - "Completed plans"
+  - "Abandoned plans"
+  - "Architecture decision records"
+  - "Documentation model"
 ---
 
 # Planning workspace
@@ -25,3 +31,11 @@ Move intentionally discarded plans to `abandoned/` and explain why. TODO: Verify
 
 ## Promotion rules
 Only verified, durable decisions should be promoted into ADRs or canonical documentation. TODO: Verify this against the current implementation.
+
+## Related documents
+
+- [[Active plans]]
+- [[Completed plans]]
+- [[Abandoned plans]]
+- [[Architecture decision records]]
+- [[Documentation model]]

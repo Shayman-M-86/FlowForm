@@ -4,23 +4,21 @@ document_type: reference
 status: scaffold
 authority: canonical
 verified_against_commit: ac7d021ad3716a68638759df684b9a3c32bb4389
+tags: [configuration]
 related_code:
-  [
-    "../../backend/app/core/config.py",
-    "../../backend/gunicorn.conf.py",
-    "../../backend/pyproject.toml",
-    "../../.dockerignore",
-    "../../frontend/",
-    "../../infra/",
-    "../../.github/workflows/",
-    "../../.vscode/",
-  ]
+  - "../../backend/app/core/config.py"
+  - "../../backend/gunicorn.conf.py"
+  - "../../backend/pyproject.toml"
+  - "../../.dockerignore"
+  - "../../frontend/"
+  - "../../infra/"
+  - "../../.github/workflows/"
+  - "../../.vscode/"
 related_docs:
-  [
-    "environment-variables.md",
-    "../40-implementation/configuration.md",
-    "../30-workflows/secrets-and-configuration.md",
-  ]
+  - "Environment variables"
+  - "Configuration implementation"
+  - "Secrets and configuration"
+  - "Configuration index"
 ---
 
 # Configuration catalogue
@@ -72,3 +70,10 @@ Configuration files, application settings modules, Compose definitions, infrastr
 ## Update procedure
 
 Rescan current configuration filenames and directories while excluding dependencies, virtual environments, generated build output, and `old-docs/`. Confirm ownership from direct consumers or adjacent entry points. Add new template families only when their maintained source and consumer can both be identified.
+
+## Related documents
+
+- [[Environment variables]]
+- [[Configuration implementation]]
+- [[Secrets and configuration]]
+- [[Configuration index]]

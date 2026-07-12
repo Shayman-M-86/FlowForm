@@ -1,14 +1,18 @@
 ---
-title: Local Infrastructure
+title: Local infrastructure
 document_type: workflow
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [infrastructure]
 related_code: []
-related_docs: []
+related_docs:
+  - "Local development"
+  - "Runtime containers"
+  - "Services and ports"
 ---
 
-# Local Infrastructure
+# Local infrastructure
 Describes the end-to-end workflow for local infrastructure.
 
 ## Trigger
@@ -36,6 +40,7 @@ This section will list exact commands that prove the workflow works.
 TODO: Verify this against the current implementation.
 
 ## Related documents
-This section will connect the workflow to architecture, domains, and references.
-TODO: Verify this against the current implementation.
 
+- [[Local development]]
+- [[Runtime containers]]
+- [[Services and ports]]

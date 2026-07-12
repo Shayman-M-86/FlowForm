@@ -1,14 +1,19 @@
 ---
-title: Continuous Integration
+title: Continuous integration
 document_type: workflow
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [ci-cd]
 related_code: []
-related_docs: []
+related_docs:
+  - "Testing workflow"
+  - "Cloud deployment"
+  - "CI/CD implementation"
+  - "CI workflows"
 ---
 
-# Continuous Integration
+# Continuous integration
 Describes the end-to-end workflow for continuous integration.
 
 ## Trigger
@@ -36,6 +41,8 @@ This section will list exact commands that prove the workflow works.
 TODO: Verify this against the current implementation.
 
 ## Related documents
-This section will connect the workflow to architecture, domains, and references.
-TODO: Verify this against the current implementation.
 
+- [[Testing workflow]]
+- [[Cloud deployment]]
+- [[CI/CD implementation]]
+- [[CI workflows]]

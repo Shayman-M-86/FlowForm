@@ -1,14 +1,16 @@
 ---
-title: Dependency Map
+title: Dependency map
 document_type: generated
 status: scaffold
 authority: canonical
 verified_against_commit: null
 related_code: []
-related_docs: []
+related_docs:
+  - "Generated documentation"
+  - "Repository map"
 ---
 
-# Dependency Map
+# Dependency map
 Generated reference scaffold for dependency map.
 
 > Generated-document scaffold: this file is intended to be reproducible from repository contents. Do not manually add unreproducible facts here.
@@ -33,3 +35,7 @@ TODO: Verify this against the current implementation.
 This section will document the exact command used to regenerate the file.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Generated documentation]]
+- [[Repository map]]

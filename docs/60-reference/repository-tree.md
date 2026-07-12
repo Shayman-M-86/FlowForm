@@ -5,22 +5,15 @@ status: scaffold
 authority: canonical
 verified_against_commit: ac7d021ad3716a68638759df684b9a3c32bb4389
 related_code:
-  [
-    "../../backend/",
-    "../../frontend/",
-    "../../infra/",
-    "../../scripts/",
-    "../../tools/mcp/",
-    "../../.github/workflows/",
-  ]
+  - "../../backend/"
+  - "../../frontend/"
+  - "../../infra/"
+  - "../../scripts/"
+  - "../../tools/mcp/"
+  - "../../.github/workflows/"
 related_docs:
-  [
-    "../00-overview/repository-map.md",
-    "scripts-catalogue.md",
-    "configuration-catalogue.md",
-    "generated-files.md",
-    "../90-generated/repository-tree.md",
-  ]
+  - "Repository map"
+  - "Repository tree snapshot"
 ---
 
 # Repository tree
@@ -137,8 +130,8 @@ The `find` results were filtered to exclude dependency directories, virtual envi
 1. Record the current commit with `git rev-parse HEAD`.
 2. Refresh tracked paths with `git ls-tree`; inspect new or removed manifests, entry points, test roots, infrastructure areas, and workflows.
 3. Keep this reference curated. Do not add dependency directories, caches, build products, or exhaustive internal module listings.
-4. Update the [repository map](../00-overview/repository-map.md) if a major area or reader navigation boundary changes.
-5. Regenerate [the generated repository tree](../90-generated/repository-tree.md) only through `scripts/docs/generate-repository-tree.py`; do not paste its exhaustive output into this reference.
+4. Update the [[Repository map|repository map]] if a major area or reader navigation boundary changes.
+5. Regenerate [[Repository tree snapshot|the generated repository tree]] only through `scripts/docs/generate-repository-tree.py`; do not paste its exhaustive output into this reference.
 6. Update `verified_against_commit`, then run:
 
 ```sh
@@ -149,3 +142,8 @@ python3 scripts/docs/validate-doc-metadata.py
 ## Verification notes
 
 Implementation structure was verified at commit `ac7d021ad3716a68638759df684b9a3c32bb4389`. The layered `docs/` structure and `scripts/docs/` tooling referenced above are current uncommitted Stage 1 working-tree work, so they are not present in that commit.
+
+## Related documents
+
+- [[Repository map]]
+- [[Repository tree snapshot]]

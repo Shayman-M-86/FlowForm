@@ -1,14 +1,19 @@
 ---
-title: Configuration
+title: Configuration implementation
 document_type: implementation
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [configuration]
 related_code: []
-related_docs: []
+related_docs:
+  - "Secrets and configuration"
+  - "Configuration catalogue"
+  - "Environment variables"
+  - "Configuration index"
 ---
 
-# Configuration
+# Configuration implementation
 Maps configuration concepts to verified repository implementation.
 
 ## Directory ownership
@@ -35,3 +40,9 @@ TODO: Verify this against the current implementation.
 This section will cite tests and checks that cover this implementation area.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Secrets and configuration]]
+- [[Configuration catalogue]]
+- [[Environment variables]]
+- [[Configuration index]]

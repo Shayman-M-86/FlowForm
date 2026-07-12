@@ -1,14 +1,17 @@
 ---
-title: Builder And Rules
+title: Builder and rules
 document_type: domain
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [frontend]
 related_code: []
-related_docs: []
+related_docs:
+  - "Surveys and versioning"
+  - "Frontend implementation"
 ---
 
-# Builder And Rules
+# Builder and rules
 Defines the conceptual boundary for builder and rules.
 
 ## Purpose
@@ -39,3 +42,7 @@ TODO: Verify this against the current implementation.
 This section tracks unresolved domain questions.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Surveys and versioning]]
+- [[Frontend implementation]]

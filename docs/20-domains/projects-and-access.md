@@ -1,14 +1,18 @@
 ---
-title: Projects And Access
+title: Projects and access
 document_type: domain
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [security]
 related_code: []
-related_docs: []
+related_docs:
+  - "Identity and authentication"
+  - "Surveys and versioning"
+  - "Security model"
 ---
 
-# Projects And Access
+# Projects and access
 Defines the conceptual boundary for projects and access.
 
 ## Purpose
@@ -39,3 +43,8 @@ TODO: Verify this against the current implementation.
 This section tracks unresolved domain questions.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Identity and authentication]]
+- [[Surveys and versioning]]
+- [[Security model]]

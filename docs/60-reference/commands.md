@@ -4,8 +4,12 @@ document_type: reference
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [tooling]
 related_code: []
-related_docs: []
+related_docs:
+  - "Scripts catalogue"
+  - "Local development"
+  - "Testing workflow"
 ---
 
 # Commands
@@ -28,6 +32,7 @@ This section explains how to refresh entries without adding unverified assumptio
 TODO: Verify this against the current implementation.
 
 ## Related documents
-This section links to explanatory documents that interpret these facts.
-TODO: Verify this against the current implementation.
 
+- [[Scripts catalogue]]
+- [[Local development]]
+- [[Testing workflow]]

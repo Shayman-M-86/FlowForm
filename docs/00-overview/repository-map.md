@@ -1,30 +1,26 @@
 ---
 title: Repository map
 document_type: overview
-status: scaffold
+status: verified
 authority: canonical
-verified_against_commit: ac7d021ad3716a68638759df684b9a3c32bb4389
+verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
 related_code:
-  [
-    "../../backend/",
-    "../../frontend/",
-    "../../infra/",
-    "../../scripts/",
-    "../../tools/mcp/",
-    "../../.github/workflows/",
-  ]
+  - "../../backend/"
+  - "../../frontend/"
+  - "../../infra/"
+  - "../../scripts/"
+  - "../../tools/mcp/"
+  - "../../.github/workflows/"
 related_docs:
-  [
-    "../README.md",
-    "documentation-model.md",
-    "../40-implementation/backend.md",
-    "../40-implementation/frontend.md",
-    "../40-implementation/infrastructure.md",
-    "../60-reference/repository-tree.md",
-    "../60-reference/scripts-catalogue.md",
-    "../60-reference/configuration-catalogue.md",
-    "../60-reference/generated-files.md",
-  ]
+  - "FlowForm documentation home"
+  - "Documentation model"
+  - "Backend implementation"
+  - "Frontend implementation"
+  - "Infrastructure implementation"
+  - "Repository tree"
+  - "Scripts catalogue"
+  - "Configuration catalogue"
+  - "Generated files"
 ---
 
 # Repository map
@@ -59,14 +55,14 @@ This map identifies applications, shared packages, infrastructure, automation, t
 
 ## Generated and historical areas
 
-Checked-in generated contracts and types include `backend/openapi.yaml`, `frontend/apps/studio-app/src/api/generated/`, `frontend/apps/studio-app/src/routeTree.gen.ts`, and `frontend/packages/schema/src/generated/`. See [Generated files](../60-reference/generated-files.md) for regeneration ownership.
+Checked-in generated contracts and types include `backend/openapi.yaml`, `frontend/apps/studio-app/src/api/generated/`, `frontend/apps/studio-app/src/routeTree.gen.ts`, and `frontend/packages/schema/src/generated/`. See [[Generated files]] for regeneration ownership.
 
 `old-docs/` is historical and untrusted. It is not an implementation source and its claims must be re-verified before use.
 
 ## Where to look next
 
-Use the [repository tree](../60-reference/repository-tree.md) for a compact structural reference, the implementation maps for code locations, the workflow documents for executable processes, and the reference catalogues for scripts and configuration.
+Use the [[Repository tree|repository tree]] for a compact structural reference, the implementation maps for code locations, the workflow documents for executable processes, and the reference catalogues for scripts and configuration.
 
 ## Verification notes
 
-This map was checked against tracked source, manifests, tests, infrastructure definitions, and GitHub workflows at commit `ac7d021ad3716a68638759df684b9a3c32bb4389`. The layered documentation restructure and `scripts/docs/` tooling are uncommitted Stage 1 working-tree work and are not part of that commit.
+This map was checked against tracked source, manifests, tests, infrastructure definitions, and GitHub workflows at commit `ed0fb65df856e18807ee243b4bca512a8d0442b0`. The layered documentation restructure and current `scripts/docs/` tooling are uncommitted Stage 1 working-tree work and are not part of that commit.

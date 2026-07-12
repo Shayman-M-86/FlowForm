@@ -5,7 +5,9 @@ status: scaffold
 authority: canonical
 verified_against_commit: null
 related_code: []
-related_docs: []
+related_docs:
+  - "Runtime containers"
+  - "Backend implementation"
 ---
 
 # Observability
@@ -39,3 +41,7 @@ TODO: Verify this against the current implementation.
 This section tracks unresolved domain questions.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Runtime containers]]
+- [[Backend implementation]]

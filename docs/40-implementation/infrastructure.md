@@ -1,14 +1,20 @@
 ---
-title: Infrastructure
+title: Infrastructure implementation
 document_type: implementation
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [infrastructure]
 related_code: []
-related_docs: []
+related_docs:
+  - "Repository map"
+  - "Deployment model"
+  - "Machine image building"
+  - "Local infrastructure"
+  - "Infrastructure resources"
 ---
 
-# Infrastructure
+# Infrastructure implementation
 Maps infrastructure concepts to verified repository implementation.
 
 ## Directory ownership
@@ -35,3 +41,10 @@ TODO: Verify this against the current implementation.
 This section will cite tests and checks that cover this implementation area.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Repository map]]
+- [[Deployment model]]
+- [[Machine image building]]
+- [[Local infrastructure]]
+- [[Infrastructure resources]]

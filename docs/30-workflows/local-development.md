@@ -1,14 +1,18 @@
 ---
-title: Local Development
+title: Local development
 document_type: workflow
 status: scaffold
 authority: canonical
 verified_against_commit: null
 related_code: []
-related_docs: []
+related_docs:
+  - "Local infrastructure"
+  - "Secrets and configuration"
+  - "Testing workflow"
+  - "Commands"
 ---
 
-# Local Development
+# Local development
 Describes the end-to-end workflow for local development.
 
 ## Trigger
@@ -36,6 +40,8 @@ This section will list exact commands that prove the workflow works.
 TODO: Verify this against the current implementation.
 
 ## Related documents
-This section will connect the workflow to architecture, domains, and references.
-TODO: Verify this against the current implementation.
 
+- [[Local infrastructure]]
+- [[Secrets and configuration]]
+- [[Testing workflow]]
+- [[Commands]]

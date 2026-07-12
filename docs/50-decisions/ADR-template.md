@@ -4,8 +4,10 @@ document_type: decision-template
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [meta]
 related_code: []
-related_docs: ["README.md"]
+related_docs:
+  - "Architecture decision records"
 ---
 
 # ADR template
@@ -28,3 +30,7 @@ List meaningful alternatives and why they were not selected. TODO: Verify this a
 
 ## References
 Link implementation evidence, related docs, and superseding ADRs. TODO: Verify this against the current implementation.
+
+## Related documents
+
+- [[Architecture decision records]]

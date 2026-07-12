@@ -1,14 +1,19 @@
 ---
-title: Identity And Authentication
+title: Identity and authentication
 document_type: domain
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [security]
 related_code: []
-related_docs: []
+related_docs:
+  - "Security model"
+  - "Projects and access"
+  - "Links and subjects"
+  - "Glossary"
 ---
 
-# Identity And Authentication
+# Identity and authentication
 Defines the conceptual boundary for identity and authentication.
 
 ## Purpose
@@ -39,3 +44,9 @@ TODO: Verify this against the current implementation.
 This section tracks unresolved domain questions.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Security model]]
+- [[Projects and access]]
+- [[Links and subjects]]
+- [[Glossary]]

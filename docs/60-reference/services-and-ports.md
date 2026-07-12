@@ -1,14 +1,17 @@
 ---
-title: Services And Ports
+title: Services and ports
 document_type: reference
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [infrastructure]
 related_code: []
-related_docs: []
+related_docs:
+  - "Runtime containers"
+  - "Local infrastructure"
 ---
 
-# Services And Ports
+# Services and ports
 Provides concise verified reference facts for services and ports.
 
 ## Reference scope
@@ -28,6 +31,6 @@ This section explains how to refresh entries without adding unverified assumptio
 TODO: Verify this against the current implementation.
 
 ## Related documents
-This section links to explanatory documents that interpret these facts.
-TODO: Verify this against the current implementation.
 
+- [[Runtime containers]]
+- [[Local infrastructure]]

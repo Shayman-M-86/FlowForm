@@ -1,14 +1,17 @@
 ---
-title: Database Migrations
+title: Database migrations
 document_type: workflow
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [backend]
 related_code: []
-related_docs: []
+related_docs:
+  - "Backend implementation"
+  - "Local infrastructure"
 ---
 
-# Database Migrations
+# Database migrations
 Describes the end-to-end workflow for database migrations.
 
 ## Trigger
@@ -36,6 +39,6 @@ This section will list exact commands that prove the workflow works.
 TODO: Verify this against the current implementation.
 
 ## Related documents
-This section will connect the workflow to architecture, domains, and references.
-TODO: Verify this against the current implementation.
 
+- [[Backend implementation]]
+- [[Local infrastructure]]

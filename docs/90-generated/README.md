@@ -4,8 +4,18 @@ document_type: generated-index
 status: scaffold
 authority: canonical
 verified_against_commit: null
-related_code: ["../../scripts/docs/"]
-related_docs: ["../00-overview/documentation-generator-guide.md"]
+tags: [meta]
+related_code:
+  - "../../scripts/docs/"
+related_docs:
+  - "Documentation generator guide"
+  - "Generated files"
+  - "Repository tree snapshot"
+  - "API routes"
+  - "CI workflows"
+  - "Configuration index"
+  - "Dependency map"
+  - "Infrastructure resources"
 ---
 
 # Generated documentation
@@ -25,3 +35,14 @@ Run the relevant generator, review diffs, validate metadata and links, then reco
 
 ## Manual edit exception
 Manual edits are allowed only to improve scaffold rules until generation is fully implemented. TODO: Verify this against the current implementation.
+
+## Related documents
+
+- [[Documentation generator guide]]
+- [[Generated files]]
+- [[Repository tree snapshot]]
+- [[API routes]]
+- [[CI workflows]]
+- [[Configuration index]]
+- [[Dependency map]]
+- [[Infrastructure resources]]

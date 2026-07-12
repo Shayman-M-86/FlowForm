@@ -1,14 +1,19 @@
 ---
-title: Cloud Deployment
+title: Cloud deployment
 document_type: workflow
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [infrastructure, ci-cd]
 related_code: []
-related_docs: []
+related_docs:
+  - "Deployment model"
+  - "Continuous integration"
+  - "Machine image building"
+  - "Infrastructure implementation"
 ---
 
-# Cloud Deployment
+# Cloud deployment
 Describes the end-to-end workflow for cloud deployment.
 
 ## Trigger
@@ -36,6 +41,8 @@ This section will list exact commands that prove the workflow works.
 TODO: Verify this against the current implementation.
 
 ## Related documents
-This section will connect the workflow to architecture, domains, and references.
-TODO: Verify this against the current implementation.
 
+- [[Deployment model]]
+- [[Continuous integration]]
+- [[Machine image building]]
+- [[Infrastructure implementation]]

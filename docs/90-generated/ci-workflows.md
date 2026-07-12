@@ -1,14 +1,17 @@
 ---
-title: Ci Workflows
+title: CI workflows
 document_type: generated
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [ci-cd]
 related_code: []
-related_docs: []
+related_docs:
+  - "Generated documentation"
+  - "Continuous integration"
 ---
 
-# Ci Workflows
+# CI workflows
 Generated reference scaffold for ci workflows.
 
 > Generated-document scaffold: this file is intended to be reproducible from repository contents. Do not manually add unreproducible facts here.
@@ -33,3 +36,7 @@ TODO: Verify this against the current implementation.
 This section will document the exact command used to regenerate the file.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Generated documentation]]
+- [[Continuous integration]]

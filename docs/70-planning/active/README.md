@@ -1,14 +1,16 @@
 ---
-title: Planning active
+title: Active plans
 document_type: planning-index
 status: scaffold
 authority: planning
 verified_against_commit: null
+tags: [meta]
 related_code: []
-related_docs: ["../README.md"]
+related_docs:
+  - "Planning workspace"
 ---
 
-# Planning active
+# Active plans
 Provides a tracked directory for active planning documents.
 
 ## Purpose
@@ -24,4 +26,5 @@ Each plan should include purpose, scope, evidence, decisions needed, and exit cr
 Durable verified outcomes may be promoted to canonical docs or ADRs. TODO: Verify this against the current implementation.
 
 ## Related documents
-See the parent planning README and documentation model for authority rules. TODO: Verify this against the current implementation.
+
+- [[Planning workspace]]

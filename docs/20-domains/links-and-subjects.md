@@ -1,14 +1,18 @@
 ---
-title: Links And Subjects
+title: Links and subjects
 document_type: domain
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [security]
 related_code: []
-related_docs: []
+related_docs:
+  - "Identity and authentication"
+  - "Submissions"
+  - "Security model"
 ---
 
-# Links And Subjects
+# Links and subjects
 Defines the conceptual boundary for links and subjects.
 
 ## Purpose
@@ -39,3 +43,8 @@ TODO: Verify this against the current implementation.
 This section tracks unresolved domain questions.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Identity and authentication]]
+- [[Submissions]]
+- [[Security model]]

@@ -4,17 +4,18 @@ document_type: reference
 status: scaffold
 authority: canonical
 verified_against_commit: ac7d021ad3716a68638759df684b9a3c32bb4389
+tags: [tooling]
 related_code:
-  [
-    "../../scripts/",
-    "../../backend/scripts/",
-    "../../frontend/scripts/",
-    "../../infra/",
-    "../../tools/mcp/",
-    "../../.githooks/",
-  ]
+  - "../../scripts/"
+  - "../../backend/scripts/"
+  - "../../frontend/scripts/"
+  - "../../infra/"
+  - "../../tools/mcp/"
+  - "../../.githooks/"
 related_docs:
-  ["commands.md", "generated-files.md", "../40-implementation/scripts.md"]
+  - "Commands"
+  - "Generated files"
+  - "Scripts implementation"
 ---
 
 # Scripts catalogue
@@ -123,3 +124,9 @@ The shared frontend package manifests and `infra/cdk/package.json` currently def
 Rescan maintained shell, Python, and Node entry points outside dependency and generated directories. Extract package aliases directly from every current `package.json`. Verify descriptions against script headers and invoked commands, then update `verified_against_commit`.
 
 The `scripts/docs/` entries are uncommitted Stage 1 working-tree additions at the recorded implementation baseline. Advance `verified_against_commit` after the documentation tooling is committed and re-verified.
+
+## Related documents
+
+- [[Commands]]
+- [[Generated files]]
+- [[Scripts implementation]]

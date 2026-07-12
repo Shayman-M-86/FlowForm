@@ -1,11 +1,17 @@
 ---
 title: Documentation model
 document_type: overview
-status: scaffold
+status: draft
 authority: canonical
-verified_against_commit: ac7d021ad3716a68638759df684b9a3c32bb4389
-related_code: ["../../scripts/docs/"]
-related_docs: ["../README.md", "documentation-generator-guide.md"]
+verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
+tags: [meta]
+related_code:
+  - "../../scripts/docs/"
+related_docs:
+  - "FlowForm documentation home"
+  - "Documentation generator guide"
+  - "Planning workspace"
+  - "Architecture decision records"
 ---
 
 # Documentation model
@@ -32,11 +38,42 @@ A document's `authority` identifies its role, while `status` reports its maturit
 | `70-planning/`       | Hold temporary plans, proposals, unfinished work, and unresolved design.                                                 | Planning content is not current architecture.                             |
 | `90-generated/`      | Hold reproducible repository-derived output.                                                                             | State the generator and sources; do not edit generated sections manually. |
 
+## Knowledge network conventions
+
+The documentation is a connected network, not a collection of independent files. Three conventions build that network.
+
+### Titles are identifiers
+
+Every document declares a `title` in front matter. Titles are globally unique across `docs/` (case-insensitively) and are the canonical way to refer to a document. Use sentence case and prefer a name that is unambiguous on its own — for example `Backend implementation` rather than `Backend`, and `Testing workflow` rather than `Testing`.
+
+### Wiki links
+
+Documents reference each other with wiki links: `[[Title]]`, or `[[Title|display text]]` when the surrounding sentence needs different wording. Wiki links resolve by title, never by path, so files can move between layers without breaking references. Use wiki links only for documents under `docs/`; refer to code with plain repository paths in backticks. Every document lists its most useful neighbours in `related_docs` (front matter, as titles) and, except for short prose-navigation pages, in a closing `## Related documents` section.
+
+Linking is cheap and encouraged: link a concept the first time a section mentions it, and prefer linking to the document that owns the explanation over restating it.
+
+### Tags
+
+`tags` is an optional front-matter list used only for cross-cutting classification that the directory layers do not already express. The controlled vocabulary is:
+
+| Tag              | Classifies documents about                                  |
+| ---------------- | ------------------------------------------------------------ |
+| `backend`        | The Flask backend application                                |
+| `frontend`       | The Studio and public-site frontend applications             |
+| `infrastructure` | Hosting, images, containers, networking, and deployment      |
+| `security`       | Authentication, access control, encryption, and trust        |
+| `configuration`  | Configuration surfaces, secrets, and environment variables   |
+| `ci-cd`          | Continuous integration and delivery                          |
+| `tooling`        | Repository scripts, commands, and developer tooling          |
+| `meta`           | The documentation system itself and planning/decision indexes |
+
+Do not invent one-off tags. Add a new tag to this table only when it would classify several documents and support useful filtering; layer membership (`domain`, `workflow`, `reference`, …) is already captured by `document_type` and the directory, and must not be duplicated as a tag.
+
 ## Update discipline
 
 Documentation work proceeds in narrow, reviewable stages. Inspect the target scaffold and implementation evidence, write only claims appropriate to that layer, record uncertainty instead of guessing, and use an independent review to remove unsupported claims and duplication. Stop at the stage boundary rather than filling adjacent scaffolds opportunistically.
 
-When a file is added or renamed, update navigation and related-document metadata. When implementation changes invalidate a claim, update the document and its verification commit together.
+When a file is added or renamed, update navigation and related-document metadata. When a title changes, update every `[[wiki link]]` and `related_docs` entry that uses it — validation reports any that were missed. When implementation changes invalidate a claim, update the document and its verification commit together.
 
 ## Validation
 
@@ -47,6 +84,6 @@ python3 scripts/docs/validate-doc-links.py
 python3 scripts/docs/validate-doc-metadata.py
 ```
 
-These checks cover local Markdown link targets and required front-matter fields. They do not establish that prose claims are correct; review against implementation evidence remains required.
+These checks cover local Markdown link targets, `[[wiki link]]` resolution, required front-matter fields, global title uniqueness, `related_docs` resolution, and the tag vocabulary. They do not establish that prose claims are correct; review against implementation evidence remains required.
 
-The layered documentation tree and `scripts/docs/` checks are uncommitted Stage 1 working-tree work at the recorded implementation baseline. Advance `verified_against_commit` after they are committed and re-verified.
+The layered documentation tree and current `scripts/docs/` checks are uncommitted Stage 1 working-tree work at the recorded implementation baseline. Re-verify them and advance `verified_against_commit` after they are committed.

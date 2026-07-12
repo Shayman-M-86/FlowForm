@@ -5,23 +5,25 @@ status: scaffold
 authority: canonical
 verified_against_commit: null
 related_code: ["generate-repository-tree.py", "validate-doc-links.py", "validate-doc-metadata.py"]
-related_docs: ["../../docs/00-overview/documentation-generator-guide.md"]
+related_docs: ["../../docs/00-overview/documentation-generator-guide.md", "../../docs/00-overview/documentation-model.md"]
 ---
 
 # Documentation scripts
-Provides lightweight scripts for generating and validating documentation scaffolds.
 
-## Purpose
-These scripts support documentation maintenance without adding unnecessary dependencies. TODO: Verify this against the current implementation.
+Provides lightweight, dependency-free scripts for generating and validating the docs/ knowledge network.
 
 ## Available scripts
-`generate-repository-tree.py` writes a repository tree; `validate-doc-links.py` checks local Markdown links; `validate-doc-metadata.py` checks front matter. TODO: Verify this against the current implementation.
+
+`generate-repository-tree.py` regenerates `docs/90-generated/repository-tree.md`. `validate-doc-links.py` checks that `[[wiki links]]` resolve to a document title and that relative Markdown links resolve on disk. `validate-doc-metadata.py` checks required front-matter keys, allowed status values, global title uniqueness, the controlled tag vocabulary, and `related_docs` resolution.
+
+## Conventions enforced
+
+The knowledge-network conventions (titles as identifiers, wiki links, `related_docs`, tags) are defined in `docs/00-overview/documentation-model.md`; the validators are the executable form of those rules.
 
 ## Usage expectations
-Run scripts from the repository root unless a script documents otherwise. TODO: Verify this against the current implementation.
+
+Run scripts from the repository root with `python3`. Both validators exit non-zero when issues are found, so they are safe to wire into CI or hooks.
 
 ## Limitations
-The scripts are intentionally basic and should be extended only after repository needs are verified. TODO: Verify this against the current implementation.
 
-## Related documentation
-See the documentation generator guide for the process agents should follow. TODO: Verify this against the current implementation.
+The validators parse the canonical front-matter shape used across docs/ rather than full YAML, and do not verify that prose claims match the implementation.

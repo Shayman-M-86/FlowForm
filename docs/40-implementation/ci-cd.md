@@ -1,14 +1,18 @@
 ---
-title: Ci Cd
+title: CI/CD implementation
 document_type: implementation
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [ci-cd]
 related_code: []
-related_docs: []
+related_docs:
+  - "Continuous integration"
+  - "Cloud deployment"
+  - "CI workflows"
 ---
 
-# Ci Cd
+# CI/CD implementation
 Maps ci cd concepts to verified repository implementation.
 
 ## Directory ownership
@@ -35,3 +39,8 @@ TODO: Verify this against the current implementation.
 This section will cite tests and checks that cover this implementation area.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Continuous integration]]
+- [[Cloud deployment]]
+- [[CI workflows]]

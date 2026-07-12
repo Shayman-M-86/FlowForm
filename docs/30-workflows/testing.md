@@ -1,14 +1,18 @@
 ---
-title: Testing
+title: Testing workflow
 document_type: workflow
 status: scaffold
 authority: canonical
 verified_against_commit: null
 related_code: []
-related_docs: []
+related_docs:
+  - "Local development"
+  - "Continuous integration"
+  - "Backend implementation"
+  - "Frontend implementation"
 ---
 
-# Testing
+# Testing workflow
 Describes the end-to-end workflow for testing.
 
 ## Trigger
@@ -36,6 +40,8 @@ This section will list exact commands that prove the workflow works.
 TODO: Verify this against the current implementation.
 
 ## Related documents
-This section will connect the workflow to architecture, domains, and references.
-TODO: Verify this against the current implementation.
 
+- [[Local development]]
+- [[Continuous integration]]
+- [[Backend implementation]]
+- [[Frontend implementation]]

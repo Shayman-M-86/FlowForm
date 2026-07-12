@@ -1,14 +1,18 @@
 ---
-title: Environment Variables
+title: Environment variables
 document_type: reference
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [configuration]
 related_code: []
-related_docs: []
+related_docs:
+  - "Configuration catalogue"
+  - "Secrets and configuration"
+  - "Configuration index"
 ---
 
-# Environment Variables
+# Environment variables
 Provides concise verified reference facts for environment variables.
 
 ## Reference scope
@@ -28,6 +32,7 @@ This section explains how to refresh entries without adding unverified assumptio
 TODO: Verify this against the current implementation.
 
 ## Related documents
-This section links to explanatory documents that interpret these facts.
-TODO: Verify this against the current implementation.
 
+- [[Configuration catalogue]]
+- [[Secrets and configuration]]
+- [[Configuration index]]

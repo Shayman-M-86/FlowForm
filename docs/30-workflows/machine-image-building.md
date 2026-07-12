@@ -1,14 +1,18 @@
 ---
-title: Machine Image Building
+title: Machine image building
 document_type: workflow
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [infrastructure]
 related_code: []
-related_docs: []
+related_docs:
+  - "Cloud deployment"
+  - "Packer implementation"
+  - "Infrastructure resources"
 ---
 
-# Machine Image Building
+# Machine image building
 Describes the end-to-end workflow for machine image building.
 
 ## Trigger
@@ -36,6 +40,7 @@ This section will list exact commands that prove the workflow works.
 TODO: Verify this against the current implementation.
 
 ## Related documents
-This section will connect the workflow to architecture, domains, and references.
-TODO: Verify this against the current implementation.
 
+- [[Cloud deployment]]
+- [[Packer implementation]]
+- [[Infrastructure resources]]

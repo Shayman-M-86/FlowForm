@@ -5,7 +5,11 @@ status: scaffold
 authority: canonical
 verified_against_commit: null
 related_code: []
-related_docs: []
+related_docs:
+  - "Links and subjects"
+  - "Surveys and versioning"
+  - "Responses and encryption"
+  - "Data flows"
 ---
 
 # Submissions
@@ -39,3 +43,9 @@ TODO: Verify this against the current implementation.
 This section tracks unresolved domain questions.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Links and subjects]]
+- [[Surveys and versioning]]
+- [[Responses and encryption]]
+- [[Data flows]]

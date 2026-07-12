@@ -1,14 +1,19 @@
 ---
-title: Frontend
+title: Frontend implementation
 document_type: implementation
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [frontend]
 related_code: []
-related_docs: []
+related_docs:
+  - "Repository map"
+  - "Component map"
+  - "Builder and rules"
+  - "Testing workflow"
 ---
 
-# Frontend
+# Frontend implementation
 Maps frontend concepts to verified repository implementation.
 
 ## Directory ownership
@@ -35,3 +40,9 @@ TODO: Verify this against the current implementation.
 This section will cite tests and checks that cover this implementation area.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Repository map]]
+- [[Component map]]
+- [[Builder and rules]]
+- [[Testing workflow]]

@@ -1,14 +1,19 @@
 ---
-title: Responses And Encryption
+title: Responses and encryption
 document_type: domain
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [security]
 related_code: []
-related_docs: []
+related_docs:
+  - "Submissions"
+  - "Security model"
+  - "Data flows"
+  - "Backend implementation"
 ---
 
-# Responses And Encryption
+# Responses and encryption
 Defines the conceptual boundary for responses and encryption.
 
 ## Purpose
@@ -39,3 +44,9 @@ TODO: Verify this against the current implementation.
 This section tracks unresolved domain questions.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Submissions]]
+- [[Security model]]
+- [[Data flows]]
+- [[Backend implementation]]

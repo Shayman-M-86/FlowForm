@@ -1,14 +1,20 @@
 ---
-title: Backend
+title: Backend implementation
 document_type: implementation
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [backend]
 related_code: []
-related_docs: []
+related_docs:
+  - "Repository map"
+  - "Component map"
+  - "Database migrations"
+  - "Testing workflow"
+  - "API routes"
 ---
 
-# Backend
+# Backend implementation
 Maps backend concepts to verified repository implementation.
 
 ## Directory ownership
@@ -35,3 +41,10 @@ TODO: Verify this against the current implementation.
 This section will cite tests and checks that cover this implementation area.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Repository map]]
+- [[Component map]]
+- [[Database migrations]]
+- [[Testing workflow]]
+- [[API routes]]

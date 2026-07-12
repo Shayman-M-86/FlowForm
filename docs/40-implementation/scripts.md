@@ -1,14 +1,18 @@
 ---
-title: Scripts
+title: Scripts implementation
 document_type: implementation
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [tooling]
 related_code: []
-related_docs: []
+related_docs:
+  - "Scripts catalogue"
+  - "Commands"
+  - "Repository map"
 ---
 
-# Scripts
+# Scripts implementation
 Maps scripts concepts to verified repository implementation.
 
 ## Directory ownership
@@ -35,3 +39,8 @@ TODO: Verify this against the current implementation.
 This section will cite tests and checks that cover this implementation area.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Scripts catalogue]]
+- [[Commands]]
+- [[Repository map]]

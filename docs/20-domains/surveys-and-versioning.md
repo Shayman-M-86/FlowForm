@@ -1,14 +1,17 @@
 ---
-title: Surveys And Versioning
+title: Surveys and versioning
 document_type: domain
 status: scaffold
 authority: canonical
 verified_against_commit: null
 related_code: []
-related_docs: []
+related_docs:
+  - "Projects and access"
+  - "Builder and rules"
+  - "Submissions"
 ---
 
-# Surveys And Versioning
+# Surveys and versioning
 Defines the conceptual boundary for surveys and versioning.
 
 ## Purpose
@@ -39,3 +42,8 @@ TODO: Verify this against the current implementation.
 This section tracks unresolved domain questions.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Projects and access]]
+- [[Builder and rules]]
+- [[Submissions]]

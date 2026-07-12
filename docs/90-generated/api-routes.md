@@ -1,14 +1,17 @@
 ---
-title: Api Routes
+title: API routes
 document_type: generated
 status: scaffold
 authority: canonical
 verified_against_commit: null
+tags: [backend]
 related_code: []
-related_docs: []
+related_docs:
+  - "Generated documentation"
+  - "Backend implementation"
 ---
 
-# Api Routes
+# API routes
 Generated reference scaffold for api routes.
 
 > Generated-document scaffold: this file is intended to be reproducible from repository contents. Do not manually add unreproducible facts here.
@@ -33,3 +36,7 @@ TODO: Verify this against the current implementation.
 This section will document the exact command used to regenerate the file.
 TODO: Verify this against the current implementation.
 
+## Related documents
+
+- [[Generated documentation]]
+- [[Backend implementation]]
