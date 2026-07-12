@@ -1,0 +1,264 @@
+# Session and Response Envelope Lifecycle
+
+## Purpose
+
+This document explains the conceptual lifecycle of encrypted response collection.
+
+## 1. Session start
+
+Session start is not complete until both the Core DB and Response DB have the required records.
+
+The flow is:
+
+1. Resolve access using `AccessResolver`.
+
+   The respondent may enter through a public slug or a link token.
+
+   This returns a `SubmissionAccessGrant`, which says:
+
+   * which survey/project/version is being accessed;
+   * whether the link is valid;
+   * what access type is being used;
+   * whether a link is assigned;
+   * whether authentication is required;
+   * whether the link is single-use.
+
+2. Look up the browser recognition token using `SubjectTokenService.lookup`.
+
+   This checks whether this browser is already linked to a known project subject.
+
+   If the token is missing, expired, revoked, or invalid, it returns `None`.
+
+3. Resolve the final subject using `SubjectResolver`.
+
+   This decides which `project_subject_id` the session belongs to.
+
+   It may choose:
+
+   * the assigned link subject;
+   * the logged-in user subject;
+   * the recognised browser-token subject;
+   * a new anonymous subject;
+   * no subject, if anonymous subjects are not being created.
+
+   It may also decide whether the recognition token should be issued, rotated, marked used, or kept.
+
+4. Create the Core DB submission session.
+
+   The core side stores:
+
+   * frozen survey version;
+   * project subject, if known;
+   * link id, if used;
+   * browser resume token hash;
+   * lifecycle timestamps;
+   * linkage key version;
+   * session status.
+
+5. Derive the session locator using `LocatorService.for_new_session(session_id)`.
+
+   `LocatorService` uses `LinkageKeyService.get_current()` to get the current linkage key version and secret.
+
+   It returns:
+
+   * `linkage_key_version`;
+   * `session_locator`.
+
+6. Load the survey encryption key from Core DB.
+
+   The survey encryption key row stores the KMS-wrapped survey branch key.
+   This row is created lazily at survey publish time.
+
+7. Unwrap the survey branch key.
+
+   On cache hit, use the cached plaintext survey branch key.
+
+   On cache miss, call KMS `Decrypt` to unwrap the survey branch key,
+   then cache the plaintext branch key for future sessions on the same survey.
+
+8. Generate a plaintext session DEK and wrap it locally.
+
+   Generate a fresh 32-byte session DEK using `os.urandom`.
+
+   Wrap the session DEK with AES-256-GCM using the plaintext survey branch key.
+   The wrapped session DEK format is `nonce(12 bytes) || ciphertext_and_tag`.
+
+   AAD for the local wrap includes: crypto version, project ID, survey ID,
+   session ID, and session locator.
+
+   The plaintext DEK may be cached by `SessionDEKService` for the active session window.
+
+9. Create the Response DB response envelope.
+
+   The response side stores:
+
+   * session locator;
+   * linkage key version;
+   * wrapped session DEK;
+   * crypto version.
+
+   The response side does not store KMS key ARNs or KMS context versions.
+   KMS metadata stays on the survey encryption key row in Core DB.
+
+10. Apply the recognition-token action using `SubjectTokenService.apply_token_action`.
+
+    This may issue, rotate, mark used, or keep the browser recognition token.
+
+11. Return browser cookies only after the required Core DB and Response DB records both exist.
+
+The browser may receive:
+
+* the raw resume token cookie;
+* the raw recognition token cookie, if one was issued or rotated.
+
+The raw resume token must not be returned if the session and response envelope were not both created successfully.
+
+## 2. Current-session loading
+
+A current-session loader is shared by answer save, completion, and other session-bound operations.
+
+It must:
+
+1. read the browser resume cookie;
+
+2. hash the raw resume token;
+
+3. load the core session by token hash;
+
+4. load the frozen survey version;
+
+5. reject forbidden states:
+
+   * missing session;
+   * expired session;
+   * abandoned session;
+   * invalid session;
+   * completed session, unless the operation allows idempotent completion;
+
+6. derive the session locator using `LocatorService.for_existing_session(session_id, linkage_key_version)`;
+
+7. load the response envelope by session locator;
+
+8. return a safe service context.
+
+The safe context may include:
+
+* core session;
+* frozen survey version;
+* session locator;
+* response envelope.
+
+The loader must not expose internal IDs, locators, key material, ciphertext, or nonce values to the browser.
+
+## 3. Answer save
+
+Saving an answer means overwriting the current encrypted answer row for that answer locator.
+
+The response write is authoritative. The core analytics event is secondary.
+
+The flow is:
+
+1. load and lock the current session using the shared current-session loader;
+
+2. check whether the existing stored row already has the same client mutation ID;
+
+3. if it does, return that stored row immediately without re-encrypting or writing again;
+
+4. load the question node from the session’s frozen survey version using the submitted `question_node_id`, then validate the submitted answer against that frozen question definition using the answer validator;
+
+   Validation is performed for a single question at a time.
+
+   This step compares the answer payload to the frozen question schema and constraints only.
+
+   It does not evaluate survey rules, visibility logic, completion state, or cross-question requirements.
+
+5. derive the answer locator using `LocatorService.answer_locator(session_id, question_node_id, linkage_key_version)`;
+
+6. load the plaintext DEK through the survey branch-key chain;
+
+   On session DEK cache hit, return the cached DEK.
+
+   On miss, load the survey encryption key from Core, unwrap the survey branch
+   key (from cache or KMS), then locally unwrap the envelope’s
+   `wrapped_session_dek` using the survey branch key and cache the plaintext
+   session DEK.
+
+7. encrypt the answer payload with AES-GCM using a fresh nonce;
+
+8. upsert the current encrypted answer row for the answer locator —
+   overwrites ciphertext, nonce, and client mutation ID in place; there is
+   no revision history (see `04-answer-revisions.md`);
+
+9. commit the response transaction;
+
+10. insert the core answer-saved event;
+
+11. commit the core transaction.
+
+If the analytics event fails after the response write succeeds, the answer must still be treated as saved.
+
+Answer save validates the shape of one answer. It does not decide whether the whole submission is complete.
+
+## 4. Question-viewed event
+
+Question-viewed events are analytics metadata.
+
+The flow is:
+
+1. load the current session;
+2. load the frozen survey version;
+3. validate that the question belongs to the frozen survey version;
+4. write the question-viewed event to the core event log.
+
+This path does not need to unwrap the DEK.
+
+Failure to write this event must not block the respondent from continuing.
+
+## 5. Completion
+
+Completion validates access to the current session in the same way as other session-bound operations and then marks the session as completed in the Core DB.
+
+The flow is:
+
+1. load and lock the current session using the shared current-session loader;
+2. if the session is already completed, perform no additional work;
+3. mark the core session as completed;
+4. insert a session-completed event.
+
+Completion must be idempotent. A repeated completion request for an already completed session must not create duplicate effects.
+
+## 6. Admin reads and export
+
+Admin list views can mostly use core metadata.
+
+Admin detail and export must go through the authorized decrypt path.
+
+The flow is:
+
+1. authorize project and survey access;
+2. load core session metadata;
+3. load the frozen survey version;
+4. derive the session locator using `LocatorService.for_existing_session(session_id, linkage_key_version)`;
+5. load the response envelope;
+6. load the current stored answer rows for the envelope (there is no revision history to page through — see `04-answer-revisions.md`);
+7. load the plaintext DEK through the survey branch-key chain;
+8. decrypt through the service;
+9. map decrypted answers back to the frozen survey version.
+
+Admin paths must never bypass authorization, locator derivation, or the decrypt service.
+
+## 7. Delete
+
+Deletion must remove encrypted response material before claiming response deletion is complete.
+
+The flow is:
+
+1. authorize deletion;
+2. load the core session;
+3. derive the session locator using the stored linkage key version;
+4. load the response envelope;
+5. delete encrypted response answers and response envelope;
+6. mark or delete the core session record;
+7. clear any cached plaintext DEK using `SessionDEKService.clear_for_session(session_id)`.
+
+If deletion spans both databases and one side succeeds, the system must mark the deletion as pending and retry rather than pretending the operation fully completed.
