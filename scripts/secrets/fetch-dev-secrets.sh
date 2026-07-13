@@ -9,31 +9,31 @@ set -euo pipefail
 #      be generated lives there:
 #        flowform/nonprod/app-secrets: app_secret_key, auth0_mgmt_secret
 #      (dev and staging share the "nonprod" security scope — one KMS key
-#      and one secret set for both; see infra/cdk security_stack.py)
+#      and one secret set for both; see infra/platforms/aws/cdk security_stack.py)
 #   2. Machine-local throwaways -> generated on this machine
 #      (scripts/secrets/generate-secrets.sh, invoked below when any file
 #      is missing): the four local-Postgres passwords. They stay in
-#      gitignored infra/docker/secrets/ so they survive reboots alongside
+#      gitignored infra/environments/development/compose/secrets/ so they survive reboots alongside
 #      the Postgres volume they initialised (regenerating them requires a
 #      DB volume reset), and are copied into the tmpfs dir here so
 #      Compose bind-mounts that complete directory read-only at /run/secrets.
 #
 # This mirrors the EC2 bootstrap flow (see the Secrets and Configuration
 # Bootstrap section in
-# infra/cdk/docs/implementation-sketch/caddy-ec2-implementation-notes.md);
+# infra/platforms/aws/cdk/docs/implementation-sketch/caddy-ec2-implementation-notes.md);
 # on EC2 the DB passwords come from the database stack/RDS instead.
 #
 # Usage:
 #   scripts/secrets/fetch-dev-secrets.sh
 #   FLOWFORM_SECRET_DIR="$XDG_RUNTIME_DIR/flowform-secrets" \
-#     docker compose -f infra/docker/docker-compose.dev.yml up -d
+#     docker compose -f infra/environments/development/compose/docker-compose.dev.yml up -d
 #
 # (Export FLOWFORM_SECRET_DIR in your shell rc so compose always finds it.)
 # tmpfs empties on reboot — just re-run this script.
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
-DOCKER_DIR="${PROJECT_ROOT}/infra/docker"
+DOCKER_DIR="${PROJECT_ROOT}/infra/environments/development/compose"
 ENV_NAME=dev
 
 # Refuse to fall back to /tmp: on many systems (WSL2 included) it is real

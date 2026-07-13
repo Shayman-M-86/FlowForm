@@ -1,0 +1,238 @@
+{
+  "schema": "flowform.docsys.health/1",
+  "repo_head": "f128536f46b905e4e9c54c47b1e712630407c47b",
+  "document_count": 58,
+  "status_counts": {
+    "draft": 10,
+    "verified": 4,
+    "scaffold": 44
+  },
+  "type_counts": {
+    "overview": 7,
+    "architecture": 7,
+    "domain": 8,
+    "workflow": 8,
+    "implementation": 7,
+    "decision-template": 1,
+    "decision-index": 1,
+    "reference": 7,
+    "planning-index": 4,
+    "generated-index": 1,
+    "generated": 7
+  },
+  "freshness_counts": {
+    "current": 11,
+    "review suggested": 3,
+    "likely stale": 2,
+    "unknown": 42
+  },
+  "stale_documents": [
+    {
+      "path": "docs/00-overview/documentation-model.md",
+      "title": "Documentation model",
+      "status": "draft",
+      "document_type": "overview",
+      "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
+      "classification": "likely stale",
+      "commit_distance": 1,
+      "changed_owned_files": [
+        "scripts/docs/README.md",
+        "scripts/docs/generate-repository-tree.py",
+        "scripts/docs/validate-doc-links.py",
+        "scripts/docs/validate-doc-metadata.py"
+      ],
+      "reasons": [
+        "1 commit(s) since verification",
+        "4 owned file(s) changed across 1/1 declared code areas"
+      ]
+    },
+    {
+      "path": "docs/README.md",
+      "title": "FlowForm documentation home",
+      "status": "draft",
+      "document_type": "overview",
+      "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
+      "classification": "likely stale",
+      "commit_distance": 1,
+      "changed_owned_files": [
+        "scripts/docs/README.md",
+        "scripts/docs/generate-repository-tree.py",
+        "scripts/docs/validate-doc-links.py",
+        "scripts/docs/validate-doc-metadata.py"
+      ],
+      "reasons": [
+        "1 commit(s) since verification",
+        "4 owned file(s) changed across 1/1 declared code areas"
+      ]
+    },
+    {
+      "path": "docs/00-overview/repository-map.md",
+      "title": "Repository map",
+      "status": "verified",
+      "document_type": "overview",
+      "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
+      "classification": "review suggested",
+      "commit_distance": 1,
+      "changed_owned_files": [
+        "scripts/docs/README.md",
+        "scripts/docs/generate-repository-tree.py",
+        "scripts/docs/validate-doc-links.py",
+        "scripts/docs/validate-doc-metadata.py"
+      ],
+      "reasons": [
+        "1 commit(s) since verification",
+        "4 owned file(s) changed since verification"
+      ]
+    },
+    {
+      "path": "docs/60-reference/repository-tree.md",
+      "title": "Repository tree",
+      "status": "scaffold",
+      "document_type": "reference",
+      "verified_against_commit": "ac7d021ad3716a68638759df684b9a3c32bb4389",
+      "classification": "review suggested",
+      "commit_distance": 2,
+      "changed_owned_files": [
+        "scripts/docs/README.md",
+        "scripts/docs/generate-repository-tree.py",
+        "scripts/docs/validate-doc-links.py",
+        "scripts/docs/validate-doc-metadata.py"
+      ],
+      "reasons": [
+        "2 commit(s) since verification",
+        "4 owned file(s) changed since verification"
+      ]
+    },
+    {
+      "path": "docs/60-reference/scripts-catalogue.md",
+      "title": "Scripts catalogue",
+      "status": "scaffold",
+      "document_type": "reference",
+      "verified_against_commit": "ac7d021ad3716a68638759df684b9a3c32bb4389",
+      "classification": "review suggested",
+      "commit_distance": 2,
+      "changed_owned_files": [
+        "scripts/docs/README.md",
+        "scripts/docs/generate-repository-tree.py",
+        "scripts/docs/validate-doc-links.py",
+        "scripts/docs/validate-doc-metadata.py"
+      ],
+      "reasons": [
+        "2 commit(s) since verification",
+        "4 owned file(s) changed since verification"
+      ]
+    }
+  ],
+  "orphan_documents": [],
+  "heavily_connected": [
+    {
+      "title": "Architecture principles",
+      "path": "docs/00-overview/architecture-principles.md",
+      "in": 17,
+      "out": 17
+    },
+    {
+      "title": "Data flows",
+      "path": "docs/10-architecture/data-flows.md",
+      "in": 13,
+      "out": 13
+    },
+    {
+      "title": "Glossary",
+      "path": "docs/00-overview/glossary.md",
+      "in": 12,
+      "out": 12
+    },
+    {
+      "title": "Repository map",
+      "path": "docs/00-overview/repository-map.md",
+      "in": 12,
+      "out": 12
+    },
+    {
+      "title": "System context",
+      "path": "docs/10-architecture/system-context.md",
+      "in": 12,
+      "out": 12
+    },
+    {
+      "title": "Trust boundaries",
+      "path": "docs/10-architecture/trust-boundaries.md",
+      "in": 12,
+      "out": 12
+    },
+    {
+      "title": "FlowForm documentation home",
+      "path": "docs/README.md",
+      "in": 12,
+      "out": 12
+    },
+    {
+      "title": "System summary",
+      "path": "docs/00-overview/system-summary.md",
+      "in": 11,
+      "out": 11
+    },
+    {
+      "title": "Component map",
+      "path": "docs/10-architecture/component-map.md",
+      "in": 11,
+      "out": 11
+    },
+    {
+      "title": "Deployment model",
+      "path": "docs/10-architecture/deployment-model.md",
+      "in": 11,
+      "out": 11
+    }
+  ],
+  "open_questions": [
+    {
+      "title": "Architecture principles",
+      "path": "docs/00-overview/architecture-principles.md",
+      "count": 5
+    },
+    {
+      "title": "Glossary",
+      "path": "docs/00-overview/glossary.md",
+      "count": 3
+    },
+    {
+      "title": "System summary",
+      "path": "docs/00-overview/system-summary.md",
+      "count": 2
+    },
+    {
+      "title": "Component map",
+      "path": "docs/10-architecture/component-map.md",
+      "count": 3
+    },
+    {
+      "title": "Deployment model",
+      "path": "docs/10-architecture/deployment-model.md",
+      "count": 5
+    },
+    {
+      "title": "Runtime containers",
+      "path": "docs/10-architecture/runtime-containers.md",
+      "count": 4
+    },
+    {
+      "title": "Security model",
+      "path": "docs/10-architecture/security-model.md",
+      "count": 7
+    },
+    {
+      "title": "System context",
+      "path": "docs/10-architecture/system-context.md",
+      "count": 3
+    },
+    {
+      "title": "Trust boundaries",
+      "path": "docs/10-architecture/trust-boundaries.md",
+      "count": 6
+    }
+  ],
+  "invalid_metadata": [],
+  "broken_links": []
+}

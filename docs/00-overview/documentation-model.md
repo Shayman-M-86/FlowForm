@@ -69,6 +69,20 @@ Linking is cheap and encouraged: link a concept the first time a section mention
 
 Do not invent one-off tags. Add a new tag to this table only when it would classify several documents and support useful filtering; layer membership (`domain`, `workflow`, `reference`, …) is already captured by `document_type` and the directory, and must not be duplicated as a tag.
 
+## Code linkage metadata
+
+`related_code` records the implementation evidence boundary a document depends on. Entries are written relative to the document's own directory (the same convention as relative links) and may name an exact file, a directory (with a trailing `/`), or a glob (`*`, `?`, `[…]`). This linkage is what lets the documentation tooling map code changes onto the documents that may need review, so keep it selective and accurate rather than exhaustive.
+
+Three optional fields refine that linkage; add them only when they earn their keep:
+
+| Field             | Purpose                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| `change_triggers` | Extra paths or globs that should flag the document for review even though they are not core evidence. Matched with lower confidence than `related_code`. |
+| `exclusions`      | Paths or globs to subtract from the matched set, so a broad `related_code` directory can skip noisy sub-paths. |
+| `code_confidence` | `high`, `medium`, or `low`; weights how strongly a matched change implicates the document.        |
+
+The documentation tooling under `scripts/docs/docsys/` reads these fields to build the documentation index, detect impacted documents, and check freshness. The tooling never edits documents; it identifies what to review. Generated documents record their generator and sources instead of prose evidence, and are refreshed rather than hand-verified.
+
 ## Update discipline
 
 Documentation work proceeds in narrow, reviewable stages. Inspect the target scaffold and implementation evidence, write only claims appropriate to that layer, record uncertainty instead of guessing, and use an independent review to remove unsupported claims and duplication. Stop at the stage boundary rather than filling adjacent scaffolds opportunistically.

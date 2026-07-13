@@ -12,7 +12,7 @@ PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 echo "Script dir: $SCRIPT_DIR"
 echo "Project root: $PROJECT_ROOT"
 
-DOCKER_DIR="$PROJECT_ROOT/infra/docker"
+DOCKER_DIR="$PROJECT_ROOT/infra/environments/development/compose"
 
 BACKEND_ENV="$DOCKER_DIR/.backend.env"
 DB_CORE_ENV="$DOCKER_DIR/.db.core.env"

@@ -23,10 +23,10 @@ die() { printf '[render-user-data] ERROR: %s\n' "$*" >&2; exit 1; }
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # The render pulls REAL repo files from shared runtime and rehearsal environment folders. Two run contexts:
-#   - dev machine: full repo checked out → repo root is two dirs up from here.
+#   - dev machine: full repo checked out → repo root is three dirs up from here.
 #   - PVE host: run from a synced copy. Sync from the REPO ROOT (see README) so
 #     these subtrees exist, or pass REPO_ROOT=/path explicitly.
-REPO_ROOT="${REPO_ROOT:-$(cd -- "${HERE}/../.." && pwd)}"
+REPO_ROOT="${REPO_ROOT:-$(cd -- "${HERE}/../../.." && pwd)}"
 
 # placeholder marker  ->  repo-relative source file.
 # Keep markers in sync with the *.template files that reference them.
@@ -92,7 +92,7 @@ render_one() {
 }
 
 shopt -s nullglob
-templates=("${HERE}/../runtime/cloud-init"/*.yaml.template)
+templates=("${HERE}"/*.yaml.template)
 shopt -u nullglob
 [[ ${#templates[@]} -gt 0 ]] || die "no *.yaml.template files in ${HERE}"
 

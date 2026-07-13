@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Compatibility wrapper: Packer now owns image construction. Run this from a
-# checkout with Packer installed; it does not perform cloud-init package baking.
+# Convenience entry point for the platform-independent Packer image pipeline.
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PACKER_DIR="$(cd -- "${SCRIPT_DIR}/../images/packer" && pwd)"
+PACKER_DIR="$(cd -- "${SCRIPT_DIR}/packer" && pwd)"
 cd "${PACKER_DIR}"
 packer init .
 packer validate -syntax-only .

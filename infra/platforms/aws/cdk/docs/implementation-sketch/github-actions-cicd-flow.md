@@ -111,7 +111,7 @@ Existing shape:
 - Set up Docker Buildx.
 - Generate temporary test secret files from the GitHub `test` environment.
 - Render Docker Compose config.
-- Start `infra/docker/docker-compose.test.yml`.
+- Start `infra/tests/compose/docker-compose.test.yml`.
 - Run `uv run pytest tests --cov=app`.
 - Upload coverage and debug artifacts.
 - Always tear down Compose with `docker compose down -v --remove-orphans`.
@@ -141,7 +141,7 @@ apps and shared packages:
 
 For PRs, the safest baseline is:
 
-- Run `uv sync` in `infra/cdk`.
+- Run `uv sync` in `infra/platforms/aws/cdk`.
 - Run `uv run pytest` for CDK assertions.
 - Run `npx cdk synth -c env=dev`.
 
@@ -216,7 +216,7 @@ Assume the infra deploy role through OIDC.
 
 Steps:
 
-- `cd infra/cdk`
+- `cd infra/platforms/aws/cdk`
 - `uv sync`
 - `npx cdk synth -c env=<env>`
 - `npx cdk diff -c env=<env>`
@@ -234,7 +234,7 @@ Assume the backend deploy role through OIDC.
 Steps:
 
 - Log in to ECR.
-- Build the backend Docker image from `infra/docker/backend.Dockerfile`.
+- Build the backend Docker image from `infra/environments/development/compose/backend.Dockerfile`.
 - Tag it with the Git SHA and optionally a mutable environment tag such as
   `staging-latest`.
 - Push the immutable Git SHA tag to ECR.

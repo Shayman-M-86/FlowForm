@@ -22,6 +22,10 @@ args = ["/home/shayman86/my-repos/FlowForm/tools/mcp/run.sh"]
 command = "/usr/bin/bash"
 args = ["/home/shayman86/my-repos/FlowForm/tools/mcp/repomap_run.sh"]
 
+[mcp_servers.flowform-docs]
+command = "/usr/bin/bash"
+args = ["/home/shayman86/my-repos/FlowForm/tools/mcp/docsys_run.sh"]
+
 [mcp_servers.shadcn]
 command = "npx"
 args = [

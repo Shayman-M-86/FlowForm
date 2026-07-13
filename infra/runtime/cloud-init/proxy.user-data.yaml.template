@@ -22,7 +22,7 @@
 # Repo layout on the box mirrors the real tree so relative bind-mounts and
 # bootstrap-proxy.sh's REPO_ROOT math (scripts/bootstrap → ../../..) both work:
 #   /opt/flowform/repo/infra/runtime/bootstrap/bootstrap-proxy.sh
-#   /opt/flowform/repo/infra/docker/{docker-compose.proxy.yml,caddy/,squid/}
+#   /opt/flowform/repo/infra/runtime/{compose/,config/caddy/,config/squid/}
 #   /opt/flowform/repo/infra/environments/rehearsal/compose/ plus infra/environments/rehearsal/fixtures/{caddy,squid}/
 #
 # Shape note: this is the proxy analogue of the future CDK ec2.UserData.
@@ -93,7 +93,7 @@ write_files:
       API_DOMAIN=api.localstack.test
       # run the REAL prod proxy compose (base) PLUS the rehearsal override, each
       # as its own -f (bootstrap-proxy.sh assembles them). docker compose resolves
-      # relative mounts against the FIRST/base file's dir = infra/docker/, which is
+      # relative mounts against the first/base file's dir = infra/runtime/compose/, which is
       # why the override's paths are written ../rehearsal/... .
       COMPOSE_FILE=/opt/flowform/repo/infra/runtime/compose/docker-compose.proxy.yml
       COMPOSE_OVERRIDE_FILE=/opt/flowform/repo/infra/environments/rehearsal/compose/docker-compose.proxy.rehearsal.yml

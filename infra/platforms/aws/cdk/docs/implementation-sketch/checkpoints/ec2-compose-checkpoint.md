@@ -18,34 +18,34 @@ Runtime Compose files:
 
 - `infra/runtime/compose/docker-compose.proxy.yml` - public proxy EC2 runtime.
 - `infra/runtime/compose/docker-compose.app.yml` - private app EC2 runtime.
-- `infra/docker/docker-compose.ec2.local.yml` - workstation proof of the split
+- `infra/environments/development/compose/docker-compose.ec2.local.yml` - workstation proof of the split
   with local Caddy, Squid, backend, and Postgres containers.
 
 Proxy/app support files:
 
 - `infra/runtime/config/caddy/Caddyfile.proxy` - production proxy Caddyfile using
   Route 53 DNS-01 and the app private IP as upstream.
-- `infra/docker/caddy/Caddyfile.local` - local proof Caddyfile using
+- `infra/environments/development/compose/caddy/Caddyfile.local` - local proof Caddyfile using
   `tls internal` and the local backend service name.
 - `infra/runtime/config/squid/squid.conf` - fail-closed CONNECT proxy policy rendered
   with the exact app source CIDR.
 - `infra/runtime/config/squid/allowed-domains.txt` - strict starting allow-list for
   Auth0 and the required regional AWS service hosts.
-- `infra/docker/postgres/pg_hba.ec2.local.conf` - local-only Postgres access
+- `infra/environments/development/compose/postgres/pg_hba.ec2.local.conf` - local-only Postgres access
   rule for the Compose proof network.
 
 Design and hardening docs:
 
-- `infra/cdk/docs/implementation-sketch/caddy-ec2-implementation-notes.md`
-- `infra/cdk/docs/implementation-sketch/docker-hardening.md`
-- `infra/cdk/docs/implementation-sketch/host-hardening.md`
-- `infra/cdk/docs/implementation-sketch/ec2-compose-due-diligence-checklist.md`
+- `infra/platforms/aws/cdk/docs/implementation-sketch/caddy-ec2-implementation-notes.md`
+- `infra/platforms/aws/cdk/docs/implementation-sketch/docker-hardening.md`
+- `infra/platforms/aws/cdk/docs/implementation-sketch/host-hardening.md`
+- `infra/platforms/aws/cdk/docs/implementation-sketch/ec2-compose-due-diligence-checklist.md`
 
 CDK orientation files for the next pass:
 
-- `infra/cdk/flowform_infra/stacks/application_stack.py`
-- `infra/cdk/flowform_infra/stacks/network_stack.py`
-- `infra/cdk/flowform_infra/stacks/security_stack.py`
+- `infra/platforms/aws/cdk/flowform_infra/stacks/application_stack.py`
+- `infra/platforms/aws/cdk/flowform_infra/stacks/network_stack.py`
+- `infra/platforms/aws/cdk/flowform_infra/stacks/security_stack.py`
 
 ## Compose Responsibilities
 
@@ -147,7 +147,7 @@ env BACKEND_IMAGE=example.com/flowform-backend:test \
 
 ```bash
 env FLOWFORM_SECRET_DIR=/tmp/flowform-compose-check-secrets \
-  docker compose -f infra/docker/docker-compose.ec2.local.yml config -q
+  docker compose -f infra/environments/development/compose/docker-compose.ec2.local.yml config -q
 ```
 
 The checks prove the Compose files still render under the expected variable

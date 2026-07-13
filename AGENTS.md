@@ -12,6 +12,17 @@ Purpose: Defines repository-wide rules for future agents working in FlowForm.
 The implementation is the source of truth. Documentation may be incomplete, historical, or wrong until verified against source code, tests, configuration, CI, and infrastructure definitions.
 TODO: Verify this against the current implementation.
 
+## Documentation context (Docsys MCP)
+Before meaningful implementation work — whenever existing FlowForm architecture, behaviour, workflows, or domain rules are relevant — call `get_task_context` on the `flowform-docs` MCP server to load focused context. Prefer this retrieval over broadly grepping documentation or reading large parts of the repository. The `flowform-doc-context` skill describes the full workflow.
+
+- Available MCP tools: `search_docs`, `get_document`, `get_related`, `get_task_context`, `get_impacted_docs`, `check_freshness`, `doc_health`. (CLI equivalents live under `scripts/docs/docsys/`; run `python3 -m docsys <command>` with `scripts/docs` on `PYTHONPATH`.)
+- Code, tests, schemas, configuration, and infrastructure remain the source of truth. Documentation provides focused context and implementation boundaries, not authority.
+- Load only the documents returned as relevant; do not load the whole documentation tree.
+- Treat `old-docs/` as historical, never as current architecture.
+- Never manually edit generated documentation under `docs/90-generated/`; regenerate it instead.
+- After behavioural or architectural changes, call `get_impacted_docs` and review each high-confidence result, updating docs only when documented behaviour, responsibilities, boundaries, invariants, or workflows actually changed.
+- Skip this for trivial changes: spelling fixes, formatting, or isolated mechanical renames.
+
 ## Documentation rules
 Read `docs/README.md` and `docs/00-overview/documentation-generator-guide.md` before updating documentation. Keep canonical, planning, reference, and generated documents separate.
 TODO: Verify this against the current implementation.

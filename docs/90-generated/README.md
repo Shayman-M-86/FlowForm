@@ -16,6 +16,7 @@ related_docs:
   - "Configuration index"
   - "Dependency map"
   - "Infrastructure resources"
+  - "Documentation health dashboard"
 ---
 
 # Generated documentation
@@ -25,10 +26,10 @@ Indexes documentation intended to be reproducible from repository contents.
 Generated files must identify the generator, scanned sources, and no-manual-edit expectations. TODO: Verify this against the current implementation.
 
 ## Available generated documents
-This directory includes repository tree, dependency map, API routes, CI workflows, infrastructure resources, and configuration index scaffolds. TODO: Verify this against the current implementation.
+This directory includes repository tree, dependency map, API routes, CI workflows, infrastructure resources, and configuration index scaffolds, plus the reproducible [[Documentation health dashboard|health dashboard]]. The machine-readable `documentation-index.json` and `documentation-health.json` are also generated here for tooling and agents. TODO: Verify the scaffolds against the current implementation.
 
 ## Generator scripts
-Generator and validation scripts live under `scripts/docs/`. TODO: Verify this against the current implementation.
+Generator and validation scripts live under `scripts/docs/`. The `docsys` package (`scripts/docs/docsys/`) builds the documentation index, health dashboard, and impact/freshness reports. TODO: Verify this against the current implementation.
 
 ## Regeneration workflow
 Run the relevant generator, review diffs, validate metadata and links, then record the verified commit. TODO: Verify this against the current implementation.
@@ -46,3 +47,4 @@ Manual edits are allowed only to improve scaffold rules until generation is full
 - [[Configuration index]]
 - [[Dependency map]]
 - [[Infrastructure resources]]
+- [[Documentation health dashboard]]

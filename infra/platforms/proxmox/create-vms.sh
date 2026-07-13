@@ -18,12 +18,12 @@ set -Eeuo pipefail
 # The app box (220) boots with cloud-init user-data (--cicustom) that trusts the
 # rehearsal CA, resolves the *.localstack.test SNI names to the ls-vm, and runs
 # bootstrap-app.sh. That user-data is RENDERED from the real repo files by
-# render-user-data.sh (single source of truth) — this script renders
+# infra/runtime/cloud-init/render-user-data.sh (single source of truth) — this script renders
 # it and installs it as a PVE snippet before cloning 220.
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/template-build.sh
-. "${SCRIPT_DIR}/lib/template-build.sh"
+# shellcheck source=lib/cloud-init-snippets.sh
+. "${SCRIPT_DIR}/lib/cloud-init-snippets.sh"
 
 TEMPLATE_VMID="${TEMPLATE_VMID:-9000}"        # golden base → proxy + app
 LS_TEMPLATE_VMID="${LS_TEMPLATE_VMID:-${TEMPLATE_VMID}}"  # default: clone golden; LocalStack fixtures are runtime-managed
@@ -67,23 +67,24 @@ fi
 
 # Render the app + proxy cloud-init from the real repo files and install them as
 # PVE snippets. `create-vms.sh` runs on the PVE host from a synced copy, so the
-# shared ../runtime/cloud-init/ files (templates + render script) are here; the render
+# shared runtime/cloud-init files (templates + render script) are here; the renderer
 # script reaches the repo sources via REPO_ROOT (sync from the repo root — see
 # README — or export REPO_ROOT).
 APP_USERDATA_REF=""
 PROXY_USERDATA_REF=""
 LOCALSTACK_USERDATA_REF=""
 render_userdata() {
-  local ci_dir="$(cd -- "${SCRIPT_DIR}/../runtime/cloud-init" && pwd)"
-  [[ -x "${SCRIPT_DIR}/render-user-data.sh" ]] || die "missing ${SCRIPT_DIR}/render-user-data.sh"
+  local ci_dir="$(cd -- "${SCRIPT_DIR}/../../runtime/cloud-init" && pwd)"
+  local renderer="${ci_dir}/render-user-data.sh"
+  [[ -x "${renderer}" ]] || die "missing ${renderer}"
   log "rendering app + proxy cloud-init from repo sources"
-  "${SCRIPT_DIR}/render-user-data.sh" || die "render-user-data.sh failed"
-  APP_USERDATA_REF="$(tb_install_snippet "${ci_dir}/app.user-data.rendered.yaml" flowform-app.user-data.yaml)" \
+  "${renderer}" || die "render-user-data.sh failed"
+  APP_USERDATA_REF="$(proxmox_install_snippet "${ci_dir}/app.user-data.rendered.yaml" flowform-app.user-data.yaml)" \
     || die "installing app user-data snippet failed (run setup-host.sh?)"
-  PROXY_USERDATA_REF="$(tb_install_snippet "${ci_dir}/proxy.user-data.rendered.yaml" flowform-proxy.user-data.yaml)" \
+  PROXY_USERDATA_REF="$(proxmox_install_snippet "${ci_dir}/proxy.user-data.rendered.yaml" flowform-proxy.user-data.yaml)" \
     || die "installing proxy user-data snippet failed (run setup-host.sh?)"
   log "app   user-data snippet: ${APP_USERDATA_REF}"
-  LOCALSTACK_USERDATA_REF="$(tb_install_snippet "${ci_dir}/localstack.user-data.rendered.yaml" flowform-localstack.user-data.yaml)" \
+  LOCALSTACK_USERDATA_REF="$(proxmox_install_snippet "${ci_dir}/localstack.user-data.rendered.yaml" flowform-localstack.user-data.yaml)" \
     || die "installing localstack user-data snippet failed (run setup-host.sh?)"
   log "proxy user-data snippet: ${PROXY_USERDATA_REF}"
   log "localstack user-data snippet: ${LOCALSTACK_USERDATA_REF}"

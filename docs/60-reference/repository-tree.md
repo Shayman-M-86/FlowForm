@@ -102,8 +102,8 @@ FlowForm/
 | Backend application       | `backend/wsgi.py`, which imports `create_app` from `backend/app/`; the factory is implemented in `backend/app/core/factory.py` |
 | Public site               | Astro pages under `frontend/apps/public-site/src/pages/`, configured by `frontend/apps/public-site/astro.config.mjs`           |
 | Studio application        | `frontend/apps/studio-app/src/main.tsx` and `frontend/apps/studio-app/src/lib/router.ts`                                       |
-| AWS infrastructure        | `infra/cdk/app.py`                                                                                                             |
-| Local and test containers | `infra/docker/docker-compose.dev.yml` and `infra/docker/docker-compose.test.yml`                                               |
+| AWS infrastructure        | `infra/platforms/aws/cdk/app.py`                                                                                               |
+| Local and test containers | `infra/environments/development/compose/docker-compose.dev.yml` and `infra/tests/compose/docker-compose.test.yml`             |
 | Host runtime definitions  | `infra/runtime/compose/` and `infra/runtime/bootstrap/`                                                                        |
 | Continuous integration    | `.github/workflows/ci.yml`                                                                                                     |
 | Frontend deployment       | `.github/workflows/deploy.yml`                                                                                                 |
@@ -120,7 +120,7 @@ git ls-tree -r --name-only HEAD backend frontend infra scripts tools .github
 find backend/app -maxdepth 2 -type d
 find frontend/apps frontend/packages -maxdepth 3 -type d
 find infra -maxdepth 3 -type d
-find backend/tests infra/cdk/tests infra/tests frontend/apps/studio-app/tests -type f
+find backend/tests infra/platforms/aws/cdk/tests infra/tests frontend/apps/studio-app/tests -type f
 ```
 
 The `find` results were filtered to exclude dependency directories, virtual environments, caches, generated build directories, and `old-docs/`. Package manifests, application entry points, test configuration, infrastructure entry points, and workflow files were then inspected directly.

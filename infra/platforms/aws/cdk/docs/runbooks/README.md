@@ -10,7 +10,7 @@ stacks. Each file covers one area; this page is the index.
 
 All commands assume:
 
-- You're in `infra/cdk/` (`cd infra/cdk` first).
+- You're in `infra/platforms/aws/cdk/` (`cd infra/platforms/aws/cdk` first).
 - AWS credentials for the target account are active (`aws login` / `aws sso login` / `AWS_PROFILE`).
 - The CDK CLI runs via `npx cdk …` (it's a Node tool, not vendored in this Python project).
 

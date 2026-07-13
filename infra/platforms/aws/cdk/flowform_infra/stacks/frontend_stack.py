@@ -40,7 +40,7 @@ class FrontendStack(Stack):
         if env_config.auth0_public is None:
             raise ValueError(
                 f"EnvConfig for '{env_config.env_name}' has no auth0_public config — "
-                f"create infra/cdk/.env.{env_config.env_name} with AUTH0_DOMAIN, "
+                f"create infra/platforms/aws/cdk/.env.{env_config.env_name} with AUTH0_DOMAIN, "
                 "AUTH0_CLIENT_ID, and AUTH0_AUDIENCE (see .env.dev.example) "
                 "before deploying the frontend stack."
             )

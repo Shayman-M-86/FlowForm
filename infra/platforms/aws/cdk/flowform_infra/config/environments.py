@@ -5,7 +5,7 @@ from typing import Literal
 
 from aws_cdk import RemovalPolicy
 
-# infra/cdk — where the per-env `.env.<env>` files live (gitignored).
+# infra/platforms/aws/cdk — where the per-env `.env.<env>` files live (gitignored).
 _CDK_ROOT = Path(__file__).resolve().parents[2]
 
 EnvName = Literal["dev", "staging", "prod"]
@@ -36,7 +36,7 @@ class EnvConfig:
     removal_policy: RemovalPolicy
     deletion_protection: bool
     # When False (dev), only the Security stack is synthesized — the app and
-    # databases run locally via Docker Compose (infra/docker/), and the
+    # databases run locally via Docker Compose (infra/environments/development/compose/), and the
     # frontends run on local Vite dev servers. Compute/hosting fields below
     # (db_instance_class, auth0_public) are unused until this is True.
     full_deployment: bool
@@ -60,7 +60,7 @@ class EnvConfig:
     security_scope: str = "nonprod"
     # Packer-built EC2 base image contract. CDK must consume this explicit AMI
     # reference instead of selecting an unrelated latest base image. Prefer
-    # publishing infra/images/manifests/packer-manifest.json output to this SSM
+    # publishing infra/image-factory/manifests/packer-manifest.json output to this SSM
     # parameter after an AWS image build.
     ec2_base_ami_ssm_parameter: str | None = None
     # Optional direct AMI ID override for tests/break-glass deployments. If set,
@@ -98,12 +98,12 @@ class SecurityScopeConfig:
 
 
 # Region matches the KMS key / Secrets Manager secret already in use for
-# dev (see infra/docker/.backend.env FLOWFORM_ENCRYPTION_* ARNs).
+# dev (see infra/environments/development/compose/.backend.env FLOWFORM_ENCRYPTION_* ARNs).
 _DEFAULT_REGION = "ap-southeast-2"
 
 # Route53 hosted zone + SES domain identity, already configured by hand in
 # AWS (matches FLOWFORM_EMAIL_FROM_ADDRESS=no-reply@flow-form.com.au in
-# infra/docker/.backend.env). Same domain across all envs for now — revisit
+# infra/environments/development/compose/.backend.env). Same domain across all envs for now — revisit
 # if staging/prod end up on subdomains.
 DOMAIN_NAME = "flow-form.com.au"
 
@@ -118,7 +118,7 @@ GITHUB_REPOSITORY = "FlowForm"
 # developer, AWS Organizations + member accounts was judged more operational
 # overhead than it's worth right now; revisit (prod in its own member
 # account) if/when the project grows. The account ID matches the ARNs
-# already in infra/docker/.backend.env.
+# already in infra/environments/development/compose/.backend.env.
 _ACCOUNT = "908123139858"
 
 _ENVIRONMENTS: dict[EnvName, EnvConfig] = {

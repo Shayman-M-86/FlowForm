@@ -13,8 +13,8 @@
             "path": "../frontend"
         },
         {
-            "name": "infra/cdk",
-            "path": "../infra/cdk"
+            "name": "infra/platforms/aws/cdk",
+            "path": "../infra/platforms/aws/cdk"
         }
     ],
     "settings": {
@@ -33,7 +33,7 @@
         ],
         "python.analysis.include": [
             "${workspaceFolder:backend}",
-            "${workspaceFolder:infra/cdk}"
+            "${workspaceFolder:infra/platforms/aws/cdk}"
         ],
         "python.analysis.exclude": [
             "**/.git/**",

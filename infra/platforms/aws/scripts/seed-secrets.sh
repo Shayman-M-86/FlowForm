@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Pushes real secret values from infra/cdk/.env.<env> into the two Secrets
+# Pushes real secret values from infra/platforms/aws/cdk/.env.<env> into the two Secrets
 # Manager entries security_stack.py creates (flowform/<env>/app-secrets and
 # flowform/<env>/db-secrets). CDK only provisions the secrets with generated
 # placeholder values — it never seeds real values, so this script is the
@@ -12,11 +12,11 @@ set -euo pipefail
 # asked to confirm y/n for each secret before it's written.
 #
 # Usage:
-#   infra/scripts/cdk/seed-secrets.sh [--env dev] [--send]
+#   infra/platforms/aws/scripts/seed-secrets.sh [--env dev] [--send]
 
 SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-# This script lives at infra/scripts/cdk/; the CDK root (where .env.<env>
-# lives) is infra/cdk/.
+# This script lives at infra/platforms/aws/scripts/; the CDK root (where .env.<env>
+# lives) is infra/platforms/aws/cdk/.
 CDK_ROOT="$(cd "$SCRIPT_DIR/../../cdk" >/dev/null 2>&1 && pwd)"
 
 ENV_NAME="dev"

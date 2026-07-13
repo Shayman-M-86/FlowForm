@@ -8,6 +8,8 @@ Checks every Markdown file under docs/ for:
 - globally unique titles (case-insensitive), since wiki links resolve by title
 - tags drawn only from the controlled vocabulary in the documentation model
 - related_docs entries that resolve to an existing document title
+- optional tooling fields, when present, having valid shapes: change_triggers
+  and exclusions must be lists; code_confidence must be high/medium/low
 
 Exits 0 on success and 1 when validation issues are found. Dependency-free by
 design; see docs/00-overview/documentation-model.md for the conventions.
@@ -21,6 +23,12 @@ DOCS = ROOT / "docs"
 REQUIRED = ["title", "document_type", "status", "authority",
             "verified_against_commit", "related_code", "related_docs"]
 ALLOWED_STATUS = {"scaffold", "draft", "verified"}
+ALLOWED_CONFIDENCE = {"high", "medium", "low"}
+# Optional tooling fields (consumed by scripts/docs/docsys/): related_code may
+# use directories and globs; change_triggers/exclusions extend or subtract the
+# matched code set; code_confidence weights impact/freshness. See the
+# documentation model for the contract.
+LIST_FIELDS = {"change_triggers", "exclusions"}
 TAG_VOCABULARY = {"backend", "frontend", "infrastructure", "security",
                   "configuration", "ci-cd", "tooling", "meta"}
 
@@ -76,6 +84,13 @@ for path in sorted(DOCS.rglob("*.md")):
         if tag not in TAG_VOCABULARY:
             issues.append(f"{rel}: tag '{tag}' not in controlled vocabulary "
                           f"{sorted(TAG_VOCABULARY)}")
+    for field in LIST_FIELDS:
+        if field in fm and not isinstance(fm[field], list):
+            issues.append(f"{rel}: optional field '{field}' must be a list")
+    confidence = fm.get("code_confidence")
+    if confidence is not None and confidence not in ALLOWED_CONFIDENCE:
+        issues.append(f"{rel}: code_confidence '{confidence}' not in "
+                      f"{sorted(ALLOWED_CONFIDENCE)}")
 
 # Titles must be unique because wiki links resolve by title.
 by_title = {}

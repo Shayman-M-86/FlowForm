@@ -6,9 +6,9 @@ authority: canonical
 verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
 tags: [backend, frontend, infrastructure]
 related_code:
-  - "../../infra/docker/docker-compose.dev.yml"
-  - "../../infra/docker/docker-compose.test.yml"
-  - "../../infra/docker/docker-compose.ec2.local.yml"
+  - "../../infra/environments/development/compose/docker-compose.dev.yml"
+  - "../../infra/tests/compose/docker-compose.test.yml"
+  - "../../infra/environments/development/compose/docker-compose.ec2.local.yml"
   - "../../frontend/docker-compose.dev.yml"
   - "../../infra/runtime/compose/"
   - "../../infra/runtime/bootstrap/"

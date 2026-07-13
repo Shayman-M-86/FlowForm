@@ -35,7 +35,7 @@ die() { printf '[build-push-backend] ERROR: %s\n' "$*" >&2; exit 1; }
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${REPO_ROOT:-$(cd -- "${SCRIPT_DIR}/../../../.." && pwd)}"
 
-DOCKERFILE="${REPO_ROOT}/infra/docker/backend.Dockerfile"
+DOCKERFILE="${REPO_ROOT}/infra/environments/development/compose/backend.Dockerfile"
 [[ -f "${DOCKERFILE}" ]] || die "backend Dockerfile not found at ${DOCKERFILE} (REPO_ROOT=${REPO_ROOT}; sync the repo to the dev box or set REPO_ROOT=)"
 command -v docker >/dev/null 2>&1 || die "docker not found on this box"
 

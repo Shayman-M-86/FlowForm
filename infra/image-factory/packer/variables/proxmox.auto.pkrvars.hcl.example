@@ -1,4 +1,4 @@
-# Copy to local.auto.pkrvars.hcl and fill with your Proxmox values. Do not commit the copy.
+# Copy to proxmox.auto.pkrvars.hcl and fill with your Proxmox values. Do not commit the copy.
 # proxmox_source_template should be a minimal template imported from the official
 # Amazon Linux 2023 KVM qcow2 image and bootable with cloud-init/SSH for ec2-user.
 proxmox_api_url         = "https://pve.example.lan:8006/api2/json"

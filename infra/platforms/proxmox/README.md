@@ -1,44 +1,26 @@
-# Proxmox runtime orchestration
+# Proxmox platform orchestration
 
-This directory is only for Proxmox-specific host setup, snippet rendering,
-template cloning, local networking and VM destruction. Packer image construction
-lives in `infra/images`; runtime bootstrap lives in `infra/runtime`; rehearsal
-fixtures live in `infra/environments/rehearsal`.
+This directory owns Proxmox host and VM lifecycle operations: bridge setup,
+cloud-init snippet installation, VM cloning, and VM destruction. It does not
+construct images.
 
-## Build the template
-
-From a developer machine or CI runner with Proxmox API access, first import the
-official Amazon Linux 2023 KVM qcow2 image into Proxmox as a minimal base
-template named by `proxmox_source_template`; Packer then clones that base and
-owns FlowForm image provisioning:
+Build the shared golden template through the machine-image pipeline first:
 
 ```bash
-cd infra/images/packer
-cp variables/local.auto.pkrvars.hcl.example local.auto.pkrvars.hcl
-packer init .
-packer validate -syntax-only .
-packer build -only='proxmox-clone.amazon_linux_2023' .
+infra/image-factory/build-proxmox-template.sh
 ```
 
-`create-template.sh` is a compatibility wrapper around the same Packer flow.
-
-## Prepare and run local VMs
-
-On the Proxmox host, from a synced checkout:
+Then, on the Proxmox host, create the rehearsal topology:
 
 ```bash
 ./setup-host.sh
 ./create-vms.sh --force
 ```
 
-Defaults:
+`create-vms.sh` renders `infra/runtime/cloud-init` templates and attaches them
+as Proxmox snippets before boot. Environment-specific values and fixtures remain
+under `infra/environments/rehearsal`; the rendered cloud-init starts shared
+runtime bootstrap and Compose files.
 
-| VMID | Role | Template |
-| --- | --- | --- |
-| 210 | proxy | `TEMPLATE_VMID` (default 9000) |
-| 220 | app | `TEMPLATE_VMID` (default 9000) |
-| 230 | LocalStack/fixtures | `LS_TEMPLATE_VMID`, defaulting to `TEMPLATE_VMID` |
-| 240 | optional dev box | `DEV_TEMPLATE_VMID`, defaulting to `TEMPLATE_VMID` |
-
-Runtime cloud-init templates live in `../runtime/cloud-init/` and are rendered
-by `./render-user-data.sh` before clone startup.
+The defaults clone golden template `9000` for proxy, app, LocalStack, and the
+optional development box. No rehearsal-specific image-baking wrapper remains.

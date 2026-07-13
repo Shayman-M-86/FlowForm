@@ -6,10 +6,10 @@ authority: canonical
 verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
 tags: [infrastructure, configuration, ci-cd]
 related_code:
-  - "../../infra/cdk/app.py"
-  - "../../infra/cdk/flowform_infra/config/environments.py"
-  - "../../infra/cdk/flowform_infra/stacks/"
-  - "../../infra/cdk/flowform_infra/constructs/static_site_construct.py"
+  - "../../infra/platforms/aws/cdk/app.py"
+  - "../../infra/platforms/aws/cdk/flowform_infra/config/environments.py"
+  - "../../infra/platforms/aws/cdk/flowform_infra/stacks/"
+  - "../../infra/platforms/aws/cdk/flowform_infra/constructs/static_site_construct.py"
   - "../../infra/runtime/"
   - "../../infra/environments/rehearsal/"
   - "../../.github/workflows/deploy.yml"
@@ -84,7 +84,7 @@ environment region.
 
 ## CDK implementation boundary
 
-The stack names in `infra/cdk/app.py` do not all represent completed resource
+The stack names in `infra/platforms/aws/cdk/app.py` do not all represent completed resource
 sets.
 
 | Stack area | Current implementation state |

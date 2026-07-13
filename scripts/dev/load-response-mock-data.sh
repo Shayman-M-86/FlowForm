@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
-SECRET_FILE="${SECRET_FILE:-${PROJECT_ROOT}/infra/docker/secrets/DATABASE_RESPONSE_INIT_PASSWORD.dev.secret.txt}"
+SECRET_FILE="${SECRET_FILE:-${PROJECT_ROOT}/infra/environments/development/compose/secrets/DATABASE_RESPONSE_INIT_PASSWORD.dev.secret.txt}"
 SQL_FILE="${1:-${SQL_FILE:-${PROJECT_ROOT}/infra/postgres/flowform_response_mock_data.sql}}"
 CONTAINER_NAME="${CONTAINER_NAME:-flowform-postgres-response}"
 DB_HOST="${DB_HOST:-localhost}"

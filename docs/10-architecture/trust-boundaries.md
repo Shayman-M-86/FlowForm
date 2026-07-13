@@ -14,7 +14,7 @@ related_code:
   - "../../infra/runtime/compose/"
   - "../../infra/runtime/config/"
   - "../../infra/runtime/bootstrap/"
-  - "../../infra/cdk/flowform_infra/stacks/"
+  - "../../infra/platforms/aws/cdk/flowform_infra/stacks/"
 related_docs:
   - "Security model"
   - "System context"

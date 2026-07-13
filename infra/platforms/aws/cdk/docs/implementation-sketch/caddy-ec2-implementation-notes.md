@@ -257,7 +257,7 @@ for Caddy in [Certificate Flow](#certificate-flow).
 
 ## Compose and Caddyfile Sketch
 
-The production Compose files belong under `infra/docker/`, as called out in
+The production Compose files belong under `infra/runtime/compose/`, as called out in
 [Phase 2a](core-sketch-plan.md#phase-2--backend-runtime-on-ec2). The proxy
 instance uses `docker-compose.proxy.yml` (Caddy + Squid); the private app
 instance uses `docker-compose.app.yml` (backend only). RDS is external.

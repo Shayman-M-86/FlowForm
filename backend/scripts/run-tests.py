@@ -59,7 +59,8 @@ if isinstance(sys.stderr, TextIOWrapper):
 # ------------------------------------------------------------------------------
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-COMPOSE_FILE = PROJECT_ROOT / "infra/docker/docker-compose.test.yml"
+COMPOSE_FILE = PROJECT_ROOT / "infra/tests/compose/docker-compose.test.yml"
+COMPOSE_ENV_FILE = PROJECT_ROOT / "infra/environments/development/compose/.env"
 COMPOSE_PROJECT = "flowform-test-environment"
 BACKEND_SERVICE = "backend-test"
 CONTAINER = "flowform-backend-test"
@@ -76,14 +77,14 @@ COLOR_RED = "\033[31m"
 
 FINGERPRINT_INPUTS = {
     "environment": (
-        "infra/docker/docker-compose.test.yml",
-        "infra/docker/.backend.env",
-        "infra/docker/.db.core.env",
-        "infra/docker/.db.response.env",
-        "infra/docker/.env",
+        "infra/tests/compose/docker-compose.test.yml",
+        "infra/environments/development/compose/.backend.env",
+        "infra/environments/development/compose/.db.core.env",
+        "infra/environments/development/compose/.db.response.env",
+        "infra/environments/development/compose/.env",
     ),
     "build": (
-        "infra/docker/backend.test.Dockerfile",
+        "infra/tests/compose/backend.test.Dockerfile",
         "backend/pyproject.toml",
         "backend/uv.lock",
     ),
@@ -158,7 +159,17 @@ def run(args: list[str], *, check: bool = True, capture: bool = False) -> subpro
 
 
 def compose_args(*args: str) -> list[str]:
-    return ["docker", "compose", "-p", COMPOSE_PROJECT, "-f", str(COMPOSE_FILE), *args]
+    return [
+        "docker",
+        "compose",
+        "--env-file",
+        str(COMPOSE_ENV_FILE),
+        "-p",
+        COMPOSE_PROJECT,
+        "-f",
+        str(COMPOSE_FILE),
+        *args,
+    ]
 
 
 def print_section(title: str) -> None:

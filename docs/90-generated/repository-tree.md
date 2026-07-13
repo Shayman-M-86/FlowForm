@@ -35,6 +35,11 @@ FlowForm/
 │   │   ├── impl-start.md
 │   │   ├── repomap.md
 │   │   └── workflow-setup.md
+│   ├── hooks/
+│   │   ├── docsys_hook_lib.py
+│   │   ├── record_doc_review.py
+│   │   ├── session_start_capture_base.py
+│   │   └── stop_doc_impact_review.py
 │   ├── rules/
 │   │   ├── repomap/
 │   │   │   ├── backend-app-api-v1.md
@@ -58,6 +63,8 @@ FlowForm/
 │   │   ├── frontend-public-site.md
 │   │   └── frontend-studio.md
 │   ├── skills/
+│   │   ├── flowform-doc-context/
+│   │   │   └── SKILL.md
 │   │   ├── integrity-rules-and-sql-constraints/
 │   │   │   └── SKILL.md
 │   │   └── source-command-repomap/
@@ -113,6 +120,9 @@ FlowForm/
 │   │   └── environment.toml
 │   ├── config.toml
 │   └── hooks.json
+├── .docsys/
+│   └── hook-state/
+│       └── bff45442-3a46-48e1-8848-fb8445557d73.json
 ├── .githooks/
 │   └── pre-commit
 ├── .github/
@@ -515,6 +525,13 @@ FlowForm/
 │   ├── uv.lock
 │   └── wsgi.py
 ├── docs/
+│   ├── .obsidian/
+│   │   ├── plugins/
+│   │   ├── app.json
+│   │   ├── appearance.json
+│   │   ├── core-plugins.json
+│   │   ├── graph.json
+│   │   └── workspace.json
 │   ├── 00-overview/
 │   │   ├── architecture-principles.md
 │   │   ├── documentation-generator-guide.md
@@ -523,6 +540,8 @@ FlowForm/
 │   │   ├── repository-map.md
 │   │   └── system-summary.md
 │   ├── 10-architecture/
+│   │   ├── assets/
+│   │   │   └── data-flows-overview.svg
 │   │   ├── component-map.md
 │   │   ├── data-flows.md
 │   │   ├── deployment-model.md
@@ -580,6 +599,9 @@ FlowForm/
 │   │   ├── ci-workflows.md
 │   │   ├── configuration-index.md
 │   │   ├── dependency-map.md
+│   │   ├── documentation-dashboard.md
+│   │   ├── documentation-health.json
+│   │   ├── documentation-index.json
 │   │   ├── infrastructure-resources.md
 │   │   ├── README.md
 │   │   └── repository-tree.md
@@ -756,126 +778,61 @@ FlowForm/
 │   ├── pnpm-workspace.yaml
 │   └── tsconfig.base.json
 ├── infra/
-│   ├── cdk/
-│   │   ├── .vscode/
-│   │   │   └── settings.json
-│   │   ├── docs/
-│   │   │   ├── implementation-sketch/
-│   │   │   │   ├── checkpoints/
-│   │   │   │   ├── caddy-ec2-implementation-notes.md
-│   │   │   │   ├── core-sketch-plan.md
-│   │   │   │   ├── docker-hardening.md
-│   │   │   │   ├── ec2-compose-due-diligence-checklist.md
-│   │   │   │   ├── github-actions-cicd-flow.md
-│   │   │   │   └── host-hardening.md
-│   │   │   ├── runbooks/
-│   │   │   │   ├── frontend-deploy.md
-│   │   │   │   ├── README.md
-│   │   │   │   └── teardown.md
-│   │   │   ├── aws-overview.md
-│   │   │   ├── cost-model.md
-│   │   │   ├── deployment.md
-│   │   │   ├── environments.md
-│   │   │   ├── manual-prerequisites.md
-│   │   │   └── secrets-and-config.md
-│   │   ├── flowform_infra/
-│   │   │   ├── config/
-│   │   │   │   ├── __init__.py
-│   │   │   │   └── environments.py
-│   │   │   ├── constructs/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── kms_construct.py
-│   │   │   │   ├── secrets_construct.py
-│   │   │   │   ├── ses_construct.py
-│   │   │   │   └── static_site_construct.py
-│   │   │   ├── stacks/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── application_stack.py
-│   │   │   │   ├── database_stack.py
-│   │   │   │   ├── frontend_cert_stack.py
-│   │   │   │   ├── frontend_stack.py
-│   │   │   │   ├── network_stack.py
-│   │   │   │   ├── observability_stack.py
-│   │   │   │   └── security_stack.py
-│   │   │   └── __init__.py
-│   │   ├── tests/
-│   │   │   ├── __init__.py
-│   │   │   ├── test_ec2_compose_stack.py
-│   │   │   ├── test_environments.py
-│   │   │   ├── test_frontend_stack.py
-│   │   │   └── test_security_stack.py
-│   │   ├── .env
-│   │   ├── .env.dev.example
-│   │   ├── .env.staging
-│   │   ├── app.py
-│   │   ├── cdk.context.json
-│   │   ├── cdk.json
-│   │   ├── package-lock.json
-│   │   ├── package.json
-│   │   ├── pyproject.toml
-│   │   ├── pyrightconfig.json
-│   │   ├── README.md
-│   │   └── uv.lock
 │   ├── docker/
-│   │   ├── caddy/
-│   │   │   ├── Caddyfile
-│   │   │   └── Caddyfile.local
-│   │   ├── postgres/
-│   │   │   └── pg_hba.ec2.local.conf
-│   │   ├── secrets/
-│   │   │   ├── DATABASE_CORE_APP_PASSWORD.dev.secret.txt
-│   │   │   ├── DATABASE_CORE_APP_PASSWORD.prod.secret.txt
-│   │   │   ├── DATABASE_CORE_APP_PASSWORD.test.secret.txt
-│   │   │   ├── DATABASE_CORE_INIT_PASSWORD.dev.secret.txt
-│   │   │   ├── DATABASE_CORE_INIT_PASSWORD.prod.secret.txt
-│   │   │   ├── DATABASE_CORE_INIT_PASSWORD.test.secret.txt
-│   │   │   ├── DATABASE_RESPONSE_APP_PASSWORD.dev.secret.txt
-│   │   │   ├── DATABASE_RESPONSE_APP_PASSWORD.prod.secret.txt
-│   │   │   ├── DATABASE_RESPONSE_APP_PASSWORD.test.secret.txt
-│   │   │   ├── DATABASE_RESPONSE_INIT_PASSWORD.dev.secret.txt
-│   │   │   ├── DATABASE_RESPONSE_INIT_PASSWORD.prod.secret.txt
-│   │   │   ├── DATABASE_RESPONSE_INIT_PASSWORD.test.secret.txt
-│   │   │   ├── FLOWFORM_APP_SECRET_KEY.prod.secret.txt
-│   │   │   └── FLOWFORM_APP_SECRET_KEY.test.secret.txt
-│   │   ├── .backend.env
-│   │   ├── .db.core.env
-│   │   ├── .db.response.env
-│   │   ├── .env
-│   │   ├── backend.Dockerfile
-│   │   ├── backend.test.Dockerfile
-│   │   ├── caddy.Dockerfile
-│   │   ├── docker-compose.dev.yml
-│   │   ├── docker-compose.ec2.local.yml
-│   │   ├── docker-compose.test.yml
-│   │   └── frontend.Dockerfile
+│   │   └── secrets/
+│   │       ├── DATABASE_CORE_APP_PASSWORD.test.secret.txt/
+│   │       ├── DATABASE_CORE_INIT_PASSWORD.test.secret.txt/
+│   │       ├── DATABASE_RESPONSE_APP_PASSWORD.test.secret.txt/
+│   │       ├── DATABASE_RESPONSE_INIT_PASSWORD.test.secret.txt/
+│   │       └── FLOWFORM_APP_SECRET_KEY.test.secret.txt/
 │   ├── environments/
-│   │   └── rehearsal/
-│   │       ├── compose/
-│   │       │   ├── docker-compose.app.rehearsal.yml
-│   │       │   └── docker-compose.proxy.rehearsal.yml
-│   │       ├── fixtures/
-│   │       │   ├── caddy/
-│   │       │   ├── localstack/
-│   │       │   ├── registry/
-│   │       │   ├── squid/
-│   │       │   └── tls-shim/
+│   │   ├── development/
+│   │   │   ├── compose/
+│   │   │   │   ├── caddy/
+│   │   │   │   ├── postgres/
+│   │   │   │   ├── secrets/
+│   │   │   │   ├── .backend.env
+│   │   │   │   ├── .db.core.env
+│   │   │   │   ├── .db.response.env
+│   │   │   │   ├── .env
+│   │   │   │   ├── backend.Dockerfile
+│   │   │   │   ├── caddy.Dockerfile
+│   │   │   │   ├── docker-compose.dev.yml
+│   │   │   │   ├── docker-compose.ec2.local.yml
+│   │   │   │   └── frontend.Dockerfile
+│   │   │   └── README.md
+│   │   ├── production/
+│   │   │   └── README.md
+│   │   ├── rehearsal/
+│   │   │   ├── compose/
+│   │   │   │   ├── docker-compose.app.rehearsal.yml
+│   │   │   │   └── docker-compose.proxy.rehearsal.yml
+│   │   │   ├── fixtures/
+│   │   │   │   ├── caddy/
+│   │   │   │   ├── localstack/
+│   │   │   │   ├── registry/
+│   │   │   │   ├── squid/
+│   │   │   │   └── tls-shim/
+│   │   │   └── README.md
+│   │   └── staging/
 │   │       └── README.md
-│   ├── images/
+│   ├── image-factory/
 │   │   ├── manifests/
 │   │   │   ├── extract-aws-ami-id.sh
 │   │   │   └── README.md
 │   │   ├── packer/
-│   │   │   ├── sources/
 │   │   │   ├── variables/
 │   │   │   │   ├── aws.auto.pkrvars.hcl.example
-│   │   │   │   └── local.auto.pkrvars.hcl.example
-│   │   │   ├── aws.pkr.hcl
-│   │   │   ├── builds.pkr.hcl
+│   │   │   │   └── proxmox.auto.pkrvars.hcl.example
+│   │   │   ├── build.golden.pkr.hcl
 │   │   │   ├── locals.pkr.hcl
-│   │   │   ├── proxmox.pkr.hcl
 │   │   │   ├── required_plugins.pkr.hcl
-│   │   │   └── variables.pkr.hcl
-│   │   ├── provisioning/
+│   │   │   ├── source.aws.pkr.hcl
+│   │   │   ├── source.proxmox.pkr.hcl
+│   │   │   ├── variables.aws.pkr.hcl
+│   │   │   ├── variables.common.pkr.hcl
+│   │   │   └── variables.proxmox.pkr.hcl
+│   │   ├── provisioners/
 │   │   │   ├── aws/
 │   │   │   │   ├── configure-ec2.sh
 │   │   │   │   └── configure-ssm.sh
@@ -890,8 +847,37 @@ FlowForm/
 │   │   │   └── proxmox/
 │   │   │       ├── configure-proxmox-guest.sh
 │   │   │       └── install-qemu-agent.sh
+│   │   ├── build-proxmox-template.sh
 │   │   ├── IMAGE-CONTRACT.md
 │   │   └── README.md
+│   ├── platforms/
+│   │   ├── aws/
+│   │   │   ├── cdk/
+│   │   │   │   ├── .vscode/
+│   │   │   │   ├── docs/
+│   │   │   │   ├── flowform_infra/
+│   │   │   │   ├── tests/
+│   │   │   │   ├── .env
+│   │   │   │   ├── .env.dev.example
+│   │   │   │   ├── .env.staging
+│   │   │   │   ├── app.py
+│   │   │   │   ├── cdk.context.json
+│   │   │   │   ├── cdk.json
+│   │   │   │   ├── package-lock.json
+│   │   │   │   ├── package.json
+│   │   │   │   ├── pyproject.toml
+│   │   │   │   ├── pyrightconfig.json
+│   │   │   │   ├── README.md
+│   │   │   │   └── uv.lock
+│   │   │   └── scripts/
+│   │   │       └── seed-secrets.sh
+│   │   └── proxmox/
+│   │       ├── lib/
+│   │       │   └── cloud-init-snippets.sh
+│   │       ├── create-vms.sh
+│   │       ├── destroy-vms.sh
+│   │       ├── README.md
+│   │       └── setup-host.sh
 │   ├── postgres/
 │   │   ├── config/
 │   │   │   └── pg_hba.conf
@@ -908,29 +894,6 @@ FlowForm/
 │   │   │   └── init_readme.md
 │   │   ├── flowform_core_mock_data.sql
 │   │   └── flowform_response_mock_data.sql
-│   ├── proxmox/
-│   │   ├── lib/
-│   │   │   └── template-build.sh
-│   │   ├── create-template.sh
-│   │   ├── create-vms.sh
-│   │   ├── destroy-vms.sh
-│   │   ├── README.md
-│   │   ├── render-user-data.sh
-│   │   └── setup-host.sh
-│   ├── rehearsal/
-│   │   ├── cloud-init/
-│   │   ├── proxmox/
-│   │   │   ├── cloud-init/
-│   │   │   │   ├── dev-builder.user-data.yaml
-│   │   │   │   ├── golden-builder.user-data.yaml
-│   │   │   │   └── localstack-builder.user-data.yaml
-│   │   │   ├── lib/
-│   │   │   │   └── template-build.sh
-│   │   │   ├── create-dev-template.sh
-│   │   │   ├── create-localstack-template.sh
-│   │   │   ├── create-template.sh
-│   │   │   └── README.md
-│   │   └── IMAGE-BAKING.md
 │   ├── runtime/
 │   │   ├── bootstrap/
 │   │   │   ├── bootstrap-app.sh
@@ -943,7 +906,8 @@ FlowForm/
 │   │   │   ├── localstack.user-data.rendered.yaml
 │   │   │   ├── localstack.user-data.yaml.template
 │   │   │   ├── proxy.user-data.rendered.yaml
-│   │   │   └── proxy.user-data.yaml.template
+│   │   │   ├── proxy.user-data.yaml.template
+│   │   │   └── render-user-data.sh
 │   │   ├── compose/
 │   │   │   ├── docker-compose.app.yml
 │   │   │   └── docker-compose.proxy.yml
@@ -953,13 +917,14 @@ FlowForm/
 │   │       └── squid/
 │   │           ├── allowed-domains.txt
 │   │           └── squid.conf
-│   ├── scripts/
-│   │   └── cdk/
-│   │       └── seed-secrets.sh
-│   └── tests/
-│       └── images/
-│           ├── inspect-layout.sh
-│           └── validate.sh
+│   ├── tests/
+│   │   ├── compose/
+│   │   │   ├── backend.test.Dockerfile
+│   │   │   └── docker-compose.test.yml
+│   │   └── images/
+│   │       ├── inspect-layout.sh
+│   │       └── validate.sh
+│   └── README.md
 ├── old-docs/
 │   ├── High-level implementation/
 │   │   ├── admin-results-tree-and-decryption.md
@@ -1076,6 +1041,25 @@ FlowForm/
 │   │   ├── load-core-mock-data.sh
 │   │   └── load-response-mock-data.sh
 │   ├── docs/
+│   │   ├── docsys/
+│   │   │   ├── __init__.py
+│   │   │   ├── __main__.py
+│   │   │   ├── ci.py
+│   │   │   ├── config.py
+│   │   │   ├── context.py
+│   │   │   ├── freshness.py
+│   │   │   ├── gitutil.py
+│   │   │   ├── health.py
+│   │   │   ├── impact.py
+│   │   │   ├── index.py
+│   │   │   ├── mcp_server.py
+│   │   │   ├── model.py
+│   │   │   ├── propose.py
+│   │   │   ├── query.py
+│   │   │   ├── README.md
+│   │   │   ├── retrieve.py
+│   │   │   └── validate.py
+│   │   ├── docsys.config.example.json
 │   │   ├── generate-repository-tree.py
 │   │   ├── README.md
 │   │   ├── validate-doc-links.py
@@ -1092,6 +1076,7 @@ FlowForm/
 │   └── mcp/
 │       ├── .env
 │       ├── auth.py
+│       ├── docsys_run.sh
 │       ├── flowform_dev.py
 │       ├── pyproject.toml
 │       ├── README.md

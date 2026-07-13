@@ -34,7 +34,7 @@ structural stubs with `# TODO` markers — see `aws-overview.md` for status.
 
 - **dev** deploys the Security stack only (KMS, secrets, SES send access).
   The app, both databases, and the frontends run locally
-  (`infra/docker/` + Vite dev servers) — no VPC, RDS, ECS, or Amplify.
+  (`infra/environments/development/compose/` + Vite dev servers) — no VPC, RDS, ECS, or Amplify.
 - **staging** is the one shared non-prod cloud environment: full stack set,
   doubles as the integration environment.
 - **prod** is the same stack set as staging with retention/protection

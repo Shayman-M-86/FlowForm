@@ -13,7 +13,7 @@ related_code:
   - "../../backend/app/middleware/auth/"
   - "../../backend/app/aws/"
   - "../../infra/runtime/"
-  - "../../infra/cdk/"
+  - "../../infra/platforms/aws/cdk/"
 related_docs:
   - "System summary"
   - "Component map"

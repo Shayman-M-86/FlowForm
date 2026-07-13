@@ -21,9 +21,12 @@
 #   studio              studio-app ESLint + Vitest + production build
 #   public-site         public-site ESLint (astro plugin) + production build
 #   contracts           OpenAPI export drift + generated frontend contract check
-#   cdk                 infra/cdk pytest + Ruff + Pyright, hermetic `cdk synth`
+#   cdk                 infra/platforms/aws/cdk pytest + Ruff + Pyright, hermetic `cdk synth`
 #                       (staging + dev), then `cdk diff` against deployed
 #                       staging (read-only OIDC role; skipped on fork PRs)
+#   docs-review         validates doc metadata/links, then reports documentation
+#                       impacted by the PR (advisory; fails only on impacted
+#                       critical docs configured in docsys.config.json)
 #
 # Deploys are NOT here — see deploy.yml (frontends, after green staging CI).
 
@@ -37,7 +40,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  COMPOSE_FILE: infra/docker/docker-compose.test.yml
+  COMPOSE_FILE: infra/tests/compose/docker-compose.test.yml
   BACKEND_CONTAINER: flowform-backend-test
   NODE_VERSION: "22"
   PNPM_VERSION: "10.24.0"
@@ -218,14 +221,14 @@ jobs:
 
       - name: Prepare CI Compose file
         run: |
-          COMPOSE_FILE_RUNTIME="$GITHUB_WORKSPACE/infra/docker/docker-compose.test.ci.runtime.yml"
+          COMPOSE_FILE_RUNTIME="$GITHUB_WORKSPACE/infra/tests/compose/docker-compose.test.ci.runtime.yml"
           cp "$COMPOSE_FILE" "$COMPOSE_FILE_RUNTIME"
           sed -i '\|flowform_backend_test_venv:/opt/flowform/backend-test-venv|d' "$COMPOSE_FILE_RUNTIME"
           sed -i '/^  flowform_backend_test_venv:$/d' "$COMPOSE_FILE_RUNTIME"
           echo "COMPOSE_FILE_RUNTIME=$COMPOSE_FILE_RUNTIME" >> "$GITHUB_ENV"
 
       - name: Validate rendered Compose config
-        run: docker compose -f "$COMPOSE_FILE_RUNTIME" config > /tmp/docker-compose.rendered.yml
+        run: docker compose --env-file infra/environments/development/compose/.env -f "$COMPOSE_FILE_RUNTIME" config > /tmp/docker-compose.rendered.yml
 
       - name: Build backend test image
         env:
@@ -234,14 +237,14 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: infra/docker/backend.test.Dockerfile
+          file: infra/tests/compose/backend.test.Dockerfile
           tags: flowform-backend-test:ci
           load: true
           cache-from: type=gha,scope=flowform-backend-test
           cache-to: type=gha,mode=max,scope=flowform-backend-test,ignore-error=true
 
       - name: Start test environment
-        run: docker compose -f "$COMPOSE_FILE_RUNTIME" up -d --no-build
+        run: docker compose --env-file infra/environments/development/compose/.env -f "$COMPOSE_FILE_RUNTIME" up -d --no-build
 
       - name: Wait for backend-test container
         run: |
@@ -266,7 +269,7 @@ jobs:
 
       - name: Dump service logs
         if: failure()
-        run: docker compose -f "$COMPOSE_FILE_RUNTIME" logs --no-color
+        run: docker compose --env-file infra/environments/development/compose/.env -f "$COMPOSE_FILE_RUNTIME" logs --no-color
 
       - name: Upload coverage report
         if: always() && github.event_name == 'push'
@@ -400,18 +403,18 @@ jobs:
       pull-requests: write
     defaults:
       run:
-        working-directory: infra/cdk
+        working-directory: infra/platforms/aws/cdk
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-glob: infra/cdk/uv.lock
+          cache-dependency-glob: infra/platforms/aws/cdk/uv.lock
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: infra/cdk/package-lock.json
+          cache-dependency-path: infra/platforms/aws/cdk/package-lock.json
       - name: Install CDK CLI
         run: npm ci --prefer-offline --no-audit --fund=false
       - name: Sync CDK dependencies
@@ -507,6 +510,88 @@ jobs:
               return;
             }
 
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body,
+            });
+
+  docs-review:
+    # Documentation impact review: surfaces documentation that may need a look
+    # when code it describes changes. Advisory by default — it fails only when a
+    # repository configures critical_doc_globs and one is impacted but not
+    # updated (see scripts/docs/docsys.config.json).
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate documentation structure
+        run: |
+          python3 scripts/docs/validate-doc-metadata.py
+          python3 scripts/docs/validate-doc-links.py
+      - name: Documentation impact report
+        id: docs_impact
+        run: |
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}" || true
+          PYTHONPATH=scripts/docs python3 -m docsys.ci \
+            --base "origin/${{ github.base_ref }}" --head HEAD \
+            --markdown "$RUNNER_TEMP/docs-impact.md" \
+            --json "$RUNNER_TEMP/docs-impact.json" \
+            --fail-on-critical
+      - name: Upload documentation impact report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-impact-report
+          path: ${{ runner.temp }}/docs-impact.json
+          if-no-files-found: ignore
+      - name: Comment documentation impact on PR
+        if: >-
+          always() &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v7
+        env:
+          DOCS_IMPACT_PATH: ${{ runner.temp }}/docs-impact.md
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- flowform-docs-impact -->';
+            let report = 'No documentation impact report was produced.';
+            try {
+              report = fs.readFileSync(process.env.DOCS_IMPACT_PATH, 'utf8').trim();
+            } catch (err) {
+              // Report file missing (e.g. the step failed early); post the marker anyway.
+            }
+            const body = [marker, report].join('\n');
+
+            const issueNumber = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              per_page: 100,
+            });
+            const existingComment = comments.find(
+              (comment) =>
+                comment.user?.type === 'Bot' &&
+                typeof comment.body === 'string' &&
+                comment.body.includes(marker),
+            );
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+              return;
+            }
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,

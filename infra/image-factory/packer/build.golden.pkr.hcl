@@ -6,7 +6,7 @@ build {
   ]
 
   provisioner "file" {
-    source      = "../provisioning/common/lib.sh"
+    source      = "../provisioners/common/lib.sh"
     destination = "/tmp/flowform-image-lib.sh"
   }
 
@@ -18,18 +18,18 @@ build {
   provisioner "shell" {
     only            = ["proxmox-clone.amazon_linux_2023"]
     execute_command = "chmod +x {{ .Path }}; {{ .Vars }} sudo -E {{ .Path }}"
-    scripts         = ["../provisioning/proxmox/install-qemu-agent.sh", "../provisioning/proxmox/configure-proxmox-guest.sh"]
+    scripts         = ["../provisioners/proxmox/install-qemu-agent.sh", "../provisioners/proxmox/configure-proxmox-guest.sh"]
   }
 
   provisioner "shell" {
     only            = ["amazon-ebs.amazon_linux_2023"]
     execute_command = "chmod +x {{ .Path }}; {{ .Vars }} sudo -E {{ .Path }}"
-    scripts         = ["../provisioning/aws/configure-ec2.sh", "../provisioning/aws/configure-ssm.sh"]
+    scripts         = ["../provisioners/aws/configure-ec2.sh", "../provisioners/aws/configure-ssm.sh"]
   }
 
   provisioner "shell" {
     execute_command = "chmod +x {{ .Path }}; {{ .Vars }} sudo -E {{ .Path }}"
-    script          = "../provisioning/common/cleanup-image.sh"
+    script          = "../provisioners/common/cleanup-image.sh"
   }
 
   post-processor "manifest" {

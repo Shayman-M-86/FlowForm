@@ -13,7 +13,7 @@ related_code:
   - "../../backend/app/core/config.py"
   - "../../backend/app/middleware/rate_limit/"
   - "../../infra/runtime/"
-  - "../../infra/cdk/flowform_infra/stacks/"
+  - "../../infra/platforms/aws/cdk/flowform_infra/stacks/"
 related_docs:
   - "Trust boundaries"
   - "Identity and authentication"

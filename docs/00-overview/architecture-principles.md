@@ -11,7 +11,7 @@ related_code:
   - "../../frontend/apps/"
   - "../../frontend/packages/"
   - "../../frontend/scripts/generate-types.mjs"
-  - "../../infra/cdk/"
+  - "../../infra/platforms/aws/cdk/"
   - "../../infra/postgres/init/schema/"
 related_docs:
   - "System context"

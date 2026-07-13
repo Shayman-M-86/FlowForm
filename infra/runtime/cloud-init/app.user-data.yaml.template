@@ -41,7 +41,7 @@ write_files:
     owner: root:root
     content: __BOOTSTRAP_APP_SH_B64__
 
-  # --- the REAL app compose file (rendered from infra/docker/) -----------------
+  # --- the shared app compose file ----------------------------------------------
   # bootstrap-app.sh's REPO_ROOT math is scripts/bootstrap → ../../.. , so the
   # compose file must sit at <root>/infra/runtime/compose/docker-compose.app.yml relative
   # to the script. We reproduce that layout under /opt/flowform/repo.

@@ -5,7 +5,7 @@
 # readiness endpoint can return 200.
 #
 #   FLOWFORM_SECRET_DIR="$XDG_RUNTIME_DIR/flowform-secrets" \
-#     docker compose -f infra/docker/docker-compose.ec2.local.yml up -d --build
+#     docker compose -f infra/environments/development/compose/docker-compose.ec2.local.yml up -d --build
 #
 # Differences from EC2:
 #   - Caddy serves https://localhost with `tls internal`.
@@ -24,8 +24,8 @@ services:
   caddy:
     image: flowform-caddy:local
     build:
-      context: ../..
-      dockerfile: infra/docker/caddy.Dockerfile
+      context: ../../../..
+      dockerfile: infra/environments/development/compose/caddy.Dockerfile
     container_name: flowform-caddy-local
     restart: unless-stopped
     ports:
@@ -124,7 +124,7 @@ services:
       - port=${DATABASE_CORE_PORT}
     volumes:
       - flowform_postgres_core_ec2_local_data:/var/lib/postgresql/data
-      - ../postgres/init:/docker-entrypoint-initdb.d
+      - ../../../postgres/init:/docker-entrypoint-initdb.d
       - ./postgres/pg_hba.ec2.local.conf:/etc/postgresql/pg_hba.conf:ro
     secrets:
       - DATABASE_CORE_INIT_PASSWORD
@@ -160,7 +160,7 @@ services:
       - port=${DATABASE_RESPONSE_PORT}
     volumes:
       - flowform_postgres_response_ec2_local_data:/var/lib/postgresql/data
-      - ../postgres/init:/docker-entrypoint-initdb.d
+      - ../../../postgres/init:/docker-entrypoint-initdb.d
       - ./postgres/pg_hba.ec2.local.conf:/etc/postgresql/pg_hba.conf:ro
     secrets:
       - DATABASE_RESPONSE_INIT_PASSWORD
@@ -176,8 +176,8 @@ services:
   backend:
     image: flowform-backend:local
     build:
-      context: ../..
-      dockerfile: infra/docker/backend.Dockerfile
+      context: ../../../..
+      dockerfile: infra/environments/development/compose/backend.Dockerfile
       args:
         UV_SYNC_FLAGS: "--extra dev"
     container_name: flowform-backend-ec2-local

@@ -23,7 +23,7 @@ _FAKE_AUTH0 = Auth0PublicConfig(
 )
 
 # env_dir with no .env.* files, so get_env_config never picks up real
-# local config (e.g. an actual infra/cdk/.env.staging).
+# local config (e.g. an actual infra/platforms/aws/cdk/.env.staging).
 _EMPTY_ENV_DIR = Path(__file__).parent
 
 

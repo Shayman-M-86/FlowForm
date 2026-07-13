@@ -26,8 +26,8 @@ services:
       - "127.0.0.1:5432:${DATABASE_CORE_PORT}"
     volumes:
       - flowform_postgres_core_data:/var/lib/postgresql/data
-      - ../postgres/init:/docker-entrypoint-initdb.d
-      - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ../../../postgres/init:/docker-entrypoint-initdb.d
+      - ../../../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - ${FLOWFORM_SECRET_DIR:-./secrets}:/run/secrets:ro
     networks:
       - flowform_net_dev
@@ -61,8 +61,8 @@ services:
       - "127.0.0.1:5433:${DATABASE_RESPONSE_PORT}"
     volumes:
       - flowform_postgres_response_data:/var/lib/postgresql/data
-      - ../postgres/init:/docker-entrypoint-initdb.d
-      - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ../../../postgres/init:/docker-entrypoint-initdb.d
+      - ../../../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - ${FLOWFORM_SECRET_DIR:-./secrets}:/run/secrets:ro
     networks:
       - flowform_net_dev
@@ -74,8 +74,8 @@ services:
 
   backend:
     build:
-      context: ../..
-      dockerfile: infra/docker/backend.Dockerfile
+      context: ../../../..
+      dockerfile: infra/environments/development/compose/backend.Dockerfile
       args:
         UV_SYNC_FLAGS: "--extra dev"
     container_name: flowform-backend
@@ -104,8 +104,8 @@ services:
       FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET
     command: uv run flask --debug run --host 0.0.0.0 --port 5000
     volumes:
-      - ../../backend:/app
-      - ../../backend/logs:/app/logs
+      - ../../../../backend:/app
+      - ../../../../backend/logs:/app/logs
       - flowform_backend_dev_venv:/opt/flowform/backend-venv
       # `aws login` credentials for boto3 (container runs as root, so it
       # looks in /root/.aws). Only the profile config and the login token

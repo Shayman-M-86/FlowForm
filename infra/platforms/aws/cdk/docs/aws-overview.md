@@ -1,7 +1,7 @@
 # AWS Overview
 
 FlowForm's AWS infrastructure is managed as code under
-[`infra/cdk/`](..), using AWS CDK (Python). Goal: if the AWS account
+[`infra/platforms/aws/cdk/`](..), using AWS CDK (Python). Goal: if the AWS account
 disappeared, `cdk deploy` rebuilds everything except database contents and
 secret values.
 
@@ -32,8 +32,8 @@ past it.
 ## What's NOT in CDK
 
 - **Local development** — Flask, React, Postgres, PgBouncer all run in
-  Docker Compose (`infra/docker/`), untouched by this. See
-  [`infra/docker_secrets_env_setup_flow_form.md`](../../docker_secrets_env_setup_flow_form.md).
+  Docker Compose (`infra/environments/development/compose/`), untouched by this. See
+  the development environment README at `infra/environments/development/README.md`.
 - **Sentry / PostHog** — external SaaS, not AWS resources.
 - **Everything hand-done that CDK assumes exists** (domain/hosted zone,
   SES identity + sandbox exit, Auth0, secret seeding, bootstrap) — the
@@ -67,7 +67,7 @@ the job assumes `flowform-<env>-frontend-deploy` via OIDC (created by
 parameters published by the frontend stack, builds both apps, then
 `aws s3 sync` (assets before `index.html`) and a CloudFront invalidation.
 The Auth0 values come from `EnvConfig.auth0_public`, loaded at synth time
-from the gitignored `infra/cdk/.env.<env>` file — the frontend stack fails
+from the gitignored `infra/platforms/aws/cdk/.env.<env>` file — the frontend stack fails
 synth with a clear error if that file (or its `AUTH0_*` keys) is missing.
 **`VITE_API_BASE_URL` points at the planned API hostname**
 (`api.<public-site-domain>`) which doesn't resolve until
@@ -77,5 +77,5 @@ synth with a clear error if that file (or its `AUTH0_*` keys) is missing.
 
 Everything targets `ap-southeast-2`, matching the KMS key and Secrets
 Manager secret already referenced by the backend's dev config
-(`infra/docker/.backend.env`). See [`environments.md`](environments.md) for
+(`infra/environments/development/compose/.backend.env`). See [`environments.md`](environments.md) for
 per-environment account details.

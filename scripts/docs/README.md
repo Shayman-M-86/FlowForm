@@ -4,7 +4,7 @@ document_type: implementation
 status: scaffold
 authority: canonical
 verified_against_commit: null
-related_code: ["generate-repository-tree.py", "validate-doc-links.py", "validate-doc-metadata.py"]
+related_code: ["generate-repository-tree.py", "validate-doc-links.py", "validate-doc-metadata.py", "docsys/"]
 related_docs: ["../../docs/00-overview/documentation-generator-guide.md", "../../docs/00-overview/documentation-model.md"]
 ---
 
@@ -15,6 +15,8 @@ Provides lightweight, dependency-free scripts for generating and validating the 
 ## Available scripts
 
 `generate-repository-tree.py` regenerates `docs/90-generated/repository-tree.md`. `validate-doc-links.py` checks that `[[wiki links]]` resolve to a document title and that relative Markdown links resolve on disk. `validate-doc-metadata.py` checks required front-matter keys, allowed status values, global title uniqueness, the controlled tag vocabulary, and `related_docs` resolution.
+
+The `docsys/` package builds on the same conventions to offer a documentation index, impact detection, freshness checks, deterministic search, task-context assembly, a health dashboard, reviewable update proposals, and an MCP server. See `docsys/README.md`. Run it as `python3 -m docsys <command>` (with `scripts/docs/` on `PYTHONPATH`).
 
 ## Conventions enforced
 

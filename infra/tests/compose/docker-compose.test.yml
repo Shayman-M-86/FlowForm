@@ -5,7 +5,7 @@ services:
     image: postgres:17
     container_name: flowform-postgres-core-test
     env_file:
-      - ./.db.core.env
+      - ../../environments/development/compose/.db.core.env
     environment:
       DATABASE_INIT_TARGET: core
 
@@ -27,8 +27,8 @@ services:
       ]
     volumes:
       - flowform_postgres_core_data:/var/lib/postgresql/data
-      - ../postgres/init:/docker-entrypoint-initdb.d:ro
-      - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ../../postgres/init:/docker-entrypoint-initdb.d:ro
+      - ../../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     secrets:
       - DATABASE_CORE_APP_PASSWORD
       - DATABASE_CORE_INIT_PASSWORD
@@ -44,7 +44,7 @@ services:
     image: postgres:17
     container_name: flowform-postgres-response-test
     env_file:
-      - ./.db.response.env
+      - ../../environments/development/compose/.db.response.env
     environment:
       DATABASE_INIT_TARGET: response
 
@@ -64,8 +64,8 @@ services:
       ]
     volumes:
       - flowform_postgres_response_data:/var/lib/postgresql/data
-      - ../postgres/init:/docker-entrypoint-initdb.d:ro
-      - ../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ../../postgres/init:/docker-entrypoint-initdb.d:ro
+      - ../../postgres/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     secrets:
       
       - DATABASE_RESPONSE_INIT_PASSWORD
@@ -81,15 +81,15 @@ services:
   backend-test:
     image: flowform-backend-test:ci
     build:
-      context: ../..
-      dockerfile: infra/docker/backend.test.Dockerfile
+      context: ../../..
+      dockerfile: infra/tests/compose/backend.test.Dockerfile
     working_dir: /app
     init: true
     container_name: flowform-backend-test
     env_file:
-      - ./.backend.env
-      - ./.db.core.env
-      - ./.db.response.env
+      - ../../environments/development/compose/.backend.env
+      - ../../environments/development/compose/.db.core.env
+      - ../../environments/development/compose/.db.response.env
     environment:
       FLOWFORM_ENV: test
       PYTHONUNBUFFERED: "1"
@@ -103,8 +103,8 @@ services:
       FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET
     command: ["sh", "-lc", "tail -f /dev/null"]
     volumes:
-      - ../../backend:/app
-      - ../../backend/logs:/app/logs
+      - ../../../backend:/app
+      - ../../../backend/logs:/app/logs
       - flowform_backend_test_venv:/opt/flowform/backend-test-venv
     depends_on:
       postgres-core:
@@ -135,14 +135,14 @@ networks:
 
 secrets:
   DATABASE_CORE_INIT_PASSWORD:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_CORE_INIT_PASSWORD.test.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-../../environments/development/compose/secrets}/DATABASE_CORE_INIT_PASSWORD.test.secret.txt
   DATABASE_CORE_APP_PASSWORD:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_CORE_APP_PASSWORD.test.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-../../environments/development/compose/secrets}/DATABASE_CORE_APP_PASSWORD.test.secret.txt
   DATABASE_RESPONSE_INIT_PASSWORD:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_INIT_PASSWORD.test.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-../../environments/development/compose/secrets}/DATABASE_RESPONSE_INIT_PASSWORD.test.secret.txt
   DATABASE_RESPONSE_APP_PASSWORD:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/DATABASE_RESPONSE_APP_PASSWORD.test.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-../../environments/development/compose/secrets}/DATABASE_RESPONSE_APP_PASSWORD.test.secret.txt
   FLOWFORM_APP_SECRET_KEY:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_APP_SECRET_KEY.test.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-../../environments/development/compose/secrets}/FLOWFORM_APP_SECRET_KEY.test.secret.txt
   FLOWFORM_AUTH0_MGMT_SECRET:
-    file: ${FLOWFORM_SECRET_DIR:-./secrets}/FLOWFORM_AUTH0_MGMT_SECRET.test.secret.txt
+    file: ${FLOWFORM_SECRET_DIR:-../../environments/development/compose/secrets}/FLOWFORM_AUTH0_MGMT_SECRET.test.secret.txt

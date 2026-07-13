@@ -7,7 +7,7 @@ This integration test setup is meant for tests that need to run **inside the Doc
 Run this from the **project root**:
 
 ```bash
-docker compose -f infra/docker/docker-compose.test.yml up -d --build
+docker compose --env-file infra/environments/development/compose/.env -f infra/tests/compose/docker-compose.test.yml up -d --build
 ```
 
 ## Attach VS Code to the test container

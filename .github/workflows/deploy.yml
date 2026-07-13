@@ -13,7 +13,7 @@
 # can never sneak into a deploy. Note: this means a deploy happens after
 # every green CI run on staging, not just frontend-touching ones — a
 # redundant sync/invalidation is harmless. Prod is intentionally not
-# wired up yet — see infra/cdk/docs/implementation-sketch/.
+# wired up yet — see infra/platforms/aws/cdk/docs/implementation-sketch/.
 
 name: deploy
 
@@ -58,7 +58,7 @@ jobs:
 
       # Same pnpm pin as frontend/package.json's packageManager field,
       # installed via npm (not corepack — its registry signature check is
-      # currently broken; see infra/cdk docs).
+      # currently broken; see infra/platforms/aws/cdk docs).
       - name: Install pnpm
         run: npm install -g pnpm@10.24.0
 
