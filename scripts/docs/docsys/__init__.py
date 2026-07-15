@@ -21,6 +21,10 @@ core tools. See ``docs/00-overview/documentation-model.md`` for the conventions
 these tools enforce, and ``scripts/docs/docsys/README.md`` for usage.
 """
 
+# Bind the documented public modules so ``from docsys import index`` and
+# ``from docsys import *`` agree with this export list.
+from . import context, freshness, gitutil, health, impact, index, model, propose, query
+
 __all__ = [
     "model",
     "gitutil",
