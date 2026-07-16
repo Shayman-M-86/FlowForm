@@ -13,9 +13,10 @@ source "proxmox-clone" "amazon_linux_2023" {
   template_description = "FlowForm ${var.image_role} ${var.os_name} template built by Packer"
 
   cores           = var.proxmox_cpu
+  cpu_type        = var.proxmox_cpu_type
   memory          = var.proxmox_memory
   os              = "l26"
-  qemu_agent      = true
+  qemu_agent      = false
   scsi_controller = "virtio-scsi-single"
 
   network_adapters {
@@ -23,8 +24,14 @@ source "proxmox-clone" "amazon_linux_2023" {
     model  = "virtio"
   }
 
+  ipconfig {
+    ip      = var.proxmox_build_ip_cidr
+    gateway = var.proxmox_build_gateway
+  }
+
   cloud_init              = true
   cloud_init_storage_pool = var.proxmox_storage_pool
+  ssh_host                = split("/", var.proxmox_build_ip_cidr)[0]
   ssh_username            = var.ssh_username
   ssh_timeout             = "45m"
 }

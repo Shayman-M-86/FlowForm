@@ -7,7 +7,7 @@ construct images.
 Build the shared golden template through the machine-image pipeline first:
 
 ```bash
-infra/images/proxmox/packer/build-proxmox-template.sh
+infra/images/proxmox/provisioning/02-build-proxmox-template.sh
 ```
 
 Then, on the Proxmox host, create the rehearsal topology:

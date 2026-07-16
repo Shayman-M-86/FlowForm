@@ -8,9 +8,14 @@ proxmox_token_secret    = "REPLACE_ME"
 proxmox_storage_pool    = "ZFS-RAIDZ"
 proxmox_source_template = "amazon-linux-2023-kvm-base"
 proxmox_network_bridge  = "vmbr0"
+# Reserve this address outside the DHCP pool. Only one Proxmox Packer build may
+# use it at a time; deployment scripts replace this temporary network metadata.
+proxmox_build_ip_cidr = "192.168.1.240/24"
+proxmox_build_gateway = "192.168.1.1"
 proxmox_vm_id           = 9000
 proxmox_template_name   = "flowform-rehearsal-golden-al2023"
 proxmox_cpu             = 2
+proxmox_cpu_type        = "x86-64-v2-AES"
 proxmox_memory          = 2048
 ssh_username            = "ec2-user"
 source_commit           = "git-sha-here"

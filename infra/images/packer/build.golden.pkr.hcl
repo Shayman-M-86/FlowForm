@@ -18,7 +18,7 @@ build {
   provisioner "shell" {
     only            = ["proxmox-clone.amazon_linux_2023"]
     execute_command = "chmod +x {{ .Path }}; {{ .Vars }} sudo -E {{ .Path }}"
-    scripts         = ["../proxmox/build-steps/install-qemu-agent.sh", "../proxmox/build-steps/configure-proxmox-guest.sh"]
+    scripts         = ["../proxmox/build-steps/configure-proxmox-guest.sh"]
   }
 
   provisioner "shell" {

@@ -3,14 +3,16 @@
 The Packer image is shared by AWS and local Proxmox rehearsal. It is an Amazon
 Linux 2023 host image that guarantees the following build-time state:
 
-- base OS packages needed by runtime bootstrap (`ca-certificates`, `curl`, `jq`,
-  `unzip`, `gnupg2`, `nftables`, `openssl`)
+- base OS packages needed by runtime bootstrap (`ca-certificates`,
+  `curl-minimal`, `jq`, `unzip`, `nftables`, `openssl`)
 - Docker Engine, containerd, Docker CLI, Docker Buildx and Docker Compose plugin
 - AWS CLI v2
 - `/opt/flowform`, `/etc/flowform` and `/var/lib/flowform`
 - common sysctl and cloud-init defaults that keep first boot from doing package
   upgrades or large package installs
-- platform agent support: qemu guest agent on Proxmox, SSM Agent on AWS
+- SSM Agent support on AWS; Proxmox uses cloud-init and an explicit temporary
+  SSH address during image construction because AL2023 does not package a
+  supported QEMU guest agent
 - validation checks proving the above tools are present
 - cleanup of package caches, cloud-init logs and machine identity
 

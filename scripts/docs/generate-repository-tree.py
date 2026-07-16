@@ -14,11 +14,19 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "docs/90-generated/repository-tree.md"
 
 
+def should_skip(path):
+    return (
+        path.name in SKIP
+        or path.name == ".env"
+        or path.name.endswith(".auto.pkrvars.hcl")
+    )
+
+
 def walk(path, prefix="", depth=0, max_depth=4):
     if depth > max_depth:
         return []
     rows = []
-    entries = sorted([p for p in path.iterdir() if p.name not in SKIP],
+    entries = sorted([p for p in path.iterdir() if not should_skip(p)],
                      key=lambda p: (p.is_file(), p.name.lower()))
     for i, p in enumerate(entries):
         branch = "└── " if i == len(entries) - 1 else "├── "

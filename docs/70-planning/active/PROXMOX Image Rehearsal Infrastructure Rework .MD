@@ -114,8 +114,8 @@ Implement as a separate behavior-preserving commit:
 
 ```text
 # Linux/WSL build host
-prepare-proxmox-source.sh --source-vmid ID
-build-proxmox-template.sh --vmid ID --var-file FILE
+provisioning/01-prepare-proxmox-source.sh --source-vmid ID
+provisioning/02-build-proxmox-template.sh --vmid ID --var-file FILE
 prepare-artifacts.sh --release GIT_SHA --upload PVE_SSH_TARGET
 
 # Proxmox host
