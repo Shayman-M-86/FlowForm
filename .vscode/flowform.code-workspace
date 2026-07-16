@@ -13,8 +13,8 @@
             "path": "../frontend"
         },
         {
-            "name": "infra/platforms/aws/cdk",
-            "path": "../infra/platforms/aws/cdk"
+            "name": "infra",
+            "path": "../infra"
         }
     ],
     "settings": {
@@ -26,14 +26,12 @@
             "MD013": false,
             "MD060": false
         },
-        "python.defaultInterpreterPath": "${workspaceFolder:backend}/.venv/bin/python",
-        "python.envFile": "${workspaceFolder:backend}/.env.dev",
+       
         "python.analysis.extraPaths": [
             "${workspaceFolder:backend}"
         ],
         "python.analysis.include": [
             "${workspaceFolder:backend}",
-            "${workspaceFolder:infra/platforms/aws/cdk}"
         ],
         "python.analysis.exclude": [
             "**/.git/**",

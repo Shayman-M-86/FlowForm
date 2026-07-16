@@ -23,7 +23,7 @@ dependencies = [
     "requests>=2.33.0",
     # [crt] is needed by botocore's login credential provider — dev
     # containers authenticate via `aws login` profiles (see the backend
-    # service in infra/environments/development/compose/docker-compose.dev.yml).
+    # service in infra/containers/dev/compose/compose.yml).
     "boto3[crt]>=1.38.0",
     "cachetools>=5.5,<6",
     "sqlalchemy-utils>=0.42.1",

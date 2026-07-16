@@ -59,8 +59,9 @@ if isinstance(sys.stderr, TextIOWrapper):
 # ------------------------------------------------------------------------------
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-COMPOSE_FILE = PROJECT_ROOT / "infra/tests/compose/docker-compose.test.yml"
-COMPOSE_ENV_FILE = PROJECT_ROOT / "infra/environments/development/compose/.env"
+COMPOSE_FILE = PROJECT_ROOT / "infra/containers/dev/compose/compose.test.yml"
+COMPOSE_ENV_FILE = PROJECT_ROOT / "infra/env/dev/.env"
+TEST_SECRET_DIR = PROJECT_ROOT / "infra/env/test/secrets"
 COMPOSE_PROJECT = "flowform-test-environment"
 BACKEND_SERVICE = "backend-test"
 CONTAINER = "flowform-backend-test"
@@ -77,20 +78,21 @@ COLOR_RED = "\033[31m"
 
 FINGERPRINT_INPUTS = {
     "environment": (
-        "infra/tests/compose/docker-compose.test.yml",
-        "infra/environments/development/compose/.backend.env",
-        "infra/environments/development/compose/.db.core.env",
-        "infra/environments/development/compose/.db.response.env",
-        "infra/environments/development/compose/.env",
+        "infra/containers/dev/compose/compose.test.yml",
+        "infra/env/dev/.backend.env",
+        "infra/env/dev/.db.core.env",
+        "infra/env/dev/.db.response.env",
+        "infra/env/dev/.env",
+        "infra/env/test/secrets/*",
     ),
     "build": (
-        "infra/tests/compose/backend.test.Dockerfile",
+        "infra/containers/dev/services/backend/backend.test.Dockerfile",
         "backend/pyproject.toml",
         "backend/uv.lock",
     ),
     "schema": (
-        "infra/postgres/config/pg_hba.conf",
-        "infra/postgres/init/**/*",
+        "infra/database/config/pg_hba.conf",
+        "infra/database/init/**/*",
         "backend/app/db/**/*.py",
         "backend/app/schema/orm/**/*.py",
     ),
@@ -143,9 +145,12 @@ def print_help() -> None:
 
 
 def run(args: list[str], *, check: bool = True, capture: bool = False) -> subprocess.CompletedProcess[str]:
+    environment = os.environ.copy()
+    environment["FLOWFORM_SECRET_DIR"] = str(TEST_SECRET_DIR)
     completed = subprocess.run(
         args,
         cwd=PROJECT_ROOT,
+        env=environment,
         check=False,
         text=True,
         stdout=subprocess.PIPE if capture else None,
@@ -231,9 +236,12 @@ def run_with_spinner(message: str, args: list[str], verbose: bool) -> int:
     with tempfile.NamedTemporaryFile("w+", encoding="utf-8", delete=False) as step_log:
         log_path = Path(step_log.name)
 
+    environment = os.environ.copy()
+    environment["FLOWFORM_SECRET_DIR"] = str(TEST_SECRET_DIR)
     process = subprocess.Popen(
         args,
         cwd=PROJECT_ROOT,
+        env=environment,
         stdout=log_path.open("w", encoding="utf-8"),
         stderr=subprocess.STDOUT,
         text=True,

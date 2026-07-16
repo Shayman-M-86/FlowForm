@@ -26,10 +26,11 @@ import string
 
 DEFAULT_ENVIRONMENTS = ("dev", "test")
 
-# Default output keeps dev's DB passwords persistent across reboots so
-# they stay in sync with the Postgres volume they initialised. CI/test
-# flows pass --output-dir to write straight to their runtime dir.
-DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "infra" / "docker" / "secrets"
+# Default output keeps each environment's generated values under its own
+# gitignored configuration directory. Dev's DB passwords stay persistent
+# across reboots so they remain in sync with the Postgres volumes they
+# initialised. CI can still pass --output-dir to use its per-run runtime dir.
+DEFAULT_OUTPUT_ROOT = Path(__file__).resolve().parents[2] / "infra" / "env"
 
 SECRET_LENGTHS = {
     "DATABASE_CORE_APP_PASSWORD": 32,
@@ -91,8 +92,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=DEFAULT_OUTPUT_DIR,
-        help=f"Directory to write secret files into (default: {DEFAULT_OUTPUT_DIR}).",
+        help=(
+            "Directory to write all requested environments into "
+            f"(default: {DEFAULT_OUTPUT_ROOT}/<environment>/secrets)."
+        ),
     )
     return parser.parse_args()
 
@@ -101,13 +104,13 @@ def main() -> None:
     args = parse_args()
     environments = tuple(dict.fromkeys(args.environments)) or DEFAULT_ENVIRONMENTS
 
-    secrets_dir: Path = args.output_dir
-    secrets_dir.mkdir(parents=True, exist_ok=True)
-
     created_files: list[Path] = []
     skipped_files: list[Path] = []
 
     for environment in environments:
+        secrets_dir = args.output_dir or DEFAULT_OUTPUT_ROOT / environment / "secrets"
+        secrets_dir.mkdir(parents=True, exist_ok=True)
+
         for secret_name in ENV_SECRETS[environment]:
             filepath = secrets_dir / build_filename(secret_name, environment)
 
@@ -115,7 +118,10 @@ def main() -> None:
                 skipped_files.append(filepath)
                 continue
 
-            filepath.write_text(generate_secret(SECRET_LENGTHS[secret_name]) + "\n", encoding="utf-8")
+            filepath.write_text(
+                generate_secret(SECRET_LENGTHS[secret_name]) + "\n",
+                encoding="utf-8",
+            )
             filepath.chmod(0o600)
             created_files.append(filepath)
 

@@ -4,8 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
-SECRET_FILE="${SECRET_FILE:-${PROJECT_ROOT}/infra/environments/development/compose/secrets/DATABASE_CORE_INIT_PASSWORD.dev.secret.txt}"
-SQL_FILE="${1:-${SQL_FILE:-${PROJECT_ROOT}/infra/postgres/flowform_core_mock_data.sql}}"
+SECRET_FILE="${SECRET_FILE:-${PROJECT_ROOT}/infra/env/dev/secrets/DATABASE_CORE_INIT_PASSWORD.dev.secret.txt}"
+SQL_FILE="${1:-${SQL_FILE:-${PROJECT_ROOT}/infra/database/flowform_core_mock_data.sql}}"
 CONTAINER_NAME="${CONTAINER_NAME:-flowform-postgres-core}"
 DB_HOST="${DB_HOST:-localhost}"
 DB_USER="${DB_USER:-flowform-admin}"

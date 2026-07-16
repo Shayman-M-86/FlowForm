@@ -1,5 +1,0 @@
-# These are cloud-init user-data files, not CloudFormation templates.
-# The .template extension makes cfn-lint auto-detect them as CFN and emit
-# false E1001 errors (e.g. "'write_files' was unexpected").
-ignore_templates:
-  - infra/runtime/cloud-init/*.template

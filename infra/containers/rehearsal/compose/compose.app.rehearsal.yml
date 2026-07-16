@@ -1,0 +1,70 @@
+# Rehearsal app-compose OVERRIDE — layered on top of the prod app compose:
+#
+#   docker compose -f infra/containers/deployment/compose/compose.app.yml \
+#                  -f infra/containers/rehearsal/compose/compose.app.rehearsal.yml up -d
+#
+# WHY: prod points the backend at RDS (DATABASE_*_HOST = an RDS endpoint) — RDS is
+# a STAGING-only concern the rehearsal deliberately omits. But the backend's
+# /health/ready does a real `SELECT 1` against the core + response databases, so
+# to reach a green health check locally we stand up two throwaway Postgres
+# containers ON the app box and point DATABASE_*_HOST at them (seeded as core-db /
+# response-db). This is a REHEARSAL delta — prod uses RDS, not app-box Postgres.
+# Never read a green health here as proof of the RDS path (SG isolation, etc.).
+#
+# PASSWORD MATCHING (the subtle part): the backend reads each DB password from a
+# tmpfs secret file materialised by bootstrap-app.sh from LocalStack. These
+# Postgres containers read the SAME secret files (mounted below) via a small init
+# script, so the app_user password matches the backend's by construction — no
+# copy-paste, no drift, even though the seed generates random passwords each run.
+#
+# The backend joins these services' network by being in the same compose project
+# (name: flowform-app), so it reaches them as core-db:5432 / response-db:5432.
+
+name: flowform-app
+
+services:
+  core-db:
+    image: 10.10.10.30:5000/postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: flowform_core
+      POSTGRES_USER: flowform_core_app
+      # password comes from the mounted secret file via POSTGRES_PASSWORD_FILE
+      POSTGRES_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+    secrets:
+      - DATABASE_CORE_APP_PASSWORD
+    tmpfs:
+      - /var/lib/postgresql/data   # ephemeral: rehearsal DB, no persistence needed
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowform_core_app -d flowform_core"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  response-db:
+    image: 10.10.10.30:5000/postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: flowform_response
+      POSTGRES_USER: flowform_response_app
+      POSTGRES_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
+    secrets:
+      - DATABASE_RESPONSE_APP_PASSWORD
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowform_response_app -d flowform_response"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  # Make the backend wait for both DBs to be healthy before it starts, so its
+  # first readiness probe can pass instead of crash-looping on connection refused.
+  backend:
+    depends_on:
+      core-db:
+        condition: service_healthy
+      response-db:
+        condition: service_healthy
