@@ -1,4 +1,6 @@
 {
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": false,
     "python-envs.pythonProjects": [
         {
             "path": ".",

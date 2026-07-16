@@ -13,8 +13,8 @@
             "path": "../frontend"
         },
         {
-            "name": "infra",
-            "path": "../infra"
+            "name": "cdk",
+            "path": "../infra/deployment/aws/cdk/"
         }
     ],
     "settings": {
@@ -26,13 +26,6 @@
             "MD013": false,
             "MD060": false
         },
-       
-        "python.analysis.extraPaths": [
-            "${workspaceFolder:backend}"
-        ],
-        "python.analysis.include": [
-            "${workspaceFolder:backend}",
-        ],
         "python.analysis.exclude": [
             "**/.git/**",
             "**/.venv/**",
@@ -55,11 +48,6 @@
         "python-hover.diagnostics.enabled": false,
         "python-hover.ui.showBadges": false,
         "python-hover.ui.showCallouts": false,
-        "python.testing.pytestEnabled": true,
-        "python.testing.unittestEnabled": false,
-        "python.testing.pytestArgs": [
-            "tests"
-        ],
         "python.terminal.activateEnvironment": true,
         // "task.allowAutomaticTasks": "on",
         "files.exclude": {
@@ -84,6 +72,7 @@
             "**/.mypy_cache/**": true,
             "**/.ruff_cache/**": true,
             "**/node_modules/**": true,
+            "**/cloud-init/**": true,
             "**/on_hold/**": true
         },
         "search.exclude": {
@@ -94,12 +83,14 @@
             "**/.mypy_cache": true,
             "**/.ruff_cache": true,
             "**/node_modules": true,
+            "**/cloud-init/**": true,
             "**/on_hold/**": true
         },
         // cloud-init user-data files use a .template extension but are NOT
         // CloudFormation; exclude them so cfn-lint stops emitting false E1001s.
         "cfnLint.ignoreTemplates": [
-            "**/infra/runtime/cloud-init/*.template"
+            "**/cloud-init/*.template",
+            "**/cloud-init/**/*.template"
         ],
         "json.schemas": [
             {
