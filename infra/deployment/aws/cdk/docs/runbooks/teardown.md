@@ -19,7 +19,7 @@ figures out the region itself, so you don't pass region flags.
 every stack at once and it destroys them in the right sequence:
 
 ```bash
-cd infra/platforms/aws/cdk
+cd infra/deployment/aws/cdk
 npx cdk destroy -c env=staging --all
 ```
 

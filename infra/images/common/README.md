@@ -8,7 +8,7 @@ Linux 2023 image contract.
 ```text
 images/
 ├── packer/                    consolidated Packer HCL (all sources, golden build,
-│                              locals, variables) + init/ entry points
+│                              locals, variables)
 ├── common/build-steps/        shared build steps + lib.sh
 ├── aws/build-steps/           AWS-only build steps
 ├── proxmox/build-steps/       Proxmox-only build steps
@@ -45,10 +45,25 @@ to ping. The Proxmox builder uses that explicit address because AL2023 does not
 provide a supported QEMU guest agent. Deployment replaces the temporary network
 metadata when cloning the completed template.
 
+## Proxmox deployment boundary
+
+Packer stops after creating the reusable template. Terraform under
+`infra/deployment/proxmox/terraform/` clones that template, uploads its
+per-role cloud-init snippets, and owns the rehearsal VMs. Terraform does not
+run Packer; rebuild the image only when base-image content changes.
+
+The current shared golden template contains Amazon Linux, Docker, Compose, and
+AWS CLI. It deliberately does not contain third-party runtime container images.
+That is sufficient for the proxy, which has LAN egress, but not for the
+isolated LocalStack VM. The next image-pipeline stage is a Proxmox-only
+LocalStack fixture template derived from the golden image and preloaded with
+the LocalStack, registry, and TLS-shim images. Do not add those fixture images
+to the shared golden template.
+
 ## Build an AWS AMI
 
 ```bash
-cd infra/image-factory/packer
+cd infra/images/packer
 cp variables/aws.auto.pkrvars.hcl.example aws.auto.pkrvars.hcl
 # Edit aws.auto.pkrvars.hcl with AWS network/profile values.
 packer init .
@@ -56,12 +71,12 @@ packer validate -syntax-only .
 packer build -only='flowform-golden.amazon-ebs.amazon_linux_2023' .
 ```
 
-Packer writes `infra/image-factory/manifests/packer-manifest.json`. Publish
+Packer writes `infra/images/common/manifests/packer-manifest.json`. Publish
 the extracted AMI ID to the explicit environment SSM parameter consumed by
 `infra/deployment/aws/cdk`:
 
 ```bash
-AMI_ID="$(infra/image-factory/manifests/extract-aws-ami-id.sh)"
+AMI_ID="$(infra/images/aws/manifests/extract-aws-ami-id.sh)"
 aws ssm put-parameter \
   --name /flowform/staging/ec2/baseAmiId \
   --type String \

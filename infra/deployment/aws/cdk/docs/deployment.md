@@ -10,7 +10,7 @@
 ## One-time bootstrap (per account/region)
 
 ```bash
-cd infra/platforms/aws/cdk
+cd infra/deployment/aws/cdk
 uv sync
 npx aws-cdk bootstrap aws://<ACCOUNT_ID>/ap-southeast-2
 ```
@@ -21,7 +21,7 @@ deploy). Run once per AWS account + region combination.
 ## Deploying
 
 ```bash
-cd infra/platforms/aws/cdk
+cd infra/deployment/aws/cdk
 npx cdk synth -c env=dev        # preview the CloudFormation template
 npx cdk diff -c env=dev         # see what would change
 npx cdk deploy -c env=dev       # deploy all stacks
@@ -55,7 +55,7 @@ handles the cross-region wiring. For dev only the Security stack exists.
 ## Verifying a deploy
 
 ```bash
-cd infra/platforms/aws/cdk
+cd infra/deployment/aws/cdk
 uv run pytest              # synth-time assertions (currently: security_stack)
 npx cdk synth -c env=dev > /dev/null && echo "synth OK"
 ```

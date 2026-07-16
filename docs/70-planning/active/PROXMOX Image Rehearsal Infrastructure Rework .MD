@@ -9,6 +9,25 @@ Rework the infrastructure in two ordered tracks:
 
 Keep the shared Amazon Linux 2023 golden-image boundary. Do not introduce Ubuntu Autoinstall, bake application images into the golden template, or rely on the undocumented template `9001`.
 
+## Current checkpoint
+
+The local Proxmox rehearsal has reached the Packer-to-Terraform handoff:
+
+- the pinned AL2023 source template and shared golden template `9000` have
+  been built through Packer;
+- Terraform renders and uploads cloud-init, then owns proxy `210`, app `220`,
+  and LocalStack `230` clone lifecycle;
+- the proxy completes cloud-init with Caddy and Squid running; and
+- the app and LocalStack guests boot with the intended private network shape.
+
+The LocalStack runtime is the current blocker. VM `230` has no default route by
+design, but its cloud-init attempts to pull LocalStack and registry images from
+Docker Hub. Those pulls fail, so LocalStack, the registry, and TLS shim do not
+start. The next work is a Proxmox-only Packer fixture template derived from
+shared golden template `9000` and preloaded with the required third-party
+images. It must not add application images or mutable runtime state to the
+shared golden template.
+
 ## Implementation Changes
 
 ### 1. Reproducible Proxmox image pipeline
@@ -36,29 +55,27 @@ Keep the shared Amazon Linux 2023 golden-image boundary. Do not introduce Ubuntu
   - Emit a FlowForm image manifest containing VMID, name, source-image checksum, source commit, tool versions, build time, and verification result.
   - Smoke-clone every candidate, verify it, destroy the smoke VM, and only then make its manifest selectable by rehearsal.
 
-### 2. Deterministic rehearsal artifacts
+### 2. Offline LocalStack fixture template
 
-- Add a tracked lock describing exact digest-pinned LocalStack, registry, Caddy, and Postgres images.
-- Add an internet-connected Linux/WSL artifact preparation command that:
-  - Verifies Docker and repository cleanliness or records dirty state explicitly.
-  - Pulls the locked third-party images.
-  - Builds the backend image and labels/tags it with the Git commit.
-  - Produces `rehearsal-images.tar`, `manifest.json`, and `SHA256SUMS`.
-  - Uploads the complete artifact set to the configured Proxmox host staging directory.
-- The artifact manifest must identify every image digest, backend commit, bundle checksum, and compatible image-template contract version.
-- Activation must reject missing, corrupt, or incompatible bundles before starting the app VM.
+- Add a Proxmox-only Packer fixture build that clones shared golden template
+  `9000` and preloads the digest-pinned LocalStack, registry, and TLS-shim
+  images required by VM `230`.
+- Keep the shared golden image free of application images, secrets, and
+  environment-specific runtime state.
+- Emit a distinct fixture-template VMID/name and record the source golden
+  template plus the preloaded image digests in its manifest.
+- Update Terraform to use the fixture-template VMID only for LocalStack while
+  proxy and app continue to clone the shared golden template.
+- Verify the isolated LocalStack VM can start its services without a default
+  route or Docker Hub access.
 
 ### 3. Separate VM creation from activation
 
 - Update Proxmox host setup to assign `10.10.10.1/24` to `vmbr10`. VMs still receive no default gateway, preserving isolation while allowing host-side orchestration, transfer, and health checks.
 - Generate a root-owned rehearsal orchestration SSH key under `/var/lib/flowform/rehearsal/`; inject its public key into every clone and remove the fixed `rehearsal` password.
-- Change `create-vms.sh` to:
-  - Require a verified image manifest rather than defaulting to VMID `9000`.
-  - Render cloud-init into a generated-output directory.
-  - Attach app, proxy, fixtures, and optional development cloud-init correctly.
-  - Clone and configure all requested VMs but leave them stopped.
-  - Never run environment activation implicitly.
-- Update destruction to remove only VMIDs recorded in rehearsal state. Add `--purge-state` to remove generated keys, manifests, bundles, and activation state without requiring manual cleanup.
+- Replace host-local VM lifecycle scripts with Terraform. Terraform renders and
+  uploads cloud-init from the local checkout, clones the Packer template, and
+  owns destroy/recreate through state.
 - Remove stale references to templates `9001`/`9002`, baked fixture images, and the nonexistent verification script.
 
 ### 4. Add dependency-ordered activation
@@ -115,16 +132,16 @@ Implement as a separate behavior-preserving commit:
 ```text
 # Linux/WSL build host
 provisioning/01-prepare-proxmox-source.sh --source-vmid ID
-provisioning/02-build-proxmox-template.sh --vmid ID --var-file FILE
-prepare-artifacts.sh --release GIT_SHA --upload PVE_SSH_TARGET
+provisioning/02-build-proxmox-template.sh
+# Next planned stage: Proxmox-only LocalStack fixture-template Packer build
 
-# Proxmox host
-setup-host.sh
-create-vms.sh --image-manifest FILE [--with-dev]
-activate.sh --artifact-manifest FILE [--with-dev]
-verify.sh
-destroy-vms.sh [--purge-state]
-setup-host.sh --undo
+# Proxmox deployment
+host/01-setup-host.sh
+terraform/render-cloud-init.sh
+terraform plan
+terraform apply
+terraform destroy
+host/01-setup-host.sh --undo
 ```
 
 All commands must support `--help`, validate prerequisites before mutation, avoid printing secrets, and return nonzero on incomplete work.
@@ -150,8 +167,10 @@ Acceptance requires a clean rehearsal to become healthy without manually rerunni
 
 ## Assumptions and Defaults
 
-- OCI bundles are the chosen offline image-delivery mechanism.
-- `create-vms.sh` leaves every clone stopped.
+- A Proxmox-only Packer fixture template is the selected offline delivery
+  mechanism for the LocalStack, registry, and TLS-shim images; the build is not
+  implemented yet.
+- Terraform owns clone lifecycle and starts the configured rehearsal VMs.
 - Packer runs through Bash on Linux or WSL; WSL is supported only when preflight proves API and build-VM SSH reachability.
 - Golden templates use immutable versioned VMIDs and manifests.
 - The Amazon Linux source-template import is automated and checksum-verified.

@@ -1,39 +1,27 @@
 #!/usr/bin/env python3
-"""Stop hook: request a documentation-impact review before finishing.
+"""Stop hook: warn about possible documentation impact before finishing.
 
 When the main agent tries to finish, this hook checks whether implementation
-changes during the task may have affected canonical documentation. If so, it
-asks for one review step; otherwise it allows completion immediately.
-
-It reuses the existing ``docsys`` impact detection (via ``docsys_hook_lib``) and
-never edits documentation itself. The review is a human/agent judgement: update
-docs only when documented behaviour actually changed, or record why not.
+changes during the task may have affected canonical documentation. If a
+high-confidence (exact-file) match exists, it prints a short one-line heads-up
+and allows completion. It never blocks and never edits documentation — updating
+docs stays a human/agent judgement call.
 
 Lifecycle
 ---------
 1. Read ``session_id`` and ``stop_hook_active`` from stdin.
 2. Compute implementation files changed since the task's base commit.
-3. Documentation-only or trivial changes → allow (nothing to review).
-4. If the agent already recorded a review for the current change fingerprint
-   → allow (loop prevention).
-5. Run docsys impact; collect high/medium-confidence canonical docs.
-6. None affected → allow.
-7. Some affected → block once with an actionable message and how to record the
-   review.
+3. Documentation-only or trivial changes → allow silently.
+4. If we already warned for the current change fingerprint → allow silently.
+5. Run docsys impact; collect high-confidence canonical docs.
+6. None affected → allow silently.
+7. Some affected → print a one-line warning to stderr and allow.
 
-Loop prevention
----------------
-``stop_hook_active`` is respected as a hard stop: if it is true we never block
-again. Independently, once a review record whose fingerprint matches the
-current changed-file set exists, completion is allowed — so recording a review
-(update list or no-update reasons) always lets the next Stop succeed.
-
-Blocking uses the Stop-hook JSON contract: ``{"decision": "block", "reason":
-...}``. The reason text is fed back to the agent.
+The hook always exits 0 with empty stdout, so completion is never gated; the
+notice goes to stderr purely as a heads-up.
 """
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -48,47 +36,29 @@ from docsys_hook_lib import (  # noqa: E402
     save_state,
 )
 
-REVIEW_CMD = "python3 .claude/hooks/record_doc_review.py"
-
 
 def _allow() -> int:
-    # Empty output + exit 0 = allow the stop.
+    # Empty stdout + exit 0 = allow the stop.
     return 0
 
 
-def _block(reason: str) -> int:
-    """Signal a block understood by both Claude Code and Codex.
+def _warn(message: str) -> int:
+    """Surface a non-blocking notice and allow completion.
 
-    Both agents read ``{"decision": "block", "reason": ...}`` from stdout (with
-    exit 0) as "block the stop and feed the reason back to the agent". This is
-    a drop-in shared contract, so no per-agent branching is needed.
+    Printing to stderr with exit 0 shows the message to the user without
+    feeding a "blocked" decision back to the agent, so the task finishes
+    normally. This is a heads-up, not a gate.
     """
-    print(json.dumps({"decision": "block", "reason": reason}))
+    print(message, file=sys.stderr)
     return 0
 
 
-def _format_reason(impacted: list[dict], fp: str) -> str:
-    lines = ["Documentation impact review required.", "", "Likely affected:"]
-    for d in impacted:
-        lines.append(f"- {d['title']}  ({d['confidence']})")
-    lines += [
-        "",
-        "Review these documents using the FlowForm Docsys MCP tools "
-        "(get_document / get_related on the flowform-docs server). Update them "
-        "only if the documented behaviour, responsibilities, boundaries, "
-        "invariants, or workflow changed. Otherwise record why no update is "
-        "needed.",
-        "",
-        "When done, record the review so completion can proceed, e.g.:",
-        "",
-        f"  {REVIEW_CMD} \\",
-        '    --updated "Responses and encryption" \\',
-        '    --unchanged "Submissions=Internal refactor preserved documented behaviour."',
-        "",
-        "Record at least one updated or unchanged document. This review is "
-        "requested once; it will not block again after you record it.",
-    ]
-    return "\n".join(lines)
+def _format_reason(impacted: list[dict]) -> str:
+    titles = ", ".join(d["title"] for d in impacted)
+    return (
+        "docs may be affected by this change: "
+        f"{titles}. Review and update only if documented behaviour changed."
+    )
 
 
 def main() -> int:
@@ -128,14 +98,11 @@ def main() -> int:
         save_state(session_id, state)
         return _allow()
 
-    # Record what we asked for so the review recorder can validate against it.
-    state["pending_review"] = {
-        "fingerprint": fp,
-        "impacted": impacted,
-        "changed_files": impl_files,
-    }
+    # Remember that we warned for this change set so repeated stop attempts do
+    # not recompute or repeat the notice.
+    state["reviewed"] = {"fingerprint": fp, "warned": [d["title"] for d in impacted]}
     save_state(session_id, state)
-    return _block(_format_reason(impacted, fp))
+    return _warn(_format_reason(impacted))
 
 
 if __name__ == "__main__":

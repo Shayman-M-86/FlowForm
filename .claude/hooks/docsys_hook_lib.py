@@ -210,12 +210,14 @@ def _specificity(item) -> int:
 
 
 def detect_impacted_docs(impl_files: list[str]) -> list[dict]:
-    """Reuse docsys impact detection; return high/medium canonical docs.
+    """Reuse docsys impact detection; return high-confidence canonical docs.
 
     Imports the existing ``docsys`` package rather than duplicating any logic.
     Returns a focused, capped list of ``{title, path, confidence}`` for
-    canonical documents, most specifically-matched first. Generated documents
-    are excluded (they are reproduced by their generators, not hand-reviewed).
+    canonical documents, most specifically-matched first. Only high-confidence
+    (exact-file) matches are returned, so a broad directory edit no longer names
+    the whole architecture section. Generated documents are excluded (they are
+    reproduced by their generators, not hand-reviewed).
     """
     if str(DOCSYS_PATH) not in sys.path:
         sys.path.insert(0, str(DOCSYS_PATH))
@@ -233,7 +235,7 @@ def detect_impacted_docs(impl_files: list[str]) -> list[dict]:
     candidates = [
         item
         for item in impacted
-        if item.confidence in ("high", "medium")
+        if item.confidence == "high"
         and item.doc.authority == "canonical"
         and not item.doc.is_generated
     ]

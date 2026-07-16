@@ -10,8 +10,8 @@ related_code:
   - "../../backend/app/services/public_submissions/"
   - "../../frontend/apps/studio-app/"
   - "../../frontend/apps/public-site/"
-  - "../../infra/postgres/init/schema/flowform_core_db_schema_v4.sql"
-  - "../../infra/postgres/init/schema/flowform_response_db_schema_v4.sql"
+  - "../../infra/database/init/schema/flowform_core_db_schema_v4.sql"
+  - "../../infra/database/init/schema/flowform_response_db_schema_v4.sql"
 related_docs:
   - "System summary"
   - "Projects and access"

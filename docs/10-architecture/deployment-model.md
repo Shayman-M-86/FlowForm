@@ -6,12 +6,15 @@ authority: canonical
 verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
 tags: [infrastructure, configuration, ci-cd]
 related_code:
-  - "../../infra/platforms/aws/cdk/app.py"
-  - "../../infra/platforms/aws/cdk/flowform_infra/config/environments.py"
-  - "../../infra/platforms/aws/cdk/flowform_infra/stacks/"
-  - "../../infra/platforms/aws/cdk/flowform_infra/constructs/static_site_construct.py"
-  - "../../infra/runtime/"
-  - "../../infra/environments/rehearsal/"
+  - "../../infra/deployment/aws/cdk/app.py"
+  - "../../infra/deployment/aws/cdk/flowform_infra/config/environments.py"
+  - "../../infra/deployment/aws/cdk/flowform_infra/stacks/"
+  - "../../infra/deployment/aws/cdk/flowform_infra/constructs/static_site_construct.py"
+  - "../../infra/containers/"
+  - "../../infra/containers/rehearsal/"
+  - "../../infra/images/packer/"
+  - "../../infra/images/proxmox/provisioning/"
+  - "../../infra/deployment/proxmox/"
   - "../../.github/workflows/deploy.yml"
 related_docs:
   - "System context"
@@ -19,6 +22,7 @@ related_docs:
   - "Trust boundaries"
   - "Cloud deployment"
   - "Machine image building"
+  - "Proxmox rehearsal implementation"
   - "Secrets and configuration"
   - "Infrastructure implementation"
   - "Infrastructure resources"
@@ -37,7 +41,7 @@ does not claim that synthesized resources are deployed or healthy.
 | Local development | Backend and two PostgreSQL services use development Compose; frontends run through their workspace tooling or frontend Compose. AWS `dev` synthesizes only the shared non-production security stack. | Local definitions; current process state is not checked in. |
 | Automated test | A separate backend test Compose project with two PostgreSQL services runs locally and in CI. | CI proves this variant when the job succeeds, not a deployed application environment. |
 | Split-runtime local proof | One workstation runs proxy, app, and local database containers together. | Tests communication and hardening assumptions without reproducing host or AWS isolation. |
-| Proxmox rehearsal | Separate proxy and app VMs consume shared runtime/bootstrap files; local fixtures replace AWS, RDS, and public TLS dependencies. | Rehearses the host contract but intentionally does not prove managed cloud services. |
+| Proxmox rehearsal | Packer builds a shared Amazon Linux golden template; Terraform clones proxy, app, and LocalStack VMs and uploads role-specific cloud-init. | The VM topology has been exercised locally, but the isolated LocalStack workload cannot yet start because its container images are not preloaded. |
 | AWS staging | Configuration requests the full CDK stack set and shares the `nonprod` security scope with dev. | Declared and partly synthesizable; the checkout does not prove a complete or running staging backend. |
 | AWS production | Configuration requests the same full stack classes with production domains, retained lifecycle policy, and a separate `prod` security scope. | Declared target only; the deploy workflow explicitly does not deploy production. |
 
@@ -45,6 +49,32 @@ Environment differences are data in the typed CDK configuration rather than
 separate stack implementations. Dev intentionally differs by omitting cloud
 compute, databases, and frontend hosting. Staging and prod select the same stack
 classes, but resource lifecycle, sizing, domains, and security scope differ.
+
+## Proxmox image and deployment boundary
+
+The local Proxmox rehearsal uses separate tools for separate lifecycle scopes:
+
+```text
+official AL2023 KVM image
+  -> source template 8999
+  -> Packer
+  -> shared golden template 9000
+  -> Terraform
+  -> proxy 210, app 220, LocalStack 230
+```
+
+Packer owns source-template preparation and the reusable operating-system
+image: Amazon Linux, Docker, Compose, AWS CLI, and shared host configuration.
+Terraform owns the deployment topology: full clones, VM networking, cloud-init
+snippets, and Terraform state. Terraform does not invoke Packer, and Packer
+does not deploy the rehearsal VMs.
+
+The current golden template intentionally excludes mutable third-party runtime
+images. That leaves LocalStack unable to pull its initial LocalStack, registry,
+and TLS-shim images after Terraform places it on the isolated `vmbr10` network.
+The next planned stage is a Proxmox-only fixture template derived from the
+golden template and preloaded with those images. This is a known rehearsal gap,
+not evidence that the current topology is end-to-end healthy.
 
 ## Intended AWS topology
 
@@ -84,7 +114,7 @@ environment region.
 
 ## CDK implementation boundary
 
-The stack names in `infra/platforms/aws/cdk/app.py` do not all represent completed resource
+The stack names in `infra/deployment/aws/cdk/app.py` do not all represent completed resource
 sets.
 
 | Stack area | Current implementation state |
@@ -146,6 +176,7 @@ live deployment. Configuration and secret ownership belong in
 - [[Trust boundaries]]
 - [[Cloud deployment]]
 - [[Machine image building]]
+- [[Proxmox rehearsal implementation]]
 - [[Secrets and configuration]]
 - [[Infrastructure implementation]]
 - [[Infrastructure resources]]

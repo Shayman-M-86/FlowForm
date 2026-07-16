@@ -1,6 +1,6 @@
 # Environments
 
-Defined in [`infra/platforms/aws/cdk/flowform_infra/config/environments.py`](../flowform_infra/config/environments.py).
+Defined in [`infra/deployment/aws/cdk/flowform_infra/config/environments.py`](../flowform_infra/config/environments.py).
 
 | Env | Account | Deployment | Removal policy | Deletion protection | DB instance |
 |---|---|---|---|---|---|
@@ -10,12 +10,12 @@ Defined in [`infra/platforms/aws/cdk/flowform_infra/config/environments.py`](../
 
 All environments share one AWS account — the one already visible in the KMS
 key / Secrets Manager ARNs the backend uses locally
-(`infra/environments/development/compose/.backend.env`).
+(`infra/env/dev/.backend.env`).
 
 ## Deployment shapes
 
 **dev is local-first.** The Flask API, both Postgres databases, and the
-frontends all run locally (Docker Compose in `infra/environments/development/compose/`, Vite dev
+frontends all run locally (Docker Compose in `infra/containers/dev/compose/`, Vite dev
 servers). The only AWS resources dev needs are the ones the backend can't
 fake locally — the KMS key, the Secrets Manager entries, and SES send
 permission — so `-c env=dev` synthesizes the Security stack and nothing
@@ -35,7 +35,7 @@ key/secrets and RDS deletion protection.
 
 The Amplify stack fails synth with a clear error for any full-deployment
 env whose `auth0_public` config is still `None`. Those values load at
-synth time from the gitignored `infra/platforms/aws/cdk/.env.<env>` file
+synth time from the gitignored `infra/deployment/aws/cdk/.env.<env>` file
 (`AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_AUDIENCE` — see
 `.env.dev.example`), the same per-env file `seed-secrets.sh` reads its
 secret values from.
@@ -54,7 +54,7 @@ for the (single-account) Route 53 hosted zone.
 ## Selecting an environment
 
 ```bash
-cd infra/platforms/aws/cdk
+cd infra/deployment/aws/cdk
 npx cdk synth -c env=dev       # or staging / prod
 npx cdk deploy -c env=dev
 ```

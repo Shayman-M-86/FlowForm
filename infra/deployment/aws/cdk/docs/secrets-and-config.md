@@ -4,8 +4,8 @@
 
 | Location | What goes here | Managed by |
 |---|---|---|
-| Local `.env` / Docker secrets (`infra/environments/development/compose/`) | Local dev only — never real prod credentials | Manual, gitignored |
-| `infra/platforms/aws/cdk/.env.<env>` | Per-env Auth0 public config (read at synth) + secret values staged for `seed-secrets.sh` | Manual, gitignored (`.env.dev.example` is the template) |
+| Local `.env` / Docker secrets (`infra/env/dev/`) | Local dev only — never real prod credentials | Manual, gitignored |
+| `infra/deployment/aws/cdk/.env.<env>` | Per-env Auth0 public config (read at synth) + secret values staged for `seed-secrets.sh` | Manual, gitignored (`.env.dev.example` is the template) |
 | SSM Parameter Store | Non-secret config (KMS key ARN, region) | `security_stack.py` |
 | Secrets Manager | Actual secret values (passwords, client secrets) | `security_stack.py` (shape only — see below) |
 
@@ -31,7 +31,7 @@ CDK creates each secret with **generated placeholder values** for every
 key. The real values are set out-of-band (AWS Console, CLI
 `put-secret-value`, or a rotation Lambda later) — secret values never
 appear in code, in a synthesized CloudFormation template, or in git. See
-`infra/platforms/aws/scripts/seed-secrets.sh` for the seeding workflow.
+`infra/deployment/aws/scripts/seed-secrets.sh` for the seeding workflow.
 
 ## Route53 + SES (imported, not created)
 
@@ -55,7 +55,7 @@ hermetic — see `tests/test_security_stack.py`.
 
 ## Resolved: existing dev KMS key / secret → create fresh
 
-`infra/environments/development/compose/.backend.env` references a hand-created KMS key and Secrets
+`infra/env/dev/.backend.env` references a hand-created KMS key and Secrets
 Manager secret for dev (`FLOWFORM_ENCRYPTION_KMS_KEY_ARN`,
 `FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN`). Decision: `security_stack.py`
 always **creates fresh** resources — there is no import-by-ARN path, so a
@@ -77,7 +77,7 @@ resource).
 
 ## Flagged follow-up: rotate old local secrets
 
-`infra/environments/development/compose/.backend.env` no longer stores raw secret values for the
+`infra/env/dev/.backend.env` no longer stores raw secret values for the
 Auth0 Management API client. It still carries live resource identifiers
 such as the KMS key ARN and Secrets Manager secret ARN referenced above.
 
@@ -95,7 +95,7 @@ generated, never uploaded:
 | Value | Source | Why |
 |---|---|---|
 | `app_secret_key`, `auth0_mgmt_secret` | `flowform/nonprod/app-secrets` (Secrets Manager) | must persist / external value |
-| 4 local-Postgres passwords | `scripts/secrets/generate-secrets.sh` → gitignored `infra/environments/development/compose/secrets/` | dev-only throwaways; must survive reboots alongside the Postgres volume they initialised |
+| 4 local-Postgres passwords | `scripts/secrets/generate-secrets.sh` → gitignored `infra/env/dev/secrets/` | dev-only throwaways; must survive reboots alongside the Postgres volume they initialised |
 
 `scripts/secrets/fetch-dev-secrets.sh` assembles both into one place:
 
@@ -129,9 +129,9 @@ Docker parity with EC2.
 ## EC2 Compose bootstrap contract
 
 The split EC2 runtime keeps the same secret-file convention. The proxy
-instance runs `infra/runtime/compose/docker-compose.proxy.yml` from a bootstrap-written
+instance runs `infra/containers/deployment/compose/compose.proxy.yml` from a bootstrap-written
 proxy env file; the private app instance runs
-`infra/runtime/compose/docker-compose.app.yml` with
+`infra/containers/deployment/compose/compose.app.yml` with
 `--env-file /opt/flowform/backend.env`. That backend env file must contain
 only non-secret config, image refs, private IPs, proxy settings, and logging
 settings. Keep production logging on stdout JSON

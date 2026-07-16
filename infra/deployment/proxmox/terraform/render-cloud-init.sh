@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 # Render every *.yaml.template in this dir -> *.yaml.rendered.yaml by injecting the
 # base64 of the REAL repo files (single source of truth). Run whenever any of the
-# referenced repo files change; create-vms.sh runs it too.
+# referenced repo files change; Terraform uploads the result during apply.
 #
 # Why a generator (not committed base64 blobs): the private VMs are offline, so
 # the bootstrap scripts + compose/config files must travel INSIDE cloud-init.
@@ -17,16 +17,14 @@ set -Eeuo pipefail
 #
 # The *.rendered.yaml files are BUILD ARTIFACTS (git-ignored). Never edit by hand.
 
-log() { printf '[render-user-data] %s\n' "$*"; }
-die() { printf '[render-user-data] ERROR: %s\n' "$*" >&2; exit 1; }
+log() { printf '[render-cloud-init] %s\n' "$*"; }
+die() { printf '[render-cloud-init] ERROR: %s\n' "$*" >&2; exit 1; }
 
-HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/cloud-init"
 
-# The render pulls REAL repo files from the containers and deployment folders. Two run contexts:
-#   - dev machine: full repo checked out → repo root is four dirs up from here.
-#   - PVE host: run from a synced copy. Sync from the REPO ROOT (see README) so
-#     these subtrees exist, or pass REPO_ROOT=/path explicitly.
-REPO_ROOT="${REPO_ROOT:-$(cd -- "${HERE}/../../../.." && pwd)}"
+# The render runs from the local checkout; Terraform uploads its resulting
+# snippets, so no repository checkout is needed on the Proxmox host.
+REPO_ROOT="${REPO_ROOT:-$(cd -- "${HERE}/../../../../.." && pwd)}"
 
 # placeholder marker  ->  repo-relative source file.
 # Keep markers in sync with the *.template files that reference them.

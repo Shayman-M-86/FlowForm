@@ -55,13 +55,13 @@ Script files are authoritative for shell, Python, and Node helpers. Each `packag
 
 | Area                    | Paths                                                                                                                                             | Responsibility                                                          |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Database initialization | `infra/postgres/init/00-render-and-run.sh`                                                                                                        | Renders and runs PostgreSQL initialization templates.                   |
-| Runtime bootstrap       | `infra/runtime/bootstrap/bootstrap-app.sh`, `infra/runtime/bootstrap/bootstrap-proxy.sh`                                                          | App-host and proxy-host bootstrap entry points.                         |
-| CDK support             | `infra/platforms/aws/scripts/seed-secrets.sh`                                                                                                    | AWS CDK environment seeding helper.                                     |
-| Image factory           | `infra/image-factory/provisioners/**/*.sh`, `infra/image-factory/manifests/extract-aws-ami-id.sh`                                                   | Packer provisioners and AMI-manifest extraction.                        |
-| Image validation        | `infra/tests/images/inspect-layout.sh`, `infra/tests/images/validate.sh`                                                                          | Image-layout and Packer validation helpers.                             |
-| Proxmox orchestration   | `infra/platforms/proxmox/*.sh`, `infra/platforms/proxmox/lib/cloud-init-snippets.sh`                                                             | Proxmox host, VM, and user-data lifecycle helpers.                      |
-| Rehearsal fixtures      | `infra/environments/rehearsal/fixtures/localstack/seed-localstack.sh`, `infra/environments/rehearsal/fixtures/registry/build-and-push-backend.sh` | Rehearsal fixture preparation.                                          |
+| Database initialization | `infra/database/init/00-render-and-run.sh`                                                                                                        | Renders and runs PostgreSQL initialization templates.                   |
+| Runtime bootstrap       | `infra/deployment/bootstrap/bootstrap-app.sh`, `infra/deployment/bootstrap/bootstrap-proxy.sh`                                                    | App-host and proxy-host bootstrap entry points.                         |
+| CDK support             | `infra/deployment/aws/scripts/seed-secrets.sh`                                                                                                   | AWS CDK environment seeding helper.                                     |
+| Packer image build      | `infra/images/proxmox/provisioning/*.sh`, `infra/images/common/build-steps/*.sh`                                                                 | Proxmox source preparation, Packer invocation, and image build steps.  |
+| Image validation        | `infra/tests/images/validate.sh`, `infra/tests/images/test-prepare-proxmox-source.sh`                                                            | Packer syntax and source-template preparation checks.                   |
+| Proxmox deployment      | `infra/deployment/proxmox/host/01-setup-host.sh`, `infra/deployment/proxmox/terraform/`                                                          | One-time host bridge setup and Terraform-managed rehearsal VMs/snippets. |
+| Rehearsal fixtures      | `infra/containers/rehearsal/services/localstack/seed-localstack.sh`, `infra/containers/rehearsal/services/registry/build-and-push-backend.sh` | Rehearsal fixture preparation.                                          |
 
 ## Tool-owned helpers
 
@@ -116,7 +116,7 @@ Instantiated `.claude/workflows/*/scripts/` copies are excluded from this catalo
 | `serve`   | `serve dist --config "$PWD/serve.json" --debug` |
 | `astro`   | `astro`                                         |
 
-The shared frontend package manifests and `infra/platforms/aws/cdk/package.json` currently define no `scripts` entries.
+The shared frontend package manifests and `infra/deployment/aws/cdk/package.json` currently define no `scripts` entries.
 
 ## Update procedure
 

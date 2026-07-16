@@ -13,7 +13,7 @@ related_code:
   - "../../backend/app/services/"
   - "../../backend/app/repositories/"
   - "../../backend/app/schema/orm/"
-  - "../../infra/postgres/init/schema/"
+  - "../../infra/database/init/schema/"
 related_docs:
   - "System context"
   - "Runtime containers"

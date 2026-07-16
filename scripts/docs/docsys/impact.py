@@ -93,11 +93,11 @@ def _confidence_for(doc: Document, matches: list[Match]) -> tuple[str, list[str]
         best = "low"
         reasons.append("only a change_triggers pattern matched")
 
-    # A verified/draft document with matched code is likelier to need review
-    # than a scaffold that has no real claims yet: nudge confidence up.
-    if doc.status in ("verified", "draft") and best == "medium":
-        best = "high"
-        reasons.append(f"document is '{doc.status}', so claims are at risk")
+    # Only an exact-file match earns "high". Broad directory/glob matches stay
+    # "medium" even for verified/draft docs: a change somewhere under
+    # backend/app/ is not strong evidence that a specific architecture document
+    # is now wrong, and promoting it floods any finish-time gate with the whole
+    # architecture section. Demotions below still apply — they reduce noise.
     if doc.status == "scaffold":
         reasons.append("document is a scaffold; review value is lower")
         if best == "high":
@@ -107,9 +107,6 @@ def _confidence_for(doc: Document, matches: list[Match]) -> tuple[str, list[str]
         reasons.append("code_confidence is 'low', weakening this match")
         if best == "high":
             best = "medium"
-    elif doc.code_confidence == "high" and best == "medium":
-        best = "high"
-        reasons.append("code_confidence is 'high', strengthening this match")
 
     return best, reasons
 

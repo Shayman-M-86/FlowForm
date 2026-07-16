@@ -1,5 +1,5 @@
 #cloud-config
-# Runtime LocalStack/fixtures VM. The base Packer image already has Docker.
+# Terraform-managed LocalStack/fixtures VM. The Packer image has Docker.
 write_files:
   - path: /opt/flowform/localstack/docker-compose.localstack.yml
     encoding: b64

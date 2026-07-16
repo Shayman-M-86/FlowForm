@@ -2,9 +2,9 @@
 # ===========================================================================
 # Proxy-box (210) runtime cloud-init — the PUBLIC entry + egress gateway.
 # ===========================================================================
-# This is a TEMPLATE. `render-user-data.sh` fills the __*_B64__ placeholders with
+# This is a TEMPLATE. `render-cloud-init.sh` fills the __*_B64__ placeholders with
 # the base64 of the REAL repo files (single source of truth) and emits
-# `proxy.user-data.rendered.yaml`, which `create-vms.sh` attaches via --cicustom.
+# `proxy.user-data.rendered.yaml`, which Terraform uploads and attaches.
 # NEVER edit the .rendered.yaml by hand — re-render instead.
 #
 # The proxy box is EGRESS-ONLY: it simulates the controlled egress gateway and

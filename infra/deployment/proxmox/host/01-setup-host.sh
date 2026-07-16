@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Proxmox host prerequisites for the FlowForm rehearsal (run ON the PVE host).
+# One-time Proxmox host prerequisite for the FlowForm rehearsal (run on PVE).
 #
 #   A. Create private bridge vmbr10 (no ports, no gateway) via a dedicated
 #      file in /etc/network/interfaces.d/ — the PVE-safe way that does not

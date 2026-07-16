@@ -16,40 +16,42 @@ intended edits in this pass are this file and a small link from
 
 Runtime Compose files:
 
-- `infra/runtime/compose/docker-compose.proxy.yml` - public proxy EC2 runtime.
-- `infra/runtime/compose/docker-compose.app.yml` - private app EC2 runtime.
-- `infra/environments/development/compose/docker-compose.ec2.local.yml` - workstation proof of the split
-  with local Caddy, Squid, backend, and Postgres containers.
+- `infra/containers/deployment/compose/compose.proxy.yml` - public proxy EC2 runtime.
+- `infra/containers/deployment/compose/compose.app.yml` - private app EC2 runtime.
+- `infra/containers/rehearsal/compose/*.rehearsal.yml` - the rehearsal stack, which
+  now serves as the workstation/VM proof of the split, layering local Caddy, Squid,
+  LocalStack, registry, and ephemeral Postgres over the shared runtime compose files.
 
 Proxy/app support files:
 
-- `infra/runtime/config/caddy/Caddyfile.proxy` - production proxy Caddyfile using
+- `infra/containers/deployment/services/caddy/Caddyfile.proxy` - production proxy Caddyfile using
   Route 53 DNS-01 and the app private IP as upstream.
-- `infra/environments/development/compose/caddy/Caddyfile.local` - local proof Caddyfile using
-  `tls internal` and the local backend service name.
-- `infra/runtime/config/squid/squid.conf` - fail-closed CONNECT proxy policy rendered
+- `infra/containers/rehearsal/services/caddy/Caddyfile.proxy` - rehearsal proxy Caddyfile,
+  paired with the rehearsal TLS shim for local certificate issuance.
+- `infra/containers/deployment/services/squid/squid.conf` - fail-closed CONNECT proxy policy rendered
   with the exact app source CIDR.
-- `infra/runtime/config/squid/allowed-domains.txt` - strict starting allow-list for
+- `infra/containers/deployment/services/squid/allowed-domains.txt` - strict starting allow-list for
   Auth0 and the required regional AWS service hosts.
-- `infra/environments/development/compose/postgres/pg_hba.ec2.local.conf` - local-only Postgres access
-  rule for the Compose proof network.
+- Rehearsal Postgres runs as ephemeral containers added by the rehearsal app compose
+  override (`infra/containers/rehearsal/compose/compose.app.rehearsal.yml`); there is no
+  separate local `pg_hba` file for it.
 
 Design and hardening docs:
 
-- `infra/platforms/aws/cdk/docs/implementation-sketch/caddy-ec2-implementation-notes.md`
-- `infra/platforms/aws/cdk/docs/implementation-sketch/docker-hardening.md`
-- `infra/platforms/aws/cdk/docs/implementation-sketch/host-hardening.md`
-- `infra/platforms/aws/cdk/docs/implementation-sketch/ec2-compose-due-diligence-checklist.md`
+- `infra/deployment/aws/cdk/docs/implementation-sketch/caddy-ec2-implementation-notes.md`
+- `infra/deployment/aws/cdk/docs/implementation-sketch/docker-hardening.md`
+- `infra/deployment/aws/cdk/docs/implementation-sketch/host-hardening.md`
+- `infra/deployment/aws/cdk/docs/implementation-sketch/ec2-compose-due-diligence-checklist.md`
 
 CDK orientation files for the next pass:
 
-- `infra/platforms/aws/cdk/flowform_infra/stacks/application_stack.py`
-- `infra/platforms/aws/cdk/flowform_infra/stacks/network_stack.py`
-- `infra/platforms/aws/cdk/flowform_infra/stacks/security_stack.py`
+- `infra/deployment/aws/cdk/flowform_infra/stacks/application_stack.py`
+- `infra/deployment/aws/cdk/flowform_infra/stacks/network_stack.py`
+- `infra/deployment/aws/cdk/flowform_infra/stacks/security_stack.py`
 
 ## Compose Responsibilities
 
-`docker-compose.proxy.yml` runs only the proxy-side services on the public
+`compose.proxy.yml` runs only the proxy-side services on the public
 proxy EC2:
 
 - Caddy terminates public HTTP/HTTPS, obtains DNS-01 certificates with the
@@ -59,7 +61,7 @@ proxy EC2:
 - Caddy certificate state is persisted in Docker volumes; Squid logs are kept
   in a Docker volume.
 
-`docker-compose.app.yml` runs only the backend on the private app EC2:
+`compose.app.yml` runs only the backend on the private app EC2:
 
 - The backend image is supplied by `BACKEND_IMAGE`; production should pin it to
   an immutable digest.
@@ -70,13 +72,16 @@ proxy EC2:
 - The container is read-only with tmpfs for `/tmp` and `/app/logs`, no Linux
   capabilities, `no-new-privileges`, a PID limit, and json-file log rotation.
 
-`docker-compose.ec2.local.yml` is a local proof harness:
+The rehearsal stack (`infra/containers/rehearsal/compose/*.rehearsal.yml`, layered on
+the shared runtime compose files) is the local/VM proof harness:
 
-- Builds the local Caddy and backend images instead of pulling ECR refs.
-- Runs local Postgres containers for the core and response databases.
-- Publishes local Caddy on `80`/`443` and local Squid on `127.0.0.1:3128`.
-- Uses local dev env files and local secret files. It does not prove AWS
-  routing, IAM, endpoint policies, IMDS, or instance bootstrap.
+- Runs local Caddy, Squid, LocalStack, and a local registry instead of pulling
+  from real AWS or ECR.
+- Adds ephemeral Postgres containers for the core and response databases via the
+  app override so `/health/ready` can pass.
+- Substitutes a local TLS shim for certificate issuance.
+- It does not prove AWS routing, IAM, endpoint policies, IMDS, RDS, or instance
+  bootstrap.
 
 ## Expected EC2 Env Files
 
@@ -95,7 +100,7 @@ App instance:
   `PROXY_PRIVATE_IP`, database host/name/user values, Auth0 IDs, KMS/linkage
   ARNs, SES config, and logging config. `PROXY_PRIVATE_IP` is used by Compose
   to derive backend `HTTP_PROXY`/`HTTPS_PROXY`; backend `NO_PROXY` is defined
-  in `docker-compose.app.yml`.
+  in `compose.app.yml`.
 
 Env files should be generated by bootstrap, root-owned, not world-readable,
 and free of secret values.
@@ -133,7 +138,7 @@ env CADDY_IMAGE=example.com/flowform-caddy:test \
   PROXY_PRIVATE_IP=10.0.1.10 \
   APP_PRIVATE_IP=10.0.11.10 \
   SQUID_APP_SOURCE_CIDR=10.0.11.10/32 \
-  docker compose -f infra/runtime/compose/docker-compose.proxy.yml config -q
+  docker compose -f infra/containers/deployment/compose/compose.proxy.yml config -q
 ```
 
 ```bash
@@ -141,13 +146,15 @@ env BACKEND_IMAGE=example.com/flowform-backend:test \
   APP_PRIVATE_IP=10.0.11.10 \
   PROXY_PRIVATE_IP=10.0.1.10 \
   FLOWFORM_SECRET_DIR=/tmp/flowform-compose-check-secrets \
-  docker compose -f infra/runtime/compose/docker-compose.app.yml \
+  docker compose -f infra/containers/deployment/compose/compose.app.yml \
     config --no-env-resolution -q
 ```
 
 ```bash
 env FLOWFORM_SECRET_DIR=/tmp/flowform-compose-check-secrets \
-  docker compose -f infra/environments/development/compose/docker-compose.ec2.local.yml config -q
+  docker compose \
+    -f infra/containers/deployment/compose/compose.app.yml \
+    -f infra/containers/rehearsal/compose/compose.app.rehearsal.yml config -q
 ```
 
 The checks prove the Compose files still render under the expected variable

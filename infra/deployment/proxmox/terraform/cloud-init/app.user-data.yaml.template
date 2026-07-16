@@ -2,9 +2,9 @@
 # ===========================================================================
 # App-box (220) runtime cloud-init — the PRIVATE, offline box under test.
 # ===========================================================================
-# This is a TEMPLATE. `render-user-data.sh` fills the __*_B64__ placeholders
+# This is a TEMPLATE. `render-cloud-init.sh` fills the __*_B64__ placeholders
 # with the base64 of the REAL repo files (single source of truth) and emits
-# `app.user-data.rendered.yaml`, which `create-vms.sh` attaches via --cicustom.
+# `app.user-data.rendered.yaml`, which Terraform uploads and attaches.
 # NEVER edit the .rendered.yaml by hand — re-render instead.
 #
 # Shape note: this write_files/runcmd structure is the direct template for the

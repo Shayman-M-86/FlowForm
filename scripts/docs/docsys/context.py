@@ -35,6 +35,10 @@ from .query import QueryEngine
 
 _OPEN_Q_HEADINGS = re.compile(r"open questions?|unresolved|todo", re.I)
 
+# Cap on rendered implementation locations: enough to point at the right code,
+# short enough to stay scannable rather than a flat 30-line dump.
+_MAX_IMPL_LOCATIONS = 8
+
 
 @dataclass
 class ContextBundle:
@@ -56,6 +60,10 @@ class ContextBundle:
                 "summary": _first_sentence(d),
             }
 
+        # ``open_questions`` is intentionally omitted from the rendered bundle:
+        # it repeated scaffold uncertainties on every retrieval and added noise
+        # without guiding the task. It is still computed on the bundle object
+        # for callers that want it (e.g. propose.py, health.py).
         return {
             "schema": "flowform.docsys.context/1",
             "task": self.task,
@@ -64,7 +72,6 @@ class ContextBundle:
             "neighbouring_documents": [brief(d) for d in self.neighbours],
             "implementation_locations": self.implementation_locations,
             "workflows": [brief(d) for d in self.workflows],
-            "open_questions": self.open_questions,
         }
 
 
@@ -145,14 +152,28 @@ def build_context(
                 neighbour_paths.add(n.rel_path)
     neighbours = neighbours[:max_neighbours]
 
-    # 4. Implementation locations from primary docs' declared code.
+    # 4. Implementation locations from primary docs' declared code. Keep this
+    # short and specific: drop the broad top-level prefixes (they match almost
+    # anything and are not useful as reading targets) and cap the list so the
+    # bundle stays scannable.
+    _BROAD = {
+        "backend/",
+        "backend/app/",
+        "frontend/",
+        "frontend/apps/",
+        "frontend/packages/",
+        "infra/",
+        "scripts/",
+    }
     impl: list[str] = []
     seen_impl: set[str] = set()
     for d in primary:
         for pattern in d.related_patterns:
-            if pattern not in seen_impl:
-                impl.append(pattern)
-                seen_impl.add(pattern)
+            if pattern in _BROAD or pattern in seen_impl:
+                continue
+            impl.append(pattern)
+            seen_impl.add(pattern)
+    impl = impl[:_MAX_IMPL_LOCATIONS]
 
     # 5. Relevant workflows among primary + neighbours.
     workflows = [d for d in primary + neighbours if d.document_type == "workflow"]
@@ -212,12 +233,6 @@ def main(argv: list[str] | None = None) -> int:
         print("\nRelevant workflows:")
         for d in bundle.workflows:
             print(f"  - {d.title}  {d.rel_path}")
-    if bundle.open_questions:
-        print("\nOpen questions:")
-        for oq in bundle.open_questions:
-            print(f"  {oq['document']}:")
-            for q in oq["questions"]:
-                print(f"    · {q}")
     return 0
 
 

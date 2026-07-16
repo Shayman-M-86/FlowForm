@@ -225,7 +225,7 @@ Instance bootstrap (instance role, no static keys)
         non-secret FLOWFORM_* config + DB hosts/names/users + image refs
 
 docker compose --env-file /opt/flowform/backend.env \
-  -f docker-compose.app.yml up -d
+  -f compose.app.yml up -d
 ```
 
 Why this over in-app fetching:
@@ -244,8 +244,8 @@ The split follows the usual rule: credentials and keys in Secrets Manager
 non-secret runtime config in SSM Parameter Store (Auth0 domain/audience/client
 IDs, KMS key ARN, linkage secret ARN, SES from-address, logging levels, RDS
 endpoints, image refs, private IPs). Compose files reference only names and
-paths — see `infra/runtime/compose/docker-compose.proxy.yml` and
-`infra/runtime/compose/docker-compose.app.yml`.
+paths — see `infra/containers/deployment/compose/compose.proxy.yml` and
+`infra/containers/deployment/compose/compose.app.yml`.
 
 Note that the backend still uses the instance role at runtime for its
 own AWS calls (KMS session encryption, the linkage-key secret, SES) —
@@ -257,19 +257,19 @@ for Caddy in [Certificate Flow](#certificate-flow).
 
 ## Compose and Caddyfile Sketch
 
-The production Compose files belong under `infra/runtime/compose/`, as called out in
+The production Compose files belong under `infra/containers/deployment/compose/`, as called out in
 [Phase 2a](core-sketch-plan.md#phase-2--backend-runtime-on-ec2). The proxy
-instance uses `docker-compose.proxy.yml` (Caddy + Squid); the private app
-instance uses `docker-compose.app.yml` (backend only). RDS is external.
+instance uses `compose.proxy.yml` (Caddy + Squid); the private app
+instance uses `compose.app.yml` (backend only). RDS is external.
 
 ```yaml
 proxy EC2:
   docker compose --env-file /opt/flowform/proxy.env \
-    -f docker-compose.proxy.yml up -d
+    -f compose.proxy.yml up -d
 
 app EC2:
   docker compose --env-file /opt/flowform/backend.env \
-    -f docker-compose.app.yml up -d
+    -f compose.app.yml up -d
 ```
 
 ```caddyfile

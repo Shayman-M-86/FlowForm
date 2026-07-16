@@ -1,5 +1,5 @@
 #cloud-config
-# Optional developer workbench first-boot configuration. The base image already
+# Optional Terraform-managed developer workbench configuration. The base image already
 # contains Docker, Compose, AWS CLI, nftables and common directories.
 packages: []
 write_files:

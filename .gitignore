@@ -15,8 +15,6 @@ eggs/
 .eggs/
 develop-eggs/
 lib/
-!infra/deployment/proxmox/lib/
-!infra/deployment/proxmox/lib/*.sh
 
 !frontend/packages/ui/src/lib/
 !frontend/packages/ui/src/lib/**
@@ -106,8 +104,15 @@ cover/
 # infra/containers/rehearsal/services/tls-shim/README.md. It is NOT ignored so a fresh checkout can
 # build template 9001 and render the app user-data without regenerating certs.
 
-# Rendered cloud-init artifacts (generated from *.template by render-user-data.sh)
-infra/deployment/proxmox/cloud-init/*.rendered.yaml
+# Rendered Proxmox Terraform cloud-init artifacts
+infra/deployment/proxmox/terraform/cloud-init/*.rendered.yaml
+
+# Local Proxmox Terraform state and credentials
+infra/deployment/proxmox/terraform/.terraform/
+infra/deployment/proxmox/terraform/*.tfstate
+infra/deployment/proxmox/terraform/*.tfstate.*
+infra/deployment/proxmox/terraform/terraform.tfvars
+infra/deployment/proxmox/terraform/tfplan
 
 # Packer local image-build artifacts and credentials
 *.pkrvars.hcl

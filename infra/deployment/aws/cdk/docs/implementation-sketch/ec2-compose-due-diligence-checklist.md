@@ -139,7 +139,7 @@ gateway. Harden it as the highest-value host in this design.
 
 ## App Backend Exposure
 
-- [ ] `docker-compose.app.yml` binds backend only to
+- [ ] `compose.app.yml` binds backend only to
   `${APP_PRIVATE_IP}:5000:5000/tcp`.
 - [ ] App security group allows backend `5000` only from the proxy security
   group.

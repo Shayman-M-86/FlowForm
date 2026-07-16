@@ -200,7 +200,7 @@ Notes:
 
 ```text
 /opt/flowform-app/
-  docker-compose.yml          # backend only (repo source: docker-compose.app.yml)
+  docker-compose.yml          # backend only (repo source: compose.app.yml)
 /opt/flowform/backend.env     # non-secret FLOWFORM_* config, written by bootstrap from SSM
 /run/flowform/secrets/        # tmpfs; written by bootstrap from Secrets Manager
   DATABASE_CORE_APP_PASSWORD.secret.txt
@@ -213,7 +213,7 @@ Secret names, `*_FILE` env vars, and the tmpfs bootstrap all follow the
 existing convention (see the Secrets and Configuration Bootstrap section
 of the notes doc) — do not invent new names.
 
-Backend service sketch (`infra/runtime/compose/docker-compose.app.yml`):
+Backend service sketch (`infra/containers/deployment/compose/compose.app.yml`):
 
 ```yaml
 services:
@@ -237,7 +237,7 @@ services:
       # daemon but silently ignored by the app. Use hostname/suffix
       # entries for everything the backend itself dials.
       NO_PROXY: "localhost,127.0.0.1,169.254.169.254,.rds.amazonaws.com"
-      # *_FILE secret envs + FLOWFORM_ENV as in docker-compose.app.yml
+      # *_FILE secret envs + FLOWFORM_ENV as in compose.app.yml
     secrets:
       - DATABASE_CORE_APP_PASSWORD
       - DATABASE_RESPONSE_APP_PASSWORD

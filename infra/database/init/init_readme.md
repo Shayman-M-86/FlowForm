@@ -63,8 +63,8 @@ FF_PGDB_CORE__APP_PASSWORD=core_password_here
 FF_PGDB_RESPONSE__APP_USER=flowform_response_app
 FF_PGDB_RESPONSE__APP_PASSWORD=response_password_here
 
-FF_PGDB_CORE__SCHEMA_FILE=schema/flowform_core_db_schema_tightened.sql
-FF_PGDB_RESPONSE__SCHEMA_FILE=schema/flowform_response_db_schema_tightened.sql
+FF_PGDB_CORE__SCHEMA_FILE=schema/flowform_core_db_schema_v4.sql
+FF_PGDB_RESPONSE__SCHEMA_FILE=schema/flowform_response_db_schema_v4.sql
 ```
 
 ## Bootstrap Modes

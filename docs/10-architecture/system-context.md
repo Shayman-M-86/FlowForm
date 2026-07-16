@@ -12,8 +12,8 @@ related_code:
   - "../../backend/app/core/config.py"
   - "../../backend/app/middleware/auth/"
   - "../../backend/app/aws/"
-  - "../../infra/runtime/"
-  - "../../infra/platforms/aws/cdk/"
+  - "../../infra/containers/"
+  - "../../infra/deployment/aws/cdk/"
 related_docs:
   - "System summary"
   - "Component map"

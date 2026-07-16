@@ -1,9 +1,9 @@
 ---
 title: Repository map
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
+verified_against_commit: null
 related_code:
   - "../../backend/"
   - "../../frontend/"
@@ -39,11 +39,11 @@ This map identifies applications, shared packages, infrastructure, automation, t
 | `frontend/apps/public-site/`                                                 | Astro public website application.                                                                                 | `frontend/apps/public-site/src/pages/`, `frontend/apps/public-site/astro.config.mjs`                                          |
 | `frontend/apps/studio-app/`                                                  | React and Vite Studio application and its frontend tests.                                                         | `frontend/apps/studio-app/src/main.tsx`, `frontend/apps/studio-app/src/lib/router.ts`, `frontend/apps/studio-app/src/routes/` |
 | `frontend/packages/`                                                         | Shared workspace packages: `builder`, `schema`, `site-shell`, `styles`, and `ui`.                                 | Each package's `package.json` and exported `src/` entry point                                                                 |
-| `infra/platforms/aws/cdk/`                                                   | AWS CDK application, reusable constructs, stacks, environment configuration, and synth-time tests.                | `infra/platforms/aws/cdk/app.py`, `infra/platforms/aws/cdk/flowform_infra/`, `infra/platforms/aws/cdk/tests/`               |
-| `infra/environments/development/`, `infra/tests/compose/`                   | Development and test container definitions.                                                                        | Development and test Compose files within their respective execution contexts.                                                  |
-| `infra/postgres/`                                                            | PostgreSQL initialization, schema SQL, configuration, and local mock data.                                        | `infra/postgres/init/`, `infra/postgres/init/schema/`                                                                         |
-| `infra/runtime/`                                                             | Host bootstrap, cloud-init templates, runtime Compose definitions, and proxy configuration.                       | `infra/runtime/bootstrap/`, `infra/runtime/compose/`, `infra/runtime/config/`                                                 |
-| `infra/image-factory/`, `infra/platforms/`, `infra/runtime/`, `infra/environments/` | Image construction, platform orchestration, post-boot runtime, and environment-specific topology. | `infra/README.md` and the README in each ownership area |
+| `infra/containers/`                                                          | Docker and Compose service definitions, split by stage: `dev/`, `deployment/` (shared proxy/app host runtime), and `rehearsal/` (LocalStack, registry, TLS shim). | `infra/containers/dev/compose/`, `infra/containers/deployment/compose/`, `infra/containers/rehearsal/compose/`                |
+| `infra/database/`                                                            | PostgreSQL initialization, schema SQL, configuration, and local mock data.                                        | `infra/database/init/`, `infra/database/init/schema/`                                                                         |
+| `infra/images/`                                                             | Packer machine-image construction shared by AWS and Proxmox: consolidated Packer HCL, common/AWS/Proxmox build steps, and image contract. | `infra/images/common/README.md`, `infra/images/packer/`, `infra/images/common/IMAGE-CONTRACT.md`                            |
+| `infra/deployment/`                                                          | Platform deployment: `aws/cdk/` (AWS CDK app, constructs, stacks, synth-time tests), `proxmox/` (Terraform VMs, host bootstrap, cloud-init), and shared `bootstrap/` host scripts. | `infra/deployment/aws/cdk/app.py`, `infra/deployment/proxmox/README.md`, `infra/deployment/bootstrap/`                       |
+| `infra/env/`                                                                 | Per-environment (`dev`, `test`, `live`) configuration values and secret files consumed by Compose and bootstrap. | `infra/env/dev/`, `infra/env/<env>/secrets/`                                                                                  |
 | `scripts/`                                                                   | Repository-level CI, development, documentation, secret-management, and utility scripts.                          | `scripts/ci/`, `scripts/dev/`, `scripts/docs/`, `scripts/secrets/`, `scripts/tools/`                                          |
 | `tools/mcp/`                                                                 | Development MCP server and helpers that expose the backend OpenAPI surface to MCP clients.                        | `tools/mcp/flowform_dev.py`, `tools/mcp/README.md`                                                                            |
 | `.github/workflows/`                                                         | Continuous-integration and frontend-deployment workflows.                                                         | `.github/workflows/ci.yml`, `.github/workflows/deploy.yml`                                                                    |
@@ -51,7 +51,7 @@ This map identifies applications, shared packages, infrastructure, automation, t
 
 ## Workspace and test boundaries
 
-`frontend/pnpm-workspace.yaml` defines the frontend workspace as `apps/*` and `packages/*`. Backend tests are grouped under `backend/tests/unit/`, `backend/tests/integration/`, and `backend/tests/e2e/`; Studio tests are under `frontend/apps/studio-app/tests/`; infrastructure checks are under `infra/platforms/aws/cdk/tests/` and `infra/tests/`.
+`frontend/pnpm-workspace.yaml` defines the frontend workspace as `apps/*` and `packages/*`. Backend tests are grouped under `backend/tests/unit/`, `backend/tests/integration/`, and `backend/tests/e2e/`; Studio tests are under `frontend/apps/studio-app/tests/`; infrastructure checks are under `infra/deployment/aws/cdk/tests/` and `infra/tests/`.
 
 ## Generated and historical areas
 
@@ -65,4 +65,8 @@ Use the [[Repository tree|repository tree]] for a compact structural reference, 
 
 ## Verification notes
 
-This map was checked against tracked source, manifests, tests, infrastructure definitions, and GitHub workflows at commit `ed0fb65df856e18807ee243b4bca512a8d0442b0`. The layered documentation restructure and current `scripts/docs/` tooling are uncommitted Stage 1 working-tree work and are not part of that commit.
+The `infra/` rows were rechecked against the current working tree after the
+capability-first infrastructure reorganization (`containers/`, `database/`,
+`images/`, `deployment/`, `env/`). The remainder of this map still needs a
+complete repository-wide verification before this document can return to
+`verified` status.

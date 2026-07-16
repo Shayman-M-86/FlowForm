@@ -6,13 +6,12 @@ authority: canonical
 verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
 tags: [backend, frontend, infrastructure]
 related_code:
-  - "../../infra/environments/development/compose/docker-compose.dev.yml"
-  - "../../infra/tests/compose/docker-compose.test.yml"
-  - "../../infra/environments/development/compose/docker-compose.ec2.local.yml"
+  - "../../infra/containers/dev/compose/compose.yml"
+  - "../../infra/containers/dev/compose/compose.test.yml"
+  - "../../infra/containers/deployment/compose/"
   - "../../frontend/docker-compose.dev.yml"
-  - "../../infra/runtime/compose/"
-  - "../../infra/runtime/bootstrap/"
-  - "../../infra/environments/rehearsal/compose/"
+  - "../../infra/deployment/bootstrap/"
+  - "../../infra/containers/rehearsal/compose/"
 related_docs:
   - "Component map"
   - "Deployment model"

@@ -74,7 +74,7 @@ two backend SSM params under `/flowform/<scope>/backend/`:
   omitted, the mgmt client falls back to `FLOWFORM_AUTH0_DOMAIN` (correct
   only for tenants without a custom domain).
 
-The egress allow-list (`infra/runtime/config/squid/allowed-domains.txt`) must admit
+The egress allow-list (`infra/containers/deployment/services/squid/allowed-domains.txt`) must admit
 both hosts for the same reason.
 
 Per environment, before its first frontend deploy:
@@ -82,7 +82,7 @@ Per environment, before its first frontend deploy:
 1. Create the environment's Auth0 application (SPA/PKCE) and API audience.
 2. Set callback/logout URLs for that environment's hostnames.
 3. Put `AUTH0_DOMAIN` / `AUTH0_CLIENT_ID` / `AUTH0_AUDIENCE` in the
-   gitignored `infra/platforms/aws/cdk/.env.<env>` file — staging/prod synth **fails
+   gitignored `infra/deployment/aws/cdk/.env.<env>` file — staging/prod synth **fails
    early** until this is done.
 4. Put the Management API client secret into the environment's
    `app-secrets` entry (see secret seeding below).
@@ -109,7 +109,7 @@ recreating it. Do this when next touching email infrastructure
 
 ### Legacy dev KMS key + linkage secret
 
-`infra/environments/development/compose/.backend.env` still points at the hand-created KMS key and
+`infra/env/dev/.backend.env` still points at the hand-created KMS key and
 linkage secret. One-time cutover after the first `cdk deploy -c env=dev`
 — see the steps in
 [`secrets-and-config.md`](secrets-and-config.md#resolved-existing-dev-kms-key--secret--create-fresh).
@@ -137,6 +137,6 @@ aws://908123139858/ap-southeast-2`. See
 CDK creates the Secrets Manager entries with **generated placeholder
 values only** — real values never pass through CDK or git. After the
 first deploy of an environment's Security stack, seed them:
-`infra/platforms/aws/scripts/seed-secrets.sh --env <env> --send` (values come from a
+`infra/deployment/aws/scripts/seed-secrets.sh --env <env> --send` (values come from a
 gitignored `.env.<env>`; see `.env.dev.example` and
 [`secrets-and-config.md`](secrets-and-config.md)).

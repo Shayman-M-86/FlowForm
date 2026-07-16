@@ -130,8 +130,10 @@ FlowForm/
 │       ├── 141136ab-ba09-4b43-8bad-7c148c6ea788.json
 │       ├── 4aec0b6d-0991-4aae-a328-7eff53528223.json
 │       ├── 4f525396-7821-439b-9252-39b0bd3f1762.json
+│       ├── 52083c7c-1749-48f5-b4b4-f36feb1e6a74.json
 │       ├── 5796cab5-b631-4e38-9363-45872393d1c0.json
 │       ├── a69f6d88-754d-470e-bf63-15fe39e76766.json
+│       ├── aad4170e-1ce1-4d2a-a35d-5f116ce12f3f.json
 │       ├── b67cc731-e501-4486-b59f-0f1f1d42d64d.json
 │       ├── bff45442-3a46-48e1-8848-fb8445557d73.json
 │       └── ee2ccc50-b4d7-4917-be11-9f6317619810.json
@@ -587,6 +589,7 @@ FlowForm/
 │   │   ├── frontend.md
 │   │   ├── infrastructure.md
 │   │   ├── packer.md
+│   │   ├── proxmox-rehearsal.md
 │   │   └── scripts.md
 │   ├── 50-decisions/
 │   │   ├── ADR-template.md
@@ -860,17 +863,24 @@ FlowForm/
 │   │   │   └── bootstrap-proxy.sh
 │   │   └── proxmox/
 │   │       ├── cloud-init/
-│   │       │   ├── app.user-data.yaml.template
-│   │       │   ├── dev.user-data.yaml.template
-│   │       │   ├── localstack.user-data.yaml.template
-│   │       │   ├── proxy.user-data.yaml.template
-│   │       │   └── render-user-data.sh
-│   │       ├── lib/
-│   │       │   └── cloud-init-snippets.sh
-│   │       ├── create-vms.sh
-│   │       ├── destroy-vms.sh
-│   │       ├── README.md
-│   │       └── setup-host.sh
+│   │       ├── host/
+│   │       │   └── 01-setup-host.sh
+│   │       ├── terraform/
+│   │       │   ├── .terraform/
+│   │       │   ├── cloud-init/
+│   │       │   ├── .terraform.lock.hcl
+│   │       │   ├── main.tf
+│   │       │   ├── provider.tf
+│   │       │   ├── README.md
+│   │       │   ├── render-cloud-init.sh
+│   │       │   ├── terraform.tfstate
+│   │       │   ├── terraform.tfstate.backup
+│   │       │   ├── terraform.tfvars
+│   │       │   ├── terraform.tfvars.example
+│   │       │   ├── tfplan
+│   │       │   ├── variables.tf
+│   │       │   └── versions.tf
+│   │       └── README.md
 │   ├── env/
 │   │   ├── dev/
 │   │   │   ├── secrets/
