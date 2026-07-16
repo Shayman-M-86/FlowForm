@@ -10,7 +10,7 @@
 # Listing the bare names too keeps it explicit.
 #
 # NOT here on purpose:
-#   - the registry (10.10.10.10:5000): the app box's docker DAEMON pulls it
+#   - the registry (10.10.10.30:5000): the app box's docker DAEMON pulls it
 #     DIRECTLY (daemon no-proxy covers 10.0.0.0/8) — it never traverses Squid,
 #     so it needs no allow-list entry. It reaches the registry over the private
 #     net and trusts it via /etc/docker/daemon.json insecure-registries.

@@ -35,21 +35,26 @@ undo() {
 [[ "${1:-}" == "--undo" ]] && undo
 
 # --- A. vmbr10 ---
-if [[ -f "${BRIDGE_FILE}" ]]; then
-  echo "A: ${BRIDGE_FILE} already exists — skipping"
-else
-  echo "A: creating ${BRIDGE_FILE}"
-  cat > "${BRIDGE_FILE}" <<'EOF'
+desired_bridge="$(mktemp)"
+trap 'rm -f "${desired_bridge}"' EXIT
+cat > "${desired_bridge}" <<'EOF'
 auto vmbr10
-iface vmbr10 inet manual
+iface vmbr10 inet static
+	address 10.10.10.1/24
 	bridge-ports none
 	bridge-stp off
 	bridge-fd 0
 	# Private FlowForm rehearsal net. No bridge-ports = not wired to any
-	# physical NIC; no gateway = no internet path. A VM whose only NIC is
+	# physical NIC; the host address exists only for orchestration and health
+	# checks. No gateway is advertised to the private VMs, so a VM whose only NIC is
 	# vmbr10 structurally has no default route off the bridge.
 EOF
+if [[ ! -f "${BRIDGE_FILE}" ]] || ! cmp -s "${desired_bridge}" "${BRIDGE_FILE}"; then
+  echo "A: installing ${BRIDGE_FILE}"
+  install -m 0644 "${desired_bridge}" "${BRIDGE_FILE}"
   ifreload -a
+else
+  echo "A: ${BRIDGE_FILE} already matches — skipping"
 fi
 ip -br addr show vmbr10
 

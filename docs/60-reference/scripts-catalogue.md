@@ -3,7 +3,7 @@ title: Scripts catalogue
 document_type: reference
 status: scaffold
 authority: canonical
-verified_against_commit: ac7d021ad3716a68638759df684b9a3c32bb4389
+verified_against_commit: null
 tags: [tooling]
 related_code:
   - "../../scripts/"
@@ -58,10 +58,10 @@ Script files are authoritative for shell, Python, and Node helpers. Each `packag
 | Database initialization | `infra/postgres/init/00-render-and-run.sh`                                                                                                        | Renders and runs PostgreSQL initialization templates.                   |
 | Runtime bootstrap       | `infra/runtime/bootstrap/bootstrap-app.sh`, `infra/runtime/bootstrap/bootstrap-proxy.sh`                                                          | App-host and proxy-host bootstrap entry points.                         |
 | CDK support             | `infra/platforms/aws/scripts/seed-secrets.sh`                                                                                                    | AWS CDK environment seeding helper.                                     |
-| Image factory           | `infra/image-factory/provisioners/**/*.sh`, `infra/image-factory/manifests/extract-aws-ami-id.sh`                                                   | Packer provisioners and AMI-manifest extraction.                        |
+| Image factory           | `infra/image-factory/build-proxmox-template.sh`, `infra/image-factory/prepare-proxmox-source.sh`, `infra/image-factory/provisioners/**/*.sh`, `infra/image-factory/manifests/extract-aws-ami-id.sh` | Source preparation, candidate builds, Packer provisioners, and manifest extraction. |
 | Image validation        | `infra/tests/images/inspect-layout.sh`, `infra/tests/images/validate.sh`                                                                          | Image-layout and Packer validation helpers.                             |
-| Proxmox orchestration   | `infra/platforms/proxmox/*.sh`, `infra/platforms/proxmox/lib/cloud-init-snippets.sh`                                                             | Proxmox host, VM, and user-data lifecycle helpers.                      |
-| Rehearsal fixtures      | `infra/environments/rehearsal/fixtures/localstack/seed-localstack.sh`, `infra/environments/rehearsal/fixtures/registry/build-and-push-backend.sh` | Rehearsal fixture preparation.                                          |
+| Proxmox orchestration   | `infra/platforms/proxmox/*.sh`, `infra/platforms/proxmox/lib/cloud-init-snippets.sh`                                                             | Source import, template smoke checks, and Proxmox host/VM lifecycle.    |
+| Rehearsal lifecycle     | `infra/environments/rehearsal/prepare-artifacts.sh`, `infra/environments/rehearsal/activate.sh`, `infra/environments/rehearsal/verify.sh`, `infra/environments/rehearsal/fixtures/localstack/seed-localstack.sh` | Offline artifact preparation, ordered activation, verification, and fixture seeding. |
 
 ## Tool-owned helpers
 

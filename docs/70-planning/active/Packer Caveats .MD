@@ -1,4 +1,32 @@
-Here is the full practical gotcha list, combining the speaker’s direct mistakes with the important warnings that follow from his setup. 
+---
+title: Proxmox Packer caveats
+document_type: planning
+status: active
+authority: planning
+verified_against_commit: null
+tags: [infrastructure]
+related_code:
+  - "../../../infra/image-factory/"
+  - "../../../infra/platforms/proxmox/"
+related_docs:
+  - "Proxmox image and rehearsal infrastructure rework"
+---
+
+# Proxmox Packer caveats
+
+This source note combines a speaker's Ubuntu ISO workflow with warnings relevant
+to FlowForm. FlowForm clones a pinned Amazon Linux 2023 KVM source template; it
+does not run Ubuntu Autoinstall.
+
+Applicable items are API connectivity, token format and storage, least-privilege
+permissions, TLS verification, Packer-to-guest SSH reachability, build-user sudo,
+image cleanup, machine identity, SSH host-key regeneration, QEMU guest agent,
+cloud-init preparation, validation, smoke-cloning, and immutable rebuilds.
+
+The temporary Packer HTTP server, WSL reverse HTTP reachability, NoCloud HTTP
+files, Ubuntu boot commands/timing, Autoinstall YAML, APT locks, and interactive
+installer fallback do not apply to the checked-in `proxmox-clone` builder. They
+remain below only as historical source context and must not drive implementation.
 
 # Biggest failure points
 

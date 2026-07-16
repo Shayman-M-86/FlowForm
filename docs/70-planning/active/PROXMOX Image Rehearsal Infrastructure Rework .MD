@@ -1,4 +1,25 @@
+---
+title: Proxmox image and rehearsal infrastructure rework
+document_type: planning
+status: active
+authority: planning
+verified_against_commit: null
+tags: [infrastructure]
+related_code:
+  - "../../../infra/image-factory/"
+  - "../../../infra/platforms/proxmox/"
+  - "../../../infra/environments/rehearsal/"
+related_docs:
+  - "Proxmox Packer caveats"
+---
+
 # Proxmox Image and Rehearsal Infrastructure Rework
+
+Implementation status: source preparation, hardened Packer input/preflight,
+immutable manifests, offline artifacts, stopped topology creation, ordered
+activation, verification, and local contract tests are implemented in the
+working tree. Real Packer and Proxmox acceptance remains required before the
+structural cleanup phase begins.
 
 ## Summary
 

@@ -3,7 +3,7 @@ title: Runtime containers
 document_type: architecture
 status: draft
 authority: canonical
-verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
+verified_against_commit: null
 tags: [backend, frontend, infrastructure]
 related_code:
   - "../../infra/environments/development/compose/docker-compose.dev.yml"
@@ -86,9 +86,19 @@ The Proxmox rehearsal reuses the shared host runtime but deliberately changes
 dependencies that cannot operate on its offline private network. Its proxy
 override substitutes local TLS and egress allow-list configuration. Its app
 override adds ephemeral core and response PostgreSQL containers because the
-rehearsal does not exercise RDS. A green rehearsal therefore supports the
-shared image/bootstrap/Compose contract, but does not prove AWS networking,
-managed database connectivity, public DNS, or certificate issuance. See
+rehearsal does not exercise RDS. Third-party, PostgreSQL, and backend images are
+prepared as a digest/checksum-locked offline bundle rather than pulled during
+first boot.
+
+Topology creation leaves all rehearsal VMs stopped. Explicit activation starts
+the proxy first, then loads and starts the registry, LocalStack, and TLS shim on
+the fixtures VM, seeds the local AWS contract, and starts the app VM only after
+those prerequisites are healthy. Verification checks both Compose layers,
+direct and proxied readiness, and the app VM's lack of a default route. These
+are checked-in contracts with mock ordering coverage; real Proxmox acceptance
+remains pending. A green live rehearsal would support the shared
+image/bootstrap/Compose contract, but would not prove AWS networking, managed
+database connectivity, public DNS, or certificate issuance. See
 [[Machine image building]] and [[Deployment model]].
 
 ## Declared versus running state

@@ -3,7 +3,7 @@ title: Deployment model
 document_type: architecture
 status: draft
 authority: canonical
-verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
+verified_against_commit: null
 tags: [infrastructure, configuration, ci-cd]
 related_code:
   - "../../infra/platforms/aws/cdk/app.py"
@@ -37,7 +37,7 @@ does not claim that synthesized resources are deployed or healthy.
 | Local development | Backend and two PostgreSQL services use development Compose; frontends run through their workspace tooling or frontend Compose. AWS `dev` synthesizes only the shared non-production security stack. | Local definitions; current process state is not checked in. |
 | Automated test | A separate backend test Compose project with two PostgreSQL services runs locally and in CI. | CI proves this variant when the job succeeds, not a deployed application environment. |
 | Split-runtime local proof | One workstation runs proxy, app, and local database containers together. | Tests communication and hardening assumptions without reproducing host or AWS isolation. |
-| Proxmox rehearsal | Separate proxy and app VMs consume shared runtime/bootstrap files; local fixtures replace AWS, RDS, and public TLS dependencies. | Rehearses the host contract but intentionally does not prove managed cloud services. |
+| Proxmox rehearsal | Separate proxy, app, fixtures, and optional development VMs are cloned stopped from a verified image manifest. Explicit activation loads a checksum-verified offline image bundle, starts dependencies in order, seeds local AWS substitutes, and starts the app last. | The checked-in scripts and mock ordering tests exercise the host contract; real Proxmox acceptance remains pending and does not prove managed cloud services. |
 | AWS staging | Configuration requests the full CDK stack set and shares the `nonprod` security scope with dev. | Declared and partly synthesizable; the checkout does not prove a complete or running staging backend. |
 | AWS production | Configuration requests the same full stack classes with production domains, retained lifecycle policy, and a separate `prod` security scope. | Declared target only; the deploy workflow explicitly does not deploy production. |
 
@@ -45,6 +45,12 @@ Environment differences are data in the typed CDK configuration rather than
 separate stack implementations. Dev intentionally differs by omitting cloud
 compute, databases, and frontend hosting. Staging and prod select the same stack
 classes, but resource lifecycle, sizing, domains, and security scope differ.
+
+The rehearsal separates topology declaration from runtime activation.
+`create-vms.sh` records the selected immutable image and leaves every clone
+stopped; `activate.sh` validates the image and artifact contracts before it
+starts proxy, fixture, and application dependencies. This is a checked-in
+workflow boundary, not evidence that a live Proxmox run has passed.
 
 ## Intended AWS topology
 

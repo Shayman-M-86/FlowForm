@@ -51,6 +51,12 @@ write_files:
     owner: root:root
     content: __DOCKER_COMPOSE_APP_B64__
 
+  - path: /opt/flowform/repo/infra/environments/rehearsal/compose/docker-compose.app.rehearsal.yml
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: __DOCKER_COMPOSE_APP_REHEARSAL_B64__
+
   # --- rehearsal-only: trust the private HTTP registry -------------------------
   # bootstrap-app.sh pulls BACKEND_IMAGE from 10.10.10.30:5000 (plain HTTP on the
   # private net). Docker refuses HTTP registries unless listed as insecure. This
@@ -78,12 +84,11 @@ write_files:
       AWS_REGION=ap-southeast-2
       APP_PRIVATE_IP=10.10.10.20
       PROXY_PRIVATE_IP=10.10.10.10
-      # rehearsal image ref (fake-ECR registry on the aws-fixtures-vm, 230)
-      BACKEND_IMAGE=10.10.10.30:5000/flowform-backend:rehearsal
       # explicit compose path: the script is baked at /opt/flowform/scripts/... so
       # its own REPO_ROOT math (../../..) would look under /opt, not where we put
       # the compose file. Point at the baked location directly.
       COMPOSE_FILE=/opt/flowform/repo/infra/runtime/compose/docker-compose.app.yml
+      COMPOSE_OVERRIDE_FILE=/opt/flowform/repo/infra/environments/rehearsal/compose/docker-compose.app.rehearsal.yml
       # per-service fake-AWS endpoints (each = its own SNI → own Squid tunnel)
       AWS_ENDPOINT_URL_SECRETS_MANAGER=https://secretsmanager.localstack.test
       AWS_ENDPOINT_URL_SSM=https://ssm.localstack.test
@@ -107,15 +112,10 @@ write_files:
       set -Eeuo pipefail
       # Load the rehearsal env (endpoints, IPs, scope) then run the REAL script.
       set -a; . /etc/flowform/bootstrap-app.env; set +a
-      # On first boot the backend image may not be in the registry yet (the
-      # operator pushes it from the dev box AFTER the VMs come up). bootstrap's
-      # final compose-up then fails to pull — expected, not a regression. Emit a
-      # clear hint and preserve the real exit code so the failure is still visible.
       if ! /opt/flowform/scripts/bootstrap/bootstrap-app.sh; then
         rc=$?
         echo "[run-bootstrap-app] bootstrap-app.sh exited ${rc}." >&2
-        echo "[run-bootstrap-app] If it failed pulling ${BACKEND_IMAGE}, push it from the" >&2
-        echo "[run-bootstrap-app] dev box (build-and-push-backend.sh) then re-run THIS script." >&2
+        echo "[run-bootstrap-app] Re-run activate.sh after correcting the failed prerequisite." >&2
         exit "${rc}"
       fi
 

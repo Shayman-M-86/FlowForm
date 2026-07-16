@@ -3,7 +3,7 @@ title: Configuration catalogue
 document_type: reference
 status: scaffold
 authority: canonical
-verified_against_commit: ac7d021ad3716a68638759df684b9a3c32bb4389
+verified_against_commit: null
 tags: [configuration]
 related_code:
   - "../../backend/app/core/config.py"
@@ -50,9 +50,9 @@ Configuration files, application settings modules, Compose definitions, infrastr
 | Test container environment     | `infra/tests/compose/`                                                                                                                                               | Test-only Compose stack and Dockerfile.                                                       |
 | Frontend-only local containers | `frontend/docker-compose.dev.yml`, frontend app `Dockerfile*` files                                                                                               | Frontend-local container configuration.                                                      |
 | Runtime container deployment   | `infra/runtime/compose/`, `infra/runtime/config/`, `infra/runtime/cloud-init/`                                                                                    | Shared runtime Compose, service configuration, and cloud-init templates.                     |
-| Rehearsal environment          | `infra/environments/rehearsal/compose/`, `infra/environments/rehearsal/fixtures/`                                                                                   | Rehearsal overrides and fixture configuration.                                               |
+| Rehearsal environment          | `infra/environments/rehearsal/compose/`, `infra/environments/rehearsal/fixtures/`, `infra/environments/rehearsal/artifacts/images.lock`                             | Rehearsal overrides, fixture configuration, and digest-pinned offline image inputs.           |
 | PostgreSQL initialization      | `infra/postgres/init/templates/`, `infra/postgres/init/schema/`, `infra/postgres/config/`                                                                         | Database initialization templates, persisted schemas, and PostgreSQL access configuration.   |
-| Image factory                  | `infra/image-factory/packer/*.pkr.hcl`, `infra/image-factory/packer/variables/*.example`                                                                           | Packer plugins, variables, locals, sources, builds, and copy-to-local variable examples.     |
+| Image factory                  | `infra/image-factory/packer/*.pkr.hcl`, `infra/image-factory/packer/variables/*.example`, `infra/image-factory/sources/*.lock`                                      | Packer definitions, local variable examples, and pinned source-image inputs.                  |
 | AWS CDK                        | `infra/platforms/aws/cdk/cdk.json`, `infra/platforms/aws/cdk/cdk.context.json`, `infra/platforms/aws/cdk/flowform_infra/config/environments.py`, `infra/platforms/aws/cdk/pyproject.toml`, `infra/platforms/aws/cdk/pyrightconfig.json` | CDK entry configuration, cached lookup context, environment definitions, and Python tooling. |
 | MCP tools                      | `tools/mcp/pyproject.toml`, `.mcp.json`                                                                                                                           | MCP server dependencies and repository registration.                                         |
 | Docker build context           | `.dockerignore`                                                                                                                                                   | Repository-wide Docker build-context exclusions.                                             |

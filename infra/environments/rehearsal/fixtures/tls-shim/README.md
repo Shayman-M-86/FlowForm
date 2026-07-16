@@ -3,8 +3,8 @@
 Fronts LocalStack with **TLS on :443 under AWS-style SNI names** so the app box
 reaches fake-AWS exactly the way it reaches real AWS — and so Squid's
 `CONNECT :443` + SNI allow-list applies unchanged. Runs on the **ls-vm (230)**,
-beside LocalStack (baked into template 9001; auto-starts via
-`flowform-tls-shim.service`).
+beside LocalStack. Cloud-init writes the unit and configuration; activation
+loads the pinned image and starts the service after LocalStack is healthy.
 
 ```
 app-vm → Squid (CONNECT <svc>.localstack.test:443, SNI allow-list)
@@ -57,5 +57,5 @@ openssl x509 -req -in localstack.csr -CA rehearsal-ca.crt -CAkey rehearsal-ca.ke
   -CAcreateserial -days 3650 -sha256 -extensions v3_req -extfile san.cnf -out localstack.crt
 ```
 
-Then re-embed `Caddyfile` + `localstack.crt/.key` (base64) into the ls builder
-user-data and rebuild template 9001.
+Then rerun the cloud-init renderer; a future activation will embed the updated
+tracked files without rebuilding the golden image.

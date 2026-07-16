@@ -12,11 +12,15 @@ variable "proxmox_token_id" {
   type      = string
   default   = "packer@pve!flowform"
   sensitive = true
+
+  validation {
+    condition     = can(regex("^[^@[:space:]]+@[^![:space:]]+![^[:space:]]+$", var.proxmox_token_id))
+    error_message = "proxmox_token_id must match user@realm!token-name."
+  }
 }
 
 variable "proxmox_token_secret" {
   type      = string
-  default   = "change-me"
   sensitive = true
 }
 
@@ -36,13 +40,16 @@ variable "proxmox_network_bridge" {
 }
 
 variable "proxmox_vm_id" {
-  type    = number
-  default = 9000
+  type = number
+
+  validation {
+    condition     = var.proxmox_vm_id >= 100 && var.proxmox_vm_id <= 999999999
+    error_message = "proxmox_vm_id must be a valid Proxmox VMID."
+  }
 }
 
 variable "proxmox_template_name" {
-  type    = string
-  default = "flowform-golden-al2023"
+  type = string
 }
 
 variable "proxmox_cpu" {
@@ -57,5 +64,10 @@ variable "proxmox_memory" {
 
 variable "proxmox_insecure_skip_tls_verify" {
   type    = bool
-  default = true
+  default = false
+}
+
+variable "proxmox_ssh_private_key_file" {
+  type      = string
+  sensitive = true
 }

@@ -21,5 +21,11 @@ while IFS= read -r script; do
     echo "CRLF line endings: ${script}" >&2
     exit 1
   fi
-done < <(find "${repo_root}/image-factory" "${repo_root}/platforms/proxmox" "${repo_root}/runtime" "${repo_root}/tests" -type f -name '*.sh' -print)
+done < <(find \
+  "${repo_root}/image-factory" \
+  "${repo_root}/platforms/proxmox" \
+  "${repo_root}/runtime" \
+  "${repo_root}/environments/rehearsal" \
+  "${repo_root}/tests" \
+  -type f -name '*.sh' -print)
 printf 'image layout OK\n'

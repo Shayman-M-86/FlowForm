@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Render every *.yaml.template in this dir -> *.yaml.rendered.yaml by injecting the
+# Render every *.yaml.template into the generated output directory by injecting the
 # base64 of the REAL repo files (single source of truth). Run whenever any of the
 # referenced repo files change; create-vms.sh runs it too.
 #
@@ -27,6 +27,15 @@ HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 #   - PVE host: run from a synced copy. Sync from the REPO ROOT (see README) so
 #     these subtrees exist, or pass REPO_ROOT=/path explicitly.
 REPO_ROOT="${REPO_ROOT:-$(cd -- "${HERE}/../../.." && pwd)}"
+OUTPUT_DIR="${OUTPUT_DIR:-${REPO_ROOT}/infra/.generated/cloud-init}"
+install -d -m 0750 "${OUTPUT_DIR}"
+
+# Older revisions wrote generated files beside the templates. Remove those
+# legacy artifacts so rerunning the renderer completes its own migration and
+# does not leave stale cloud-init payloads in the source tree.
+if [[ "${OUTPUT_DIR}" != "${HERE}" ]]; then
+  find "${HERE}" -maxdepth 1 -type f -name '*.user-data.rendered.yaml' -delete
+fi
 
 # placeholder marker  ->  repo-relative source file.
 # Keep markers in sync with the *.template files that reference them.
@@ -34,6 +43,7 @@ declare -A PLACEHOLDERS=(
   [__REHEARSAL_CA_CRT_B64__]="infra/environments/rehearsal/fixtures/tls-shim/ca/rehearsal-ca.crt"
   [__BOOTSTRAP_APP_SH_B64__]="infra/runtime/bootstrap/bootstrap-app.sh"
   [__DOCKER_COMPOSE_APP_B64__]="infra/runtime/compose/docker-compose.app.yml"
+  [__DOCKER_COMPOSE_APP_REHEARSAL_B64__]="infra/environments/rehearsal/compose/docker-compose.app.rehearsal.yml"
   [__BOOTSTRAP_PROXY_SH_B64__]="infra/runtime/bootstrap/bootstrap-proxy.sh"
   [__DOCKER_COMPOSE_PROXY_B64__]="infra/runtime/compose/docker-compose.proxy.yml"
   [__DOCKER_COMPOSE_PROXY_REHEARSAL_B64__]="infra/environments/rehearsal/compose/docker-compose.proxy.rehearsal.yml"
@@ -46,6 +56,7 @@ declare -A PLACEHOLDERS=(
   [__TLS_SHIM_CADDYFILE_B64__]="infra/environments/rehearsal/fixtures/tls-shim/Caddyfile"
   [__LOCALSTACK_CRT_B64__]="infra/environments/rehearsal/fixtures/tls-shim/ca/localstack.crt"
   [__LOCALSTACK_KEY_B64__]="infra/environments/rehearsal/fixtures/tls-shim/ca/localstack.key"
+  [__SEED_LOCALSTACK_SH_B64__]="infra/environments/rehearsal/fixtures/localstack/seed-localstack.sh"
 )
 
 # base64 -w0 = single line (cloud-init wants the content on one logical line).
@@ -62,9 +73,9 @@ done
 
 render_one() {
   local tpl="$1"
-  local out="${tpl%.template}.rendered.yaml"
-  # app.user-data.yaml.template -> app.user-data.rendered.yaml
-  out="${tpl%.yaml.template}.rendered.yaml"
+  local base out
+  base="$(basename -- "${tpl%.yaml.template}")"
+  out="${OUTPUT_DIR}/${base}.rendered.yaml"
 
   local tmp; tmp="$(mktemp "${out}.tmp.XXXXXX")"
   # shellcheck disable=SC2064

@@ -26,5 +26,6 @@ source "proxmox-clone" "amazon_linux_2023" {
   cloud_init              = true
   cloud_init_storage_pool = var.proxmox_storage_pool
   ssh_username            = var.ssh_username
+  ssh_private_key_file    = var.proxmox_ssh_private_key_file
   ssh_timeout             = "45m"
 }

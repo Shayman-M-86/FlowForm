@@ -9,6 +9,7 @@ Linux 2023 image contract.
 image-factory/
 ├── packer/        Packer sources, build definition, and separated variables
 ├── provisioners/  shared, AWS-only, and Proxmox-only Packer provisioners
+├── sources/       pinned upstream source-image identity and checksum
 └── manifests/     generated build metadata and the AMI extraction helper
 ```
 
@@ -19,20 +20,32 @@ the platform agent provisioners.
 
 ## Build a Proxmox template
 
-Import the official Amazon Linux 2023 KVM qcow2 once as the minimal Proxmox
-source template, then run:
+Create a dedicated Proxmox Packer token and temporary build SSH key. Store the
+one-time token value in a mode-`0600` file outside the repository, then prepare
+the pinned and checksum-verified source template:
 
 ```bash
-cd infra/image-factory/packer
-cp variables/proxmox.auto.pkrvars.hcl.example proxmox.auto.pkrvars.hcl
-# Edit proxmox.auto.pkrvars.hcl, including proxmox_source_template.
-packer init .
-packer validate -syntax-only .
-packer build -only='proxmox-clone.amazon_linux_2023' .
+export PROXMOX_PACKER_SSH_PRIVATE_KEY_FILE=/secure/path/packer-build
+infra/image-factory/prepare-proxmox-source.sh \
+  --source-vmid 9000 \
+  --upload root@pve.example.lan
 ```
 
-`../build-proxmox-template.sh` is the equivalent convenience entry point. It
-does not add a separate image-construction path.
+Copy and edit the non-secret example, then build a new immutable candidate VMID:
+
+```bash
+cp infra/image-factory/packer/variables/proxmox.auto.pkrvars.hcl.example \
+  infra/image-factory/packer/proxmox.auto.pkrvars.hcl
+export PROXMOX_TOKEN_SECRET_FILE=/secure/path/proxmox-packer-token
+infra/image-factory/build-proxmox-template.sh \
+  --vmid 9100 \
+  --var-file infra/image-factory/packer/proxmox.auto.pkrvars.hcl \
+  --verify-on root@pve.example.lan
+```
+
+The wrapper validates API access and visible resources, runs full Packer
+validation, builds the candidate, smoke-clones it through QEMU guest agent, and
+writes a selectable manifest under `infra/.generated/image-factory/`.
 
 ## Build an AWS AMI
 
@@ -58,6 +71,7 @@ aws ssm put-parameter \
   --overwrite
 ```
 
-Run `infra/tests/images/validate.sh` for static Packer and layout validation.
+Run the infrastructure image validation wrapper available in the active test
+layout for static Packer and layout validation.
 The image contract excludes application code, secrets, mutable container images,
 and environment topology; those belong to runtime and environment directories.

@@ -17,14 +17,18 @@ write_files:
     encoding: b64
     permissions: '0644'
     content: __TLS_SHIM_CADDYFILE_B64__
-  - path: /opt/flowform/tls-shim/ca/localstack.crt
+  - path: /opt/flowform/tls-shim/certs/localstack.crt
     encoding: b64
     permissions: '0644'
     content: __LOCALSTACK_CRT_B64__
-  - path: /opt/flowform/tls-shim/ca/localstack.key
+  - path: /opt/flowform/tls-shim/certs/localstack.key
     encoding: b64
     permissions: '0600'
     content: __LOCALSTACK_KEY_B64__
+  - path: /opt/flowform/rehearsal/seed-localstack.sh
+    encoding: b64
+    permissions: '0755'
+    content: __SEED_LOCALSTACK_SH_B64__
   - path: /etc/systemd/system/flowform-localstack.service
     permissions: '0644'
     content: |
@@ -70,7 +74,6 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 runcmd:
+  # Activation owns image loading and service order. First boot only prepares
+  # the host; it must not race ahead and pull mutable images from the internet.
   - [ systemctl, daemon-reload ]
-  - [ systemctl, enable, --now, flowform-localstack.service ]
-  - [ systemctl, enable, --now, flowform-registry.service ]
-  - [ systemctl, enable, --now, flowform-tls-shim.service ]

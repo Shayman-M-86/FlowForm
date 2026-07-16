@@ -5,6 +5,7 @@ log "validating image dependencies"
 command -v curl >/dev/null
 command -v jq >/dev/null
 command -v nft >/dev/null
+command -v cloud-init >/dev/null
 docker --version
 docker compose version
 /usr/local/bin/aws --version || aws --version

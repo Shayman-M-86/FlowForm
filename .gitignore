@@ -104,10 +104,11 @@ cover/
 # DELIBERATELY COMMITTED THROWAWAY — it only signs *.localstack.test on an
 # un-routed private net and is trusted only inside the rehearsal. See
 # infra/environments/rehearsal/fixtures/tls-shim/README.md. It is NOT ignored so a fresh checkout can
-# build template 9001 and render the app user-data without regenerating certs.
+# render rehearsal user data without regenerating certificates.
 
 # Rendered cloud-init artifacts (generated from *.template by render-user-data.sh)
 infra/runtime/cloud-init/*.rendered.yaml
+infra/.generated/
 
 # Packer local image-build artifacts and credentials
 *.pkrvars.hcl

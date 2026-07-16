@@ -5,7 +5,7 @@
 # reaches LocalStack at 127.0.0.1:4566 (LocalStack publishes 10.10.10.30:4566,
 # reachable as 127.0.0.1 from the host netns).
 #
-# The image (caddy:2-alpine) is baked into the ls template so this starts offline.
+# The pinned Caddy image arrives in the offline rehearsal artifact bundle.
 
 services:
   tls-shim:
