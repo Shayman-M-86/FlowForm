@@ -1,9 +1,8 @@
 # Private image registry for the rehearsal — fake ECR.
 #
-# REFERENCE COPY. The AUTHORITATIVE version is baked into the ls/aws-fixtures
-# template (9001) via runtime LocalStack first-boot configuration or a future Proxmox-only Packer fixture variant (which
-# also adds the flowform-registry.service systemd unit that auto-starts it on
-# boot). Keep the two in sync; the running box uses the baked copy.
+# This file is the runtime source rendered into cloud-init. The Proxmox fixture
+# build reads only its image reference and preloads that image; registry data,
+# service units, networking, and startup remain runtime concerns.
 #
 # Runs on the aws-fixtures-vm (230, 10.10.10.30) ALONGSIDE LocalStack + the TLS
 # shim — the box that hosts every always-on fake-AWS backend:

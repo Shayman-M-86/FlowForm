@@ -53,7 +53,7 @@ Configuration files, application settings modules, Compose definitions, infrastr
 | Rehearsal environment          | `infra/containers/rehearsal/compose/`, `infra/containers/rehearsal/services/`                                                                                        | Rehearsal overrides and fixture configuration.                                               |
 | Per-environment values         | `infra/env/dev/`, `infra/env/test/`, `infra/env/live/`                                                                                                            | Environment-specific configuration values and secret files consumed by Compose and bootstrap. |
 | PostgreSQL initialization      | `infra/database/init/templates/`, `infra/database/init/schema/`, `infra/database/config/`                                                                         | Database initialization templates, persisted schemas, and PostgreSQL access configuration.   |
-| Packer image build             | `infra/images/packer/*.pkr.hcl`, `infra/images/packer/variables/*.pkrvars.hcl.example`, `infra/images/proxmox/.env.example`                                      | Shared image definitions plus example configuration for Proxmox source preparation and Packer builds. |
+| Packer image build             | `infra/images/packer/**/*.pkr.hcl`, `infra/images/packer/variables/*.pkrvars.hcl.example`, `infra/images/scripts/.env.example`                                   | Shared golden and Proxmox fixture definitions plus local examples for source preparation and selected builds. |
 | Proxmox Terraform deployment   | `infra/deployment/proxmox/terraform/*.tf`, `infra/deployment/proxmox/terraform/terraform.tfvars.example`                                                           | Proxmox API, clone, cloud-init, and guest-access configuration; real variables and state are local-only. |
 | AWS CDK                        | `infra/deployment/aws/cdk/cdk.json`, `infra/deployment/aws/cdk/cdk.context.json`, `infra/deployment/aws/cdk/flowform_infra/config/environments.py`, `infra/deployment/aws/cdk/pyproject.toml`, `infra/deployment/aws/cdk/pyrightconfig.json` | CDK entry configuration, cached lookup context, environment definitions, and Python tooling. |
 | MCP tools                      | `tools/mcp/pyproject.toml`, `.mcp.json`                                                                                                                           | MCP server dependencies and repository registration.                                         |
@@ -66,10 +66,16 @@ Configuration files, application settings modules, Compose definitions, infrastr
 | `infra/deployment/aws/cdk/.env.dev.example`                     | Gitignored `infra/deployment/aws/cdk/.env.<env>` files consumed by CDK configuration and its seeding helper. |
 | `infra/images/packer/variables/aws.auto.pkrvars.hcl.example` | Local AWS Packer variable file. |
 | `infra/images/packer/variables/proxmox.auto.pkrvars.hcl.example` | Local Proxmox Packer variable file. |
-| `infra/images/proxmox/.env.example` | Local source-template preparation configuration. |
+| `infra/images/scripts/.env.example` | Local source-template preparation configuration. |
 | `infra/deployment/proxmox/terraform/terraform.tfvars.example` | Local Terraform deployment configuration. |
 | `infra/deployment/proxmox/terraform/cloud-init/*.user-data.yaml.template` | Terraform-rendered Proxmox cloud-init payloads. |
 | `infra/database/init/templates/**/*.sql`                       | Rendered PostgreSQL initialization SQL.                                                       |
+
+For Proxmox source preparation, `PROXMOX_SOURCE_DISK_SIZE=native`
+preserves the pinned QCOW2 virtual size (currently 25 GiB), while
+`PROXMOX_DISK_MAX_SIZE=25G` is the independent upper-bound check. Set an
+explicit larger source size only when capacity requirements justify it, and
+raise the maximum in the same reviewed change.
 
 ## Update procedure
 

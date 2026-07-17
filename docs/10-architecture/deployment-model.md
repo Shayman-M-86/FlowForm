@@ -3,7 +3,7 @@ title: Deployment model
 document_type: architecture
 status: draft
 authority: canonical
-verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
+verified_against_commit: null
 tags: [infrastructure, configuration, ci-cd]
 related_code:
   - "../../infra/deployment/aws/cdk/app.py"
@@ -13,7 +13,7 @@ related_code:
   - "../../infra/containers/"
   - "../../infra/containers/rehearsal/"
   - "../../infra/images/packer/"
-  - "../../infra/images/proxmox/provisioning/"
+  - "../../infra/images/scripts/"
   - "../../infra/deployment/proxmox/"
   - "../../.github/workflows/deploy.yml"
 related_docs:
@@ -41,7 +41,7 @@ does not claim that synthesized resources are deployed or healthy.
 | Local development | Backend and two PostgreSQL services use development Compose; frontends run through their workspace tooling or frontend Compose. AWS `dev` synthesizes only the shared non-production security stack. | Local definitions; current process state is not checked in. |
 | Automated test | A separate backend test Compose project with two PostgreSQL services runs locally and in CI. | CI proves this variant when the job succeeds, not a deployed application environment. |
 | Split-runtime local proof | One workstation runs proxy, app, and local database containers together. | Tests communication and hardening assumptions without reproducing host or AWS isolation. |
-| Proxmox rehearsal | Packer builds a shared Amazon Linux golden template; Terraform clones proxy, app, and LocalStack VMs and uploads role-specific cloud-init. | The VM topology has been exercised locally, but the isolated LocalStack workload cannot yet start because its container images are not preloaded. |
+| Proxmox rehearsal | Packer builds a shared Amazon Linux golden template and a Proxmox-only LocalStack fixture; Terraform clones proxy, app, and LocalStack VMs and uploads role-specific cloud-init. | The checked-in fixture path supports offline LocalStack startup; a successful image build and applied rehearsal are still required to prove live health. |
 | AWS staging | Configuration requests the full CDK stack set and shares the `nonprod` security scope with dev. | Declared and partly synthesizable; the checkout does not prove a complete or running staging backend. |
 | AWS production | Configuration requests the same full stack classes with production domains, retained lifecycle policy, and a separate `prod` security scope. | Declared target only; the deploy workflow explicitly does not deploy production. |
 
@@ -55,12 +55,11 @@ classes, but resource lifecycle, sizing, domains, and security scope differ.
 The local Proxmox rehearsal uses separate tools for separate lifecycle scopes:
 
 ```text
-official AL2023 KVM image
-  -> source template 8999
-  -> Packer
-  -> shared golden template 9000
-  -> Terraform
-  -> proxy 210, app 220, LocalStack 230
+shared golden definition
+├── AWS AMI
+└── Proxmox golden template 9000
+    ├── Terraform -> proxy 210, app 220
+    └── Packer LocalStack fixture 9001 -> Terraform -> LocalStack 230
 ```
 
 Packer owns source-template preparation and the reusable operating-system
@@ -69,12 +68,12 @@ Terraform owns the deployment topology: full clones, VM networking, cloud-init
 snippets, and Terraform state. Terraform does not invoke Packer, and Packer
 does not deploy the rehearsal VMs.
 
-The current golden template intentionally excludes mutable third-party runtime
-images. That leaves LocalStack unable to pull its initial LocalStack, registry,
-and TLS-shim images after Terraform places it on the isolated `vmbr10` network.
-The next planned stage is a Proxmox-only fixture template derived from the
-golden template and preloaded with those images. This is a known rehearsal gap,
-not evidence that the current topology is end-to-end healthy.
+The golden template excludes runtime container images. The Proxmox-only
+fixture derives from that golden template and preloads exactly the LocalStack,
+registry, and TLS-shim images declared by rehearsal Compose so VM `230` does
+not need internet access. Terraform and cloud-init still own IPs, SSH keys,
+Compose files, TLS material, service units, seed data, and service startup.
+Terraform consumes both completed template VMIDs and never invokes Packer.
 
 ## Intended AWS topology
 

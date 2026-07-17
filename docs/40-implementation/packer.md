@@ -7,8 +7,8 @@ verified_against_commit: null
 tags: [infrastructure]
 related_code:
   - "../../infra/images/packer/"
-  - "../../infra/images/common/build-steps/"
-  - "../../infra/images/proxmox/"
+  - "../../infra/images/scripts/"
+  - "../../infra/images/IMAGE-CONTRACT.md"
   - "../../infra/deployment/proxmox/terraform/"
   - "../../infra/tests/images/"
 related_docs:
@@ -22,25 +22,32 @@ related_docs:
 Maps the current Packer and Proxmox image boundary to its implementation.
 
 ## Directory ownership
-`infra/images/packer/` owns the consolidated Packer HCL: sources, variables,
-locals, required plugins, and the golden build. `infra/images/common/build-steps/`
-owns software and cleanup common to AWS and Proxmox builds. Platform-only guest
-steps live under `infra/images/aws/build-steps/` and
-`infra/images/proxmox/build-steps/`.
+`infra/images/packer/` owns builds, sources, variables, provisioners, manifests,
+locals, and required plugins. Shared steps live in `provisioners/common/`;
+platform-only steps live in `provisioners/aws/` and `provisioners/proxmox/`.
 
-`infra/images/proxmox/provisioning/` owns the ordered operator entry points:
-source-template preparation first, then the Packer golden-template build.
+`infra/images/scripts/` owns source preparation, selected Packer builds, and AWS
+AMI publication. Its common helper creates a temporary flat Packer project
+because Packer does not recursively load the canonical nested HCL directories.
 Terraform is intentionally outside this ownership boundary under
 `infra/deployment/proxmox/terraform/`.
 
 ## Entry points
-- `01-prepare-proxmox-source.sh` imports and generalizes the minimal AL2023
-  source template.
-- `02-build-proxmox-template.sh` runs the selected Packer Proxmox build.
-- `source.proxmox.pkr.hcl` uses `proxmox-clone` from the source template and an
+- `prepare-proxmox-source.sh` imports and generalizes the minimal AL2023
+  source template while preserving its native disk size by default.
+- `verify-proxmox-disk-sizes.sh` reports the downloaded QCOW2 and source,
+  golden, and fixture virtual sizes and enforces the configured maximum.
+- `build-proxmox-image.sh` builds only the shared Proxmox golden template.
+- `build-proxmox-localstack-fixture.sh` builds only the fixture derived from the
+  golden template.
+- `build-aws-image.sh` builds only the AWS golden AMI; `publish-aws-ami.sh`
+  publishes its manifest ID to an explicit SSM parameter.
+- `sources/proxmox.pkr.hcl` defines both Proxmox clone sources with an
   explicit reserved SSH address.
-- `build.golden.pkr.hcl` defines the shared build and platform-specific guest
+- `builds/golden.pkr.hcl` defines the shared build and platform-specific guest
   provisioners.
+- `builds/localstack-fixture.pkr.hcl` uploads the maintained Compose inputs only
+  for image-reference extraction and runs the fixture preload provisioner.
 
 ## Important modules
 The shared build installs base packages, Docker/Compose, AWS CLI, host
@@ -50,13 +57,22 @@ credential state before template conversion.
 
 The source-preparation path and Packer source disable the QEMU guest agent;
 AL2023 does not support it. Packer reaches its temporary clone through the
-configured static build IP instead.
+configured static build IP instead. The fixture provisioner pulls, inspects,
+and saves the LocalStack, registry, and TLS-shim images, then stops Docker. It
+does not copy Compose or runtime configuration into the resulting template.
+
+The official source QCOW2 is sparse/compressed on disk but declares a 25 GiB
+virtual disk containing a GPT layout and XFS root filesystem. `qm importdisk`
+preserves that virtual capacity. Source bootstrap expands a filesystem only
+when the disk was explicitly enlarged; Packer and Terraform full clones then
+inherit the template capacity. The default `native` policy avoids the resize
+that previously changed 25 GiB to 32 GiB. XFS is never shrunk in place.
 
 ## Dependency direction
-Packer consumes a minimal source template and produces a reusable golden
-template. Terraform consumes that completed template and produces deployment
-VMs. Neither layer invokes the other. Per-role cloud-init belongs to Terraform,
-not to the shared Packer golden image.
+Packer consumes a minimal source template and produces the shared golden
+outputs; the Proxmox fixture consumes that completed golden template. Terraform
+consumes golden and fixture VMIDs and produces deployment VMs. Neither layer
+invokes the other. Per-role cloud-init belongs to Terraform, not either image.
 
 ## Generated versus handwritten code
 Packer variable files containing real credentials and manifests are local or
@@ -66,14 +82,15 @@ rendered files are not committed.
 
 ## Tests and validation
 `infra/tests/images/validate.sh` runs Packer syntax validation and the
-source-template preparation tests. Terraform configuration is validated from
+source-template preparation tests, including the native-size no-resize path.
+Successful Proxmox build wrappers then run the live disk-size verifier.
+Terraform configuration is validated from
 `infra/deployment/proxmox/terraform/` with `terraform validate` after its
 cloud-init payloads have been rendered.
 
-The shared golden template has been built and Terraform has cloned it into the
-local rehearsal. The LocalStack runtime exposed the remaining image gap:
-third-party images must be preloaded in a future Proxmox-only fixture template
-before the isolated LocalStack VM can become healthy.
+Static validation resolves the AWS golden, Proxmox golden, and Proxmox fixture
+builders. A real fixture build and applied rehearsal remain operator actions;
+checked-in validation does not claim they are live or healthy.
 
 ## Related documents
 

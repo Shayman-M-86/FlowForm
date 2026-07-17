@@ -60,7 +60,7 @@ class EnvConfig:
     security_scope: str = "nonprod"
     # Packer-built EC2 base image contract. CDK must consume this explicit AMI
     # reference instead of selecting an unrelated latest base image. Prefer
-    # publishing infra/image-factory/manifests/packer-manifest.json output to this SSM
+    # publishing infra/images/packer/manifests/packer-manifest.json output to this SSM
     # parameter after an AWS image build.
     ec2_base_ami_ssm_parameter: str | None = None
     # Optional direct AMI ID override for tests/break-glass deployments. If set,

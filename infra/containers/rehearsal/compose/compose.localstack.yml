@@ -1,9 +1,8 @@
 # LocalStack fixture for the rehearsal (runs on ls-vm / 10.10.10.30).
 #
-# REFERENCE COPY. The AUTHORITATIVE version is baked into the ls template via
-# runtime LocalStack first-boot configuration or a future Proxmox-only Packer fixture variant (which also adds the
-# flowform-localstack.service systemd unit that auto-starts it on boot). Keep the
-# two in sync if you change one; the running ls-vm uses the baked copy.
+# This file is the runtime source rendered into cloud-init. The Proxmox fixture
+# build reads only its image reference and preloads that image; Compose content,
+# service units, networking, and startup remain first-boot configuration.
 #
 # Fake AWS: only the services the bootstrap actually calls — Secrets Manager,
 # SSM Parameter Store, KMS. Bootstrap hits these with the REAL aws CLI via
@@ -12,7 +11,8 @@
 # LocalStack serves plain HTTP on :4566. The app box never talks to it directly
 # — it goes app-vm → Squid (CONNECT :443, SNI allow-list) → TLS shim (on the
 # ls-vm) → here. Plain HTTP is fine on the private net for the seed path; the
-# TLS/SNI fidelity is added by the shim (tls-shim/, also baked into 9001).
+# TLS/SNI fidelity is added by the runtime-configured shim; only its image is
+# preloaded into fixture template 9001.
 
 services:
   localstack:

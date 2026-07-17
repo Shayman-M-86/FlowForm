@@ -113,7 +113,7 @@ Implement as a separate behavior-preserving commit:
 - Make environment directories the source of environment inputs; adapters consume them rather than owning them.
 - Standardize environment identifiers as `dev`, `rehearsal`, `staging`, and `prod`.
 - Move PostgreSQL under `database/postgres/` and update every schema, Compose, backend, script, CI, and documentation reference.
-- Rename infrastructure image tests to `tests/image-factory/`.
+- Keep infrastructure image validation under `infra/tests/images/`.
 - Move rendered cloud-init and other generated artifacts under `infra/.generated/`.
 - Standardize new Compose names on `compose*.yaml`, normalize README/contract filenames, and remove explicitly legacy experiment files.
 - Run a complete reference sweep immediately after moves; do not leave compatibility wrappers once one canonical path exists.
@@ -131,9 +131,9 @@ Implement as a separate behavior-preserving commit:
 
 ```text
 # Linux/WSL build host
-provisioning/01-prepare-proxmox-source.sh --source-vmid ID
-provisioning/02-build-proxmox-template.sh
-# Next planned stage: Proxmox-only LocalStack fixture-template Packer build
+infra/images/scripts/prepare-proxmox-source.sh --apply
+infra/images/scripts/build-proxmox-image.sh
+infra/images/scripts/build-proxmox-localstack-fixture.sh
 
 # Proxmox deployment
 host/01-setup-host.sh
@@ -168,8 +168,8 @@ Acceptance requires a clean rehearsal to become healthy without manually rerunni
 ## Assumptions and Defaults
 
 - A Proxmox-only Packer fixture template is the selected offline delivery
-  mechanism for the LocalStack, registry, and TLS-shim images; the build is not
-  implemented yet.
+  mechanism for the LocalStack, registry, and TLS-shim images. The checked-in
+  build is implemented; a real fixture build and rehearsal acceptance remain.
 - Terraform owns clone lifecycle and starts the configured rehearsal VMs.
 - Packer runs through Bash on Linux or WSL; WSL is supported only when preflight proves API and build-VM SSH reachability.
 - Golden templates use immutable versioned VMIDs and manifests.

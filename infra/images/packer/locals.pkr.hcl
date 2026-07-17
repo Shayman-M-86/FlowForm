@@ -1,11 +1,11 @@
 locals {
   build_timestamp = formatdate("YYYYMMDDhhmmss", timestamp())
   common_scripts = [
-    "../common/build-steps/install-base.sh",
-    "../common/build-steps/install-docker.sh",
-    "../common/build-steps/install-aws-cli.sh",
-    "../common/build-steps/configure-host.sh",
-    "../common/build-steps/verify-image.sh",
+    "${var.image_root}/packer/provisioners/common/install-base.sh",
+    "${var.image_root}/packer/provisioners/common/install-docker.sh",
+    "${var.image_root}/packer/provisioners/common/install-aws-cli.sh",
+    "${var.image_root}/packer/provisioners/common/configure-host.sh",
+    "${var.image_root}/packer/provisioners/common/verify-image.sh",
   ]
   common_tags = {
     project       = "flowform"

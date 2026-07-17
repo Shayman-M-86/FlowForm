@@ -2,8 +2,8 @@
 set -Eeuo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-script="${repo_root}/images/proxmox/provisioning/01-prepare-proxmox-source.sh"
-example_env="${repo_root}/images/proxmox/.env.example"
+script="${repo_root}/images/scripts/prepare-proxmox-source.sh"
+example_env="${repo_root}/images/scripts/.env.example"
 tmp="$(mktemp -d)"
 trap 'rm -rf "${tmp}"' EXIT
 
@@ -138,6 +138,20 @@ set -Eeuo pipefail
 printf 'virt-customize %s\n' "$*" >>"${FAKE_COMMAND_LOG}"
 FAKE_VIRT_CUSTOMIZE
 
+cat >"${fake_bin}/qemu-img" <<'FAKE_QEMU_IMG'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+printf 'qemu-img %s\n' "$*" >>"${FAKE_COMMAND_LOG}"
+cat <<'JSON'
+{
+  "virtual-size": 26843545600,
+  "filename": "fake-image",
+  "format": "qcow2",
+  "actual-size": 10
+}
+JSON
+FAKE_QEMU_IMG
+
 cat >"${fake_bin}/ip" <<'FAKE_IP'
 #!/usr/bin/env bash
 set -Eeuo pipefail
@@ -195,7 +209,12 @@ assert_contains "${FAKE_VM_CONFIG}" 'template: 1'
 assert_contains "${FAKE_COMMAND_LOG}" 'qm importdisk 8999'
 assert_contains "${FAKE_COMMAND_LOG}" '--agent enabled=0'
 assert_contains "${FAKE_COMMAND_LOG}" '--cpu x86-64-v2-AES'
-assert_contains "${FAKE_COMMAND_LOG}" 'qm disk resize 8999 scsi0 32G'
+if grep -Fq 'qm disk resize' "${FAKE_COMMAND_LOG}"; then
+  fail 'native-size source preparation unexpectedly resized the imported disk'
+fi
+assert_contains "${tmp}/apply.out" 'downloaded QCOW2: file-bytes=10 virtual=25GB maximum=25G'
+assert_contains "${tmp}/apply.out" 'preserving imported source disk at 25G (policy=native)'
+assert_contains "${tmp}/apply.out" 'final source-template virtual disk: 25G; maximum: 25G'
 assert_contains "${FAKE_COMMAND_LOG}" 'virt-customize -a /dev/fake-source-disk'
 assert_contains "${FAKE_COMMAND_LOG}" '--run-command cloud-init clean --logs'
 assert_contains "${FAKE_COMMAND_LOG}" 'qm template 8999'

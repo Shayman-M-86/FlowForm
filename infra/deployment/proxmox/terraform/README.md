@@ -10,6 +10,7 @@ clones and the cloud-init snippets attached to them:
 | 230 | LocalStack | `10.10.10.30/24` on `vmbr10`, no gateway |
 
 It assumes that Packer has built the golden template (default VMID `9000`) and
+the Proxmox-only LocalStack fixture derived from it (default VMID `9001`), and
 that the one-time host bootstrap has created `vmbr10` and enabled snippets on
 the configured snippet storage. Those host-level operations are deliberately
 outside Terraform's VM lifecycle scope.
@@ -46,13 +47,20 @@ cloud-init payload because Proxmox custom user data replaces, rather than
 merges with, its generated user-data configuration.
 
 `terraform destroy` removes only the Terraform-managed rehearsal VMs and
-snippet files. It does not remove Packer template `9000` or `vmbr10`.
+snippet files. It does not remove Packer templates `9000`/`9001` or `vmbr10`.
 
-## Current limitation
+## Template selection
 
-All three VMs currently clone the shared golden template `9000`. This works
-for the proxy because it has LAN egress, but LocalStack `230` is isolated on
-`vmbr10` and cannot pull its initial container images from Docker Hub. The
-next Packer stage must produce an offline-capable, Proxmox-only LocalStack
-fixture template. Once it exists, this Terraform root will use that template
-for `localstack` while retaining `9000` for proxy and app.
+Proxy `210` and app `220` clone `golden_template_vmid`. LocalStack `230` clones
+`localstack_fixture_template_vmid`, whose preloaded image layers allow its
+runtime cloud-init and Compose services to start without internet access.
+Terraform supplies all networking, keys, Compose/configuration files, service
+units, TLS material, and startup actions; none of those are baked by Packer.
+
+Build order is source template, golden template, LocalStack fixture template,
+then Terraform. Terraform never invokes either Packer build.
+
+Terraform declares no guest disk resize. New full clones inherit the selected
+template's virtual disk size (25 GiB with the current native-size image build).
+Older 32 GiB rehearsal clones are not shrunk and must be replaced if they need
+to adopt the smaller template.

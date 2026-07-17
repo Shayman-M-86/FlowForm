@@ -38,6 +38,7 @@ variable "proxmox_network_bridge" {
 variable "proxmox_build_ip_cidr" {
   type        = string
   description = "Dedicated temporary IPv4 address in CIDR notation used only by the Proxmox Packer VM"
+  default     = "192.0.2.10/24"
 
   validation {
     condition     = can(cidrnetmask(var.proxmox_build_ip_cidr))
@@ -48,6 +49,7 @@ variable "proxmox_build_ip_cidr" {
 variable "proxmox_build_gateway" {
   type        = string
   description = "IPv4 gateway reachable from the dedicated Proxmox Packer build address"
+  default     = "192.0.2.1"
 
   validation {
     condition     = can(cidrnetmask("${var.proxmox_build_gateway}/32"))
@@ -63,6 +65,22 @@ variable "proxmox_vm_id" {
 variable "proxmox_template_name" {
   type    = string
   default = "flowform-golden-al2023"
+}
+
+variable "proxmox_golden_template" {
+  type        = string
+  description = "Packer-built Proxmox golden template used as the LocalStack fixture base"
+  default     = ""
+}
+
+variable "proxmox_localstack_fixture_vm_id" {
+  type    = number
+  default = 9001
+}
+
+variable "proxmox_localstack_fixture_template_name" {
+  type    = string
+  default = "flowform-localstack-fixture-al2023"
 }
 
 variable "proxmox_cpu" {

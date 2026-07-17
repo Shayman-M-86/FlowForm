@@ -168,7 +168,7 @@ resource "proxmox_virtual_environment_vm" "localstack" {
   started   = true
 
   clone {
-    vm_id        = var.golden_template_vmid
+    vm_id        = var.localstack_fixture_template_vmid
     full         = true
     datastore_id = var.proxmox_storage_pool
   }

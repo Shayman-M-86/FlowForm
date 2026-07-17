@@ -2,8 +2,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PROXMOX_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-DEFAULT_ENV_FILE="${PROXMOX_DIR}/.env"
+DEFAULT_ENV_FILE="${SCRIPT_DIR}/.env"
 BOOTSTRAP_FILE="${SCRIPT_DIR}/source-bootstrap.user-data.yaml"
 
 ENV_FILE="${DEFAULT_ENV_FILE}"
@@ -12,7 +11,7 @@ REPLACE="0"
 
 usage() {
   cat <<'USAGE'
-Usage: 01-prepare-proxmox-source.sh [options]
+Usage: prepare-proxmox-source.sh [options]
 
 Prepare the cloud-init-enabled Amazon Linux source template used by the
 FlowForm Packer Proxmox clone builder.
@@ -28,9 +27,9 @@ Options:
   --help           Show this help.
 
 Examples:
-  cp infra/images/proxmox/.env.example infra/images/proxmox/.env
-  infra/images/proxmox/provisioning/01-prepare-proxmox-source.sh
-  infra/images/proxmox/provisioning/01-prepare-proxmox-source.sh --apply
+  cp infra/images/scripts/.env.example infra/images/scripts/.env
+  infra/images/scripts/prepare-proxmox-source.sh
+  infra/images/scripts/prepare-proxmox-source.sh --apply
 USAGE
 }
 
@@ -71,7 +70,7 @@ done
 [[ "${REPLACE}" == "0" || "${MODE}" == "apply" ]] \
   || die "--replace is only valid with --apply"
 [[ -f "${ENV_FILE}" ]] \
-  || die "environment file not found: ${ENV_FILE} (copy ${PROXMOX_DIR}/.env.example to ${DEFAULT_ENV_FILE})"
+  || die "environment file not found: ${ENV_FILE} (copy ${SCRIPT_DIR}/.env.example to ${DEFAULT_ENV_FILE})"
 [[ -f "${BOOTSTRAP_FILE}" ]] || die "bootstrap user-data missing: ${BOOTSTRAP_FILE}"
 
 set -a
@@ -92,6 +91,7 @@ required_vars=(
   PROXMOX_NETWORK_BRIDGE
   PROXMOX_CPU_TYPE
   PROXMOX_SOURCE_DISK_SIZE
+  PROXMOX_DISK_MAX_SIZE
   PROXMOX_SOURCE_MEMORY
   PROXMOX_SOURCE_CORES
   PROXMOX_BUILD_TIMEOUT_SECONDS
@@ -140,8 +140,10 @@ validate_path PROXMOX_SSH_IDENTITY_FILE
 [[ "${PROXMOX_SOURCE_CORES}" =~ ^[0-9]+$ ]] || die "PROXMOX_SOURCE_CORES must be numeric"
 [[ "${PROXMOX_BUILD_TIMEOUT_SECONDS}" =~ ^[0-9]+$ ]] \
   || die "PROXMOX_BUILD_TIMEOUT_SECONDS must be numeric"
-[[ "${PROXMOX_SOURCE_DISK_SIZE}" =~ ^[1-9][0-9]*[KMGT]$ ]] \
-  || die "PROXMOX_SOURCE_DISK_SIZE must look like 16G"
+[[ "${PROXMOX_SOURCE_DISK_SIZE}" == "native" || "${PROXMOX_SOURCE_DISK_SIZE}" =~ ^[1-9][0-9]*[KMGT]$ ]] \
+  || die "PROXMOX_SOURCE_DISK_SIZE must be native or an IEC size such as 32G"
+[[ "${PROXMOX_DISK_MAX_SIZE}" =~ ^[1-9][0-9]*[KMGT]$ ]] \
+  || die "PROXMOX_DISK_MAX_SIZE must be an IEC size such as 25G"
 url_pattern='^https://[A-Za-z0-9._~:/?%&=+-]+$'
 [[ "${AL2023_IMAGE_URL}" =~ ${url_pattern} ]] \
   || die "AL2023_IMAGE_URL must be an HTTPS URL without shell metacharacters"
@@ -181,6 +183,7 @@ ssh_args=(
   "${AL2023_IMAGE_FILENAME}"
   "${AL2023_IMAGE_URL}"
   "${AL2023_IMAGE_SHA256,,}"
+  "${PROXMOX_DISK_MAX_SIZE}"
   "${BOOTSTRAP_B64}"
 )
 
@@ -209,10 +212,11 @@ al2023_release="${16}"
 image_filename="${17}"
 image_url="${18}"
 image_sha256="${19}"
-bootstrap_b64="${20}"
+disk_max_size="${20}"
+bootstrap_b64="${21}"
 
 prefix='[prepare-proxmox-source:remote]'
-description="FlowForm Packer source; al2023=${al2023_release}; cpu=${cpu_type}; sha256=${image_sha256}"
+description="FlowForm Packer source; al2023=${al2023_release}; cpu=${cpu_type}; disk=${disk_size}; max=${disk_max_size}; sha256=${image_sha256}"
 snippet_name="flowform-packer-source-${vmid}.user-data.yaml"
 snippet_path="${snippet_dir}/${snippet_name}"
 snippet_ref="${snippet_storage}:snippets/${snippet_name}"
@@ -231,7 +235,7 @@ require_command() {
   command -v "$1" >/dev/null 2>&1 || die "required command not found on Proxmox host: $1"
 }
 
-for command_name in awk base64 curl date grep install ip mv numfmt qm pvesh pvesm rm sed sha256sum sleep virt-customize; do
+for command_name in awk base64 curl date grep install ip mv numfmt qemu-img qm pvesh pvesm rm sed sha256sum sleep stat tail virt-customize; do
   require_command "${command_name}"
 done
 
@@ -253,8 +257,17 @@ if pvesm status --content snippets 2>/dev/null | awk -v storage="${snippet_stora
 fi
 
 matching_existing=0
+max_disk_bytes="$(numfmt --from=iec "${disk_max_size}")"
 if qm status "${vmid}" >/dev/null 2>&1; then
   existing_config="$(qm config "${vmid}")"
+  existing_disk_size="$(sed -n 's/^scsi0: .*size=\([^,]*\).*/\1/p' <<<"${existing_config}")"
+  if [[ -n "${existing_disk_size}" ]]; then
+    existing_disk_bytes="$(numfmt --from=iec "${existing_disk_size}")"
+    log "existing VMID ${vmid} virtual disk: ${existing_disk_size}; maximum: ${disk_max_size}"
+    if (( existing_disk_bytes > max_disk_bytes )) && [[ "${mode}:${replace}" != "apply:1" ]]; then
+      die "VMID ${vmid} disk ${existing_disk_size} exceeds ${disk_max_size}; rebuild it with --apply --replace (do not shrink in place)"
+    fi
+  fi
   if grep -qx 'template: 1' <<<"${existing_config}" \
     && grep -qx "name: ${template_name}" <<<"${existing_config}" \
     && grep -Fqx "description: ${description}" <<<"${existing_config}"; then
@@ -304,12 +317,6 @@ if [[ "${snippets_enabled}" != "1" ]]; then
   esac
 fi
 
-if qm status "${vmid}" >/dev/null 2>&1; then
-  log "destroying explicitly replaceable VMID ${vmid}"
-  qm stop "${vmid}" >/dev/null 2>&1 || true
-  qm destroy "${vmid}" --purge
-fi
-
 install -d -m 0755 "${image_cache_dir}" "${snippet_dir}"
 if [[ -f "${image_path}" ]] \
   && printf '%s  %s\n' "${image_sha256}" "${image_path}" | sha256sum -c - >/dev/null 2>&1; then
@@ -321,6 +328,34 @@ else
   printf '%s  %s\n' "${image_sha256}" "${image_path}.tmp" | sha256sum -c - >/dev/null \
     || die "checksum verification failed for ${image_path}.tmp"
   mv -f "${image_path}.tmp" "${image_path}"
+fi
+
+image_virtual_size_bytes="$(qemu-img info --output=json "${image_path}" \
+  | sed -n 's/^[[:space:]]*"virtual-size":[[:space:]]*\([0-9][0-9]*\),\{0,1\}$/\1/p' \
+  | tail -n 1)"
+[[ "${image_virtual_size_bytes}" =~ ^[0-9]+$ ]] \
+  || die "could not read the QCOW2 virtual size from ${image_path}"
+image_virtual_size="$(numfmt --to=iec --suffix=B "${image_virtual_size_bytes}")"
+log "downloaded QCOW2: file-bytes=$(stat -c %s "${image_path}") virtual=${image_virtual_size} maximum=${disk_max_size}"
+(( image_virtual_size_bytes <= max_disk_bytes )) \
+  || die "downloaded QCOW2 virtual size ${image_virtual_size} exceeds maximum ${disk_max_size}"
+
+requested_disk_bytes="${image_virtual_size_bytes}"
+if [[ "${disk_size}" != "native" ]]; then
+  requested_disk_bytes="$(numfmt --from=iec "${disk_size}")"
+  (( requested_disk_bytes >= image_virtual_size_bytes )) \
+    || die "requested disk ${disk_size} is smaller than native ${image_virtual_size}; shrinking is unsupported"
+  (( requested_disk_bytes <= max_disk_bytes )) \
+    || die "requested disk ${disk_size} exceeds maximum ${disk_max_size}"
+fi
+
+# Verify the replacement source and requested capacity before removing an
+# existing template. Once destroyed, an XFS-backed template cannot be safely
+# recovered by shrinking another copy.
+if qm status "${vmid}" >/dev/null 2>&1; then
+  log "destroying explicitly replaceable VMID ${vmid}"
+  qm stop "${vmid}" >/dev/null 2>&1 || true
+  qm destroy "${vmid}" --purge
 fi
 
 printf '%s' "${bootstrap_b64}" | base64 --decode >"${snippet_path}.tmp"
@@ -351,13 +386,14 @@ qm set "${vmid}" --boot order=scsi0 >/dev/null
 current_disk_size="$(qm config "${vmid}" | sed -n 's/^scsi0: .*size=\([^,]*\).*/\1/p')"
 [[ -n "${current_disk_size}" ]] || die "could not read the imported disk size for VMID ${vmid}"
 current_disk_bytes="$(numfmt --from=iec "${current_disk_size}")"
-requested_disk_bytes="$(numfmt --from=iec "${disk_size}")"
 if (( requested_disk_bytes > current_disk_bytes )); then
   log "growing source disk from ${current_disk_size} to ${disk_size}"
   qm disk resize "${vmid}" scsi0 "${disk_size}"
 else
-  log "source disk is ${current_disk_size}; requested ${disk_size} does not require growth"
+  log "preserving imported source disk at ${current_disk_size} (policy=${disk_size})"
 fi
+(( current_disk_bytes <= max_disk_bytes )) \
+  || die "imported source disk ${current_disk_size} exceeds maximum ${disk_max_size}"
 qm set "${vmid}" --ipconfig0 ip=dhcp >/dev/null
 qm set "${vmid}" --ciuser ec2-user >/dev/null
 qm set "${vmid}" --cicustom "user=${snippet_ref}" >/dev/null
@@ -398,6 +434,13 @@ log "converting VMID ${vmid} to template"
 qm template "${vmid}"
 qm config "${vmid}" | grep -qx 'template: 1' \
   || die "VMID ${vmid} was not converted to a template"
+
+final_disk_size="$(qm config "${vmid}" | sed -n 's/^scsi0: .*size=\([^,]*\).*/\1/p')"
+[[ -n "${final_disk_size}" ]] || die "could not read final template disk size"
+final_disk_bytes="$(numfmt --from=iec "${final_disk_size}")"
+log "final source-template virtual disk: ${final_disk_size}; maximum: ${disk_max_size}"
+(( final_disk_bytes <= max_disk_bytes )) \
+  || die "final source-template disk ${final_disk_size} exceeds maximum ${disk_max_size}"
 
 log "source template ready: ${vmid} (${template_name})"
 REMOTE_SCRIPT

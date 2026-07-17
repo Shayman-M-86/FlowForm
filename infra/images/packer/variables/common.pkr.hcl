@@ -17,3 +17,8 @@ variable "source_commit" {
   type    = string
   default = "unknown"
 }
+
+variable "image_root" {
+  type        = string
+  description = "Absolute path to infra/images, supplied by the build scripts"
+}

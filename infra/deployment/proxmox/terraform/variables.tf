@@ -21,9 +21,15 @@ variable "proxmox_node" {
 }
 
 variable "golden_template_vmid" {
-  description = "Packer-built golden template VMID to clone."
+  description = "Packer-built golden template VMID cloned by the proxy and app VMs."
   type        = number
   default     = 9000
+}
+
+variable "localstack_fixture_template_vmid" {
+  description = "Packer-built LocalStack fixture template VMID cloned by the isolated LocalStack VM."
+  type        = number
+  default     = 9001
 }
 
 variable "proxmox_storage_pool" {

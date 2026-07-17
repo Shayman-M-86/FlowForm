@@ -5,6 +5,7 @@ proxmox_api_token                = "terraform@pve!flowform=REPLACE_ME"
 proxmox_insecure_skip_tls_verify = true
 proxmox_node                     = "pve"
 golden_template_vmid             = 9000
+localstack_fixture_template_vmid  = 9001
 proxmox_storage_pool             = "ZFS-RAIDZ"
 proxmox_snippet_storage          = "local"
 proxmox_cpu_type                 = "x86-64-v2-AES"
