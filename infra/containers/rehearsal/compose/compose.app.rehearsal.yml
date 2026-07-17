@@ -60,6 +60,49 @@ services:
       retries: 20
       start_period: 10s
 
+  # The repository does not yet contain deployable migration files. Build the
+  # current SQLAlchemy schema only for this throwaway rehearsal database so API
+  # behavior can be exercised; staging/prod remain migration-owned.
+  schema-init:
+    image: ${BACKEND_IMAGE:?set BACKEND_IMAGE to the rehearsal backend image}
+    restart: "no"
+    env_file:
+      - /opt/flowform/backend.env
+    environment:
+      DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
+      FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
+      FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET
+    secrets:
+      - DATABASE_CORE_APP_PASSWORD
+      - DATABASE_RESPONSE_APP_PASSWORD
+      - FLOWFORM_APP_SECRET_KEY
+      - FLOWFORM_AUTH0_MGMT_SECRET
+    depends_on:
+      core-db:
+        condition: service_healthy
+      response-db:
+        condition: service_healthy
+    command:
+      - /opt/flowform/backend-venv/bin/python
+      - -c
+      - |
+        from sqlalchemy import create_engine, text
+        from app.core.config import get_settings
+        from app.db.base import CoreBase, ResponseBase
+        import app.schema.orm  # noqa: F401
+
+        settings = get_settings()
+        core_engine = create_engine(settings.database.core.url)
+        response_engine = create_engine(settings.database.response.url)
+        for engine in (core_engine, response_engine):
+            with engine.begin() as connection:
+                connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
+        CoreBase.metadata.create_all(core_engine)
+        ResponseBase.metadata.create_all(response_engine)
+        core_engine.dispose()
+        response_engine.dispose()
+
   # Make the backend wait for both DBs to be healthy before it starts, so its
   # first readiness probe can pass instead of crash-looping on connection refused.
   backend:
@@ -68,3 +111,5 @@ services:
         condition: service_healthy
       response-db:
         condition: service_healthy
+      schema-init:
+        condition: service_completed_successfully

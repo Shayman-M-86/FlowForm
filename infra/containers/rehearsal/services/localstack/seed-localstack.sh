@@ -156,6 +156,7 @@ main() {
   put_runtime_parameter backend auth0_audience "${FLOWFORM_AUTH0_AUDIENCE}"
   put_runtime_parameter backend auth0_client_id "${FLOWFORM_AUTH0_CLIENT_ID}"
   put_runtime_parameter backend auth0_management_id "${FLOWFORM_AUTH0_MGMT_ID}"
+  put_runtime_parameter backend auth0_management_validate_on_startup "${FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP}"
   put_runtime_parameter backend aws_region "${AWS_REGION}"
   put_runtime_parameter backend email_from_address "${FLOWFORM_EMAIL_FROM_ADDRESS}"
   put_runtime_parameter backend kms_key_arn "${kms_key_arn}"

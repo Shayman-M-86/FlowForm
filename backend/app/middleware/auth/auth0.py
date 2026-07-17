@@ -360,20 +360,26 @@ class AuthExtension:
                 client_id=mgmt_settings.id,
                 client_secret=mgmt_settings.secret.get_secret_value(),
             )
-            try:
-                mgmt_client.validate_connection()
-            except ManagementApiError as exc:
-                msg = "Auth0 Management API client validation failed. Check the configured client grant and scopes."
-                logger.error(
-                    "%s status=%s provider_error=%s provider_message=%r",
-                    msg,
-                    exc.status_code,
-                    exc.provider_error,
-                    exc.provider_message,
+            if getattr(mgmt_settings, "validate_on_startup", True):
+                try:
+                    mgmt_client.validate_connection()
+                except ManagementApiError as exc:
+                    msg = "Auth0 Management API client validation failed. Check the configured client grant and scopes."
+                    logger.error(
+                        "%s status=%s provider_error=%s provider_message=%r",
+                        msg,
+                        exc.status_code,
+                        exc.provider_error,
+                        exc.provider_message,
+                    )
+                    raise ConfigError(msg) from exc
+            else:
+                logger.warning(
+                    "Auth0 Management API startup validation is disabled. "
+                    "Management operations will still fail closed if the provider is unavailable."
                 )
-                raise ConfigError(msg) from exc
             self.mgmt = mgmt_client
-            logger.info("Auth0 Management API client initialized and validated.")
+            logger.info("Auth0 Management API client initialized.")
         else:
             logger.warning(
                 "Auth0 Management API client is not configured. "

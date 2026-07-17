@@ -92,6 +92,21 @@ daemon, and pushes from there before removing the temporary transport on exit.
 This does not make the registry or LocalStack LAN-facing and does not require an
 insecure-registry exception in Docker Desktop.
 
+That helper also mirrors the private-registry dependencies named by the
+rehearsal app Compose override, deriving upstream names and tags from Compose.
+The app cloud-init layers that override over the production Compose file, so
+the two ephemeral PostgreSQL services start only in the rehearsal.
+
+Rehearsal bootstrap force-recreates its throwaway app stack when secrets are
+reseeded. Until the repository contains deployable migrations, the override
+runs a rehearsal-only one-shot that creates the current SQLAlchemy schema before
+the backend starts. This is not evidence for the production migration path.
+
+The rehearsal seed also sets `FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP=false` so
+the isolated app can boot without contacting Auth0. The application default
+remains `true`, bearer-token validation is unchanged, and later Management API
+operations still fail closed when the rehearsal credentials are unusable.
+
 ## Related documents
 
 - [[Deployment model]]

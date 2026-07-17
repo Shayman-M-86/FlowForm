@@ -71,6 +71,22 @@ the Proxmox `vmbr10` bridge, then streams the built image over SSH to app VM
 removes the address if that invocation added it. The registry is never exposed
 on the LAN, and Docker Desktop needs no insecure-registry configuration.
 
+The same invocation mirrors private-registry runtime dependencies declared by
+the rehearsal app Compose override. Their upstream names and tags are derived
+from that Compose file; currently this publishes `postgres:17` for the two
+ephemeral rehearsal databases.
+
+The rehearsal app override recreates its throwaway containers when bootstrap
+is rerun so newly generated LocalStack secrets cannot leave PostgreSQL using an
+old password. Because deployable migrations are not yet present in the
+repository, a rehearsal-only one-shot initializes the current SQLAlchemy schema
+before the backend starts; AWS environments remain migration-owned.
+
+The rehearsal runtime contract disables Auth0 Management API validation during
+startup because the isolated environment uses placeholder Auth0 credentials.
+The backend default remains enabled for other environments, and Management API
+operations still fail closed if those credentials are used.
+
 The connection defaults can be overridden with `PROXMOX_SSH_TARGET`,
 `PROXMOX_SSH_KEY`, `PROXMOX_PRIVATE_BRIDGE`, `PROXMOX_TEMP_BRIDGE_CIDR`,
 and `PUSH_RELAY_SSH_TARGET`.

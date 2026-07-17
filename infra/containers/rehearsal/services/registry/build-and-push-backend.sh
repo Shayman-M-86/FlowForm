@@ -2,8 +2,9 @@
 set -Eeuo pipefail
 
 # Build the FlowForm backend image and push it to the rehearsal's private
-# registry, so the offline app box (220) can pull it at bootstrap — mirroring how
-# real EC2 pulls BACKEND_IMAGE from ECR and never from the internet.
+# registry. Also mirror the registry-qualified third-party images named by the
+# rehearsal app Compose override, so the offline app box (220) can pull every
+# runtime image at bootstrap.
 #
 # WHERE THIS RUNS: a host with Docker, internet, the repo checkout, and SSH
 # access to the Proxmox host. A dual-homed dev box can push directly. From WSL or
@@ -37,6 +38,7 @@ PROXMOX_TEMP_BRIDGE_CIDR="${PROXMOX_TEMP_BRIDGE_CIDR:-10.10.10.1/24}"
 PUSH_RELAY_SSH_TARGET="${PUSH_RELAY_SSH_TARGET:-ec2-user@10.10.10.20}"
 
 APP_DEST="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+APP_REHEARSAL_COMPOSE="${APP_REHEARSAL_COMPOSE:-}"
 ADDED_BRIDGE_ADDRESS=0
 USE_PUSH_RELAY=0
 
@@ -63,9 +65,11 @@ trap cleanup EXIT
 # REPO_ROOT override for odd checkouts.
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${REPO_ROOT:-$(cd -- "${SCRIPT_DIR}/../../../../.." && pwd)}"
+APP_REHEARSAL_COMPOSE="${APP_REHEARSAL_COMPOSE:-${REPO_ROOT}/infra/containers/rehearsal/compose/compose.app.rehearsal.yml}"
 
 DOCKERFILE="${REPO_ROOT}/infra/containers/dev/services/backend/backend.Dockerfile"
 [[ -f "${DOCKERFILE}" ]] || die "backend Dockerfile not found at ${DOCKERFILE} (REPO_ROOT=${REPO_ROOT}; sync the repo to the dev box or set REPO_ROOT=)"
+[[ -f "${APP_REHEARSAL_COMPOSE}" ]] || die "rehearsal app Compose file not found at ${APP_REHEARSAL_COMPOSE}"
 command -v docker >/dev/null 2>&1 || die "docker not found on this box"
 command -v curl >/dev/null 2>&1 || die "curl not found on this box"
 
@@ -127,6 +131,27 @@ if ! curl "${CURL_PROBE_OPTIONS[@]}" "http://${REGISTRY}/v2/" >/dev/null 2>&1; t
 fi
 
 DEST="${APP_DEST}"
+PUSH_IMAGES=("${APP_DEST}")
+
+# The destination references are owned by Compose. Strip only this rehearsal
+# registry prefix to obtain the upstream pull reference; no versions are
+# duplicated or invented here.
+# Variable references (image: ${BACKEND_IMAGE:?...}) are excluded: the backend
+# image is what THIS script builds and pushes as ${APP_DEST}, injected at deploy
+# time — only literal third-party references need mirroring.
+mapfile -t compose_registry_images < <(
+  awk '$1 == "image:" && $2 !~ /\$/ {gsub(/"/, "", $2); print $2}' "${APP_REHEARSAL_COMPOSE}" \
+    | sort -u
+)
+for registry_image in "${compose_registry_images[@]}"; do
+  [[ "${registry_image}" == "${REGISTRY}/"* ]] \
+    || die "rehearsal image ${registry_image} must use the private registry prefix ${REGISTRY}/"
+  upstream_image="${registry_image#${REGISTRY}/}"
+  log "mirroring runtime dependency ${upstream_image} as ${registry_image}"
+  docker pull "${upstream_image}"
+  docker tag "${upstream_image}" "${registry_image}"
+  PUSH_IMAGES+=("${registry_image}")
+done
 
 log "building ${DEST} from ${DOCKERFILE} (context=${REPO_ROOT}, --no-dev prod image)"
 # Default UV_SYNC_FLAGS in the Dockerfile is already --no-dev; pass explicitly to
@@ -137,16 +162,23 @@ docker build \
   -t "${DEST}" \
   "${REPO_ROOT}"
 
-log "pushing ${DEST}"
+log "pushing ${#PUSH_IMAGES[@]} rehearsal images"
 if (( USE_PUSH_RELAY == 1 )); then
-  docker image save "${DEST}" | ssh "${SSH_OPTIONS[@]}" \
+  remote_push_command="sudo docker image load >/dev/null"
+  for image in "${PUSH_IMAGES[@]}"; do
+    [[ "${image}" =~ ^[a-zA-Z0-9._:/-]+$ ]] || die "invalid image destination ${image}"
+    remote_push_command+=" && sudo docker push '${image}'"
+  done
+  docker image save "${PUSH_IMAGES[@]}" | ssh "${SSH_OPTIONS[@]}" \
     -o UserKnownHostsFile=/dev/null \
     -o StrictHostKeyChecking=no \
     -o "ProxyCommand=ssh -i ${PROXMOX_SSH_KEY} -o BatchMode=yes -W %h:%p ${PROXMOX_SSH_TARGET}" \
     "${PUSH_RELAY_SSH_TARGET}" \
-    "sudo docker image load >/dev/null && sudo docker push '${APP_DEST}'"
+    "${remote_push_command}"
 else
-  docker push "${DEST}"
+  for image in "${PUSH_IMAGES[@]}"; do
+    docker push "${image}"
+  done
 fi
 
 log "done. Registry catalog:"

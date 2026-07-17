@@ -55,6 +55,11 @@ write_files:
     permissions: '0644'
     owner: root:root
     content: __DOCKER_COMPOSE_APP_B64__
+  - path: /opt/flowform/repo/infra/containers/rehearsal/compose/compose.app.rehearsal.yml
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: __DOCKER_COMPOSE_APP_REHEARSAL_B64__
 
   # --- rehearsal-only: trust the private HTTP registry -------------------------
   # bootstrap-app.sh pulls BACKEND_IMAGE from 10.10.10.30:5000 (plain HTTP on the
@@ -89,6 +94,8 @@ write_files:
       # its own REPO_ROOT math (../../..) would look under /opt, not where we put
       # the compose file. Point at the baked location directly.
       COMPOSE_FILE=/opt/flowform/repo/infra/containers/deployment/compose/compose.app.yml
+      COMPOSE_OVERRIDE_FILE=/opt/flowform/repo/infra/containers/rehearsal/compose/compose.app.rehearsal.yml
+      COMPOSE_FORCE_RECREATE=1
       # per-service fake-AWS endpoints (each = its own SNI → own Squid tunnel)
       AWS_ENDPOINT_URL_SECRETS_MANAGER=https://secretsmanager.localstack.test
       AWS_ENDPOINT_URL_SSM=https://ssm.localstack.test

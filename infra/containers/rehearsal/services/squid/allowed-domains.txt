@@ -9,15 +9,28 @@
 # Leading dot = match the domain AND its subdomains (Squid dstdomain semantics).
 # Listing the bare names too keeps it explicit.
 #
+# Auth0 is the ONE dependency that is not faked, so this list is not purely
+# *.localstack.test: the rehearsal validates tokens against the REAL tenant,
+# exactly as prod does. Token validation needs the issuer's OIDC metadata and
+# JWKS, and there is no local issuer to serve them — without this entry Squid
+# refuses the CONNECT and every authenticated request 500s.
+#
+# This is a deliberate hole in the isolation: the app box makes real outbound
+# calls here, so authenticated flows need the tenant reachable and up. Public
+# endpoints stay fully offline.
+#
 # NOT here on purpose:
 #   - the registry (10.10.10.10:5000): the app box's docker DAEMON pulls it
 #     DIRECTLY (daemon no-proxy covers 10.0.0.0/8) — it never traverses Squid,
 #     so it needs no allow-list entry. It reaches the registry over the private
 #     net and trusts it via /etc/docker/daemon.json insecure-registries.
-#   - real AWS/Auth0/ECR domains: unreachable from the private net anyway; the
-#     app box only ever dials *.localstack.test in the rehearsal.
+#   - real AWS/ECR domains: fake-AWS is served by LocalStack, so the app box
+#     only ever dials *.localstack.test for those.
 
 .localstack.test
 secretsmanager.localstack.test
 ssm.localstack.test
 kms.localstack.test
+
+# Auth0 issuer — token validation (OIDC discovery + JWKS).
+auth.flow-form.com.au

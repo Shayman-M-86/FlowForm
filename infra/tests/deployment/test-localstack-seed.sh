@@ -7,6 +7,7 @@ SEED_SCRIPT="${REPO_ROOT}/infra/containers/rehearsal/services/localstack/seed-lo
 TLS_COMPOSE="${REPO_ROOT}/infra/containers/rehearsal/compose/compose.tls-shim.yml"
 PROXY_OVERRIDE="${REPO_ROOT}/infra/containers/rehearsal/compose/compose.proxy.rehearsal.yml"
 APP_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/terraform/cloud-init/app.user-data.yaml.template"
+PROXMOX_VARIABLES="${REPO_ROOT}/infra/deployment/proxmox/terraform/variables.tf"
 PROXY_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/terraform/cloud-init/proxy.user-data.yaml.template"
 TEST_DIR="$(mktemp -d)"
 trap 'rm -rf "${TEST_DIR}"' EXIT
@@ -95,5 +96,9 @@ for cloud_init in "${APP_CLOUD_INIT}" "${PROXY_CLOUD_INIT}"; do
   grep -F 'AWS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt' "${cloud_init}" >/dev/null
   grep -F 'BOOTSTRAP_AWS_MAX_ATTEMPTS=120' "${cloud_init}" >/dev/null
 done
+grep -F 'COMPOSE_OVERRIDE_FILE=/opt/flowform/repo/infra/containers/rehearsal/compose/compose.app.rehearsal.yml' "${APP_CLOUD_INIT}" >/dev/null
+grep -F 'COMPOSE_FORCE_RECREATE=1' "${APP_CLOUD_INIT}" >/dev/null
+grep -E 'FLOWFORM_EMAIL_FROM_ADDRESS += "no-reply@flow-form.com.au"' "${PROXMOX_VARIABLES}" >/dev/null
+grep -E 'FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP += "false"' "${PROXMOX_VARIABLES}" >/dev/null
 
 printf '[test-localstack-seed] PASS\n'

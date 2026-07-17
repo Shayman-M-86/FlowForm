@@ -47,6 +47,10 @@
           "name": "FLOWFORM_AUTH0_MGMT_ID",
           "seed_value_key": "FLOWFORM_AUTH0_MGMT_ID"
         },
+        "auth0_management_validate_on_startup": {
+          "name": "FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP",
+          "seed_value_key": "FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP"
+        },
         "aws_region": {
           "name": "FLOWFORM_AWS_REGION",
           "seed_value_key": "AWS_REGION"

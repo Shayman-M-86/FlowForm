@@ -139,6 +139,7 @@ class Auth0MgmtSettings(BaseModel):
     # to the canonical tenant so the mgmt client uses it. Falls back to the
     # issuer domain when unset (tenants without a custom domain).
     domain: str | None = None
+    validate_on_startup: bool = True
 
     def __init__(
         self,
@@ -147,11 +148,13 @@ class Auth0MgmtSettings(BaseModel):
         secret: SecretStr | str | None = None,
         secret_file: str | None = None,
         domain: str | None = None,
+        validate_on_startup: bool = True,
     ) -> None:
         data: dict[str, Any] = {
             "id": id,
             "secret_file": secret_file,
             "domain": domain,
+            "validate_on_startup": validate_on_startup,
         }
         if secret is not None:
             data["secret"] = secret
@@ -195,6 +198,7 @@ class Auth0Settings(BaseModel):
         mgmt_secret = data.get("mgmt_secret")
         mgmt_secret_file = data.get("mgmt_secret_file")
         mgmt_domain = data.get("mgmt_domain")
+        mgmt_validate_on_startup = data.get("mgmt_validate_on_startup", True)
         if mgmt_id is None and mgmt_secret is None and mgmt_secret_file is None:
             return data
 
@@ -205,6 +209,7 @@ class Auth0Settings(BaseModel):
                 "secret": mgmt_secret,
                 "secret_file": mgmt_secret_file,
                 "domain": mgmt_domain,
+                "validate_on_startup": mgmt_validate_on_startup,
             },
         }
 

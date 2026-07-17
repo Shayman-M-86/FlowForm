@@ -33,6 +33,7 @@ declare -A PLACEHOLDERS=(
   [__BOOTSTRAP_APP_SH_B64__]="infra/deployment/bootstrap/bootstrap-app.sh"
   [__AWS_CLI_RETRY_SH_B64__]="infra/deployment/bootstrap/aws-cli-retry.sh"
   [__DOCKER_COMPOSE_APP_B64__]="infra/containers/deployment/compose/compose.app.yml"
+  [__DOCKER_COMPOSE_APP_REHEARSAL_B64__]="infra/containers/rehearsal/compose/compose.app.rehearsal.yml"
   [__BOOTSTRAP_PROXY_SH_B64__]="infra/deployment/bootstrap/bootstrap-proxy.sh"
   [__DOCKER_COMPOSE_PROXY_B64__]="infra/containers/deployment/compose/compose.proxy.yml"
   [__DOCKER_COMPOSE_PROXY_REHEARSAL_B64__]="infra/containers/rehearsal/compose/compose.proxy.rehearsal.yml"

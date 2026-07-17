@@ -8,10 +8,21 @@ locals {
       if can(parameter.seed_value_key)
     ]
   ]))
-  configured_localstack_seed_keys = toset(keys(var.localstack_seed_values))
+  # The Auth0 identifiers are not defaulted in the seed map — they must match the
+  # dev tenant exactly and a committed copy would drift — so they arrive as their
+  # own variables and are merged in here. Everything downstream (the contract
+  # check included) reads this merged map, never the raw variable.
+  localstack_seed_values = merge(var.localstack_seed_values, {
+    FLOWFORM_AUTH0_DOMAIN      = var.auth0_domain
+    FLOWFORM_AUTH0_AUDIENCE    = var.auth0_audience
+    FLOWFORM_AUTH0_CLIENT_ID   = var.auth0_client_id
+    FLOWFORM_AUTH0_MGMT_DOMAIN = var.auth0_mgmt_domain
+    FLOWFORM_AUTH0_MGMT_ID     = var.auth0_mgmt_id
+  })
+  configured_localstack_seed_keys = toset(keys(local.localstack_seed_values))
   localstack_seed_environment = join("\n", concat(
     ["FLOWFORM_SCOPE=nonprod"],
-    [for key in sort(keys(var.localstack_seed_values)) : "${key}=${var.localstack_seed_values[key]}"]
+    [for key in sort(keys(local.localstack_seed_values)) : "${key}=${local.localstack_seed_values[key]}"]
   ))
   localstack_rendered_user_data = replace(
     file("${local.rendered_cloud_init_dir}/localstack.user-data.rendered.yaml"),
@@ -127,9 +138,11 @@ resource "proxmox_virtual_environment_vm" "proxy" {
     datastore_id      = var.proxmox_storage_pool
     user_data_file_id = proxmox_virtual_environment_file.proxy_user_data.id
 
+    # Static — see proxy_lan_ip in variables.tf for why DHCP is not used here.
     ip_config {
       ipv4 {
-        address = "dhcp"
+        address = var.proxy_lan_ip
+        gateway = var.proxy_lan_gateway
       }
     }
 

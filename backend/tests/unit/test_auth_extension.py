@@ -280,6 +280,43 @@ def test_init_app_rejects_failed_management_validation(
     assert auth_extension.mgmt is None
 
 
+def test_init_app_can_defer_management_validation(
+    auth_extension: AuthExtension,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeManagementApiClient:
+        validated = False
+
+        def __init__(self, *, domain: str, client_id: str, client_secret: str) -> None:
+            pass
+
+        def validate_connection(self) -> None:
+            self.validated = True
+
+    flask_app = Flask(__name__)
+    flask_app.extensions["settings"] = SimpleNamespace(
+        flowform=SimpleNamespace(
+            auth0=SimpleNamespace(
+                audience="https://api.example.test",
+                domain="example.auth0.com",
+                mgmt=SimpleNamespace(
+                    id="client-id",
+                    secret=SecretStr("client-secret"),
+                    domain=None,
+                    validate_on_startup=False,
+                ),
+            )
+        )
+    )
+    monkeypatch.setattr(auth0_module, "ApiClient", lambda _options: object())
+    monkeypatch.setattr(auth0_module, "ManagementApiClient", FakeManagementApiClient)
+
+    auth_extension.init_app(flask_app)
+
+    assert isinstance(auth_extension.mgmt, FakeManagementApiClient)
+    assert auth_extension.mgmt.validated is False
+
+
 def test_management_token_error_is_translated(monkeypatch: pytest.MonkeyPatch) -> None:
     class TokenResponse:
         ok = False

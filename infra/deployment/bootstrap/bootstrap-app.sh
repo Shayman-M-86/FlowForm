@@ -59,6 +59,9 @@ COMPOSE_FILE="${COMPOSE_FILE:-${REPO_ROOT}/infra/containers/deployment/compose/c
 # Empty in prod, so behaviour is exactly the single-file case. Prod-safe seam,
 # like BOOTSTRAP_ENDPOINT_URL.
 COMPOSE_OVERRIDE_FILE="${COMPOSE_OVERRIDE_FILE:-}"
+COMPOSE_FORCE_RECREATE="${COMPOSE_FORCE_RECREATE:-0}"
+[[ "${COMPOSE_FORCE_RECREATE}" == "0" || "${COMPOSE_FORCE_RECREATE}" == "1" ]] \
+  || die "COMPOSE_FORCE_RECREATE must be 0 or 1"
 
 # AWS CLI endpoint override is the sole rehearsal seam.
 AWS_ARGS=(--region "${AWS_REGION}")
@@ -233,12 +236,16 @@ compose_up() {
     [[ -f "${COMPOSE_OVERRIDE_FILE}" ]] || die "compose override not found: ${COMPOSE_OVERRIDE_FILE}"
     compose_args+=(-f "${COMPOSE_OVERRIDE_FILE}")
   fi
+  local up_args=(up -d)
+  if [[ "${COMPOSE_FORCE_RECREATE}" == "1" ]]; then
+    up_args+=(--force-recreate)
+  fi
   if [[ "${DRY_RUN}" == "1" ]]; then
-    log "DRY_RUN: would run: docker compose --env-file ${BACKEND_ENV} ${compose_args[*]} up -d"
+    log "DRY_RUN: would run: docker compose --env-file ${BACKEND_ENV} ${compose_args[*]} ${up_args[*]}"
     return
   fi
   FLOWFORM_SECRET_DIR="${SECRET_DIR}" \
-    docker compose --env-file "${BACKEND_ENV}" "${compose_args[@]}" up -d
+    docker compose --env-file "${BACKEND_ENV}" "${compose_args[@]}" "${up_args[@]}"
   log "app compose stack started"
 }
 
