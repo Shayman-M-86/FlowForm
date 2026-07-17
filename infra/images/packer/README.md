@@ -25,9 +25,9 @@ and only the requested builder. No HCL definition is duplicated.
 ## Image lineage
 
 ```text
-shared golden build
-├── AWS AMI
-└── Proxmox golden template
+shared provisioning contract
+├── official minimal AL2023 EC2 AMI -> AWS golden AMI (10 GiB)
+└── official AL2023 KVM QCOW2 -> Proxmox golden template (25 GiB)
     └── Proxmox LocalStack fixture template
 ```
 
@@ -35,6 +35,11 @@ The shared golden build installs Amazon Linux 2023 base dependencies, Docker,
 Docker Compose, AWS CLI, common host defaults, platform-specific guest support,
 verification, and image cleanup. It contains no application code, runtime
 configuration, secrets, or runtime container images.
+
+The AWS builder uses Amazon's native minimal AL2023 EC2 AMI with kernel 6.1.
+It does not import the Proxmox QCOW2. Its 10 GiB encrypted gp3 root is an
+AWS-specific cost and capacity policy; successful builds verify that the AMI
+and root snapshot retain exactly that size. CDK declares the same mapping.
 
 The Proxmox-only fixture clones the completed golden template and reads image
 references from the maintained LocalStack, registry, and TLS-shim Compose
@@ -77,8 +82,10 @@ terraform plan
 ```
 
 For AWS, copy the AWS variable example and run
-`infra/images/scripts/build-aws-image.sh`. To publish the resulting manifest AMI
-ID to the CDK configuration parameter, run:
+`infra/images/scripts/build-aws-image.sh`. The wrapper accepts only a minimal
+AL2023 source and an 8–12 GiB root, then runs `verify-aws-ami.sh` against the
+completed artifact. To publish the resulting manifest AMI ID to the CDK
+configuration parameter, run:
 
 ```bash
 infra/images/scripts/publish-aws-ami.sh /flowform/staging/ec2/baseAmiId ap-southeast-2

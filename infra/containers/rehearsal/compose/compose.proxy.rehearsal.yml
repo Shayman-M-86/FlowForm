@@ -29,6 +29,12 @@ services:
       - ../../rehearsal/services/caddy/Caddyfile.proxy:/etc/caddy/Caddyfile:ro
 
   squid:
+    extra_hosts:
+      # Docker containers do not inherit the VM's /etc/hosts. Resolve only the
+      # three rehearsal AWS service names to the private fixture VM.
+      - "secretsmanager.localstack.test:10.10.10.30"
+      - "ssm.localstack.test:10.10.10.30"
+      - "kms.localstack.test:10.10.10.30"
     volumes:
       - ../services/squid/squid.conf:/etc/squid/squid.conf.template:ro
       # replace the prod allow-list with the rehearsal one (*.localstack.test).

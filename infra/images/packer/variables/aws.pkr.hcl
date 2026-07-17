@@ -10,7 +10,7 @@ variable "aws_source_ami_owner" {
 
 variable "aws_source_ami_name" {
   type    = string
-  default = "al2023-ami-2023.*-kernel-*-x86_64"
+  default = "al2023-ami-minimal-2023.*-kernel-6.1-x86_64"
 }
 
 variable "aws_instance_type" {
@@ -40,7 +40,7 @@ variable "aws_ami_name_prefix" {
 
 variable "aws_root_volume_size" {
   type    = number
-  default = 16
+  default = 10
 }
 
 variable "aws_encrypt_boot" {

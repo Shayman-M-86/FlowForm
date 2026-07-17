@@ -50,6 +50,7 @@ Configuration files, application settings modules, Compose definitions, infrastr
 | Test container environment     | `infra/containers/dev/compose/compose.test.yml`, `infra/containers/dev/services/backend/`                                                                            | Test-only Compose stack and Dockerfile.                                                       |
 | Frontend-only local containers | `frontend/docker-compose.dev.yml`, frontend app `Dockerfile*` files                                                                                               | Frontend-local container configuration.                                                      |
 | Runtime container deployment   | `infra/containers/deployment/compose/`, `infra/containers/deployment/services/`, `infra/deployment/proxmox/terraform/cloud-init/`                                  | Shared runtime Compose, service configuration, and cloud-init templates.                     |
+| Runtime parameter contract     | `infra/deployment/config/runtime-parameter-contract.json`                                                                                                          | Shared SSM parameter names and rehearsal seed-key requirements consumed by AWS CDK and Proxmox. |
 | Rehearsal environment          | `infra/containers/rehearsal/compose/`, `infra/containers/rehearsal/services/`                                                                                        | Rehearsal overrides and fixture configuration.                                               |
 | Per-environment values         | `infra/env/dev/`, `infra/env/test/`, `infra/env/live/`                                                                                                            | Environment-specific configuration values and secret files consumed by Compose and bootstrap. |
 | PostgreSQL initialization      | `infra/database/init/templates/`, `infra/database/init/schema/`, `infra/database/config/`                                                                         | Database initialization templates, persisted schemas, and PostgreSQL access configuration.   |
@@ -76,6 +77,11 @@ preserves the pinned QCOW2 virtual size (currently 25 GiB), while
 `PROXMOX_DISK_MAX_SIZE=25G` is the independent upper-bound check. Set an
 explicit larger source size only when capacity requirements justify it, and
 raise the maximum in the same reviewed change.
+
+AWS image variables independently select the Amazon-owned minimal AL2023 EC2
+AMI and set `aws_root_volume_size=10`. The build wrapper permits 8–12 GiB and
+verifies the completed AMI; `EnvConfig.ec2_root_volume_size_gib` must match it
+for CDK app and proxy instances.
 
 ## Update procedure
 

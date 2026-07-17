@@ -5,6 +5,18 @@ write_files:
     encoding: b64
     permissions: '0644'
     content: __DOCKER_COMPOSE_LOCALSTACK_B64__
+  - path: /opt/flowform/localstack/seed-localstack.sh
+    encoding: b64
+    permissions: '0755'
+    content: __LOCALSTACK_SEED_SH_B64__
+  - path: /opt/flowform/localstack/runtime-parameter-contract.json
+    encoding: b64
+    permissions: '0644'
+    content: __RUNTIME_PARAMETER_CONTRACT_B64__
+  - path: /etc/flowform/localstack-seed.env
+    encoding: b64
+    permissions: '0600'
+    content: __LOCALSTACK_SEED_ENV_TERRAFORM__
   - path: /opt/flowform/registry/docker-compose.registry.yml
     encoding: b64
     permissions: '0644'
@@ -17,11 +29,11 @@ write_files:
     encoding: b64
     permissions: '0644'
     content: __TLS_SHIM_CADDYFILE_B64__
-  - path: /opt/flowform/tls-shim/ca/localstack.crt
+  - path: /opt/flowform/tls-shim/certs/localstack.crt
     encoding: b64
     permissions: '0644'
     content: __LOCALSTACK_CRT_B64__
-  - path: /opt/flowform/tls-shim/ca/localstack.key
+  - path: /opt/flowform/tls-shim/certs/localstack.key
     encoding: b64
     permissions: '0600'
     content: __LOCALSTACK_KEY_B64__
@@ -55,17 +67,34 @@ write_files:
       ExecStop=/usr/bin/docker compose -f /opt/flowform/registry/docker-compose.registry.yml down
       [Install]
       WantedBy=multi-user.target
+  - path: /etc/systemd/system/flowform-localstack-seed.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Seed FlowForm rehearsal resources into LocalStack
+      Requires=flowform-localstack.service
+      After=flowform-localstack.service
+      Before=flowform-tls-shim.service
+      [Service]
+      Type=oneshot
+      EnvironmentFile=/etc/flowform/localstack-seed.env
+      Environment=AWS_ENDPOINT_URL=http://10.10.10.30:4566
+      Environment=RUNTIME_PARAMETER_CONTRACT=/opt/flowform/localstack/runtime-parameter-contract.json
+      ExecStart=/opt/flowform/localstack/seed-localstack.sh
+      RemainAfterExit=yes
+      [Install]
+      WantedBy=multi-user.target
   - path: /etc/systemd/system/flowform-tls-shim.service
     permissions: '0644'
     content: |
       [Unit]
       Description=FlowForm rehearsal TLS shim
-      Requires=docker.service flowform-localstack.service
-      After=docker.service flowform-localstack.service
+      Requires=docker.service flowform-localstack-seed.service
+      After=docker.service flowform-localstack-seed.service
       [Service]
       Type=oneshot
       RemainAfterExit=yes
-      ExecStart=/usr/bin/docker compose -f /opt/flowform/tls-shim/docker-compose.tls-shim.yml up -d
+      ExecStart=/usr/bin/docker compose -f /opt/flowform/tls-shim/docker-compose.tls-shim.yml up -d --wait --wait-timeout 120
       ExecStop=/usr/bin/docker compose -f /opt/flowform/tls-shim/docker-compose.tls-shim.yml down
       [Install]
       WantedBy=multi-user.target
@@ -73,4 +102,5 @@ runcmd:
   - [ systemctl, daemon-reload ]
   - [ systemctl, enable, --now, flowform-localstack.service ]
   - [ systemctl, enable, --now, flowform-registry.service ]
+  - [ systemctl, enable, --now, flowform-localstack-seed.service ]
   - [ systemctl, enable, --now, flowform-tls-shim.service ]

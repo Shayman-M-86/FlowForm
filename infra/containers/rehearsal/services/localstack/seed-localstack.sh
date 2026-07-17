@@ -1,141 +1,176 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Seed the rehearsal LocalStack with the Secrets Manager secrets and SSM
-# parameters the bootstrap scripts read. Run from the DEV BOX (it has plain `aws`
-# → LocalStack via ~/.aws), or anywhere with AWS_ENDPOINT_URL pointed at LS.
+# Seed the isolated rehearsal LocalStack from Terraform-supplied non-secret
+# values. This script runs inside the fixture VM after LocalStack becomes
+# healthy; no workstation or LAN-facing LocalStack endpoint is required.
 #
-# Populates EXACTLY the contract in infra/deployment/bootstrap/bootstrap-app.sh and
-# bootstrap-proxy.sh:
-#   Secrets Manager:
-#     flowform/<scope>/app-secrets  {app_secret_key, auth0_mgmt_secret}
-#     flowform/<scope>/db-secrets   {db_core_app_password, db_response_app_password}
-#   SSM (String / SecureString) under:
-#     /flowform/<scope>/backend/*   non-secret backend config
-#     /flowform/<scope>/proxy/*     CADDY_IMAGE, API_DOMAIN
-#
-# Values are REHEARSAL THROWAWAYS — never real secrets. LocalStack has
-# PERSISTENCE=0, so re-run this after every aws-fixtures-vm reboot.
-#
-# Idempotent: create-or-update for every secret/param.
+# Parameter names come from the same JSON contract used by AWS CDK. Values are
+# deliberately platform-specific: Terraform supplies rehearsal configuration,
+# while throwaway secret values are generated here and never enter Terraform
+# configuration or state. The operations are create-or-update and safe to rerun.
 
 : "${FLOWFORM_SCOPE:=nonprod}"
+: "${AWS_REGION:=ap-southeast-2}"
 LS_ENDPOINT="${AWS_ENDPOINT_URL:-http://10.10.10.30:4566}"
-REGION="${AWS_DEFAULT_REGION:-ap-southeast-2}"
+CONTRACT="${RUNTIME_PARAMETER_CONTRACT:-/opt/flowform/localstack/runtime-parameter-contract.json}"
+HEALTH_ATTEMPTS="${LOCALSTACK_HEALTH_ATTEMPTS:-60}"
+HEALTH_DELAY_SECONDS="${LOCALSTACK_HEALTH_DELAY_SECONDS:-2}"
 
-# BACKEND_IMAGE / CADDY_IMAGE default to the fake-ECR registry on the
-# aws-fixtures-vm (.30:5000) — the rehearsal delivers the backend image via that
-# registry, not SSM. Overridable.
-BACKEND_IMAGE="${BACKEND_IMAGE:-10.10.10.30:5000/flowform-backend:rehearsal}"
-CADDY_IMAGE="${CADDY_IMAGE:-caddy:2-alpine}"
-API_DOMAIN="${API_DOMAIN:-api.localstack.test}"
-
-AWS=(aws --endpoint-url "${LS_ENDPOINT}" --region "${REGION}")
-# Ensure creds exist even if ~/.aws isn't configured (e.g. run off the dev box).
+AWS=(aws --endpoint-url "${LS_ENDPOINT}" --region "${AWS_REGION}")
 export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-test}"
 export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-test}"
 
 log() { printf '[seed-localstack] %s\n' "$*"; }
 die() { printf '[seed-localstack] ERROR: %s\n' "$*" >&2; exit 1; }
 
-# Preflight: LocalStack must be reachable and healthy.
-curl -fsS --max-time 5 "${LS_ENDPOINT}/_localstack/health" >/dev/null 2>&1 \
-  || die "LocalStack not reachable/healthy at ${LS_ENDPOINT} — start it on the ls-vm first"
+command -v aws >/dev/null 2>&1 || die "aws CLI is required"
+command -v curl >/dev/null 2>&1 || die "curl is required"
+command -v jq >/dev/null 2>&1 || die "jq is required"
+[[ -f "${CONTRACT}" ]] || die "runtime parameter contract not found: ${CONTRACT}"
+jq -e '.schema_version == 1' "${CONTRACT}" >/dev/null \
+  || die "unsupported or invalid runtime parameter contract: ${CONTRACT}"
 
-# put_secret <name> <json-string> — create or update a Secrets Manager secret.
+wait_for_localstack() {
+  local attempt
+  for ((attempt = 1; attempt <= HEALTH_ATTEMPTS; attempt++)); do
+    if curl -fsS --max-time 5 "${LS_ENDPOINT}/_localstack/health" >/dev/null 2>&1; then
+      log "LocalStack healthy at ${LS_ENDPOINT}"
+      return
+    fi
+    if ((attempt == 1 || attempt % 10 == 0)); then
+      log "waiting for LocalStack health (${attempt}/${HEALTH_ATTEMPTS})"
+    fi
+    sleep "${HEALTH_DELAY_SECONDS}"
+  done
+  die "LocalStack did not become healthy at ${LS_ENDPOINT}"
+}
+
+contract_value() {
+  local expression="$1"
+  jq -er "${expression}" "${CONTRACT}" \
+    || die "missing contract value: ${expression}"
+}
+
+scope_parameter_name() {
+  local logical_name="$1" suffix
+  suffix="$(contract_value ".scope_parameters.${logical_name}")"
+  printf '/flowform/%s/%s' "${FLOWFORM_SCOPE}" "${suffix}"
+}
+
+runtime_parameter_name() {
+  local group="$1" logical_name="$2" path name
+  path="$(contract_value ".runtime_groups.${group}.path")"
+  name="$(contract_value ".runtime_groups.${group}.parameters.${logical_name}.name")"
+  printf '/flowform/%s/%s/%s' "${FLOWFORM_SCOPE}" "${path}" "${name}"
+}
+
+secret_name() {
+  local logical_name="$1" suffix
+  suffix="$(contract_value ".secrets.${logical_name}")"
+  printf 'flowform/%s/%s' "${FLOWFORM_SCOPE}" "${suffix}"
+}
+
+validate_seed_environment() {
+  local key
+  while IFS= read -r key; do
+    [[ -n "${key}" ]] || continue
+    [[ -n "${!key:-}" ]] || die "required Terraform seed value is unset: ${key}"
+  done < <(jq -r '.runtime_groups[].parameters[].seed_value_key // empty' "${CONTRACT}" | sort -u)
+}
+
 put_secret() {
   local name="$1" json="$2"
   if "${AWS[@]}" secretsmanager describe-secret --secret-id "${name}" >/dev/null 2>&1; then
     "${AWS[@]}" secretsmanager put-secret-value --secret-id "${name}" \
-      --secret-string "${json}" --query 'VersionId' --output text >/dev/null
+      --secret-string "${json}" --query VersionId --output text >/dev/null
     log "updated secret ${name}"
   else
     "${AWS[@]}" secretsmanager create-secret --name "${name}" \
-      --secret-string "${json}" --query 'ARN' --output text >/dev/null
+      --secret-string "${json}" --query ARN --output text >/dev/null
     log "created secret ${name}"
   fi
 }
 
-# put_param <name> <value> <type> — create/overwrite an SSM parameter.
-put_param() {
+put_parameter() {
   local name="$1" value="$2" type="${3:-String}"
   "${AWS[@]}" ssm put-parameter --name "${name}" --value "${value}" \
-    --type "${type}" --overwrite --query 'Version' --output text >/dev/null
-  log "put param ${name} (${type})"
+    --type "${type}" --overwrite --query Version --output text >/dev/null
+  log "put parameter ${name} (${type})"
 }
 
-# rand <bytes> — a throwaway secret value (hex).
+put_runtime_parameter() {
+  local group="$1" logical_name="$2" value="$3"
+  put_parameter "$(runtime_parameter_name "${group}" "${logical_name}")" "${value}"
+}
+
 rand() { openssl rand -hex "${1:-32}"; }
 
-log "scope=${FLOWFORM_SCOPE} endpoint=${LS_ENDPOINT}"
+ensure_kms_key() {
+  local alias_name="alias/flowform-${FLOWFORM_SCOPE}-rehearsal" key_arn key_id
+  if key_arn="$("${AWS[@]}" kms describe-key --key-id "${alias_name}" \
+    --query KeyMetadata.Arn --output text 2>/dev/null)"; then
+    printf '%s' "${key_arn}"
+    return
+  fi
 
-# --- Secrets Manager -------------------------------------------------------
-# app-secrets: persistent/unregenerable values in the real system; throwaways here.
-put_secret "flowform/${FLOWFORM_SCOPE}/app-secrets" \
-  "$(printf '{"app_secret_key":"%s","auth0_mgmt_secret":"%s"}' "$(rand 32)" "$(rand 24)")"
+  key_id="$("${AWS[@]}" kms create-key \
+    --description "FlowForm ${FLOWFORM_SCOPE} rehearsal key" \
+    --query KeyMetadata.KeyId --output text)"
+  "${AWS[@]}" kms create-alias --alias-name "${alias_name}" --target-key-id "${key_id}"
+  "${AWS[@]}" kms describe-key --key-id "${key_id}" --query KeyMetadata.Arn --output text
+}
 
-# db-secrets: local Postgres app-user passwords (throwaways).
-put_secret "flowform/${FLOWFORM_SCOPE}/db-secrets" \
-  "$(printf '{"db_core_app_password":"%s","db_response_app_password":"%s"}' "$(rand 16)" "$(rand 16)")"
+main() {
+  wait_for_localstack
+  validate_seed_environment
+  log "scope=${FLOWFORM_SCOPE} contract=${CONTRACT}"
 
-# --- SSM: backend/ (non-secret config the app renders into backend.env) ----
-# This is the FULL config the backend needs to pass startup validation (env=prod).
-# The backend's /health/ready only does a real `SELECT 1` on the two DBs; it does
-# NOT call Auth0/KMS/SES at readiness. So Auth0/encryption/email values only need
-# to be WELL-FORMED (validate as strings/ARNs), not functional — they're stubs /
-# dev-tenant throwaways here. The DB parts, by contrast, ARE real (point at the
-# app-box Postgres containers from docker-compose.app.rehearsal.yml).
-BP="/flowform/${FLOWFORM_SCOPE}/backend"
+  local app_secret db_secret linkage_secret kms_key_arn linkage_secret_arn
+  app_secret="$(secret_name app)"
+  db_secret="$(secret_name database)"
+  linkage_secret="$(secret_name linkage)"
 
-# logging (all optional; set for parity with the real env). Note: the key is
-# FLOWFORM_LOGGING_LEVEL, not _LOG_LEVEL.
-put_param "${BP}/FLOWFORM_LOGGING_LOG_JSON" "true"
-put_param "${BP}/FLOWFORM_LOGGING_LEVEL"    "INFO"
+  put_secret "${app_secret}" \
+    "$(printf '{\"app_secret_key\":\"%s\",\"auth0_mgmt_secret\":\"%s\"}' "$(rand 32)" "$(rand 24)")"
+  put_secret "${db_secret}" \
+    "$(printf '{\"db_core_app_password\":\"%s\",\"db_response_app_password\":\"%s\"}' "$(rand 16)" "$(rand 16)")"
+  put_secret "${linkage_secret}" "$(printf '{\"version\":1,\"secret_b64\":\"%s\"}' "$(rand 32)")"
 
-# FLOWFORM_ENV is the app's RUNTIME MODE (dev|test|prod) — a different axis from
-# FLOWFORM_SCOPE (nonprod|prod, the secrets/param namespace). The rehearsal boots
-# the prod runtime shape, so this is 'prod', NOT the scope. Overridable.
-put_param "${BP}/FLOWFORM_ENV"    "${FLOWFORM_ENV:-prod}"
-put_param "${BP}/BACKEND_IMAGE"   "${BACKEND_IMAGE}"
+  kms_key_arn="$(ensure_kms_key)"
+  linkage_secret_arn="$("${AWS[@]}" secretsmanager describe-secret \
+    --secret-id "${linkage_secret}" --query ARN --output text)"
 
-# Auth0 — dev-tenant throwaways (readiness doesn't call Auth0). MGMT secret comes
-# from app-secrets (materialised to a tmpfs file), not here.
-put_param "${BP}/FLOWFORM_AUTH0_DOMAIN"      "${FLOWFORM_AUTH0_DOMAIN:-dev-rehearsal.au.auth0.com}"
-# Canonical tenant for the Management API (/api/v2 is not served on custom
-# domains); mirrors the real backend config shape.
-put_param "${BP}/FLOWFORM_AUTH0_MGMT_DOMAIN" "${FLOWFORM_AUTH0_MGMT_DOMAIN:-dev-rehearsal.au.auth0.com}"
-put_param "${BP}/FLOWFORM_AUTH0_AUDIENCE"    "${FLOWFORM_AUTH0_AUDIENCE:-https://flowform.auth.api}"
-put_param "${BP}/FLOWFORM_AUTH0_CLIENT_ID"   "${FLOWFORM_AUTH0_CLIENT_ID:-rehearsalClientId0000000000000000}"
-put_param "${BP}/FLOWFORM_AUTH0_MGMT_ID"     "${FLOWFORM_AUTH0_MGMT_ID:-rehearsalMgmtId000000000000000000}"
+  # These names are shared with the AWS CDK security stack. Their values are
+  # local resource identifiers, not copied AWS environment values.
+  put_parameter "$(scope_parameter_name kms_key_arn)" "${kms_key_arn}"
+  put_parameter "$(scope_parameter_name aws_region)" "${AWS_REGION}"
+  put_parameter "$(scope_parameter_name linkage_secret_arn)" "${linkage_secret_arn}"
 
-# AWS + email (well-formed; not exercised at readiness).
-put_param "${BP}/FLOWFORM_AWS_REGION"        "${REGION}"
-put_param "${BP}/FLOWFORM_EMAIL_FROM_ADDRESS" "${FLOWFORM_EMAIL_FROM_ADDRESS:-no-reply@rehearsal.test}"
+  put_runtime_parameter backend logging_json "${FLOWFORM_LOGGING_LOG_JSON}"
+  put_runtime_parameter backend logging_level "${FLOWFORM_LOGGING_LEVEL}"
+  put_runtime_parameter backend runtime_environment "${FLOWFORM_ENV}"
+  put_runtime_parameter backend backend_image "${BACKEND_IMAGE}"
+  put_runtime_parameter backend auth0_domain "${FLOWFORM_AUTH0_DOMAIN}"
+  put_runtime_parameter backend auth0_management_domain "${FLOWFORM_AUTH0_MGMT_DOMAIN}"
+  put_runtime_parameter backend auth0_audience "${FLOWFORM_AUTH0_AUDIENCE}"
+  put_runtime_parameter backend auth0_client_id "${FLOWFORM_AUTH0_CLIENT_ID}"
+  put_runtime_parameter backend auth0_management_id "${FLOWFORM_AUTH0_MGMT_ID}"
+  put_runtime_parameter backend aws_region "${AWS_REGION}"
+  put_runtime_parameter backend email_from_address "${FLOWFORM_EMAIL_FROM_ADDRESS}"
+  put_runtime_parameter backend kms_key_arn "${kms_key_arn}"
+  put_runtime_parameter backend linkage_secret_arn "${linkage_secret_arn}"
+  put_runtime_parameter backend database_core_host "${DATABASE_CORE_HOST}"
+  put_runtime_parameter backend database_core_name "${DATABASE_CORE_NAME}"
+  put_runtime_parameter backend database_core_app_user "${DATABASE_CORE_APP_USER}"
+  put_runtime_parameter backend database_response_host "${DATABASE_RESPONSE_HOST}"
+  put_runtime_parameter backend database_response_name "${DATABASE_RESPONSE_NAME}"
+  put_runtime_parameter backend database_response_app_user "${DATABASE_RESPONSE_APP_USER}"
 
-# Encryption — well-formed ARNs. These validate as strings at startup; readiness
-# does not perform a KMS decrypt. Shaped like real ARNs so the config model accepts
-# them. (A fuller rehearsal could create a real LocalStack KMS key + linkage secret
-# and use those ARNs; not needed for a green /health/ready.)
-put_param "${BP}/FLOWFORM_ENCRYPTION_KMS_KEY_ARN" \
-  "${FLOWFORM_ENCRYPTION_KMS_KEY_ARN:-arn:aws:kms:${REGION}:000000000000:key/00000000-0000-0000-0000-000000000000}"
-put_param "${BP}/FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN" \
-  "${FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN:-arn:aws:secretsmanager:${REGION}:000000000000:secret:flowform/${FLOWFORM_SCOPE}/linkage-secret}"
+  put_runtime_parameter proxy caddy_image "${CADDY_IMAGE}"
+  put_runtime_parameter proxy api_domain "${API_DOMAIN}"
 
-# Database parts — REAL. Point at the app-box Postgres containers (service names
-# core-db / response-db from docker-compose.app.rehearsal.yml). The app_user +
-# db name must match what those containers are initialised with; the password is
-# the same tmpfs secret both sides read.
-put_param "${BP}/DATABASE_CORE_HOST"         "${DATABASE_CORE_HOST:-core-db}"
-put_param "${BP}/DATABASE_CORE_NAME"         "flowform_core"
-put_param "${BP}/DATABASE_CORE_APP_USER"     "flowform_core_app"
-put_param "${BP}/DATABASE_RESPONSE_HOST"     "${DATABASE_RESPONSE_HOST:-response-db}"
-put_param "${BP}/DATABASE_RESPONSE_NAME"     "flowform_response"
-put_param "${BP}/DATABASE_RESPONSE_APP_USER" "flowform_response_app"
+  log "seed complete for /flowform/${FLOWFORM_SCOPE}"
+}
 
-# --- SSM: proxy/ (CADDY_IMAGE + API_DOMAIN required by bootstrap-proxy) -----
-PP="/flowform/${FLOWFORM_SCOPE}/proxy"
-put_param "${PP}/CADDY_IMAGE" "${CADDY_IMAGE}"
-put_param "${PP}/API_DOMAIN"  "${API_DOMAIN}"
-
-log "done. Seeded secrets + params under flowform/${FLOWFORM_SCOPE}."
-log "verify: aws --endpoint-url ${LS_ENDPOINT} ssm get-parameters-by-path --path ${BP}/ --recursive"
+main "$@"

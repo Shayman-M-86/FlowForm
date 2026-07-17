@@ -1,6 +1,23 @@
 locals {
-  rendered_cloud_init_dir = "${path.module}/cloud-init"
-  ssh_authorized_keys     = indent(2, join("\n", [for key in var.ssh_public_keys : "- ${key}"]))
+  rendered_cloud_init_dir    = "${path.module}/cloud-init"
+  ssh_authorized_keys        = indent(2, join("\n", [for key in var.ssh_public_keys : "- ${key}"]))
+  runtime_parameter_contract = jsondecode(file("${path.module}/../../config/runtime-parameter-contract.json"))
+  required_localstack_seed_keys = toset(flatten([
+    for group in values(local.runtime_parameter_contract.runtime_groups) : [
+      for parameter in values(group.parameters) : parameter.seed_value_key
+      if can(parameter.seed_value_key)
+    ]
+  ]))
+  configured_localstack_seed_keys = toset(keys(var.localstack_seed_values))
+  localstack_seed_environment = join("\n", concat(
+    ["FLOWFORM_SCOPE=nonprod"],
+    [for key in sort(keys(var.localstack_seed_values)) : "${key}=${var.localstack_seed_values[key]}"]
+  ))
+  localstack_rendered_user_data = replace(
+    file("${local.rendered_cloud_init_dir}/localstack.user-data.rendered.yaml"),
+    "__LOCALSTACK_SEED_ENV_TERRAFORM__",
+    base64encode("${local.localstack_seed_environment}\n")
+  )
 
   # Proxmox treats a custom user-data file as a replacement for its generated
   # cloud-init user data. Include the SSH keys in each custom payload instead
@@ -25,8 +42,18 @@ locals {
       ssh_authorized_keys:
       ${local.ssh_authorized_keys}
 
-      ${file("${local.rendered_cloud_init_dir}/localstack.user-data.rendered.yaml")}
+      ${local.localstack_rendered_user_data}
     EOT
+  }
+}
+
+check "localstack_seed_values_match_contract" {
+  assert {
+    condition = (
+      length(setsubtract(local.required_localstack_seed_keys, local.configured_localstack_seed_keys)) == 0 &&
+      length(setsubtract(local.configured_localstack_seed_keys, local.required_localstack_seed_keys)) == 0
+    )
+    error_message = "localstack_seed_values keys must exactly match seed_value_key entries in infra/deployment/config/runtime-parameter-contract.json."
   }
 }
 

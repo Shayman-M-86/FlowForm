@@ -42,6 +42,8 @@ Terraform is intentionally outside this ownership boundary under
   golden template.
 - `build-aws-image.sh` builds only the AWS golden AMI; `publish-aws-ami.sh`
   publishes its manifest ID to an explicit SSM parameter.
+- `verify-aws-ami.sh` checks that the completed AWS AMI has one encrypted gp3
+  root mapping and that both AMI and snapshot are exactly the configured size.
 - `sources/proxmox.pkr.hcl` defines both Proxmox clone sources with an
   explicit reserved SSH address.
 - `builds/golden.pkr.hcl` defines the shared build and platform-specific guest
@@ -54,6 +56,13 @@ The shared build installs base packages, Docker/Compose, AWS CLI, host
 configuration, and verification requirements. The Proxmox build step configures
 the guest serial console. The cleanup step removes image-specific identity and
 credential state before template conversion.
+
+AWS uses the Amazon-owned minimal AL2023 EC2 AMI with kernel 6.1 and a 10 GiB
+build root. Proxmox independently uses the official 25 GiB KVM QCOW2. This is
+source and storage divergence, not provisioning divergence: both builders run
+`local.common_scripts`, then their respective EC2/SSM or Proxmox guest steps.
+The AWS wrapper rejects non-minimal source filters and root sizes outside
+8–12 GiB before invoking Packer.
 
 The source-preparation path and Packer source disable the QEMU guest agent;
 AL2023 does not support it. Packer reaches its temporary clone through the
@@ -84,6 +93,7 @@ rendered files are not committed.
 `infra/tests/images/validate.sh` runs Packer syntax validation and the
 source-template preparation tests, including the native-size no-resize path.
 Successful Proxmox build wrappers then run the live disk-size verifier.
+Successful AWS builds run the live AMI/snapshot verifier before publication.
 Terraform configuration is validated from
 `infra/deployment/proxmox/terraform/` with `terraform validate` after its
 cloud-init payloads have been rendered.

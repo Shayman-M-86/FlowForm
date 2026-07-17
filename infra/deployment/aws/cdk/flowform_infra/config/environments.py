@@ -66,6 +66,9 @@ class EnvConfig:
     # Optional direct AMI ID override for tests/break-glass deployments. If set,
     # ApplicationStack uses it instead of the SSM parameter.
     ec2_base_ami_id: str | None = None
+    # Must match the root mapping of the Packer-built minimal AL2023 AMI. AWS
+    # cannot launch an EBS root volume smaller than the AMI snapshot.
+    ec2_root_volume_size_gib: int = 10
 
 
 @dataclass(frozen=True)

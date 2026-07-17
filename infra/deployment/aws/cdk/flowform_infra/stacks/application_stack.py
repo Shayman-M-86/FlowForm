@@ -154,6 +154,18 @@ class ApplicationStack(Stack):
                 "via ec2_base_ami_id or ec2_base_ami_ssm_parameter"
             )
 
+        root_block_devices = [
+            ec2.BlockDevice(
+                device_name="/dev/xvda",
+                volume=ec2.BlockDeviceVolume.ebs(
+                    env_config.ec2_root_volume_size_gib,
+                    volume_type=ec2.EbsDeviceVolumeType.GP3,
+                    encrypted=True,
+                    delete_on_termination=True,
+                ),
+            )
+        ]
+
         self.proxy_instance = ec2.Instance(
             self,
             "ProxyInstance",
@@ -167,6 +179,7 @@ class ApplicationStack(Stack):
             associate_public_ip_address=True,
             http_tokens=ec2.HttpTokens.REQUIRED,
             http_put_response_hop_limit=2,
+            block_devices=root_block_devices,
         )
 
         self.proxy_elastic_ip = ec2.CfnEIP(
@@ -189,6 +202,7 @@ class ApplicationStack(Stack):
             associate_public_ip_address=False,
             http_tokens=ec2.HttpTokens.REQUIRED,
             http_put_response_hop_limit=2,
+            block_devices=root_block_devices,
         )
 
         # Runtime user-data/bootstrap wiring is intentionally separate from the image. The proxy host must

@@ -10,6 +10,7 @@ from flowform_infra.config import (
     GITHUB_REPOSITORY,
     SecurityScopeConfig,
 )
+from flowform_infra.config.runtime_parameter_contract import scope_parameter_name
 from flowform_infra.constructs.kms_construct import AppKmsKey
 from flowform_infra.constructs.secrets_construct import AppMultiSecret
 from flowform_infra.constructs.ses_construct import AppEmailIdentity
@@ -133,14 +134,14 @@ class SecurityStack(Stack):
         ssm.StringParameter(
             self,
             "KmsKeyArnParam",
-            parameter_name=f"/flowform/{scope_name}/kms-key-arn",
+            parameter_name=scope_parameter_name(scope_name, "kms_key_arn"),
             string_value=self.kms_key.key_arn,
         )
 
         ssm.StringParameter(
             self,
             "RegionParam",
-            parameter_name=f"/flowform/{scope_name}/aws-region",
+            parameter_name=scope_parameter_name(scope_name, "aws_region"),
             string_value=scope_config.region,
         )
 
@@ -149,14 +150,14 @@ class SecurityStack(Stack):
         ssm.StringParameter(
             self,
             "LinkageSecretArnParam",
-            parameter_name=f"/flowform/{scope_name}/linkage-secret-arn",
+            parameter_name=scope_parameter_name(scope_name, "linkage_secret_arn"),
             string_value=self.linkage_secret.secret_arn,
         )
 
         ssm.StringParameter(
             self,
             "HostedZoneIdParam",
-            parameter_name=f"/flowform/{scope_name}/hosted-zone-id",
+            parameter_name=scope_parameter_name(scope_name, "hosted_zone_id"),
             string_value=self.email_identity.hosted_zone.hosted_zone_id,
         )
 
@@ -196,7 +197,7 @@ class SecurityStack(Stack):
         ssm.StringParameter(
             self,
             "AppRoleArnParam",
-            parameter_name=f"/flowform/{scope_name}/app-role-arn",
+            parameter_name=scope_parameter_name(scope_name, "app_role_arn"),
             string_value=self.task_role.role_arn,
         )
 

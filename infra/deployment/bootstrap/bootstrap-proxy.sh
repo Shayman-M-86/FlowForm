@@ -51,6 +51,9 @@ if [[ -n "${BOOTSTRAP_ENDPOINT_URL:-}" ]]; then
   log "using AWS endpoint override: ${BOOTSTRAP_ENDPOINT_URL} (rehearsal mode)"
 fi
 
+# shellcheck source=aws-cli-retry.sh
+source "${SCRIPT_DIR}/aws-cli-retry.sh"
+
 render_proxy_env() {
   local param_path="/flowform/${FLOWFORM_SCOPE}/proxy/"
 
@@ -69,9 +72,10 @@ render_proxy_env() {
   # Proxy params are optional (API_DOMAIN/CADDY_IMAGE may come from the caller),
   # so an empty path is not fatal here — unlike the app box.
   local raw
-  raw="$(aws "${AWS_ARGS[@]}" ssm get-parameters-by-path \
+  raw="$(aws_cli_retry "SSM path ${param_path}" ssm get-parameters-by-path \
     --path "${param_path}" --recursive --with-decryption \
-    --query 'Parameters[].[Name,Value]' --output text 2>/dev/null || true)"
+    --query 'Parameters[].[Name,Value]' --output text)" \
+    || die "SSM get-parameters-by-path ${param_path} failed"
 
   if [[ -n "${raw}" ]]; then
     printf '%s\n' "${raw}" | while IFS=$'\t' read -r name value; do

@@ -58,3 +58,34 @@ variable "ssh_public_keys" {
     error_message = "At least one SSH public key is required for guest access."
   }
 }
+
+variable "localstack_seed_values" {
+  description = "Non-secret rehearsal values written to LocalStack by the fixture VM after boot. Keys are validated against the shared runtime parameter contract."
+  type        = map(string)
+  default = {
+    API_DOMAIN                  = "api.localstack.test"
+    AWS_REGION                  = "ap-southeast-2"
+    BACKEND_IMAGE               = "10.10.10.30:5000/flowform-backend:rehearsal"
+    CADDY_IMAGE                 = "caddy:2-alpine"
+    DATABASE_CORE_APP_USER      = "flowform_core_app"
+    DATABASE_CORE_HOST          = "core-db"
+    DATABASE_CORE_NAME          = "flowform_core"
+    DATABASE_RESPONSE_APP_USER  = "flowform_response_app"
+    DATABASE_RESPONSE_HOST      = "response-db"
+    DATABASE_RESPONSE_NAME      = "flowform_response"
+    FLOWFORM_AUTH0_AUDIENCE     = "https://flowform.auth.api"
+    FLOWFORM_AUTH0_CLIENT_ID    = "rehearsalClientId0000000000000000"
+    FLOWFORM_AUTH0_DOMAIN       = "dev-rehearsal.au.auth0.com"
+    FLOWFORM_AUTH0_MGMT_DOMAIN  = "dev-rehearsal.au.auth0.com"
+    FLOWFORM_AUTH0_MGMT_ID      = "rehearsalMgmtId000000000000000000"
+    FLOWFORM_EMAIL_FROM_ADDRESS = "no-reply@rehearsal.test"
+    FLOWFORM_ENV                = "prod"
+    FLOWFORM_LOGGING_LEVEL      = "INFO"
+    FLOWFORM_LOGGING_LOG_JSON   = "true"
+  }
+
+  validation {
+    condition     = alltrue([for value in values(var.localstack_seed_values) : length(trimspace(value)) > 0 && !can(regex("[\r\n]", value))])
+    error_message = "LocalStack seed values must be non-empty single-line strings."
+  }
+}

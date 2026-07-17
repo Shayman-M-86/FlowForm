@@ -57,6 +57,29 @@ runtime cloud-init and Compose services to start without internet access.
 Terraform supplies all networking, keys, Compose/configuration files, service
 units, TLS material, and startup actions; none of those are baked by Packer.
 
+## LocalStack runtime seeding
+
+LocalStack remains reachable only on the isolated `vmbr10` network. Terraform
+does not use the AWS provider against LocalStack and does not expose port 4566
+to the development LAN. Instead, Terraform validates `localstack_seed_values`
+against `infra/deployment/config/runtime-parameter-contract.json`, renders the
+non-secret values into cloud-init, and uploads them with the LocalStack VM
+snippet.
+
+On every fixture VM boot, `flowform-localstack-seed.service` waits for
+LocalStack health and runs the idempotent seed script locally. It creates local
+KMS and linkage-secret resources, publishes their local ARNs under the same
+scoped SSM names used by AWS CDK, and writes the rehearsal `/backend/*` and
+`/proxy/*` parameters. Throwaway secret values are generated inside the VM and
+never enter Terraform configuration or state. App and proxy bootstrap AWS
+reads retry while this boot-time seed completes.
+
+The default non-secret values live in `variables.tf`. To override them, set the
+complete `localstack_seed_values` map in `terraform.tfvars`; Terraform rejects
+missing or unknown keys so contract changes cannot silently leave stale seed
+data. Because LocalStack persistence is disabled, the fixture VM is the
+lifecycle boundary: each boot starts empty and reseeds deterministically.
+
 Build order is source template, golden template, LocalStack fixture template,
 then Terraform. Terraform never invokes either Packer build.
 

@@ -67,6 +67,9 @@ if [[ -n "${BOOTSTRAP_ENDPOINT_URL:-}" ]]; then
   log "using AWS endpoint override: ${BOOTSTRAP_ENDPOINT_URL} (rehearsal mode)"
 fi
 
+# shellcheck source=aws-cli-retry.sh
+source "${SCRIPT_DIR}/aws-cli-retry.sh"
+
 # ---------------------------------------------------------------------------
 # 1. Forced-proxy egress
 # ---------------------------------------------------------------------------
@@ -117,7 +120,8 @@ EOF
 #   DATABASE_CORE_APP_PASSWORD     <- db-secrets  / db_core_app_password
 #   DATABASE_RESPONSE_APP_PASSWORD <- db-secrets  / db_response_app_password
 fetch_secret_string() { # $1 = secret id suffix (e.g. app-secrets)
-  aws "${AWS_ARGS[@]}" secretsmanager get-secret-value \
+  aws_cli_retry "Secrets Manager secret flowform/${FLOWFORM_SCOPE}/$1" \
+    secretsmanager get-secret-value \
     --secret-id "flowform/${FLOWFORM_SCOPE}/$1" \
     --query SecretString --output text
 }
@@ -183,7 +187,7 @@ render_backend_env() {
   # upper-cased is NOT assumed — params are stored already named as the env
   # keys the backend expects (the CDK backend-param milestone owns that).
   local raw
-  raw="$(aws "${AWS_ARGS[@]}" ssm get-parameters-by-path \
+  raw="$(aws_cli_retry "SSM path ${param_path}" ssm get-parameters-by-path \
     --path "${param_path}" --recursive --with-decryption \
     --query 'Parameters[].[Name,Value]' --output text)" \
     || die "SSM get-parameters-by-path ${param_path} failed"

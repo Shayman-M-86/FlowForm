@@ -19,8 +19,9 @@ related_docs:
 ---
 
 # Machine image building
-Describes the Packer workflow for the shared Amazon Linux 2023 golden image and
-the Proxmox-only LocalStack fixture derived from it.
+Describes the Packer workflow for AWS and Proxmox Amazon Linux 2023 golden
+images and the Proxmox-only LocalStack fixture. The platforms share
+provisioning but deliberately use different official base images and disks.
 It covers image construction only; [[Deployment model|Terraform deployment]]
 clones a completed Proxmox template and does not invoke Packer.
 
@@ -61,6 +62,13 @@ step.
 5. Run Terraform separately. Proxy and app clone the golden template, while
    LocalStack clones the fixture template.
 
+For AWS, copy `variables/aws.auto.pkrvars.hcl.example`, authenticate the AWS
+CLI, and run `infra/images/scripts/build-aws-image.sh`. The builder selects the
+Amazon-owned minimal AL2023 EC2 AMI with kernel 6.1 and creates a 10 GiB
+encrypted gp3 root. It never imports the Proxmox QCOW2. After Packer completes,
+the wrapper verifies the resulting AMI and snapshot size, encryption, volume
+type, and absence of additional EBS mappings before the AMI may be published.
+
 ## Inputs and outputs
 Inputs are the pinned AL2023 image configuration, Proxmox credentials, and the
 Packer variable file. Outputs are reusable templates and separate golden/fixture
@@ -72,6 +80,11 @@ The pinned x86_64 XFS/GPT source is a QCOW2 file of 1,829,175,296 bytes with a
 `PROXMOX_DISK_MAX_SIZE=25G` rejects unexpected growth. Packer full clones keep
 the same 25 GiB virtual size. New Terraform full clones inherit it; existing
 32 GiB clones are unchanged until deliberately replaced.
+
+AWS has a separate storage contract because an EC2 root volume cannot be
+smaller than its AMI snapshot. The official minimal EC2 AMI has a smaller
+native snapshot, so FlowForm intentionally expands it to 10 GiB during the
+Packer build. CDK declares the same 10 GiB root mapping for app and proxy.
 
 ## Failure behaviour
 - AL2023 has no supported QEMU guest agent package, so the Proxmox builder uses

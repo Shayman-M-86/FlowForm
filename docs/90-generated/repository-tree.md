@@ -130,6 +130,7 @@ FlowForm/
 │       ├── 019f6d93-cf83-77d3-ba4e-17e9450c3acf.json
 │       ├── 019f6da3-2f79-75c0-83bc-539d91f1357b.json
 │       ├── 019f6da4-60fe-71e1-adb3-291d206a1d5a.json
+│       ├── 019f6f26-8f4c-7142-aa9e-3f5e09a39948.json
 │       ├── 02113535-080f-40f4-a17a-0e190b2db9e9.json
 │       ├── 141136ab-ba09-4b43-8bad-7c148c6ea788.json
 │       ├── 4aec0b6d-0991-4aae-a328-7eff53528223.json
@@ -949,6 +950,7 @@ FlowForm/
 │   │   │   ├── prepare-proxmox-source.sh
 │   │   │   ├── publish-aws-ami.sh
 │   │   │   ├── source-bootstrap.user-data.yaml
+│   │   │   ├── verify-aws-ami.sh
 │   │   │   └── verify-proxmox-disk-sizes.sh
 │   │   └── IMAGE-CONTRACT.md
 │   ├── postgres/
@@ -958,6 +960,7 @@ FlowForm/
 │   └── tests/
 │       └── images/
 │           ├── test-prepare-proxmox-source.sh
+│           ├── test-verify-aws-ami.sh
 │           └── validate.sh
 ├── old-docs/
 │   ├── High-level implementation/

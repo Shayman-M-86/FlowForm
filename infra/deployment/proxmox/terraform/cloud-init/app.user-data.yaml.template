@@ -28,7 +28,7 @@
 
 write_files:
   # --- rehearsal CA: trusted so the shim's *.localstack.test cert validates ---
-  - path: /usr/local/share/ca-certificates/flowform-rehearsal-ca.crt
+  - path: /etc/pki/ca-trust/source/anchors/flowform-rehearsal-ca.crt
     encoding: b64
     permissions: '0644'
     owner: root:root
@@ -40,6 +40,11 @@ write_files:
     permissions: '0755'
     owner: root:root
     content: __BOOTSTRAP_APP_SH_B64__
+  - path: /opt/flowform/scripts/bootstrap/aws-cli-retry.sh
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: __AWS_CLI_RETRY_SH_B64__
 
   # --- the shared app compose file ----------------------------------------------
   # bootstrap-app.sh's REPO_ROOT math is scripts/bootstrap → ../../.. , so the
@@ -89,14 +94,17 @@ write_files:
       AWS_ENDPOINT_URL_SSM=https://ssm.localstack.test
       AWS_ENDPOINT_URL_KMS=https://kms.localstack.test
       # AWS CLI v2 ships its OWN CA bundle and ignores the system trust store, so
-      # it wouldn't trust the rehearsal CA (added via update-ca-certificates). Point
+      # it wouldn't trust the rehearsal CA (added via update-ca-trust). Point
       # it at the system bundle, which now includes the rehearsal CA. REHEARSAL
       # delta — prod leaves this UNSET (real AWS TLS validates against the public
       # CAs the CLI already bundles).
-      AWS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+      AWS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt
       # dummy creds — LocalStack ignores validity but the SDK requires presence
       AWS_ACCESS_KEY_ID=test
       AWS_SECRET_ACCESS_KEY=test
+      # Allow the internet-enabled proxy VM time to pull and start Squid during
+      # a simultaneous three-VM Terraform deployment.
+      BOOTSTRAP_AWS_MAX_ATTEMPTS=120
 
   # --- run the bootstrap once cloud-init reaches runcmd ------------------------
   - path: /opt/flowform/scripts/run-bootstrap-app.sh
@@ -111,7 +119,9 @@ write_files:
       # operator pushes it from the dev box AFTER the VMs come up). bootstrap's
       # final compose-up then fails to pull — expected, not a regression. Emit a
       # clear hint and preserve the real exit code so the failure is still visible.
-      if ! /opt/flowform/scripts/bootstrap/bootstrap-app.sh; then
+      if /opt/flowform/scripts/bootstrap/bootstrap-app.sh; then
+        exit 0
+      else
         rc=$?
         echo "[run-bootstrap-app] bootstrap-app.sh exited ${rc}." >&2
         echo "[run-bootstrap-app] If it failed pulling ${BACKEND_IMAGE}, push it from the" >&2
@@ -121,7 +131,7 @@ write_files:
 
 runcmd:
   # 1. Trust the rehearsal CA so the shim's TLS validates like real AWS TLS.
-  - [ update-ca-certificates ]
+  - [ update-ca-trust, extract ]
   # 2. Resolve the 3 AWS SNI names to the ls-vm (shim + LocalStack live there).
   #    Idempotent: only append if absent.
   - [ bash, -c, "grep -q localstack.test /etc/hosts || echo '10.10.10.30 secretsmanager.localstack.test ssm.localstack.test kms.localstack.test' >> /etc/hosts" ]

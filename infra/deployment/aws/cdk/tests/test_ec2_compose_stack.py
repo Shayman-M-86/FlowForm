@@ -208,3 +208,24 @@ def test_application_instances_use_packer_ami_ssm_parameter_not_latest_base_imag
         if resource["Type"] == "AWS::EC2::Instance"
     ]
     assert instance_image_ids == [{"Ref": parameter_logical_id}] * 2
+
+
+def test_application_instances_use_ten_gib_gp3_encrypted_root_volumes():
+    template = _synth_application_stack()
+    template.resource_properties_count_is(
+        "AWS::EC2::Instance",
+        {
+            "BlockDeviceMappings": [
+                {
+                    "DeviceName": "/dev/xvda",
+                    "Ebs": {
+                        "DeleteOnTermination": True,
+                        "Encrypted": True,
+                        "VolumeSize": 10,
+                        "VolumeType": "gp3",
+                    },
+                }
+            ]
+        },
+        2,
+    )

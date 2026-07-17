@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "scope_parameters": {
+    "kms_key_arn": "kms-key-arn",
+    "aws_region": "aws-region",
+    "linkage_secret_arn": "linkage-secret-arn",
+    "hosted_zone_id": "hosted-zone-id",
+    "app_role_arn": "app-role-arn"
+  },
+  "runtime_groups": {
+    "backend": {
+      "path": "backend",
+      "parameters": {
+        "logging_json": {
+          "name": "FLOWFORM_LOGGING_LOG_JSON",
+          "seed_value_key": "FLOWFORM_LOGGING_LOG_JSON"
+        },
+        "logging_level": {
+          "name": "FLOWFORM_LOGGING_LEVEL",
+          "seed_value_key": "FLOWFORM_LOGGING_LEVEL"
+        },
+        "runtime_environment": {
+          "name": "FLOWFORM_ENV",
+          "seed_value_key": "FLOWFORM_ENV"
+        },
+        "backend_image": {
+          "name": "BACKEND_IMAGE",
+          "seed_value_key": "BACKEND_IMAGE"
+        },
+        "auth0_domain": {
+          "name": "FLOWFORM_AUTH0_DOMAIN",
+          "seed_value_key": "FLOWFORM_AUTH0_DOMAIN"
+        },
+        "auth0_management_domain": {
+          "name": "FLOWFORM_AUTH0_MGMT_DOMAIN",
+          "seed_value_key": "FLOWFORM_AUTH0_MGMT_DOMAIN"
+        },
+        "auth0_audience": {
+          "name": "FLOWFORM_AUTH0_AUDIENCE",
+          "seed_value_key": "FLOWFORM_AUTH0_AUDIENCE"
+        },
+        "auth0_client_id": {
+          "name": "FLOWFORM_AUTH0_CLIENT_ID",
+          "seed_value_key": "FLOWFORM_AUTH0_CLIENT_ID"
+        },
+        "auth0_management_id": {
+          "name": "FLOWFORM_AUTH0_MGMT_ID",
+          "seed_value_key": "FLOWFORM_AUTH0_MGMT_ID"
+        },
+        "aws_region": {
+          "name": "FLOWFORM_AWS_REGION",
+          "seed_value_key": "AWS_REGION"
+        },
+        "email_from_address": {
+          "name": "FLOWFORM_EMAIL_FROM_ADDRESS",
+          "seed_value_key": "FLOWFORM_EMAIL_FROM_ADDRESS"
+        },
+        "kms_key_arn": {
+          "name": "FLOWFORM_ENCRYPTION_KMS_KEY_ARN"
+        },
+        "linkage_secret_arn": {
+          "name": "FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN"
+        },
+        "database_core_host": {
+          "name": "DATABASE_CORE_HOST",
+          "seed_value_key": "DATABASE_CORE_HOST"
+        },
+        "database_core_name": {
+          "name": "DATABASE_CORE_NAME",
+          "seed_value_key": "DATABASE_CORE_NAME"
+        },
+        "database_core_app_user": {
+          "name": "DATABASE_CORE_APP_USER",
+          "seed_value_key": "DATABASE_CORE_APP_USER"
+        },
+        "database_response_host": {
+          "name": "DATABASE_RESPONSE_HOST",
+          "seed_value_key": "DATABASE_RESPONSE_HOST"
+        },
+        "database_response_name": {
+          "name": "DATABASE_RESPONSE_NAME",
+          "seed_value_key": "DATABASE_RESPONSE_NAME"
+        },
+        "database_response_app_user": {
+          "name": "DATABASE_RESPONSE_APP_USER",
+          "seed_value_key": "DATABASE_RESPONSE_APP_USER"
+        }
+      }
+    },
+    "proxy": {
+      "path": "proxy",
+      "parameters": {
+        "caddy_image": {
+          "name": "CADDY_IMAGE",
+          "seed_value_key": "CADDY_IMAGE"
+        },
+        "api_domain": {
+          "name": "API_DOMAIN",
+          "seed_value_key": "API_DOMAIN"
+        }
+      }
+    }
+  },
+  "secrets": {
+    "app": "app-secrets",
+    "database": "db-secrets",
+    "linkage": "linkage-secret"
+  }
+}

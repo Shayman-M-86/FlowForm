@@ -1,9 +1,8 @@
 # Rehearsal TLS shim (runs on ls-vm / 10.10.10.30, beside LocalStack).
 #
 # Caddy terminates TLS for the *.localstack.test SNI names on :443 and reverse-
-# proxies to LocalStack. host networking so it binds the private NIC's :443 and
-# reaches LocalStack at 127.0.0.1:4566 (LocalStack publishes 10.10.10.30:4566,
-# reachable as 127.0.0.1 from the host netns).
+# proxies to LocalStack. Host networking lets it bind the private NIC's :443;
+# it reaches LocalStack on the explicitly published 10.10.10.30:4566 address.
 #
 # The image (caddy:2-alpine) is baked into the ls template so this starts offline.
 
@@ -13,15 +12,19 @@ services:
     container_name: flowform-tls-shim
     restart: unless-stopped
     network_mode: host
+    extra_hosts:
+      # The health probe must use the DNS name so TLS sends matching SNI.
+      - "ssm.localstack.test:10.10.10.30"
     volumes:
       - /opt/flowform/tls-shim/Caddyfile:/etc/caddy/Caddyfile:ro
       - /opt/flowform/tls-shim/certs:/etc/caddy/certs:ro   # pre-generated cert+key
       - tls_shim_data:/data
       - tls_shim_config:/config
     healthcheck:
-      # up when it answers TLS on :443 for an SNI name (localhost resolves it via
-      # the container's own view; --no-check-certificate since busybox lacks the CA)
-      test: ["CMD", "sh", "-c", "wget -q --no-check-certificate --header 'Host: ssm.localstack.test' -O /dev/null https://10.10.10.30/_localstack/health || exit 1"]
+      # Up when it answers TLS on :443 for a real SNI name. The explicit host
+      # mapping keeps the check offline; --no-check-certificate is acceptable
+      # here because this probes liveness, while clients validate the CA.
+      test: ["CMD", "sh", "-c", "wget -q --no-check-certificate -O /dev/null https://ssm.localstack.test/_localstack/health || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 20

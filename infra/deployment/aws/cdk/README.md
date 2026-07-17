@@ -30,6 +30,11 @@ tests/                     # synth-time assertions (aws_cdk.assertions)
 `security_stack.py` is the only fully-built stack so far; the rest are
 structural stubs with `# TODO` markers — see `aws-overview.md` for status.
 
+The app and proxy consume the Packer-built minimal AL2023 AMI and explicitly
+request a 10 GiB encrypted gp3 root volume. This must match
+`aws_root_volume_size` in the Packer variables because AWS cannot launch a
+root volume smaller than the AMI snapshot.
+
 ## Environment model
 
 - **dev** deploys the Security stack only (KMS, secrets, SES send access).

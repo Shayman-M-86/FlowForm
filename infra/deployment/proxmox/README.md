@@ -54,3 +54,23 @@ creates and starts LocalStack, the local registry, and the TLS shim at runtime.
 An applied rehearsal still requires a fixture template built from the current
 Compose image references; checked-in configuration alone does not prove the
 live services healthy.
+
+## Push the backend image
+
+From a WSL checkout with Docker available, run:
+
+```bash
+infra/containers/rehearsal/services/registry/build-and-push-backend.sh
+```
+
+The helper builds the production-runtime backend image and pushes it as
+`10.10.10.30:5000/flowform-backend:rehearsal`. When the registry is not directly
+reachable, it uses `~/.ssh/proxmox_codex` to add `10.10.10.1/24` temporarily to
+the Proxmox `vmbr10` bridge, then streams the built image over SSH to app VM
+`220`, whose Docker daemon pushes it to the private registry. Its exit trap
+removes the address if that invocation added it. The registry is never exposed
+on the LAN, and Docker Desktop needs no insecure-registry configuration.
+
+The connection defaults can be overridden with `PROXMOX_SSH_TARGET`,
+`PROXMOX_SSH_KEY`, `PROXMOX_PRIVATE_BRIDGE`, `PROXMOX_TEMP_BRIDGE_CIDR`,
+and `PUSH_RELAY_SSH_TARGET`.

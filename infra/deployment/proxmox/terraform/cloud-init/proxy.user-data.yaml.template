@@ -29,7 +29,7 @@
 
 write_files:
   # --- rehearsal CA: trusted so the shim's *.localstack.test cert validates ---
-  - path: /usr/local/share/ca-certificates/flowform-rehearsal-ca.crt
+  - path: /etc/pki/ca-trust/source/anchors/flowform-rehearsal-ca.crt
     encoding: b64
     permissions: '0644'
     owner: root:root
@@ -41,6 +41,11 @@ write_files:
     permissions: '0755'
     owner: root:root
     content: __BOOTSTRAP_PROXY_SH_B64__
+  - path: /opt/flowform/repo/infra/deployment/bootstrap/aws-cli-retry.sh
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: __AWS_CLI_RETRY_SH_B64__
 
   # --- prod proxy compose (base) + its prod config files (kept, referenced by
   #     the override which only swaps two of them) -------------------------------
@@ -103,9 +108,10 @@ write_files:
       AWS_ENDPOINT_URL_KMS=https://kms.localstack.test
       # AWS CLI v2 bundles its own CA; point it at the system store so it trusts
       # the rehearsal CA. REHEARSAL delta — prod leaves this UNSET.
-      AWS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+      AWS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt
       AWS_ACCESS_KEY_ID=test
       AWS_SECRET_ACCESS_KEY=test
+      BOOTSTRAP_AWS_MAX_ATTEMPTS=120
 
   - path: /opt/flowform/scripts/run-bootstrap-proxy.sh
     permissions: '0755'
@@ -118,7 +124,7 @@ write_files:
 
 runcmd:
   # Trust the rehearsal CA (the proxy box also dials the shim's *.localstack.test).
-  - [ update-ca-certificates ]
+  - [ update-ca-trust, extract ]
   # Resolve the fake-AWS SNI names to the aws-fixtures-vm.
   - [ bash, -c, "grep -q localstack.test /etc/hosts || echo '10.10.10.30 secretsmanager.localstack.test ssm.localstack.test kms.localstack.test' >> /etc/hosts" ]
   # Bring up the prod proxy stack (Caddy + Squid) the prod way — egress only.

@@ -20,6 +20,13 @@ The shared golden image must not contain application code, application or
 fixture container images, secrets, `.env` files, TLS private keys, registry
 credentials, AWS credentials, mutable hostnames, or environment-specific IPs.
 
+The shared contract does not require identical source disks. AWS builds from
+the official minimal AL2023 EC2 AMI and uses an encrypted 10 GiB gp3 root;
+Proxmox builds from the official KVM QCOW2 and preserves its native 25 GiB
+disk. Both run the same common provisioners and verification, followed by only
+the platform-specific guest steps. An AWS build must fail if its output AMI or
+root snapshot differs from the configured 8–12 GiB policy.
+
 The Proxmox-only LocalStack fixture is the sole container-image exception. It
 is derived from the Proxmox golden template and may contain only the image
 layers named by the maintained rehearsal LocalStack, registry, and TLS-shim

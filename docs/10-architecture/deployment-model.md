@@ -55,9 +55,9 @@ classes, but resource lifecycle, sizing, domains, and security scope differ.
 The local Proxmox rehearsal uses separate tools for separate lifecycle scopes:
 
 ```text
-shared golden definition
-├── AWS AMI
-└── Proxmox golden template 9000
+shared provisioning contract
+├── minimal AL2023 EC2 base -> AWS AMI with 10 GiB root
+└── AL2023 KVM base -> Proxmox golden template 9000 with 25 GiB root
     ├── Terraform -> proxy 210, app 220
     └── Packer LocalStack fixture 9001 -> Terraform -> LocalStack 230
 ```
@@ -74,6 +74,20 @@ registry, and TLS-shim images declared by rehearsal Compose so VM `230` does
 not need internet access. Terraform and cloud-init still own IPs, SSH keys,
 Compose files, TLS material, service units, seed data, and service startup.
 Terraform consumes both completed template VMIDs and never invokes Packer.
+
+LocalStack is not exposed to the development LAN for provisioning. Terraform
+validates the non-secret rehearsal seed values against the shared runtime
+parameter contract and delivers them through cloud-init. After LocalStack is
+healthy, the fixture VM creates its own throwaway secrets and local KMS
+resources, then seeds SSM locally. AWS CDK consumes the same contract for
+scoped SSM names while supplying real AWS-derived values; application code
+continues to use the normal AWS SDK contract in both environments.
+
+Shared provisioning does not imply a shared source disk. AWS uses Amazon's
+native minimal EC2 AMI so its encrypted gp3 root can remain 10 GiB; Proxmox
+preserves the official KVM QCOW2's native 25 GiB XFS disk. CDK explicitly
+declares the AWS size, and the AWS build verifies its AMI snapshot before the
+artifact is published.
 
 ## Intended AWS topology
 
