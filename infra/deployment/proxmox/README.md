@@ -24,9 +24,18 @@ host/01-setup-host.sh # one-time bootstrap, run on the PVE host
 ./terraform/render-cloud-init.sh
 cd terraform
 terraform init
-terraform plan
-terraform apply
+./with-dev-auth0-env.sh plan
+./with-dev-auth0-env.sh apply
 ```
+
+Run plan/apply through `with-dev-auth0-env.sh`: the Auth0 identifiers are
+Terraform variables without defaults, and the wrapper exports them as
+`TF_VAR_*` from the gitignored `infra/env/dev/.backend.env` so the rehearsal
+always validates tokens against the same dev tenant the front end logs in to.
+
+The full from-scratch order of operations (fresh Proxmox host, nothing built)
+is documented in
+[docs/40-implementation/proxmox-rehearsal.md](../../../docs/40-implementation/proxmox-rehearsal.md).
 
 Terraform renders no repository files on the Proxmox host. Its local
 `render-cloud-init.sh` produces snippets that Terraform uploads before cloning
@@ -42,11 +51,19 @@ startup remain owned by cloud-init and Compose.
 
 ## Current rehearsal status
 
-The Packer golden template and Terraform topology have been exercised on the
-local Proxmox host: Terraform creates and starts proxy `210`, app `220`, and
-LocalStack `230`. The proxy cloud-init completes and its Caddy and Squid
-containers run. The app and LocalStack VMs also boot with their intended
-network isolation and cloud-init.
+The topology has been exercised end-to-end on the local Proxmox host: Terraform
+creates and starts proxy `210`, app `220`, and LocalStack `230`; the app boots,
+seeds from LocalStack, and serves `/api/v1/system/health/ready` through the
+proxy at the static LAN address `192.168.70.63` (`proxy_lan_ip` — keep it
+excluded from the router's DHCP pool). Bearer-token validation against the real
+dev Auth0 tenant has been verified through Squid: a well-formed but unsigned
+JWT returns `401` (JWKS kid mismatch), not a proxy error.
+
+Operator TLS trust is anchored on the committed rehearsal CA
+(`infra/containers/rehearsal/services/tls-shim/ca/rehearsal-ca.crt`): the proxy
+Caddy serves a pre-generated leaf for `api.localstack.test` signed by it, so
+installing that one CA file in a workstation trust store survives all VM
+rebuilds. Tail service logs with `infra/deployment/proxmox/rehearsal-logs.sh`.
 
 LocalStack `230` has no default route by design. Its Packer fixture preloads the
 third-party images it needs before isolation, while Terraform cloud-init still
@@ -82,10 +99,18 @@ old password. Because deployable migrations are not yet present in the
 repository, a rehearsal-only one-shot initializes the current SQLAlchemy schema
 before the backend starts; AWS environments remain migration-owned.
 
-The rehearsal runtime contract disables Auth0 Management API validation during
-startup because the isolated environment uses placeholder Auth0 credentials.
-The backend default remains enabled for other environments, and Management API
-operations still fail closed if those credentials are used.
+Auth0 is the one dependency the rehearsal does not fake: bearer tokens are
+validated against the real dev tenant (its issuer domain is on the rehearsal
+Squid allow-list), so Studio-issued tokens verify end-to-end. Only the
+Management API stays on placeholder credentials — its client secret is seeded
+as random bytes — so the runtime contract disables Management API validation
+during startup. The backend default remains enabled for other environments,
+and Management API operations still fail closed.
+
+A `terraform destroy` wipes the registry contents with VM `230`; after any
+full rebuild, re-run the push above and then re-run
+`/opt/flowform/scripts/run-bootstrap-app.sh` on app VM `220` (its first boot
+fails at image pull by design when the registry is empty).
 
 The connection defaults can be overridden with `PROXMOX_SSH_TARGET`,
 `PROXMOX_SSH_KEY`, `PROXMOX_PRIVATE_BRIDGE`, `PROXMOX_TEMP_BRIDGE_CIDR`,

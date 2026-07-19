@@ -24,9 +24,12 @@ name: flowform-proxy
 services:
   caddy:
     volumes:
-      # replace the prod Route53 Caddyfile with the rehearsal tls-internal one.
-      # path is relative to the PROJECT dir (infra/containers/deployment/compose/)
+      # replace the prod Route53 Caddyfile with the rehearsal one (pre-generated
+      # leaf signed by the committed rehearsal CA — see Caddyfile.proxy).
+      # paths are relative to the PROJECT dir (infra/containers/deployment/compose/)
       - ../../rehearsal/services/caddy/Caddyfile.proxy:/etc/caddy/Caddyfile:ro
+      - ../../rehearsal/services/caddy/certs/api.crt:/etc/caddy/certs/api.crt:ro
+      - ../../rehearsal/services/caddy/certs/api.key:/etc/caddy/certs/api.key:ro
 
   squid:
     extra_hosts:

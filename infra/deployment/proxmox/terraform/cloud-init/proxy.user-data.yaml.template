@@ -71,6 +71,18 @@ write_files:
     permissions: '0644'
     owner: root:root
     content: __CADDYFILE_PROXY_REHEARSAL_B64__
+  # TLS leaf for the API domain, signed by the committed rehearsal CA — the
+  # stable trust anchor operators install once (see generate-api-cert.sh).
+  - path: /opt/flowform/repo/infra/containers/rehearsal/services/caddy/certs/api.crt
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: __PROXY_API_CRT_B64__
+  - path: /opt/flowform/repo/infra/containers/rehearsal/services/caddy/certs/api.key
+    encoding: b64
+    permissions: '0600'
+    owner: root:root
+    content: __PROXY_API_KEY_B64__
   - path: /opt/flowform/repo/infra/containers/rehearsal/services/squid/allowed-domains.txt
     encoding: b64
     permissions: '0644'

@@ -85,7 +85,9 @@ The Proxmox rehearsal reuses the shared host runtime but deliberately changes
 dependencies that cannot operate on its offline private network. Its proxy
 override substitutes local TLS and egress allow-list configuration. Its app
 override adds ephemeral core and response PostgreSQL containers because the
-rehearsal does not exercise RDS. A green rehearsal therefore supports the
+rehearsal does not exercise RDS. Auth0 is the one deliberate live dependency:
+the egress allow-list admits the real dev tenant so bearer-token validation is
+exercised end-to-end (see [[Proxmox rehearsal implementation]]). A green rehearsal therefore supports the
 shared image/bootstrap/Compose contract, but does not prove AWS networking,
 managed database connectivity, public DNS, or certificate issuance. See
 [[Machine image building]] and [[Deployment model]].
