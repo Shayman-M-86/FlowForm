@@ -8,11 +8,12 @@
 # SSM Parameter Store, KMS. Bootstrap hits these with the REAL aws CLI via
 # BOOTSTRAP_ENDPOINT_URL, so the AWS code path is exercised, not stubbed.
 #
-# LocalStack serves plain HTTP on :4566. The app box never talks to it directly
-# — it goes app-vm → Squid (CONNECT :443, SNI allow-list) → TLS shim (on the
-# ls-vm) → here. Plain HTTP is fine on the private net for the seed path; the
-# TLS/SNI fidelity is added by the runtime-configured shim; only its image is
-# preloaded into fixture template 9001.
+# LocalStack serves plain HTTP on :4566, bound to LOOPBACK — nothing off-box can
+# reach it. The app box goes app-vm → Squid (CONNECT :443, SNI allow-list) → TLS
+# shim (co-located here, network_mode: host, reaches :4566 over lo) → here. The
+# loopback bind is enforcement: it makes the direct-bypass path (app → :4566)
+# structurally impossible, the way an AWS security group would. The on-box seed
+# also uses 127.0.0.1:4566. Only the image is preloaded into fixture 9001.
 
 services:
   localstack:
@@ -20,7 +21,7 @@ services:
     container_name: flowform-localstack
     restart: unless-stopped
     ports:
-      - "10.10.10.30:4566:4566"   # bind the private NIC, not 0.0.0.0
+      - "127.0.0.1:4566:4566"     # loopback only: no direct off-box access
     environment:
       - SERVICES=secretsmanager,ssm,kms
       - DEBUG=0

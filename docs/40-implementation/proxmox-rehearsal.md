@@ -11,7 +11,10 @@ related_code:
   - "../../infra/deployment/proxmox/host/"
   - "../../infra/deployment/proxmox/terraform/"
   - "../../infra/deployment/proxmox/rehearsal-logs.sh"
+  - "../../infra/deployment/proxmox/verify-rehearsal.sh"
+  - "../../infra/deployment/bootstrap/"
   - "../../infra/containers/rehearsal/"
+  - "../../infra/tests/deployment/"
 related_docs:
   - "Deployment model"
   - "Machine image building"
@@ -79,6 +82,21 @@ units, SSH keys, and network-specific configuration, then starts the services.
 LocalStack remains private to `vmbr10`; Terraform does not require a LAN-facing
 LocalStack endpoint or run an AWS provider against it.
 
+Every fake-AWS and fake-ECR call takes the same egress shape as real AWS:
+`app → Squid (CONNECT :443, per-service SNI) → TLS shim on VM 230 →` LocalStack
+`:4566` or the registry `:5000`. Image pulls and pushes are included — the
+registry is fronted by the shim as `registry.localstack.test`, admitted in the
+Squid allow-list exactly as production admits `api.ecr`/`dkr.ecr`, so the app
+daemon proxies pulls through Squid rather than trusting a plain-HTTP registry
+(there is no `insecure-registries` entry, and the shared daemon `NO_PROXY`
+carries no private-CIDR exemption). That bypass path is not merely unused but
+closed: LocalStack `:4566` and the registry `:5000` bind to loopback on VM 230,
+and an `nftables` ruleset there admits `:443` only from the proxy VM — so a
+direct `app → :4566`/`:443` call fails the way an AWS security group would.
+`infra/deployment/proxmox/verify-rehearsal.sh` asserts all of this against the
+live stack (Squid-log CONNECTs present, direct paths blocked, `--disruptive`
+proves egress fails when Squid is down).
+
 Terraform validates its non-secret seed map against the shared parameter
 contract and renders both into the LocalStack cloud-init payload. A systemd
 oneshot waits for LocalStack health on every boot, generates throwaway secrets
@@ -93,13 +111,15 @@ Static validation proves the build graph and contract resolve, not that
 template `9001` exists on a Proxmox host or the deployed services are healthy.
 
 The backend image push remains an operator action. The maintained helper at
-`infra/containers/rehearsal/services/registry/build-and-push-backend.sh` uses a
-direct private-network path when one exists. From WSL or another LAN
-workstation, it temporarily addresses the Proxmox host on `vmbr10` and creates a
-proxied SSH path to app VM `220`, streams the built image into that VM's Docker
-daemon, and pushes from there before removing the temporary transport on exit.
-This does not make the registry or LocalStack LAN-facing and does not require an
-insecure-registry exception in Docker Desktop.
+`infra/containers/rehearsal/services/registry/build-and-push-backend.sh` always
+relays through app VM `220`: it temporarily addresses the Proxmox host on
+`vmbr10`, creates a proxied SSH path to `220`, streams the built image into that
+VM's Docker daemon, and pushes from there before removing the temporary
+transport on exit. The push itself rides Squid — the app daemon tunnels
+`CONNECT registry.localstack.test:443` to the TLS shim, which fronts the private
+registry — so it exercises the same egress path a real ECR push would. The
+registry and LocalStack are never LAN-facing, and there is no insecure-registry
+exception anywhere.
 
 That helper also mirrors the private-registry dependencies named by the
 rehearsal app Compose override, deriving upstream names and tags from Compose.
@@ -234,10 +254,15 @@ file, this never has to be repeated after rebuilds.
 curl --cacert infra/containers/rehearsal/services/tls-shim/ca/rehearsal-ca.crt \
   https://api.localstack.test/api/v1/system/health/ready   # 200, verified TLS
 infra/deployment/proxmox/rehearsal-logs.sh app --list      # containers healthy
+infra/deployment/proxmox/verify-rehearsal.sh               # full egress model
 ```
 
-A structurally valid but unsigned JWT should return `401` (kid mismatch) from
-an authenticated route — proving the live Auth0 JWKS path — never a `500`.
+`verify-rehearsal.sh` is the definitive check: health `200`, a structurally
+valid but unsigned JWT returning `401` (kid mismatch — the live Auth0 JWKS path,
+never a `500`), every fake-AWS/ECR name appearing as a `CONNECT` in Squid's
+access log, and the direct-bypass paths all blocked. `--disruptive` also stops
+Squid to prove egress fails closed. Note it reads Squid's log as the in-container
+squid uid (`docker exec -u 13`), which the hardened container requires.
 
 **Teardown and rebuild.** `terraform destroy` removes the VMs and with them the
 registry contents and all seeded state. After any full rebuild, repeat steps

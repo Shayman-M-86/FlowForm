@@ -10,3 +10,4 @@ subjectAltName = @alt
 DNS.1 = secretsmanager.localstack.test
 DNS.2 = ssm.localstack.test
 DNS.3 = kms.localstack.test
+DNS.4 = registry.localstack.test

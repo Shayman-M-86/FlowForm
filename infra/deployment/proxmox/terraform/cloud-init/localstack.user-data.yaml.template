@@ -37,6 +37,32 @@ write_files:
     encoding: b64
     permissions: '0600'
     content: __LOCALSTACK_KEY_B64__
+  # Enforcement: the fixtures VM exposes ONLY :443 (the TLS shim) to the private
+  # net, and only from the proxy VM. LocalStack :4566 and the registry :5000 are
+  # loopback-bound (see the compose files), so the shim (network_mode: host) is
+  # the sole ingress path — this firewall makes the "app dials the shim/backend
+  # directly, skipping Squid" bypass fail the way an AWS security group would.
+  # nftables is installed + enabled in the golden image (install-base.sh); this
+  # only supplies the ruleset and reloads it.
+  - path: /etc/nftables/flowform-fixtures.nft
+    permissions: '0644'
+    owner: root:root
+    content: |
+      table inet flowform_fixtures {
+        chain input {
+          type filter hook input priority 0; policy drop;
+          iif "lo" accept
+          ct state established,related accept
+          # TLS shim: only the proxy VM (Squid) may open the CONNECT tunnel.
+          ip saddr 10.10.10.10 tcp dport 443 accept
+          # SSH from the PVE jump address used by operator tooling (temporary
+          # 10.10.10.1/24 on vmbr10) — rehearsal-logs.sh, the harness, debugging.
+          ip saddr 10.10.10.1 tcp dport 22 accept
+          # ICMP for debugging + IPv6 neighbor discovery (no fidelity cost).
+          ip protocol icmp accept
+          icmpv6 type { nd-neighbor-solicit, nd-neighbor-advert, nd-router-advert, nd-router-solicit } accept
+        }
+      }
   - path: /etc/systemd/system/flowform-localstack.service
     permissions: '0644'
     content: |
@@ -78,7 +104,7 @@ write_files:
       [Service]
       Type=oneshot
       EnvironmentFile=/etc/flowform/localstack-seed.env
-      Environment=AWS_ENDPOINT_URL=http://10.10.10.30:4566
+      Environment=AWS_ENDPOINT_URL=http://127.0.0.1:4566
       Environment=RUNTIME_PARAMETER_CONTRACT=/opt/flowform/localstack/runtime-parameter-contract.json
       ExecStart=/opt/flowform/localstack/seed-localstack.sh
       RemainAfterExit=yes
@@ -99,6 +125,13 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 runcmd:
+  # Load the fixtures firewall FIRST (before services accept traffic). Idempotent
+  # include into the base config, then reload. Our inet table filters the host
+  # input chain; docker's own iptables-nft tables coexist (a packet must clear
+  # every base chain). Nothing in this cloud-init needs inbound traffic — the
+  # seed and every healthcheck are loopback — so ordering is safe.
+  - [ bash, -c, "grep -q flowform-fixtures.nft /etc/sysconfig/nftables.conf || echo 'include \"/etc/nftables/flowform-fixtures.nft\"' >> /etc/sysconfig/nftables.conf" ]
+  - [ systemctl, restart, nftables ]
   - [ systemctl, daemon-reload ]
   - [ systemctl, enable, --now, flowform-localstack.service ]
   - [ systemctl, enable, --now, flowform-registry.service ]

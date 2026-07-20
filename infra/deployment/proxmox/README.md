@@ -81,12 +81,14 @@ infra/containers/rehearsal/services/registry/build-and-push-backend.sh
 ```
 
 The helper builds the production-runtime backend image and pushes it as
-`10.10.10.30:5000/flowform-backend:rehearsal`. When the registry is not directly
-reachable, it uses `~/.ssh/proxmox_codex` to add `10.10.10.1/24` temporarily to
-the Proxmox `vmbr10` bridge, then streams the built image over SSH to app VM
-`220`, whose Docker daemon pushes it to the private registry. Its exit trap
-removes the address if that invocation added it. The registry is never exposed
-on the LAN, and Docker Desktop needs no insecure-registry configuration.
+`registry.localstack.test/flowform-backend:rehearsal`. It uses
+`~/.ssh/proxmox_codex` to add `10.10.10.1/24` temporarily to the Proxmox
+`vmbr10` bridge, then streams the built image over SSH to app VM `220`, whose
+Docker daemon pushes it. The push rides Squid — `CONNECT
+registry.localstack.test:443` → TLS shim → private registry — the same egress
+path a real ECR push takes; there is no insecure-registry configuration
+anywhere, and the registry is never LAN-facing. Its exit trap removes the
+bridge address if that invocation added it.
 
 The same invocation mirrors private-registry runtime dependencies declared by
 the rehearsal app Compose override. Their upstream names and tags are derived

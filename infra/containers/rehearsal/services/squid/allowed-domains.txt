@@ -4,7 +4,9 @@
 # The app box reaches fake-AWS the prod way: CONNECT <svc>.localstack.test:443 →
 # Squid (this allow-list) → TLS tunnel → shim (on the ls-vm) → LocalStack. So the
 # three fake-AWS SNI names must be admitted here, exactly as prod admits the real
-# secretsmanager/ssm/kms .<region>.amazonaws.com names.
+# secretsmanager/ssm/kms .<region>.amazonaws.com names. The fake-ECR registry
+# rides the same path (registry.localstack.test:443 → shim → registry), mirroring
+# how prod admits api.ecr/dkr.ecr — so image pulls/pushes traverse Squid too.
 #
 # Leading dot = match the domain AND its subdomains (Squid dstdomain semantics).
 # Listing the bare names too keeps it explicit.
@@ -20,17 +22,16 @@
 # endpoints stay fully offline.
 #
 # NOT here on purpose:
-#   - the registry (10.10.10.10:5000): the app box's docker DAEMON pulls it
-#     DIRECTLY (daemon no-proxy covers 10.0.0.0/8) — it never traverses Squid,
-#     so it needs no allow-list entry. It reaches the registry over the private
-#     net and trusts it via /etc/docker/daemon.json insecure-registries.
-#   - real AWS/ECR domains: fake-AWS is served by LocalStack, so the app box
-#     only ever dials *.localstack.test for those.
+#   - real AWS/ECR domains: fake-AWS and fake-ECR are served by LocalStack + the
+#     registry behind the shim, so the app box only ever dials *.localstack.test.
 
 .localstack.test
 secretsmanager.localstack.test
 ssm.localstack.test
 kms.localstack.test
+
+# Fake-ECR registry — image pulls/pushes over HTTPS (mirrors prod api.ecr/dkr.ecr).
+registry.localstack.test
 
 # Auth0 issuer — token validation (OIDC discovery + JWKS).
 auth.flow-form.com.au

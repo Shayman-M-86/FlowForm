@@ -174,9 +174,16 @@ breaks this design:
   ECR pulls; boto3/requests in the backend container via the same env
   vars in the Compose file.
 - `NO_PROXY` must cover: `localhost,127.0.0.1,169.254.169.254` (IMDS —
-  identity breaks without it), the VPC CIDR (RDS + S3 gateway endpoint
-  traffic must NOT hairpin through the proxy), and Docker-internal
-  service names.
+  identity breaks without it), plus the **hostname suffixes** for traffic
+  that must not hairpin through the proxy — `.rds.amazonaws.com` and
+  `.s3.<region>.amazonaws.com` (the S3 gateway endpoint), and Docker-internal
+  service names. Do NOT rely on a VPC-CIDR entry for the **daemon** NO_PROXY:
+  the Docker daemon is Go, and Go matches CIDR NO_PROXY entries only against
+  IP-literal request hosts — it never resolves hostnames, and the daemon only
+  ever dials hostnames (ECR API/registry, S3 layer hosts). A VPC CIDR there is
+  inert; ECR pulls should ride the proxy exactly as every other egress does.
+  (boto3 in the container likewise ignores CIDR NO_PROXY entries — suffixes
+  only.)
 - **Session Manager does not work through an HTTPS proxy.** Management
   path for the private box is an **EC2 Instance Connect Endpoint**
   (free) — or pay for the SSM interface-endpoint trio (~$22/month) if

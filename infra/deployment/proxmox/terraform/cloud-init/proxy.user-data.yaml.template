@@ -137,7 +137,8 @@ write_files:
 runcmd:
   # Trust the rehearsal CA (the proxy box also dials the shim's *.localstack.test).
   - [ update-ca-trust, extract ]
-  # Resolve the fake-AWS SNI names to the aws-fixtures-vm.
-  - [ bash, -c, "grep -q localstack.test /etc/hosts || echo '10.10.10.30 secretsmanager.localstack.test ssm.localstack.test kms.localstack.test' >> /etc/hosts" ]
+  # Resolve the fake-AWS SNI names + fake-ECR registry to the aws-fixtures-vm.
+  # (Squid's own extra_hosts is the load-bearing resolution; this aids debugging.)
+  - [ bash, -c, "grep -q registry.localstack.test /etc/hosts || echo '10.10.10.30 secretsmanager.localstack.test ssm.localstack.test kms.localstack.test registry.localstack.test' >> /etc/hosts" ]
   # Bring up the prod proxy stack (Caddy + Squid) the prod way — egress only.
   - [ /opt/flowform/scripts/run-bootstrap-proxy.sh ]

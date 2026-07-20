@@ -79,8 +79,7 @@ source "${SCRIPT_DIR}/aws-cli-retry.sh"
 # CAUTION (mirrors docker-compose.app.yml): Python/boto3 IGNORE CIDR entries in
 # NO_PROXY. Use hostnames/suffixes for anything this shell's AWS CLI must dial
 # directly. IMDS (169.254.169.254) must never traverse Squid or instance-role
-# credential lookups break. The Docker DAEMON no-proxy (set below) may use CIDRs
-# because the daemon is Go.
+# credential lookups break.
 export HTTP_PROXY="http://${PROXY_PRIVATE_IP}:3128"
 export HTTPS_PROXY="http://${PROXY_PRIVATE_IP}:3128"
 export NO_PROXY="localhost,127.0.0.1,169.254.169.254,.rds.amazonaws.com"
@@ -90,14 +89,18 @@ export http_proxy="${HTTP_PROXY}" https_proxy="${HTTPS_PROXY}" no_proxy="${NO_PR
 configure_docker_daemon_proxy() {
   local drop_in_dir="/etc/systemd/system/docker.service.d"
   local drop_in="${drop_in_dir}/http-proxy.conf"
-  # Daemon no-proxy MAY use CIDRs (Go). Cover IMDS, the VPC-internal RDS/S3
-  # gateway paths, and localhost so image layer pulls and metadata stay direct.
+  # No CIDR exemptions: the daemon is Go, and Go's NO_PROXY matches CIDRs ONLY
+  # against IP-literal request hosts — never resolved hostnames. The daemon only
+  # ever dials hostnames (the registry/ECR host, S3 layer hosts), so image pulls
+  # and pushes traverse the proxy exactly as prod's ECR-over-HTTPS pulls do. The
+  # hostname-suffix exemptions below keep RDS and the S3 gateway path direct;
+  # IMDS + localhost stay direct; the proxy is dialed AS the proxy, not exempted.
   local content
   content="$(cat <<EOF
 [Service]
 Environment="HTTP_PROXY=http://${PROXY_PRIVATE_IP}:3128"
 Environment="HTTPS_PROXY=http://${PROXY_PRIVATE_IP}:3128"
-Environment="NO_PROXY=localhost,127.0.0.1,169.254.169.254,10.0.0.0/8,172.16.0.0/12,.rds.amazonaws.com,.s3.${AWS_REGION}.amazonaws.com"
+Environment="NO_PROXY=localhost,127.0.0.1,169.254.169.254,.rds.amazonaws.com,.s3.${AWS_REGION}.amazonaws.com"
 EOF
 )"
   if [[ "${DRY_RUN}" == "1" ]]; then

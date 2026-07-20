@@ -24,7 +24,7 @@ name: flowform-app
 
 services:
   core-db:
-    image: 10.10.10.30:5000/postgres:17
+    image: registry.localstack.test/postgres:17
     restart: unless-stopped
     environment:
       POSTGRES_DB: flowform_core
@@ -43,7 +43,7 @@ services:
       start_period: 10s
 
   response-db:
-    image: 10.10.10.30:5000/postgres:17
+    image: registry.localstack.test/postgres:17
     restart: unless-stopped
     environment:
       POSTGRES_DB: flowform_response

@@ -61,19 +61,18 @@ write_files:
     owner: root:root
     content: __DOCKER_COMPOSE_APP_REHEARSAL_B64__
 
-  # --- rehearsal-only: trust the private HTTP registry -------------------------
-  # bootstrap-app.sh pulls BACKEND_IMAGE from 10.10.10.30:5000 (plain HTTP on the
-  # private net). Docker refuses HTTP registries unless listed as insecure. This
-  # is a REHEARSAL delta (prod pulls ECR over HTTPS, no daemon.json entry). It
-  # must exist BEFORE bootstrap-app.sh restarts the daemon (for its proxy drop-in)
-  # so the setting is live for the compose pull — the runcmd order guarantees that.
-  - path: /etc/docker/daemon.json
+  # --- trust the fake-ECR registry's TLS (mirrors prod ECR-over-HTTPS) ---------
+  # bootstrap-app.sh pulls BACKEND_IMAGE as https://registry.localstack.test
+  # through Squid → TLS shim → registry, exactly as prod pulls ECR over HTTPS —
+  # so dockerd validates real TLS rather than trusting a plain-HTTP registry.
+  # The rehearsal CA is in the system bundle (update-ca-trust, runcmd step 1),
+  # and this explicit /etc/docker/certs.d anchor makes the registry-TLS trust
+  # deterministic and self-documenting. Same committed CA the app CLI trusts.
+  - path: /etc/docker/certs.d/registry.localstack.test/ca.crt
+    encoding: b64
     permissions: '0644'
     owner: root:root
-    content: |
-      {
-        "insecure-registries": ["10.10.10.30:5000"]
-      }
+    content: __REHEARSAL_CA_CRT_B64__
 
   # --- env consumed by the bootstrap runcmd ------------------------------------
   # Per-service endpoints (option chosen: AWS_ENDPOINT_URL_<SERVICE>) so each
@@ -88,8 +87,9 @@ write_files:
       AWS_REGION=ap-southeast-2
       APP_PRIVATE_IP=10.10.10.20
       PROXY_PRIVATE_IP=10.10.10.10
-      # rehearsal image ref (fake-ECR registry on the aws-fixtures-vm, 230)
-      BACKEND_IMAGE=10.10.10.30:5000/flowform-backend:rehearsal
+      # rehearsal image ref (fake-ECR registry, reached over HTTPS through Squid +
+      # the TLS shim on the aws-fixtures-vm, 230 — no port = 443)
+      BACKEND_IMAGE=registry.localstack.test/flowform-backend:rehearsal
       # explicit compose path: the script is baked at /opt/flowform/scripts/... so
       # its own REPO_ROOT math (../../..) would look under /opt, not where we put
       # the compose file. Point at the baked location directly.
@@ -139,9 +139,11 @@ write_files:
 runcmd:
   # 1. Trust the rehearsal CA so the shim's TLS validates like real AWS TLS.
   - [ update-ca-trust, extract ]
-  # 2. Resolve the 3 AWS SNI names to the ls-vm (shim + LocalStack live there).
-  #    Idempotent: only append if absent.
-  - [ bash, -c, "grep -q localstack.test /etc/hosts || echo '10.10.10.30 secretsmanager.localstack.test ssm.localstack.test kms.localstack.test' >> /etc/hosts" ]
+  # 2. Resolve the fake-AWS SNI names AND the fake-ECR registry to the ls-vm
+  #    (shim + LocalStack + registry live there). The pull path resolves inside
+  #    Squid; these entries serve operator debugging + the harness's direct-fail
+  #    probes. Idempotent guard greps the registry name (the last one appended).
+  - [ bash, -c, "grep -q registry.localstack.test /etc/hosts || echo '10.10.10.30 secretsmanager.localstack.test ssm.localstack.test kms.localstack.test registry.localstack.test' >> /etc/hosts" ]
   # 3. Bootstrap the app box the prod way (forced-proxy egress, tmpfs secrets,
   #    backend.env from SSM, compose up). Logs to the cloud-init output.
   - [ /opt/flowform/scripts/run-bootstrap-app.sh ]

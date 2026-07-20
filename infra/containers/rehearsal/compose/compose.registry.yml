@@ -15,10 +15,14 @@
 # here (not on the proxy) keeps that boundary clean, and here it is always-on
 # during isolation runs (unlike the toggleable dev box).
 #
-# Plain HTTP on :5000. The private VMs that pull/push must trust it as an
-# "insecure registry" via /etc/docker/daemon.json — set by cloud-init on the app
-# box (pulls) and the dev box (builds + pushes). Mirrors how the real app box
-# pulls BACKEND_IMAGE from ECR and never from the internet.
+# Clients reach it as https://registry.localstack.test through Squid + the TLS
+# shim (CONNECT :443 → shim → here), mirroring prod's ECR-over-HTTPS — NOT as a
+# plain-HTTP insecure registry. Plain HTTP survives only on the shim→registry
+# hop over loopback on this same VM; no insecure-registries trust anywhere.
+#
+# Bound to LOOPBACK only: nothing off-box can reach :5000 directly, so the ONLY
+# path in is through the shim on :443 — the enforcement that makes bypassing
+# Squid structurally impossible (an AWS security group equivalent).
 
 services:
   registry:
@@ -26,7 +30,7 @@ services:
     container_name: flowform-registry
     restart: unless-stopped
     ports:
-      - "10.10.10.30:5000:5000"   # bind the private NIC so offline VMs can reach it
+      - "127.0.0.1:5000:5000"     # loopback only; shim (network_mode: host) reaches it over lo
     environment:
       - REGISTRY_STORAGE_DELETE_ENABLED=true
     volumes:

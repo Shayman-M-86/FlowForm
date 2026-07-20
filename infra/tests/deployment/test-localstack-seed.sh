@@ -9,6 +9,10 @@ PROXY_OVERRIDE="${REPO_ROOT}/infra/containers/rehearsal/compose/compose.proxy.re
 APP_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/terraform/cloud-init/app.user-data.yaml.template"
 PROXMOX_VARIABLES="${REPO_ROOT}/infra/deployment/proxmox/terraform/variables.tf"
 PROXY_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/terraform/cloud-init/proxy.user-data.yaml.template"
+LOCALSTACK_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/terraform/cloud-init/localstack.user-data.yaml.template"
+TLS_SHIM_CADDYFILE="${REPO_ROOT}/infra/containers/rehearsal/services/tls-shim/Caddyfile"
+REGISTRY_COMPOSE="${REPO_ROOT}/infra/containers/rehearsal/compose/compose.registry.yml"
+LOCALSTACK_COMPOSE="${REPO_ROOT}/infra/containers/rehearsal/compose/compose.localstack.yml"
 TEST_DIR="$(mktemp -d)"
 trap 'rm -rf "${TEST_DIR}"' EXIT
 
@@ -62,7 +66,7 @@ EOF
 chmod +x "${TEST_DIR}/bin/aws" "${TEST_DIR}/bin/curl"
 export PATH="${TEST_DIR}/bin:${PATH}"
 export RUNTIME_PARAMETER_CONTRACT="${CONTRACT}"
-export AWS_ENDPOINT_URL="http://10.10.10.30:4566"
+export AWS_ENDPOINT_URL="http://127.0.0.1:4566"
 
 while IFS= read -r key; do
   export "${key}=test-${key,,}"
@@ -100,5 +104,50 @@ grep -F 'COMPOSE_OVERRIDE_FILE=/opt/flowform/repo/infra/containers/rehearsal/com
 grep -F 'COMPOSE_FORCE_RECREATE=1' "${APP_CLOUD_INIT}" >/dev/null
 grep -E 'FLOWFORM_EMAIL_FROM_ADDRESS += "no-reply@flow-form.com.au"' "${PROXMOX_VARIABLES}" >/dev/null
 grep -E 'FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP += "false"' "${PROXMOX_VARIABLES}" >/dev/null
+
+# --- Wave A: registry-over-HTTPS-through-Squid invariants --------------------
+# The registry rides Squid as registry.localstack.test (mirrors ECR-over-HTTPS),
+# NOT a plain-HTTP insecure registry pulled direct.
+grep -F 'registry.localstack.test:10.10.10.30' "${PROXY_OVERRIDE}" >/dev/null \
+  || { printf 'proxy override missing registry.localstack.test extra_hosts\n' >&2; exit 1; }
+grep -F 'registry.localstack.test' "${TLS_SHIM_CADDYFILE}" >/dev/null \
+  || { printf 'tls-shim Caddyfile missing the registry site block\n' >&2; exit 1; }
+grep -E 'BACKEND_IMAGE += "registry.localstack.test/flowform-backend:rehearsal"' "${PROXMOX_VARIABLES}" >/dev/null \
+  || { printf 'variables.tf BACKEND_IMAGE not the registry.localstack.test ref\n' >&2; exit 1; }
+grep -F 'BACKEND_IMAGE=registry.localstack.test/flowform-backend:rehearsal' "${APP_CLOUD_INIT}" >/dev/null \
+  || { printf 'app cloud-init BACKEND_IMAGE not the registry.localstack.test ref\n' >&2; exit 1; }
+grep -F '/etc/docker/certs.d/registry.localstack.test/ca.crt' "${APP_CLOUD_INIT}" >/dev/null \
+  || { printf 'app cloud-init missing the registry certs.d trust anchor\n' >&2; exit 1; }
+# No insecure-registries anywhere: dockerd validates the shim's TLS.
+if grep -F 'insecure-registries' "${APP_CLOUD_INIT}" >/dev/null; then
+  printf 'app cloud-init still declares insecure-registries\n' >&2; exit 1
+fi
+# The shared daemon proxy drop-in no longer exempts private CIDRs (pulls ride Squid).
+if grep -E 'NO_PROXY=.*10\.0\.0\.0/8' "${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-app.sh" >/dev/null; then
+  printf 'bootstrap-app.sh daemon NO_PROXY still exempts 10.0.0.0/8\n' >&2; exit 1
+fi
+
+# --- Wave B: enforcement invariants (loopback binds + fixtures firewall) ------
+# LocalStack + registry loopback-bound: no off-box direct path; shim is sole ingress.
+grep -F '127.0.0.1:4566:4566' "${LOCALSTACK_COMPOSE}" >/dev/null \
+  || { printf 'compose.localstack.yml not loopback-bound\n' >&2; exit 1; }
+grep -F '127.0.0.1:5000:5000' "${REGISTRY_COMPOSE}" >/dev/null \
+  || { printf 'compose.registry.yml not loopback-bound\n' >&2; exit 1; }
+if grep -F '10.10.10.30:4566' "${LOCALSTACK_COMPOSE}" >/dev/null; then
+  printf 'compose.localstack.yml still publishes 10.10.10.30:4566\n' >&2; exit 1
+fi
+if grep -F '10.10.10.30:5000' "${REGISTRY_COMPOSE}" >/dev/null; then
+  printf 'compose.registry.yml still publishes 10.10.10.30:5000\n' >&2; exit 1
+fi
+# Shim upstreams point at loopback (LocalStack + registry are loopback-bound).
+grep -F 'reverse_proxy http://127.0.0.1:4566' "${TLS_SHIM_CADDYFILE}" >/dev/null \
+  || { printf 'tls-shim Caddyfile AWS upstream not loopback\n' >&2; exit 1; }
+grep -F 'reverse_proxy http://127.0.0.1:5000' "${TLS_SHIM_CADDYFILE}" >/dev/null \
+  || { printf 'tls-shim Caddyfile registry upstream not loopback\n' >&2; exit 1; }
+# Fixtures firewall present and admits :443 only from the proxy VM.
+grep -F 'flowform-fixtures.nft' "${LOCALSTACK_CLOUD_INIT}" >/dev/null \
+  || { printf 'localstack cloud-init missing the fixtures nftables ruleset\n' >&2; exit 1; }
+grep -F 'ip saddr 10.10.10.10 tcp dport 443 accept' "${LOCALSTACK_CLOUD_INIT}" >/dev/null \
+  || { printf 'fixtures nftables does not admit :443 from the proxy VM only\n' >&2; exit 1; }
 
 printf '[test-localstack-seed] PASS\n'

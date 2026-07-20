@@ -12,7 +12,8 @@ set -Eeuo pipefail
 
 : "${FLOWFORM_SCOPE:=nonprod}"
 : "${AWS_REGION:=ap-southeast-2}"
-LS_ENDPOINT="${AWS_ENDPOINT_URL:-http://10.10.10.30:4566}"
+# Seeds run ON the fixtures VM; LocalStack is bound to loopback (no off-box port).
+LS_ENDPOINT="${AWS_ENDPOINT_URL:-http://127.0.0.1:4566}"
 CONTRACT="${RUNTIME_PARAMETER_CONTRACT:-/opt/flowform/localstack/runtime-parameter-contract.json}"
 HEALTH_ATTEMPTS="${LOCALSTACK_HEALTH_ATTEMPTS:-60}"
 HEALTH_DELAY_SECONDS="${LOCALSTACK_HEALTH_DELAY_SECONDS:-2}"

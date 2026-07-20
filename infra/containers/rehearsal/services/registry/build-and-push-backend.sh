@@ -7,16 +7,19 @@ set -Eeuo pipefail
 # runtime image at bootstrap.
 #
 # WHERE THIS RUNS: a host with Docker, internet, the repo checkout, and SSH
-# access to the Proxmox host. A dual-homed dev box can push directly. From WSL or
-# another LAN workstation, this script temporarily gives the Proxmox host an IP
-# on vmbr10 and streams the built image over SSH to the app VM, whose Docker
-# daemon can reach the private registry. The address is removed after the push,
-# including when the build or push fails.
+# access to the Proxmox host. The registry is reached ONLY as
+# https://registry.localstack.test through Squid + the TLS shim, and Squid's
+# source ACL admits only the app VM (10.10.10.20/32) — so no workstation can
+# push directly. This script always relays: it temporarily gives the Proxmox
+# host an IP on vmbr10, streams the built image over SSH to the app VM, and the
+# app daemon pushes through its proxy drop-in (CONNECT registry.localstack.test
+# :443 → Squid → shim → registry). The address is removed after the push,
+# including on failure.
 #
 # WHAT IT PROVES / DOESN'T: this is the rehearsal stand-in for the ECR push half
-# of a deploy. It is a REHEARSAL delta — plain HTTP registry, no ECR auth, no
-# image signing. The real push path (ECR + IAM + S3 gateway for layers) is
-# staging's job. Never read a green push here as proof of the ECR path.
+# of a deploy. Registry-over-HTTPS-through-Squid mirrors ECR's transport, but
+# there is no ECR auth or image signing. The real push path (ECR + IAM + S3
+# gateway for layers) is staging's job. Never read a green push here as proof.
 #
 # Prod fidelity: builds with --no-dev (the prod runtime image — no dev tooling),
 # NOT the dev-extra build. The app box runs exactly this image.
@@ -24,23 +27,23 @@ set -Eeuo pipefail
 # Idempotent: re-running rebuilds (Docker layer cache makes it cheap) and
 # re-pushes; an unchanged image is a no-op push.
 
-REGISTRY="${REGISTRY:-10.10.10.30:5000}"
+REGISTRY_HOST="${REGISTRY_HOST:-registry.localstack.test}"   # no port ⇒ 443/HTTPS
 IMAGE_NAME="${IMAGE_NAME:-flowform-backend}"
 IMAGE_TAG="${IMAGE_TAG:-rehearsal}"
 
-# Fallback transport used only when REGISTRY is not directly reachable. Docker
-# Desktop's daemon does not share WSL's loopback namespace, so the built image is
-# streamed to the app VM instead of forwarding the registry port into WSL.
+# The registry is never LAN-reachable; the built image is streamed to the app VM
+# and pushed from there, through Squid. Docker Desktop's daemon also does not
+# share WSL's loopback namespace, so relaying is the only path either way.
 PROXMOX_SSH_TARGET="${PROXMOX_SSH_TARGET:-root@192.168.68.88}"
 PROXMOX_SSH_KEY="${PROXMOX_SSH_KEY:-${HOME}/.ssh/proxmox_codex}"
 PROXMOX_PRIVATE_BRIDGE="${PROXMOX_PRIVATE_BRIDGE:-vmbr10}"
 PROXMOX_TEMP_BRIDGE_CIDR="${PROXMOX_TEMP_BRIDGE_CIDR:-10.10.10.1/24}"
 PUSH_RELAY_SSH_TARGET="${PUSH_RELAY_SSH_TARGET:-ec2-user@10.10.10.20}"
+SQUID_PROXY_URL="${SQUID_PROXY_URL:-http://10.10.10.10:3128}"
 
-APP_DEST="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+APP_DEST="${REGISTRY_HOST}/${IMAGE_NAME}:${IMAGE_TAG}"
 APP_REHEARSAL_COMPOSE="${APP_REHEARSAL_COMPOSE:-}"
 ADDED_BRIDGE_ADDRESS=0
-USE_PUSH_RELAY=0
 
 log() { printf '[build-push-backend] %s\n' "$*"; }
 die() { printf '[build-push-backend] ERROR: %s\n' "$*" >&2; exit 1; }
@@ -71,7 +74,7 @@ DOCKERFILE="${REPO_ROOT}/infra/containers/dev/services/backend/backend.Dockerfil
 [[ -f "${DOCKERFILE}" ]] || die "backend Dockerfile not found at ${DOCKERFILE} (REPO_ROOT=${REPO_ROOT}; sync the repo to the dev box or set REPO_ROOT=)"
 [[ -f "${APP_REHEARSAL_COMPOSE}" ]] || die "rehearsal app Compose file not found at ${APP_REHEARSAL_COMPOSE}"
 command -v docker >/dev/null 2>&1 || die "docker not found on this box"
-command -v curl >/dev/null 2>&1 || die "curl not found on this box"
+command -v ssh >/dev/null 2>&1 || die "ssh not found on this box"
 
 SSH_OPTIONS=(
   -i "${PROXMOX_SSH_KEY}"
@@ -80,22 +83,25 @@ SSH_OPTIONS=(
   -o ServerAliveInterval=15
   -o ServerAliveCountMax=3
 )
-CURL_PROBE_OPTIONS=(-fsS --connect-timeout 2 --max-time 3)
+
+# ssh to a rehearsal VM through the Proxmox jump host. Rehearsal VMs are
+# routinely rebuilt, so their host key uses an invocation-local trust boundary;
+# the stable Proxmox jump host stays checked against the normal known_hosts.
+relay_ssh() {
+  ssh "${SSH_OPTIONS[@]}" \
+    -o UserKnownHostsFile=/dev/null \
+    -o StrictHostKeyChecking=no \
+    -o "ProxyCommand=ssh -i ${PROXMOX_SSH_KEY} -o BatchMode=yes -W %h:%p ${PROXMOX_SSH_TARGET}" \
+    "${PUSH_RELAY_SSH_TARGET}" "$@"
+}
 
 prepare_push_relay() {
-  local registry_host registry_port
-  registry_host="${REGISTRY%:*}"
-  registry_port="${REGISTRY##*:}"
-
-  [[ "${REGISTRY}" == *:* && -n "${registry_host}" ]] || die "REGISTRY must be host:port (got ${REGISTRY})"
-  [[ "${registry_port}" =~ ^[0-9]+$ ]] || die "REGISTRY port must be numeric (got ${registry_port})"
   [[ "${PROXMOX_PRIVATE_BRIDGE}" =~ ^[a-zA-Z0-9_.:-]+$ ]] || die "invalid PROXMOX_PRIVATE_BRIDGE"
   [[ "${PROXMOX_TEMP_BRIDGE_CIDR}" =~ ^[0-9.]+/[0-9]+$ ]] || die "invalid PROXMOX_TEMP_BRIDGE_CIDR"
   [[ "${APP_DEST}" =~ ^[a-zA-Z0-9._:/-]+$ ]] || die "invalid image destination ${APP_DEST}"
   [[ -f "${PROXMOX_SSH_KEY}" ]] || die "Proxmox SSH key not found at ${PROXMOX_SSH_KEY}"
-  command -v ssh >/dev/null 2>&1 || die "ssh not found on this box"
 
-  log "registry is private; preparing temporary image relay through ${PROXMOX_SSH_TARGET}"
+  log "preparing temporary image relay through ${PROXMOX_SSH_TARGET}"
   ssh "${SSH_OPTIONS[@]}" "${PROXMOX_SSH_TARGET}" "ip link show '${PROXMOX_PRIVATE_BRIDGE}'" >/dev/null \
     || die "cannot access ${PROXMOX_PRIVATE_BRIDGE} on ${PROXMOX_SSH_TARGET}"
 
@@ -109,26 +115,18 @@ prepare_push_relay() {
     ADDED_BRIDGE_ADDRESS=1
   fi
 
-  # Rehearsal VMs are routinely rebuilt, so use an invocation-local trust
-  # boundary for their host key. The stable Proxmox jump host remains checked
-  # against the operator's normal known_hosts file.
-  ssh "${SSH_OPTIONS[@]}" \
-    -o UserKnownHostsFile=/dev/null \
-    -o StrictHostKeyChecking=no \
-    -o "ProxyCommand=ssh -i ${PROXMOX_SSH_KEY} -o BatchMode=yes -W %h:%p ${PROXMOX_SSH_TARGET}" \
-    "${PUSH_RELAY_SSH_TARGET}" \
-    "curl -fsS --connect-timeout 2 --max-time 5 'http://${REGISTRY}/v2/' >/dev/null && sudo docker info >/dev/null" \
-    || die "app VM relay ${PUSH_RELAY_SSH_TARGET} cannot reach the registry or Docker"
+  # Preflight: the app VM must reach the registry over HTTPS through Squid (the
+  # exact push path) and have a working Docker daemon. The app VM trusts the
+  # rehearsal CA via its system bundle, so no --cacert / -k here.
+  relay_ssh \
+    "curl -fsS --connect-timeout 3 --max-time 5 --proxy '${SQUID_PROXY_URL}' 'https://${REGISTRY_HOST}/v2/' >/dev/null && sudo docker info >/dev/null" \
+    || die "app VM relay ${PUSH_RELAY_SSH_TARGET} cannot reach https://${REGISTRY_HOST} through Squid or Docker is down"
 
-  USE_PUSH_RELAY=1
   log "temporary image relay is ready through ${PUSH_RELAY_SSH_TARGET}"
 }
 
-# Prefer the direct path from a dual-homed operator VM. WSL/LAN workstations use
-# the temporary SSH image relay without exposing the registry to the LAN.
-if ! curl "${CURL_PROBE_OPTIONS[@]}" "http://${REGISTRY}/v2/" >/dev/null 2>&1; then
-  prepare_push_relay
-fi
+# The registry is only reachable from the app VM through Squid — always relay.
+prepare_push_relay
 
 DEST="${APP_DEST}"
 PUSH_IMAGES=("${APP_DEST}")
@@ -144,9 +142,9 @@ mapfile -t compose_registry_images < <(
     | sort -u
 )
 for registry_image in "${compose_registry_images[@]}"; do
-  [[ "${registry_image}" == "${REGISTRY}/"* ]] \
-    || die "rehearsal image ${registry_image} must use the private registry prefix ${REGISTRY}/"
-  upstream_image="${registry_image#${REGISTRY}/}"
+  [[ "${registry_image}" == "${REGISTRY_HOST}/"* ]] \
+    || die "rehearsal image ${registry_image} must use the private registry prefix ${REGISTRY_HOST}/"
+  upstream_image="${registry_image#${REGISTRY_HOST}/}"
   log "mirroring runtime dependency ${upstream_image} as ${registry_image}"
   docker pull "${upstream_image}"
   docker tag "${upstream_image}" "${registry_image}"
@@ -162,34 +160,18 @@ docker build \
   -t "${DEST}" \
   "${REPO_ROOT}"
 
-log "pushing ${#PUSH_IMAGES[@]} rehearsal images"
-if (( USE_PUSH_RELAY == 1 )); then
-  remote_push_command="sudo docker image load >/dev/null"
-  for image in "${PUSH_IMAGES[@]}"; do
-    [[ "${image}" =~ ^[a-zA-Z0-9._:/-]+$ ]] || die "invalid image destination ${image}"
-    remote_push_command+=" && sudo docker push '${image}'"
-  done
-  docker image save "${PUSH_IMAGES[@]}" | ssh "${SSH_OPTIONS[@]}" \
-    -o UserKnownHostsFile=/dev/null \
-    -o StrictHostKeyChecking=no \
-    -o "ProxyCommand=ssh -i ${PROXMOX_SSH_KEY} -o BatchMode=yes -W %h:%p ${PROXMOX_SSH_TARGET}" \
-    "${PUSH_RELAY_SSH_TARGET}" \
-    "${remote_push_command}"
-else
-  for image in "${PUSH_IMAGES[@]}"; do
-    docker push "${image}"
-  done
-fi
+log "pushing ${#PUSH_IMAGES[@]} rehearsal images via the app VM (through Squid)"
+# The app daemon's proxy drop-in tunnels the push: CONNECT registry.localstack
+# .test:443 → Squid → shim → registry. registry:2 accepts anonymous pushes.
+remote_push_command="sudo docker image load >/dev/null"
+for image in "${PUSH_IMAGES[@]}"; do
+  [[ "${image}" =~ ^[a-zA-Z0-9._:/-]+$ ]] || die "invalid image destination ${image}"
+  remote_push_command+=" && sudo docker push '${image}'"
+done
+docker image save "${PUSH_IMAGES[@]}" | relay_ssh "${remote_push_command}"
 
 log "done. Registry catalog:"
-if (( USE_PUSH_RELAY == 1 )); then
-  ssh "${SSH_OPTIONS[@]}" \
-    -o UserKnownHostsFile=/dev/null \
-    -o StrictHostKeyChecking=no \
-    -o "ProxyCommand=ssh -i ${PROXMOX_SSH_KEY} -o BatchMode=yes -W %h:%p ${PROXMOX_SSH_TARGET}" \
-    "${PUSH_RELAY_SSH_TARGET}" \
-    "curl -fsS --connect-timeout 2 --max-time 10 'http://${REGISTRY}/v2/_catalog'" | sed 's/^/  /'
-else
-  curl -fsS --connect-timeout 2 --max-time 10 "http://${REGISTRY}/v2/_catalog" | sed 's/^/  /'
-fi
+relay_ssh \
+  "curl -fsS --connect-timeout 3 --max-time 10 --proxy '${SQUID_PROXY_URL}' 'https://${REGISTRY_HOST}/v2/_catalog'" \
+  | sed 's/^/  /'
 log "app box (220) BACKEND_IMAGE should be: ${APP_DEST}"

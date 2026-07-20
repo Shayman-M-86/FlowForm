@@ -163,7 +163,7 @@ variable "localstack_seed_values" {
   default = {
     API_DOMAIN                 = "api.localstack.test"
     AWS_REGION                 = "ap-southeast-2"
-    BACKEND_IMAGE              = "10.10.10.30:5000/flowform-backend:rehearsal"
+    BACKEND_IMAGE              = "registry.localstack.test/flowform-backend:rehearsal"
     CADDY_IMAGE                = "caddy:2-alpine"
     DATABASE_CORE_APP_USER     = "flowform_core_app"
     DATABASE_CORE_HOST         = "core-db"

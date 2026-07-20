@@ -1,8 +1,10 @@
-# Rehearsal TLS shim — runs on the ls-vm (230), beside LocalStack.
+# Rehearsal TLS shim — runs on the ls-vm (230), beside LocalStack and the
+# private registry.
 #
-# Makes the fake-AWS endpoint present TLS on :443 under SNI names, so the app
-# box reaches it exactly the way it reaches real AWS: CONNECT <host>:443 → Squid
-# (SNI allow-list) → TLS tunnel → here → terminate TLS → LocalStack :4566.
+# Makes the fake-AWS endpoints AND the fake-ECR registry present TLS on :443
+# under SNI names, so the app box reaches them exactly the way it reaches real
+# AWS/ECR: CONNECT <host>:443 → Squid (SNI allow-list) → TLS tunnel → here →
+# terminate TLS → LocalStack :4566 (services) or the registry :5000.
 #
 # The ONLY deltas from prod are the hostnames (*.localstack.test) and a
 # rehearsal-only CA (ca/rehearsal-ca.crt, a throwaway committed for the local
@@ -19,6 +21,16 @@
 
 secretsmanager.localstack.test, ssm.localstack.test, kms.localstack.test {
 	tls /etc/caddy/certs/localstack.crt /etc/caddy/certs/localstack.key
-	# LocalStack publishes on the private NIC (10.10.10.30:4566), not 127.0.0.1.
-	reverse_proxy http://10.10.10.30:4566
+	# LocalStack is bound to loopback; the shim is network_mode: host so lo works.
+	reverse_proxy http://127.0.0.1:4566
+}
+
+# Fake-ECR: the private registry fronted with TLS so image pulls/pushes ride
+# CONNECT registry.localstack.test:443 → Squid → here → registry, mirroring
+# prod's ECR-over-HTTPS instead of a plain-HTTP insecure registry. Same leaf
+# (registry.localstack.test is a SAN in ca/san.cnf). Registry publishes on
+# loopback (127.0.0.1:5000) — the shim is network_mode: host, so lo reaches it.
+registry.localstack.test {
+	tls /etc/caddy/certs/localstack.crt /etc/caddy/certs/localstack.key
+	reverse_proxy http://127.0.0.1:5000
 }
