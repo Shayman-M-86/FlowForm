@@ -11,10 +11,12 @@ related_code:
   - "../../backend/app/services/public_submissions/"
   - "../../backend/app/db/"
   - "../../backend/app/crypto/"
-  - "../../infra/containers/deployment/compose/"
-  - "../../infra/containers/deployment/services/"
+  - "../../infra/containers/runtime/compose/"
+  - "../../infra/containers/runtime/services/"
+  - "../../infra/containers/strategies/aws/services/"
   - "../../infra/deployment/bootstrap/"
   - "../../infra/deployment/aws/cdk/flowform_infra/stacks/"
+  - "../../infra/deployment/proxmox/"
 related_docs:
   - "Security model"
   - "System context"
@@ -46,6 +48,8 @@ Identifies where data or authority crosses between users, external services, run
 | Backend to KMS and Secrets Manager | Survey-key wrap/unwrap requests and versioned linkage-secret reads | IAM role grants, KMS encryption context, configured secret ARN, worker caches | AWS APIs and IAM configuration are trusted; plaintext keys and linkage material exist in backend memory while used or cached |
 | Authorized results reader through backend | Result request and optionally decrypted answer values | `submission:view` permission on Studio result routes; backend resolves locators and decrypts response rows | Authorization protects API access, but the backend and its logs/memory become plaintext handling points; downstream browser/export handling was not reviewed here |
 | App host to outbound proxy | Auth0 and selected AWS HTTPS traffic | Private app subnet, no NAT in the definition, Squid source/CONNECT/domain allow-list, proxy security-group rules | Squid and proxy host can observe destinations and traffic metadata; the allow-list contains deployment placeholders that must be rendered correctly |
+| Rehearsal app VM to database VM | PostgreSQL protocol and separate core/response app credentials | VM 240 has no gateway; nftables admits forwarded port 5432 only from app VM 220 to the fixed DB container address; `pg_hba.conf` requires SCRAM | This is a local RDS stand-in, not evidence that AWS RDS controls are deployed or equivalent |
+| Rehearsal database bootstrap to Secrets Manager | Two application-role passwords during first boot | Host nftables temporarily admits only Squid, the DB image is preloaded with runtime pulls disabled, the init credential is locally generated, and the temporary chain is flushed before PostgreSQL starts | Squid and LocalStack are trusted during the brief bootstrap window; live enforcement requires an applied rehearsal verification |
 | Backend container to host-provided secrets | Database passwords, Flask secret, and Auth0 Management API secret files | Bootstrap fetches into root-owned tmpfs files; Compose mounts read-only secrets; container filesystem is read-only with reduced capabilities | Root/host compromise can read or replace secrets; correct bootstrap attachment to CDK instances is not implemented in `ApplicationStack` |
 | Frontend deployment workflow to AWS | Built frontend artifacts, staging S3 writes, CloudFront invalidations, and SSM parameter reads | GitHub OIDC assumes the declared deployment role rather than storing long-lived AWS credentials | The checked-in workflow is staging-only; it does not deploy CDK stacks, backend images, database changes, or production |
 

@@ -3,16 +3,19 @@ set -Eeuo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
 CONTRACT="${REPO_ROOT}/infra/deployment/config/runtime-parameter-contract.json"
-SEED_SCRIPT="${REPO_ROOT}/infra/containers/rehearsal/services/localstack/seed-localstack.sh"
-TLS_COMPOSE="${REPO_ROOT}/infra/containers/rehearsal/compose/compose.tls-shim.yml"
-PROXY_OVERRIDE="${REPO_ROOT}/infra/containers/rehearsal/compose/compose.proxy.rehearsal.yml"
-APP_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/terraform/cloud-init/app.user-data.yaml.template"
+SEED_SCRIPT="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/localstack/seed-localstack.sh"
+TLS_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.tls-shim.yml"
+PROXY_OVERRIDE="${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/proxy.override.yml"
+APP_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/app.yaml.tftpl"
 PROXMOX_VARIABLES="${REPO_ROOT}/infra/deployment/proxmox/terraform/variables.tf"
-PROXY_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/terraform/cloud-init/proxy.user-data.yaml.template"
-LOCALSTACK_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/terraform/cloud-init/localstack.user-data.yaml.template"
-TLS_SHIM_CADDYFILE="${REPO_ROOT}/infra/containers/rehearsal/services/tls-shim/Caddyfile"
-REGISTRY_COMPOSE="${REPO_ROOT}/infra/containers/rehearsal/compose/compose.registry.yml"
-LOCALSTACK_COMPOSE="${REPO_ROOT}/infra/containers/rehearsal/compose/compose.localstack.yml"
+PROXY_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/proxy.yaml.tftpl"
+LOCALSTACK_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/localstack.yaml.tftpl"
+DB_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/db.yaml.tftpl"
+DB_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/db.yml"
+DB_BOOTSTRAP="${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-db.sh"
+TLS_SHIM_CADDYFILE="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/tls-shim/Caddyfile"
+REGISTRY_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.registry.yml"
+LOCALSTACK_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.localstack.yml"
 TEST_DIR="$(mktemp -d)"
 trap 'rm -rf "${TEST_DIR}"' EXIT
 
@@ -95,13 +98,14 @@ grep -F 'https://ssm.localstack.test/_localstack/health' "${TLS_COMPOSE}" >/dev/
 for hostname in secretsmanager.localstack.test ssm.localstack.test kms.localstack.test; do
   grep -F "${hostname}:10.10.10.30" "${PROXY_OVERRIDE}" >/dev/null
 done
-for cloud_init in "${APP_CLOUD_INIT}" "${PROXY_CLOUD_INIT}"; do
+for cloud_init in "${APP_CLOUD_INIT}" "${PROXY_CLOUD_INIT}" "${DB_CLOUD_INIT}"; do
   grep -F '/etc/pki/ca-trust/source/anchors/flowform-rehearsal-ca.crt' "${cloud_init}" >/dev/null
   grep -F 'AWS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt' "${cloud_init}" >/dev/null
   grep -F 'BOOTSTRAP_AWS_MAX_ATTEMPTS=120' "${cloud_init}" >/dev/null
 done
-grep -F 'COMPOSE_OVERRIDE_FILE=/opt/flowform/repo/infra/containers/rehearsal/compose/compose.app.rehearsal.yml' "${APP_CLOUD_INIT}" >/dev/null
 grep -F 'COMPOSE_FORCE_RECREATE=1' "${APP_CLOUD_INIT}" >/dev/null
+grep -E 'DATABASE_CORE_HOST += "10.10.10.40"' "${PROXMOX_VARIABLES}" >/dev/null
+grep -E 'DATABASE_RESPONSE_HOST += "10.10.10.40"' "${PROXMOX_VARIABLES}" >/dev/null
 grep -E 'FLOWFORM_EMAIL_FROM_ADDRESS += "no-reply@flow-form.com.au"' "${PROXMOX_VARIABLES}" >/dev/null
 grep -E 'FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP += "false"' "${PROXMOX_VARIABLES}" >/dev/null
 
@@ -149,5 +153,19 @@ grep -F 'flowform-fixtures.nft' "${LOCALSTACK_CLOUD_INIT}" >/dev/null \
   || { printf 'localstack cloud-init missing the fixtures nftables ruleset\n' >&2; exit 1; }
 grep -F 'ip saddr 10.10.10.10 tcp dport 443 accept' "${LOCALSTACK_CLOUD_INIT}" >/dev/null \
   || { printf 'fixtures nftables does not admit :443 from the proxy VM only\n' >&2; exit 1; }
+
+# --- Dedicated DB fixture and fail-closed bootstrap invariants ---------------
+grep -F 'pull_policy: never' "${DB_COMPOSE}" >/dev/null \
+  || { printf 'DB compose permits a runtime image pull\n' >&2; exit 1; }
+grep -F 'DATABASE_INIT_TARGET: all' "${DB_COMPOSE}" >/dev/null \
+  || { printf 'DB compose does not use the full init path\n' >&2; exit 1; }
+grep -F '10.10.10.40:5432:5432/tcp' "${DB_COMPOSE}" >/dev/null \
+  || { printf 'DB compose is not bound only to the DB VM address\n' >&2; exit 1; }
+grep -F 'ip saddr 10.10.10.20 ip daddr 172.60.0.2 tcp dport 5432 accept' "${DB_CLOUD_INIT}" >/dev/null \
+  || { printf 'DB nftables does not enforce the app-to-container path\n' >&2; exit 1; }
+grep -F 'ip daddr "${PROXY_PRIVATE_IP}" tcp dport 3128 accept' "${DB_BOOTSTRAP}" >/dev/null \
+  || { printf 'DB bootstrap temporary egress is not Squid-only\n' >&2; exit 1; }
+grep -F 'DB_BOOTSTRAP_PRIVATE_IP=10.10.10.40' "${PROXY_CLOUD_INIT}" >/dev/null \
+  || { printf 'proxy does not admit the rehearsal DB bootstrap source\n' >&2; exit 1; }
 
 printf '[test-localstack-seed] PASS\n'

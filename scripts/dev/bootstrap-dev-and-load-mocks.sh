@@ -4,7 +4,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
-COMPOSE_FILE="${REPO_ROOT}/infra/containers/dev/compose/compose.yml"
+COMPOSE_FILE="${REPO_ROOT}/infra/containers/strategies/dev/compose/compose.yml"
 CORE_LOAD_SCRIPT="${REPO_ROOT}/scripts/dev/load-core-mock-data.sh"
 RESPONSE_LOAD_SCRIPT="${REPO_ROOT}/scripts/dev/load-response-mock-data.sh"
 FRONTEND_DIR="${REPO_ROOT}/frontend"

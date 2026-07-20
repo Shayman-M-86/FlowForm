@@ -251,8 +251,8 @@ The split follows the usual rule: credentials and keys in Secrets Manager
 non-secret runtime config in SSM Parameter Store (Auth0 domain/audience/client
 IDs, KMS key ARN, linkage secret ARN, SES from-address, logging levels, RDS
 endpoints, image refs, private IPs). Compose files reference only names and
-paths — see `infra/containers/deployment/compose/compose.proxy.yml` and
-`infra/containers/deployment/compose/compose.app.yml`.
+paths — see `infra/containers/runtime/compose/proxy.yml` and
+`infra/containers/runtime/compose/app.yml`.
 
 Note that the backend still uses the instance role at runtime for its
 own AWS calls (KMS session encryption, the linkage-key secret, SES) —
@@ -264,7 +264,7 @@ for Caddy in [Certificate Flow](#certificate-flow).
 
 ## Compose and Caddyfile Sketch
 
-The production Compose files belong under `infra/containers/deployment/compose/`, as called out in
+The production Compose files belong under `infra/containers/runtime/compose/`, as called out in
 [Phase 2a](core-sketch-plan.md#phase-2--backend-runtime-on-ec2). The proxy
 instance uses `compose.proxy.yml` (Caddy + Squid); the private app
 instance uses `compose.app.yml` (backend only). RDS is external.

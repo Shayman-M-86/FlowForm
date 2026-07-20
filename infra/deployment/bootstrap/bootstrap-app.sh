@@ -54,7 +54,7 @@ BACKEND_ENV="/opt/flowform/backend.env"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # infra/deployment/bootstrap -> repo root is three up.
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
-COMPOSE_FILE="${COMPOSE_FILE:-${REPO_ROOT}/infra/containers/deployment/compose/compose.app.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-${REPO_ROOT}/infra/containers/runtime/compose/app.yml}"
 # Optional override compose file (rehearsal). Layered on with a second -f below.
 # Empty in prod, so behaviour is exactly the single-file case. Prod-safe seam,
 # like BOOTSTRAP_ENDPOINT_URL.

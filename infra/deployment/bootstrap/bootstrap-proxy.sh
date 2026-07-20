@@ -21,6 +21,8 @@ set -Eeuo pipefail
 #   CADDY_IMAGE             overrides the image ref in proxy.env
 #   API_DOMAIN              public API hostname (else must come from SSM)
 #   BOOTSTRAP_ENDPOINT_URL  AWS endpoint override (rehearsal: LocalStack)
+#   DB_BOOTSTRAP_PRIVATE_IP rehearsal DB host temporarily admitted to Squid;
+#                           unset elsewhere, producing a loopback sentinel ACL
 #   COMPOSE_FILE            defaults to the repo's docker-compose.proxy.yml
 #   COMPOSE_OVERRIDE_FILE   optional extra compose file layered on top with a
 #                           second -f (empty in prod; rehearsal uses it to swap
@@ -41,7 +43,7 @@ DRY_RUN="${BOOTSTRAP_DRY_RUN:-0}"
 PROXY_ENV="/opt/flowform/proxy.env"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
-COMPOSE_FILE="${COMPOSE_FILE:-${REPO_ROOT}/infra/containers/deployment/compose/compose.proxy.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-${REPO_ROOT}/infra/containers/runtime/compose/proxy.yml}"
 # Optional override compose file (rehearsal). Assembled into the -f list below.
 COMPOSE_OVERRIDE_FILE="${COMPOSE_OVERRIDE_FILE:-}"
 
@@ -89,6 +91,11 @@ render_proxy_env() {
     printf 'PROXY_PRIVATE_IP=%s\n' "${PROXY_PRIVATE_IP}"
     printf 'APP_PRIVATE_IP=%s\n'   "${APP_PRIVATE_IP}"
     printf 'SQUID_APP_SOURCE_CIDR=%s/32\n' "${APP_PRIVATE_IP}"
+    if [[ -n "${DB_BOOTSTRAP_PRIVATE_IP:-}" ]]; then
+      printf 'SQUID_DB_BOOTSTRAP_SOURCE_CIDR=%s/32\n' "${DB_BOOTSTRAP_PRIVATE_IP}"
+    else
+      printf 'SQUID_DB_BOOTSTRAP_SOURCE_CIDR=127.0.0.1/32\n'
+    fi
     printf 'AWS_REGION=%s\n' "${AWS_REGION}"
     [[ -n "${CADDY_IMAGE:-}" ]] && printf 'CADDY_IMAGE=%s\n' "${CADDY_IMAGE}"
     [[ -n "${API_DOMAIN:-}" ]]  && printf 'API_DOMAIN=%s\n'  "${API_DOMAIN}"

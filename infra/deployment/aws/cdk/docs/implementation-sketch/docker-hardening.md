@@ -213,7 +213,7 @@ Secret names, `*_FILE` env vars, and the tmpfs bootstrap all follow the
 existing convention (see the Secrets and Configuration Bootstrap section
 of the notes doc) — do not invent new names.
 
-Backend service sketch (`infra/containers/deployment/compose/compose.app.yml`):
+Backend service sketch (`infra/containers/runtime/compose/app.yml`):
 
 ```yaml
 services:

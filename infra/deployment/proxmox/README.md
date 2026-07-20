@@ -4,12 +4,13 @@ This directory owns Proxmox rehearsal deployment. Packer image construction
 lives under `infra/images`; Terraform owns the cloned VMs and cloud-init
 snippets here.
 
-Build the shared golden template and then its offline LocalStack fixture:
+Build the shared golden template and then its two offline fixtures:
 
 ```bash
 infra/images/scripts/prepare-proxmox-source.sh
 infra/images/scripts/build-proxmox-image.sh
 infra/images/scripts/build-proxmox-localstack-fixture.sh
+infra/images/scripts/build-proxmox-db-fixture.sh
 infra/images/scripts/verify-proxmox-disk-sizes.sh
 ```
 
@@ -20,12 +21,11 @@ existing larger clones must be deliberately replaced to adopt it.
 Then create the rehearsal topology from the local checkout:
 
 ```bash
-host/01-setup-host.sh # one-time bootstrap, run on the PVE host
-./terraform/render-cloud-init.sh
+host/setup-host.sh # one-time bootstrap, run on the PVE host
 cd terraform
 terraform init
-./with-dev-auth0-env.sh plan
-./with-dev-auth0-env.sh apply
+../scripts/with-dev-auth0-env.sh plan
+../scripts/with-dev-auth0-env.sh apply
 ```
 
 Run plan/apply through `with-dev-auth0-env.sh`: the Auth0 identifiers are
@@ -37,33 +37,33 @@ The full from-scratch order of operations (fresh Proxmox host, nothing built)
 is documented in
 [docs/40-implementation/proxmox-rehearsal.md](../../../docs/40-implementation/proxmox-rehearsal.md).
 
-Terraform renders no repository files on the Proxmox host. Its local
-`render-cloud-init.sh` produces snippets that Terraform uploads before cloning
-golden template `9000` for proxy/app and fixture template `9001` for LocalStack.
+Terraform renders no repository files on the Proxmox host. It renders the
+checked-in cloud-init templates and uploads the resulting snippets before
+cloning golden template `9000` for proxy/app, fixture template `9001` for
+LocalStack, and fixture template `9002` for PostgreSQL.
 Environment-specific values and
 fixtures remain under
-`infra/containers/rehearsal`; the rendered cloud-init starts shared runtime
+`infra/containers/strategies/rehearsal`; the rendered cloud-init starts shared runtime
 bootstrap and Compose files.
 
-The fixture contains only the image layers referenced by the maintained
-LocalStack, registry, and TLS-shim Compose files. Runtime configuration and
-startup remain owned by cloud-init and Compose.
+Template `9001` contains only image layers referenced by the maintained
+LocalStack, registry, and TLS-shim Compose files. Template `9002` contains only
+the PostgreSQL image declared by DB Compose. Runtime configuration and startup
+remain owned by cloud-init and Compose.
 
 ## Current rehearsal status
 
-The topology has been exercised end-to-end on the local Proxmox host: Terraform
-creates and starts proxy `210`, app `220`, and LocalStack `230`; the app boots,
-seeds from LocalStack, and serves `/api/v1/system/health/ready` through the
-proxy at the static LAN address `192.168.70.63` (`proxy_lan_ip` — keep it
-excluded from the router's DHCP pool). Bearer-token validation against the real
-dev Auth0 tenant has been verified through Squid: a well-formed but unsigned
-JWT returns `401` (JWKS kid mismatch), not a proxy error.
+The prior three-VM topology was exercised end-to-end. The checked-in topology
+now also creates database VM `240`; that four-VM cutover still requires a fresh
+Packer build and live apply before it can be called proven. The proxy remains at
+the static LAN address `192.168.70.63` (`proxy_lan_ip` — keep it excluded from
+the router's DHCP pool).
 
 Operator TLS trust is anchored on the committed rehearsal CA
-(`infra/containers/rehearsal/services/tls-shim/ca/rehearsal-ca.crt`): the proxy
+(`infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.crt`): the proxy
 Caddy serves a pre-generated leaf for `api.localstack.test` signed by it, so
 installing that one CA file in a workstation trust store survives all VM
-rebuilds. Tail service logs with `infra/deployment/proxmox/rehearsal-logs.sh`.
+rebuilds. Tail service logs with `infra/deployment/proxmox/scripts/logs.sh`.
 
 LocalStack `230` has no default route by design. Its Packer fixture preloads the
 third-party images it needs before isolation, while Terraform cloud-init still
@@ -77,7 +77,7 @@ live services healthy.
 From a WSL checkout with Docker available, run:
 
 ```bash
-infra/containers/rehearsal/services/registry/build-and-push-backend.sh
+infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh
 ```
 
 The helper builds the production-runtime backend image and pushes it as
@@ -90,16 +90,9 @@ path a real ECR push takes; there is no insecure-registry configuration
 anywhere, and the registry is never LAN-facing. Its exit trap removes the
 bridge address if that invocation added it.
 
-The same invocation mirrors private-registry runtime dependencies declared by
-the rehearsal app Compose override. Their upstream names and tags are derived
-from that Compose file; currently this publishes `postgres:17` for the two
-ephemeral rehearsal databases.
-
-The rehearsal app override recreates its throwaway containers when bootstrap
-is rerun so newly generated LocalStack secrets cannot leave PostgreSQL using an
-old password. Because deployable migrations are not yet present in the
-repository, a rehearsal-only one-shot initializes the current SQLAlchemy schema
-before the backend starts; AWS environments remain migration-owned.
+The helper publishes only the backend image. PostgreSQL is independently
+preloaded in Packer fixture `9002`; VM `240` starts it with `pull_policy: never`
+after running the maintained initialization tree against both databases.
 
 Auth0 is the one dependency the rehearsal does not fake: bearer tokens are
 validated against the real dev tenant (its issuer domain is on the rehearsal

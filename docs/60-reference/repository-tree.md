@@ -103,8 +103,8 @@ FlowForm/
 | Public site               | Astro pages under `frontend/apps/public-site/src/pages/`, configured by `frontend/apps/public-site/astro.config.mjs`           |
 | Studio application        | `frontend/apps/studio-app/src/main.tsx` and `frontend/apps/studio-app/src/lib/router.ts`                                       |
 | AWS infrastructure        | `infra/deployment/aws/cdk/app.py`                                                                                             |
-| Local and test containers | `infra/containers/dev/compose/compose.yml` and `infra/containers/dev/compose/compose.test.yml`                                |
-| Host runtime definitions  | `infra/containers/deployment/compose/` and `infra/deployment/bootstrap/`                                                       |
+| Local and test containers | `infra/containers/strategies/dev/compose/compose.yml` and `infra/containers/strategies/dev/compose/compose.test.yml`           |
+| Host runtime definitions  | `infra/containers/runtime/compose/` and `infra/deployment/bootstrap/`                                                          |
 | Continuous integration    | `.github/workflows/ci.yml`                                                                                                     |
 | Frontend deployment       | `.github/workflows/deploy.yml`                                                                                                 |
 | Development MCP server    | `tools/mcp/flowform_dev.py`                                                                                                    |

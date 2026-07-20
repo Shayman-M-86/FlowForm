@@ -59,7 +59,7 @@ if isinstance(sys.stderr, TextIOWrapper):
 # ------------------------------------------------------------------------------
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-COMPOSE_FILE = PROJECT_ROOT / "infra/containers/dev/compose/compose.test.yml"
+COMPOSE_FILE = PROJECT_ROOT / "infra/containers/strategies/dev/compose/compose.test.yml"
 COMPOSE_ENV_FILE = PROJECT_ROOT / "infra/env/dev/.env"
 TEST_SECRET_DIR = PROJECT_ROOT / "infra/env/test/secrets"
 COMPOSE_PROJECT = "flowform-test-environment"
@@ -78,7 +78,7 @@ COLOR_RED = "\033[31m"
 
 FINGERPRINT_INPUTS = {
     "environment": (
-        "infra/containers/dev/compose/compose.test.yml",
+        "infra/containers/strategies/dev/compose/compose.test.yml",
         "infra/env/dev/.backend.env",
         "infra/env/dev/.db.core.env",
         "infra/env/dev/.db.response.env",
@@ -86,7 +86,7 @@ FINGERPRINT_INPUTS = {
         "infra/env/test/secrets/*",
     ),
     "build": (
-        "infra/containers/dev/services/backend/backend.test.Dockerfile",
+        "infra/containers/strategies/dev/services/backend/backend.test.Dockerfile",
         "backend/pyproject.toml",
         "backend/uv.lock",
     ),

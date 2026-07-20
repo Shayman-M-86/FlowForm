@@ -104,15 +104,18 @@ cover/
 # infra/containers/rehearsal/services/tls-shim/README.md. It is NOT ignored so a fresh checkout can
 # build template 9001 and render the app user-data without regenerating certs.
 
-# Rendered Proxmox Terraform cloud-init artifacts
-infra/deployment/proxmox/terraform/cloud-init/*.rendered.yaml
+# Terraform working directories, state, plans, and local values
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfplan
+**/tfplan
+**/terraform.tfvars
+**/*.auto.tfvars
 
-# Local Proxmox Terraform state and credentials
-infra/deployment/proxmox/terraform/.terraform/
-infra/deployment/proxmox/terraform/*.tfstate
-infra/deployment/proxmox/terraform/*.tfstate.*
-infra/deployment/proxmox/terraform/terraform.tfvars
-infra/deployment/proxmox/terraform/tfplan
+# Generated Proxmox cloud-init artifacts (templates are source files)
+infra/deployment/proxmox/cloud-init/generated/*
+!infra/deployment/proxmox/cloud-init/generated/.gitkeep
 
 # Packer local image-build artifacts and credentials
 *.pkrvars.hcl

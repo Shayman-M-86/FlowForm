@@ -1,5 +1,9 @@
 # Proxmox Image and Rehearsal Infrastructure Rework
 
+> Superseded planning snapshot. Do not execute this sequence. The maintained
+> topology and workflow are documented in [[Proxmox rehearsal implementation]]
+> and the checked-in Packer, Terraform, cloud-init, and container definitions.
+
 ## Summary
 
 Rework the infrastructure in two ordered tracks:

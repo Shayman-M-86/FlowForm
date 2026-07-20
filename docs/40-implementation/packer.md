@@ -40,16 +40,20 @@ Terraform is intentionally outside this ownership boundary under
 - `build-proxmox-image.sh` builds only the shared Proxmox golden template.
 - `build-proxmox-localstack-fixture.sh` builds only the fixture derived from the
   golden template.
+- `build-proxmox-db-fixture.sh` builds the independent PostgreSQL fixture
+  derived from the same clean golden template.
 - `build-aws-image.sh` builds only the AWS golden AMI; `publish-aws-ami.sh`
   publishes its manifest ID to an explicit SSM parameter.
 - `verify-aws-ami.sh` checks that the completed AWS AMI has one encrypted gp3
   root mapping and that both AMI and snapshot are exactly the configured size.
-- `sources/proxmox.pkr.hcl` defines both Proxmox clone sources with an
+- `sources/proxmox.pkr.hcl` defines the golden and two fixture clone sources with an
   explicit reserved SSH address.
 - `builds/golden.pkr.hcl` defines the shared build and platform-specific guest
   provisioners.
 - `builds/localstack-fixture.pkr.hcl` uploads the maintained Compose inputs only
   for image-reference extraction and runs the fixture preload provisioner.
+- `builds/db-fixture.pkr.hcl` uploads only the DB Compose input and preloads its
+  sole declared image into template `9002`.
 
 ## Important modules
 The shared build installs base packages, Docker/Compose, AWS CLI, host
@@ -64,11 +68,13 @@ source and storage divergence, not provisioning divergence: both builders run
 The AWS wrapper rejects non-minimal source filters and root sizes outside
 8–12 GiB before invoking Packer.
 
-The source-preparation path and Packer source disable the QEMU guest agent;
+The source-preparation path and Packer sources disable the QEMU guest agent;
 AL2023 does not support it. Packer reaches its temporary clone through the
 configured static build IP instead. The fixture provisioner pulls, inspects,
 and saves the LocalStack, registry, and TLS-shim images, then stops Docker. It
 does not copy Compose or runtime configuration into the resulting template.
+The DB fixture provisioner follows the same boundary but inventories and saves
+only the PostgreSQL image declared by rehearsal DB Compose.
 
 The official source QCOW2 is sparse/compressed on disk but declares a 25 GiB
 virtual disk containing a GPT layout and XFS root filesystem. `qm importdisk`
@@ -79,7 +85,7 @@ that previously changed 25 GiB to 32 GiB. XFS is never shrunk in place.
 
 ## Dependency direction
 Packer consumes a minimal source template and produces the shared golden
-outputs; the Proxmox fixture consumes that completed golden template. Terraform
+outputs; both Proxmox fixtures consume that completed golden template. Terraform
 consumes golden and fixture VMIDs and produces deployment VMs. Neither layer
 invokes the other. Per-role cloud-init belongs to Terraform, not either image.
 
@@ -98,8 +104,8 @@ Terraform configuration is validated from
 `infra/deployment/proxmox/terraform/` with `terraform validate` after its
 cloud-init payloads have been rendered.
 
-Static validation resolves the AWS golden, Proxmox golden, and Proxmox fixture
-builders. A real fixture build and applied rehearsal remain operator actions;
+Static validation resolves the AWS golden, Proxmox golden, LocalStack fixture,
+and PostgreSQL fixture builders. Real fixture builds and an applied rehearsal remain operator actions;
 checked-in validation does not claim they are live or healthy.
 
 ## Related documents

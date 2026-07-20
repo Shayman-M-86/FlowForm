@@ -1,0 +1,43 @@
+# Rehearsal proxy Caddyfile — used ONLY by the local Proxmox rehearsal.
+#
+# IDENTICAL to infra/containers/strategies/aws/services/caddy/Caddyfile.proxy EXCEPT the TLS issuer: prod
+# gets a real cert via Route 53 DNS-01 (`tls { dns route53 }`), which needs
+# public DNS + ACME and is a STAGING-only concern. Here we serve a PRE-GENERATED
+# leaf signed by the committed rehearsal CA (tls-shim/ca/rehearsal-ca.crt) so the
+# reverse_proxy + upstream health check are still exercised end-to-end.
+#
+# NOT `tls internal`: Caddy's internal CA lives in the VM's /data volume, so
+# every proxy rebuild minted a NEW root and invalidated whatever operators had
+# installed in their OS trust stores. The committed CA is the single, stable
+# trust anchor — install rehearsal-ca.crt once, survives all rebuilds.
+# Regenerate the leaf with services/caddy/certs/generate-api-cert.sh.
+#
+# The ONLY delta from prod is this one issuer line. Never read a green rehearsal
+# Caddy as proof of the real ACME/DNS-01 path — that is staging's job.
+
+{
+	log {
+		output stdout
+		format json
+	}
+}
+
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	# prod: tls { dns route53 }  — rehearsal: leaf signed by the committed CA.
+	tls /etc/caddy/certs/api.crt /etc/caddy/certs/api.key
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy http://{$APP_PRIVATE_IP}:5000 {
+		health_uri /api/v1/system/health/ready
+		health_interval 30s
+		health_timeout 5s
+	}
+}

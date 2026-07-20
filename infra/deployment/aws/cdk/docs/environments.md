@@ -15,7 +15,7 @@ key / Secrets Manager ARNs the backend uses locally
 ## Deployment shapes
 
 **dev is local-first.** The Flask API, both Postgres databases, and the
-frontends all run locally (Docker Compose in `infra/containers/dev/compose/`, Vite dev
+frontends all run locally (Docker Compose in `infra/containers/strategies/dev/compose/`, Vite dev
 servers). The only AWS resources dev needs are the ones the backend can't
 fake locally — the KMS key, the Secrets Manager entries, and SES send
 permission — so `-c env=dev` synthesizes the Security stack and nothing

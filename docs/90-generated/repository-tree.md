@@ -131,8 +131,11 @@ FlowForm/
 │       ├── 019f6da3-2f79-75c0-83bc-539d91f1357b.json
 │       ├── 019f6da4-60fe-71e1-adb3-291d206a1d5a.json
 │       ├── 019f6f26-8f4c-7142-aa9e-3f5e09a39948.json
+│       ├── 019f7322-2975-74a3-910a-0b0774131a45.json
+│       ├── 019f7cee-f61f-7933-b297-45a13c8e440e.json
 │       ├── 02113535-080f-40f4-a17a-0e190b2db9e9.json
 │       ├── 141136ab-ba09-4b43-8bad-7c148c6ea788.json
+│       ├── 4a9e4c2c-91e5-4a89-b225-59afab07e8bd.json
 │       ├── 4aec0b6d-0991-4aae-a328-7eff53528223.json
 │       ├── 4f525396-7821-439b-9252-39b0bd3f1762.json
 │       ├── 52083c7c-1749-48f5-b4b4-f36feb1e6a74.json
@@ -140,11 +143,14 @@ FlowForm/
 │       ├── 5b54fece-f724-44b9-9c98-0a4e08b839b9.json
 │       ├── 85d892b4-dfe7-4909-8cb1-bf38c70949af.json
 │       ├── a69f6d88-754d-470e-bf63-15fe39e76766.json
+│       ├── aad3d4b1-5a47-44dd-a91f-a88d74664320.json
 │       ├── aad4170e-1ce1-4d2a-a35d-5f116ce12f3f.json
+│       ├── b25db486-b774-4ace-9ded-d5ca0876ab80.json
 │       ├── b67cc731-e501-4486-b59f-0f1f1d42d64d.json
 │       ├── bff45442-3a46-48e1-8848-fb8445557d73.json
 │       ├── bloat-test-demo.json
 │       ├── ee2ccc50-b4d7-4917-be11-9f6317619810.json
+│       ├── f0ae3ee4-9552-4753-a891-880cb55b4a30.json
 │       └── verify-nonblock.json
 ├── .githooks/
 │   └── pre-commit
@@ -805,32 +811,26 @@ FlowForm/
 │   └── tsconfig.base.json
 ├── infra/
 │   ├── containers/
-│   │   ├── deployment/
+│   │   ├── images/
+│   │   │   └── backend/
+│   │   │       └── backend.Dockerfile
+│   │   ├── runtime/
 │   │   │   ├── compose/
-│   │   │   │   ├── compose.app.yml
-│   │   │   │   └── compose.proxy.yml
+│   │   │   │   ├── app.yml
+│   │   │   │   └── proxy.yml
 │   │   │   └── services/
-│   │   │       ├── caddy/
 │   │   │       └── squid/
-│   │   ├── dev/
-│   │   │   ├── compose/
-│   │   │   │   ├── compose.test.yml
-│   │   │   │   └── compose.yml
-│   │   │   └── services/
-│   │   │       └── backend/
-│   │   └── rehearsal/
-│   │       ├── compose/
-│   │       │   ├── compose.app.rehearsal.yml
-│   │       │   ├── compose.localstack.yml
-│   │       │   ├── compose.proxy.rehearsal.yml
-│   │       │   ├── compose.registry.yml
-│   │       │   └── compose.tls-shim.yml
-│   │       └── services/
-│   │           ├── caddy/
-│   │           ├── localstack/
-│   │           ├── registry/
-│   │           ├── squid/
-│   │           └── tls-shim/
+│   │   ├── strategies/
+│   │   │   ├── aws/
+│   │   │   │   └── services/
+│   │   │   ├── dev/
+│   │   │   │   ├── compose/
+│   │   │   │   └── services/
+│   │   │   └── rehearsal/
+│   │   │       ├── compose/
+│   │   │       ├── fixtures/
+│   │   │       └── services/
+│   │   └── README.md
 │   ├── database/
 │   │   ├── config/
 │   │   │   └── pg_hba.conf
@@ -868,27 +868,33 @@ FlowForm/
 │   │   │   └── scripts/
 │   │   │       └── seed-secrets.sh
 │   │   ├── bootstrap/
+│   │   │   ├── aws-cli-retry.sh
 │   │   │   ├── bootstrap-app.sh
+│   │   │   ├── bootstrap-db.sh
 │   │   │   └── bootstrap-proxy.sh
+│   │   ├── config/
+│   │   │   └── runtime-parameter-contract.json
 │   │   └── proxmox/
 │   │       ├── cloud-init/
+│   │       │   ├── generated/
+│   │       │   └── templates/
 │   │       ├── host/
-│   │       │   └── 01-setup-host.sh
+│   │       │   └── setup-host.sh
+│   │       ├── scripts/
+│   │       │   ├── logs.sh
+│   │       │   ├── verify.sh
+│   │       │   └── with-dev-auth0-env.sh
 │   │       ├── terraform/
 │   │       │   ├── .terraform/
-│   │       │   ├── cloud-init/
 │   │       │   ├── .terraform.lock.hcl
-│   │       │   ├── main.tf
-│   │       │   ├── provider.tf
+│   │       │   ├── locals.tf
+│   │       │   ├── outputs.tf
+│   │       │   ├── providers.tf
 │   │       │   ├── README.md
-│   │       │   ├── render-cloud-init.sh
-│   │       │   ├── terraform.tfstate
-│   │       │   ├── terraform.tfstate.backup
-│   │       │   ├── terraform.tfvars
 │   │       │   ├── terraform.tfvars.example
-│   │       │   ├── tfplan
 │   │       │   ├── variables.tf
-│   │       │   └── versions.tf
+│   │       │   ├── versions.tf
+│   │       │   └── virtual-machines.tf
 │   │       └── README.md
 │   ├── env/
 │   │   ├── dev/
@@ -917,6 +923,7 @@ FlowForm/
 │   ├── images/
 │   │   ├── packer/
 │   │   │   ├── builds/
+│   │   │   │   ├── db-fixture.pkr.hcl
 │   │   │   │   ├── golden.pkr.hcl
 │   │   │   │   └── localstack-fixture.pkr.hcl
 │   │   │   ├── manifests/
@@ -944,6 +951,7 @@ FlowForm/
 │   │   │   │   └── packer-build.sh
 │   │   │   ├── .env.example
 │   │   │   ├── build-aws-image.sh
+│   │   │   ├── build-proxmox-db-fixture.sh
 │   │   │   ├── build-proxmox-image.sh
 │   │   │   ├── build-proxmox-localstack-fixture.sh
 │   │   │   ├── extract-aws-ami-id.sh
@@ -958,6 +966,10 @@ FlowForm/
 │   │   │   └── pg_hba.conf/
 │   │   └── init/
 │   └── tests/
+│       ├── containers/
+│       │   └── test-container-invariants.sh
+│       ├── deployment/
+│       │   └── test-localstack-seed.sh
 │       └── images/
 │           ├── test-prepare-proxmox-source.sh
 │           ├── test-verify-aws-ami.sh

@@ -28,7 +28,8 @@ and only the requested builder. No HCL definition is duplicated.
 shared provisioning contract
 ├── official minimal AL2023 EC2 AMI -> AWS golden AMI (10 GiB)
 └── official AL2023 KVM QCOW2 -> Proxmox golden template (25 GiB)
-    └── Proxmox LocalStack fixture template
+    ├── Proxmox LocalStack fixture template (9001)
+    └── Proxmox PostgreSQL fixture template (9002)
 ```
 
 The shared golden build installs Amazon Linux 2023 base dependencies, Docker,
@@ -41,11 +42,15 @@ It does not import the Proxmox QCOW2. Its 10 GiB encrypted gp3 root is an
 AWS-specific cost and capacity policy; successful builds verify that the AMI
 and root snapshot retain exactly that size. CDK declares the same mapping.
 
-The Proxmox-only fixture clones the completed golden template and reads image
+The Proxmox-only fixtures clone the completed golden template. Template 9001 reads image
 references from the maintained LocalStack, registry, and TLS-shim Compose
 files. It pulls and verifies those exact images so the isolated LocalStack VM
 can start without internet access. Cloud-init still supplies the Compose files,
 TLS material, service units, networking, and startup actions at boot.
+
+Template 9002 independently reads the rehearsal DB Compose file and preloads
+only its PostgreSQL image. The DB VM has no gateway and Compose uses
+`pull_policy: never`, so PostgreSQL never reaches the registry at runtime.
 
 ## Proxmox disk sizing
 
@@ -73,6 +78,7 @@ cp infra/images/packer/variables/proxmox.auto.pkrvars.hcl.example \
 # Fill in the local Proxmox values.
 infra/images/scripts/build-proxmox-image.sh
 infra/images/scripts/build-proxmox-localstack-fixture.sh
+infra/images/scripts/build-proxmox-db-fixture.sh
 infra/images/scripts/verify-proxmox-disk-sizes.sh
 
 cd infra/deployment/proxmox/terraform

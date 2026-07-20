@@ -11,7 +11,7 @@ Usage: verify-proxmox-disk-sizes.sh [--env-file PATH] [VMID...]
 
 Report the downloaded QCOW2 file/virtual sizes and validate Proxmox virtual
 disk sizes against PROXMOX_DISK_MAX_SIZE. With no VMIDs, checks the source,
-golden, and LocalStack fixture templates (8999, 9000, and 9001 by default).
+golden, LocalStack fixture, and DB fixture templates (8999–9002 by default).
 USAGE
 }
 
@@ -57,7 +57,7 @@ done
   || die "PROXMOX_DISK_MAX_SIZE must be an IEC size such as 25G"
 
 if (( ${#vmids[@]} == 0 )); then
-  vmids=("${PROXMOX_SOURCE_VMID}" 9000 9001)
+  vmids=("${PROXMOX_SOURCE_VMID}" 9000 9001 9002)
 fi
 
 ssh -i "${PROXMOX_SSH_IDENTITY_FILE}" \

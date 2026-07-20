@@ -27,13 +27,14 @@ disk. Both run the same common provisioners and verification, followed by only
 the platform-specific guest steps. An AWS build must fail if its output AMI or
 root snapshot differs from the configured 8–12 GiB policy.
 
-The Proxmox-only LocalStack fixture is the sole container-image exception. It
-is derived from the Proxmox golden template and may contain only the image
-layers named by the maintained rehearsal LocalStack, registry, and TLS-shim
-Compose files, plus a generated inventory/archive of those image layers. This
-exception exists only so the isolated LocalStack VM can start offline.
+The two Proxmox-only fixture templates are the container-image exceptions. Both
+derive from the clean Proxmox golden template. Template `9001` may contain only
+the image layers named by the maintained rehearsal LocalStack, registry, and
+TLS-shim Compose files. Template `9002` may contain only the image declared by
+the rehearsal DB Compose file. Each fixture also carries a generated inventory
+and archive of its allowed image layers so its offline contents are verifiable.
 
-The fixture must not contain Compose files, IP addresses, SSH keys, secrets,
+The fixtures must not contain Compose files, IP addresses, SSH keys, secrets,
 `.env` files, TLS configuration or keys, seeded LocalStack resources, systemd
 service units, running containers, or service startup state.
 
@@ -48,7 +49,7 @@ Runtime orchestration supplies everything environment-specific:
 - Proxmox or CDK creates the instance and supplies platform-specific user data
 - cloud-init sets hostname/network identity and writes runtime files
 - shared `infra/deployment/bootstrap/*` scripts retrieve parameters/secrets and
-  start shared `infra/containers/deployment/compose/*` Compose files
-- `infra/containers/<stage>/` and `infra/env/<env>/` supply values, topology,
-  Compose definitions, and local-only fixtures such as LocalStack seed data or
-  rehearsal TLS material
+  start shared `infra/containers/runtime/compose/*` Compose files
+- `infra/containers/strategies/<strategy>/` and `infra/env/<env>/` supply values,
+  topology, Compose overrides, and local-only fixtures such as LocalStack seed
+  data or rehearsal TLS material

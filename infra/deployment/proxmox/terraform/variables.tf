@@ -32,6 +32,12 @@ variable "localstack_fixture_template_vmid" {
   default     = 9001
 }
 
+variable "db_fixture_template_vmid" {
+  description = "Packer-built PostgreSQL fixture template VMID cloned by the isolated rehearsal database VM."
+  type        = number
+  default     = 9002
+}
+
 variable "proxmox_storage_pool" {
   description = "Storage pool for cloned disks and cloud-init disks."
   type        = string
@@ -92,7 +98,7 @@ variable "ssh_public_keys" {
 # drifts the moment either side changes tenant. Supply them from the dev backend
 # env, which is gitignored and already the source of truth for the dev stack:
 #
-#   infra/deployment/proxmox/terraform/with-dev-auth0-env.sh plan
+#   infra/deployment/proxmox/scripts/with-dev-auth0-env.sh plan
 #
 # (that wrapper exports these as TF_VAR_*), or export TF_VAR_auth0_domain etc.
 # yourself. Terraform prompts for any that are missing.
@@ -101,7 +107,7 @@ variable "ssh_public_keys" {
 # the rehearsal seeds a random one into LocalStack, so Management API calls do
 # not work there — see FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP below.
 
-# These are merged into localstack_seed_values (see main.tf), so they carry the
+# These are merged into localstack_seed_values (see locals.tf), so they carry the
 # same non-empty/single-line rule its own validation applies to the defaulted
 # keys — a blank or newline-bearing value would otherwise reach the seed file.
 # A bare hostname is required, not a URL: the seed script writes it straight to
@@ -166,10 +172,10 @@ variable "localstack_seed_values" {
     BACKEND_IMAGE              = "registry.localstack.test/flowform-backend:rehearsal"
     CADDY_IMAGE                = "caddy:2-alpine"
     DATABASE_CORE_APP_USER     = "flowform_core_app"
-    DATABASE_CORE_HOST         = "core-db"
+    DATABASE_CORE_HOST         = "10.10.10.40"
     DATABASE_CORE_NAME         = "flowform_core"
     DATABASE_RESPONSE_APP_USER = "flowform_response_app"
-    DATABASE_RESPONSE_HOST     = "response-db"
+    DATABASE_RESPONSE_HOST     = "10.10.10.40"
     DATABASE_RESPONSE_NAME     = "flowform_response"
     # Mgmt calls need a real client secret, which the rehearsal does not have
     # (it seeds random bytes), so startup validation stays off or the app will

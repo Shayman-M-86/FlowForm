@@ -86,6 +86,9 @@
             "**/cloud-init/**": true,
             "**/on_hold/**": true
         },
+        "files.associations": {
+            "**/infra/deployment/proxmox/cloud-init/templates/*.yaml.tftpl": "terraform"
+          },
         // cloud-init user-data files use a .template extension but are NOT
         // CloudFormation; exclude them so cfn-lint stops emitting false E1001s.
         "cfnLint.ignoreTemplates": [

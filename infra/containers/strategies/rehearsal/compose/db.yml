@@ -1,0 +1,81 @@
+# Rehearsal stand-in for the isolated RDS database host.
+#
+# The DB fixture template preloads postgres:17. Runtime pulls are forbidden so
+# the isolated VM never needs registry access. Both FlowForm databases live in
+# one ephemeral cluster and use the same maintained initialization tree as dev.
+
+name: flowform-db
+
+services:
+  postgres:
+    image: postgres:17
+    pull_policy: never
+    container_name: flowform-db
+    restart: unless-stopped
+    environment:
+      DATABASE_INIT_TARGET: all
+      POSTGRES_USER: flowform_rehearsal_init
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/DATABASE_INIT_PASSWORD
+      DATABASE_CORE_NAME: flowform_core
+      DATABASE_CORE_APP_USER: flowform_core_app
+      DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+      DATABASE_CORE_SCHEMA_FILE: schema/flowform_core_db_schema_v4.sql
+      DATABASE_RESPONSE_NAME: flowform_response
+      DATABASE_RESPONSE_APP_USER: flowform_response_app
+      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
+      DATABASE_RESPONSE_SCHEMA_FILE: schema/flowform_response_db_schema_v4.sql
+    command:
+      - postgres
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+      - -c
+      - listen_addresses=*
+      - -c
+      - port=5432
+    ports:
+      - "10.10.10.40:5432:5432/tcp"
+    volumes:
+      - /opt/flowform/db/init:/docker-entrypoint-initdb.d:ro
+      - /opt/flowform/db/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    secrets:
+      - DATABASE_INIT_PASSWORD
+      - DATABASE_CORE_APP_PASSWORD
+      - DATABASE_RESPONSE_APP_PASSWORD
+    read_only: true
+    tmpfs:
+      - /var/lib/postgresql/data
+      - /var/run/postgresql
+      - /tmp
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowform_rehearsal_init -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      db_net:
+        ipv4_address: 172.60.0.2
+
+secrets:
+  DATABASE_INIT_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_INIT_PASSWORD.secret.txt
+  DATABASE_CORE_APP_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_CORE_APP_PASSWORD.secret.txt
+  DATABASE_RESPONSE_APP_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_RESPONSE_APP_PASSWORD.secret.txt
+
+networks:
+  db_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.60.0.0/24

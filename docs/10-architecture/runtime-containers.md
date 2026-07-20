@@ -6,12 +6,12 @@ authority: canonical
 verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
 tags: [backend, frontend, infrastructure]
 related_code:
-  - "../../infra/containers/dev/compose/compose.yml"
-  - "../../infra/containers/dev/compose/compose.test.yml"
-  - "../../infra/containers/deployment/compose/"
+  - "../../infra/containers/strategies/dev/compose/compose.yml"
+  - "../../infra/containers/strategies/dev/compose/compose.test.yml"
+  - "../../infra/containers/runtime/compose/"
   - "../../frontend/docker-compose.dev.yml"
   - "../../infra/deployment/bootstrap/"
-  - "../../infra/containers/rehearsal/compose/"
+  - "../../infra/containers/strategies/rehearsal/"
 related_docs:
   - "Component map"
   - "Deployment model"
@@ -39,7 +39,7 @@ The repository does not use one Compose model unchanged in every context.
 | Backend test | Long-running backend test container, core PostgreSQL, response PostgreSQL | Gives tests an isolated application image and two disposable database services; CI enters the running backend container to execute the suite. |
 | Split-runtime local proof | Caddy, Squid, Gunicorn backend, core PostgreSQL, response PostgreSQL | Exercises the proxy/app communication and hardening shape on one Docker host. It is explicitly a workstation proof, not the cloud topology. |
 | Shared host runtime | Caddy and Squid on a proxy host; Gunicorn backend on a separate app host | Defines the staging/prod container contract. PostgreSQL and the static frontends are outside these Compose projects. |
-| Proxmox rehearsal | Shared proxy/app Compose files plus rehearsal overrides and fixture services | Exercises the shared host bootstrap and images on local VMs while replacing cloud-only dependencies with local equivalents. |
+| Proxmox rehearsal | Shared proxy/app Compose files, a proxy override, and dedicated fixture/database services | Exercises the shared host bootstrap and images on local VMs while replacing cloud-only dependencies with local equivalents. |
 
 The development and test definitions are operationally useful variants, not
 evidence that their networks, credentials, writable mounts, or database
@@ -81,15 +81,16 @@ locations.
 
 ## Rehearsal boundary
 
-The Proxmox rehearsal reuses the shared host runtime but deliberately changes
-dependencies that cannot operate on its offline private network. Its proxy
-override substitutes local TLS and egress allow-list configuration. Its app
-override adds ephemeral core and response PostgreSQL containers because the
-rehearsal does not exercise RDS. Auth0 is the one deliberate live dependency:
+The Proxmox rehearsal reuses the shared app runtime unchanged and deliberately
+changes only dependencies that cannot operate on its offline private network.
+Its proxy override substitutes local TLS and egress allow-list configuration.
+A dedicated, isolated DB VM runs one ephemeral PostgreSQL cluster containing
+the core and response databases through the maintained initialization path.
+Auth0 is the one deliberate live dependency:
 the egress allow-list admits the real dev tenant so bearer-token validation is
 exercised end-to-end (see [[Proxmox rehearsal implementation]]). A green rehearsal therefore supports the
-shared image/bootstrap/Compose contract, but does not prove AWS networking,
-managed database connectivity, public DNS, or certificate issuance. See
+shared image/bootstrap/Compose contract and cross-VM database shape, but does
+not prove AWS networking, RDS behavior, public DNS, or certificate issuance. See
 [[Machine image building]] and [[Deployment model]].
 
 ## Declared versus running state

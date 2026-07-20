@@ -20,7 +20,7 @@ related_docs:
 
 # Machine image building
 Describes the Packer workflow for AWS and Proxmox Amazon Linux 2023 golden
-images and the Proxmox-only LocalStack fixture. The platforms share
+images and the Proxmox-only LocalStack and PostgreSQL fixtures. The platforms share
 provisioning but deliberately use different official base images and disks.
 It covers image construction only; [[Deployment model|Terraform deployment]]
 clones a completed Proxmox template and does not invoke Packer.
@@ -59,8 +59,11 @@ step.
 4. Run `infra/images/scripts/build-proxmox-localstack-fixture.sh`. Packer clones
    golden template `9000`, extracts the exact image references from the three
    maintained rehearsal Compose files, and preloads them into fixture `9001`.
-5. Run Terraform separately. Proxy and app clone the golden template, while
-   LocalStack clones the fixture template.
+5. Run `infra/images/scripts/build-proxmox-db-fixture.sh`. Packer independently
+   clones golden template `9000` and preloads only the image declared by the
+   rehearsal DB Compose file into fixture `9002`.
+6. Run Terraform separately. Proxy and app clone the golden template, while
+   LocalStack and PostgreSQL clone their respective fixture templates.
 
 For AWS, copy `variables/aws.auto.pkrvars.hcl.example`, authenticate the AWS
 CLI, and run `infra/images/scripts/build-aws-image.sh`. The builder selects the
@@ -91,9 +94,9 @@ Packer build. CDK declares the same 10 GiB root mapping for app and proxy.
   a reserved static build address and explicit SSH host instead of agent-based
   IP discovery.
 - The shared golden image deliberately excludes runtime container images. The
-  fixture is the bounded exception for the isolated LocalStack VM; it contains
-  image layers and an image inventory/archive, but no runtime configuration or
-  service state.
+  the two fixtures are bounded exceptions for the isolated LocalStack and DB
+  VMs; each contains only its declared image layers and an image
+  inventory/archive, with no runtime configuration or service state.
 
 ## Verification commands
 ```bash

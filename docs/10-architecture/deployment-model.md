@@ -11,7 +11,7 @@ related_code:
   - "../../infra/deployment/aws/cdk/flowform_infra/stacks/"
   - "../../infra/deployment/aws/cdk/flowform_infra/constructs/static_site_construct.py"
   - "../../infra/containers/"
-  - "../../infra/containers/rehearsal/"
+  - "../../infra/containers/strategies/rehearsal/"
   - "../../infra/images/packer/"
   - "../../infra/images/scripts/"
   - "../../infra/deployment/proxmox/"
@@ -41,7 +41,7 @@ does not claim that synthesized resources are deployed or healthy.
 | Local development | Backend and two PostgreSQL services use development Compose; frontends run through their workspace tooling or frontend Compose. AWS `dev` synthesizes only the shared non-production security stack. | Local definitions; current process state is not checked in. |
 | Automated test | A separate backend test Compose project with two PostgreSQL services runs locally and in CI. | CI proves this variant when the job succeeds, not a deployed application environment. |
 | Split-runtime local proof | One workstation runs proxy, app, and local database containers together. | Tests communication and hardening assumptions without reproducing host or AWS isolation. |
-| Proxmox rehearsal | Packer builds a shared Amazon Linux golden template and a Proxmox-only LocalStack fixture; Terraform clones proxy, app, and LocalStack VMs and uploads role-specific cloud-init. | The checked-in fixture path supports offline LocalStack startup; a successful image build and applied rehearsal are still required to prove live health. |
+| Proxmox rehearsal | Packer builds a shared Amazon Linux golden template plus isolated LocalStack and PostgreSQL fixtures; Terraform clones proxy, app, LocalStack, and DB VMs and uploads role-specific cloud-init. | The checked-in fixture paths support offline startup; successful image builds and an applied rehearsal are still required to prove live health. |
 | AWS staging | Configuration requests the full CDK stack set and shares the `nonprod` security scope with dev. | Declared and partly synthesizable; the checkout does not prove a complete or running staging backend. |
 | AWS production | Configuration requests the same full stack classes with production domains, retained lifecycle policy, and a separate `prod` security scope. | Declared target only; the deploy workflow explicitly does not deploy production. |
 
@@ -59,7 +59,8 @@ shared provisioning contract
 ├── minimal AL2023 EC2 base -> AWS AMI with 10 GiB root
 └── AL2023 KVM base -> Proxmox golden template 9000 with 25 GiB root
     ├── Terraform -> proxy 210, app 220
-    └── Packer LocalStack fixture 9001 -> Terraform -> LocalStack 230
+    ├── Packer LocalStack fixture 9001 -> Terraform -> LocalStack 230
+    └── Packer PostgreSQL fixture 9002 -> Terraform -> database 240
 ```
 
 Packer owns source-template preparation and the reusable operating-system
@@ -68,12 +69,13 @@ Terraform owns the deployment topology: full clones, VM networking, cloud-init
 snippets, and Terraform state. Terraform does not invoke Packer, and Packer
 does not deploy the rehearsal VMs.
 
-The golden template excludes runtime container images. The Proxmox-only
-fixture derives from that golden template and preloads exactly the LocalStack,
-registry, and TLS-shim images declared by rehearsal Compose so VM `230` does
-not need internet access. Terraform and cloud-init still own IPs, SSH keys,
+The golden template excludes runtime container images. Two Proxmox-only
+fixtures derive from it: template `9001` preloads exactly the LocalStack,
+registry, and TLS-shim images declared by rehearsal Compose, while template
+`9002` preloads only the PostgreSQL image declared by DB Compose. VMs `230` and
+`240` therefore need no runtime registry access. Terraform and cloud-init own IPs, SSH keys,
 Compose files, TLS material, service units, seed data, and service startup.
-Terraform consumes both completed template VMIDs and never invokes Packer.
+Terraform consumes all completed template VMIDs and never invokes Packer.
 
 LocalStack is not exposed to the development LAN for provisioning. Terraform
 validates the non-secret rehearsal seed values against the shared runtime

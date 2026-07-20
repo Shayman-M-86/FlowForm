@@ -26,7 +26,7 @@ set -euo pipefail
 # Usage:
 #   scripts/secrets/fetch-dev-secrets.sh
 #   FLOWFORM_SECRET_DIR="$XDG_RUNTIME_DIR/flowform-secrets" \
-#     docker compose -f infra/containers/dev/compose/compose.yml up -d
+#     docker compose -f infra/containers/strategies/dev/compose/compose.yml up -d
 #
 # (Export FLOWFORM_SECRET_DIR in your shell rc so compose always finds it.)
 # tmpfs empties on reboot — just re-run this script.

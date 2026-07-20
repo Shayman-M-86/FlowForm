@@ -14,9 +14,9 @@ build {
 
   provisioner "file" {
     sources = [
-      "${var.image_root}/../containers/rehearsal/compose/compose.localstack.yml",
-      "${var.image_root}/../containers/rehearsal/compose/compose.registry.yml",
-      "${var.image_root}/../containers/rehearsal/compose/compose.tls-shim.yml",
+      "${var.image_root}/../containers/strategies/rehearsal/fixtures/compose.localstack.yml",
+      "${var.image_root}/../containers/strategies/rehearsal/fixtures/compose.registry.yml",
+      "${var.image_root}/../containers/strategies/rehearsal/fixtures/compose.tls-shim.yml",
     ]
     destination = "/tmp/flowform-fixture-compose/"
   }

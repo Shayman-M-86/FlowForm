@@ -69,7 +69,7 @@ variable "proxmox_template_name" {
 
 variable "proxmox_golden_template" {
   type        = string
-  description = "Packer-built Proxmox golden template used as the LocalStack fixture base"
+  description = "Packer-built Proxmox golden template used as the LocalStack and database fixture base"
   default     = ""
 }
 
@@ -81,6 +81,16 @@ variable "proxmox_localstack_fixture_vm_id" {
 variable "proxmox_localstack_fixture_template_name" {
   type    = string
   default = "flowform-localstack-fixture-al2023"
+}
+
+variable "proxmox_db_fixture_vm_id" {
+  type    = number
+  default = 9002
+}
+
+variable "proxmox_db_fixture_template_name" {
+  type    = string
+  default = "flowform-db-fixture-al2023"
 }
 
 variable "proxmox_cpu" {

@@ -10,10 +10,9 @@ related_code:
   - "../../infra/images/packer/"
   - "../../infra/deployment/proxmox/host/"
   - "../../infra/deployment/proxmox/terraform/"
-  - "../../infra/deployment/proxmox/rehearsal-logs.sh"
-  - "../../infra/deployment/proxmox/verify-rehearsal.sh"
+  - "../../infra/deployment/proxmox/scripts/"
   - "../../infra/deployment/bootstrap/"
-  - "../../infra/containers/rehearsal/"
+  - "../../infra/containers/strategies/rehearsal/"
   - "../../infra/tests/deployment/"
 related_docs:
   - "Deployment model"
@@ -33,9 +32,9 @@ or the rehearsal is end-to-end healthy.
 | Layer | Owned responsibility | Main location |
 | --- | --- | --- |
 | Source preparation | Import the pinned official AL2023 KVM image as a minimal Proxmox source template. | `infra/images/scripts/prepare-proxmox-source.sh` |
-| Packer | Build the shared golden template, then derive the offline LocalStack fixture. | `infra/images/packer/`, `infra/images/scripts/build-proxmox-image.sh`, `infra/images/scripts/build-proxmox-localstack-fixture.sh` |
-| Host bootstrap | Create the private rehearsal bridge and enable Proxmox snippet storage once. | `infra/deployment/proxmox/host/01-setup-host.sh` |
-| Terraform | Render/upload cloud-init and clone the golden template into the rehearsal topology. | `infra/deployment/proxmox/terraform/` |
+| Packer | Build the shared golden template, then derive separate offline LocalStack and PostgreSQL fixtures. | `infra/images/packer/`, `infra/images/scripts/build-proxmox-image.sh`, `infra/images/scripts/build-proxmox-localstack-fixture.sh`, `infra/images/scripts/build-proxmox-db-fixture.sh` |
+| Host bootstrap | Create the private rehearsal bridge and enable Proxmox snippet storage once. | `infra/deployment/proxmox/host/setup-host.sh` |
+| Terraform | Render cloud-init templates, upload the snippets, and clone the golden template into the rehearsal topology. | `infra/deployment/proxmox/terraform/`, `infra/deployment/proxmox/cloud-init/templates/` |
 | Runtime configuration contract | Keep AWS CDK and Proxmox rehearsal SSM parameter names aligned while allowing platform-specific values. | `infra/deployment/config/runtime-parameter-contract.json` |
 
 Packer and Terraform are separate processes. Packer produces a reusable
@@ -45,8 +44,8 @@ can deploy clones of that new template.
 
 ## Current topology
 
-The default golden template is VMID `9000` and the default fixture is `9001`.
-The source (`8999`), golden, and fixture templates use the official image's
+The default golden template is VMID `9000`; fixture templates are LocalStack
+`9001` and PostgreSQL `9002`. The source (`8999`), golden, and fixture templates use the official image's
 native 25 GiB virtual disk. Terraform does not resize disks: new full clones
 inherit 25 GiB, while older 32 GiB clones remain 32 GiB until replaced.
 Terraform declares:
@@ -56,6 +55,7 @@ Terraform declares:
 | 210 | Proxy | Golden `9000` | Static `192.168.70.63/22` on `vmbr0` (`proxy_lan_ip`); `10.10.10.10/24` on `vmbr10` |
 | 220 | App | Golden `9000` | `10.10.10.20/24` on `vmbr10`; no gateway |
 | 230 | LocalStack | Fixture `9001` | `10.10.10.30/24` on `vmbr10`; no gateway |
+| 240 | Database | Fixture `9002` | `10.10.10.40/24` on `vmbr10`; no gateway |
 
 The proxy's LAN address is static on purpose. It is the one address operators,
 docs, and hosts files name, and a DHCP lease does not survive VM recreation:
@@ -64,18 +64,18 @@ identifier, so the stack came back healthy on a new address while everything
 pointing at the old one appeared dead. MAC pinning alone does not fix this.
 Keep `proxy_lan_ip` excluded from the LAN router's DHCP pool.
 
-Terraform renders cloud-init locally, embeds its configured public SSH keys in
+Terraform renders the checked-in cloud-init templates directly, embeds its configured public SSH keys in
 the custom user-data, uploads the snippets to Proxmox storage, and attaches
 them to the clone. This matters because Proxmox custom user data replaces its
 generated user-data rather than merging the generated SSH-key section.
 
 ## Offline fixture boundary
 
-The proxy retains LAN egress and uses the golden template. LocalStack has no
-default route, so its fixture preloads the images named by the maintained
+The proxy retains LAN egress and uses the golden template. LocalStack and the
+database have no default route, so their fixtures preload the images named by the maintained
 LocalStack, registry, and TLS-shim Compose files before deployment. Terraform
-uses that fixture only for VM `230`; proxy and app remain on the shared golden
-template.
+uses template `9001` only for VM `230` and template `9002`, containing only
+`postgres:17`, for VM `240`; proxy and app remain on the shared golden template.
 
 Cloud-init still writes the Compose files, rehearsal TLS material, service
 units, SSH keys, and network-specific configuration, then starts the services.
@@ -93,7 +93,7 @@ carries no private-CIDR exemption). That bypass path is not merely unused but
 closed: LocalStack `:4566` and the registry `:5000` bind to loopback on VM 230,
 and an `nftables` ruleset there admits `:443` only from the proxy VM — so a
 direct `app → :4566`/`:443` call fails the way an AWS security group would.
-`infra/deployment/proxmox/verify-rehearsal.sh` asserts all of this against the
+`infra/deployment/proxmox/scripts/verify.sh` asserts all of this against the
 live stack (Squid-log CONNECTs present, direct paths blocked, `--disruptive`
 proves egress fails when Squid is down).
 
@@ -108,10 +108,10 @@ a simultaneous-start race with the seed service.
 
 Seed resources remain runtime data; the fixture contains none of that state.
 Static validation proves the build graph and contract resolve, not that
-template `9001` exists on a Proxmox host or the deployed services are healthy.
+templates `9001` and `9002` exist on a Proxmox host or the deployed services are healthy.
 
 The backend image push remains an operator action. The maintained helper at
-`infra/containers/rehearsal/services/registry/build-and-push-backend.sh` always
+`infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh` always
 relays through app VM `220`: it temporarily addresses the Proxmox host on
 `vmbr10`, creates a proxied SSH path to `220`, streams the built image into that
 VM's Docker daemon, and pushes from there before removing the temporary
@@ -121,15 +121,14 @@ registry — so it exercises the same egress path a real ECR push would. The
 registry and LocalStack are never LAN-facing, and there is no insecure-registry
 exception anywhere.
 
-That helper also mirrors the private-registry dependencies named by the
-rehearsal app Compose override, deriving upstream names and tags from Compose.
-The app cloud-init layers that override over the production Compose file, so
-the two ephemeral PostgreSQL services start only in the rehearsal.
-
-Rehearsal bootstrap force-recreates its throwaway app stack when secrets are
-reseeded. Until the repository contains deployable migrations, the override
-runs a rehearsal-only one-shot that creates the current SQLAlchemy schema before
-the backend starts. This is not evidence for the production migration path.
+The app VM uses the shared app Compose unchanged. VM `240` runs one tmpfs-backed
+PostgreSQL 17 cluster containing both databases. Its bootstrap briefly opens
+host egress only to Squid to retrieve the two app-role passwords, generates the
+throwaway cluster-init credential locally, closes egress, and then starts the
+preloaded image with `pull_policy: never`. The full maintained database init
+tree creates schemas, grants, the NOLOGIN owner, and low-privilege SCRAM roles.
+There is no cross-VM Compose dependency: readiness can fail until VM `240` is
+healthy and recover afterwards.
 
 ## Auth0 boundary — the one live dependency
 
@@ -143,7 +142,7 @@ tenant reachable and up; unauthenticated endpoints remain fully offline.
 
 The Auth0 identifiers are not committed. Terraform declares them as variables
 without defaults, and the wrapper
-`infra/deployment/proxmox/terraform/with-dev-auth0-env.sh` exports them as
+`infra/deployment/proxmox/scripts/with-dev-auth0-env.sh` exports them as
 `TF_VAR_*` from the gitignored `infra/env/dev/.backend.env`, so rehearsal and
 dev cannot drift apart. Run every plan/apply through that wrapper.
 
@@ -156,9 +155,9 @@ unaffected, and Management API operations still fail closed.
 ## Operator-facing TLS — committed trust anchor
 
 The proxy's Caddy serves a pre-generated leaf for the API domain
-(`infra/containers/rehearsal/services/caddy/certs/api.crt`, regenerated by
+(`infra/containers/strategies/rehearsal/services/caddy/certs/api.crt`, regenerated by
 `generate-api-cert.sh` beside it) signed by the committed rehearsal CA
-(`infra/containers/rehearsal/services/tls-shim/ca/rehearsal-ca.crt`) — the same
+(`infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.crt`) — the same
 throwaway CA the TLS shim uses for the fake-AWS endpoints. It deliberately does
 NOT use Caddy's `tls internal`: that CA is minted inside the VM's data volume,
 so every proxy rebuild produced a new root and silently invalidated operators'
@@ -167,7 +166,7 @@ into their OS trust store once and it survives all rebuilds.
 
 ## Observability
 
-`infra/deployment/proxmox/rehearsal-logs.sh [app|proxy|registry]` tails
+`infra/deployment/proxmox/scripts/logs.sh [app|proxy|registry|db]` tails
 container logs from the private VMs. It temporarily addresses the Proxmox host
 on `vmbr10`, jumps through it, restores the isolation invariant on exit
 (including interrupt), and flattens the backend's JSON records to one line per
@@ -195,7 +194,7 @@ after losing the host entirely.
 **2. Proxmox host bootstrap (once, on the PVE host):**
 
 ```bash
-infra/deployment/proxmox/host/01-setup-host.sh
+infra/deployment/proxmox/host/setup-host.sh
 ```
 
 Creates the isolated `vmbr10` bridge and enables snippet storage.
@@ -206,27 +205,28 @@ Creates the isolated `vmbr10` bridge and enables snippet storage.
 infra/images/scripts/prepare-proxmox-source.sh            # source template 8999
 infra/images/scripts/build-proxmox-image.sh               # golden template 9000
 infra/images/scripts/build-proxmox-localstack-fixture.sh  # offline fixture 9001
+infra/images/scripts/build-proxmox-db-fixture.sh          # offline DB fixture 9002
 infra/images/scripts/verify-proxmox-disk-sizes.sh
 ```
 
 **4. Deploy the topology (Terraform):**
 
 ```bash
-infra/deployment/proxmox/terraform/render-cloud-init.sh
 cd infra/deployment/proxmox/terraform
 terraform init
-./with-dev-auth0-env.sh apply
+../scripts/with-dev-auth0-env.sh apply
 ```
 
 The wrapper exports the Auth0 `TF_VAR_*`s; plain `terraform apply` will prompt
-for them. The apply clones templates into VMs 210/220/230; the LocalStack VM
-seeds parameters and secrets on first boot. The app VM's first bootstrap is
+for them. The apply clones templates into VMs 210/220/230/240; the LocalStack VM
+seeds parameters and secrets on first boot. The app and DB boot independently;
+backend readiness recovers after the database becomes healthy. The app VM's first bootstrap is
 EXPECTED to fail at image pull — the registry starts empty (next step).
 
 **5. Push the backend image, then re-run the app bootstrap:**
 
 ```bash
-infra/containers/rehearsal/services/registry/build-and-push-backend.sh
+infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh
 ```
 
 Then re-run the failed one-shot on the app VM (through the temporary `vmbr10`
@@ -242,7 +242,7 @@ VMs to be running — the ordering apply → push → re-bootstrap is inherent.
 **6. Operator workstation trust (once per machine).** Add the hosts entry
 `192.168.70.63 api.localstack.test` (Windows: `C:\Windows\System32\drivers\etc\hosts`;
 also WSL's `/etc/hosts` if testing from there), then install
-`infra/containers/rehearsal/services/tls-shim/ca/rehearsal-ca.crt` into the
+`infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.crt` into the
 trust store — Windows: import into *Trusted Root Certification Authorities*;
 Firefox keeps its own store; Node tooling needs
 `NODE_EXTRA_CA_CERTS=<path to rehearsal-ca.crt>`. Because the CA is a repo
@@ -251,13 +251,13 @@ file, this never has to be repeated after rebuilds.
 **7. Verify:**
 
 ```bash
-curl --cacert infra/containers/rehearsal/services/tls-shim/ca/rehearsal-ca.crt \
+curl --cacert infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.crt \
   https://api.localstack.test/api/v1/system/health/ready   # 200, verified TLS
-infra/deployment/proxmox/rehearsal-logs.sh app --list      # containers healthy
-infra/deployment/proxmox/verify-rehearsal.sh               # full egress model
+infra/deployment/proxmox/scripts/logs.sh app --list        # containers healthy
+infra/deployment/proxmox/scripts/verify.sh                 # full egress model
 ```
 
-`verify-rehearsal.sh` is the definitive check: health `200`, a structurally
+`verify.sh` is the definitive check: health `200`, a structurally
 valid but unsigned JWT returning `401` (kid mismatch — the live Auth0 JWKS path,
 never a `500`), every fake-AWS/ECR name appearing as a `CONNECT` in Squid's
 access log, and the direct-bypass paths all blocked. `--disruptive` also stops

@@ -111,7 +111,7 @@ Existing shape:
 - Set up Docker Buildx.
 - Generate temporary test secret files from the GitHub `test` environment.
 - Render Docker Compose config.
-- Start `infra/containers/dev/compose/compose.test.yml`.
+- Start `infra/containers/strategies/dev/compose/compose.test.yml`.
 - Run `uv run pytest tests --cov=app`.
 - Upload coverage and debug artifacts.
 - Always tear down Compose with `docker compose down -v --remove-orphans`.
@@ -234,7 +234,7 @@ Assume the backend deploy role through OIDC.
 Steps:
 
 - Log in to ECR.
-- Build the backend Docker image from `infra/containers/dev/services/backend/backend.Dockerfile`.
+- Build the backend Docker image from `infra/containers/images/backend/backend.Dockerfile`.
 - Tag it with the Git SHA and optionally a mutable environment tag such as
   `staging-latest`.
 - Push the immutable Git SHA tag to ECR.
