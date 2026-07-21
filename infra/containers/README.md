@@ -4,7 +4,10 @@ Container assets are grouped by responsibility rather than by deployment stage.
 
 - `images/` owns Dockerfiles shared by more than one runtime strategy.
 - `runtime/` owns the hardened app and proxy Compose contracts shared by AWS
-  staging/production and the Proxmox rehearsal.
+  staging/production and the Proxmox rehearsal. The proxy stack also runs a
+  Grafana Alloy agent (`runtime/services/alloy/`) that ships host and container
+  logs to Grafana Cloud (Loki); its credentials arrive via the same
+  `/flowform/<scope>/proxy/*` SSM path as the rest of the proxy config.
 - `strategies/aws/` owns AWS-specific runtime configuration such as Route 53 TLS
   and the production Squid allow-list.
 - `strategies/dev/` owns the writable, source-mounted development and test stacks.

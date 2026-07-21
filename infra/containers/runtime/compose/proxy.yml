@@ -18,6 +18,14 @@
 #   SQUID_APP_SOURCE_CIDR    - exact app source CIDR, usually <APP_PRIVATE_IP>/32
 #   SQUID_DB_BOOTSTRAP_SOURCE_CIDR - optional DB bootstrap source; use a
 #                                    loopback sentinel when disabled
+#   GRAFANA_CLOUD_LOKI_URL   - Grafana Cloud Loki push URL for the Alloy agent
+#   GRAFANA_CLOUD_LOKI_USER  - Grafana Cloud Loki tenant/user id (basic-auth user)
+#   GRAFANA_CLOUD_TOKEN      - Grafana Cloud access token (basic-auth password)
+#
+# The three GRAFANA_CLOUD_* values arrive the same prod-shaped way as CADDY_IMAGE
+# and API_DOMAIN: bootstrap-proxy.sh renders them into proxy.env from the
+# /flowform/<scope>/proxy/* SSM path. The alloy service ships host + container
+# logs to Grafana Cloud (Loki); it is LOGS ONLY for now (no metrics/traces).
 
 name: flowform-proxy
 
@@ -96,6 +104,54 @@ services:
     networks:
       - proxy_net
 
+  # Observability agent — ships host journal + Docker container logs to Grafana
+  # Cloud (Loki). Logs only for now. Reads GRAFANA_CLOUD_* from proxy.env.
+  alloy:
+    image: grafana/alloy:v1.5.1
+    restart: unless-stopped
+    # Runs as root: the host journal (/var/log/journal, root:systemd-journal) and
+    # docker socket are not world-readable, and the storage dir the image ships is
+    # alloy-owned 0770. With cap_drop: ALL, even root is bound by those DAC bits,
+    # so restore just the two that let it traverse/read/write them (DAC_OVERRIDE
+    # for writes to the alloy-owned storage volume, DAC_READ_SEARCH for reading the
+    # journal). Nothing else is granted; no-new-privileges stays on.
+    user: root
+    command:
+      - run
+      - --server.http.listen-addr=127.0.0.1:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    environment:
+      GRAFANA_CLOUD_LOKI_URL: ${GRAFANA_CLOUD_LOKI_URL:?set GRAFANA_CLOUD_LOKI_URL}
+      GRAFANA_CLOUD_LOKI_USER: ${GRAFANA_CLOUD_LOKI_USER:?set GRAFANA_CLOUD_LOKI_USER}
+      GRAFANA_CLOUD_TOKEN: ${GRAFANA_CLOUD_TOKEN:?set GRAFANA_CLOUD_TOKEN}
+    volumes:
+      - ../services/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # Docker log discovery + reads. Read-only socket: Alloy only lists
+      # containers and streams their logs.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Host systemd journal (persistent + runtime) and the machine-id the
+      # journal reader needs to resolve the boot.
+      - /var/log/journal:/var/log/journal:ro
+      - /run/log/journal:/run/log/journal:ro
+      - /etc/machine-id:/etc/machine-id:ro
+      # Writable state (WAL, positions). Not read_only because of this.
+      - alloy_data:/var/lib/alloy/data
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
+      - DAC_READ_SEARCH
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - proxy_net
+
 networks:
   proxy_net:
     driver: bridge
@@ -104,3 +160,4 @@ volumes:
   caddy_data:
   caddy_config:
   squid_logs:
+  alloy_data:

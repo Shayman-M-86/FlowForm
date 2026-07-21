@@ -1,0 +1,87 @@
+// FlowForm proxy-box observability agent (Grafana Alloy).
+//
+// Phase 1 scope: LOGS ONLY. This config ships two log sources to Grafana Cloud
+// Loki and nothing else — no metrics, no traces, no app instrumentation:
+//   1. the host systemd journal (host + per-unit)
+//   2. every Docker container on the box (Caddy, Squid, and Alloy itself)
+//
+// Grafana Cloud credentials are injected as environment variables by docker
+// compose from /opt/flowform/proxy.env (rendered by bootstrap-proxy.sh from the
+// /flowform/<scope>/proxy/* SSM path — the same prod-shaped seam as CADDY_IMAGE
+// and API_DOMAIN):
+//   GRAFANA_CLOUD_LOKI_URL   full Loki push URL, e.g.
+//                            https://logs-prod-XX.grafana.net/loki/api/v1/push
+//   GRAFANA_CLOUD_LOKI_USER  Loki tenant / user id (basic-auth username)
+//   GRAFANA_CLOUD_TOKEN      Grafana Cloud access token (basic-auth password)
+//
+// Until a real token is seeded these are placeholders; Alloy still starts and
+// simply gets 401s from Grafana Cloud, so the wiring is exercised end to end.
+
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// --- Grafana Cloud Loki sink -------------------------------------------------
+loki.write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_LOKI_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_LOKI_USER")
+      password = sys.env("GRAFANA_CLOUD_TOKEN")
+    }
+  }
+}
+
+// --- Host systemd journal ----------------------------------------------------
+loki.relabel "journal" {
+  // forward_to is required but unused here: this component only exposes .rules,
+  // which loki.source.journal consumes via relabel_rules.
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+  rule {
+    source_labels = ["__journal__hostname"]
+    target_label  = "hostname"
+  }
+}
+
+loki.source.journal "host" {
+  // Defaults to /var/log/journal and /run/log/journal; both are bind-mounted
+  // read-only into the container (see proxy.yml).
+  max_age       = "12h"
+  relabel_rules = loki.relabel.journal.rules
+  labels        = { job = "systemd-journal" }
+  forward_to    = [loki.write.grafana_cloud.receiver]
+}
+
+// --- Docker container logs ---------------------------------------------------
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  // Trim the leading "/" Docker puts on container names.
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_log_stream"]
+    target_label  = "stream"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  labels     = { job = "docker" }
+  forward_to = [loki.write.grafana_cloud.receiver]
+}

@@ -57,6 +57,14 @@ write_files:
     permissions: '0644'
     owner: root:root
     content: ${SQUID_CONF_B64}
+  # Observability agent config, bind-mounted by the alloy service in the base
+  # proxy compose. Must exist as a FILE before compose up, or Docker auto-creates
+  # the path as a directory and the :/etc/alloy/config.alloy mount fails.
+  - path: /opt/flowform/repo/infra/containers/runtime/services/alloy/config.alloy
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${CONFIG_ALLOY_B64}
 
   # --- rehearsal override + the two rehearsal configs it swaps in --------------
   - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/compose/proxy.override.yml

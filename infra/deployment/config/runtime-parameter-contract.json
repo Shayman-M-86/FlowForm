@@ -101,6 +101,18 @@
         "api_domain": {
           "name": "API_DOMAIN",
           "seed_value_key": "API_DOMAIN"
+        },
+        "grafana_cloud_loki_url": {
+          "name": "GRAFANA_CLOUD_LOKI_URL",
+          "seed_value_key": "GRAFANA_CLOUD_LOKI_URL"
+        },
+        "grafana_cloud_loki_user": {
+          "name": "GRAFANA_CLOUD_LOKI_USER",
+          "seed_value_key": "GRAFANA_CLOUD_LOKI_USER"
+        },
+        "grafana_cloud_token": {
+          "name": "GRAFANA_CLOUD_TOKEN",
+          "seed_value_key": "GRAFANA_CLOUD_TOKEN"
         }
       }
     }

@@ -163,6 +163,17 @@ variable "auth0_mgmt_id" {
   }
 }
 
+variable "grafana_cloud_token" {
+  description = "Grafana Cloud access token (basic-auth password) for the proxy-box Alloy agent. A real secret, so it has no default and is never committed: supply it via TF_VAR_grafana_cloud_token, which the with-dev-auth0-env.sh wrapper exports from the gitignored infra/env/dev/.grafana.env. Merged into localstack_seed_values in locals.tf like the Auth0 identifiers."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(trimspace(var.grafana_cloud_token)) > 0 && !can(regex("[\r\n]", var.grafana_cloud_token))
+    error_message = "grafana_cloud_token must be a non-empty single-line string."
+  }
+}
+
 variable "localstack_seed_values" {
   description = "Non-secret rehearsal values written to LocalStack by the fixture VM after boot. Auth0 keys are merged in from their own variables (see locals.seed_values); the rest default here. Keys are validated against the shared runtime parameter contract."
   type        = map(string)
@@ -185,6 +196,13 @@ variable "localstack_seed_values" {
     FLOWFORM_ENV                            = "prod"
     FLOWFORM_LOGGING_LEVEL                  = "INFO"
     FLOWFORM_LOGGING_LOG_JSON               = "true"
+    # Grafana Cloud Loki target for the proxy-box Alloy agent. URL + user id are
+    # non-secret and default here; the secret token is NOT in this map — it comes
+    # from var.grafana_cloud_token, merged in via locals.tf exactly like the Auth0
+    # identifiers, so it never lands in a committed default. Override the URL/user
+    # for a real GC stack via TF_VAR_localstack_seed_values / terraform.tfvars.
+    GRAFANA_CLOUD_LOKI_URL  = "https://logs-prod-026.grafana.net/loki/api/v1/push"
+    GRAFANA_CLOUD_LOKI_USER = "1687659"
   }
 
   validation {

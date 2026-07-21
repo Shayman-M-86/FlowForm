@@ -171,6 +171,9 @@ main() {
 
   put_runtime_parameter proxy caddy_image "${CADDY_IMAGE}"
   put_runtime_parameter proxy api_domain "${API_DOMAIN}"
+  put_runtime_parameter proxy grafana_cloud_loki_url "${GRAFANA_CLOUD_LOKI_URL}"
+  put_runtime_parameter proxy grafana_cloud_loki_user "${GRAFANA_CLOUD_LOKI_USER}"
+  put_runtime_parameter proxy grafana_cloud_token "${GRAFANA_CLOUD_TOKEN}"
 
   log "seed complete for /flowform/${FLOWFORM_SCOPE}"
 }

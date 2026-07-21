@@ -26,6 +26,8 @@ locals {
     FLOWFORM_AUTH0_CLIENT_ID   = var.auth0_client_id
     FLOWFORM_AUTH0_MGMT_DOMAIN = var.auth0_mgmt_domain
     FLOWFORM_AUTH0_MGMT_ID     = var.auth0_mgmt_id
+    # Secret, merged in from its own variable (never a committed map default).
+    GRAFANA_CLOUD_TOKEN = var.grafana_cloud_token
   })
   configured_localstack_seed_keys = toset(keys(local.localstack_seed_values))
   localstack_seed_environment = join("\n", concat(
@@ -44,6 +46,7 @@ locals {
     DB_INIT_WRITE_FILES                 = local.database_init_write_files
     BOOTSTRAP_PROXY_SH_B64              = base64encode(file("${path.module}/../../bootstrap/bootstrap-proxy.sh"))
     DOCKER_COMPOSE_PROXY_B64            = base64encode(file("${path.module}/../../../containers/runtime/compose/proxy.yml"))
+    CONFIG_ALLOY_B64                    = base64encode(file("${path.module}/../../../containers/runtime/services/alloy/config.alloy"))
     DOCKER_COMPOSE_PROXY_REHEARSAL_B64  = base64encode(file("${path.module}/../../../containers/strategies/rehearsal/compose/proxy.override.yml"))
     CADDYFILE_PROXY_REHEARSAL_B64       = base64encode(file("${path.module}/../../../containers/strategies/rehearsal/services/caddy/Caddyfile.proxy"))
     PROXY_API_CRT_B64                   = base64encode(file("${path.module}/../../../containers/strategies/rehearsal/services/caddy/certs/api.crt"))
