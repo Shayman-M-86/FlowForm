@@ -121,6 +121,12 @@ services:
       - --server.http.listen-addr=127.0.0.1:12345
       - --storage.path=/var/lib/alloy/data
       - /etc/alloy/config.alloy
+    # Gateway receiver for the offline app box: the config's loki.source.api
+    # listens on :3500 and this publishes it bound to the proxy's PRIVATE IP only,
+    # so only the rehearsal private net (the app box) can push logs in — never the
+    # public LAN interface. The :12345 UI stays loopback-only inside the container.
+    ports:
+      - "${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP}:3500:3500/tcp"
     environment:
       GRAFANA_CLOUD_LOKI_URL: ${GRAFANA_CLOUD_LOKI_URL:?set GRAFANA_CLOUD_LOKI_URL}
       GRAFANA_CLOUD_LOKI_USER: ${GRAFANA_CLOUD_LOKI_USER:?set GRAFANA_CLOUD_LOKI_USER}

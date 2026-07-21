@@ -53,6 +53,14 @@ write_files:
     permissions: '0644'
     owner: root:root
     content: ${DOCKER_COMPOSE_APP_B64}
+  # Observability agent config, bind-mounted by the alloy service in app.yml.
+  # Must exist as a FILE before compose up, or Docker auto-creates the path as a
+  # directory and the :/etc/alloy/config.alloy mount fails (learned on the proxy).
+  - path: /opt/flowform/repo/infra/containers/runtime/services/alloy-app/config.alloy
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${CONFIG_ALLOY_APP_B64}
   # --- trust the fake-ECR registry's TLS (mirrors prod ECR-over-HTTPS) ---------
   # bootstrap-app.sh pulls BACKEND_IMAGE as https://registry.localstack.test
   # through Squid → TLS shim → registry, exactly as prod pulls ECR over HTTPS —
@@ -82,6 +90,10 @@ write_files:
       # rehearsal image ref (fake-ECR registry, reached over HTTPS through Squid +
       # the TLS shim on the aws-fixtures-vm, 230 — no port = 443)
       BACKEND_IMAGE=registry.localstack.test/flowform-backend:rehearsal
+      # Alloy image mirrored into the fake registry (the app box is offline and
+      # cannot reach Docker Hub). Mirror it with mirror-alloy-image.sh before/at
+      # deploy, the same relay path as the backend image.
+      ALLOY_IMAGE=registry.localstack.test/grafana/alloy:v1.5.1
       # explicit compose path: the script is baked at /opt/flowform/scripts/... so
       # its own REPO_ROOT math (../../..) would look under /opt, not where we put
       # the compose file. Point at the baked location directly.

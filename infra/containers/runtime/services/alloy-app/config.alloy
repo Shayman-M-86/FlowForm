@@ -1,0 +1,126 @@
+// FlowForm app-box observability agent (Grafana Alloy).
+//
+// Phase 2 (logs): ships the backend container's logs off the OFFLINE app box.
+// The app box (10.10.10.20) has no internet route — its only egress is Squid,
+// which does not admit Grafana Cloud — so this agent does NOT talk to Grafana
+// directly. It forwards to the proxy-box Alloy (10.10.10.10:3500) over the
+// private net, and that gateway Alloy fans out to Grafana Cloud. Keeping the app
+// box offline is the whole point of the rehearsal, so we add no internet hole.
+//
+// The backend emits one JSON object per log record (FLOWFORM_LOGGING_LOG_JSON=
+// true; see backend/app/logging/logging_config.py JsonFormatter). We parse that
+// here so Grafana shows the human message and a few low-cardinality labels, and
+// keep high-cardinality context (request_id, user_id, ids) as fields, not labels.
+//
+// Injected by docker compose from the app bootstrap env:
+//   PROXY_PRIVATE_IP   proxy-box Alloy gateway host (loki.source.api on :3500)
+
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// --- Forward to the proxy-box gateway Alloy ----------------------------------
+loki.write "gateway" {
+  endpoint {
+    url = "http://" + sys.env("PROXY_PRIVATE_IP") + ":3500/loki/api/v1/push"
+  }
+}
+
+// --- Docker container logs (backend only lives here) -------------------------
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  // service_name is the Grafana Logs Drilldown key. Compose sets
+  // com.docker.compose.service (= "backend") on the container.
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service_name"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "compose_project"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_log_stream"]
+    target_label  = "stream"
+  }
+
+  // Static deployment identity (this file only ships to the Proxmox app box).
+  rule {
+    replacement  = "rehearsal"
+    target_label = "environment"
+  }
+  rule {
+    replacement  = "proxmox"
+    target_label = "platform"
+  }
+  rule {
+    replacement  = "app"
+    target_label = "host_role"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  labels     = { job = "docker" }
+  forward_to = [loki.process.backend.receiver]
+}
+
+// --- Parse the backend's JSON records ----------------------------------------
+loki.process "backend" {
+  // Only the backend logs JSON. gunicorn's own startup banner is plain text, so
+  // scope JSON parsing to the backend service and leave anything else untouched.
+  stage.match {
+    selector = "{service_name=\"backend\"}"
+
+    // Field names match backend JsonFormatter: level, logger, message, method,
+    // path, status_code, request_id, duration_ms, event_type, ...
+    stage.json {
+      expressions = {
+        level        = "level",
+        logger       = "logger",
+        message      = "message",
+        method       = "method",
+        path         = "path",
+        status_code  = "status_code",
+        event_type   = "event_type",
+        request_id   = "request_id",
+        duration_ms  = "duration_ms",
+      }
+    }
+
+    // Index only stable, low-cardinality fields. `path` is the RAW request path
+    // (request.path — carries UUIDs), and request_id / duration_ms / status_code
+    // are per-request, so none of them become labels: that would explode Loki
+    // stream cardinality. They remain parsed values in the record.
+    stage.labels {
+      values = {
+        level      = "",
+        method     = "",
+        event_type = "",
+      }
+    }
+
+    // Show the human message as the log line instead of the raw JSON object.
+    stage.output {
+      source = "message"
+    }
+  }
+
+  forward_to = [loki.write.gateway.receiver]
+}

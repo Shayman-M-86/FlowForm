@@ -40,6 +40,7 @@ locals {
     BOOTSTRAP_APP_SH_B64                = base64encode(file("${path.module}/../../bootstrap/bootstrap-app.sh"))
     AWS_CLI_RETRY_SH_B64                = base64encode(file("${path.module}/../../bootstrap/aws-cli-retry.sh"))
     DOCKER_COMPOSE_APP_B64              = base64encode(file("${path.module}/../../../containers/runtime/compose/app.yml"))
+    CONFIG_ALLOY_APP_B64                = base64encode(file("${path.module}/../../../containers/runtime/services/alloy-app/config.alloy"))
     BOOTSTRAP_DB_SH_B64                 = base64encode(file("${path.module}/../../bootstrap/bootstrap-db.sh"))
     DOCKER_COMPOSE_DB_B64               = base64encode(file("${path.module}/../../../containers/strategies/rehearsal/compose/db.yml"))
     PG_HBA_CONF_B64                     = base64encode(file("${path.module}/../../../database/config/pg_hba.conf"))

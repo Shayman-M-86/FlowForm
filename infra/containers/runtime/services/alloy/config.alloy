@@ -3,7 +3,9 @@
 // Phase 1 scope: LOGS ONLY. This config ships two log sources to Grafana Cloud
 // Loki and nothing else — no metrics, no traces, no app instrumentation:
 //   1. the host systemd journal (host + per-unit)
-//   2. every Docker container on the box (Caddy, Squid, and Alloy itself)
+//   2. every Docker container on the box (Caddy, Squid, and Alloy itself),
+//      labelled with service_name (for Grafana Logs Drilldown) and a level
+//      extracted from the plain-text lines.
 //
 // Grafana Cloud credentials are injected as environment variables by docker
 // compose from /opt/flowform/proxy.env (rendered by bootstrap-proxy.sh from the
@@ -34,6 +36,22 @@ loki.write "grafana_cloud" {
   }
 }
 
+// --- Gateway receiver for the offline app box --------------------------------
+// The app box (10.10.10.20) has no internet route — its only egress is Squid,
+// which does not admit Grafana Cloud. So the app-box Alloy ships the backend
+// logs HERE over the private net, and this proxy Alloy (which does have internet)
+// fans them out to Grafana Cloud. Listen on all interfaces so 10.10.10.20 can
+// reach it; the compose publishes this port bound to the proxy's private IP only,
+// and the app box already labels the records (service_name=backend, level, ...),
+// so this side just forwards them on untouched.
+loki.source.api "app_gateway" {
+  http {
+    listen_address = "0.0.0.0"
+    listen_port    = 3500
+  }
+  forward_to = [loki.write.grafana_cloud.receiver]
+}
+
 // --- Host systemd journal ----------------------------------------------------
 loki.relabel "journal" {
   // forward_to is required but unused here: this component only exposes .rules,
@@ -60,12 +78,32 @@ loki.source.journal "host" {
 }
 
 // --- Docker container logs ---------------------------------------------------
+// This agent only sees the proxy-box stack: caddy, squid, and alloy itself. The
+// backend runs on a separate VM with no Alloy in Phase 1, so there is no backend
+// container (and no backend-JSON parsing) here yet.
 discovery.docker "containers" {
   host = "unix:///var/run/docker.sock"
 }
 
 discovery.relabel "containers" {
   targets = discovery.docker.containers.targets
+
+  // service_name is the label Grafana Logs Drilldown keys on to identify where a
+  // log comes from; without it everything shows up under "Unknown". Compose sets
+  // com.docker.compose.service on each container (caddy / squid / alloy), so map
+  // that to service_name (and keep a plain `service` alias).
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service_name"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "compose_project"
+  }
 
   // Trim the leading "/" Docker puts on container names.
   rule {
@@ -77,11 +115,43 @@ discovery.relabel "containers" {
     source_labels = ["__meta_docker_container_log_stream"]
     target_label  = "stream"
   }
+
+  // Static deployment identity. This config file only ever ships to the Proxmox
+  // proxy box, so these are constants rather than env-driven. Revisit when Alloy
+  // also runs on the app box / real AWS, where values genuinely vary.
+  rule {
+    replacement  = "rehearsal"
+    target_label = "environment"
+  }
+  rule {
+    replacement  = "proxmox"
+    target_label = "platform"
+  }
+  rule {
+    replacement  = "proxy"
+    target_label = "host_role"
+  }
 }
 
 loki.source.docker "containers" {
   host       = "unix:///var/run/docker.sock"
   targets    = discovery.relabel.containers.output
   labels     = { job = "docker" }
+  forward_to = [loki.process.docker.receiver]
+}
+
+// Extract a `level` label from the plain-text proxy logs (Caddy, Squid, Alloy)
+// so severity filtering works in Drilldown. Grafana recognises `level` for its
+// severity colouring. These are all plain-text/logfmt here — no JSON stage,
+// since there is no backend container on this box.
+loki.process "docker" {
+  stage.regex {
+    expression = "(?i)(?P<level>debug|info|notice|warn|warning|error|critical|fatal)"
+  }
+  stage.labels {
+    values = {
+      level = "",
+    }
+  }
   forward_to = [loki.write.grafana_cloud.receiver]
 }

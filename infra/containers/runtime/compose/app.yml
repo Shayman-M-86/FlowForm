@@ -72,6 +72,52 @@ services:
         max-size: "10m"
         max-file: "5"
 
+  # Observability agent — reads the backend container (and host journal) and
+  # forwards to the proxy-box Alloy gateway (PROXY_PRIVATE_IP:3500), which fans
+  # out to Grafana Cloud. The app box has no internet route, so it never talks to
+  # Grafana directly. Logs only. See runtime/services/alloy-app/config.alloy.
+  alloy:
+    # Default to the public image (proxy/AWS can pull it). The OFFLINE app box has
+    # no Docker Hub route — its only egress is Squid — so its bootstrap env
+    # overrides ALLOY_IMAGE to the fake-registry mirror
+    # (registry.localstack.test/grafana/alloy:...), pushed there the same relay way
+    # as the backend image. See strategies/rehearsal/services/registry/.
+    image: ${ALLOY_IMAGE:-grafana/alloy:v1.5.1}
+    restart: unless-stopped
+    # As on the proxy: the host journal and docker socket are root-owned and the
+    # image's storage dir is alloy-owned 0770, so run as root and restore only
+    # DAC_OVERRIDE/DAC_READ_SEARCH under cap_drop: ALL. no-new-privileges stays on.
+    user: root
+    command:
+      - run
+      - --server.http.listen-addr=127.0.0.1:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    environment:
+      PROXY_PRIVATE_IP: ${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP}
+    volumes:
+      - ../services/alloy-app/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/log/journal:/var/log/journal:ro
+      - /run/log/journal:/run/log/journal:ro
+      - /etc/machine-id:/etc/machine-id:ro
+      - alloy_data:/var/lib/alloy/data
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
+      - DAC_READ_SEARCH
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  alloy_data:
+
 secrets:
   DATABASE_CORE_APP_PASSWORD:
     file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_CORE_APP_PASSWORD.secret.txt
