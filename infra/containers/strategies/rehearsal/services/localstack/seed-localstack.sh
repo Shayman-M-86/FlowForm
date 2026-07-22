@@ -1,18 +1,23 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Seed the isolated rehearsal LocalStack from Terraform-supplied non-secret
-# values. This script runs inside the fixture VM after LocalStack becomes
-# healthy; no workstation or LAN-facing LocalStack endpoint is required.
+# Boot-time seed for the isolated rehearsal LocalStack. Runs INSIDE the fixtures
+# VM (230) after LocalStack becomes healthy, from Terraform-supplied NON-SECRET
+# values only.
 #
-# Parameter names come from the same JSON contract used by AWS CDK. Values are
-# deliberately platform-specific: Terraform supplies rehearsal configuration,
-# and most throwaway secret values are generated here and never enter Terraform
-# configuration or state. The one exception is the Auth0 management client
-# secret (AUTH0_MGMT_SECRET): it is a real secret Terraform supplies (a
-# secret_seed_value_key in the contract) so the rehearsal Management API works
-# against the real tenant. It is written into the app-secrets entry, not SSM.
-# The operations are create-or-update and safe to rerun.
+# SECRET-FREE BY DESIGN. This script no longer creates any Secrets Manager entry
+# and no longer consumes any secret value. It establishes exactly what can be
+# known without a secret:
+#   * the rehearsal KMS key (+ alias), and
+#   * every non-secret SSM parameter the runtime reads.
+#
+# The four Secrets Manager entries (app-secrets, db-secrets, linkage-secret,
+# observability-secrets) and the two SSM parameters that depend on the linkage
+# secret's ARN (scope + backend linkage_secret_arn) are written LATER by the
+# deploy-time SSH synchronisation step (`rehearsal sync` on the operator
+# workstation → sync-secrets-into-localstack.sh on this VM). Rebuilding this VM
+# therefore comes up with no secrets until that step runs — fail-closed by
+# construction. All operations here are create-or-update and safe to rerun.
 
 : "${FLOWFORM_SCOPE:=nonprod}"
 : "${AWS_REGION:=ap-southeast-2}"
@@ -70,35 +75,15 @@ runtime_parameter_name() {
   printf '/flowform/%s/%s/%s' "${FLOWFORM_SCOPE}" "${path}" "${name}"
 }
 
-secret_name() {
-  local logical_name="$1" suffix
-  suffix="$(contract_value ".secrets.${logical_name}")"
-  printf 'flowform/%s/%s' "${FLOWFORM_SCOPE}" "${suffix}"
-}
-
 validate_seed_environment() {
   local key
-  # Runtime-parameter seed keys plus the secret seed keys (e.g. AUTH0_MGMT_SECRET,
-  # which Terraform supplies and this script writes into Secrets Manager). Both
-  # must be present in the environment or the seed writes empty values.
+  # Only NON-SECRET runtime-parameter seed keys remain (secret_seed_value_keys is
+  # empty). Each must be present in the environment or the seed writes empties.
   while IFS= read -r key; do
     [[ -n "${key}" ]] || continue
     [[ -n "${!key:-}" ]] || die "required Terraform seed value is unset: ${key}"
   done < <(jq -r '(.runtime_groups[].parameters[].seed_value_key // empty),
                   (.secret_seed_value_keys[]? // empty)' "${CONTRACT}" | sort -u)
-}
-
-put_secret() {
-  local name="$1" json="$2"
-  if "${AWS[@]}" secretsmanager describe-secret --secret-id "${name}" >/dev/null 2>&1; then
-    "${AWS[@]}" secretsmanager put-secret-value --secret-id "${name}" \
-      --secret-string "${json}" --query VersionId --output text >/dev/null
-    log "updated secret ${name}"
-  else
-    "${AWS[@]}" secretsmanager create-secret --name "${name}" \
-      --secret-string "${json}" --query ARN --output text >/dev/null
-    log "created secret ${name}"
-  fi
 }
 
 put_parameter() {
@@ -112,8 +97,6 @@ put_runtime_parameter() {
   local group="$1" logical_name="$2" value="$3"
   put_parameter "$(runtime_parameter_name "${group}" "${logical_name}")" "${value}"
 }
-
-rand() { openssl rand -hex "${1:-32}"; }
 
 ensure_kms_key() {
   local alias_name="alias/flowform-${FLOWFORM_SCOPE}-rehearsal" key_arn key_id
@@ -133,33 +116,16 @@ ensure_kms_key() {
 main() {
   wait_for_localstack
   validate_seed_environment
-  log "scope=${FLOWFORM_SCOPE} contract=${CONTRACT}"
+  log "scope=${FLOWFORM_SCOPE} contract=${CONTRACT} (secret-free boot seed)"
 
-  local app_secret db_secret linkage_secret kms_key_arn linkage_secret_arn
-  app_secret="$(secret_name app)"
-  db_secret="$(secret_name database)"
-  linkage_secret="$(secret_name linkage)"
-
-  # app_secret_key is a throwaway generated here; auth0_mgmt_secret is the REAL
-  # management secret Terraform supplies (var.auth0_mgmt_secret), so the Management
-  # API works against the real tenant. jq (not printf) builds the JSON so an
-  # arbitrary secret value is escaped correctly.
-  put_secret "${app_secret}" \
-    "$(jq -cn --arg k "$(rand 32)" --arg m "${AUTH0_MGMT_SECRET}" \
-      '{app_secret_key: $k, auth0_mgmt_secret: $m}')"
-  put_secret "${db_secret}" \
-    "$(printf '{\"db_core_app_password\":\"%s\",\"db_response_app_password\":\"%s\"}' "$(rand 16)" "$(rand 16)")"
-  put_secret "${linkage_secret}" "$(printf '{\"version\":1,\"secret_b64\":\"%s\"}' "$(rand 32)")"
-
+  local kms_key_arn
   kms_key_arn="$(ensure_kms_key)"
-  linkage_secret_arn="$("${AWS[@]}" secretsmanager describe-secret \
-    --secret-id "${linkage_secret}" --query ARN --output text)"
 
-  # These names are shared with the AWS CDK security stack. Their values are
-  # local resource identifiers, not copied AWS environment values.
+  # Scope-level identifiers. linkage_secret_arn is NOT written here — it depends
+  # on the linkage secret, which the deploy-time sync creates and whose ARN it
+  # then records into both the scope and backend parameters.
   put_parameter "$(scope_parameter_name kms_key_arn)" "${kms_key_arn}"
   put_parameter "$(scope_parameter_name aws_region)" "${AWS_REGION}"
-  put_parameter "$(scope_parameter_name linkage_secret_arn)" "${linkage_secret_arn}"
 
   put_runtime_parameter backend logging_json "${FLOWFORM_LOGGING_LOG_JSON}"
   put_runtime_parameter backend logging_level "${FLOWFORM_LOGGING_LEVEL}"
@@ -174,7 +140,6 @@ main() {
   put_runtime_parameter backend aws_region "${AWS_REGION}"
   put_runtime_parameter backend email_from_address "${FLOWFORM_EMAIL_FROM_ADDRESS}"
   put_runtime_parameter backend kms_key_arn "${kms_key_arn}"
-  put_runtime_parameter backend linkage_secret_arn "${linkage_secret_arn}"
   put_runtime_parameter backend database_core_host "${DATABASE_CORE_HOST}"
   put_runtime_parameter backend database_core_name "${DATABASE_CORE_NAME}"
   put_runtime_parameter backend database_core_app_user "${DATABASE_CORE_APP_USER}"
@@ -186,9 +151,8 @@ main() {
   put_runtime_parameter proxy api_domain "${API_DOMAIN}"
   put_runtime_parameter proxy grafana_cloud_loki_url "${GRAFANA_CLOUD_LOKI_URL}"
   put_runtime_parameter proxy grafana_cloud_loki_user "${GRAFANA_CLOUD_LOKI_USER}"
-  put_runtime_parameter proxy grafana_cloud_token "${GRAFANA_CLOUD_TOKEN}"
 
-  log "seed complete for /flowform/${FLOWFORM_SCOPE}"
+  log "boot seed complete for /flowform/${FLOWFORM_SCOPE} (KMS + non-secret SSM only)"
 }
 
 main "$@"

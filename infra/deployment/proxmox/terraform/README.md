@@ -26,8 +26,10 @@ cd infra/deployment/proxmox/terraform
 cp terraform.tfvars.example terraform.tfvars
 # Set the Proxmox endpoint, API token, node, storage, and SSH public key.
 terraform init
-../scripts/with-dev-auth0-env.sh plan
-../scripts/with-dev-auth0-env.sh apply
+../scripts/rehearsal terraform plan
+../scripts/rehearsal terraform apply
+# Or run the complete apply/sync/converge workflow:
+../scripts/rehearsal build
 ```
 
 Terraform renders `../cloud-init/templates/*.yaml.tftpl` directly from the
@@ -50,7 +52,8 @@ cloud-init payload because Proxmox custom user data replaces, rather than
 merges with, its generated user-data configuration.
 
 `terraform destroy` removes only the Terraform-managed rehearsal VMs and
-snippet files. It does not remove Packer templates `9000`/`9001`/`9002` or `vmbr10`.
+snippet files. It does not remove Packer templates `9000`/`9001`/`9002`,
+`vmbr10`, or the root-only rehearsal secret bundle stored on the PVE host.
 
 ## Template selection
 
@@ -72,12 +75,12 @@ non-secret values into cloud-init, and uploads them with the LocalStack VM
 snippet.
 
 On every fixture VM boot, `flowform-localstack-seed.service` waits for
-LocalStack health and runs the idempotent seed script locally. It creates local
-KMS and linkage-secret resources, publishes their local ARNs under the same
-scoped SSM names used by AWS CDK, and writes the rehearsal `/backend/*` and
-`/proxy/*` parameters. Throwaway secret values are generated inside the VM and
-never enter Terraform configuration or state. App and proxy bootstrap AWS
-reads retry while this boot-time seed completes.
+LocalStack health and runs the idempotent non-secret seed locally. Managed
+Secrets Manager values and the linkage-secret ARN parameter are reconciled by
+`../scripts/rehearsal sync`, which streams an allow-listed archive assembled
+from the PVE-host bundle and deploy-time inputs. Secret values never enter
+Terraform configuration or state. App, proxy, and database bootstrap AWS reads
+retry while these boot-time/deploy-time steps complete.
 
 The default non-secret values live in `variables.tf`. To override them, set the
 complete `localstack_seed_values` map in `terraform.tfvars`; Terraform rejects

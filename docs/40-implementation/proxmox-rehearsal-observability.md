@@ -29,7 +29,7 @@ For the VM topology this refers to, see the topology table in
 
 ## Log tailing
 
-`infra/deployment/proxmox/scripts/logs.sh [app|proxy|registry|db]` tails
+`infra/deployment/proxmox/scripts/rehearsal logs [app|proxy|fixtures|db]` tails
 container logs from the private VMs. It temporarily addresses the Proxmox host
 on `vmbr10`, jumps through it, restores the isolation invariant on exit
 (including interrupt), and flattens the backend's JSON records to one line per
@@ -52,7 +52,7 @@ allow-list.
   (`basic_auth` from the three `GRAFANA_CLOUD_*` env values). It also exposes a
   `loki.source.api` receiver on `:3500` that fans the app box's records out to
   the same sink. Squid preserves one `level=info` file access log for
-  `verify.sh`; the container entrypoint tails that file to stdout, allowing
+  `rehearsal verify`; the container entrypoint tails that file to stdout, allowing
   Docker discovery to publish it under `service_name="squid"`. Proxy-box containers log plain text,
   so the pipeline extracts a `level` label by regex but does no JSON parsing.
 - **App agent** (`infra/containers/runtime/services/alloy-app/config.alloy`, run
@@ -88,15 +88,13 @@ Drilldown keys on it; without it logs surface as "Unknown". The
 because each file ships to exactly one box; they must become env-driven if Alloy
 later runs on real AWS.
 
-**Credential seam.** The three `GRAFANA_CLOUD_*` values reach the proxy the same
-prod-shaped way as `CADDY_IMAGE` and `API_DOMAIN`: the URL and user default in
-Terraform's `localstack_seed_values`, the token comes from the sensitive
-`var.grafana_cloud_token` (no committed default; the wrapper exports it from the
-gitignored `infra/env/dev/.grafana.env`), both are seeded into LocalStack SSM
-under `/flowform/<scope>/proxy/*` by `seed-localstack.sh`, and `bootstrap-proxy.sh`
-renders that path into `proxy.env` for Compose to interpolate. The keys are
-declared in `infra/deployment/config/runtime-parameter-contract.json`, which a
-Terraform `check` block asserts matches the seed-value map exactly.
+**Credential seam.** The non-secret Grafana URL and user follow the same
+prod-shaped SSM path as `CADDY_IMAGE` and `API_DOMAIN`. The token is resolved by
+`rehearsal sync` from `GRAFANA_CLOUD_TOKEN_FILE`, the environment, or the
+gitignored `infra/env/dev/.grafana.env`, then reconciled into the LocalStack
+observability secret. `bootstrap-proxy.sh` materialises that secret under the
+host tmpfs while rendering non-secret proxy parameters into `proxy.env` for
+Compose. Terraform configuration and state contain no token value.
 
 ## Related documents
 

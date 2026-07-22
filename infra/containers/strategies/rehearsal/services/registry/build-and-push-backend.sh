@@ -30,7 +30,7 @@ set -Eeuo pipefail
 # may not be settled — the just-added bridge address is not yet ARP-resolved, and
 # the TLS shim / registry on VM 230 are the last services to come healthy. Both
 # preflights retry until the stack converges instead of failing fast, so a fresh
-# apply → push in one command (see proxmox/scripts/rebuild.sh) does not need a
+# apply → push in one command (see `proxmox/scripts/rehearsal build`) does not need a
 # manual redo. A fully-up stack passes on the first attempt with no added wait.
 # Optional knobs (attempts x delay seconds; defaults wait ~120s each):
 #   PUSH_RELAY_MAX_ATTEMPTS (60) / PUSH_RELAY_RETRY_DELAY_SECONDS (2)
@@ -49,12 +49,25 @@ PROXMOX_PRIVATE_BRIDGE="${PROXMOX_PRIVATE_BRIDGE:-vmbr10}"
 PROXMOX_TEMP_BRIDGE_CIDR="${PROXMOX_TEMP_BRIDGE_CIDR:-10.10.10.1/24}"
 PUSH_RELAY_SSH_TARGET="${PUSH_RELAY_SSH_TARGET:-ec2-user@10.10.10.20}"
 SQUID_PROXY_URL="${SQUID_PROXY_URL:-http://10.10.10.10:3128}"
+PUBLISH_PREPARE_ONLY="${PUBLISH_PREPARE_ONLY:-0}"
+PUBLISH_SKIP_PREPARE="${PUBLISH_SKIP_PREPARE:-0}"
+PUSH_RELAY_READY="${PUSH_RELAY_READY:-0}"
+PUSH_RELAY_KNOWN_HOSTS_FILE="${PUSH_RELAY_KNOWN_HOSTS_FILE:-/dev/null}"
 
 APP_DEST="${REGISTRY_HOST}/${IMAGE_NAME}:${IMAGE_TAG}"
 ADDED_BRIDGE_ADDRESS=0
 
-log() { printf '[build-push-backend] %s\n' "$*"; }
-die() { printf '[build-push-backend] ERROR: %s\n' "$*" >&2; exit 1; }
+publisher_log() { # fd level message...
+  local fd="$1" level="$2" colour="" reset=""; shift 2
+  if [[ -z "${NO_COLOR:-}" && -t "${fd}" && "${REHEARSAL_COLOR:-auto}" != never ]]; then
+    reset=$'\033[0m'
+    [[ "${level}" == ERROR ]] && colour=$'\033[1;31m' || colour=$'\033[0;36m'
+  fi
+  printf '%s | %b%-7s%b | %-20s | %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+    "${colour}" "${level}" "${reset}" build-push-backend "$*" >&"${fd}"
+}
+log() { publisher_log 1 INFO "$*"; }
+die() { publisher_log 2 ERROR "$*"; exit 1; }
 
 # Retry a command with fixed-delay backoff. This script runs on the operator's
 # box right after `terraform apply`, so the app VM's SSH, Squid, and the TLS
@@ -114,6 +127,11 @@ DOCKERFILE="${REPO_ROOT}/infra/containers/images/backend/backend.Dockerfile"
 [[ -f "${DOCKERFILE}" ]] || die "backend Dockerfile not found at ${DOCKERFILE} (REPO_ROOT=${REPO_ROOT}; sync the repo to the dev box or set REPO_ROOT=)"
 command -v docker >/dev/null 2>&1 || die "docker not found on this box"
 command -v ssh >/dev/null 2>&1 || die "ssh not found on this box"
+for flag in PUBLISH_PREPARE_ONLY PUBLISH_SKIP_PREPARE PUSH_RELAY_READY; do
+  [[ "${!flag}" == "0" || "${!flag}" == "1" ]] || die "${flag} must be 0 or 1"
+done
+[[ "${PUBLISH_PREPARE_ONLY}" != "1" || "${PUBLISH_SKIP_PREPARE}" != "1" ]] \
+  || die "PUBLISH_PREPARE_ONLY and PUBLISH_SKIP_PREPARE are mutually exclusive"
 
 SSH_OPTIONS=(
   -i "${PROXMOX_SSH_KEY}"
@@ -128,8 +146,8 @@ SSH_OPTIONS=(
 # the stable Proxmox jump host stays checked against the normal known_hosts.
 relay_ssh() {
   ssh "${SSH_OPTIONS[@]}" \
-    -o UserKnownHostsFile=/dev/null \
-    -o StrictHostKeyChecking=no \
+    -o "UserKnownHostsFile=${PUSH_RELAY_KNOWN_HOSTS_FILE}" \
+    -o StrictHostKeyChecking=accept-new \
     -o "ProxyCommand=ssh -i ${PROXMOX_SSH_KEY} -o BatchMode=yes -W %h:%p ${PROXMOX_SSH_TARGET}" \
     "${PUSH_RELAY_SSH_TARGET}" "$@"
 }
@@ -178,20 +196,34 @@ prepare_push_relay() {
   log "temporary image relay is ready through ${PUSH_RELAY_SSH_TARGET}"
 }
 
-# The registry is only reachable from the app VM through Squid — always relay.
-prepare_push_relay
-
 DEST="${APP_DEST}"
 PUSH_IMAGES=("${APP_DEST}")
 
-log "building ${DEST} from ${DOCKERFILE} (context=${REPO_ROOT}, --no-dev prod image)"
-# Default UV_SYNC_FLAGS in the Dockerfile is already --no-dev; pass explicitly to
-# make the prod-runtime intent unmistakable and immune to a Dockerfile default change.
-docker build \
-  -f "${DOCKERFILE}" \
-  --build-arg UV_SYNC_FLAGS="--no-dev" \
-  -t "${DEST}" \
-  "${REPO_ROOT}"
+if [[ "${PUBLISH_SKIP_PREPARE}" != "1" ]]; then
+  log "building ${DEST} from ${DOCKERFILE} (context=${REPO_ROOT}, --no-dev prod image)"
+  # Default UV_SYNC_FLAGS in the Dockerfile is already --no-dev; pass explicitly.
+  docker build \
+    -f "${DOCKERFILE}" \
+    --build-arg UV_SYNC_FLAGS="--no-dev" \
+    -t "${DEST}" \
+    "${REPO_ROOT}"
+fi
+
+if [[ "${PUBLISH_PREPARE_ONLY}" == "1" ]]; then
+  log "backend image prepared locally; publication deferred"
+  exit 0
+fi
+
+[[ "${PUSH_RELAY_READY}" == "1" ]] || prepare_push_relay
+
+local_config_digest="$(docker image inspect --format '{{.Id}}' "${APP_DEST}")"
+remote_config_digest="$(relay_ssh \
+  "curl -fsS --connect-timeout 3 --max-time 10 --proxy '${SQUID_PROXY_URL}' -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' 'https://${REGISTRY_HOST}/v2/${IMAGE_NAME}/manifests/${IMAGE_TAG}' 2>/dev/null | jq -er '.config.digest // empty'" \
+  2>/dev/null || true)"
+if [[ -n "${remote_config_digest}" && "${remote_config_digest}" == "${local_config_digest}" ]]; then
+  log "registry already has ${APP_DEST} with config digest ${local_config_digest}; skipping stream and push"
+  exit 0
+fi
 
 log "pushing the rehearsal backend image via the app VM (through Squid)"
 # The app daemon's proxy drop-in tunnels the push: CONNECT registry.localstack

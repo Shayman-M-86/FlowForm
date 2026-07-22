@@ -98,15 +98,17 @@ variable "ssh_public_keys" {
 # drifts the moment either side changes tenant. Supply them from the dev backend
 # env, which is gitignored and already the source of truth for the dev stack:
 #
-#   infra/deployment/proxmox/scripts/with-dev-auth0-env.sh plan
+#   infra/deployment/proxmox/scripts/rehearsal terraform plan
 #
 # (that wrapper exports these as TF_VAR_*), or export TF_VAR_auth0_domain etc.
 # yourself. Terraform prompts for any that are missing.
 #
-# All five are non-secret identifiers. The Auth0 mgmt client SECRET is a real
-# secret and is handled separately — see var.auth0_mgmt_secret below, which the
-# with-dev-auth0-env.sh wrapper fetches from AWS Secrets Manager so the rehearsal
-# uses the SAME management secret dev does and the Management API actually works.
+# All five are non-secret identifiers. NO real secret is a Terraform variable any
+# more: the Auth0 management client secret and the Grafana Cloud token — like the
+# application key, database passwords, and linkage secret — live in the root-only
+# Proxmox host bundle and are streamed into LocalStack Secrets Manager over SSH at
+# deploy time by `scripts/rehearsal sync`. Terraform (config, state, and
+# rendered cloud-init) is secret-free.
 
 # These are merged into localstack_seed_values (see locals.tf), so they carry the
 # same non-empty/single-line rule its own validation applies to the defaulted
@@ -164,37 +166,12 @@ variable "auth0_mgmt_id" {
   }
 }
 
-# The Auth0 Management API client secret — a REAL secret, unlike the five
-# identifiers above. It has no default and is never committed: the
-# with-dev-auth0-env.sh wrapper fetches it from AWS Secrets Manager
-# (flowform/nonprod/app-secrets → auth0_mgmt_secret, the same source the dev
-# stack's fetch-dev-secrets.sh uses) and exports it as TF_VAR_auth0_mgmt_secret,
-# or you can set that env var / AUTH0_MGMT_SECRET yourself. It is merged into
-# localstack_seed_values in locals.tf and written into the LocalStack app-secrets
-# entry by seed-localstack.sh in place of the throwaway random value, so the
-# rehearsal Management API works against the real tenant. With a real secret in
-# place, FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP now defaults to "true" below.
-variable "auth0_mgmt_secret" {
-  description = "Auth0 Management API client secret. Real secret; set via TF_VAR_auth0_mgmt_secret (the with-dev-auth0-env.sh wrapper fetches it from AWS Secrets Manager)."
-  type        = string
-  sensitive   = true
-
-  validation {
-    condition     = length(trimspace(var.auth0_mgmt_secret)) > 0 && !can(regex("[\r\n]", var.auth0_mgmt_secret))
-    error_message = "auth0_mgmt_secret must be a non-empty single-line string."
-  }
-}
-
-variable "grafana_cloud_token" {
-  description = "Grafana Cloud access token (basic-auth password) for the proxy-box Alloy agent. A real secret, so it has no default and is never committed: supply it via TF_VAR_grafana_cloud_token, which the with-dev-auth0-env.sh wrapper exports from the gitignored infra/env/dev/.grafana.env. Merged into localstack_seed_values in locals.tf like the Auth0 identifiers."
-  type        = string
-  sensitive   = true
-
-  validation {
-    condition     = length(trimspace(var.grafana_cloud_token)) > 0 && !can(regex("[\r\n]", var.grafana_cloud_token))
-    error_message = "grafana_cloud_token must be a non-empty single-line string."
-  }
-}
+# The Auth0 management client secret and the Grafana Cloud token were once
+# Terraform variables merged into the LocalStack seed. They are REAL secrets and
+# are no longer supplied through Terraform at all: both now live in the root-only
+# Proxmox host bundle (auth0/grafana resolved at deploy time from their
+# file/env/AWS sources) and reach LocalStack Secrets Manager via the deploy-time
+# SSH sync. Terraform carries no secret variables — see locals.tf.
 
 variable "localstack_seed_values" {
   description = "Non-secret rehearsal values written to LocalStack by the fixture VM after boot. Auth0 keys are merged in from their own variables (see locals.seed_values); the rest default here. Keys are validated against the shared runtime parameter contract."
@@ -210,20 +187,20 @@ variable "localstack_seed_values" {
     DATABASE_RESPONSE_APP_USER = "flowform_response_app"
     DATABASE_RESPONSE_HOST     = "10.10.10.40"
     DATABASE_RESPONSE_NAME     = "flowform_response"
-    # The rehearsal now seeds the REAL mgmt client secret (var.auth0_mgmt_secret,
-    # fetched from AWS Secrets Manager by the wrapper), so startup validation is
-    # ON: the app exercises the real Management API at boot and fails loudly if
-    # the secret or tenant is wrong. Token validation is unaffected either way.
+    # The rehearsal seeds the REAL mgmt client secret via the deploy-time SSH sync
+    # (from the Proxmox host bundle), so startup validation is ON: the app
+    # exercises the real Management API at boot and fails loudly if the secret or
+    # tenant is wrong. Token validation is unaffected either way.
     FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP = "true"
     FLOWFORM_EMAIL_FROM_ADDRESS             = "no-reply@flow-form.com.au"
     FLOWFORM_ENV                            = "prod"
     FLOWFORM_LOGGING_LEVEL                  = "INFO"
     FLOWFORM_LOGGING_LOG_JSON               = "true"
     # Grafana Cloud Loki target for the proxy-box Alloy agent. URL + user id are
-    # non-secret and default here; the secret token is NOT in this map — it comes
-    # from var.grafana_cloud_token, merged in via locals.tf exactly like the Auth0
-    # identifiers, so it never lands in a committed default. Override the URL/user
-    # for a real GC stack via TF_VAR_localstack_seed_values / terraform.tfvars.
+    # non-secret and default here. The secret token is NOT a seed value at all: it
+    # is delivered as the observability-secrets Secrets Manager entry by the
+    # deploy-time SSH sync, never through this map or Terraform. Override the
+    # URL/user for a real GC stack via TF_VAR_localstack_seed_values.
     GRAFANA_CLOUD_LOKI_URL  = "https://logs-prod-026.grafana.net/loki/api/v1/push"
     GRAFANA_CLOUD_LOKI_USER = "1687659"
   }

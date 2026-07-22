@@ -48,9 +48,8 @@ failure test.
   tmpfs `XDG_RUNTIME_DIR`. Shared-host bootstrap requires its instance role,
   scope, region, host addresses, and existing SSM/Secrets Manager resources.
 - Do not print secret contents, commit generated secret files, or treat a
-  frontend `VITE_*` value as confidential. The current dev and app bootstrap
-  helpers pass complete secret JSON through a short-lived Python process
-  argument; removing that process-list exposure remains an implementation gap.
+  frontend `VITE_*` value as confidential. Bootstrap parses secret JSON from
+  stdin and writes only mode-`0600` files under its tmpfs secret directory.
 
 ## Ordered steps
 
@@ -81,18 +80,16 @@ failure test.
    or real Auth0 management secret. CI generates and masks its throwaway value
    before starting Compose.
 5. In the shared-host model, CDK owns scoped `app-secrets`, `db-secrets`, and
-   `linkage-secret` resources plus SSM parameters. App bootstrap
-   materializes four secret files into `/run/flowform/secrets` tmpfs, renders
-   `/opt/flowform/backend.env` from `/flowform/<scope>/backend/*`, validates a
-   backend image, and starts Compose. Proxy bootstrap renders its scoped SSM
-   path into `/opt/flowform/proxy.env`; that path currently includes
-   `GRAFANA_CLOUD_TOKEN`, so the resulting file must be treated as sensitive
-   even though the value is stored as an SSM parameter rather than a Secrets
-   Manager secret.
-6. Re-run bootstrap after a supported secret/config rotation so files and env
-   are re-materialized before containers restart. The repository does not yet
-   attach this bootstrap to CDK-created EC2 instances or provide a complete
-   cloud rotation/release orchestration.
+   `linkage-secret` resources plus SSM parameters. App, proxy, and database
+   bootstrap materialize secret files into `/run/flowform/secrets` tmpfs while
+   keeping non-secret runtime settings in root-owned env files. Compose config
+   is validated before pull/up and startup waits for container health.
+6. In the Proxmox rehearsal, use the `rehearsal sync` subcommand to reconcile
+   the root-only PVE-host bundle plus deploy-time Auth0 and
+   Grafana inputs into LocalStack. Use `rehearsal rotate
+   app|database|linkage` for supported rotations and consumer convergence.
+   The repository does not yet attach bootstrap to CDK-created EC2 instances or
+   provide complete cloud rotation/release orchestration.
 
 ## Inputs and outputs
 

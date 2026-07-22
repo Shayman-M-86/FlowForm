@@ -7,21 +7,35 @@
 //      labelled with service_name (for Grafana Logs Drilldown) and a level
 //      extracted from the plain-text lines.
 //
-// Grafana Cloud credentials are injected as environment variables by docker
-// compose from /opt/flowform/proxy.env (rendered by bootstrap-proxy.sh from the
-// /flowform/<scope>/proxy/* SSM path — the same prod-shaped seam as CADDY_IMAGE
-// and API_DOMAIN):
+// The two NON-SECRET Grafana Cloud identifiers are injected as environment
+// variables by docker compose from /opt/flowform/proxy.env (rendered by
+// bootstrap-proxy.sh from the /flowform/<scope>/proxy/* SSM path — the same
+// prod-shaped seam as CADDY_IMAGE and API_DOMAIN):
 //   GRAFANA_CLOUD_LOKI_URL   full Loki push URL, e.g.
 //                            https://logs-prod-XX.grafana.net/loki/api/v1/push
 //   GRAFANA_CLOUD_LOKI_USER  Loki tenant / user id (basic-auth username)
-//   GRAFANA_CLOUD_TOKEN      Grafana Cloud access token (basic-auth password)
 //
-// Until a real token is seeded these are placeholders; Alloy still starts and
-// simply gets 401s from Grafana Cloud, so the wiring is exercised end to end.
+// The SECRET (basic-auth password) is NOT an environment variable. It is
+// delivered as a file-backed Docker secret at GRAFANA_CLOUD_TOKEN_FILE
+// (/run/secrets/GRAFANA_CLOUD_TOKEN), which bootstrap-proxy.sh materialises from
+// the observability-secrets Secrets Manager entry. local.file reads it with
+// is_secret = true so the value is redacted in the Alloy UI and never logged.
+//
+// Until a real token is seeded the token file simply holds a placeholder; Alloy
+// still starts and gets 401s from Grafana Cloud, so the wiring is exercised end
+// to end.
 
 logging {
   level  = "info"
   format = "logfmt"
+}
+
+// --- Grafana Cloud token (file-backed Docker secret) -------------------------
+// is_secret marks the exported content sensitive: Alloy redacts it in the UI and
+// keeps it out of logs. The path comes from the env the compose file sets.
+local.file "grafana_cloud_token" {
+  filename  = sys.env("GRAFANA_CLOUD_TOKEN_FILE")
+  is_secret = true
 }
 
 // --- Grafana Cloud Loki sink -------------------------------------------------
@@ -31,7 +45,7 @@ loki.write "grafana_cloud" {
 
     basic_auth {
       username = sys.env("GRAFANA_CLOUD_LOKI_USER")
-      password = sys.env("GRAFANA_CLOUD_TOKEN")
+      password = local.file.grafana_cloud_token.content
     }
   }
 }

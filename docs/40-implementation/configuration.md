@@ -5,7 +5,7 @@ aliases:
 document_type: implementation
 status: draft
 authority: canonical
-verified_against_commit: ad26b87e9820
+verified_against_commit: null
 tags: [configuration]
 related_code:
   - "../../backend/app/core/config.py"
@@ -64,8 +64,9 @@ their environment-specific lifecycle; `SecurityScopeConfig` separates the
 shared non-production security namespace from production.
 
 The runtime-parameter contract separates scoped values, backend/proxy runtime
-groups, secret resource names, and secret-only rehearsal seed keys. Consumers
-derive paths from it instead of maintaining independent SSM name lists.
+groups, and secret resource names. Its rehearsal seed-key set is non-secret;
+managed secret values use the separate deploy-time sync path. Consumers derive
+paths from the contract instead of maintaining independent SSM name lists.
 
 ## Dependency direction
 
@@ -75,8 +76,8 @@ and cloud-init then feed application and container consumers. Runtime code does
 not write back to the canonical models. Confidential values are generally
 intended to travel through secret files or Secrets Manager, while identifiers
 and ordinary runtime settings use environment files or SSM parameters. The
-current proxy SSM path is an exception: it carries `GRAFANA_CLOUD_TOKEN` into
-`/opt/flowform/proxy.env`, so that rendered file is sensitive.
+Grafana token follows the proxy's file-backed observability secret path; only
+its URL and user remain in the proxy SSM parameter group.
 
 ## Generated versus handwritten code
 

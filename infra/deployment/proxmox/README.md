@@ -18,20 +18,19 @@ The source and Packer templates default to the official AL2023 image's native
 25 GiB disk. Terraform full clones inherit that size and never runs a resize;
 existing larger clones must be deliberately replaced to adopt it.
 
-Then create the rehearsal topology from the local checkout:
+Then create and converge the rehearsal topology from the local checkout:
 
 ```bash
 host/setup-host.sh # one-time bootstrap, run on the PVE host
-cd terraform
-terraform init
-../scripts/with-dev-auth0-env.sh plan
-../scripts/with-dev-auth0-env.sh apply
+terraform -chdir=terraform init
+scripts/rehearsal build
 ```
 
-Run plan/apply through `with-dev-auth0-env.sh`: the Auth0 identifiers are
-Terraform variables without defaults, and the wrapper exports them as
-`TF_VAR_*` from the gitignored `infra/env/dev/.backend.env` so the rehearsal
-always validates tokens against the same dev tenant the front end logs in to.
+`rehearsal` is the workstation entrypoint. Its `build` subcommand applies
+Terraform, synchronises the PVE-host secret bundle, converges proxy and database,
+publishes the two app images, and finally converges the app. Use
+`scripts/rehearsal --help` for `verify`, `logs`, `sync`, and `rotate` commands.
+Direct Terraform operations use `scripts/rehearsal terraform <arguments...>`.
 
 The full from-scratch order of operations (fresh Proxmox host, nothing built)
 is documented in
@@ -63,7 +62,7 @@ Operator TLS trust is anchored on the committed rehearsal CA
 (`infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.crt`): the proxy
 Caddy serves a pre-generated leaf for `api.localstack.test` signed by it, so
 installing that one CA file in a workstation trust store survives all VM
-rebuilds. Tail service logs with `infra/deployment/proxmox/scripts/logs.sh`.
+rebuilds. Tail service logs with `infra/deployment/proxmox/scripts/rehearsal logs`.
 
 LocalStack `230` has no default route by design. Its Packer fixture preloads the
 third-party images it needs before isolation, while Terraform cloud-init still
@@ -72,9 +71,11 @@ An applied rehearsal still requires a fixture template built from the current
 Compose image references; checked-in configuration alone does not prove the
 live services healthy.
 
-## Push the backend image
+## Image publication
 
-From a WSL checkout with Docker available, run:
+`scripts/rehearsal build` publishes both required app images in dependency
+order. To publish only the backend image manually from a WSL checkout with
+Docker available, run:
 
 ```bash
 infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh
@@ -94,19 +95,15 @@ The helper publishes only the backend image. PostgreSQL is independently
 preloaded in Packer fixture `9002`; VM `240` starts it with `pull_policy: never`
 after running the maintained initialization tree against both databases.
 
-Auth0 is the one dependency the rehearsal does not fake: bearer tokens are
-validated against the real dev tenant (its issuer domain is on the rehearsal
-Squid allow-list), so Studio-issued tokens verify end-to-end. Only the
-Management API stays on placeholder credentials — its client secret is seeded
-as random bytes — so the runtime contract disables Management API validation
-during startup. The backend default remains enabled for other environments,
-and Management API operations still fail closed.
+Auth0 is the one dependency the rehearsal does not fake: bearer tokens and the
+Management API use the real dev tenant through the rehearsal Squid allow-list.
+The management secret is resolved at deploy time and enters LocalStack only via
+`rehearsal sync`; it is not stored in Terraform state or the persistent bundle.
 
-A `terraform destroy` wipes the registry contents with VM `230`; after any
-full rebuild, re-run the push above and then re-run
-`/opt/flowform/scripts/run-bootstrap-app.sh` on app VM `220` (its first boot
-fails at image pull by design when the registry is empty).
+A `terraform destroy` wipes the registry and LocalStack state with VM `230`, but
+does not touch `/var/lib/flowform/rehearsal-secrets/<scope>/` on the PVE host.
+Use `scripts/rehearsal build --fresh` to destroy and rebuild while preserving
+that bundle; the command verifies its fingerprint across the operation.
 
-The connection defaults can be overridden with `PROXMOX_SSH_TARGET`,
-`PROXMOX_SSH_KEY`, `PROXMOX_PRIVATE_BRIDGE`, `PROXMOX_TEMP_BRIDGE_CIDR`,
-and `PUSH_RELAY_SSH_TARGET`.
+Connection defaults can be overridden consistently with `PVE_HOST`, `PVE_USER`,
+`PVE_SSH_KEY`, `GUEST_USER`, `BRIDGE`, and `BRIDGE_CIDR`.

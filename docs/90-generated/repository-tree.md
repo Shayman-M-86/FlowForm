@@ -248,7 +248,8 @@ FlowForm/
 │   │   │   ├── audit_logging.py
 │   │   │   ├── logging_config.py
 │   │   │   ├── request_logging.py
-│   │   │   └── request_timing.py
+│   │   │   ├── request_timing.py
+│   │   │   └── sensitive_data.py
 │   │   ├── middleware/
 │   │   │   ├── auth/
 │   │   │   │   ├── __init__.py
@@ -483,7 +484,8 @@ FlowForm/
 │   │   │   ├── logging/
 │   │   │   │   ├── __init__.py
 │   │   │   │   ├── test_logging_config.py
-│   │   │   │   └── test_request_logging.py
+│   │   │   │   ├── test_request_logging.py
+│   │   │   │   └── test_sensitive_data.py
 │   │   │   ├── models/
 │   │   │   │   ├── __init__.py
 │   │   │   │   └── test_models_mapper.py
@@ -837,10 +839,6 @@ FlowForm/
 │   │       ├── host/
 │   │       │   └── setup-host.sh
 │   │       ├── scripts/
-│   │       │   ├── logs.sh
-│   │       │   ├── rebuild.sh
-│   │       │   ├── verify.sh
-│   │       │   └── with-dev-auth0-env.sh
 │   │       ├── terraform/
 │   │       │   ├── .terraform.lock.hcl
 │   │       │   ├── locals.tf

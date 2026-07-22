@@ -13,10 +13,13 @@ locals {
   ])
   ssh_authorized_keys        = indent(2, join("\n", [for key in var.ssh_public_keys : "- ${key}"]))
   runtime_parameter_contract = jsondecode(file("${path.module}/../../config/runtime-parameter-contract.json"))
-  # Runtime-parameter seed keys become plaintext SSM parameters. Secret seed keys
-  # (e.g. AUTH0_MGMT_SECRET) are declared separately in the contract because the
-  # seed script writes them into Secrets Manager, never SSM — but they are still
-  # legal keys in localstack_seed_values, so union both sources for the check.
+  # Runtime-parameter seed keys become plaintext SSM parameters. Terraform no
+  # longer supplies ANY secret values: real secrets (the Auth0 management secret,
+  # the Grafana Cloud token, the application key, both database passwords, and the
+  # linkage secret) are held in the root-only Proxmox host bundle and streamed
+  # into LocalStack Secrets Manager over SSH at deploy time — never through
+  # Terraform variables, state, or cloud-init. The contract's secret_seed_value_keys
+  # is now empty, so this union is just the runtime-parameter seed keys.
   required_localstack_seed_keys = toset(concat(
     flatten([
       for group in values(local.runtime_parameter_contract.runtime_groups) : [
@@ -33,11 +36,9 @@ locals {
     FLOWFORM_AUTH0_CLIENT_ID   = var.auth0_client_id
     FLOWFORM_AUTH0_MGMT_DOMAIN = var.auth0_mgmt_domain
     FLOWFORM_AUTH0_MGMT_ID     = var.auth0_mgmt_id
-    # Secrets, merged in from their own variables (never a committed map default).
-    # AUTH0_MGMT_SECRET is a secret_seed_value_key in the contract: the seed
-    # script writes it into the Secrets Manager app-secrets entry, not SSM.
-    AUTH0_MGMT_SECRET   = var.auth0_mgmt_secret
-    GRAFANA_CLOUD_TOKEN = var.grafana_cloud_token
+    # No secrets are merged here. The boot seed writes only these non-secret
+    # identifiers into SSM; every real secret arrives later via the deploy-time
+    # SSH synchronisation step (see `scripts/rehearsal sync`).
   })
   configured_localstack_seed_keys = toset(keys(local.localstack_seed_values))
   localstack_seed_environment = join("\n", concat(
@@ -49,7 +50,9 @@ locals {
     REHEARSAL_CA_CRT_B64                = base64encode(file("${path.module}/../../../containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.crt"))
     BOOTSTRAP_APP_SH_B64                = base64encode(file("${path.module}/../../bootstrap/bootstrap-app.sh"))
     AWS_CLI_RETRY_SH_B64                = base64encode(file("${path.module}/../../bootstrap/aws-cli-retry.sh"))
+    BOOTSTRAP_COMMON_SH_B64             = base64encode(file("${path.module}/../../bootstrap/bootstrap-common.sh"))
     DOCKER_COMPOSE_APP_B64              = base64encode(file("${path.module}/../../../containers/runtime/compose/app.yml"))
+    DOCKER_COMPOSE_APP_REHEARSAL_B64    = base64encode(file("${path.module}/../../../containers/strategies/rehearsal/compose/app.override.yml"))
     CONFIG_ALLOY_APP_B64                = base64encode(file("${path.module}/../../../containers/runtime/services/alloy-app/config.alloy"))
     BOOTSTRAP_DB_SH_B64                 = base64encode(file("${path.module}/../../bootstrap/bootstrap-db.sh"))
     DOCKER_COMPOSE_DB_B64               = base64encode(file("${path.module}/../../../containers/strategies/rehearsal/compose/db.yml"))
@@ -66,6 +69,7 @@ locals {
     SQUID_ALLOWED_DOMAINS_REHEARSAL_B64 = base64encode(file("${path.module}/../../../containers/strategies/rehearsal/services/squid/allowed-domains.txt"))
     DOCKER_COMPOSE_LOCALSTACK_B64       = base64encode(file("${path.module}/../../../containers/strategies/rehearsal/fixtures/compose.localstack.yml"))
     LOCALSTACK_SEED_SH_B64              = base64encode(file("${path.module}/../../../containers/strategies/rehearsal/services/localstack/seed-localstack.sh"))
+    LOCALSTACK_SYNC_SECRETS_SH_B64      = base64encode(file("${path.module}/../../../containers/strategies/rehearsal/services/localstack/sync-secrets-into-localstack.sh"))
     RUNTIME_PARAMETER_CONTRACT_B64      = base64encode(file("${path.module}/../../config/runtime-parameter-contract.json"))
     DOCKER_COMPOSE_REGISTRY_B64         = base64encode(file("${path.module}/../../../containers/strategies/rehearsal/fixtures/compose.registry.yml"))
     DOCKER_COMPOSE_TLS_SHIM_B64         = base64encode(file("${path.module}/../../../containers/strategies/rehearsal/fixtures/compose.tls-shim.yml"))

@@ -5,7 +5,7 @@ aliases:
 document_type: implementation
 status: draft
 authority: canonical
-verified_against_commit: ad26b87e9820
+verified_against_commit: null
 tags: [infrastructure]
 related_code:
   - "../../infra/images/scripts/"
@@ -44,9 +44,9 @@ after losing the host entirely.
   `terraform.tfvars` — Proxmox API endpoint and token, node name, storage
   pools, and the SSH public keys baked into every VM.
 - `infra/env/dev/.backend.env` — the dev backend env (shared with the dev
-  Compose stack); the Terraform wrapper reads the Auth0 values from it.
+  Compose stack); `rehearsal` reads the non-secret Auth0 identifiers from it.
 - `infra/env/dev/.grafana.env` — machine-local `GRAFANA_CLOUD_TOKEN` input
-  required by the Terraform wrapper for proxy fixture configuration.
+  resolved by `rehearsal sync` for proxy observability.
 
 **2. Proxmox host bootstrap (once, on the PVE host):**
 
@@ -66,52 +66,55 @@ infra/images/scripts/build-proxmox-db-fixture.sh          # offline DB fixture 9
 infra/images/scripts/verify-proxmox-disk-sizes.sh
 ```
 
-**4. Deploy the topology (Terraform):**
+**4. Deploy and converge the topology:**
 
 ```bash
-cd infra/deployment/proxmox/terraform
-terraform init
-../scripts/with-dev-auth0-env.sh apply
+terraform -chdir=infra/deployment/proxmox/terraform init
+infra/deployment/proxmox/scripts/rehearsal build
 ```
 
-The wrapper exports the Auth0 `TF_VAR_*`s; plain `terraform apply` will prompt
-for them. The apply clones templates into VMs 210/220/230/240; the LocalStack VM
-seeds parameters and secrets on first boot. The app and DB boot independently;
-backend readiness recovers after the database becomes healthy. The app VM's
-bootstrap does not fail on the empty registry — it **waits** for its images,
-retrying the pull. That wait is bounded, so the combined rebuild command also
-reruns the idempotent app bootstrap after both images have landed.
+`rehearsal build` is the maintained workstation orchestrator and the sole owner
+of first convergence. Cloud-init installs configuration and enables app, proxy,
+and database systemd services for later VM reboots, but does not start those
+services during the creation boot. This avoids cloud-init racing the workstation
+over the same bootstrap locks or waiting for images that are not published yet.
 
-**5. Push the two images the app box needs.** The app Compose stack pulls
-**both** the backend and the Grafana Alloy sidecar, and the offline app box can
-fetch neither from the internet — only from the fake registry. Push both:
+The orchestrator runs Terraform apply → secret synchronisation → proxy
+convergence → app image-relay preparation. It then converges the database while
+building the backend and pulling Alloy in parallel, publishes the images through
+one prepared relay, converges the app, and runs the non-disruptive verification
+suite. A registry upload is skipped only when its manifest config digest exactly
+matches the prepared local image; unknown manifest shapes are published normally.
+The ordering remains inherent: secret sync requires VM 230; isolated guests and
+image publication need Squid; and the app requires both registry images plus its
+database. Direct Terraform operations use `rehearsal terraform <arguments...>`
+and share the same preparation code.
 
-```bash
-infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh
-infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh
-```
-
-Both relay through app VM 220's Docker daemon, so they require step 4's VMs to be
-running — the ordering apply → push is inherent. `compose pull` fails as a whole
-if *any* service image is missing, so mirroring Alloy is not optional: skip it
-and the bootstrap's waiting pull eventually fails on the absent Alloy image,
-which looks exactly like a stuck backend pull. When running the steps manually,
-rerun `/opt/flowform/scripts/run-bootstrap-app.sh` on VM 220 after both pushes if
-its initial bounded wait has already expired.
-
-**Steps 4–5 in one command.** `rebuild.sh` orchestrates apply → push backend →
-mirror Alloy → app convergence in the one order they can go in (see the "why
-this order is inherent" note in its header). It calls the same wrapper, both
-registry scripts, and finally the app's idempotent bootstrap under the hood:
+Use `--fresh` for an explicit full replacement:
 
 ```bash
-infra/deployment/proxmox/scripts/rebuild.sh                 # converge + push both images
-infra/deployment/proxmox/scripts/rebuild.sh --fresh -- -auto-approve  # full teardown first
+infra/deployment/proxmox/scripts/rehearsal build --fresh -- -auto-approve
 ```
 
 `--fresh` runs `terraform destroy` before the apply (opt-in, so a bare run never
-nukes a healthy stack); anything after `--` is passed through to the terraform
-apply.
+nukes a healthy stack); anything after `--` is passed through to Terraform.
+The root-only bundle at `/var/lib/flowform/rehearsal-secrets/<scope>/` is outside
+Terraform's lifecycle. When it already exists, `build --fresh` fingerprints it
+before destroy and confirms that it is unchanged after apply and sync.
+
+**5. Synchronise or rotate secrets independently (as needed):**
+
+```bash
+infra/deployment/proxmox/scripts/rehearsal sync
+infra/deployment/proxmox/scripts/rehearsal rotate app
+infra/deployment/proxmox/scripts/rehearsal rotate database
+infra/deployment/proxmox/scripts/rehearsal rotate linkage
+```
+
+App and database rotations restore the prior bundle values and attempt to
+reconverge the prior state if sync or consumer convergence fails. Linkage
+history is append-only: after a version is synced, it is retained even if app
+convergence fails, and `rehearsal build` is the recovery path.
 
 **6. Operator workstation trust (once per machine).** Add the hosts entry
 `192.168.70.63 api.localstack.test` (Windows: `C:\Windows\System32\drivers\etc\hosts`;
@@ -122,16 +125,17 @@ Firefox keeps its own store; Node tooling needs
 `NODE_EXTRA_CA_CERTS=<path to rehearsal-ca.crt>`. Because the CA is a repo
 file, this never has to be repeated after rebuilds.
 
-**7. Verify:**
+**7. Verify or inspect independently:**
 
 ```bash
 curl --cacert infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.crt \
   https://api.localstack.test/api/v1/system/health/ready   # 200, verified TLS
-infra/deployment/proxmox/scripts/logs.sh app --list        # containers healthy
-infra/deployment/proxmox/scripts/verify.sh                 # full egress model
+infra/deployment/proxmox/scripts/rehearsal logs app --list # containers healthy
+infra/deployment/proxmox/scripts/rehearsal verify          # full egress model
 ```
 
-`verify.sh` is the definitive check: health `200`, a structurally
+`rehearsal build` runs this verification automatically before reporting
+success. `rehearsal verify` remains the independent definitive check: health `200`, a structurally
 valid but unsigned JWT returning `401` (kid mismatch — the live Auth0 JWKS path,
 never a `500`), every fake-AWS/ECR name appearing as a `CONNECT` in Squid's
 access log, and the direct-bypass paths all blocked. `--disruptive` also stops
@@ -139,11 +143,11 @@ Squid to prove egress fails closed. Note it reads Squid's log as the in-containe
 squid uid (`docker exec -u 13`), which the hardened container requires.
 
 **Teardown and rebuild.** `terraform destroy` removes the VMs and with them the
-registry contents and all seeded state. After any full rebuild, repeat steps
-4–5 — or run `rebuild.sh --fresh`, which folds the destroy, apply, and push into
-one command (the templates, host bridge, and workstation trust all survive). VM
-disks are disposable by design; fixes belong in the scripts and templates, never
-hand-applied to a built VM.
+registry contents and seeded LocalStack state, but not the PVE-host secret
+bundle. Run `rehearsal build --fresh` to fold destroy, apply, sync, publication,
+and convergence into one command. Templates, the host bridge, the persistent
+bundle, and workstation trust survive. VM disks are disposable by design;
+fixes belong in scripts and templates, never hand-applied to a built VM.
 
 ## Related documents
 

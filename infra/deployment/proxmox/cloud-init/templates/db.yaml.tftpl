@@ -1,7 +1,7 @@
 #cloud-config
 # Dedicated rehearsal database VM (240). The image is preloaded by template
-# 9002; boot opens one narrowly scoped Squid path only long enough to retrieve
-# the two managed app-role passwords, then starts PostgreSQL with egress closed.
+# 9002. Cloud-init prepares firewall/configuration and enables reboot recovery;
+# `rehearsal build` owns the creation boot's secret fetch and PostgreSQL start.
 
 write_files:
   - path: /etc/pki/ca-trust/source/anchors/flowform-rehearsal-ca.crt
@@ -19,6 +19,13 @@ write_files:
     permissions: '0644'
     owner: root:root
     content: ${AWS_CLI_RETRY_SH_B64}
+  # shared bootstrap library; sourced by bootstrap-db.sh and the retry shim,
+  # so it must sit beside them in this same directory.
+  - path: /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-common.sh
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${BOOTSTRAP_COMMON_SH_B64}
   - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/compose/db.yml
     encoding: b64
     permissions: '0644'
@@ -109,4 +116,6 @@ runcmd:
   # the required first-boot firewall without disturbing Docker's tables.
   - [ nft, -f, /etc/nftables/flowform-db.nft ]
   - [ systemctl, daemon-reload ]
-  - [ systemctl, enable, --now, flowform-db.service ]
+  # First convergence is owned by `rehearsal build`. Enable for later reboots
+  # without starting it during cloud-init and racing the orchestrator.
+  - [ systemctl, enable, flowform-db.service ]

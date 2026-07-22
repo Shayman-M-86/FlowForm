@@ -60,7 +60,7 @@ grep -Fq '../services/squid/squid.conf:/etc/squid/squid.conf.template:ro' "${PRO
   || note "rehearsal proxy override no longer mounts the base squid.conf"
 [[ -f "${SQUID_CONF}" ]] || note "base squid.conf missing at ${SQUID_CONF}"
 grep -Fq 'access_log stdio:/var/log/squid/access.log flowform_access' "${SQUID_CONF}" \
-  || note "squid file access log required by verify.sh is missing"
+  || note "squid file access log required by rehearsal verify is missing"
 grep -Fq 'logformat flowform_access level=info' "${SQUID_CONF}" \
   || note "squid access log no longer carries a Grafana severity"
 grep -Fq "su -s /bin/sh -c 'exec tail -n 0 -F /var/log/squid/access.log' proxy &" "${PROXY_COMPOSE}" \

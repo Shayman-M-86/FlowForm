@@ -39,12 +39,19 @@ listed under [Rehearsal areas](#rehearsal-areas) below.
 | Packer | Build the shared golden template, then derive separate offline LocalStack and PostgreSQL fixtures. | `infra/images/packer/`, `infra/images/scripts/build-proxmox-image.sh`, `infra/images/scripts/build-proxmox-localstack-fixture.sh`, `infra/images/scripts/build-proxmox-db-fixture.sh` |
 | Host bootstrap | Create the private rehearsal bridge and enable Proxmox snippet storage once. | `infra/deployment/proxmox/host/setup-host.sh` |
 | Terraform | Render cloud-init templates, upload the snippets, and clone the golden template into the rehearsal topology. | `infra/deployment/proxmox/terraform/`, `infra/deployment/proxmox/cloud-init/templates/` |
+| Workstation orchestration | Apply, synchronise secrets, converge guests, publish images, inspect logs, and verify the live rehearsal. | `infra/deployment/proxmox/scripts/rehearsal`, `infra/deployment/proxmox/scripts/lib/` |
 | Runtime configuration contract | Keep AWS CDK and Proxmox rehearsal SSM parameter names aligned while allowing platform-specific values. | `infra/deployment/config/runtime-parameter-contract.json` |
 
 Packer and Terraform are separate processes. Packer produces a reusable
 template; Terraform consumes a completed template by VMID. Terraform does not
 invoke Packer, so a base-image change requires a Packer build before Terraform
 can deploy clones of that new template.
+
+The workstation orchestrator owns first convergence. Guest cloud-init installs
+the launchers and enables systemd units for reboot recovery without starting
+app, proxy, or database convergence during the creation boot. After proxy
+convergence, database convergence overlaps local backend/Alloy preparation;
+image publication and app convergence remain ordered behind their prerequisites.
 
 ## Current topology
 
@@ -80,10 +87,10 @@ The rest of the rehearsal is documented in three focused pages:
 - [[proxmox-rehearsal-fixtures|Proxmox rehearsal fixtures and egress]] — the offline fixture boundary, the
   Squid/TLS-shim egress model, registry pushes, the database VM, and the two
   deliberate holes in the isolation (Auth0 and operator-facing TLS).
-- [[proxmox-rehearsal-observability|Proxmox rehearsal observability]] — tailing container logs with `logs.sh`
+- [[proxmox-rehearsal-observability|Proxmox rehearsal observability]] — tailing container logs with `rehearsal logs`
   and the two-agent Grafana Alloy log-shipping stack.
-- [[proxmox-rehearsal-setup|Proxmox rehearsal setup]] — the from-scratch runbook (steps 1–7,
-  `rebuild.sh`, and teardown).
+- [[proxmox-rehearsal-setup|Proxmox rehearsal setup]] — the from-scratch runbook,
+  `rehearsal build`, rotation, verification, and teardown.
 
 ## Related documents
 

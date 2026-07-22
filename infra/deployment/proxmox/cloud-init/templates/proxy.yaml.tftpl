@@ -6,8 +6,8 @@
 # uploads the result to Proxmox. No rendered cloud-init file is stored locally.
 #
 # The proxy box is EGRESS-ONLY: it simulates the controlled egress gateway and
-# nothing else. It runs the REAL prod proxy stack (Caddy + Squid) via
-# bootstrap-proxy.sh, with a rehearsal OVERRIDE that swaps only the two configs
+# nothing else. `rehearsal build` runs the REAL prod proxy stack (Caddy + Squid)
+# via bootstrap-proxy.sh, with a rehearsal OVERRIDE that swaps only the two configs
 # that can't work offline: Caddy TLS (route53 → internal) and the Squid allow-list
 # (real AWS → *.localstack.test). Prod compose + prod configs are untouched.
 #
@@ -44,6 +44,13 @@ write_files:
     permissions: '0644'
     owner: root:root
     content: ${AWS_CLI_RETRY_SH_B64}
+  # shared bootstrap library; sourced by bootstrap-proxy.sh and the retry shim,
+  # so it must sit beside them in this same directory.
+  - path: /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-common.sh
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${BOOTSTRAP_COMMON_SH_B64}
 
   # --- prod proxy compose (base) + its prod config files (kept, referenced by
   #     the override which only swaps two of them) -------------------------------
@@ -140,6 +147,21 @@ write_files:
       set -Eeuo pipefail
       set -a; . /etc/flowform/bootstrap-proxy.env; set +a
       exec /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-proxy.sh
+  - path: /etc/systemd/system/flowform-proxy.service
+    permissions: '0644'
+    owner: root:root
+    content: |
+      [Unit]
+      Description=FlowForm proxy convergence
+      Requires=docker.service
+      After=docker.service network-online.target
+      Wants=network-online.target
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/opt/flowform/scripts/run-bootstrap-proxy.sh
+      [Install]
+      WantedBy=multi-user.target
 
 runcmd:
   # Trust the rehearsal CA (the proxy box also dials the shim's *.localstack.test).
@@ -147,5 +169,7 @@ runcmd:
   # Resolve the fake-AWS SNI names + fake-ECR registry to the aws-fixtures-vm.
   # (Squid's own extra_hosts is the load-bearing resolution; this aids debugging.)
   - [ bash, -c, "grep -q registry.localstack.test /etc/hosts || echo '10.10.10.30 secretsmanager.localstack.test ssm.localstack.test kms.localstack.test registry.localstack.test' >> /etc/hosts" ]
-  # Bring up the prod proxy stack (Caddy + Squid) the prod way — egress only.
-  - [ /opt/flowform/scripts/run-bootstrap-proxy.sh ]
+  # First convergence is owned by `rehearsal build`; enable only for later
+  # reboots so cloud-init and the orchestrator never run the same bootstrap.
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, enable, flowform-proxy.service ]

@@ -51,17 +51,18 @@ carries no private-CIDR exemption). That bypass path is not merely unused but
 closed: LocalStack `:4566` and the registry `:5000` bind to loopback on VM 230,
 and an `nftables` ruleset there admits `:443` only from the proxy VM — so a
 direct `app → :4566`/`:443` call fails the way an AWS security group would.
-`infra/deployment/proxmox/scripts/verify.sh` asserts all of this against the
+`infra/deployment/proxmox/scripts/rehearsal verify` asserts all of this against the
 live stack (Squid-log CONNECTs present, direct paths blocked, `--disruptive`
 proves egress fails when Squid is down).
 
 Terraform validates its non-secret seed map against the shared parameter
 contract and renders both into the LocalStack cloud-init payload. A systemd
-oneshot waits for LocalStack health on every boot, generates throwaway secrets
-inside the VM (except the real Auth0 management client secret, which Terraform
-supplies — see the Auth0 boundary below), creates local KMS and Secrets Manager
-resources, and publishes the resulting local identifiers plus the rehearsal
-backend/proxy parameters.
+oneshot waits for LocalStack health and publishes non-secret runtime parameters.
+Managed Secrets Manager values arrive later through `rehearsal sync`: the
+workstation streams an allow-listed archive assembled from the root-only PVE
+bundle and deploy-time Auth0/Grafana inputs into VM 230, where the on-VM helper
+validates and reconciles it. Terraform configuration and state contain none of
+those secret values.
 The AWS CDK security stack uses the same contract for its scoped SSM names but
 supplies real AWS resource values. App and proxy bootstrap reads retry to avoid
 a simultaneous-start race with the seed service.
@@ -70,12 +71,11 @@ Seed resources remain runtime data; the fixture contains none of that state.
 Static validation proves the build graph and contract resolve, not that
 templates `9001` and `9002` exist on a Proxmox host or the deployed services are healthy.
 
-The backend image push remains an operator action. The maintained helper at
-`infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh` always
-relays through app VM `220`: it temporarily addresses the Proxmox host on
-`vmbr10`, creates a proxied SSH path to `220`, streams the built image into that
-VM's Docker daemon, and pushes from there before removing the temporary
-transport on exit. The push itself rides Squid — the app daemon tunnels
+Backend publication remains an orchestrated operator action. The maintained
+helper at `infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh`
+always relays through app VM `220`: `rehearsal build` owns the temporary
+`vmbr10` transport, prepares the app daemon proxy, and reuses one per-build SSH
+trust file across image operations. The push itself rides Squid — the app daemon tunnels
 `CONNECT registry.localstack.test:443` to the TLS shim, which fronts the private
 registry — so it exercises the same egress path a real ECR push would. The
 registry and LocalStack are never LAN-facing, and there is no insecure-registry
@@ -85,11 +85,11 @@ The app Compose stack pulls a second image the offline app box cannot reach on
 its own: the Grafana Alloy sidecar. The companion helper
 `infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh`
 mirrors `grafana/alloy` into the fake registry over the identical relay-through-
-`220` path. Both pushes are required: `compose pull` fails as a whole if any one
-service image is absent, so a missing Alloy mirror eventually exhausts the app
-bootstrap's bounded retry. `rebuild.sh` runs both helpers after the apply and
-then reruns the idempotent app bootstrap; run manually, do both pushes and rerun
-the bootstrap if its initial wait has already expired.
+`220` path. Backend build and Alloy pull run concurrently with database
+convergence. Publication stays sequential through the shared relay, and a
+stream is skipped only when the registry manifest's config digest equals the
+prepared local image ID. Both images must exist before the orchestrator runs the
+app bootstrap; cloud-init no longer starts a competing app convergence.
 
 The app VM uses the shared app Compose unchanged. VM `240` runs one tmpfs-backed
 PostgreSQL 17 cluster containing both databases. Its bootstrap briefly opens
@@ -126,24 +126,17 @@ CONNECT. This is a deliberate hole in the isolation — authenticated flows requ
 both hosts reachable and up; unauthenticated endpoints remain fully offline.
 
 The Auth0 identifiers are not committed. Terraform declares them as variables
-without defaults, and the wrapper
-`infra/deployment/proxmox/scripts/with-dev-auth0-env.sh` exports them as
+without defaults, and `rehearsal terraform`/`rehearsal build` export them as
 `TF_VAR_*` from the gitignored `infra/env/dev/.backend.env`, so rehearsal and
-dev cannot drift apart. Run every plan/apply through that wrapper.
+dev cannot drift apart.
 
-The Management API is functional and uses the real management client secret. The
-same wrapper fetches it from AWS Secrets Manager
-(`flowform/nonprod/app-secrets` → `auth0_mgmt_secret`, the source the dev stack's
-`fetch-dev-secrets.sh` also reads) using the operator's `aws login`, and exports
-it as `TF_VAR_auth0_mgmt_secret` (declared as a `secret_seed_value_key` in the
-runtime-parameter contract). Terraform merges it into the LocalStack seed
-environment, and `seed-localstack.sh` writes it into the `app-secrets`
-Secrets Manager entry in place of the throwaway it generates for
-`app_secret_key`. Because the secret is real, the seed sets
-`FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP=true`: the app validates against the
-real Management API at startup and fails loudly on a wrong secret, a wrong
-tenant, or a tenant host the Squid allow-list does not admit (see the two Auth0
-hosts above).
+The Management API is functional and uses the real management client secret.
+`rehearsal sync` resolves it from `AUTH0_MGMT_SECRET_FILE`, the environment, or
+AWS Secrets Manager (`flowform/nonprod/app-secrets` → `auth0_mgmt_secret`) and
+streams it into the LocalStack `app-secrets` value without putting it in
+Terraform or the persistent bundle. The app validates against the real
+Management API at startup and fails loudly on a wrong secret, wrong tenant, or
+a tenant host the Squid allow-list does not admit.
 Set `AUTH0_MGMT_SECRET` in the environment to override the AWS fetch (e.g. no
 login available); the wrapper requires the value and fails fast if it is absent.
 

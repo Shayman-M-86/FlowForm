@@ -20,12 +20,14 @@
 #                                    loopback sentinel when disabled
 #   GRAFANA_CLOUD_LOKI_URL   - Grafana Cloud Loki push URL for the Alloy agent
 #   GRAFANA_CLOUD_LOKI_USER  - Grafana Cloud Loki tenant/user id (basic-auth user)
-#   GRAFANA_CLOUD_TOKEN      - Grafana Cloud access token (basic-auth password)
 #
-# The three GRAFANA_CLOUD_* values arrive the same prod-shaped way as CADDY_IMAGE
-# and API_DOMAIN: bootstrap-proxy.sh renders them into proxy.env from the
-# /flowform/<scope>/proxy/* SSM path. The alloy service ships host + container
-# logs to Grafana Cloud (Loki); it is LOGS ONLY for now (no metrics/traces).
+# The two NON-SECRET GRAFANA_CLOUD_LOKI_* values arrive the same prod-shaped way
+# as CADDY_IMAGE and API_DOMAIN: bootstrap-proxy.sh renders them into proxy.env
+# from the /flowform/<scope>/proxy/* SSM path. The Grafana Cloud TOKEN is a
+# secret and does NOT come through proxy.env/SSM: bootstrap-proxy.sh materialises
+# it from the observability-secrets Secrets Manager entry into a tmpfs 0600 file
+# that this compose mounts as the GRAFANA_CLOUD_TOKEN Docker secret. The alloy
+# service ships host + container logs to Grafana Cloud (Loki); LOGS ONLY for now.
 
 name: flowform-proxy
 
@@ -131,7 +133,12 @@ services:
     environment:
       GRAFANA_CLOUD_LOKI_URL: ${GRAFANA_CLOUD_LOKI_URL:?set GRAFANA_CLOUD_LOKI_URL}
       GRAFANA_CLOUD_LOKI_USER: ${GRAFANA_CLOUD_LOKI_USER:?set GRAFANA_CLOUD_LOKI_USER}
-      GRAFANA_CLOUD_TOKEN: ${GRAFANA_CLOUD_TOKEN:?set GRAFANA_CLOUD_TOKEN}
+      # The token is NOT an environment variable. Alloy reads it from a file-backed
+      # Docker secret (see `secrets:` below) via local.file in config.alloy, so it
+      # never appears in the container's environment or `docker inspect`.
+      GRAFANA_CLOUD_TOKEN_FILE: /run/secrets/GRAFANA_CLOUD_TOKEN
+    secrets:
+      - GRAFANA_CLOUD_TOKEN
     volumes:
       - ../services/alloy/config.alloy:/etc/alloy/config.alloy:ro
       # Docker log discovery + reads. Read-only socket: Alloy only lists
@@ -168,3 +175,11 @@ volumes:
   caddy_config:
   squid_logs:
   alloy_data:
+
+secrets:
+  # The Grafana Cloud token, materialised by bootstrap-proxy.sh into a tmpfs
+  # 0600 file from the observability-secrets Secrets Manager entry. Compose
+  # mounts it read-only at /run/secrets/GRAFANA_CLOUD_TOKEN for Alloy. FLOWFORM_
+  # SECRET_DIR is exported by the bootstrap; it defaults here only for local use.
+  GRAFANA_CLOUD_TOKEN:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/GRAFANA_CLOUD_TOKEN.secret.txt

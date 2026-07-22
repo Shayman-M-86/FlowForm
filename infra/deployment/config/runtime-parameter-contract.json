@@ -109,10 +109,6 @@
         "grafana_cloud_loki_user": {
           "name": "GRAFANA_CLOUD_LOKI_USER",
           "seed_value_key": "GRAFANA_CLOUD_LOKI_USER"
-        },
-        "grafana_cloud_token": {
-          "name": "GRAFANA_CLOUD_TOKEN",
-          "seed_value_key": "GRAFANA_CLOUD_TOKEN"
         }
       }
     }
@@ -120,9 +116,8 @@
   "secrets": {
     "app": "app-secrets",
     "database": "db-secrets",
-    "linkage": "linkage-secret"
+    "linkage": "linkage-secret",
+    "observability": "observability-secrets"
   },
-  "secret_seed_value_keys": [
-    "AUTH0_MGMT_SECRET"
-  ]
+  "secret_seed_value_keys": []
 }

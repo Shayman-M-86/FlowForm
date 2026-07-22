@@ -4,6 +4,7 @@ set -Eeuo pipefail
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
 CONTRACT="${REPO_ROOT}/infra/deployment/config/runtime-parameter-contract.json"
 SEED_SCRIPT="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/localstack/seed-localstack.sh"
+SYNC_SCRIPT="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/localstack/sync-secrets-into-localstack.sh"
 TLS_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.tls-shim.yml"
 PROXY_OVERRIDE="${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/proxy.override.yml"
 APP_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/app.yaml.tftpl"
@@ -13,6 +14,8 @@ LOCALSTACK_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/template
 DB_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/db.yaml.tftpl"
 DB_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/db.yml"
 DB_BOOTSTRAP="${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-db.sh"
+APP_BOOTSTRAP="${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-app.sh"
+BUILD_COMMAND="${REPO_ROOT}/infra/deployment/proxmox/scripts/lib/cmd_build.sh"
 TLS_SHIM_CADDYFILE="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/tls-shim/Caddyfile"
 REGISTRY_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.registry.yml"
 LOCALSTACK_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.localstack.yml"
@@ -72,9 +75,7 @@ export PATH="${TEST_DIR}/bin:${PATH}"
 export RUNTIME_PARAMETER_CONTRACT="${CONTRACT}"
 export AWS_ENDPOINT_URL="http://127.0.0.1:4566"
 
-# Export every seed value the script validates: runtime-parameter seed keys plus
-# the secret seed keys (e.g. AUTH0_MGMT_SECRET, supplied by Terraform), matching
-# validate_seed_environment in seed-localstack.sh.
+# Export every non-secret seed value validated by seed-localstack.sh.
 while IFS= read -r key; do
   export "${key}=test-${key,,}"
 done < <(jq -r '(.runtime_groups[].parameters[].seed_value_key // empty),
@@ -83,9 +84,9 @@ export AWS_REGION="ap-southeast-2"
 
 "${SEED_SCRIPT}" >/dev/null
 
-expected_parameters="$((
-  $(jq '[.runtime_groups[].parameters[]] | length' "${CONTRACT}") + 3
-))"
+# Non-secret env-backed runtime values + computed backend KMS ARN + two
+# scope-level values (KMS ARN and region). Linkage ARN arrives during sync.
+expected_parameters="$(($(jq '[.runtime_groups[].parameters[] | select(.seed_value_key != null)] | length' "${CONTRACT}") + 3))"
 actual_parameters="$(grep -c 'ssm put-parameter' "${AWS_CALL_LOG}")"
 [[ "${actual_parameters}" == "${expected_parameters}" ]] \
   || { printf 'expected %s SSM writes, found %s\n' "${expected_parameters}" "${actual_parameters}" >&2; exit 1; }
@@ -95,16 +96,21 @@ while IFS= read -r expected_name; do
     || { printf 'missing seeded parameter: %s\n' "${expected_name}" >&2; exit 1; }
 done < <(jq -r '
   .runtime_groups[] as $group
-  | $group.parameters[].name
+  | $group.parameters[]
+  | select(.seed_value_key != null or .name == "FLOWFORM_ENCRYPTION_KMS_KEY_ARN")
+  | .name
   | "/flowform/nonprod/\($group.path)/\(.)"
 ' "${CONTRACT}")
 
-# The Terraform-supplied mgmt secret (AUTH0_MGMT_SECRET) must reach the
-# app-secrets entry as-is — not the throwaway the script generates for
-# app_secret_key. The mock logs the --secret-string JSON; assert the value flows
-# through. (The %q-quoted call log preserves the literal value.)
-grep -F 'auth0_mgmt_secret' "${AWS_CALL_LOG}" | grep -F "${AUTH0_MGMT_SECRET}" >/dev/null \
-  || { printf 'app-secrets was not seeded with the Terraform-supplied auth0_mgmt_secret\n' >&2; exit 1; }
+# Boot seeding is secret-free. Managed secrets arrive later via `rehearsal sync`.
+if grep -F 'secretsmanager ' "${AWS_CALL_LOG}" >/dev/null; then
+  printf 'boot seed unexpectedly called Secrets Manager\n' >&2; exit 1
+fi
+
+# Deploy-time synchronization must own LocalStack readiness too, so callers
+# cannot race a reachable VM whose container is still health: starting.
+grep -F 'wait_for_localstack' "${SYNC_SCRIPT}" >/dev/null
+grep -F 'curl -fsS --max-time 5 "${LS_ENDPOINT}/_localstack/health"' "${SYNC_SCRIPT}" >/dev/null
 
 grep -F 'https://ssm.localstack.test/_localstack/health' "${TLS_COMPOSE}" >/dev/null
 for hostname in secretsmanager.localstack.test ssm.localstack.test kms.localstack.test; do
@@ -116,6 +122,28 @@ for cloud_init in "${APP_CLOUD_INIT}" "${PROXY_CLOUD_INIT}" "${DB_CLOUD_INIT}"; 
   grep -F 'BOOTSTRAP_AWS_MAX_ATTEMPTS=120' "${cloud_init}" >/dev/null
 done
 grep -F 'COMPOSE_FORCE_RECREATE=1' "${APP_CLOUD_INIT}" >/dev/null
+# Cloud-init prepares and enables reboot recovery, while `rehearsal build` owns
+# first convergence. Starting these services here would recreate the old lock
+# race and make app cloud-init wait for images the orchestrator has not built.
+for service in app proxy db; do
+  cloud_init="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/${service}.yaml.tftpl"
+  grep -F "systemctl, enable, flowform-${service}.service" "${cloud_init}" >/dev/null
+  if grep -F "systemctl, enable, --now, flowform-${service}.service" "${cloud_init}" >/dev/null; then
+    printf 'cloud-init starts flowform-%s.service during first convergence\n' "${service}" >&2; exit 1
+  fi
+done
+if grep -F -- '- [ /opt/flowform/scripts/run-bootstrap-app.sh ]' "${APP_CLOUD_INIT}" >/dev/null \
+  || grep -F -- '- [ /opt/flowform/scripts/run-bootstrap-proxy.sh ]' "${PROXY_CLOUD_INIT}" >/dev/null; then
+  printf 'cloud-init directly invokes app/proxy convergence\n' >&2; exit 1
+fi
+grep -F 'BOOTSTRAP_PREPARE_ONLY' "${APP_BOOTSTRAP}" >/dev/null
+grep -F 'PUBLISH_PREPARE_ONLY=1' "${BUILD_COMMAND}" >/dev/null
+grep -F 'PUSH_RELAY_READY=1' "${BUILD_COMMAND}" >/dev/null
+grep -F '"${dispatcher}" verify' "${BUILD_COMMAND}" >/dev/null
+grep -F 'RESULT: FAIL — stopped during ${BUILD_CURRENT_STEP}' "${BUILD_COMMAND}" >/dev/null
+grep -F 'RESULT: PASS — rehearsal build and verification completed' "${BUILD_COMMAND}" >/dev/null
+grep -F 'failed check: ${failed_check}' \
+  "${REPO_ROOT}/infra/deployment/proxmox/scripts/lib/cmd_verify.sh" >/dev/null
 grep -E 'DATABASE_CORE_HOST += "10.10.10.40"' "${PROXMOX_VARIABLES}" >/dev/null
 grep -E 'DATABASE_RESPONSE_HOST += "10.10.10.40"' "${PROXMOX_VARIABLES}" >/dev/null
 grep -E 'FLOWFORM_EMAIL_FROM_ADDRESS += "no-reply@flow-form.com.au"' "${PROXMOX_VARIABLES}" >/dev/null
