@@ -100,8 +100,10 @@ proves egress fails when Squid is down).
 Terraform validates its non-secret seed map against the shared parameter
 contract and renders both into the LocalStack cloud-init payload. A systemd
 oneshot waits for LocalStack health on every boot, generates throwaway secrets
-inside the VM, creates local KMS and Secrets Manager resources, and publishes
-the resulting local identifiers plus the rehearsal backend/proxy parameters.
+inside the VM (except the real Auth0 management client secret, which Terraform
+supplies — see the Auth0 boundary below), creates local KMS and Secrets Manager
+resources, and publishes the resulting local identifiers plus the rehearsal
+backend/proxy parameters.
 The AWS CDK security stack uses the same contract for its scoped SSM names but
 supplies real AWS resource values. App and proxy bootstrap reads retry to avoid
 a simultaneous-start race with the seed service.
@@ -146,11 +148,19 @@ without defaults, and the wrapper
 `TF_VAR_*` from the gitignored `infra/env/dev/.backend.env`, so rehearsal and
 dev cannot drift apart. Run every plan/apply through that wrapper.
 
-The Management API remains intentionally non-functional: it needs the real
-management client secret, and the rehearsal seeds random bytes instead. The
-seed therefore sets `FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP=false` so the app
-boots; the application default remains `true`, bearer-token validation is
-unaffected, and Management API operations still fail closed.
+The Management API is functional and uses the real management client secret. The
+same wrapper fetches it from AWS Secrets Manager
+(`flowform/nonprod/app-secrets` → `auth0_mgmt_secret`, the source the dev stack's
+`fetch-dev-secrets.sh` also reads) using the operator's `aws login`, and exports
+it as `TF_VAR_auth0_mgmt_secret` (declared as a `secret_seed_value_key` in the
+runtime-parameter contract). Terraform merges it into the LocalStack seed
+environment, and `seed-localstack.sh` writes it into the `app-secrets`
+Secrets Manager entry in place of the throwaway it generates for
+`app_secret_key`. Because the secret is real, the seed sets
+`FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP=true`: the app validates against the
+real Management API at startup and fails loudly on a wrong secret or tenant.
+Set `AUTH0_MGMT_SECRET` in the environment to override the AWS fetch (e.g. no
+login available); the wrapper requires the value and fails fast if it is absent.
 
 ## Operator-facing TLS — committed trust anchor
 

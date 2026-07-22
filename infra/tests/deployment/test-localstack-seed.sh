@@ -71,9 +71,13 @@ export PATH="${TEST_DIR}/bin:${PATH}"
 export RUNTIME_PARAMETER_CONTRACT="${CONTRACT}"
 export AWS_ENDPOINT_URL="http://127.0.0.1:4566"
 
+# Export every seed value the script validates: runtime-parameter seed keys plus
+# the secret seed keys (e.g. AUTH0_MGMT_SECRET, supplied by Terraform), matching
+# validate_seed_environment in seed-localstack.sh.
 while IFS= read -r key; do
   export "${key}=test-${key,,}"
-done < <(jq -r '.runtime_groups[].parameters[].seed_value_key // empty' "${CONTRACT}" | sort -u)
+done < <(jq -r '(.runtime_groups[].parameters[].seed_value_key // empty),
+                (.secret_seed_value_keys[]? // empty)' "${CONTRACT}" | sort -u)
 export AWS_REGION="ap-southeast-2"
 
 "${SEED_SCRIPT}" >/dev/null
@@ -94,6 +98,13 @@ done < <(jq -r '
   | "/flowform/nonprod/\($group.path)/\(.)"
 ' "${CONTRACT}")
 
+# The Terraform-supplied mgmt secret (AUTH0_MGMT_SECRET) must reach the
+# app-secrets entry as-is — not the throwaway the script generates for
+# app_secret_key. The mock logs the --secret-string JSON; assert the value flows
+# through. (The %q-quoted call log preserves the literal value.)
+grep -F 'auth0_mgmt_secret' "${AWS_CALL_LOG}" | grep -F "${AUTH0_MGMT_SECRET}" >/dev/null \
+  || { printf 'app-secrets was not seeded with the Terraform-supplied auth0_mgmt_secret\n' >&2; exit 1; }
+
 grep -F 'https://ssm.localstack.test/_localstack/health' "${TLS_COMPOSE}" >/dev/null
 for hostname in secretsmanager.localstack.test ssm.localstack.test kms.localstack.test; do
   grep -F "${hostname}:10.10.10.30" "${PROXY_OVERRIDE}" >/dev/null
@@ -107,7 +118,8 @@ grep -F 'COMPOSE_FORCE_RECREATE=1' "${APP_CLOUD_INIT}" >/dev/null
 grep -E 'DATABASE_CORE_HOST += "10.10.10.40"' "${PROXMOX_VARIABLES}" >/dev/null
 grep -E 'DATABASE_RESPONSE_HOST += "10.10.10.40"' "${PROXMOX_VARIABLES}" >/dev/null
 grep -E 'FLOWFORM_EMAIL_FROM_ADDRESS += "no-reply@flow-form.com.au"' "${PROXMOX_VARIABLES}" >/dev/null
-grep -E 'FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP += "false"' "${PROXMOX_VARIABLES}" >/dev/null
+# Real mgmt secret is now seeded, so startup validation is ON.
+grep -E 'FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP += "true"' "${PROXMOX_VARIABLES}" >/dev/null
 
 # --- Wave A: registry-over-HTTPS-through-Squid invariants --------------------
 # The registry rides Squid as registry.localstack.test (mirrors ECR-over-HTTPS),

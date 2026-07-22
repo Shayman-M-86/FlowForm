@@ -13,12 +13,19 @@ locals {
   ])
   ssh_authorized_keys        = indent(2, join("\n", [for key in var.ssh_public_keys : "- ${key}"]))
   runtime_parameter_contract = jsondecode(file("${path.module}/../../config/runtime-parameter-contract.json"))
-  required_localstack_seed_keys = toset(flatten([
-    for group in values(local.runtime_parameter_contract.runtime_groups) : [
-      for parameter in values(group.parameters) : parameter.seed_value_key
-      if can(parameter.seed_value_key)
-    ]
-  ]))
+  # Runtime-parameter seed keys become plaintext SSM parameters. Secret seed keys
+  # (e.g. AUTH0_MGMT_SECRET) are declared separately in the contract because the
+  # seed script writes them into Secrets Manager, never SSM — but they are still
+  # legal keys in localstack_seed_values, so union both sources for the check.
+  required_localstack_seed_keys = toset(concat(
+    flatten([
+      for group in values(local.runtime_parameter_contract.runtime_groups) : [
+        for parameter in values(group.parameters) : parameter.seed_value_key
+        if can(parameter.seed_value_key)
+      ]
+    ]),
+    lookup(local.runtime_parameter_contract, "secret_seed_value_keys", [])
+  ))
 
   localstack_seed_values = merge(var.localstack_seed_values, {
     FLOWFORM_AUTH0_DOMAIN      = var.auth0_domain
@@ -26,7 +33,10 @@ locals {
     FLOWFORM_AUTH0_CLIENT_ID   = var.auth0_client_id
     FLOWFORM_AUTH0_MGMT_DOMAIN = var.auth0_mgmt_domain
     FLOWFORM_AUTH0_MGMT_ID     = var.auth0_mgmt_id
-    # Secret, merged in from its own variable (never a committed map default).
+    # Secrets, merged in from their own variables (never a committed map default).
+    # AUTH0_MGMT_SECRET is a secret_seed_value_key in the contract: the seed
+    # script writes it into the Secrets Manager app-secrets entry, not SSM.
+    AUTH0_MGMT_SECRET   = var.auth0_mgmt_secret
     GRAFANA_CLOUD_TOKEN = var.grafana_cloud_token
   })
   configured_localstack_seed_keys = toset(keys(local.localstack_seed_values))

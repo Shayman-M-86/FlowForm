@@ -13,11 +13,15 @@ set -Eeuo pipefail
 #
 # infra/env/dev/.backend.env is gitignored (.gitignore: env/), so nothing here
 # lands in git. These are non-secret identifiers — domains, audience, client id.
-# The Auth0 mgmt CLIENT SECRET is deliberately NOT handled here: it lives in
-# AWS Secrets Manager and is fetched by scripts/secrets/fetch-dev-secrets.sh
-# into a tmpfs. The rehearsal seeds its own random mgmt secret, so Management
-# API calls do not work there — see FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP in
-# variables.tf.
+#
+# The Auth0 mgmt CLIENT SECRET *is* a real secret, and this wrapper now fetches
+# it too: from AWS Secrets Manager (flowform/nonprod/app-secrets → auth0_mgmt_secret,
+# the same source scripts/secrets/fetch-dev-secrets.sh reads for the dev stack)
+# using your `aws login` session, exported as TF_VAR_auth0_mgmt_secret. The
+# rehearsal seeds that real value into its LocalStack app-secrets instead of a
+# throwaway, so the Management API works and startup validation is on — see
+# FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP in variables.tf. Set AUTH0_MGMT_SECRET
+# in the environment to override the AWS fetch (e.g. no login available).
 #
 # This wrapper ALSO exports the Grafana Cloud token for the proxy-box Alloy agent
 # as TF_VAR_grafana_cloud_token. Unlike the Auth0 identifiers this is a real
@@ -104,6 +108,32 @@ if [[ -z "${grafana_token}" ]]; then
 fi
 export TF_VAR_grafana_cloud_token="${grafana_token}"
 log "Grafana Cloud token sourced from ${grafana_source}"
+
+# Auth0 management client secret: a real secret. The AUTH0_MGMT_SECRET env var
+# wins (e.g. no AWS login available); otherwise fetch it from AWS Secrets Manager
+# — the same secret id and json key the dev stack's fetch-dev-secrets.sh reads,
+# so rehearsal and dev share one management secret. Required: terraform's
+# auth0_mgmt_secret variable has no default, so a missing value fails fast here.
+mgmt_secret="${AUTH0_MGMT_SECRET:-}"
+mgmt_source="AUTH0_MGMT_SECRET env var"
+if [[ -z "${mgmt_secret}" ]]; then
+  command -v aws >/dev/null 2>&1 || die "aws CLI not found.
+  Install and 'aws login', or set AUTH0_MGMT_SECRET in the environment to
+  supply the Auth0 management client secret without an AWS fetch."
+  mgmt_app_json="$(aws secretsmanager get-secret-value \
+    --secret-id "flowform/nonprod/app-secrets" \
+    --query SecretString --output text 2>/dev/null)" \
+    || die "failed to read flowform/nonprod/app-secrets from AWS Secrets Manager.
+  Run 'aws login' first, or set AUTH0_MGMT_SECRET in the environment."
+  mgmt_secret="$(printf '%s' "${mgmt_app_json}" | python3 -c \
+    'import json,sys; print(json.loads(sys.stdin.read()).get("auth0_mgmt_secret",""), end="")')" \
+    || die "could not parse auth0_mgmt_secret out of flowform/nonprod/app-secrets."
+  [[ -n "${mgmt_secret}" ]] \
+    || die "auth0_mgmt_secret is empty in flowform/nonprod/app-secrets — seed it first."
+  mgmt_source="AWS Secrets Manager (flowform/nonprod/app-secrets)"
+fi
+export TF_VAR_auth0_mgmt_secret="${mgmt_secret}"
+log "Auth0 management secret sourced from ${mgmt_source}"
 
 # --- SSH preflight: prime ssh-agent so the provider can reach the PVE node -----
 ssh_preflight() {

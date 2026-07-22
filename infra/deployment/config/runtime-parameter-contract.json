@@ -121,5 +121,8 @@
     "app": "app-secrets",
     "database": "db-secrets",
     "linkage": "linkage-secret"
-  }
+  },
+  "secret_seed_value_keys": [
+    "AUTH0_MGMT_SECRET"
+  ]
 }

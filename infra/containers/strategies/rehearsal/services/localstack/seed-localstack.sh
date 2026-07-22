@@ -7,8 +7,12 @@ set -Eeuo pipefail
 #
 # Parameter names come from the same JSON contract used by AWS CDK. Values are
 # deliberately platform-specific: Terraform supplies rehearsal configuration,
-# while throwaway secret values are generated here and never enter Terraform
-# configuration or state. The operations are create-or-update and safe to rerun.
+# and most throwaway secret values are generated here and never enter Terraform
+# configuration or state. The one exception is the Auth0 management client
+# secret (AUTH0_MGMT_SECRET): it is a real secret Terraform supplies (a
+# secret_seed_value_key in the contract) so the rehearsal Management API works
+# against the real tenant. It is written into the app-secrets entry, not SSM.
+# The operations are create-or-update and safe to rerun.
 
 : "${FLOWFORM_SCOPE:=nonprod}"
 : "${AWS_REGION:=ap-southeast-2}"
@@ -74,10 +78,14 @@ secret_name() {
 
 validate_seed_environment() {
   local key
+  # Runtime-parameter seed keys plus the secret seed keys (e.g. AUTH0_MGMT_SECRET,
+  # which Terraform supplies and this script writes into Secrets Manager). Both
+  # must be present in the environment or the seed writes empty values.
   while IFS= read -r key; do
     [[ -n "${key}" ]] || continue
     [[ -n "${!key:-}" ]] || die "required Terraform seed value is unset: ${key}"
-  done < <(jq -r '.runtime_groups[].parameters[].seed_value_key // empty' "${CONTRACT}" | sort -u)
+  done < <(jq -r '(.runtime_groups[].parameters[].seed_value_key // empty),
+                  (.secret_seed_value_keys[]? // empty)' "${CONTRACT}" | sort -u)
 }
 
 put_secret() {
@@ -132,8 +140,13 @@ main() {
   db_secret="$(secret_name database)"
   linkage_secret="$(secret_name linkage)"
 
+  # app_secret_key is a throwaway generated here; auth0_mgmt_secret is the REAL
+  # management secret Terraform supplies (var.auth0_mgmt_secret), so the Management
+  # API works against the real tenant. jq (not printf) builds the JSON so an
+  # arbitrary secret value is escaped correctly.
   put_secret "${app_secret}" \
-    "$(printf '{\"app_secret_key\":\"%s\",\"auth0_mgmt_secret\":\"%s\"}' "$(rand 32)" "$(rand 24)")"
+    "$(jq -cn --arg k "$(rand 32)" --arg m "${AUTH0_MGMT_SECRET}" \
+      '{app_secret_key: $k, auth0_mgmt_secret: $m}')"
   put_secret "${db_secret}" \
     "$(printf '{\"db_core_app_password\":\"%s\",\"db_response_app_password\":\"%s\"}' "$(rand 16)" "$(rand 16)")"
   put_secret "${linkage_secret}" "$(printf '{\"version\":1,\"secret_b64\":\"%s\"}' "$(rand 32)")"

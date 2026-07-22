@@ -103,9 +103,10 @@ variable "ssh_public_keys" {
 # (that wrapper exports these as TF_VAR_*), or export TF_VAR_auth0_domain etc.
 # yourself. Terraform prompts for any that are missing.
 #
-# All five are non-secret identifiers. The Auth0 mgmt client SECRET is not here:
-# the rehearsal seeds a random one into LocalStack, so Management API calls do
-# not work there — see FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP below.
+# All five are non-secret identifiers. The Auth0 mgmt client SECRET is a real
+# secret and is handled separately — see var.auth0_mgmt_secret below, which the
+# with-dev-auth0-env.sh wrapper fetches from AWS Secrets Manager so the rehearsal
+# uses the SAME management secret dev does and the Management API actually works.
 
 # These are merged into localstack_seed_values (see locals.tf), so they carry the
 # same non-empty/single-line rule its own validation applies to the defaulted
@@ -163,6 +164,27 @@ variable "auth0_mgmt_id" {
   }
 }
 
+# The Auth0 Management API client secret — a REAL secret, unlike the five
+# identifiers above. It has no default and is never committed: the
+# with-dev-auth0-env.sh wrapper fetches it from AWS Secrets Manager
+# (flowform/nonprod/app-secrets → auth0_mgmt_secret, the same source the dev
+# stack's fetch-dev-secrets.sh uses) and exports it as TF_VAR_auth0_mgmt_secret,
+# or you can set that env var / AUTH0_MGMT_SECRET yourself. It is merged into
+# localstack_seed_values in locals.tf and written into the LocalStack app-secrets
+# entry by seed-localstack.sh in place of the throwaway random value, so the
+# rehearsal Management API works against the real tenant. With a real secret in
+# place, FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP now defaults to "true" below.
+variable "auth0_mgmt_secret" {
+  description = "Auth0 Management API client secret. Real secret; set via TF_VAR_auth0_mgmt_secret (the with-dev-auth0-env.sh wrapper fetches it from AWS Secrets Manager)."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(trimspace(var.auth0_mgmt_secret)) > 0 && !can(regex("[\r\n]", var.auth0_mgmt_secret))
+    error_message = "auth0_mgmt_secret must be a non-empty single-line string."
+  }
+}
+
 variable "grafana_cloud_token" {
   description = "Grafana Cloud access token (basic-auth password) for the proxy-box Alloy agent. A real secret, so it has no default and is never committed: supply it via TF_VAR_grafana_cloud_token, which the with-dev-auth0-env.sh wrapper exports from the gitignored infra/env/dev/.grafana.env. Merged into localstack_seed_values in locals.tf like the Auth0 identifiers."
   type        = string
@@ -188,10 +210,11 @@ variable "localstack_seed_values" {
     DATABASE_RESPONSE_APP_USER = "flowform_response_app"
     DATABASE_RESPONSE_HOST     = "10.10.10.40"
     DATABASE_RESPONSE_NAME     = "flowform_response"
-    # Mgmt calls need a real client secret, which the rehearsal does not have
-    # (it seeds random bytes), so startup validation stays off or the app will
-    # not boot. Token validation is unaffected.
-    FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP = "false"
+    # The rehearsal now seeds the REAL mgmt client secret (var.auth0_mgmt_secret,
+    # fetched from AWS Secrets Manager by the wrapper), so startup validation is
+    # ON: the app exercises the real Management API at boot and fails loudly if
+    # the secret or tenant is wrong. Token validation is unaffected either way.
+    FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP = "true"
     FLOWFORM_EMAIL_FROM_ADDRESS             = "no-reply@flow-form.com.au"
     FLOWFORM_ENV                            = "prod"
     FLOWFORM_LOGGING_LEVEL                  = "INFO"
