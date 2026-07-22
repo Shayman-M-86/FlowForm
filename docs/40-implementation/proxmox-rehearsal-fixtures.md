@@ -79,6 +79,15 @@ registry — so it exercises the same egress path a real ECR push would. The
 registry and LocalStack are never LAN-facing, and there is no insecure-registry
 exception anywhere.
 
+The app Compose stack pulls a second image the offline app box cannot reach on
+its own: the Grafana Alloy sidecar. The companion helper
+`infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh`
+mirrors `grafana/alloy` into the fake registry over the identical relay-through-
+`220` path. Both pushes are required: `compose pull` fails as a whole if any one
+service image is absent, so a missing Alloy mirror strands the app bootstrap
+retrying forever on a pull that can never succeed. `rebuild.sh` runs both helpers
+after the apply; run manually, do both.
+
 The app VM uses the shared app Compose unchanged. VM `240` runs one tmpfs-backed
 PostgreSQL 17 cluster containing both databases. Its bootstrap briefly opens
 host egress only to Squid to retrieve the two app-role passwords, generates the
@@ -92,11 +101,22 @@ healthy and recover afterwards.
 
 Auth0 is the one dependency the rehearsal does not fake. The backend validates
 bearer tokens against the real dev tenant so that tokens issued to the Studio
-front end verify end-to-end: the Squid allow-list admits the issuer domain
-(`auth.flow-form.com.au`) alongside the `*.localstack.test` names, and the app
-box fetches OIDC metadata and JWKS through Squid exactly as production does.
-This is a deliberate hole in the isolation — authenticated flows require the
-tenant reachable and up; unauthenticated endpoints remain fully offline.
+front end verify end-to-end. The Squid allow-list admits **two** distinct Auth0
+hosts alongside the `*.localstack.test` names, because token validation and the
+Management API live on different domains:
+
+- the token **issuer** (`auth.flow-form.com.au`) — request-time JWT validation
+  fetches OIDC metadata and JWKS through Squid, exactly as production does;
+- the **Management API tenant** (`FLOWFORM_AUTH0_MGMT_DOMAIN`, a `*.au.auth0.com`
+  host) — the boot-time management-client check dials `https://<tenant>/oauth/token`.
+
+Both are entries in
+`infra/containers/strategies/rehearsal/services/squid/allowed-domains.txt`.
+Admitting only the issuer (as an earlier revision did) lets requests validate but
+crash-loops the backend at startup on `APPLICATION STARTUP FAILED` the moment
+management validation is enabled, because Squid `403`s the un-listed tenant
+CONNECT. This is a deliberate hole in the isolation — authenticated flows require
+both hosts reachable and up; unauthenticated endpoints remain fully offline.
 
 The Auth0 identifiers are not committed. Terraform declares them as variables
 without defaults, and the wrapper
@@ -114,7 +134,9 @@ environment, and `seed-localstack.sh` writes it into the `app-secrets`
 Secrets Manager entry in place of the throwaway it generates for
 `app_secret_key`. Because the secret is real, the seed sets
 `FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP=true`: the app validates against the
-real Management API at startup and fails loudly on a wrong secret or tenant.
+real Management API at startup and fails loudly on a wrong secret, a wrong
+tenant, or a tenant host the Squid allow-list does not admit (see the two Auth0
+hosts above).
 Set `AUTH0_MGMT_SECRET` in the environment to override the AWS fetch (e.g. no
 login available); the wrapper requires the value and fails fast if it is absent.
 

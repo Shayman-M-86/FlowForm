@@ -39,6 +39,35 @@ ADDED_BRIDGE_ADDRESS=0
 log() { printf '[mirror-alloy] %s\n' "$*"; }
 die() { printf '[mirror-alloy] ERROR: %s\n' "$*" >&2; exit 1; }
 
+# Retry a command with fixed-delay backoff — see build-and-push-backend.sh for
+# the rationale (right after `terraform apply` the relay SSH and the TLS shim on
+# VM 230 may still be seconds from ready; a fail-fast preflight turns that
+# ordinary startup race into a spurious failure). Returns immediately on the
+# first success; on exhaustion returns the last failure so callers fail closed.
+#   retry_with_backoff "<description>" <attempts> <delay_seconds> cmd arg...
+retry_with_backoff() {
+  local description="$1" attempts="$2" delay_seconds="$3"
+  shift 3
+  local attempt
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    if "$@"; then
+      return 0
+    fi
+    if ((attempt < attempts)); then
+      if ((attempt == 1 || attempt % 5 == 0)); then
+        log "${description} not ready (${attempt}/${attempts}); retrying in ${delay_seconds}s"
+      fi
+      sleep "${delay_seconds}"
+    fi
+  done
+  return 1
+}
+
+RELAY_MAX_ATTEMPTS="${PUSH_RELAY_MAX_ATTEMPTS:-30}"
+RELAY_RETRY_DELAY_SECONDS="${PUSH_RELAY_RETRY_DELAY_SECONDS:-2}"
+PREFLIGHT_MAX_ATTEMPTS="${PUSH_PREFLIGHT_MAX_ATTEMPTS:-30}"
+PREFLIGHT_RETRY_DELAY_SECONDS="${PUSH_PREFLIGHT_RETRY_DELAY_SECONDS:-2}"
+
 cleanup() {
   local status=$?
   trap - EXIT INT TERM HUP
@@ -88,9 +117,23 @@ prepare_push_relay() {
     ADDED_BRIDGE_ADDRESS=1
   fi
 
-  relay_ssh \
+  # Reachability: the temporary bridge address was just added, so the app VM may
+  # not have ARP-resolved it yet — the SSH ProxyCommand's first connect can fail
+  # with "No route to host" purely on timing. Retry a no-op relay login until the
+  # path settles rather than dying on that race.
+  retry_with_backoff "app VM relay SSH (${PUSH_RELAY_SSH_TARGET})" \
+    "${RELAY_MAX_ATTEMPTS}" "${RELAY_RETRY_DELAY_SECONDS}" \
+    relay_ssh true \
+    || die "app VM relay ${PUSH_RELAY_SSH_TARGET} unreachable via ${PROXMOX_SSH_TARGET} after ${RELAY_MAX_ATTEMPTS} attempts"
+
+  # Preflight (retried): right after `terraform apply` the TLS shim / registry on
+  # VM 230 are the last services to come healthy, so this path often needs a few
+  # seconds — a wait, not a failure.
+  retry_with_backoff "registry reachable through Squid" \
+    "${PREFLIGHT_MAX_ATTEMPTS}" "${PREFLIGHT_RETRY_DELAY_SECONDS}" \
+    relay_ssh \
     "curl -fsS --connect-timeout 3 --max-time 5 --proxy '${SQUID_PROXY_URL}' 'https://${REGISTRY_HOST}/v2/' >/dev/null && sudo docker info >/dev/null" \
-    || die "app VM relay ${PUSH_RELAY_SSH_TARGET} cannot reach https://${REGISTRY_HOST} through Squid or Docker is down"
+    || die "app VM relay ${PUSH_RELAY_SSH_TARGET} cannot reach https://${REGISTRY_HOST} through Squid or Docker is down after ${PREFLIGHT_MAX_ATTEMPTS} attempts"
 
   log "temporary image relay is ready through ${PUSH_RELAY_SSH_TARGET}"
 }

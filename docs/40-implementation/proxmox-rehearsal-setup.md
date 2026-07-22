@@ -74,27 +74,33 @@ The wrapper exports the Auth0 `TF_VAR_*`s; plain `terraform apply` will prompt
 for them. The apply clones templates into VMs 210/220/230/240; the LocalStack VM
 seeds parameters and secrets on first boot. The app and DB boot independently;
 backend readiness recovers after the database becomes healthy. The app VM's
-bootstrap does not fail on the empty registry — it **waits** for the backend
-image, retrying the pull, and converges on its own once the next step lands the
-push. No manual re-bootstrap is needed in the happy path.
+bootstrap does not fail on the empty registry — it **waits** for its images,
+retrying the pull, and converges on its own once the next step lands them. No
+manual re-bootstrap is needed in the happy path.
 
-**5. Push the backend image:**
+**5. Push the two images the app box needs.** The app Compose stack pulls
+**both** the backend and the Grafana Alloy sidecar, and the offline app box can
+fetch neither from the internet — only from the fake registry. Push both:
 
 ```bash
 infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh
+infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh
 ```
 
-The push relays through app VM 220's Docker daemon, so it requires step 4's
-VMs to be running — the ordering apply → push is inherent. Once the image lands,
-the app bootstrap's waiting pull succeeds and the backend comes up; you do not
-re-run the app one-shot yourself.
+Both relay through app VM 220's Docker daemon, so they require step 4's VMs to be
+running — the ordering apply → push is inherent. `compose pull` fails as a whole
+if *any* service image is missing, so mirroring Alloy is not optional: skip it
+and the bootstrap's waiting pull retries forever on the absent alloy image, which
+looks exactly like a stuck backend pull. Once both images land, the waiting pull
+succeeds and the backend comes up; you do not re-run the app one-shot yourself.
 
-**Steps 4–5 in one command.** `rebuild.sh` orchestrates the apply → build+push
-in the one order they can go in (see the "why this order is inherent" note in
-its header). It calls the same wrapper and push script under the hood:
+**Steps 4–5 in one command.** `rebuild.sh` orchestrates apply → push backend →
+mirror Alloy in the one order they can go in (see the "why this order is
+inherent" note in its header). It calls the same wrapper and both registry
+scripts under the hood:
 
 ```bash
-infra/deployment/proxmox/scripts/rebuild.sh                 # converge + push
+infra/deployment/proxmox/scripts/rebuild.sh                 # converge + push both images
 infra/deployment/proxmox/scripts/rebuild.sh --fresh -- -auto-approve  # full teardown first
 ```
 

@@ -25,6 +25,16 @@ set -Eeuo pipefail
 #
 # Idempotent: re-running rebuilds (Docker layer cache makes it cheap) and
 # re-pushes; an unchanged image is a no-op push.
+#
+# Startup-race tolerance: run straight after `terraform apply`, the relay path
+# may not be settled — the just-added bridge address is not yet ARP-resolved, and
+# the TLS shim / registry on VM 230 are the last services to come healthy. Both
+# preflights retry until the stack converges instead of failing fast, so a fresh
+# apply → push in one command (see proxmox/scripts/rebuild.sh) does not need a
+# manual redo. A fully-up stack passes on the first attempt with no added wait.
+# Optional knobs (attempts x delay seconds; defaults wait ~60s each):
+#   PUSH_RELAY_MAX_ATTEMPTS (30) / PUSH_RELAY_RETRY_DELAY_SECONDS (2)
+#   PUSH_PREFLIGHT_MAX_ATTEMPTS (30) / PUSH_PREFLIGHT_RETRY_DELAY_SECONDS (2)
 
 REGISTRY_HOST="${REGISTRY_HOST:-registry.localstack.test}"   # no port ⇒ 443/HTTPS
 IMAGE_NAME="${IMAGE_NAME:-flowform-backend}"
@@ -45,6 +55,39 @@ ADDED_BRIDGE_ADDRESS=0
 
 log() { printf '[build-push-backend] %s\n' "$*"; }
 die() { printf '[build-push-backend] ERROR: %s\n' "$*" >&2; exit 1; }
+
+# Retry a command with fixed-delay backoff. This script runs on the operator's
+# box right after `terraform apply`, so the app VM's SSH, Squid, and the TLS
+# shim on VM 230 may still be seconds from ready — a fail-fast preflight turns
+# that ordinary startup race into a spurious failure the operator has to redo by
+# hand. Mirrors the bootstrap scripts' retry_with_backoff: returns immediately on
+# the first success (a fully-up stack adds no latency), and on exhaustion returns
+# the last failure so callers still fail closed.
+#   retry_with_backoff "<description>" <attempts> <delay_seconds> cmd arg...
+retry_with_backoff() {
+  local description="$1" attempts="$2" delay_seconds="$3"
+  shift 3
+  local attempt
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    if "$@"; then
+      return 0
+    fi
+    if ((attempt < attempts)); then
+      if ((attempt == 1 || attempt % 5 == 0)); then
+        log "${description} not ready (${attempt}/${attempts}); retrying in ${delay_seconds}s"
+      fi
+      sleep "${delay_seconds}"
+    fi
+  done
+  return 1
+}
+
+# How long to wait for the freshly-applied stack to converge before giving up.
+# The shim/registry on VM 230 are the slowest to come healthy after apply.
+RELAY_MAX_ATTEMPTS="${PUSH_RELAY_MAX_ATTEMPTS:-30}"
+RELAY_RETRY_DELAY_SECONDS="${PUSH_RELAY_RETRY_DELAY_SECONDS:-2}"
+PREFLIGHT_MAX_ATTEMPTS="${PUSH_PREFLIGHT_MAX_ATTEMPTS:-30}"
+PREFLIGHT_RETRY_DELAY_SECONDS="${PUSH_PREFLIGHT_RETRY_DELAY_SECONDS:-2}"
 
 cleanup() {
   local status=$?
@@ -111,12 +154,26 @@ prepare_push_relay() {
     ADDED_BRIDGE_ADDRESS=1
   fi
 
+  # Reachability: the temporary bridge address was just added, so the app VM may
+  # not have ARP-resolved it yet — the SSH ProxyCommand's first connect can fail
+  # with "No route to host" purely on timing. Retry a no-op relay login until the
+  # path settles rather than dying on that race.
+  retry_with_backoff "app VM relay SSH (${PUSH_RELAY_SSH_TARGET})" \
+    "${RELAY_MAX_ATTEMPTS}" "${RELAY_RETRY_DELAY_SECONDS}" \
+    relay_ssh true \
+    || die "app VM relay ${PUSH_RELAY_SSH_TARGET} unreachable via ${PROXMOX_SSH_TARGET} after ${RELAY_MAX_ATTEMPTS} attempts"
+
   # Preflight: the app VM must reach the registry over HTTPS through Squid (the
   # exact push path) and have a working Docker daemon. The app VM trusts the
-  # rehearsal CA via its system bundle, so no --cacert / -k here.
-  relay_ssh \
+  # rehearsal CA via its system bundle, so no --cacert / -k here. Retried because
+  # right after `terraform apply` the TLS shim / registry on VM 230 are the last
+  # services to come healthy: a fresh stack often needs a few seconds before this
+  # path succeeds, which is a wait, not a failure.
+  retry_with_backoff "registry reachable through Squid" \
+    "${PREFLIGHT_MAX_ATTEMPTS}" "${PREFLIGHT_RETRY_DELAY_SECONDS}" \
+    relay_ssh \
     "curl -fsS --connect-timeout 3 --max-time 5 --proxy '${SQUID_PROXY_URL}' 'https://${REGISTRY_HOST}/v2/' >/dev/null && sudo docker info >/dev/null" \
-    || die "app VM relay ${PUSH_RELAY_SSH_TARGET} cannot reach https://${REGISTRY_HOST} through Squid or Docker is down"
+    || die "app VM relay ${PUSH_RELAY_SSH_TARGET} cannot reach https://${REGISTRY_HOST} through Squid or Docker is down after ${PREFLIGHT_MAX_ATTEMPTS} attempts"
 
   log "temporary image relay is ready through ${PUSH_RELAY_SSH_TARGET}"
 }
