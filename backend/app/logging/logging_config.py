@@ -6,6 +6,7 @@ import logging.handlers
 import os
 import re
 import sys
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,7 @@ from flask import Flask
 
 from app.core.config import Settings
 from app.logging.request_logging import register_request_logging
+from app.logging.sensitive_data import install_sensitive_data_filter, protect_root_handlers
 
 # =============================================================================
 # Constants
@@ -32,6 +34,19 @@ LEVEL_COLORS = {
 }
 
 STARTUP_LOGGER = logging.getLogger("app.startup")
+
+THIRD_PARTY_LOG_LEVELS: dict[str, int] = {
+    "auth0_api_python": logging.WARNING,
+    "authlib": logging.WARNING,
+    "boto3": logging.WARNING,
+    "botocore": logging.WARNING,
+    "hpack": logging.WARNING,
+    "httpcore": logging.WARNING,
+    "httpx": logging.WARNING,
+    "sqlalchemy.engine": logging.WARNING,
+    "urllib3": logging.WARNING,
+    "werkzeug": logging.INFO,
+}
 
 
 # =============================================================================
@@ -91,7 +106,7 @@ class JsonFormatter(logging.Formatter):
                 payload[attr] = value
 
         if record.exc_info:
-            payload["exception"] = self.formatException(record.exc_info)
+            payload["exception"] = record.exc_text or self.formatException(record.exc_info)
 
         if record.stack_info:
             payload["stack"] = self.formatStack(record.stack_info)
@@ -133,6 +148,7 @@ def build_stream_handler(
 ) -> logging.Handler:
     """Build a stream handler."""
     handler = logging.StreamHandler(stream)
+    install_sensitive_data_filter(handler)
     formatter: logging.Formatter = (
         JsonFormatter() if json_logs else ColorFormatter(LOG_FORMAT)
     )
@@ -157,6 +173,7 @@ def build_file_handler(
         backupCount=backup_count,
         encoding=encoding,
     )
+    install_sensitive_data_filter(handler)
     formatter: logging.Formatter = (
         JsonFormatter() if json_logs else StripAnsiFormatter(LOG_FORMAT)
     )
@@ -167,6 +184,15 @@ def build_file_handler(
 # =============================================================================
 # Root logger configuration
 # =============================================================================
+
+
+def configure_third_party_loggers(
+    overrides: Mapping[str, int] | None = None,
+) -> None:
+    """Keep dependency diagnostics below levels that expose wire data."""
+    levels = {**THIRD_PARTY_LOG_LEVELS, **(overrides or {})}
+    for logger_name, logger_level in levels.items():
+        logging.getLogger(logger_name).setLevel(logger_level)
 
 
 def configure_root_logger(
@@ -182,6 +208,7 @@ def configure_root_logger(
 ) -> None:
     """Configure the root logger and selected third-party loggers."""
     root = logging.getLogger()
+    protect_root_handlers()
 
     for handler in root.handlers[:]:
         if not getattr(handler, "_app_owned_handler", False):
@@ -196,15 +223,20 @@ def configure_root_logger(
     root.setLevel(resolve_log_level(level))
 
     for handler in handlers or []:
+        install_sensitive_data_filter(handler)
         setattr(handler, "_app_owned_handler", True)  # noqa: B010
         root.addHandler(handler)
 
-    logging.getLogger("sqlalchemy.engine").setLevel(resolve_log_level(sqlalchemy_level, logging.WARNING))
-    logging.getLogger("werkzeug").setLevel(resolve_log_level(werkzeug_level, logging.INFO))
-    logging.getLogger("botocore").setLevel(resolve_log_level(botocore_level, logging.WARNING))
-    logging.getLogger("authlib").setLevel(resolve_log_level(authlib_level, logging.WARNING))
-    logging.getLogger("auth0_api_python").setLevel(resolve_log_level(auth0_level, logging.WARNING))
-    logging.getLogger("urllib3").setLevel(resolve_log_level(urllib3_level, logging.WARNING))
+    configure_third_party_loggers(
+        {
+            "auth0_api_python": resolve_log_level(auth0_level, logging.WARNING),
+            "authlib": resolve_log_level(authlib_level, logging.WARNING),
+            "botocore": resolve_log_level(botocore_level, logging.WARNING),
+            "sqlalchemy.engine": resolve_log_level(sqlalchemy_level, logging.WARNING),
+            "urllib3": resolve_log_level(urllib3_level, logging.WARNING),
+            "werkzeug": resolve_log_level(werkzeug_level, logging.INFO),
+        }
+    )
 
 
 # =============================================================================

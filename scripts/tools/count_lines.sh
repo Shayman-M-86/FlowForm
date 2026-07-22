@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # Count lines in every tracked/relevant file, excluding caches, node_modules, venvs, etc.
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+set -euo pipefail
+
+# This script lives in scripts/tools, so the repository root is two levels up.
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+COUNT_FILE="$(mktemp "${TMPDIR:-/tmp}/flowform-line-counts.XXXXXX")"
+trap 'rm -f "$COUNT_FILE"' EXIT
 
 find "$REPO_ROOT" \
   -type f \
@@ -39,6 +44,8 @@ find "$REPO_ROOT" \
   ! -iname "*.ttf" \
   ! -iname "*.otf" \
   ! -iname "*.eot" \
+  ! -iname "*.md" \
+  ! -iname "*.mdx" \
   ! -iname "*.log" \
   ! -iname "*.lock" \
   ! -iname "*.gen.ts" \
@@ -61,11 +68,11 @@ find "$REPO_ROOT" \
     printf "%7d lines  %8d words  %s\n" "$lines" "$words" "${file#$REPO_ROOT/}"
   done \
 | sort -rn \
-| tee /tmp/line_counts.txt
+| tee "$COUNT_FILE"
 
-TOTAL_LINES=$(awk '{sum += $1} END {print sum}' /tmp/line_counts.txt)
-TOTAL_WORDS=$(awk '{sum += $3} END {print sum}' /tmp/line_counts.txt)
-FILE_COUNT=$(wc -l < /tmp/line_counts.txt)
+TOTAL_LINES=$(awk '{sum += $1} END {print sum + 0}' "$COUNT_FILE")
+TOTAL_WORDS=$(awk '{sum += $3} END {print sum + 0}' "$COUNT_FILE")
+FILE_COUNT=$(wc -l < "$COUNT_FILE")
 echo ""
 echo "───────────────────────────────────────"
 printf "TOTAL: %d lines  |  %d words  |  %d files\n" "$TOTAL_LINES" "$TOTAL_WORDS" "$FILE_COUNT"

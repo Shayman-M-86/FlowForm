@@ -7,6 +7,7 @@ import uuid
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import SecretStr
 
 from app.cache import AppCache, create_app_cache
 from app.crypto._internal.client_extension import CryptoClients
@@ -27,7 +28,7 @@ def _secret_value(version: int, aws_vid: str = _VID_1) -> SecretValue:
     import json
 
     raw = json.dumps({"version": version, "secret_b64": _GOOD_SECRET_B64})
-    return SecretValue(secret_string=raw, version_id=aws_vid)
+    return SecretValue(secret_string=SecretStr(raw), version_id=aws_vid)
 
 
 def _app_cache() -> AppCache:
@@ -43,6 +44,13 @@ def _db():
 
 
 class TestGetCurrentLinkageKey:
+    def test_secret_value_repr_hides_aws_payload(self) -> None:
+        secret = _secret_value(1)
+
+        assert _GOOD_SECRET_B64 not in repr(secret)
+        assert _GOOD_SECRET_B64 not in secret.model_dump_json()
+        assert secret.secret_string.get_secret_value()
+
     def test_returns_key_from_aws(self) -> None:
         cache = _app_cache()
         with (

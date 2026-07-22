@@ -5,7 +5,7 @@ aliases:
 document_type: implementation
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_against_commit: ad26b87e9820
 tags: [infrastructure]
 related_code:
   - "../../infra/images/scripts/"
@@ -45,6 +45,8 @@ after losing the host entirely.
   pools, and the SSH public keys baked into every VM.
 - `infra/env/dev/.backend.env` — the dev backend env (shared with the dev
   Compose stack); the Terraform wrapper reads the Auth0 values from it.
+- `infra/env/dev/.grafana.env` — machine-local `GRAFANA_CLOUD_TOKEN` input
+  required by the Terraform wrapper for proxy fixture configuration.
 
 **2. Proxmox host bootstrap (once, on the PVE host):**
 
@@ -57,7 +59,7 @@ Creates the isolated `vmbr10` bridge and enables snippet storage.
 **3. Build the templates (Packer, from the workstation):**
 
 ```bash
-infra/images/scripts/prepare-proxmox-source.sh            # source template 8999
+infra/images/scripts/prepare-proxmox-source.sh --apply    # create source template 8999
 infra/images/scripts/build-proxmox-image.sh               # golden template 9000
 infra/images/scripts/build-proxmox-localstack-fixture.sh  # offline fixture 9001
 infra/images/scripts/build-proxmox-db-fixture.sh          # offline DB fixture 9002

@@ -1,8 +1,8 @@
 {
   "schema": "flowform.docsys.index/1",
   "generated_by": "scripts/docs/docsys/index.py",
-  "repo_head": "f128536f46b905e4e9c54c47b1e712630407c47b",
-  "document_count": 58,
+  "repo_head": "ad26b87e98207763669367a2e9b70ffa2632ce19",
+  "document_count": 62,
   "documents": [
     {
       "path": "docs/00-overview/architecture-principles.md",
@@ -37,8 +37,8 @@
         "../../frontend/apps/",
         "../../frontend/packages/",
         "../../frontend/scripts/generate-types.mjs",
-        "../../infra/platforms/aws/cdk/",
-        "../../infra/postgres/init/schema/"
+        "../../infra/deployment/aws/cdk/",
+        "../../infra/database/init/schema/"
       ],
       "change_triggers": [],
       "exclusions": [],
@@ -48,8 +48,8 @@
         "frontend/apps/",
         "frontend/packages/",
         "frontend/scripts/generate-types.mjs",
-        "infra/platforms/aws/cdk/",
-        "infra/postgres/init/schema/"
+        "infra/deployment/aws/cdk/",
+        "infra/database/init/schema/"
       ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
@@ -63,34 +63,34 @@
         "Documentation model"
       ],
       "wiki_links": [
-        "Architecture decision records",
-        "Component map",
-        "Backend implementation",
-        "Frontend implementation",
-        "Generated files",
-        "Frontend implementation",
-        "Surveys and versioning",
-        "Projects and access",
-        "Submissions",
-        "Surveys and versioning",
-        "Data flows",
-        "Responses and encryption",
-        "Trust boundaries",
-        "Security model",
-        "Deployment model",
-        "Infrastructure implementation",
-        "Secrets and configuration",
-        "Data flows",
-        "Responses and encryption",
-        "Security model",
-        "Trust boundaries",
-        "System context",
-        "Component map",
-        "Security model",
-        "Surveys and versioning",
-        "Responses and encryption",
-        "Architecture decision records",
-        "Documentation model"
+        "50-decisions/README",
+        "component-map",
+        "backend",
+        "frontend",
+        "generated-files",
+        "frontend",
+        "surveys-and-versioning",
+        "projects-and-access",
+        "submissions",
+        "surveys-and-versioning",
+        "data-flows",
+        "responses-and-encryption",
+        "trust-boundaries",
+        "security-model",
+        "deployment-model",
+        "infrastructure",
+        "secrets-and-configuration",
+        "data-flows",
+        "responses-and-encryption",
+        "security-model",
+        "trust-boundaries",
+        "system-context",
+        "component-map",
+        "security-model",
+        "surveys-and-versioning",
+        "responses-and-encryption",
+        "50-decisions/README",
+        "documentation-model"
       ],
       "neighbours": [
         "Architecture decision records",
@@ -111,7 +111,11 @@
         "System context",
         "Trust boundaries"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Architecture principles"
+        ]
+      }
     },
     {
       "path": "docs/00-overview/documentation-generator-guide.md",
@@ -122,7 +126,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Documentation generator guide",
@@ -156,19 +160,19 @@
         "Architecture decision records"
       ],
       "wiki_links": [
-        "FlowForm documentation home",
-        "Documentation model",
-        "Documentation model",
-        "Planning workspace",
-        "Architecture decision records",
-        "Documentation model",
-        "Planning workspace",
-        "Generated documentation",
-        "FlowForm documentation home",
-        "Documentation model",
-        "Generated documentation",
-        "Planning workspace",
-        "Architecture decision records"
+        "README",
+        "documentation-model",
+        "documentation-model",
+        "70-planning/README",
+        "50-decisions/README",
+        "documentation-model",
+        "70-planning/README",
+        "90-generated/README",
+        "README",
+        "documentation-model",
+        "90-generated/README",
+        "70-planning/README",
+        "50-decisions/README"
       ],
       "neighbours": [
         "Architecture decision records",
@@ -178,7 +182,11 @@
         "Generated documentation",
         "Planning workspace"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Documentation generator guide"
+        ]
+      }
     },
     {
       "path": "docs/00-overview/documentation-model.md",
@@ -189,7 +197,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Documentation model",
@@ -229,7 +237,11 @@
         "Planning workspace",
         "Repository map"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Documentation model"
+        ]
+      }
     },
     {
       "path": "docs/00-overview/glossary.md",
@@ -272,8 +284,8 @@
         "../../backend/app/services/public_submissions/",
         "../../frontend/apps/studio-app/",
         "../../frontend/apps/public-site/",
-        "../../infra/postgres/init/schema/flowform_core_db_schema_v4.sql",
-        "../../infra/postgres/init/schema/flowform_response_db_schema_v4.sql"
+        "../../infra/database/init/schema/flowform_core_db_schema_v4.sql",
+        "../../infra/database/init/schema/flowform_response_db_schema_v4.sql"
       ],
       "change_triggers": [],
       "exclusions": [],
@@ -283,8 +295,8 @@
         "backend/app/services/public_submissions/",
         "frontend/apps/studio-app/",
         "frontend/apps/public-site/",
-        "infra/postgres/init/schema/flowform_core_db_schema_v4.sql",
-        "infra/postgres/init/schema/flowform_response_db_schema_v4.sql"
+        "infra/database/init/schema/flowform_core_db_schema_v4.sql",
+        "infra/database/init/schema/flowform_response_db_schema_v4.sql"
       ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
@@ -298,39 +310,39 @@
         "Frontend implementation"
       ],
       "wiki_links": [
-        "Projects and access",
-        "Surveys and versioning",
-        "Builder and rules",
-        "Surveys and versioning",
-        "Links and subjects",
-        "Submissions",
-        "Links and subjects",
-        "Identity and authentication",
-        "Links and subjects",
-        "Links and subjects",
-        "Identity and authentication",
-        "Submissions",
-        "Submissions",
-        "Responses and encryption",
-        "Builder and rules",
-        "Responses and encryption",
-        "Responses and encryption",
-        "Responses and encryption",
-        "Configuration implementation",
-        "Trust boundaries",
-        "Responses and encryption",
-        "Responses and encryption",
-        "Responses and encryption",
-        "Frontend implementation",
-        "System context",
-        "Frontend implementation",
-        "System summary",
-        "Projects and access",
-        "Surveys and versioning",
-        "Links and subjects",
-        "Submissions",
-        "Responses and encryption",
-        "Frontend implementation"
+        "projects-and-access",
+        "surveys-and-versioning",
+        "builder-and-rules",
+        "surveys-and-versioning",
+        "links-and-subjects",
+        "submissions",
+        "links-and-subjects",
+        "identity-and-authentication",
+        "links-and-subjects",
+        "links-and-subjects",
+        "identity-and-authentication",
+        "submissions",
+        "submissions",
+        "responses-and-encryption",
+        "builder-and-rules",
+        "responses-and-encryption",
+        "responses-and-encryption",
+        "responses-and-encryption",
+        "configuration",
+        "trust-boundaries",
+        "responses-and-encryption",
+        "responses-and-encryption",
+        "responses-and-encryption",
+        "frontend",
+        "system-context",
+        "frontend",
+        "system-summary",
+        "projects-and-access",
+        "surveys-and-versioning",
+        "links-and-subjects",
+        "submissions",
+        "responses-and-encryption",
+        "frontend"
       ],
       "neighbours": [
         "Builder and rules",
@@ -346,16 +358,20 @@
         "System summary",
         "Trust boundaries"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Glossary"
+        ]
+      }
     },
     {
       "path": "docs/00-overview/repository-map.md",
       "title": "Repository map",
       "document_type": "overview",
       "authority": "canonical",
-      "status": "verified",
+      "status": "draft",
       "tags": [],
-      "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
+      "verified_against_commit": null,
       "code_confidence": "medium",
       "headings": [
         "Repository map",
@@ -398,8 +414,8 @@
         "Generated files"
       ],
       "wiki_links": [
-        "Generated files",
-        "Repository tree"
+        "generated-files",
+        "60-reference/repository-tree"
       ],
       "neighbours": [
         "Backend implementation",
@@ -415,7 +431,11 @@
         "Scripts implementation",
         "System summary"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Repository map"
+        ]
+      }
     },
     {
       "path": "docs/00-overview/system-summary.md",
@@ -470,26 +490,26 @@
         "Responses and encryption"
       ],
       "wiki_links": [
-        "Projects and access",
-        "Surveys and versioning",
-        "Builder and rules",
-        "Links and subjects",
-        "Submissions",
-        "Responses and encryption",
-        "System context",
-        "Component map",
-        "Repository map",
-        "FlowForm documentation home",
-        "Glossary",
-        "Repository map",
-        "System context",
-        "Component map",
-        "Projects and access",
-        "Surveys and versioning",
-        "Builder and rules",
-        "Links and subjects",
-        "Submissions",
-        "Responses and encryption"
+        "projects-and-access",
+        "surveys-and-versioning",
+        "builder-and-rules",
+        "links-and-subjects",
+        "submissions",
+        "responses-and-encryption",
+        "system-context",
+        "component-map",
+        "repository-map",
+        "README",
+        "glossary",
+        "repository-map",
+        "system-context",
+        "component-map",
+        "projects-and-access",
+        "surveys-and-versioning",
+        "builder-and-rules",
+        "links-and-subjects",
+        "submissions",
+        "responses-and-encryption"
       ],
       "neighbours": [
         "Builder and rules",
@@ -504,7 +524,11 @@
         "Surveys and versioning",
         "System context"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "System summary"
+        ]
+      }
     },
     {
       "path": "docs/10-architecture/component-map.md",
@@ -538,7 +562,7 @@
         "../../backend/app/services/",
         "../../backend/app/repositories/",
         "../../backend/app/schema/orm/",
-        "../../infra/postgres/init/schema/"
+        "../../infra/database/init/schema/"
       ],
       "change_triggers": [],
       "exclusions": [],
@@ -550,7 +574,7 @@
         "backend/app/services/",
         "backend/app/repositories/",
         "backend/app/schema/orm/",
-        "infra/postgres/init/schema/"
+        "infra/database/init/schema/"
       ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
@@ -564,20 +588,20 @@
         "Responses and encryption"
       ],
       "wiki_links": [
-        "Backend implementation",
-        "Frontend implementation",
-        "Data flows",
-        "Responses and encryption",
-        "Generated files",
-        "Runtime containers",
-        "Deployment model",
-        "System context",
-        "Runtime containers",
-        "Data flows",
-        "Backend implementation",
-        "Frontend implementation",
-        "Security model",
-        "Responses and encryption"
+        "backend",
+        "frontend",
+        "data-flows",
+        "responses-and-encryption",
+        "generated-files",
+        "runtime-containers",
+        "deployment-model",
+        "system-context",
+        "runtime-containers",
+        "data-flows",
+        "backend",
+        "frontend",
+        "security-model",
+        "responses-and-encryption"
       ],
       "neighbours": [
         "Architecture principles",
@@ -592,7 +616,11 @@
         "System context",
         "System summary"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Component map"
+        ]
+      }
     },
     {
       "path": "docs/10-architecture/data-flows.md",
@@ -648,23 +676,23 @@
         "Responses and encryption"
       ],
       "wiki_links": [
-        "Surveys and versioning",
-        "Projects and access",
-        "Links and subjects",
-        "Submissions",
-        "Responses and encryption",
-        "Security model",
-        "Responses and encryption",
-        "Backend implementation",
-        "Security model",
-        "Configuration implementation",
-        "Secrets and configuration",
-        "Component map",
-        "Trust boundaries",
-        "Surveys and versioning",
-        "Links and subjects",
-        "Submissions",
-        "Responses and encryption"
+        "surveys-and-versioning",
+        "projects-and-access",
+        "links-and-subjects",
+        "submissions",
+        "responses-and-encryption",
+        "security-model",
+        "responses-and-encryption",
+        "backend",
+        "security-model",
+        "configuration",
+        "secrets-and-configuration",
+        "component-map",
+        "trust-boundaries",
+        "surveys-and-versioning",
+        "links-and-subjects",
+        "submissions",
+        "responses-and-encryption"
       ],
       "neighbours": [
         "Architecture principles",
@@ -681,7 +709,11 @@
         "System context",
         "Trust boundaries"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Data flows"
+        ]
+      }
     },
     {
       "path": "docs/10-architecture/deployment-model.md",
@@ -694,11 +726,12 @@
         "configuration",
         "infrastructure"
       ],
-      "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
+      "verified_against_commit": null,
       "code_confidence": "medium",
       "headings": [
         "Deployment model",
         "Environment model",
+        "Proxmox image and deployment boundary",
         "Intended AWS topology",
         "CDK implementation boundary",
         "Deployment automation boundary",
@@ -707,23 +740,29 @@
         "Related documents"
       ],
       "related_code": [
-        "../../infra/platforms/aws/cdk/app.py",
-        "../../infra/platforms/aws/cdk/flowform_infra/config/environments.py",
-        "../../infra/platforms/aws/cdk/flowform_infra/stacks/",
-        "../../infra/platforms/aws/cdk/flowform_infra/constructs/static_site_construct.py",
-        "../../infra/runtime/",
-        "../../infra/environments/rehearsal/",
+        "../../infra/deployment/aws/cdk/app.py",
+        "../../infra/deployment/aws/cdk/flowform_infra/config/environments.py",
+        "../../infra/deployment/aws/cdk/flowform_infra/stacks/",
+        "../../infra/deployment/aws/cdk/flowform_infra/constructs/static_site_construct.py",
+        "../../infra/containers/",
+        "../../infra/containers/strategies/rehearsal/",
+        "../../infra/images/packer/",
+        "../../infra/images/scripts/",
+        "../../infra/deployment/proxmox/",
         "../../.github/workflows/deploy.yml"
       ],
       "change_triggers": [],
       "exclusions": [],
       "related_code_resolved": [
-        "infra/platforms/aws/cdk/app.py",
-        "infra/platforms/aws/cdk/flowform_infra/config/environments.py",
-        "infra/platforms/aws/cdk/flowform_infra/stacks/",
-        "infra/platforms/aws/cdk/flowform_infra/constructs/static_site_construct.py",
-        "infra/runtime/",
-        "infra/environments/rehearsal/",
+        "infra/deployment/aws/cdk/app.py",
+        "infra/deployment/aws/cdk/flowform_infra/config/environments.py",
+        "infra/deployment/aws/cdk/flowform_infra/stacks/",
+        "infra/deployment/aws/cdk/flowform_infra/constructs/static_site_construct.py",
+        "infra/containers/",
+        "infra/containers/strategies/rehearsal/",
+        "infra/images/packer/",
+        "infra/images/scripts/",
+        "infra/deployment/proxmox/",
         ".github/workflows/deploy.yml"
       ],
       "change_triggers_resolved": [],
@@ -734,26 +773,28 @@
         "Trust boundaries",
         "Cloud deployment",
         "Machine image building",
+        "Proxmox rehearsal implementation",
         "Secrets and configuration",
         "Infrastructure implementation",
         "Infrastructure resources"
       ],
       "wiki_links": [
-        "Trust boundaries",
-        "Runtime containers",
-        "Cloud deployment",
-        "Machine image building",
-        "Secrets and configuration",
-        "Infrastructure implementation",
-        "Infrastructure resources",
-        "System context",
-        "Runtime containers",
-        "Trust boundaries",
-        "Cloud deployment",
-        "Machine image building",
-        "Secrets and configuration",
-        "Infrastructure implementation",
-        "Infrastructure resources"
+        "trust-boundaries",
+        "runtime-containers",
+        "cloud-deployment",
+        "machine-image-building",
+        "secrets-and-configuration",
+        "infrastructure",
+        "infrastructure-resources",
+        "system-context",
+        "runtime-containers",
+        "trust-boundaries",
+        "cloud-deployment",
+        "machine-image-building",
+        "proxmox-rehearsal",
+        "secrets-and-configuration",
+        "infrastructure",
+        "infrastructure-resources"
       ],
       "neighbours": [
         "Architecture principles",
@@ -762,13 +803,19 @@
         "Infrastructure implementation",
         "Infrastructure resources",
         "Machine image building",
+        "Packer implementation",
+        "Proxmox rehearsal implementation",
         "Runtime containers",
         "Secrets and configuration",
         "Security model",
         "System context",
         "Trust boundaries"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Deployment model"
+        ]
+      }
     },
     {
       "path": "docs/10-architecture/runtime-containers.md",
@@ -794,24 +841,22 @@
         "Related documents"
       ],
       "related_code": [
-        "../../infra/environments/development/compose/docker-compose.dev.yml",
-        "../../infra/tests/compose/docker-compose.test.yml",
-        "../../infra/environments/development/compose/docker-compose.ec2.local.yml",
+        "../../infra/containers/strategies/dev/compose/compose.yml",
+        "../../infra/containers/strategies/dev/compose/compose.test.yml",
+        "../../infra/containers/runtime/compose/",
         "../../frontend/docker-compose.dev.yml",
-        "../../infra/runtime/compose/",
-        "../../infra/runtime/bootstrap/",
-        "../../infra/environments/rehearsal/compose/"
+        "../../infra/deployment/bootstrap/",
+        "../../infra/containers/strategies/rehearsal/"
       ],
       "change_triggers": [],
       "exclusions": [],
       "related_code_resolved": [
-        "infra/environments/development/compose/docker-compose.dev.yml",
-        "infra/tests/compose/docker-compose.test.yml",
-        "infra/environments/development/compose/docker-compose.ec2.local.yml",
+        "infra/containers/strategies/dev/compose/compose.yml",
+        "infra/containers/strategies/dev/compose/compose.test.yml",
+        "infra/containers/runtime/compose/",
         "frontend/docker-compose.dev.yml",
-        "infra/runtime/compose/",
-        "infra/runtime/bootstrap/",
-        "infra/environments/rehearsal/compose/"
+        "infra/deployment/bootstrap/",
+        "infra/containers/strategies/rehearsal/"
       ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
@@ -825,21 +870,22 @@
         "Services and ports"
       ],
       "wiki_links": [
-        "Local infrastructure",
-        "Testing workflow",
-        "Security model",
-        "Secrets and configuration",
-        "Infrastructure implementation",
-        "Machine image building",
-        "Deployment model",
-        "Deployment model",
-        "Component map",
-        "Deployment model",
-        "Local infrastructure",
-        "Testing workflow",
-        "Secrets and configuration",
-        "Infrastructure implementation",
-        "Services and ports"
+        "local-infrastructure",
+        "testing",
+        "security-model",
+        "secrets-and-configuration",
+        "infrastructure",
+        "proxmox-rehearsal",
+        "machine-image-building",
+        "deployment-model",
+        "deployment-model",
+        "component-map",
+        "deployment-model",
+        "local-infrastructure",
+        "testing",
+        "secrets-and-configuration",
+        "infrastructure",
+        "services-and-ports"
       ],
       "neighbours": [
         "Component map",
@@ -848,13 +894,18 @@
         "Local infrastructure",
         "Machine image building",
         "Observability",
+        "Proxmox rehearsal implementation",
         "Secrets and configuration",
         "Security model",
         "Services and ports",
         "Testing workflow",
         "Trust boundaries"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Runtime containers"
+        ]
+      }
     },
     {
       "path": "docs/10-architecture/security-model.md",
@@ -867,7 +918,7 @@
         "infrastructure",
         "security"
       ],
-      "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Security model",
@@ -889,8 +940,8 @@
         "../../backend/app/crypto/",
         "../../backend/app/core/config.py",
         "../../backend/app/middleware/rate_limit/",
-        "../../infra/runtime/",
-        "../../infra/platforms/aws/cdk/flowform_infra/stacks/"
+        "../../infra/containers/",
+        "../../infra/deployment/aws/cdk/flowform_infra/stacks/"
       ],
       "change_triggers": [],
       "exclusions": [],
@@ -901,8 +952,8 @@
         "backend/app/crypto/",
         "backend/app/core/config.py",
         "backend/app/middleware/rate_limit/",
-        "infra/runtime/",
-        "infra/platforms/aws/cdk/flowform_infra/stacks/"
+        "infra/containers/",
+        "infra/deployment/aws/cdk/flowform_infra/stacks/"
       ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
@@ -916,21 +967,21 @@
         "Deployment model"
       ],
       "wiki_links": [
-        "Trust boundaries",
-        "Identity and authentication",
-        "Projects and access",
-        "Links and subjects",
-        "Responses and encryption",
-        "Secrets and configuration",
-        "Deployment model",
-        "Runtime containers",
-        "Trust boundaries",
-        "Identity and authentication",
-        "Projects and access",
-        "Links and subjects",
-        "Responses and encryption",
-        "Secrets and configuration",
-        "Deployment model"
+        "trust-boundaries",
+        "identity-and-authentication",
+        "projects-and-access",
+        "links-and-subjects",
+        "responses-and-encryption",
+        "secrets-and-configuration",
+        "deployment-model",
+        "runtime-containers",
+        "trust-boundaries",
+        "identity-and-authentication",
+        "projects-and-access",
+        "links-and-subjects",
+        "responses-and-encryption",
+        "secrets-and-configuration",
+        "deployment-model"
       ],
       "neighbours": [
         "Architecture principles",
@@ -945,7 +996,11 @@
         "Secrets and configuration",
         "Trust boundaries"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Security model"
+        ]
+      }
     },
     {
       "path": "docs/10-architecture/system-context.md",
@@ -977,8 +1032,8 @@
         "../../backend/app/core/config.py",
         "../../backend/app/middleware/auth/",
         "../../backend/app/aws/",
-        "../../infra/runtime/",
-        "../../infra/platforms/aws/cdk/"
+        "../../infra/containers/",
+        "../../infra/deployment/aws/cdk/"
       ],
       "change_triggers": [],
       "exclusions": [],
@@ -989,8 +1044,8 @@
         "backend/app/core/config.py",
         "backend/app/middleware/auth/",
         "backend/app/aws/",
-        "infra/runtime/",
-        "infra/platforms/aws/cdk/"
+        "infra/containers/",
+        "infra/deployment/aws/cdk/"
       ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
@@ -1005,22 +1060,22 @@
         "Responses and encryption"
       ],
       "wiki_links": [
-        "Component map",
-        "Deployment model",
-        "Trust boundaries",
-        "Identity and authentication",
-        "Links and subjects",
-        "Submissions",
-        "Responses and encryption",
-        "Data flows",
-        "System summary",
-        "Component map",
-        "Deployment model",
-        "Trust boundaries",
-        "Identity and authentication",
-        "Links and subjects",
-        "Submissions",
-        "Responses and encryption"
+        "component-map",
+        "deployment-model",
+        "trust-boundaries",
+        "identity-and-authentication",
+        "links-and-subjects",
+        "submissions",
+        "responses-and-encryption",
+        "data-flows",
+        "system-summary",
+        "component-map",
+        "deployment-model",
+        "trust-boundaries",
+        "identity-and-authentication",
+        "links-and-subjects",
+        "submissions",
+        "responses-and-encryption"
       ],
       "neighbours": [
         "Architecture principles",
@@ -1036,7 +1091,11 @@
         "System summary",
         "Trust boundaries"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "System context"
+        ]
+      }
     },
     {
       "path": "docs/10-architecture/trust-boundaries.md",
@@ -1067,10 +1126,12 @@
         "../../backend/app/services/public_submissions/",
         "../../backend/app/db/",
         "../../backend/app/crypto/",
-        "../../infra/runtime/compose/",
-        "../../infra/runtime/config/",
-        "../../infra/runtime/bootstrap/",
-        "../../infra/platforms/aws/cdk/flowform_infra/stacks/"
+        "../../infra/containers/runtime/compose/",
+        "../../infra/containers/runtime/services/",
+        "../../infra/containers/strategies/aws/services/",
+        "../../infra/deployment/bootstrap/",
+        "../../infra/deployment/aws/cdk/flowform_infra/stacks/",
+        "../../infra/deployment/proxmox/"
       ],
       "change_triggers": [],
       "exclusions": [],
@@ -1080,10 +1141,12 @@
         "backend/app/services/public_submissions/",
         "backend/app/db/",
         "backend/app/crypto/",
-        "infra/runtime/compose/",
-        "infra/runtime/config/",
-        "infra/runtime/bootstrap/",
-        "infra/platforms/aws/cdk/flowform_infra/stacks/"
+        "infra/containers/runtime/compose/",
+        "infra/containers/runtime/services/",
+        "infra/containers/strategies/aws/services/",
+        "infra/deployment/bootstrap/",
+        "infra/deployment/aws/cdk/flowform_infra/stacks/",
+        "infra/deployment/proxmox/"
       ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
@@ -1098,21 +1161,21 @@
         "Secrets and configuration"
       ],
       "wiki_links": [
-        "Data flows",
-        "Responses and encryption",
-        "Identity and authentication",
-        "Links and subjects",
-        "Deployment model",
-        "Local infrastructure",
-        "Security model",
-        "Security model",
-        "System context",
-        "Data flows",
-        "Deployment model",
-        "Runtime containers",
-        "Identity and authentication",
-        "Responses and encryption",
-        "Secrets and configuration"
+        "data-flows",
+        "responses-and-encryption",
+        "identity-and-authentication",
+        "links-and-subjects",
+        "deployment-model",
+        "local-infrastructure",
+        "security-model",
+        "security-model",
+        "system-context",
+        "data-flows",
+        "deployment-model",
+        "runtime-containers",
+        "identity-and-authentication",
+        "responses-and-encryption",
+        "secrets-and-configuration"
       ],
       "neighbours": [
         "Architecture principles",
@@ -1128,34 +1191,52 @@
         "Security model",
         "System context"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Trust boundaries"
+        ]
+      }
     },
     {
       "path": "docs/20-domains/builder-and-rules.md",
       "title": "Builder and rules",
       "document_type": "domain",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "frontend"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Builder and rules",
         "Purpose",
         "Responsibilities",
         "Non-responsibilities",
-        "Main entities",
+        "Main entities and invariants",
         "Important workflows",
         "Implementation map",
-        "Open questions",
+        "Verified gaps and open questions",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../frontend/packages/builder/src/",
+        "../../frontend/packages/schema/src/generated/",
+        "../../frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/useSurveyBuilderController.ts",
+        "../../frontend/apps/studio-app/src/pages/RespondPage.tsx",
+        "../../backend/app/services/content.py",
+        "../../backend/app/schema/api/requests/content/"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "frontend/packages/builder/src/",
+        "frontend/packages/schema/src/generated/",
+        "frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/useSurveyBuilderController.ts",
+        "frontend/apps/studio-app/src/pages/RespondPage.tsx",
+        "backend/app/services/content.py",
+        "backend/app/schema/api/requests/content/"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1163,8 +1244,9 @@
         "Frontend implementation"
       ],
       "wiki_links": [
-        "Surveys and versioning",
-        "Frontend implementation"
+        "surveys-and-versioning",
+        "surveys-and-versioning",
+        "frontend"
       ],
       "neighbours": [
         "Frontend implementation",
@@ -1172,34 +1254,50 @@
         "Surveys and versioning",
         "System summary"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Builder and rules"
+        ]
+      }
     },
     {
       "path": "docs/20-domains/identity-and-authentication.md",
       "title": "Identity and authentication",
       "document_type": "domain",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Identity and authentication",
         "Purpose",
         "Responsibilities",
         "Non-responsibilities",
-        "Main entities",
+        "Main entities and invariants",
         "Important workflows",
         "Implementation map",
-        "Open questions",
+        "Verified gaps and open questions",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/app/middleware/auth/auth0.py",
+        "../../backend/app/services/auth.py",
+        "../../backend/app/services/account.py",
+        "../../backend/app/schema/orm/core/user.py",
+        "../../backend/tests/unit/test_auth_extension.py"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/app/middleware/auth/auth0.py",
+        "backend/app/services/auth.py",
+        "backend/app/services/account.py",
+        "backend/app/schema/orm/core/user.py",
+        "backend/tests/unit/test_auth_extension.py"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1209,48 +1307,70 @@
         "Glossary"
       ],
       "wiki_links": [
-        "Security model",
-        "Projects and access",
-        "Links and subjects",
-        "Glossary"
+        "projects-and-access",
+        "links-and-subjects",
+        "responses-and-encryption",
+        "security-model",
+        "projects-and-access",
+        "links-and-subjects",
+        "glossary"
       ],
       "neighbours": [
         "FlowForm documentation home",
         "Glossary",
         "Links and subjects",
         "Projects and access",
+        "Responses and encryption",
         "Security model",
         "System context",
         "Trust boundaries"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Identity and authentication"
+        ]
+      }
     },
     {
       "path": "docs/20-domains/links-and-subjects.md",
       "title": "Links and subjects",
       "document_type": "domain",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Links and subjects",
         "Purpose",
         "Responsibilities",
         "Non-responsibilities",
-        "Main entities",
+        "Main entities and invariants",
         "Important workflows",
         "Implementation map",
-        "Open questions",
+        "Verified gaps and open questions",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/app/services/survey_links.py",
+        "../../backend/app/services/participants.py",
+        "../../backend/app/services/public_submissions/core/resolution/",
+        "../../backend/app/schema/orm/core/project_subject.py",
+        "../../backend/app/schema/orm/core/survey_access.py",
+        "../../backend/tests/integration/core/test_flow_matrix.py"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/app/services/survey_links.py",
+        "backend/app/services/participants.py",
+        "backend/app/services/public_submissions/core/resolution/",
+        "backend/app/schema/orm/core/project_subject.py",
+        "backend/app/schema/orm/core/survey_access.py",
+        "backend/tests/integration/core/test_flow_matrix.py"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1259,46 +1379,69 @@
         "Security model"
       ],
       "wiki_links": [
-        "Identity and authentication",
-        "Submissions",
-        "Security model"
+        "identity-and-authentication",
+        "identity-and-authentication",
+        "submissions",
+        "security-model"
       ],
       "neighbours": [
         "Data flows",
         "Glossary",
         "Identity and authentication",
+        "Projects and access",
         "Security model",
         "Submissions",
         "System context",
         "System summary",
         "Trust boundaries"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Links and subjects"
+        ]
+      }
     },
     {
       "path": "docs/20-domains/observability.md",
       "title": "Observability",
       "document_type": "domain",
       "authority": "canonical",
-      "status": "scaffold",
-      "tags": [],
-      "verified_against_commit": null,
+      "status": "draft",
+      "tags": [
+        "backend",
+        "infrastructure"
+      ],
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Observability",
         "Purpose",
         "Responsibilities",
         "Non-responsibilities",
-        "Main entities",
+        "Main signals and invariants",
         "Important workflows",
         "Implementation map",
-        "Open questions",
+        "Verified gaps and open questions",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/app/logging/",
+        "../../backend/app/api/v1/system/health.py",
+        "../../backend/app/schema/orm/core/audit_log.py",
+        "../../infra/containers/runtime/compose/",
+        "../../infra/containers/runtime/services/alloy/",
+        "../../infra/containers/runtime/services/alloy-app/"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/app/logging/",
+        "backend/app/api/v1/system/health.py",
+        "backend/app/schema/orm/core/audit_log.py",
+        "infra/containers/runtime/compose/",
+        "infra/containers/runtime/services/alloy/",
+        "infra/containers/runtime/services/alloy-app/"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1306,41 +1449,59 @@
         "Backend implementation"
       ],
       "wiki_links": [
-        "Runtime containers",
-        "Backend implementation"
+        "runtime-containers",
+        "backend"
       ],
       "neighbours": [
         "Backend implementation",
         "Runtime containers"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Observability"
+        ]
+      }
     },
     {
       "path": "docs/20-domains/projects-and-access.md",
       "title": "Projects and access",
       "document_type": "domain",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Projects and access",
         "Purpose",
         "Responsibilities",
         "Non-responsibilities",
-        "Main entities",
+        "Main entities and invariants",
         "Important workflows",
         "Implementation map",
-        "Open questions",
+        "Verified gaps and open questions",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/app/services/access/",
+        "../../backend/app/services/projects.py",
+        "../../backend/app/services/members.py",
+        "../../backend/app/services/roles.py",
+        "../../backend/app/schema/orm/core/project.py",
+        "../../backend/app/domain/permissions.py"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/app/services/access/",
+        "backend/app/services/projects.py",
+        "backend/app/services/members.py",
+        "backend/app/services/roles.py",
+        "backend/app/schema/orm/core/project.py",
+        "backend/app/domain/permissions.py"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1349,47 +1510,70 @@
         "Security model"
       ],
       "wiki_links": [
-        "Identity and authentication",
-        "Surveys and versioning",
-        "Security model"
+        "identity-and-authentication",
+        "links-and-subjects",
+        "responses-and-encryption",
+        "identity-and-authentication",
+        "surveys-and-versioning",
+        "security-model"
       ],
       "neighbours": [
         "Architecture principles",
         "Data flows",
         "Glossary",
         "Identity and authentication",
+        "Links and subjects",
+        "Responses and encryption",
         "Security model",
         "Surveys and versioning",
         "System summary"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Projects and access"
+        ]
+      }
     },
     {
       "path": "docs/20-domains/responses-and-encryption.md",
       "title": "Responses and encryption",
       "document_type": "domain",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Responses and encryption",
         "Purpose",
         "Responsibilities",
         "Non-responsibilities",
-        "Main entities",
+        "Main entities and invariants",
         "Important workflows",
         "Implementation map",
-        "Open questions",
+        "Verified gaps and open questions",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/app/crypto/",
+        "../../backend/app/schema/orm/response/",
+        "../../backend/app/services/public_submissions/core/actions/",
+        "../../backend/app/services/admin_results/",
+        "../../backend/app/db/manager.py",
+        "../../infra/database/init/schema/flowform_response_db_schema_v4.sql"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/app/crypto/",
+        "backend/app/schema/orm/response/",
+        "backend/app/services/public_submissions/core/actions/",
+        "backend/app/services/admin_results/",
+        "backend/app/db/manager.py",
+        "infra/database/init/schema/flowform_response_db_schema_v4.sql"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1399,10 +1583,10 @@
         "Backend implementation"
       ],
       "wiki_links": [
-        "Submissions",
-        "Security model",
-        "Data flows",
-        "Backend implementation"
+        "submissions",
+        "security-model",
+        "data-flows",
+        "backend"
       ],
       "neighbours": [
         "Architecture principles",
@@ -1410,38 +1594,60 @@
         "Component map",
         "Data flows",
         "Glossary",
+        "Identity and authentication",
+        "Projects and access",
         "Security model",
         "Submissions",
         "System context",
         "System summary",
         "Trust boundaries"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Responses and encryption"
+        ]
+      }
     },
     {
       "path": "docs/20-domains/submissions.md",
       "title": "Submissions",
       "document_type": "domain",
       "authority": "canonical",
-      "status": "scaffold",
-      "tags": [],
-      "verified_against_commit": null,
+      "status": "draft",
+      "tags": [
+        "backend"
+      ],
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Submissions",
         "Purpose",
         "Responsibilities",
         "Non-responsibilities",
-        "Main entities",
+        "Main entities and invariants",
         "Important workflows",
         "Implementation map",
-        "Open questions",
+        "Verified gaps and open questions",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/app/services/public_submissions/",
+        "../../backend/app/schema/orm/core/submission_session.py",
+        "../../backend/app/schema/orm/core/submission_answer_slot.py",
+        "../../backend/app/api/v1/respondent/submission_sessions.py",
+        "../../backend/tests/e2e/test_submission_session_flows.py",
+        "../../backend/tests/integration/core/test_answer_save.py"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/app/services/public_submissions/",
+        "backend/app/schema/orm/core/submission_session.py",
+        "backend/app/schema/orm/core/submission_answer_slot.py",
+        "backend/app/api/v1/respondent/submission_sessions.py",
+        "backend/tests/e2e/test_submission_session_flows.py",
+        "backend/tests/integration/core/test_answer_save.py"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1451,10 +1657,12 @@
         "Data flows"
       ],
       "wiki_links": [
-        "Links and subjects",
-        "Surveys and versioning",
-        "Responses and encryption",
-        "Data flows"
+        "data-flows",
+        "responses-and-encryption",
+        "links-and-subjects",
+        "surveys-and-versioning",
+        "responses-and-encryption",
+        "data-flows"
       ],
       "neighbours": [
         "Architecture principles",
@@ -1466,32 +1674,50 @@
         "System context",
         "System summary"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Submissions"
+        ]
+      }
     },
     {
       "path": "docs/20-domains/surveys-and-versioning.md",
       "title": "Surveys and versioning",
       "document_type": "domain",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Surveys and versioning",
         "Purpose",
         "Responsibilities",
         "Non-responsibilities",
-        "Main entities",
+        "Main entities and invariants",
         "Important workflows",
         "Implementation map",
-        "Open questions",
+        "Verified gaps and open questions",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/app/services/surveys.py",
+        "../../backend/app/domain/version_rules.py",
+        "../../backend/app/schema/orm/core/survey.py",
+        "../../backend/app/repositories/surveys_repo.py",
+        "../../backend/tests/integration/core/test_survey_version_lifecycle.py",
+        "../../infra/database/init/schema/flowform_core_db_schema_v4.sql"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/app/services/surveys.py",
+        "backend/app/domain/version_rules.py",
+        "backend/app/schema/orm/core/survey.py",
+        "backend/app/repositories/surveys_repo.py",
+        "backend/tests/integration/core/test_survey_version_lifecycle.py",
+        "infra/database/init/schema/flowform_core_db_schema_v4.sql"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1500,9 +1726,11 @@
         "Submissions"
       ],
       "wiki_links": [
-        "Projects and access",
-        "Builder and rules",
-        "Submissions"
+        "builder-and-rules",
+        "projects-and-access",
+        "projects-and-access",
+        "builder-and-rules",
+        "submissions"
       ],
       "neighbours": [
         "Architecture principles",
@@ -1513,19 +1741,23 @@
         "Submissions",
         "System summary"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Surveys and versioning"
+        ]
+      }
     },
     {
       "path": "docs/30-workflows/cloud-deployment.md",
       "title": "Cloud deployment",
       "document_type": "workflow",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "ci-cd",
         "infrastructure"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Cloud deployment",
@@ -1537,10 +1769,20 @@
         "Verification commands",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../.github/workflows/deploy.yml",
+        "../../.github/workflows/ci.yml",
+        "../../infra/deployment/aws/cdk/flowform_infra/stacks/frontend_stack.py",
+        "../../infra/deployment/aws/cdk/flowform_infra/config/environments.py"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        ".github/workflows/deploy.yml",
+        ".github/workflows/ci.yml",
+        "infra/deployment/aws/cdk/flowform_infra/stacks/frontend_stack.py",
+        "infra/deployment/aws/cdk/flowform_infra/config/environments.py"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1550,10 +1792,10 @@
         "Infrastructure implementation"
       ],
       "wiki_links": [
-        "Deployment model",
-        "Continuous integration",
-        "Machine image building",
-        "Infrastructure implementation"
+        "deployment-model",
+        "continuous-integration",
+        "machine-image-building",
+        "infrastructure"
       ],
       "neighbours": [
         "CI/CD implementation",
@@ -1562,18 +1804,22 @@
         "Infrastructure implementation",
         "Machine image building"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Cloud deployment"
+        ]
+      }
     },
     {
       "path": "docs/30-workflows/continuous-integration.md",
       "title": "Continuous integration",
       "document_type": "workflow",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "ci-cd"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Continuous integration",
@@ -1585,10 +1831,22 @@
         "Verification commands",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../.github/workflows/ci.yml",
+        "../../backend/scripts/run_backend_security.sh",
+        "../../backend/scripts/run-tests.py",
+        "../../scripts/ci/check-openapi-contracts.sh",
+        "../../scripts/docs/"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        ".github/workflows/ci.yml",
+        "backend/scripts/run_backend_security.sh",
+        "backend/scripts/run-tests.py",
+        "scripts/ci/check-openapi-contracts.sh",
+        "scripts/docs/"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1598,10 +1856,11 @@
         "CI workflows"
       ],
       "wiki_links": [
-        "Testing workflow",
-        "Cloud deployment",
-        "CI/CD implementation",
-        "CI workflows"
+        "cloud-deployment",
+        "testing",
+        "cloud-deployment",
+        "ci-cd",
+        "ci-workflows"
       ],
       "neighbours": [
         "CI workflows",
@@ -1609,18 +1868,22 @@
         "Cloud deployment",
         "Testing workflow"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Continuous integration"
+        ]
+      }
     },
     {
       "path": "docs/30-workflows/database-migrations.md",
       "title": "Database migrations",
       "document_type": "workflow",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "backend"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Database migrations",
@@ -1632,10 +1895,22 @@
         "Verification commands",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../infra/database/init/",
+        "../../infra/database/flowform_*_mock_data.sql",
+        "../../backend/app/schema/orm/",
+        "../../backend/app/db/error_handling/",
+        "../../backend/scripts/run-tests.py"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "infra/database/init/",
+        "infra/database/flowform_*_mock_data.sql",
+        "backend/app/schema/orm/",
+        "backend/app/db/error_handling/",
+        "backend/scripts/run-tests.py"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1643,23 +1918,30 @@
         "Local infrastructure"
       ],
       "wiki_links": [
-        "Backend implementation",
-        "Local infrastructure"
+        "testing",
+        "backend",
+        "local-infrastructure"
       ],
       "neighbours": [
         "Backend implementation",
-        "Local infrastructure"
+        "Local development",
+        "Local infrastructure",
+        "Testing workflow"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Database migrations"
+        ]
+      }
     },
     {
       "path": "docs/30-workflows/local-development.md",
       "title": "Local development",
       "document_type": "workflow",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Local development",
@@ -1671,10 +1953,22 @@
         "Verification commands",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../infra/containers/strategies/dev/compose/compose.yml",
+        "../../infra/env/dev/",
+        "../../scripts/secrets/fetch-dev-secrets.sh",
+        "../../scripts/dev/load-*-mock-data.sh",
+        "../../frontend/package.json"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "infra/containers/strategies/dev/compose/compose.yml",
+        "infra/env/dev/",
+        "scripts/secrets/fetch-dev-secrets.sh",
+        "scripts/dev/load-*-mock-data.sh",
+        "frontend/package.json"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1684,30 +1978,36 @@
         "Commands"
       ],
       "wiki_links": [
-        "Local infrastructure",
-        "Secrets and configuration",
-        "Testing workflow",
-        "Commands"
+        "database-migrations",
+        "local-infrastructure",
+        "secrets-and-configuration",
+        "testing",
+        "commands"
       ],
       "neighbours": [
         "Commands",
+        "Database migrations",
         "FlowForm documentation home",
         "Local infrastructure",
         "Secrets and configuration",
         "Testing workflow"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Local development"
+        ]
+      }
     },
     {
       "path": "docs/30-workflows/local-infrastructure.md",
       "title": "Local infrastructure",
       "document_type": "workflow",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "infrastructure"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Local infrastructure",
@@ -1719,10 +2019,22 @@
         "Verification commands",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../infra/containers/strategies/dev/compose/compose.yml",
+        "../../infra/containers/strategies/dev/compose/compose.test.yml",
+        "../../infra/database/init/",
+        "../../infra/tests/containers/test-container-invariants.sh",
+        "../../frontend/docker-compose.dev.yml"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "infra/containers/strategies/dev/compose/compose.yml",
+        "infra/containers/strategies/dev/compose/compose.test.yml",
+        "infra/database/init/",
+        "infra/tests/containers/test-container-invariants.sh",
+        "frontend/docker-compose.dev.yml"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1731,30 +2043,37 @@
         "Services and ports"
       ],
       "wiki_links": [
-        "Local development",
-        "Runtime containers",
-        "Services and ports"
+        "secrets-and-configuration",
+        "local-development",
+        "local-development",
+        "runtime-containers",
+        "services-and-ports"
       ],
       "neighbours": [
         "Database migrations",
         "Infrastructure implementation",
         "Local development",
         "Runtime containers",
+        "Secrets and configuration",
         "Services and ports",
         "Trust boundaries"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Local infrastructure"
+        ]
+      }
     },
     {
       "path": "docs/30-workflows/machine-image-building.md",
       "title": "Machine image building",
       "document_type": "workflow",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "infrastructure"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Machine image building",
@@ -1766,21 +2085,36 @@
         "Verification commands",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../infra/images/packer/",
+        "../../infra/images/scripts/",
+        "../../infra/images/packer/provisioners/",
+        "../../infra/tests/images/"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "infra/images/packer/",
+        "infra/images/scripts/",
+        "infra/images/packer/provisioners/",
+        "infra/tests/images/"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
         "Cloud deployment",
         "Packer implementation",
+        "Deployment model",
+        "Proxmox rehearsal implementation",
         "Infrastructure resources"
       ],
       "wiki_links": [
-        "Cloud deployment",
-        "Packer implementation",
-        "Infrastructure resources"
+        "deployment-model",
+        "cloud-deployment",
+        "packer",
+        "deployment-model",
+        "proxmox-rehearsal",
+        "infrastructure-resources"
       ],
       "neighbours": [
         "Cloud deployment",
@@ -1788,21 +2122,26 @@
         "Infrastructure implementation",
         "Infrastructure resources",
         "Packer implementation",
+        "Proxmox rehearsal implementation",
         "Runtime containers"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Machine image building"
+        ]
+      }
     },
     {
       "path": "docs/30-workflows/secrets-and-configuration.md",
       "title": "Secrets and configuration",
       "document_type": "workflow",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "configuration",
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Secrets and configuration",
@@ -1814,10 +2153,22 @@
         "Verification commands",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/app/core/config.py",
+        "../../scripts/secrets/",
+        "../../infra/deployment/config/runtime-parameter-contract.json",
+        "../../infra/deployment/bootstrap/",
+        "../../infra/deployment/aws/cdk/flowform_infra/stacks/security_stack.py"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/app/core/config.py",
+        "scripts/secrets/",
+        "infra/deployment/config/runtime-parameter-contract.json",
+        "infra/deployment/bootstrap/",
+        "infra/deployment/aws/cdk/flowform_infra/stacks/security_stack.py"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1828,11 +2179,11 @@
         "Security model"
       ],
       "wiki_links": [
-        "Local development",
-        "Configuration implementation",
-        "Configuration catalogue",
-        "Environment variables",
-        "Security model"
+        "local-development",
+        "configuration",
+        "configuration-catalogue",
+        "environment-variables",
+        "security-model"
       ],
       "neighbours": [
         "Architecture principles",
@@ -1842,20 +2193,25 @@
         "Deployment model",
         "Environment variables",
         "Local development",
+        "Local infrastructure",
         "Runtime containers",
         "Security model",
         "Trust boundaries"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Secrets and configuration"
+        ]
+      }
     },
     {
       "path": "docs/30-workflows/testing.md",
       "title": "Testing workflow",
       "document_type": "workflow",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Testing workflow",
@@ -1867,10 +2223,24 @@
         "Verification commands",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/scripts/run-tests.sh",
+        "../../backend/scripts/run-tests.py",
+        "../../backend/tests/",
+        "../../backend/pyproject.toml",
+        "../../frontend/apps/*/package.json",
+        "../../.github/workflows/ci.yml"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/scripts/run-tests.sh",
+        "backend/scripts/run-tests.py",
+        "backend/tests/",
+        "backend/pyproject.toml",
+        "frontend/apps/*/package.json",
+        ".github/workflows/ci.yml"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1880,31 +2250,38 @@
         "Frontend implementation"
       ],
       "wiki_links": [
-        "Local development",
-        "Continuous integration",
-        "Backend implementation",
-        "Frontend implementation"
+        "continuous-integration",
+        "continuous-integration",
+        "local-development",
+        "continuous-integration",
+        "backend",
+        "frontend"
       ],
       "neighbours": [
         "Backend implementation",
         "Commands",
         "Continuous integration",
+        "Database migrations",
         "Frontend implementation",
         "Local development",
         "Runtime containers"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Testing workflow"
+        ]
+      }
     },
     {
       "path": "docs/40-implementation/backend.md",
       "title": "Backend implementation",
       "document_type": "implementation",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "backend"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Backend implementation",
@@ -1914,12 +2291,31 @@
         "Dependency direction",
         "Generated versus handwritten code",
         "Tests and validation",
+        "Known gaps",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/wsgi.py",
+        "../../backend/app/core/factory.py",
+        "../../backend/app/api/v1/",
+        "../../backend/app/services/",
+        "../../backend/app/repositories/",
+        "../../backend/app/schema/",
+        "../../backend/tests/",
+        "../../backend/openapi.yaml"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/wsgi.py",
+        "backend/app/core/factory.py",
+        "backend/app/api/v1/",
+        "backend/app/services/",
+        "backend/app/repositories/",
+        "backend/app/schema/",
+        "backend/tests/",
+        "backend/openapi.yaml"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1927,14 +2323,17 @@
         "Component map",
         "Database migrations",
         "Testing workflow",
-        "API routes"
+        "API routes",
+        "Generated files"
       ],
       "wiki_links": [
-        "Repository map",
-        "Component map",
-        "Database migrations",
-        "Testing workflow",
-        "API routes"
+        "generated-files",
+        "repository-map",
+        "component-map",
+        "database-migrations",
+        "testing",
+        "api-routes",
+        "generated-files"
       ],
       "neighbours": [
         "API routes",
@@ -1942,23 +2341,28 @@
         "Component map",
         "Data flows",
         "Database migrations",
+        "Generated files",
         "Observability",
         "Repository map",
         "Responses and encryption",
         "Testing workflow"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Backend implementation"
+        ]
+      }
     },
     {
       "path": "docs/40-implementation/ci-cd.md",
       "title": "CI/CD implementation",
       "document_type": "implementation",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "ci-cd"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "CI/CD implementation",
@@ -1968,12 +2372,27 @@
         "Dependency direction",
         "Generated versus handwritten code",
         "Tests and validation",
+        "Known gaps",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../.github/workflows/ci.yml",
+        "../../.github/workflows/deploy.yml",
+        "../../scripts/ci/",
+        "../../backend/scripts/run_backend_security.sh",
+        "../../infra/deployment/aws/cdk/tests/",
+        "../../scripts/docs/docsys/ci.py"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/deploy.yml",
+        "scripts/ci/",
+        "backend/scripts/run_backend_security.sh",
+        "infra/deployment/aws/cdk/tests/",
+        "scripts/docs/docsys/ci.py"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -1982,27 +2401,31 @@
         "CI workflows"
       ],
       "wiki_links": [
-        "Continuous integration",
-        "Cloud deployment",
-        "CI workflows"
+        "continuous-integration",
+        "cloud-deployment",
+        "ci-workflows"
       ],
       "neighbours": [
         "CI workflows",
         "Cloud deployment",
         "Continuous integration"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "CI/CD implementation"
+        ]
+      }
     },
     {
       "path": "docs/40-implementation/configuration.md",
       "title": "Configuration implementation",
       "document_type": "implementation",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "configuration"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Configuration implementation",
@@ -2012,12 +2435,29 @@
         "Dependency direction",
         "Generated versus handwritten code",
         "Tests and validation",
+        "Known gaps",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/app/core/config.py",
+        "../../infra/deployment/config/runtime-parameter-contract.json",
+        "../../infra/deployment/aws/cdk/flowform_infra/config/environments.py",
+        "../../infra/deployment/bootstrap/",
+        "../../infra/containers/runtime/",
+        "../../infra/containers/strategies/dev/",
+        "../../scripts/secrets/"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/app/core/config.py",
+        "infra/deployment/config/runtime-parameter-contract.json",
+        "infra/deployment/aws/cdk/flowform_infra/config/environments.py",
+        "infra/deployment/bootstrap/",
+        "infra/containers/runtime/",
+        "infra/containers/strategies/dev/",
+        "scripts/secrets/"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -2027,10 +2467,12 @@
         "Configuration index"
       ],
       "wiki_links": [
-        "Secrets and configuration",
-        "Configuration catalogue",
-        "Environment variables",
-        "Configuration index"
+        "configuration-index",
+        "environment-variables",
+        "secrets-and-configuration",
+        "configuration-catalogue",
+        "environment-variables",
+        "configuration-index"
       ],
       "neighbours": [
         "Configuration catalogue",
@@ -2040,18 +2482,22 @@
         "Glossary",
         "Secrets and configuration"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Configuration implementation"
+        ]
+      }
     },
     {
       "path": "docs/40-implementation/frontend.md",
       "title": "Frontend implementation",
       "document_type": "implementation",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "frontend"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Frontend implementation",
@@ -2061,47 +2507,71 @@
         "Dependency direction",
         "Generated versus handwritten code",
         "Tests and validation",
+        "Known gaps",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../frontend/package.json",
+        "../../frontend/pnpm-workspace.yaml",
+        "../../frontend/apps/public-site/src/",
+        "../../frontend/apps/studio-app/src/",
+        "../../frontend/packages/",
+        "../../frontend/scripts/generate-types.mjs",
+        "../../frontend/apps/studio-app/tests/"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "frontend/package.json",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/public-site/src/",
+        "frontend/apps/studio-app/src/",
+        "frontend/packages/",
+        "frontend/scripts/generate-types.mjs",
+        "frontend/apps/studio-app/tests/"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
         "Repository map",
         "Component map",
         "Builder and rules",
-        "Testing workflow"
+        "Testing workflow",
+        "Generated files"
       ],
       "wiki_links": [
-        "Repository map",
-        "Component map",
-        "Builder and rules",
-        "Testing workflow"
+        "repository-map",
+        "component-map",
+        "builder-and-rules",
+        "testing",
+        "generated-files"
       ],
       "neighbours": [
         "Architecture principles",
         "Builder and rules",
         "Component map",
         "FlowForm documentation home",
+        "Generated files",
         "Glossary",
         "Repository map",
         "Testing workflow"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Frontend implementation"
+        ]
+      }
     },
     {
       "path": "docs/40-implementation/infrastructure.md",
       "title": "Infrastructure implementation",
       "document_type": "implementation",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "infrastructure"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Infrastructure implementation",
@@ -2111,12 +2581,25 @@
         "Dependency direction",
         "Generated versus handwritten code",
         "Tests and validation",
+        "Known gaps",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../infra/containers/",
+        "../../infra/database/",
+        "../../infra/images/",
+        "../../infra/deployment/",
+        "../../infra/tests/"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "infra/containers/",
+        "infra/database/",
+        "infra/images/",
+        "infra/deployment/",
+        "infra/tests/"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -2127,11 +2610,11 @@
         "Infrastructure resources"
       ],
       "wiki_links": [
-        "Repository map",
-        "Deployment model",
-        "Machine image building",
-        "Local infrastructure",
-        "Infrastructure resources"
+        "repository-map",
+        "deployment-model",
+        "machine-image-building",
+        "local-infrastructure",
+        "infrastructure-resources"
       ],
       "neighbours": [
         "Architecture principles",
@@ -2141,17 +2624,22 @@
         "Local infrastructure",
         "Machine image building",
         "Packer implementation",
+        "Proxmox rehearsal implementation",
         "Repository map",
         "Runtime containers"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Infrastructure implementation"
+        ]
+      }
     },
     {
       "path": "docs/40-implementation/packer.md",
       "title": "Packer implementation",
       "document_type": "implementation",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "infrastructure"
       ],
@@ -2167,36 +2655,302 @@
         "Tests and validation",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../infra/images/packer/",
+        "../../infra/images/scripts/",
+        "../../infra/images/IMAGE-CONTRACT.md",
+        "../../infra/deployment/proxmox/terraform/",
+        "../../infra/tests/images/"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "infra/images/packer/",
+        "infra/images/scripts/",
+        "infra/images/IMAGE-CONTRACT.md",
+        "infra/deployment/proxmox/terraform/",
+        "infra/tests/images/"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
         "Machine image building",
+        "Deployment model",
+        "Proxmox rehearsal implementation",
         "Infrastructure implementation"
       ],
       "wiki_links": [
-        "Machine image building",
-        "Infrastructure implementation"
+        "machine-image-building",
+        "deployment-model",
+        "proxmox-rehearsal",
+        "infrastructure"
       ],
       "neighbours": [
+        "Deployment model",
         "Infrastructure implementation",
-        "Machine image building"
+        "Machine image building",
+        "Proxmox rehearsal implementation"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Packer implementation"
+        ]
+      }
+    },
+    {
+      "path": "docs/40-implementation/proxmox-rehearsal-fixtures.md",
+      "title": "Proxmox rehearsal fixtures and egress",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "draft",
+      "tags": [
+        "infrastructure"
+      ],
+      "verified_against_commit": null,
+      "code_confidence": "medium",
+      "headings": [
+        "Proxmox rehearsal fixtures and egress",
+        "Offline fixture boundary",
+        "Auth0 boundary \u2014 the one live dependency",
+        "Operator-facing TLS \u2014 committed trust anchor",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../infra/containers/strategies/rehearsal/",
+        "../../infra/deployment/proxmox/terraform/",
+        "../../infra/deployment/proxmox/scripts/",
+        "../../infra/deployment/bootstrap/",
+        "../../infra/deployment/config/runtime-parameter-contract.json"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/containers/strategies/rehearsal/",
+        "infra/deployment/proxmox/terraform/",
+        "infra/deployment/proxmox/scripts/",
+        "infra/deployment/bootstrap/",
+        "infra/deployment/config/runtime-parameter-contract.json"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Proxmox rehearsal implementation",
+        "Proxmox rehearsal observability",
+        "Proxmox rehearsal setup"
+      ],
+      "wiki_links": [
+        "proxmox-rehearsal",
+        "proxmox-rehearsal",
+        "proxmox-rehearsal-observability",
+        "proxmox-rehearsal-setup"
+      ],
+      "neighbours": [
+        "Proxmox rehearsal implementation",
+        "Proxmox rehearsal observability",
+        "Proxmox rehearsal setup"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Proxmox rehearsal fixtures and egress"
+        ]
+      }
+    },
+    {
+      "path": "docs/40-implementation/proxmox-rehearsal-observability.md",
+      "title": "Proxmox rehearsal observability",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "draft",
+      "tags": [
+        "infrastructure"
+      ],
+      "verified_against_commit": null,
+      "code_confidence": "medium",
+      "headings": [
+        "Proxmox rehearsal observability",
+        "Log tailing",
+        "Log shipping to Grafana Cloud",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../infra/deployment/proxmox/scripts/",
+        "../../infra/containers/runtime/services/alloy/",
+        "../../infra/containers/runtime/services/alloy-app/",
+        "../../infra/containers/runtime/services/squid/squid.conf",
+        "../../infra/containers/runtime/compose/",
+        "../../infra/containers/strategies/rehearsal/services/registry/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/deployment/proxmox/scripts/",
+        "infra/containers/runtime/services/alloy/",
+        "infra/containers/runtime/services/alloy-app/",
+        "infra/containers/runtime/services/squid/squid.conf",
+        "infra/containers/runtime/compose/",
+        "infra/containers/strategies/rehearsal/services/registry/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Proxmox rehearsal implementation",
+        "Proxmox rehearsal fixtures and egress",
+        "Proxmox rehearsal setup"
+      ],
+      "wiki_links": [
+        "proxmox-rehearsal",
+        "proxmox-rehearsal",
+        "proxmox-rehearsal",
+        "proxmox-rehearsal-fixtures",
+        "proxmox-rehearsal-setup"
+      ],
+      "neighbours": [
+        "Proxmox rehearsal fixtures and egress",
+        "Proxmox rehearsal implementation",
+        "Proxmox rehearsal setup"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Proxmox rehearsal observability"
+        ]
+      }
+    },
+    {
+      "path": "docs/40-implementation/proxmox-rehearsal-setup.md",
+      "title": "Proxmox rehearsal setup",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "draft",
+      "tags": [
+        "infrastructure"
+      ],
+      "verified_against_commit": "ad26b87e9820",
+      "code_confidence": "medium",
+      "headings": [
+        "Proxmox rehearsal setup",
+        "From-scratch setup",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../infra/images/scripts/",
+        "../../infra/images/packer/",
+        "../../infra/deployment/proxmox/host/",
+        "../../infra/deployment/proxmox/terraform/",
+        "../../infra/deployment/proxmox/scripts/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/images/scripts/",
+        "infra/images/packer/",
+        "infra/deployment/proxmox/host/",
+        "infra/deployment/proxmox/terraform/",
+        "infra/deployment/proxmox/scripts/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Proxmox rehearsal implementation",
+        "Proxmox rehearsal fixtures and egress",
+        "Proxmox rehearsal observability"
+      ],
+      "wiki_links": [
+        "proxmox-rehearsal",
+        "proxmox-rehearsal-fixtures",
+        "proxmox-rehearsal",
+        "proxmox-rehearsal-fixtures",
+        "proxmox-rehearsal-observability"
+      ],
+      "neighbours": [
+        "Proxmox rehearsal fixtures and egress",
+        "Proxmox rehearsal implementation",
+        "Proxmox rehearsal observability"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Proxmox rehearsal setup"
+        ]
+      }
+    },
+    {
+      "path": "docs/40-implementation/proxmox-rehearsal.md",
+      "title": "Proxmox rehearsal implementation",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "draft",
+      "tags": [
+        "infrastructure"
+      ],
+      "verified_against_commit": null,
+      "code_confidence": "medium",
+      "headings": [
+        "Proxmox rehearsal implementation",
+        "Ownership boundary",
+        "Current topology",
+        "Rehearsal areas",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../infra/deployment/proxmox/terraform/",
+        "../../infra/deployment/proxmox/cloud-init/templates/",
+        "../../infra/deployment/config/runtime-parameter-contract.json"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/deployment/proxmox/terraform/",
+        "infra/deployment/proxmox/cloud-init/templates/",
+        "infra/deployment/config/runtime-parameter-contract.json"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Proxmox rehearsal fixtures and egress",
+        "Proxmox rehearsal observability",
+        "Proxmox rehearsal setup",
+        "Deployment model",
+        "Machine image building",
+        "Packer implementation",
+        "Infrastructure implementation"
+      ],
+      "wiki_links": [
+        "proxmox-rehearsal-fixtures",
+        "proxmox-rehearsal-observability",
+        "proxmox-rehearsal-setup",
+        "proxmox-rehearsal-fixtures",
+        "proxmox-rehearsal-observability",
+        "proxmox-rehearsal-setup",
+        "deployment-model",
+        "machine-image-building",
+        "packer",
+        "infrastructure"
+      ],
+      "neighbours": [
+        "Deployment model",
+        "Infrastructure implementation",
+        "Machine image building",
+        "Packer implementation",
+        "Proxmox rehearsal fixtures and egress",
+        "Proxmox rehearsal observability",
+        "Proxmox rehearsal setup",
+        "Runtime containers"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Proxmox rehearsal implementation"
+        ]
+      }
     },
     {
       "path": "docs/40-implementation/scripts.md",
       "title": "Scripts implementation",
       "document_type": "implementation",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Scripts implementation",
@@ -2206,37 +2960,62 @@
         "Dependency direction",
         "Generated versus handwritten code",
         "Tests and validation",
+        "Known gaps",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../scripts/",
+        "../../backend/scripts/",
+        "../../frontend/scripts/",
+        "../../infra/images/scripts/",
+        "../../infra/deployment/bootstrap/",
+        "../../infra/deployment/proxmox/scripts/",
+        "../../tools/mcp/"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "scripts/",
+        "backend/scripts/",
+        "frontend/scripts/",
+        "infra/images/scripts/",
+        "infra/deployment/bootstrap/",
+        "infra/deployment/proxmox/scripts/",
+        "tools/mcp/"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
         "Scripts catalogue",
         "Commands",
-        "Repository map"
+        "Repository map",
+        "Generated files"
       ],
       "wiki_links": [
-        "Scripts catalogue",
-        "Commands",
-        "Repository map"
+        "scripts-catalogue",
+        "scripts-catalogue",
+        "commands",
+        "repository-map",
+        "generated-files"
       ],
       "neighbours": [
         "Commands",
+        "Generated files",
         "Repository map",
         "Scripts catalogue"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Scripts implementation"
+        ]
+      }
     },
     {
       "path": "docs/50-decisions/ADR-template.md",
       "title": "ADR template",
       "document_type": "decision-template",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "meta"
       ],
@@ -2262,19 +3041,23 @@
         "Architecture decision records"
       ],
       "wiki_links": [
-        "Architecture decision records"
+        "50-decisions/README"
       ],
       "neighbours": [
         "Architecture decision records"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "ADR template"
+        ]
+      }
     },
     {
       "path": "docs/50-decisions/README.md",
       "title": "Architecture decision records",
       "document_type": "decision-index",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "meta"
       ],
@@ -2301,10 +3084,11 @@
         "Documentation model"
       ],
       "wiki_links": [
-        "Planning workspace",
-        "ADR template",
-        "Planning workspace",
-        "Documentation model"
+        "70-planning/README",
+        "ADR-template",
+        "ADR-template",
+        "70-planning/README",
+        "documentation-model"
       ],
       "neighbours": [
         "ADR template",
@@ -2314,18 +3098,22 @@
         "FlowForm documentation home",
         "Planning workspace"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Architecture decision records"
+        ]
+      }
     },
     {
       "path": "docs/60-reference/commands.md",
       "title": "Commands",
       "document_type": "reference",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Commands",
@@ -2335,10 +3123,22 @@
         "Update procedure",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/scripts/",
+        "../../frontend/package.json",
+        "../../frontend/apps/*/package.json",
+        "../../scripts/",
+        "../../.github/workflows/"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/scripts/",
+        "frontend/package.json",
+        "frontend/apps/*/package.json",
+        "scripts/",
+        ".github/workflows/"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -2347,9 +3147,9 @@
         "Testing workflow"
       ],
       "wiki_links": [
-        "Scripts catalogue",
-        "Local development",
-        "Testing workflow"
+        "scripts-catalogue",
+        "local-development",
+        "testing"
       ],
       "neighbours": [
         "Local development",
@@ -2357,18 +3157,22 @@
         "Scripts implementation",
         "Testing workflow"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Commands"
+        ]
+      }
     },
     {
       "path": "docs/60-reference/configuration-catalogue.md",
       "title": "Configuration catalogue",
       "document_type": "reference",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "configuration"
       ],
-      "verified_against_commit": "ac7d021ad3716a68638759df684b9a3c32bb4389",
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Configuration catalogue",
@@ -2410,10 +3214,10 @@
         "Configuration index"
       ],
       "wiki_links": [
-        "Environment variables",
-        "Configuration implementation",
-        "Secrets and configuration",
-        "Configuration index"
+        "environment-variables",
+        "configuration",
+        "secrets-and-configuration",
+        "configuration-index"
       ],
       "neighbours": [
         "Configuration implementation",
@@ -2422,18 +3226,22 @@
         "Repository map",
         "Secrets and configuration"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Configuration catalogue"
+        ]
+      }
     },
     {
       "path": "docs/60-reference/environment-variables.md",
       "title": "Environment variables",
       "document_type": "reference",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "configuration"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Environment variables",
@@ -2443,10 +3251,20 @@
         "Update procedure",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/app/core/config.py",
+        "../../infra/deployment/bootstrap/",
+        "../../infra/containers/",
+        "../../frontend/apps/"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/app/core/config.py",
+        "infra/deployment/bootstrap/",
+        "infra/containers/",
+        "frontend/apps/"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -2455,9 +3273,10 @@
         "Configuration index"
       ],
       "wiki_links": [
-        "Configuration catalogue",
-        "Secrets and configuration",
-        "Configuration index"
+        "configuration-catalogue",
+        "configuration-catalogue",
+        "secrets-and-configuration",
+        "configuration-index"
       ],
       "neighbours": [
         "Configuration catalogue",
@@ -2465,18 +3284,22 @@
         "Configuration index",
         "Secrets and configuration"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Environment variables"
+        ]
+      }
     },
     {
       "path": "docs/60-reference/generated-files.md",
       "title": "Generated files",
       "document_type": "reference",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Generated files",
@@ -2486,10 +3309,24 @@
         "Update procedure",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../backend/scripts/export-openapi.sh",
+        "../../frontend/scripts/generate-types.mjs",
+        "../../scripts/ci/sync-openapi.sh",
+        "../../scripts/docs/",
+        "../../scripts/secrets/generate-env-files.sh",
+        "../../infra/images/"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "backend/scripts/export-openapi.sh",
+        "frontend/scripts/generate-types.mjs",
+        "scripts/ci/sync-openapi.sh",
+        "scripts/docs/",
+        "scripts/secrets/generate-env-files.sh",
+        "infra/images/"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -2498,27 +3335,34 @@
         "Repository map"
       ],
       "wiki_links": [
-        "Generated documentation",
-        "Scripts catalogue",
-        "Repository map"
+        "90-generated/README",
+        "scripts-catalogue",
+        "repository-map"
       ],
       "neighbours": [
         "Architecture principles",
+        "Backend implementation",
         "Component map",
+        "Frontend implementation",
         "Generated documentation",
         "Repository map",
-        "Scripts catalogue"
+        "Scripts catalogue",
+        "Scripts implementation"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Generated files"
+        ]
+      }
     },
     {
       "path": "docs/60-reference/repository-tree.md",
       "title": "Repository tree",
       "document_type": "reference",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [],
-      "verified_against_commit": "ac7d021ad3716a68638759df684b9a3c32bb4389",
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Repository tree",
@@ -2555,28 +3399,32 @@
         "Repository tree snapshot"
       ],
       "wiki_links": [
-        "Repository map",
-        "Repository tree snapshot",
-        "Repository map",
-        "Repository tree snapshot"
+        "repository-map",
+        "90-generated/repository-tree",
+        "repository-map",
+        "90-generated/repository-tree"
       ],
       "neighbours": [
         "FlowForm documentation home",
         "Repository map",
         "Repository tree snapshot"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Repository tree"
+        ]
+      }
     },
     {
       "path": "docs/60-reference/scripts-catalogue.md",
       "title": "Scripts catalogue",
       "document_type": "reference",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "tooling"
       ],
-      "verified_against_commit": "ac7d021ad3716a68638759df684b9a3c32bb4389",
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Scripts catalogue",
@@ -2619,9 +3467,9 @@
         "Scripts implementation"
       ],
       "wiki_links": [
-        "Commands",
-        "Generated files",
-        "Scripts implementation"
+        "commands",
+        "generated-files",
+        "scripts"
       ],
       "neighbours": [
         "Commands",
@@ -2629,18 +3477,22 @@
         "Repository map",
         "Scripts implementation"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Scripts catalogue"
+        ]
+      }
     },
     {
       "path": "docs/60-reference/services-and-ports.md",
       "title": "Services and ports",
       "document_type": "reference",
       "authority": "canonical",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "infrastructure"
       ],
-      "verified_against_commit": null,
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "Services and ports",
@@ -2650,10 +3502,18 @@
         "Update procedure",
         "Related documents"
       ],
-      "related_code": [],
+      "related_code": [
+        "../../infra/containers/",
+        "../../infra/deployment/proxmox/cloud-init/",
+        "../../frontend/docker-compose.dev.yml"
+      ],
       "change_triggers": [],
       "exclusions": [],
-      "related_code_resolved": [],
+      "related_code_resolved": [
+        "infra/containers/",
+        "infra/deployment/proxmox/cloud-init/",
+        "frontend/docker-compose.dev.yml"
+      ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
@@ -2661,21 +3521,25 @@
         "Local infrastructure"
       ],
       "wiki_links": [
-        "Runtime containers",
-        "Local infrastructure"
+        "runtime-containers",
+        "local-infrastructure"
       ],
       "neighbours": [
         "Local infrastructure",
         "Runtime containers"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Services and ports"
+        ]
+      }
     },
     {
       "path": "docs/70-planning/README.md",
       "title": "Planning workspace",
       "document_type": "planning-index",
       "authority": "planning",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "meta"
       ],
@@ -2704,11 +3568,11 @@
         "Documentation model"
       ],
       "wiki_links": [
-        "Active plans",
-        "Completed plans",
-        "Abandoned plans",
-        "Architecture decision records",
-        "Documentation model"
+        "70-planning/active/README",
+        "70-planning/completed/README",
+        "70-planning/abandoned/README",
+        "50-decisions/README",
+        "documentation-model"
       ],
       "neighbours": [
         "Abandoned plans",
@@ -2719,14 +3583,18 @@
         "Documentation model",
         "FlowForm documentation home"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Planning workspace"
+        ]
+      }
     },
     {
       "path": "docs/70-planning/abandoned/README.md",
       "title": "Abandoned plans",
       "document_type": "planning-index",
       "authority": "planning",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "meta"
       ],
@@ -2750,19 +3618,23 @@
         "Planning workspace"
       ],
       "wiki_links": [
-        "Planning workspace"
+        "70-planning/README"
       ],
       "neighbours": [
         "Planning workspace"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Abandoned plans"
+        ]
+      }
     },
     {
       "path": "docs/70-planning/active/README.md",
       "title": "Active plans",
       "document_type": "planning-index",
       "authority": "planning",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "meta"
       ],
@@ -2786,19 +3658,23 @@
         "Planning workspace"
       ],
       "wiki_links": [
-        "Planning workspace"
+        "70-planning/README"
       ],
       "neighbours": [
         "Planning workspace"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Active plans"
+        ]
+      }
     },
     {
       "path": "docs/70-planning/completed/README.md",
       "title": "Completed plans",
       "document_type": "planning-index",
       "authority": "planning",
-      "status": "scaffold",
+      "status": "draft",
       "tags": [
         "meta"
       ],
@@ -2822,12 +3698,16 @@
         "Planning workspace"
       ],
       "wiki_links": [
-        "Planning workspace"
+        "70-planning/README"
       ],
       "neighbours": [
         "Planning workspace"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Completed plans"
+        ]
+      }
     },
     {
       "path": "docs/90-generated/README.md",
@@ -2871,16 +3751,16 @@
         "Documentation health dashboard"
       ],
       "wiki_links": [
-        "Documentation health dashboard",
-        "Documentation generator guide",
-        "Generated files",
-        "Repository tree snapshot",
-        "API routes",
-        "CI workflows",
-        "Configuration index",
-        "Dependency map",
-        "Infrastructure resources",
-        "Documentation health dashboard"
+        "documentation-dashboard",
+        "documentation-generator-guide",
+        "generated-files",
+        "90-generated/repository-tree",
+        "api-routes",
+        "ci-workflows",
+        "configuration-index",
+        "dependency-map",
+        "infrastructure-resources",
+        "documentation-dashboard"
       ],
       "neighbours": [
         "API routes",
@@ -2894,7 +3774,11 @@
         "Infrastructure resources",
         "Repository tree snapshot"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Generated documentation"
+        ]
+      }
     },
     {
       "path": "docs/90-generated/api-routes.md",
@@ -2927,14 +3811,18 @@
         "Backend implementation"
       ],
       "wiki_links": [
-        "Generated documentation",
-        "Backend implementation"
+        "90-generated/README",
+        "backend"
       ],
       "neighbours": [
         "Backend implementation",
         "Generated documentation"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "API routes"
+        ]
+      }
     },
     {
       "path": "docs/90-generated/ci-workflows.md",
@@ -2967,15 +3855,19 @@
         "Continuous integration"
       ],
       "wiki_links": [
-        "Generated documentation",
-        "Continuous integration"
+        "90-generated/README",
+        "continuous-integration"
       ],
       "neighbours": [
         "CI/CD implementation",
         "Continuous integration",
         "Generated documentation"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "CI workflows"
+        ]
+      }
     },
     {
       "path": "docs/90-generated/configuration-index.md",
@@ -3008,8 +3900,8 @@
         "Configuration catalogue"
       ],
       "wiki_links": [
-        "Generated documentation",
-        "Configuration catalogue"
+        "90-generated/README",
+        "configuration-catalogue"
       ],
       "neighbours": [
         "Configuration catalogue",
@@ -3017,7 +3909,11 @@
         "Environment variables",
         "Generated documentation"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Configuration index"
+        ]
+      }
     },
     {
       "path": "docs/90-generated/dependency-map.md",
@@ -3048,14 +3944,18 @@
         "Repository map"
       ],
       "wiki_links": [
-        "Generated documentation",
-        "Repository map"
+        "90-generated/README",
+        "repository-map"
       ],
       "neighbours": [
         "Generated documentation",
         "Repository map"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Dependency map"
+        ]
+      }
     },
     {
       "path": "docs/90-generated/documentation-dashboard.md",
@@ -3096,16 +3996,20 @@
         "Documentation generator guide"
       ],
       "wiki_links": [
-        "Generated documentation",
-        "Documentation model",
-        "Documentation generator guide"
+        "90-generated/README",
+        "documentation-model",
+        "documentation-generator-guide"
       ],
       "neighbours": [
         "Documentation generator guide",
         "Documentation model",
         "Generated documentation"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Documentation health dashboard"
+        ]
+      }
     },
     {
       "path": "docs/90-generated/infrastructure-resources.md",
@@ -3139,9 +4043,9 @@
         "Machine image building"
       ],
       "wiki_links": [
-        "Generated documentation",
-        "Infrastructure implementation",
-        "Machine image building"
+        "90-generated/README",
+        "infrastructure",
+        "machine-image-building"
       ],
       "neighbours": [
         "Deployment model",
@@ -3149,7 +4053,11 @@
         "Infrastructure implementation",
         "Machine image building"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Infrastructure resources"
+        ]
+      }
     },
     {
       "path": "docs/90-generated/repository-tree.md",
@@ -3179,14 +4087,18 @@
         "Repository tree"
       ],
       "wiki_links": [
-        "Generated documentation",
-        "Repository tree"
+        "90-generated/README",
+        "60-reference/repository-tree"
       ],
       "neighbours": [
         "Generated documentation",
         "Repository tree"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "Repository tree snapshot"
+        ]
+      }
     },
     {
       "path": "docs/README.md",
@@ -3197,7 +4109,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
+      "verified_against_commit": "ad26b87e9820",
       "code_confidence": "medium",
       "headings": [
         "FlowForm documentation home",
@@ -3225,19 +4137,21 @@
         "System summary"
       ],
       "wiki_links": [
-        "Documentation model",
-        "Documentation generator guide",
-        "Documentation model",
-        "System summary",
-        "System context",
-        "Identity and authentication",
-        "Local development",
-        "Frontend implementation",
-        "Architecture decision records",
-        "Repository tree",
-        "Planning workspace",
-        "Generated documentation",
-        "Repository map"
+        "documentation-model",
+        "documentation-generator-guide",
+        "documentation-model",
+        "system-summary",
+        "system-context",
+        "identity-and-authentication",
+        "local-development",
+        "frontend",
+        "50-decisions/README",
+        "60-reference/repository-tree",
+        "70-planning/README",
+        "90-generated/README",
+        "repository-map",
+        "system-summary",
+        "90-generated/README"
       ],
       "neighbours": [
         "Architecture decision records",
@@ -3253,7 +4167,11 @@
         "System context",
         "System summary"
       ],
-      "extra_metadata": {}
+      "extra_metadata": {
+        "aliases": [
+          "FlowForm documentation home"
+        ]
+      }
     }
   ]
 }

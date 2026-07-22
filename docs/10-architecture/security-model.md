@@ -5,7 +5,7 @@ aliases:
 document_type: architecture
 status: draft
 authority: canonical
-verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
+verified_against_commit: ad26b87e9820
 tags: [backend, infrastructure, security]
 related_code:
   - "../../backend/app/middleware/auth/"
@@ -74,7 +74,7 @@ The backend remains trusted across this split: it opens both database sessions, 
 
 Backend configuration supports file-backed database passwords, Flask secret key, and Auth0 Management API secret. The runtime bootstrap materializes those values from Secrets Manager into a root-owned tmpfs directory with mode `0700` and files with mode `0600`; Compose mounts them read-only under `/run/secrets`. Non-secret runtime configuration is rendered separately from SSM Parameter Store.
 
-The CDK security stack defines KMS and Secrets Manager resources plus an application role with read access to the declared secrets, KMS encrypt/decrypt, SES send, scoped SSM reads, and ECR pull access. ECR repository grants still use a name wildcard with a TODO to tighten them. Runtime crypto also lets the backend call KMS and fetch versioned linkage secrets directly. Operational handling and rotation belong in [[secrets-and-configuration|Secrets and configuration]].
+The CDK security stack defines KMS and Secrets Manager resources plus an application role with read access to the declared secrets, KMS encrypt/decrypt, SES send, scoped SSM reads, and ECR pull access. ECR repository grants still use a name wildcard that the source marks for tightening. Runtime crypto also lets the backend call KMS and fetch versioned linkage secrets directly. Operational handling and rotation belong in [[secrets-and-configuration|Secrets and configuration]].
 
 File-backed delivery protects against placing these values directly in normal container environment variables, but does not by itself prove secure secret creation, rotation, host access, backup handling, or absence from process memory.
 
@@ -84,7 +84,7 @@ The staging/production definitions place Caddy on a public proxy instance and th
 
 The application subnet has no NAT gateway in the CDK definition. Outbound HTTPS is routed through Squid on the proxy host, with source, port, and domain allow-lists; RDS traffic and selected VPC services use separate paths. Runtime Compose drops Linux capabilities, enables `no-new-privileges`, uses read-only container filesystems and tmpfs writable areas, and limits backend PIDs. See [[deployment-model|Deployment model]] and [[runtime-containers|Runtime containers]].
 
-These are repository-defined controls, not confirmation of a live environment. The CDK database stack is still a TODO scaffold, and the application stack creates instances but does not yet attach the runtime bootstrap/user-data wiring described in its comments.
+These are repository-defined controls, not confirmation of a live environment. The CDK database stack remains an unimplemented scaffold, and the application stack creates instances but does not yet attach the runtime bootstrap/user-data wiring described in its comments.
 
 ## Abuse and input controls
 

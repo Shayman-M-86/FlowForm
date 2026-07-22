@@ -15,7 +15,13 @@ from app.logging import request_logging
 @pytest.fixture(scope="module")
 def request_context_app() -> Flask:
     """Shared Flask app for request-context-only tests."""
-    return Flask(__name__)
+    flask_app = Flask(__name__)
+
+    @flask_app.get("/items/<token>")
+    def item_by_token(token: str) -> str:
+        return token
+
+    return flask_app
 
 
 @pytest.fixture
@@ -97,7 +103,7 @@ def test_log_request_includes_expected_extra(
     patch_request_logging(ip="1.2.3.4", level=logging.INFO)
 
     with request_response(
-        path="/test-path",
+        path="/items/private-token-value",
         method="GET",
         request_id="req-123",
         status_code=204,
@@ -108,7 +114,8 @@ def test_log_request_includes_expected_extra(
     assert captured_log["level"] == logging.INFO
     assert extra["request_id"] == "req-123"
     assert extra["method"] == "GET"
-    assert extra["path"] == "/test-path"
+    assert extra["path"] == "/items/<token>"
+    assert "private-token-value" not in captured_log["args"]
     assert extra["status_code"] == 204
     assert extra["remote_addr"] == "1.2.3.4"
     assert extra["duration_ms"] == pytest.approx(500.0)
@@ -134,7 +141,7 @@ def test_log_request_omits_duration_when_not_provided(
     assert captured_log["level"] == logging.DEBUG
     assert extra["request_id"] == "req-456"
     assert extra["method"] == "POST"
-    assert extra["path"] == "/no-duration"
+    assert extra["path"] == "<unmatched>"
     assert extra["status_code"] == 200
     assert extra["remote_addr"] == "5.6.7.8"
     assert "duration_ms" not in extra

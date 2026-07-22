@@ -3,9 +3,9 @@ title: Configuration catalogue
 aliases:
   - "Configuration catalogue"
 document_type: reference
-status: scaffold
+status: draft
 authority: canonical
-verified_against_commit: ac7d021ad3716a68638759df684b9a3c32bb4389
+verified_against_commit: ad26b87e9820
 tags: [configuration]
 related_code:
   - "../../backend/app/core/config.py"

@@ -73,7 +73,7 @@ pytest_cache/
 cover/
 
 # Logs / temp files
-*.log
+*.log*
 *temp
 
 # Jupyter
@@ -132,3 +132,10 @@ infra/images/*/manifests/*.json
 
 # Docsys documentation hook per-session state (transient)
 .docsys/
+infra/containers/strategies/rehearsal/services/caddy/certs/api.crt
+infra/containers/strategies/rehearsal/services/caddy/certs/api.key
+infra/containers/strategies/rehearsal/services/tls-shim/ca/localstack.crt
+infra/containers/strategies/rehearsal/services/tls-shim/ca/localstack.key
+infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.crt
+infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.key
+infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.srl

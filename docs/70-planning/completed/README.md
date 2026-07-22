@@ -3,7 +3,7 @@ title: Completed plans
 aliases:
   - "Completed plans"
 document_type: planning-index
-status: scaffold
+status: draft
 authority: planning
 verified_against_commit: null
 tags: [meta]
@@ -16,16 +16,16 @@ related_docs:
 Provides a tracked directory for completed planning documents.
 
 ## Purpose
-This directory stores completed plans so planning work remains separate from canonical documentation. TODO: Verify this against the current implementation.
+This directory stores completed plans as task history while keeping them separate from current canonical documentation.
 
 ## Entry criteria
-Plans should be placed here only when their status matches this directory. TODO: Verify this against the current implementation.
+Move a plan here only after its exit criteria have been evaluated and no active implementation work remains under that plan.
 
 ## Required content
-Each plan should include purpose, scope, evidence, decisions needed, and exit criteria. TODO: Verify this against the current implementation.
+Retain the plan's purpose, scope, evidence, decisions, validation result, and final disposition so readers can distinguish delivered work from ideas that were dropped.
 
 ## Promotion rules
-Durable verified outcomes may be promoted to canonical docs or ADRs. TODO: Verify this against the current implementation.
+Document implemented outcomes in the appropriate canonical page and supported lasting choices in ADRs. The completed plan remains non-authoritative history.
 
 ## Related documents
 

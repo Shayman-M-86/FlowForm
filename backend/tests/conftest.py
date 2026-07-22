@@ -12,6 +12,8 @@ from app import create_app
 from app.core.config import get_settings
 from app.core.extensions import db_manager
 from app.db.base import CoreBase, ResponseBase
+from app.logging.logging_config import configure_third_party_loggers
+from app.logging.sensitive_data import protect_root_handlers
 
 logger = logging.getLogger("app.tests.integration.conftest")
 
@@ -22,9 +24,18 @@ def pytest_configure() -> None:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
 
+    configure_third_party_loggers()
+    protect_root_handlers()
+
     logging.getLogger("sqlalchemy").setLevel(logging.WARNING)
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_runtest_setup() -> None:
+    """Protect capture handlers that pytest installs after initial configuration."""
+    protect_root_handlers()
 
 
 @pytest.fixture(scope="session")

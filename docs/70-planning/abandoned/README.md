@@ -3,7 +3,7 @@ title: Abandoned plans
 aliases:
   - "Abandoned plans"
 document_type: planning-index
-status: scaffold
+status: draft
 authority: planning
 verified_against_commit: null
 tags: [meta]
@@ -16,16 +16,16 @@ related_docs:
 Provides a tracked directory for abandoned planning documents.
 
 ## Purpose
-This directory stores abandoned plans so planning work remains separate from canonical documentation. TODO: Verify this against the current implementation.
+This directory stores intentionally abandoned plans so rejected approaches remain visible without being mistaken for current architecture.
 
 ## Entry criteria
-Plans should be placed here only when their status matches this directory. TODO: Verify this against the current implementation.
+Move a plan here only after recording why it was stopped and whether any replacement work exists.
 
 ## Required content
-Each plan should include purpose, scope, evidence, decisions needed, and exit criteria. TODO: Verify this against the current implementation.
+Retain the original purpose, scope, evidence, assumptions, and exit criteria, then add the reason for abandonment and any lessons that remain useful.
 
 ## Promotion rules
-Durable verified outcomes may be promoted to canonical docs or ADRs. TODO: Verify this against the current implementation.
+Promote only separately verified outcomes that were actually implemented. Rejected proposals remain planning history and must not become canonical claims.
 
 ## Related documents
 

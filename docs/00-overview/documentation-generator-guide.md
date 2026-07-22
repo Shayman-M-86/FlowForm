@@ -5,7 +5,7 @@ aliases:
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_against_commit: ad26b87e9820
 tags: [meta]
 related_code:
   - "../../AGENTS.md"
@@ -22,9 +22,9 @@ related_docs:
 
 Guides agents and scripts that update FlowForm documentation from verified repository evidence.
 
-This guide and the current documentation validators are uncommitted working-tree
-content. Its `verified_against_commit` remains `null` until that process is
-committed and rechecked.
+This guide and the documentation validators are tracked repository content. The
+verification commit records the checked documentation process and script
+boundary; it does not make generated prose or implementation claims correct.
 
 ## Required reading order
 

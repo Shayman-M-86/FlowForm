@@ -3,7 +3,7 @@ title: Active plans
 aliases:
   - "Active plans"
 document_type: planning-index
-status: scaffold
+status: draft
 authority: planning
 verified_against_commit: null
 tags: [meta]
@@ -16,16 +16,16 @@ related_docs:
 Provides a tracked directory for active planning documents.
 
 ## Purpose
-This directory stores active plans so planning work remains separate from canonical documentation. TODO: Verify this against the current implementation.
+This directory stores work that is currently being designed or executed, keeping proposals separate from canonical documentation.
 
 ## Entry criteria
-Plans should be placed here only when their status matches this directory. TODO: Verify this against the current implementation.
+Keep a plan here only while it has unfinished decisions or implementation work. State its owner or next action when that is known.
 
 ## Required content
-Each plan should include purpose, scope, evidence, decisions needed, and exit criteria. TODO: Verify this against the current implementation.
+Each plan should include purpose, scope, verified evidence, assumptions, decisions needed, validation, and exit criteria.
 
 ## Promotion rules
-Durable verified outcomes may be promoted to canonical docs or ADRs. TODO: Verify this against the current implementation.
+When work finishes, update implementation-backed canonical documents separately, create an ADR only for a supported lasting decision, then move the plan to `completed/` or `abandoned/`.
 
 ## Related documents
 

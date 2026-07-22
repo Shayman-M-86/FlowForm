@@ -3,11 +3,18 @@ title: Configuration implementation
 aliases:
   - "Configuration implementation"
 document_type: implementation
-status: scaffold
+status: draft
 authority: canonical
-verified_against_commit: null
+verified_against_commit: ad26b87e9820
 tags: [configuration]
-related_code: []
+related_code:
+  - "../../backend/app/core/config.py"
+  - "../../infra/deployment/config/runtime-parameter-contract.json"
+  - "../../infra/deployment/aws/cdk/flowform_infra/config/environments.py"
+  - "../../infra/deployment/bootstrap/"
+  - "../../infra/containers/runtime/"
+  - "../../infra/containers/strategies/dev/"
+  - "../../scripts/secrets/"
 related_docs:
   - "Secrets and configuration"
   - "Configuration catalogue"
@@ -16,31 +23,91 @@ related_docs:
 ---
 
 # Configuration implementation
+
 Maps configuration concepts to verified repository implementation.
 
 ## Directory ownership
-This section will identify source directories and ownership boundaries.
-TODO: Verify this against the current implementation.
+
+- `backend/app/core/config.py` owns the typed backend runtime model, nested
+  environment-variable mapping, defaults, validation errors, and mounted-file
+  loading for application and database secrets.
+- `infra/deployment/config/runtime-parameter-contract.json` owns the shared
+  parameter names consumed by AWS CDK, Proxmox Terraform, LocalStack seeding,
+  and host bootstrap.
+- `infra/deployment/aws/cdk/flowform_infra/config/environments.py` owns typed
+  dev, staging, production, and shared security-scope deployment data.
+- `infra/env/` holds local per-environment values and gitignored secret files;
+  maintained examples live beside CDK, Packer, Terraform, and image scripts.
+- Compose, cloud-init, bootstrap scripts, and frontend build commands own the
+  final mapping from maintained configuration into each process.
 
 ## Entry points
-This section will list application, package, script, or deployment entry points.
-TODO: Verify this against the current implementation.
+
+- `get_settings()` is called by the Flask application factory and requires a
+  valid `FLOWFORM_ENV` before constructing nested Pydantic settings.
+- `get_env_config()` is called by `infra/deployment/aws/cdk/app.py` for the CDK
+  context selected by `-c env=<name>` or `CDK_ENV`.
+- Proxmox `terraform/locals.tf` reads the runtime-parameter contract, checks the
+  exact rehearsal seed-key set, and renders role-specific cloud-init.
+- `bootstrap-app.sh`, `bootstrap-proxy.sh`, and `bootstrap-db.sh` fetch runtime
+  parameters or secrets and materialize the files consumed by shared Compose.
+- `scripts/secrets/` generates local throwaways, fetches persistent development
+  secrets, and builds the development environment files.
 
 ## Important modules
-This section will name key modules only after inspecting the code.
-TODO: Verify this against the current implementation.
+
+`DatabaseSettings` accepts either a full PostgreSQL URL or validated parts and
+supports password files. `Auth0Settings`, `AppSettings`, `AwsSettings`,
+`EncryptionSettings`, `EmailSettings`, and logging/server/rate-limit models form
+the remaining backend boundary. `EnvConfig` controls which CDK stacks exist and
+their environment-specific lifecycle; `SecurityScopeConfig` separates the
+shared non-production security namespace from production.
+
+The runtime-parameter contract separates scoped values, backend/proxy runtime
+groups, secret resource names, and secret-only rehearsal seed keys. Consumers
+derive paths from it instead of maintaining independent SSM name lists.
 
 ## Dependency direction
-This section will describe allowed dependency direction after verification.
-TODO: Verify this against the current implementation.
+
+Maintained models, contracts, examples, and templates feed generators or
+bootstrap steps; generated local env files, mounted secret files, SSM values,
+and cloud-init then feed application and container consumers. Runtime code does
+not write back to the canonical models. Confidential values are generally
+intended to travel through secret files or Secrets Manager, while identifiers
+and ordinary runtime settings use environment files or SSM parameters. The
+current proxy SSM path is an exception: it carries `GRAFANA_CLOUD_TOKEN` into
+`/opt/flowform/proxy.env`, so that rendered file is sensitive.
 
 ## Generated versus handwritten code
-This section will distinguish generated artifacts from maintained source.
-TODO: Verify this against the current implementation.
+
+Settings models, the runtime contract, Compose files, Terraform/CDK source, and
+`.example` files are handwritten. Local `.env*`, `*.secret.txt`, Packer variable
+files, Terraform variables/state, rendered cloud-init, and CDK output are local
+or generated artifacts and are not configuration authority. Terraform state and
+rendered user data must be treated as sensitive because they can contain
+materialized configuration.
 
 ## Tests and validation
-This section will cite tests and checks that cover this implementation area.
-TODO: Verify this against the current implementation.
+
+- Backend unit and integration tests exercise settings validation and
+  environment assembly through the application factory.
+- `infra/deployment/aws/cdk/tests/test_environments.py` and
+  `test_runtime_parameter_contract.py` cover typed deployment configuration and
+  contract-derived parameter names.
+- `infra/tests/deployment/test-localstack-seed.sh` checks that Terraform,
+  bootstrap, and LocalStack agree on the contract and rehearsal boundaries.
+- `docker compose ... config`, `terraform validate`, and CDK synth are the
+  executable validation boundaries for their respective consumers.
+
+## Known gaps
+
+The generated [[configuration-index|Configuration index]] remains a scaffold;
+the maintained [[environment-variables|Environment variables]] reference is a
+curated draft rather than an exhaustive generated inventory. No single generated
+catalogue currently proves that every consumer is represented. Configuration
+is also split across local development, Proxmox rehearsal, and incomplete AWS
+deployment paths; a valid configuration for one path is not proof that another
+path is operational.
 
 ## Related documents
 

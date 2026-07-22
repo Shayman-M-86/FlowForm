@@ -5,7 +5,7 @@ aliases:
 document_type: workflow
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_against_commit: ad26b87e9820
 tags: [infrastructure]
 related_code:
   - "../../infra/images/packer/"
@@ -80,8 +80,8 @@ Packer variable file. Outputs are reusable templates and separate golden/fixture
 manifests under `infra/images/packer/manifests/`. The source, golden, and fixture
 templates are intentionally separate from Terraform state.
 
-The pinned x86_64 XFS/GPT source is a QCOW2 file of 1,829,175,296 bytes with a
-25 GiB virtual disk. `PROXMOX_SOURCE_DISK_SIZE=native` preserves that size and
+The pinned x86_64 XFS/GPT source has a 25 GiB virtual disk.
+`PROXMOX_SOURCE_DISK_SIZE=native` preserves that size and
 `PROXMOX_DISK_MAX_SIZE=25G` rejects unexpected growth. Packer full clones keep
 the same 25 GiB virtual size. New Terraform full clones inherit it; existing
 32 GiB clones are unchanged until deliberately replaced.
@@ -108,7 +108,7 @@ infra/images/scripts/verify-proxmox-disk-sizes.sh
 
 The validation script assembles each build's nested HCL into a temporary flat
 Packer project, runs `packer init` and `packer validate` for both golden
-builders and the fixture builder, checks shell syntax, and tests source-template
+builders and both fixture builders, checks shell syntax, and tests source-template
 preparation. It does not create AMIs/templates or prove a live rehearsal.
 The disk verifier connects to Proxmox, reports the downloaded file size and
 QCOW2 virtual size, reports each configured template size, and fails if any

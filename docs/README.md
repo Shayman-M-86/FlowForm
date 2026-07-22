@@ -5,7 +5,7 @@ aliases:
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
+verified_against_commit: ad26b87e9820
 tags: [meta]
 related_code:
   - "../scripts/docs/"
@@ -22,7 +22,7 @@ Entry point for the staged, partially verified FlowForm documentation.
 
 ## Documentation status
 
-The documentation tree is being filled in stages and contains a mixture of draft, verified, and scaffold-only pages. A document's front matter states its authority and the commit used for verification. Until a claim has been checked against that commit's code, tests, configuration, CI, or infrastructure definitions, treat it as unverified.
+The documentation tree is being filled in stages and contains a mixture of concise implementation-backed drafts, independently verified pages, and generator-only scaffolds. A document's front matter states its authority and the commit used for verification. Until a claim has been checked against that commit's code, tests, configuration, CI, or infrastructure definitions, treat it as unverified.
 
 ## Layered structure
 
@@ -44,7 +44,7 @@ Documents reference each other with Obsidian-compatible `[[note-filename|display
 
 ## Suggested reading paths
 
-For repository orientation, start with the [[repository-map|repository map]], then use the relevant reference catalogue. The system summary and later architecture, domain, workflow, and implementation documents remain future staged work and may still contain placeholders.
+For repository orientation, start with the [[repository-map|repository map]] and [[system-summary|system summary]], then follow the relevant architecture, domain, workflow, implementation, or reference page. Draft pages are intentionally concise and should be deepened only when the owning implementation is being reviewed. Some pages under [[90-generated/README|Generated documentation]] remain generator scaffolds until a reproducible generator is implemented.
 
 ## Authority model
 

@@ -12,16 +12,26 @@ from app.utils.general import get_client_ip, get_log_level
 HTTP_LOGGER = logging.getLogger("app.http")
 logger = logging.getLogger(__name__)
 
+_UNMATCHED_REQUEST_PATH = "<unmatched>"
+
+
+def get_request_log_path() -> str:
+    """Return a stable route template without caller-provided path values."""
+    if request.url_rule is None:
+        return _UNMATCHED_REQUEST_PATH
+    return request.url_rule.rule
+
 
 def log_request(response, duration_seconds: float | None = None) -> None:
     """Log a completed HTTP request with structured metadata."""
     ip = get_client_ip()
     log_level = get_log_level(response.status_code)
+    path = get_request_log_path()
 
     extra: dict[str, Any] = {
         "request_id": getattr(g, "request_id", None),
         "method": request.method,
-        "path": request.path,
+        "path": path,
         "status_code": response.status_code,
         "remote_addr": ip,
     }
@@ -31,7 +41,7 @@ def log_request(response, duration_seconds: float | None = None) -> None:
         extra["duration_ms"] = duration_ms
 
     message = "%s | %s %s -> %s"
-    args: tuple[Any, ...] = (ip, request.method, request.path, response.status_code)
+    args: tuple[Any, ...] = (ip, request.method, path, response.status_code)
     if duration_ms is not None:
         message = f"{message} duration_ms=%s"
         args = (*args, duration_ms)

@@ -21,24 +21,24 @@ Generated snapshot of documentation health. Do not edit by hand; regenerate with
 
 > Generated-document scaffold: this file is reproducible from repository contents via `scripts/docs/docsys/health.py`.
 
-Repository head at generation: `f128536f46b9`. 58 documents.
+Repository head at generation: `ad26b87e9820`. 62 documents.
 
 ## Verification status
 
 | Status | Documents |
 | --- | --- |
-| draft | 10 |
-| scaffold | 44 |
-| verified | 4 |
+| draft | 51 |
+| scaffold | 8 |
+| verified | 3 |
 
 ## Freshness
 
 | Classification | Documents |
 | --- | --- |
-| Current | 11 |
-| Review suggested | 3 |
-| Likely stale | 2 |
-| Unknown | 42 |
+| Current | 35 |
+| Review suggested | 2 |
+| Likely stale | 5 |
+| Unknown | 20 |
 
 ## Documents to review
 
@@ -46,11 +46,13 @@ Documents whose owned code changed since verification, most urgent first.
 
 | Classification | Document | Reason |
 | --- | --- | --- |
-| likely stale | Documentation model | 1 commit(s) since verification |
-| likely stale | FlowForm documentation home | 1 commit(s) since verification |
-| review suggested | Repository map | 1 commit(s) since verification |
-| review suggested | Repository tree | 2 commit(s) since verification |
-| review suggested | Scripts catalogue | 2 commit(s) since verification |
+| likely stale | Architecture principles | 23 commit(s) since verification |
+| likely stale | System summary | 23 commit(s) since verification |
+| likely stale | Runtime containers | 23 commit(s) since verification |
+| likely stale | System context | 23 commit(s) since verification |
+| likely stale | Trust boundaries | 23 commit(s) since verification |
+| review suggested | Glossary | 23 commit(s) since verification |
+| review suggested | Component map | 23 commit(s) since verification |
 
 ## Heavily connected documents
 
@@ -58,14 +60,14 @@ Documents whose owned code changed since verification, most urgent first.
 | --- | --- | --- |
 | Architecture principles | 17 | 17 |
 | Data flows | 13 | 13 |
+| Deployment model | 13 | 13 |
 | Glossary | 12 | 12 |
 | Repository map | 12 | 12 |
+| Runtime containers | 12 | 12 |
 | System context | 12 | 12 |
 | Trust boundaries | 12 | 12 |
+| Responses and encryption | 12 | 12 |
 | FlowForm documentation home | 12 | 12 |
-| System summary | 11 | 11 |
-| Component map | 11 | 11 |
-| Deployment model | 11 | 11 |
 
 ## Orphan documents
 
@@ -86,6 +88,14 @@ _None._
 | Security model | 7 |
 | System context | 3 |
 | Trust boundaries | 6 |
+| Builder and rules | 6 |
+| Identity and authentication | 5 |
+| Links and subjects | 6 |
+| Observability | 7 |
+| Projects and access | 6 |
+| Responses and encryption | 6 |
+| Submissions | 7 |
+| Surveys and versioning | 5 |
 
 ## Invalid metadata
 

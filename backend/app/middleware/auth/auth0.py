@@ -187,10 +187,7 @@ class ManagementApiClient:
 
     def _get_token(self) -> str:
         """Return a valid M2M access token, refreshing if necessary."""
-        if (
-            self._access_token is None
-            or time.monotonic() >= self._token_expires_at - _MGMT_TOKEN_REFRESH_BUFFER
-        ):
+        if self._access_token is None or time.monotonic() >= self._token_expires_at - _MGMT_TOKEN_REFRESH_BUFFER:
             with self._lock:
                 # Double-checked locking: another thread may have refreshed already.
                 if (

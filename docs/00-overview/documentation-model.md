@@ -5,7 +5,7 @@ aliases:
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
+verified_against_commit: ad26b87e9820
 tags: [meta]
 related_code:
   - "../../scripts/docs/"
@@ -102,4 +102,4 @@ python3 scripts/docs/validate-doc-metadata.py
 
 These checks cover local Markdown link targets, `[[wiki link]]` resolution, required front-matter fields, Obsidian title aliases, global title uniqueness, `related_docs` resolution, and the tag vocabulary. They do not establish that prose claims are correct; review against implementation evidence remains required.
 
-The layered documentation tree and current `scripts/docs/` checks are uncommitted Stage 1 working-tree work at the recorded implementation baseline. Re-verify them and advance `verified_against_commit` after they are committed.
+The layered documentation tree and `scripts/docs/` checks are tracked at the recorded implementation baseline. Re-run the validators after documentation changes and advance `verified_against_commit` when this process or its executable rules change.

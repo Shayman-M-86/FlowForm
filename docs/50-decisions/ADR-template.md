@@ -3,7 +3,7 @@ title: ADR template
 aliases:
   - "ADR template"
 document_type: decision-template
-status: scaffold
+status: draft
 authority: canonical
 verified_against_commit: null
 tags: [meta]
@@ -16,22 +16,22 @@ related_docs:
 Provides the required structure for future FlowForm architecture decision records.
 
 ## Status
-State whether the decision is proposed, accepted, superseded, or abandoned. TODO: Verify this against the current implementation.
+Use one of `proposed`, `accepted`, `superseded`, or `abandoned`. For a superseded decision, link the replacement ADR.
 
 ## Context
-Describe the verified problem, constraints, and forces that made a decision necessary. TODO: Verify this against the current implementation.
+Describe the verified problem, relevant constraints, and forces that require a lasting choice. Separate observed current state from assumptions and proposals.
 
 ## Decision
-Record the selected option clearly and concisely. TODO: Verify this against the current implementation.
+State the selected option, its boundary, and when it takes effect. A proposed ADR records a candidate decision rather than current architecture.
 
 ## Consequences
-Explain positive, negative, and operational consequences. TODO: Verify this against the current implementation.
+Record positive, negative, migration, security, and operational consequences, including follow-up obligations that remain after acceptance.
 
 ## Alternatives considered
-List meaningful alternatives and why they were not selected. TODO: Verify this against the current implementation.
+List only meaningful alternatives and the evidence-based reason each was not selected.
 
 ## References
-Link implementation evidence, related docs, and superseding ADRs. TODO: Verify this against the current implementation.
+Link the owning code, tests, configuration, relevant canonical documents, and any superseding or superseded ADRs. Record the implementation commit used as evidence when applicable.
 
 ## Related documents
 

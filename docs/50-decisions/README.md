@@ -3,7 +3,7 @@ title: Architecture decision records
 aliases:
   - "Architecture decision records"
 document_type: decision-index
-status: scaffold
+status: draft
 authority: canonical
 verified_against_commit: null
 tags: [meta]
@@ -18,19 +18,19 @@ related_docs:
 Indexes lasting architectural decisions for FlowForm.
 
 ## Purpose
-This directory stores decisions that remain useful after implementation work is complete. TODO: Verify this against the current implementation.
+This directory stores records of durable architectural decisions after their context, choice, and consequences can be supported by repository evidence. It is an index and process boundary, not evidence that a decision has already been accepted.
 
 ## What belongs here
-Use ADRs for durable choices, alternatives considered, and consequences. TODO: Verify this against the current implementation.
+Use an ADR when a lasting choice needs its rationale, meaningful alternatives, operational consequences, and implementation evidence preserved together. Give each decision an explicit lifecycle status.
 
 ## What does not belong here
-Temporary plans and task lists belong in [[70-planning/README|70-planning]], not in ADRs. TODO: Verify this against the current implementation.
+Temporary plans, task lists, investigations, and unaccepted proposals belong in [[70-planning/README|70-planning]]. Existing code alone does not prove that every incidental implementation choice was an intentional architecture decision.
 
 ## Naming convention
-Future ADRs should use stable, sortable names such as `0001-short-title.md`. TODO: Verify this against the current implementation.
+Use stable, sortable filenames such as `0001-short-title.md`. Keep the front-matter title globally unique and add the finished record to this index.
 
 ## Index
-No verified ADRs have been created in this scaffold. TODO: Add ADR links after decisions are verified.
+No decision records currently exist beyond [[ADR-template|the ADR template]]. Add entries here only after the decision record contains evidence and a declared status.
 
 ## Related documents
 

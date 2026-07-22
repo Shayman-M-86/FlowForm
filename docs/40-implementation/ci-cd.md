@@ -3,11 +3,17 @@ title: CI/CD implementation
 aliases:
   - "CI/CD implementation"
 document_type: implementation
-status: scaffold
+status: draft
 authority: canonical
-verified_against_commit: null
+verified_against_commit: ad26b87e9820
 tags: [ci-cd]
-related_code: []
+related_code:
+  - "../../.github/workflows/ci.yml"
+  - "../../.github/workflows/deploy.yml"
+  - "../../scripts/ci/"
+  - "../../backend/scripts/run_backend_security.sh"
+  - "../../infra/deployment/aws/cdk/tests/"
+  - "../../scripts/docs/docsys/ci.py"
 related_docs:
   - "Continuous integration"
   - "Cloud deployment"
@@ -15,31 +21,83 @@ related_docs:
 ---
 
 # CI/CD implementation
+
 Maps ci cd concepts to verified repository implementation.
 
 ## Directory ownership
-This section will identify source directories and ownership boundaries.
-TODO: Verify this against the current implementation.
+
+`.github/workflows/ci.yml` owns pull-request and branch validation for backend,
+frontend, contracts, CDK, and documentation impact. `deploy.yml` owns the
+staging frontend publication path. `scripts/ci/` owns the shared OpenAPI drift
+contract; backend, frontend, CDK, and Docsys keep their detailed checks beside
+the implementation they validate.
 
 ## Entry points
-This section will list application, package, script, or deployment entry points.
-TODO: Verify this against the current implementation.
+
+- CI runs for pushes and pull requests targeting `main` or `staging` and
+  cancels older runs for the same ref.
+- Frontend deployment runs after a completed successful `CI` workflow on
+  `staging`, checking out the exact validated SHA. Manual dispatch is also
+  allowed and checks out the selected ref without an additional CI gate.
+- `.githooks/pre-commit` reuses the OpenAPI contract check locally.
 
 ## Important modules
-This section will name key modules only after inspecting the code.
-TODO: Verify this against the current implementation.
+
+- Backend jobs run dependency/source security checks, Ruff/Pyright, and the
+  Docker-based pytest suite with coverage.
+- A path-filter job controls frontend audit, Studio lint/test/build, public-site
+  lint/build, and contract checks.
+- The contract job verifies backend OpenAPI export and all checked-in frontend
+  contract artifacts.
+- The CDK job runs tests, lint, types, hermetic dev synth, then assumes a
+  read-only staging preview role for template diff on pushes and same-repository
+  pull requests.
+- The PR-only documentation job validates metadata/links and publishes Docsys
+  impact output; it is advisory unless configured critical documents are
+  impacted without updates.
+- Deployment builds both frontends, reads public build configuration from SSM,
+  publishes content-hashed assets before `index.html`, and invalidates both
+  CloudFront distributions through GitHub OIDC credentials.
 
 ## Dependency direction
-This section will describe allowed dependency direction after verification.
-TODO: Verify this against the current implementation.
+
+Backend security gates backend lint, tests, contracts, and CDK. Frontend
+security gates the path-selected application jobs. Contracts consume both
+backend and frontend generators. Automatic staging deployment consumes a green
+CI result and its recorded commit; CI does not invoke deployment directly.
+GitHub assumes scoped AWS roles through OIDC rather than storing AWS access
+keys in repository secrets.
 
 ## Generated versus handwritten code
-This section will distinguish generated artifacts from maintained source.
-TODO: Verify this against the current implementation.
+
+Workflow YAML and helper scripts are handwritten. CI produces coverage, debug,
+CDK diff, and documentation-impact artifacts; frontend deployment produces
+application `dist/` trees and remote S3/CloudFront side effects. OpenAPI and
+frontend contract files are checked-in generated artifacts whose drift is
+tested. The linked generated CI-workflow page is still a scaffold and does not
+replace direct workflow inspection.
 
 ## Tests and validation
-This section will cite tests and checks that cover this implementation area.
-TODO: Verify this against the current implementation.
+
+Each job invokes the implementation-owned command: backend pytest/Ruff/Pyright
+and security helpers, frontend pnpm audit/ESLint/Vitest/builds, OpenAPI drift,
+CDK pytest/Ruff/Pyright/synth/diff, and documentation metadata/link/impact
+checks. Failure artifacts preserve backend logs and rendered Compose output;
+the test stack is always torn down.
+
+## Known gaps
+
+The backend-test job still references
+`infra/containers/dev/compose/compose.test.yml` and
+`infra/containers/dev/services/backend/backend.test.Dockerfile`; the maintained
+files are under `infra/containers/strategies/dev/`. That job cannot use the
+current paths until the workflow is corrected.
+
+CI does not run the checked-in container, rehearsal-deployment, or Packer
+invariant suites under `infra/tests/`. Deployment publishes only staging
+frontends: it does not deploy CDK stacks, backend images/runtime, database
+migrations, observability, or production. Manual frontend deployment is not
+conditioned on a preceding successful CI run.
 
 ## Related documents
 
