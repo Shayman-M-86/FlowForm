@@ -2,8 +2,8 @@
 """Validate links between documentation files.
 
 Checks every Markdown file under docs/ for:
-- [[wiki links]] (with optional |display alias) that resolve, case-insensitively,
-  to the front-matter title of a document under docs/
+- Obsidian [[wiki links]] (with optional |display text) that resolve,
+  case-insensitively, to a note filename or shortest unique note path
 - relative Markdown links whose targets do not exist on disk
 
 Code fences and inline code spans are ignored, so conventions can be shown as
@@ -20,19 +20,23 @@ MD_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 WIKI_LINK = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]*)?\]\]")
 CODE_FENCE = re.compile(r"^```.*?^```", re.M | re.S)
 CODE_SPAN = re.compile(r"`[^`\n]*`")
-TITLE = re.compile(r"^title:\s*(.+?)\s*$", re.M)
-
 issues = []
 
-# Index titles: wiki links resolve by title, never by path.
-titles = {}
-for path in DOCS.rglob("*.md"):
-    text = path.read_text(errors="replace")
-    if text.startswith("---") and (end := text.find("\n---", 3)) != -1:
-        if m := TITLE.search(text[3:end]):
-            titles[m.group(1).strip('"').casefold()] = path.relative_to(ROOT)
+# Match Obsidian's shortest-path convention: a unique filename stem is enough;
+# duplicate stems use their path relative to docs/ (without the .md suffix).
+paths = sorted(DOCS.rglob("*.md"))
+stem_counts = {}
+for path in paths:
+    key = path.stem.casefold()
+    stem_counts[key] = stem_counts.get(key, 0) + 1
 
-for path in sorted(DOCS.rglob("*.md")):
+targets = {}
+for path in paths:
+    target = (path.stem if stem_counts[path.stem.casefold()] == 1 else
+              path.relative_to(DOCS).with_suffix("").as_posix())
+    targets[target.casefold()] = path.relative_to(ROOT)
+
+for path in paths:
     rel = path.relative_to(ROOT)
     body = path.read_text(errors="replace")
     if body.startswith("---") and (end := body.find("\n---", 3)) != -1:
@@ -40,7 +44,7 @@ for path in sorted(DOCS.rglob("*.md")):
     body = CODE_SPAN.sub("", CODE_FENCE.sub("", body))
 
     for target in WIKI_LINK.findall(body):
-        if target.strip().casefold() not in titles:
+        if target.strip().casefold() not in targets:
             issues.append(f"{rel}: unresolved wiki link [[{target}]]")
 
     for link in MD_LINK.findall(body):
@@ -52,6 +56,6 @@ for path in sorted(DOCS.rglob("*.md")):
 
 for issue in issues:
     print(issue)
-print(f"checked links against {len(titles)} titles: "
+print(f"checked links against {len(targets)} Obsidian note targets: "
       f"{'OK' if not issues else f'{len(issues)} issue(s)'}")
 raise SystemExit(1 if issues else 0)

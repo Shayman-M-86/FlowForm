@@ -1,5 +1,7 @@
 ---
 title: Scripts implementation
+aliases:
+  - "Scripts implementation"
 document_type: implementation
 status: scaffold
 authority: canonical
@@ -41,6 +43,6 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Scripts catalogue]]
-- [[Commands]]
-- [[Repository map]]
+- [[scripts-catalogue|Scripts catalogue]]
+- [[commands|Commands]]
+- [[repository-map|Repository map]]

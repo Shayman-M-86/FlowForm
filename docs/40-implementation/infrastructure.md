@@ -1,5 +1,7 @@
 ---
 title: Infrastructure implementation
+aliases:
+  - "Infrastructure implementation"
 document_type: implementation
 status: scaffold
 authority: canonical
@@ -43,8 +45,8 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Repository map]]
-- [[Deployment model]]
-- [[Machine image building]]
-- [[Local infrastructure]]
-- [[Infrastructure resources]]
+- [[repository-map|Repository map]]
+- [[deployment-model|Deployment model]]
+- [[machine-image-building|Machine image building]]
+- [[local-infrastructure|Local infrastructure]]
+- [[infrastructure-resources|Infrastructure resources]]

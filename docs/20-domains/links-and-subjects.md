@@ -1,5 +1,7 @@
 ---
 title: Links and subjects
+aliases:
+  - "Links and subjects"
 document_type: domain
 status: scaffold
 authority: canonical
@@ -45,6 +47,6 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Identity and authentication]]
-- [[Submissions]]
-- [[Security model]]
+- [[identity-and-authentication|Identity and authentication]]
+- [[submissions|Submissions]]
+- [[security-model|Security model]]

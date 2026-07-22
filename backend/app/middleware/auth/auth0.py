@@ -4,11 +4,20 @@ import asyncio
 import logging
 import threading
 import time
+import warnings
 from collections.abc import Callable
 from functools import wraps
 from typing import Any, TypeVar, cast
 
 import requests
+from authlib.deprecate import AuthlibDeprecationWarning
+
+warnings.filterwarnings(
+    "ignore",
+    category=AuthlibDeprecationWarning,
+    module="auth0_api_python\\.api_client",
+)
+
 from auth0_api_python import ApiClient, ApiClientOptions
 from auth0_api_python.errors import BaseAuthError
 from auth0_api_python.utils import get_unverified_header

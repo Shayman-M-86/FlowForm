@@ -1,5 +1,7 @@
 ---
 title: Cloud deployment
+aliases:
+  - "Cloud deployment"
 document_type: workflow
 status: scaffold
 authority: canonical
@@ -42,7 +44,7 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Deployment model]]
-- [[Continuous integration]]
-- [[Machine image building]]
-- [[Infrastructure implementation]]
+- [[deployment-model|Deployment model]]
+- [[continuous-integration|Continuous integration]]
+- [[machine-image-building|Machine image building]]
+- [[infrastructure|Infrastructure implementation]]

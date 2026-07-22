@@ -1,5 +1,7 @@
 ---
 title: Projects and access
+aliases:
+  - "Projects and access"
 document_type: domain
 status: scaffold
 authority: canonical
@@ -45,6 +47,6 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Identity and authentication]]
-- [[Surveys and versioning]]
-- [[Security model]]
+- [[identity-and-authentication|Identity and authentication]]
+- [[surveys-and-versioning|Surveys and versioning]]
+- [[security-model|Security model]]

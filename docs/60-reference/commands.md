@@ -1,5 +1,7 @@
 ---
 title: Commands
+aliases:
+  - "Commands"
 document_type: reference
 status: scaffold
 authority: canonical
@@ -33,6 +35,6 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Scripts catalogue]]
-- [[Local development]]
-- [[Testing workflow]]
+- [[scripts-catalogue|Scripts catalogue]]
+- [[local-development|Local development]]
+- [[testing|Testing workflow]]

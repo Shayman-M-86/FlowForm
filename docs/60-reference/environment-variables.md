@@ -1,5 +1,7 @@
 ---
 title: Environment variables
+aliases:
+  - "Environment variables"
 document_type: reference
 status: scaffold
 authority: canonical
@@ -26,7 +28,7 @@ Each variable is authoritative in the module or script that reads it; this
 catalogue only points there.
 
 - **Backend application settings** — `backend/app/core/config.py` (the settings
-  model). See also [[Configuration catalogue]].
+  model). See also [[configuration-catalogue|Configuration catalogue]].
 - **Boot-time deploy variables** — the header comment blocks of the bootstrap
   scripts under `infra/deployment/bootstrap/`, which list each script's required
   and optional environment. The app bootstrap
@@ -50,6 +52,6 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Configuration catalogue]]
-- [[Secrets and configuration]]
-- [[Configuration index]]
+- [[configuration-catalogue|Configuration catalogue]]
+- [[secrets-and-configuration|Secrets and configuration]]
+- [[configuration-index|Configuration index]]

@@ -1,5 +1,7 @@
 ---
 title: Architecture decision records
+aliases:
+  - "Architecture decision records"
 document_type: decision-index
 status: scaffold
 authority: canonical
@@ -22,7 +24,7 @@ This directory stores decisions that remain useful after implementation work is 
 Use ADRs for durable choices, alternatives considered, and consequences. TODO: Verify this against the current implementation.
 
 ## What does not belong here
-Temporary plans and task lists belong in [[Planning workspace|70-planning]], not in ADRs. TODO: Verify this against the current implementation.
+Temporary plans and task lists belong in [[70-planning/README|70-planning]], not in ADRs. TODO: Verify this against the current implementation.
 
 ## Naming convention
 Future ADRs should use stable, sortable names such as `0001-short-title.md`. TODO: Verify this against the current implementation.
@@ -32,6 +34,6 @@ No verified ADRs have been created in this scaffold. TODO: Add ADR links after d
 
 ## Related documents
 
-- [[ADR template]]
-- [[Planning workspace]]
-- [[Documentation model]]
+- [[ADR-template|ADR template]]
+- [[70-planning/README|Planning workspace]]
+- [[documentation-model|Documentation model]]

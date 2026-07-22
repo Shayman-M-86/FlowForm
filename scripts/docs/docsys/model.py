@@ -40,6 +40,7 @@ REQUIRED_KEYS = (
     "status",
     "authority",
     "verified_against_commit",
+    "aliases",
     "related_code",
     "related_docs",
 )
@@ -130,7 +131,7 @@ def extract_headings(body: str) -> list[str]:
 
 
 def extract_wiki_links(body: str) -> list[str]:
-    """Return the titles referenced by ``[[wiki links]]`` in body order."""
+    """Return the note targets referenced by ``[[wiki links]]`` in body order."""
     return [t.strip() for t in _WIKI_LINK_RE.findall(strip_code(body))]
 
 
@@ -315,9 +316,17 @@ class DocSet:
         self.docs = docs
         self._by_rel = {d.rel_path: d for d in docs}
         self._by_title = {}
+        stem_counts: dict[str, int] = {}
+        for d in docs:
+            key = d.path.stem.casefold()
+            stem_counts[key] = stem_counts.get(key, 0) + 1
+        self._by_wiki_target = {}
         for d in docs:
             if d.title:
                 self._by_title[d.title.casefold()] = d
+            target = (d.path.stem if stem_counts[d.path.stem.casefold()] == 1
+                      else d.path.relative_to(DOCS).with_suffix("").as_posix())
+            self._by_wiki_target[target.casefold()] = d
 
     @classmethod
     def load(cls, docs_dir: Path = DOCS) -> "DocSet":
@@ -334,8 +343,8 @@ class DocSet:
     def by_rel(self, rel_path: str) -> Document | None:
         return self._by_rel.get(rel_path)
 
-    def resolve_wiki(self, title: str) -> Document | None:
-        return self.by_title(title)
+    def resolve_wiki(self, target: str) -> Document | None:
+        return self._by_wiki_target.get(target.casefold())
 
     def neighbours(self, doc: Document) -> list[Document]:
         """Documents connected to ``doc`` by wiki links or related_docs.
@@ -345,15 +354,25 @@ class DocSet:
         a stable order.
         """
         seen: dict[str, Document] = {}
-        for title in list(doc.wiki_links) + list(doc.related_docs):
+        for target in doc.wiki_links:
+            n = self.resolve_wiki(target)
+            if n and n.rel_path != doc.rel_path:
+                seen[n.rel_path] = n
+        for title in doc.related_docs:
             n = self.by_title(title)
             if n and n.rel_path != doc.rel_path:
                 seen[n.rel_path] = n
         for other in self.docs:
             if other.rel_path == doc.rel_path:
                 continue
-            titles = {t.casefold() for t in (other.wiki_links + other.related_docs)}
-            if doc.title.casefold() in titles:
+            links_here = any(
+                linked is not None and linked.rel_path == doc.rel_path
+                for linked in (self.resolve_wiki(t) for t in other.wiki_links)
+            )
+            related_here = doc.title.casefold() in {
+                t.casefold() for t in other.related_docs
+            }
+            if links_here or related_here:
                 seen.setdefault(other.rel_path, other)
         return list(seen.values())
 

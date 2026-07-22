@@ -1,5 +1,7 @@
 ---
 title: Infrastructure resources
+aliases:
+  - "Infrastructure resources"
 document_type: generated
 status: scaffold
 authority: canonical
@@ -39,6 +41,6 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Generated documentation]]
-- [[Infrastructure implementation]]
-- [[Machine image building]]
+- [[90-generated/README|Generated documentation]]
+- [[infrastructure|Infrastructure implementation]]
+- [[machine-image-building|Machine image building]]

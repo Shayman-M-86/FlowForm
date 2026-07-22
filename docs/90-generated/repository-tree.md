@@ -1,5 +1,7 @@
 ---
 title: Repository tree snapshot
+aliases:
+  - "Repository tree snapshot"
 document_type: generated
 status: scaffold
 authority: canonical
@@ -1146,5 +1148,5 @@ Run `python3 scripts/docs/generate-repository-tree.py` from the repository root.
 
 ## Related documents
 
-- [[Generated documentation]]
-- [[Repository tree]]
+- [[90-generated/README|Generated documentation]]
+- [[60-reference/repository-tree|Repository tree]]

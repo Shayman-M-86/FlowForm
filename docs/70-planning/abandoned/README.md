@@ -1,5 +1,7 @@
 ---
 title: Abandoned plans
+aliases:
+  - "Abandoned plans"
 document_type: planning-index
 status: scaffold
 authority: planning
@@ -27,4 +29,4 @@ Durable verified outcomes may be promoted to canonical docs or ADRs. TODO: Verif
 
 ## Related documents
 
-- [[Planning workspace]]
+- [[70-planning/README|Planning workspace]]

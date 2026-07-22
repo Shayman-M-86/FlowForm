@@ -107,7 +107,11 @@ export function AccountSettingsPage() {
     try {
       const ticket = await changePassword.mutateAsync()
       window.location.assign(ticket.ticket_url)
-    } catch {
+    } catch (error) {
+      if ((error as { code?: string } | undefined)?.code === 'PASSWORD_CHANGE_UNSUPPORTED') {
+        showToast('Password changes are managed by your sign-in provider for this account.', 'error')
+        return
+      }
       showToast('Failed to start password change. Please try again.', 'error')
     }
   }

@@ -6,7 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from app.domain.errors import ManagementApiCallError
+from app.domain.errors import ManagementApiCallError, PasswordChangeUnsupportedError
 from app.middleware.auth.auth0 import ManagementApiError
 from app.schema.api.requests.me import UpdateProfileRequest
 from app.schema.orm.core.user import User
@@ -30,6 +30,15 @@ class PasswordTicketManagementApiClient:
     def create_password_change_ticket(self, auth0_user_id: str) -> str:
         self.auth0_user_id = auth0_user_id
         return "https://example.auth0.com/password-change-ticket"
+
+
+class UnsupportedPasswordTicketManagementApiClient:
+    def create_password_change_ticket(self, _auth0_user_id: str) -> str:
+        raise ManagementApiError(
+            status_code=400,
+            provider_error="operation_not_supported",
+            provider_message="The user's main connection does not support this operation",
+        )
 
 
 class CachedEmailVerified:
@@ -77,6 +86,20 @@ def test_change_password_returns_hosted_ticket_url(monkeypatch: pytest.MonkeyPat
 
     assert ticket_url == "https://example.auth0.com/password-change-ticket"
     assert mgmt.auth0_user_id == "auth0|user-123"
+
+
+def test_change_password_reports_unsupported_connection(monkeypatch: pytest.MonkeyPatch) -> None:
+    user = User()
+    user.id = 1
+    user.auth0_user_id = "google-oauth2|user-123"
+    monkeypatch.setattr(account_module, "_mgmt", lambda: UnsupportedPasswordTicketManagementApiClient())
+
+    with pytest.raises(PasswordChangeUnsupportedError) as exc_info:
+        UserAccountService().change_password(actor=user)
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.code == "PASSWORD_CHANGE_UNSUPPORTED"
+    assert "google-oauth2|user-123" not in exc_info.value.message
 
 
 def test_check_email_verified_caches_unverified_result(monkeypatch: pytest.MonkeyPatch) -> None:

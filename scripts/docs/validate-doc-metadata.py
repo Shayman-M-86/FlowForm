@@ -3,9 +3,10 @@
 
 Checks every Markdown file under docs/ for:
 - required front-matter keys (title, document_type, status, authority,
-  verified_against_commit, related_code, related_docs)
+  verified_against_commit, aliases, related_code, related_docs)
 - an allowed status value
 - globally unique titles (case-insensitive), since wiki links resolve by title
+- an Obsidian alias matching each document title
 - tags drawn only from the controlled vocabulary in the documentation model
 - related_docs entries that resolve to an existing document title
 - optional tooling fields, when present, having valid shapes: change_triggers
@@ -21,14 +22,14 @@ ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 
 REQUIRED = ["title", "document_type", "status", "authority",
-            "verified_against_commit", "related_code", "related_docs"]
+            "verified_against_commit", "aliases", "related_code", "related_docs"]
 ALLOWED_STATUS = {"scaffold", "draft", "verified"}
 ALLOWED_CONFIDENCE = {"high", "medium", "low"}
 # Optional tooling fields (consumed by scripts/docs/docsys/): related_code may
 # use directories and globs; change_triggers/exclusions extend or subtract the
 # matched code set; code_confidence weights impact/freshness. See the
 # documentation model for the contract.
-LIST_FIELDS = {"change_triggers", "exclusions"}
+LIST_FIELDS = {"aliases", "change_triggers", "exclusions"}
 TAG_VOCABULARY = {"backend", "frontend", "infrastructure", "security",
                   "configuration", "ci-cd", "tooling", "meta"}
 
@@ -104,6 +105,11 @@ for rel, fm in docs.items():
         issues.append(f"{rel}: duplicate title '{title}' (also in {by_title[key]})")
     else:
         by_title[key] = rel
+
+    aliases = fm.get("aliases", [])
+    if isinstance(aliases, list) and title.casefold() not in {
+            alias.casefold() for alias in aliases}:
+        issues.append(f"{rel}: aliases must include the document title '{title}'")
 
 # related_docs entries must resolve to existing titles.
 for rel, fm in docs.items():

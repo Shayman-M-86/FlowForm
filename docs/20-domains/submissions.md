@@ -1,5 +1,7 @@
 ---
 title: Submissions
+aliases:
+  - "Submissions"
 document_type: domain
 status: scaffold
 authority: canonical
@@ -45,7 +47,7 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Links and subjects]]
-- [[Surveys and versioning]]
-- [[Responses and encryption]]
-- [[Data flows]]
+- [[links-and-subjects|Links and subjects]]
+- [[surveys-and-versioning|Surveys and versioning]]
+- [[responses-and-encryption|Responses and encryption]]
+- [[data-flows|Data flows]]

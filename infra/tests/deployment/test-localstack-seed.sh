@@ -16,6 +16,7 @@ DB_BOOTSTRAP="${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-db.sh"
 TLS_SHIM_CADDYFILE="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/tls-shim/Caddyfile"
 REGISTRY_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.registry.yml"
 LOCALSTACK_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.localstack.yml"
+REHEARSAL_ALLOWED_DOMAINS="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/squid/allowed-domains.txt"
 TEST_DIR="$(mktemp -d)"
 trap 'rm -rf "${TEST_DIR}"' EXIT
 
@@ -120,6 +121,12 @@ grep -E 'DATABASE_RESPONSE_HOST += "10.10.10.40"' "${PROXMOX_VARIABLES}" >/dev/n
 grep -E 'FLOWFORM_EMAIL_FROM_ADDRESS += "no-reply@flow-form.com.au"' "${PROXMOX_VARIABLES}" >/dev/null
 # Real mgmt secret is now seeded, so startup validation is ON.
 grep -E 'FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP += "true"' "${PROXMOX_VARIABLES}" >/dev/null
+# The backend uses the custom issuer for JWKS and the canonical tenant for the
+# Management API. Both CONNECT destinations must survive every rebuild.
+grep -Fx 'auth.flow-form.com.au' "${REHEARSAL_ALLOWED_DOMAINS}" >/dev/null \
+  || { printf 'rehearsal Squid allow-list is missing the Auth0 issuer\n' >&2; exit 1; }
+grep -Fx 'dev-3wccg4jx4o5wvedn.au.auth0.com' "${REHEARSAL_ALLOWED_DOMAINS}" >/dev/null \
+  || { printf 'rehearsal Squid allow-list is missing the Auth0 Management API tenant\n' >&2; exit 1; }
 
 # --- Wave A: registry-over-HTTPS-through-Squid invariants --------------------
 # The registry rides Squid as registry.localstack.test (mirrors ECR-over-HTTPS),

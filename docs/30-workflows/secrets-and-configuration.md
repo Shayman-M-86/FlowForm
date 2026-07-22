@@ -1,5 +1,7 @@
 ---
 title: Secrets and configuration
+aliases:
+  - "Secrets and configuration"
 document_type: workflow
 status: scaffold
 authority: canonical
@@ -43,8 +45,8 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Local development]]
-- [[Configuration implementation]]
-- [[Configuration catalogue]]
-- [[Environment variables]]
-- [[Security model]]
+- [[local-development|Local development]]
+- [[configuration|Configuration implementation]]
+- [[configuration-catalogue|Configuration catalogue]]
+- [[environment-variables|Environment variables]]
+- [[security-model|Security model]]

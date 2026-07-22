@@ -1,5 +1,7 @@
 ---
 title: Repository map
+aliases:
+  - "Repository map"
 document_type: overview
 status: draft
 authority: canonical
@@ -55,13 +57,13 @@ This map identifies applications, shared packages, infrastructure, automation, t
 
 ## Generated and historical areas
 
-Checked-in generated contracts and types include `backend/openapi.yaml`, `frontend/apps/studio-app/src/api/generated/`, `frontend/apps/studio-app/src/routeTree.gen.ts`, and `frontend/packages/schema/src/generated/`. See [[Generated files]] for regeneration ownership.
+Checked-in generated contracts and types include `backend/openapi.yaml`, `frontend/apps/studio-app/src/api/generated/`, `frontend/apps/studio-app/src/routeTree.gen.ts`, and `frontend/packages/schema/src/generated/`. See [[generated-files|Generated files]] for regeneration ownership.
 
 `old-docs/` is historical and untrusted. It is not an implementation source and its claims must be re-verified before use.
 
 ## Where to look next
 
-Use the [[Repository tree|repository tree]] for a compact structural reference, the implementation maps for code locations, the workflow documents for executable processes, and the reference catalogues for scripts and configuration.
+Use the [[60-reference/repository-tree|repository tree]] for a compact structural reference, the implementation maps for code locations, the workflow documents for executable processes, and the reference catalogues for scripts and configuration.
 
 ## Verification notes
 

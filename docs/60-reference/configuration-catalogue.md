@@ -1,5 +1,7 @@
 ---
 title: Configuration catalogue
+aliases:
+  - "Configuration catalogue"
 document_type: reference
 status: scaffold
 authority: canonical
@@ -89,7 +91,7 @@ Rescan current configuration filenames and directories while excluding dependenc
 
 ## Related documents
 
-- [[Environment variables]]
-- [[Configuration implementation]]
-- [[Secrets and configuration]]
-- [[Configuration index]]
+- [[environment-variables|Environment variables]]
+- [[configuration|Configuration implementation]]
+- [[secrets-and-configuration|Secrets and configuration]]
+- [[configuration-index|Configuration index]]

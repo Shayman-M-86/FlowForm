@@ -176,6 +176,9 @@ def configure_root_logger(
     sqlalchemy_level: str = "WARNING",
     werkzeug_level: str = "INFO",
     botocore_level: str = "WARNING",
+    authlib_level: str = "WARNING",
+    auth0_level: str = "WARNING",
+    urllib3_level: str = "WARNING",
 ) -> None:
     """Configure the root logger and selected third-party loggers."""
     root = logging.getLogger()
@@ -199,6 +202,9 @@ def configure_root_logger(
     logging.getLogger("sqlalchemy.engine").setLevel(resolve_log_level(sqlalchemy_level, logging.WARNING))
     logging.getLogger("werkzeug").setLevel(resolve_log_level(werkzeug_level, logging.INFO))
     logging.getLogger("botocore").setLevel(resolve_log_level(botocore_level, logging.WARNING))
+    logging.getLogger("authlib").setLevel(resolve_log_level(authlib_level, logging.WARNING))
+    logging.getLogger("auth0_api_python").setLevel(resolve_log_level(auth0_level, logging.WARNING))
+    logging.getLogger("urllib3").setLevel(resolve_log_level(urllib3_level, logging.WARNING))
 
 
 # =============================================================================

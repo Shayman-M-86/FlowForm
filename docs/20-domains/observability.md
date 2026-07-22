@@ -1,5 +1,7 @@
 ---
 title: Observability
+aliases:
+  - "Observability"
 document_type: domain
 status: scaffold
 authority: canonical
@@ -43,5 +45,5 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Runtime containers]]
-- [[Backend implementation]]
+- [[runtime-containers|Runtime containers]]
+- [[backend|Backend implementation]]

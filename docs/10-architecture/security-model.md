@@ -1,5 +1,7 @@
 ---
 title: Security model
+aliases:
+  - "Security model"
 document_type: architecture
 status: draft
 authority: canonical
@@ -32,19 +34,19 @@ Explains the security controls visible in the current implementation and the lim
 
 FlowForm separates operator access from respondent access, scopes operator authorization to projects and surveys, avoids storing raw respondent session and recognition tokens, encrypts answer payloads, and keeps identity-bearing core records out of the response database. The intended deployed network places a public reverse proxy in front of a private application host and restricts application egress.
 
-These controls reduce exposure but do not prove confidentiality, integrity, or availability against every threat. Their concrete crossings and residual trust are summarized in [[Trust boundaries]].
+These controls reduce exposure but do not prove confidentiality, integrity, or availability against every threat. Their concrete crossings and residual trust are summarized in [[trust-boundaries|Trust boundaries]].
 
 ## Authentication and identity
 
 Auth0 is the external identity provider for operator accounts and authenticated respondent flows. Protected Flask routes use `AuthExtension.require_auth()` to extract a bearer token and ask the configured Auth0 API client to verify it for the configured domain and audience. Optional-auth routes accept no token, but reject an invalid token when one is supplied.
 
-Initial local-user bootstrap additionally verifies an Auth0 ID token with an RS256 JWKS key and checks issuer, client audience, expiry, issued-at presence, and equality between the access-token and ID-token subjects. The local `users.auth0_user_id` then maps the external identity to FlowForm's authorization records. Account-management operations can use a separate Auth0 Management API machine credential. Deeper identity lifecycle detail belongs in [[Identity and authentication]].
+Initial local-user bootstrap additionally verifies an Auth0 ID token with an RS256 JWKS key and checks issuer, client audience, expiry, issued-at presence, and equality between the access-token and ID-token subjects. The local `users.auth0_user_id` then maps the external identity to FlowForm's authorization records. Account-management operations can use a separate Auth0 Management API machine credential. Deeper identity lifecycle detail belongs in [[identity-and-authentication|Identity and authentication]].
 
 ## Authorization
 
 Studio authorization is stored locally as project memberships, project roles, survey role overrides, and named permissions. Project and survey route decorators load the authenticated local actor, calculate access for the route's project and survey identifiers, and reject missing membership or permission. A `platform_admin` user bypasses those membership checks; administration and assignment of that flag were not established in this pass.
 
-Respondent access uses a separate policy path rather than Studio RBAC. Public slugs require a public, published survey. Survey links are bearer credentials whose active, expiry, use, visibility, link-type, and participant-assignment rules are checked before resolution and session start. Authenticated links additionally require a local user matching the assigned participant identity. See [[Projects and access]] and [[Links and subjects]].
+Respondent access uses a separate policy path rather than Studio RBAC. Public slugs require a public, published survey. Survey links are bearer credentials whose active, expiry, use, visibility, link-type, and participant-assignment rules are checked before resolution and session start. Authenticated links additionally require a local user matching the assigned participant identity. See [[projects-and-access|Projects and access]] and [[links-and-subjects|Links and subjects]].
 
 This review verified the authorization mechanisms and representative route use, not complete decorator coverage for every endpoint.
 
@@ -64,7 +66,7 @@ Answer protection uses a three-tier key hierarchy:
 2. The survey branch key wraps one session data-encryption key, stored in the response envelope.
 3. The session key encrypts answer payloads with AES-256-GCM and context-derived additional authenticated data.
 
-Plaintext survey and session keys can be cached in backend worker memory. Opaque session and answer locators are HMAC-SHA256 values derived from core UUIDs with a separately versioned linkage secret fetched from AWS Secrets Manager. The response schema contains envelopes and encrypted current answers without foreign keys or direct identifiers back to core data. See [[Responses and encryption]].
+Plaintext survey and session keys can be cached in backend worker memory. Opaque session and answer locators are HMAC-SHA256 values derived from core UUIDs with a separately versioned linkage secret fetched from AWS Secrets Manager. The response schema contains envelopes and encrypted current answers without foreign keys or direct identifiers back to core data. See [[responses-and-encryption|Responses and encryption]].
 
 The backend remains trusted across this split: it opens both database sessions, can obtain the linkage and encryption keys, and decrypts answers for authorized result reads. The split limits what either database contains by itself; it does not protect answers from a fully compromised backend process.
 
@@ -72,7 +74,7 @@ The backend remains trusted across this split: it opens both database sessions, 
 
 Backend configuration supports file-backed database passwords, Flask secret key, and Auth0 Management API secret. The runtime bootstrap materializes those values from Secrets Manager into a root-owned tmpfs directory with mode `0700` and files with mode `0600`; Compose mounts them read-only under `/run/secrets`. Non-secret runtime configuration is rendered separately from SSM Parameter Store.
 
-The CDK security stack defines KMS and Secrets Manager resources plus an application role with read access to the declared secrets, KMS encrypt/decrypt, SES send, scoped SSM reads, and ECR pull access. ECR repository grants still use a name wildcard with a TODO to tighten them. Runtime crypto also lets the backend call KMS and fetch versioned linkage secrets directly. Operational handling and rotation belong in [[Secrets and configuration]].
+The CDK security stack defines KMS and Secrets Manager resources plus an application role with read access to the declared secrets, KMS encrypt/decrypt, SES send, scoped SSM reads, and ECR pull access. ECR repository grants still use a name wildcard with a TODO to tighten them. Runtime crypto also lets the backend call KMS and fetch versioned linkage secrets directly. Operational handling and rotation belong in [[secrets-and-configuration|Secrets and configuration]].
 
 File-backed delivery protects against placing these values directly in normal container environment variables, but does not by itself prove secure secret creation, rotation, host access, backup handling, or absence from process memory.
 
@@ -80,7 +82,7 @@ File-backed delivery protects against placing these values directly in normal co
 
 The staging/production definitions place Caddy on a public proxy instance and the Flask/Gunicorn backend on an application instance without a public IP. Caddy exposes ports 80 and 443, obtains TLS certificates through Route 53 DNS, adds HSTS, content-type, and referrer-policy headers, and forwards to the backend's private address on HTTP port 5000. Security groups restrict backend ingress to the proxy group.
 
-The application subnet has no NAT gateway in the CDK definition. Outbound HTTPS is routed through Squid on the proxy host, with source, port, and domain allow-lists; RDS traffic and selected VPC services use separate paths. Runtime Compose drops Linux capabilities, enables `no-new-privileges`, uses read-only container filesystems and tmpfs writable areas, and limits backend PIDs. See [[Deployment model]] and [[Runtime containers]].
+The application subnet has no NAT gateway in the CDK definition. Outbound HTTPS is routed through Squid on the proxy host, with source, port, and domain allow-lists; RDS traffic and selected VPC services use separate paths. Runtime Compose drops Linux capabilities, enables `no-new-privileges`, uses read-only container filesystems and tmpfs writable areas, and limits backend PIDs. See [[deployment-model|Deployment model]] and [[runtime-containers|Runtime containers]].
 
 These are repository-defined controls, not confirmation of a live environment. The CDK database stack is still a TODO scaffold, and the application stack creates instances but does not yet attach the runtime bootstrap/user-data wiring described in its comments.
 
@@ -100,10 +102,10 @@ The application registers a configurable in-memory, per-IP sliding-window rate l
 
 ## Related documents
 
-- [[Trust boundaries]]
-- [[Identity and authentication]]
-- [[Projects and access]]
-- [[Links and subjects]]
-- [[Responses and encryption]]
-- [[Secrets and configuration]]
-- [[Deployment model]]
+- [[trust-boundaries|Trust boundaries]]
+- [[identity-and-authentication|Identity and authentication]]
+- [[projects-and-access|Projects and access]]
+- [[links-and-subjects|Links and subjects]]
+- [[responses-and-encryption|Responses and encryption]]
+- [[secrets-and-configuration|Secrets and configuration]]
+- [[deployment-model|Deployment model]]

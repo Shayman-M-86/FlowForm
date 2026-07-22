@@ -1,5 +1,7 @@
 ---
 title: Proxmox rehearsal implementation
+aliases:
+  - "Proxmox rehearsal implementation"
 document_type: implementation
 status: draft
 authority: canonical
@@ -75,20 +77,20 @@ generated user-data rather than merging the generated SSH-key section.
 
 The rest of the rehearsal is documented in three focused pages:
 
-- [[Proxmox rehearsal fixtures and egress]] — the offline fixture boundary, the
+- [[proxmox-rehearsal-fixtures|Proxmox rehearsal fixtures and egress]] — the offline fixture boundary, the
   Squid/TLS-shim egress model, registry pushes, the database VM, and the two
   deliberate holes in the isolation (Auth0 and operator-facing TLS).
-- [[Proxmox rehearsal observability]] — tailing container logs with `logs.sh`
+- [[proxmox-rehearsal-observability|Proxmox rehearsal observability]] — tailing container logs with `logs.sh`
   and the two-agent Grafana Alloy log-shipping stack.
-- [[Proxmox rehearsal setup]] — the from-scratch runbook (steps 1–7,
+- [[proxmox-rehearsal-setup|Proxmox rehearsal setup]] — the from-scratch runbook (steps 1–7,
   `rebuild.sh`, and teardown).
 
 ## Related documents
 
-- [[Proxmox rehearsal fixtures and egress]]
-- [[Proxmox rehearsal observability]]
-- [[Proxmox rehearsal setup]]
-- [[Deployment model]]
-- [[Machine image building]]
-- [[Packer implementation]]
-- [[Infrastructure implementation]]
+- [[proxmox-rehearsal-fixtures|Proxmox rehearsal fixtures and egress]]
+- [[proxmox-rehearsal-observability|Proxmox rehearsal observability]]
+- [[proxmox-rehearsal-setup|Proxmox rehearsal setup]]
+- [[deployment-model|Deployment model]]
+- [[machine-image-building|Machine image building]]
+- [[packer|Packer implementation]]
+- [[infrastructure|Infrastructure implementation]]

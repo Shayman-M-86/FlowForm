@@ -1,5 +1,7 @@
 ---
 title: Runtime containers
+aliases:
+  - "Runtime containers"
 document_type: architecture
 status: draft
 authority: canonical
@@ -43,8 +45,8 @@ The repository does not use one Compose model unchanged in every context.
 
 The development and test definitions are operationally useful variants, not
 evidence that their networks, credentials, writable mounts, or database
-placement match the shared host runtime. See [[Local infrastructure]] and
-[[Testing workflow]] for their workflows.
+placement match the shared host runtime. See [[local-infrastructure|Local infrastructure]] and
+[[testing|Testing workflow]] for their workflows.
 
 ## Shared host boundaries
 
@@ -66,7 +68,7 @@ projects:
 Both host Compose files harden their application containers with read-only
 filesystems, reduced Linux capabilities, `no-new-privileges`, bounded local log
 rotation, and memory-backed writable paths where needed. These settings are
-observable controls, not a complete statement of the [[Security model]].
+observable controls, not a complete statement of the [[security-model|Security model]].
 
 ## Bootstrap and configuration boundary
 
@@ -75,8 +77,8 @@ Compose environment from SSM plus host-known addresses. The app bootstrap
 configures forced proxy egress, materialises Secrets Manager values into a host
 `tmpfs`, renders non-secret configuration from SSM, and then starts Compose.
 Staging and prod are intended to consume the same base Compose and bootstrap
-files with environment-specific values. See [[Secrets and configuration]] for
-the configuration lifecycle and [[Infrastructure implementation]] for source
+files with environment-specific values. See [[secrets-and-configuration|Secrets and configuration]] for
+the configuration lifecycle and [[infrastructure|Infrastructure implementation]] for source
 locations.
 
 ## Rehearsal boundary
@@ -88,10 +90,10 @@ A dedicated, isolated DB VM runs one ephemeral PostgreSQL cluster containing
 the core and response databases through the maintained initialization path.
 Auth0 is the one deliberate live dependency:
 the egress allow-list admits the real dev tenant so bearer-token validation is
-exercised end-to-end (see [[Proxmox rehearsal implementation]]). A green rehearsal therefore supports the
+exercised end-to-end (see [[proxmox-rehearsal|Proxmox rehearsal implementation]]). A green rehearsal therefore supports the
 shared image/bootstrap/Compose contract and cross-VM database shape, but does
 not prove AWS networking, RDS behavior, public DNS, or certificate issuance. See
-[[Machine image building]] and [[Deployment model]].
+[[machine-image-building|Machine image building]] and [[deployment-model|Deployment model]].
 
 ## Declared versus running state
 
@@ -100,7 +102,7 @@ Compose projects are running on a developer machine or any host. It also does
 not establish that the cloud-oriented host runtime has been bootstrapped in AWS;
 the current CDK application creates EC2 instances but does not attach the
 runtime bootstrap as instance user data. That implementation gap is tracked in
-[[Deployment model]].
+[[deployment-model|Deployment model]].
 
 ## Open questions
 
@@ -114,10 +116,10 @@ runtime bootstrap as instance user data. That implementation gap is tracked in
 
 ## Related documents
 
-- [[Component map]]
-- [[Deployment model]]
-- [[Local infrastructure]]
-- [[Testing workflow]]
-- [[Secrets and configuration]]
-- [[Infrastructure implementation]]
-- [[Services and ports]]
+- [[component-map|Component map]]
+- [[deployment-model|Deployment model]]
+- [[local-infrastructure|Local infrastructure]]
+- [[testing|Testing workflow]]
+- [[secrets-and-configuration|Secrets and configuration]]
+- [[infrastructure|Infrastructure implementation]]
+- [[services-and-ports|Services and ports]]

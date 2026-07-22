@@ -1,5 +1,7 @@
 ---
 title: Deployment model
+aliases:
+  - "Deployment model"
 document_type: architecture
 status: draft
 authority: canonical
@@ -119,8 +121,8 @@ subnets without a NAT gateway. Security groups restrict public ingress to the
 proxy, proxy-to-app traffic to the backend port, app-to-proxy traffic to Squid,
 and app-to-database traffic to PostgreSQL. An S3 gateway endpoint supplies the
 declared direct path for container image layers, and an EC2 Instance Connect
-Endpoint supplies the private app management path. See [[Trust boundaries]] for
-the security interpretation and [[Runtime containers]] for host service roles.
+Endpoint supplies the private app management path. See [[trust-boundaries|Trust boundaries]] for
+the security interpretation and [[runtime-containers|Runtime containers]] for host service roles.
 
 The two static frontends use separate private S3 buckets and CloudFront
 distributions. A certificate stack lives in `us-east-1`, while DNS aliases,
@@ -153,11 +155,11 @@ uses GitHub OIDC. A `workflow_run` deploys the exact commit from a successful
 staging CI run; manual dispatch deploys its selected ref without itself requiring
 a successful CI run. It does not publish or restart the backend,
 run database provisioning or migrations, deploy CDK stacks, or deploy
-production. Those procedures remain gaps for [[Cloud deployment]].
+production. Those procedures remain gaps for [[cloud-deployment|Cloud deployment]].
 
 The repository contains shared host bootstrap scripts, but CDK and the deploy
 workflow do not yet connect those scripts to EC2 provisioning or release
-rollout. [[Machine image building]] owns the base-image path; the application
+rollout. [[machine-image-building|Machine image building]] owns the base-image path; the application
 stack consumes a configured AMI ID or SSM AMI parameter rather than selecting a
 generic latest image.
 
@@ -168,8 +170,8 @@ the security stack. Full frontend synthesis also requires environment-specific
 Auth0 public configuration and hosted-zone lookup context. These dependencies
 mean a clean source checkout alone is insufficient to reproduce or verify a
 live deployment. Configuration and secret ownership belong in
-[[Secrets and configuration]], while exact resource locations belong in
-[[Infrastructure implementation]] and [[Infrastructure resources]].
+[[secrets-and-configuration|Secrets and configuration]], while exact resource locations belong in
+[[infrastructure|Infrastructure implementation]] and [[infrastructure-resources|Infrastructure resources]].
 
 ## Open questions
 
@@ -186,12 +188,12 @@ live deployment. Configuration and secret ownership belong in
 
 ## Related documents
 
-- [[System context]]
-- [[Runtime containers]]
-- [[Trust boundaries]]
-- [[Cloud deployment]]
-- [[Machine image building]]
-- [[Proxmox rehearsal implementation]]
-- [[Secrets and configuration]]
-- [[Infrastructure implementation]]
-- [[Infrastructure resources]]
+- [[system-context|System context]]
+- [[runtime-containers|Runtime containers]]
+- [[trust-boundaries|Trust boundaries]]
+- [[cloud-deployment|Cloud deployment]]
+- [[machine-image-building|Machine image building]]
+- [[proxmox-rehearsal|Proxmox rehearsal implementation]]
+- [[secrets-and-configuration|Secrets and configuration]]
+- [[infrastructure|Infrastructure implementation]]
+- [[infrastructure-resources|Infrastructure resources]]

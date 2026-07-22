@@ -1,5 +1,7 @@
 ---
 title: Builder and rules
+aliases:
+  - "Builder and rules"
 document_type: domain
 status: scaffold
 authority: canonical
@@ -44,5 +46,5 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Surveys and versioning]]
-- [[Frontend implementation]]
+- [[surveys-and-versioning|Surveys and versioning]]
+- [[frontend|Frontend implementation]]

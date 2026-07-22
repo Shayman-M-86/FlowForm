@@ -1,5 +1,7 @@
 ---
 title: Continuous integration
+aliases:
+  - "Continuous integration"
 document_type: workflow
 status: scaffold
 authority: canonical
@@ -42,7 +44,7 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Testing workflow]]
-- [[Cloud deployment]]
-- [[CI/CD implementation]]
-- [[CI workflows]]
+- [[testing|Testing workflow]]
+- [[cloud-deployment|Cloud deployment]]
+- [[ci-cd|CI/CD implementation]]
+- [[ci-workflows|CI workflows]]

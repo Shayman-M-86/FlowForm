@@ -1,5 +1,7 @@
 ---
 title: Local development
+aliases:
+  - "Local development"
 document_type: workflow
 status: scaffold
 authority: canonical
@@ -41,7 +43,7 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Local infrastructure]]
-- [[Secrets and configuration]]
-- [[Testing workflow]]
-- [[Commands]]
+- [[local-infrastructure|Local infrastructure]]
+- [[secrets-and-configuration|Secrets and configuration]]
+- [[testing|Testing workflow]]
+- [[commands|Commands]]

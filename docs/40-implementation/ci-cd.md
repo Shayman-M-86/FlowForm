@@ -1,5 +1,7 @@
 ---
 title: CI/CD implementation
+aliases:
+  - "CI/CD implementation"
 document_type: implementation
 status: scaffold
 authority: canonical
@@ -41,6 +43,6 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Continuous integration]]
-- [[Cloud deployment]]
-- [[CI workflows]]
+- [[continuous-integration|Continuous integration]]
+- [[cloud-deployment|Cloud deployment]]
+- [[ci-workflows|CI workflows]]

@@ -1,5 +1,7 @@
 ---
 title: Proxmox rehearsal observability
+aliases:
+  - "Proxmox rehearsal observability"
 document_type: implementation
 status: draft
 authority: canonical
@@ -9,6 +11,7 @@ related_code:
   - "../../infra/deployment/proxmox/scripts/"
   - "../../infra/containers/runtime/services/alloy/"
   - "../../infra/containers/runtime/services/alloy-app/"
+  - "../../infra/containers/runtime/services/squid/squid.conf"
   - "../../infra/containers/runtime/compose/"
   - "../../infra/containers/strategies/rehearsal/services/registry/"
 related_docs:
@@ -22,7 +25,7 @@ related_docs:
 How logs are read from and shipped off the Proxmox rehearsal VMs. It describes
 the checked-in design; it does not claim the rehearsal is end-to-end healthy.
 For the VM topology this refers to, see the topology table in
-[[Proxmox rehearsal implementation]].
+[[proxmox-rehearsal|Proxmox rehearsal implementation]].
 
 ## Log tailing
 
@@ -37,7 +40,7 @@ event (`--raw` for full tracebacks, `-e` errors only, `-r` by request id).
 Two Grafana Alloy agents ship logs off the VMs to Grafana Cloud (Loki). It is
 **logs only** — no metrics, no traces, no application instrumentation. The proxy
 box (210) has an egress route and pushes directly; the app box (220) has no
-gateway (see the topology table in [[Proxmox rehearsal implementation]]), so it
+gateway (see the topology table in [[proxmox-rehearsal|Proxmox rehearsal implementation]]), so it
 cannot reach Grafana Cloud and its agent relays through the proxy over the
 private `10.10.10.0/24` net instead of opening an internet hole in the Squid
 allow-list.
@@ -48,8 +51,10 @@ allow-list.
   `alloy` itself) and writes them to Grafana Cloud via `loki.write`
   (`basic_auth` from the three `GRAFANA_CLOUD_*` env values). It also exposes a
   `loki.source.api` receiver on `:3500` that fans the app box's records out to
-  the same sink. Proxy-box containers log plain text, so the pipeline extracts a
-  `level` label by regex but does no JSON parsing.
+  the same sink. Squid preserves one `level=info` file access log for
+  `verify.sh`; the container entrypoint tails that file to stdout, allowing
+  Docker discovery to publish it under `service_name="squid"`. Proxy-box containers log plain text,
+  so the pipeline extracts a `level` label by regex but does no JSON parsing.
 - **App agent** (`infra/containers/runtime/services/alloy-app/config.alloy`, run
   by the `alloy` service in `infra/containers/runtime/compose/app.yml`) collects
   the backend container and forwards to `http://<PROXY_PRIVATE_IP>:3500` via
@@ -95,6 +100,6 @@ Terraform `check` block asserts matches the seed-value map exactly.
 
 ## Related documents
 
-- [[Proxmox rehearsal implementation]]
-- [[Proxmox rehearsal fixtures and egress]]
-- [[Proxmox rehearsal setup]]
+- [[proxmox-rehearsal|Proxmox rehearsal implementation]]
+- [[proxmox-rehearsal-fixtures|Proxmox rehearsal fixtures and egress]]
+- [[proxmox-rehearsal-setup|Proxmox rehearsal setup]]

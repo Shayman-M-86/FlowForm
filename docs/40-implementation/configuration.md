@@ -1,5 +1,7 @@
 ---
 title: Configuration implementation
+aliases:
+  - "Configuration implementation"
 document_type: implementation
 status: scaffold
 authority: canonical
@@ -42,7 +44,7 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Secrets and configuration]]
-- [[Configuration catalogue]]
-- [[Environment variables]]
-- [[Configuration index]]
+- [[secrets-and-configuration|Secrets and configuration]]
+- [[configuration-catalogue|Configuration catalogue]]
+- [[environment-variables|Environment variables]]
+- [[configuration-index|Configuration index]]

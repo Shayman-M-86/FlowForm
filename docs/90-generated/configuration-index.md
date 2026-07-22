@@ -1,5 +1,7 @@
 ---
 title: Configuration index
+aliases:
+  - "Configuration index"
 document_type: generated
 status: scaffold
 authority: canonical
@@ -38,5 +40,5 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Generated documentation]]
-- [[Configuration catalogue]]
+- [[90-generated/README|Generated documentation]]
+- [[configuration-catalogue|Configuration catalogue]]

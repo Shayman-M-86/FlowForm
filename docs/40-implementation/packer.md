@@ -1,5 +1,7 @@
 ---
 title: Packer implementation
+aliases:
+  - "Packer implementation"
 document_type: implementation
 status: draft
 authority: canonical
@@ -110,7 +112,7 @@ checked-in validation does not claim they are live or healthy.
 
 ## Related documents
 
-- [[Machine image building]]
-- [[Deployment model]]
-- [[Proxmox rehearsal implementation]]
-- [[Infrastructure implementation]]
+- [[machine-image-building|Machine image building]]
+- [[deployment-model|Deployment model]]
+- [[proxmox-rehearsal|Proxmox rehearsal implementation]]
+- [[infrastructure|Infrastructure implementation]]

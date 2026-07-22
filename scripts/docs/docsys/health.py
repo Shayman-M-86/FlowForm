@@ -169,6 +169,8 @@ def render_dashboard(health: dict) -> str:
     parts = [
         "---",
         "title: Documentation health dashboard",
+        "aliases:",
+        '  - "Documentation health dashboard"',
         "document_type: generated",
         "status: scaffold",
         "authority: canonical",
@@ -260,9 +262,9 @@ def render_dashboard(health: dict) -> str:
         ),
         "## Related documents",
         "",
-        "- [[Generated documentation]]",
-        "- [[Documentation model]]",
-        "- [[Documentation generator guide]]",
+        "- [[90-generated/README|Generated documentation]]",
+        "- [[documentation-model|Documentation model]]",
+        "- [[documentation-generator-guide|Documentation generator guide]]",
         "",
     ]
     return "\n".join(parts)

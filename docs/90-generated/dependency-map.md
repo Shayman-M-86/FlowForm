@@ -1,5 +1,7 @@
 ---
 title: Dependency map
+aliases:
+  - "Dependency map"
 document_type: generated
 status: scaffold
 authority: canonical
@@ -37,5 +39,5 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Generated documentation]]
-- [[Repository map]]
+- [[90-generated/README|Generated documentation]]
+- [[repository-map|Repository map]]

@@ -1,5 +1,7 @@
 ---
 title: Planning workspace
+aliases:
+  - "Planning workspace"
 document_type: planning-index
 status: scaffold
 authority: planning
@@ -34,8 +36,8 @@ Only verified, durable decisions should be promoted into ADRs or canonical docum
 
 ## Related documents
 
-- [[Active plans]]
-- [[Completed plans]]
-- [[Abandoned plans]]
-- [[Architecture decision records]]
-- [[Documentation model]]
+- [[70-planning/active/README|Active plans]]
+- [[70-planning/completed/README|Completed plans]]
+- [[70-planning/abandoned/README|Abandoned plans]]
+- [[50-decisions/README|Architecture decision records]]
+- [[documentation-model|Documentation model]]

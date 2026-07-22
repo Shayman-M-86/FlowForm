@@ -1,5 +1,7 @@
 ---
 title: Generated files
+aliases:
+  - "Generated files"
 document_type: reference
 status: scaffold
 authority: canonical
@@ -33,6 +35,6 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Generated documentation]]
-- [[Scripts catalogue]]
-- [[Repository map]]
+- [[90-generated/README|Generated documentation]]
+- [[scripts-catalogue|Scripts catalogue]]
+- [[repository-map|Repository map]]

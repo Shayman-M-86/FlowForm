@@ -1,5 +1,7 @@
 ---
 title: CI workflows
+aliases:
+  - "CI workflows"
 document_type: generated
 status: scaffold
 authority: canonical
@@ -38,5 +40,5 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Generated documentation]]
-- [[Continuous integration]]
+- [[90-generated/README|Generated documentation]]
+- [[continuous-integration|Continuous integration]]

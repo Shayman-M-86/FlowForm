@@ -1,5 +1,7 @@
 ---
 title: Data flows
+aliases:
+  - "Data flows"
 document_type: architecture
 status: draft
 authority: canonical
@@ -62,8 +64,8 @@ Draft questions and scoring rules are stored against a survey version. Publishin
 checks that the version is a non-empty draft, compiles its nodes and scoring
 rules, ensures response-storage and survey-encryption-key prerequisites, and
 marks it as the survey's active published version. Respondent collection then
-binds to that version. [[Surveys and versioning]] owns the lifecycle and
-[[Projects and access]] owns authorization semantics.
+binds to that version. [[surveys-and-versioning|Surveys and versioning]] owns the lifecycle and
+[[projects-and-access|Projects and access]] owns authorization semantics.
 
 ## Respondent entry and session start
 
@@ -90,8 +92,8 @@ The access resolver selects a published survey version and response store. The
 subject flow may associate the attempt with a project subject, depending on the
 access method, authenticated actor, assigned participant, and recognition state.
 The service creates core session metadata and a response-side envelope linked by
-an opaque derived locator. [[Links and subjects]] owns identity resolution;
-[[Submissions]] owns the attempt lifecycle.
+an opaque derived locator. [[links-and-subjects|Links and subjects]] owns identity resolution;
+[[submissions|Submissions]] owns the attempt lifecycle.
 
 > [!WARNING]
 > Session start crosses two independent database transactions. The response
@@ -122,7 +124,7 @@ opaque locator, not the core question or session identifiers. Question-viewed
 and answer-saved analytics remain core-side events. Completion locks the core
 session, moves it from `in_progress` to `completed`, records a best-effort event,
 and evicts the cached write context. Detailed payload and encryption contracts
-belong in [[Responses and encryption]].
+belong in [[responses-and-encryption|Responses and encryption]].
 
 > [!WARNING]
 > Answer save also uses sequential core and response commits. A committed core
@@ -144,8 +146,8 @@ flowchart LR
 Management reads begin from core metadata and retrieve response-side data only
 when requested and available. Decryption occurs in the backend; the response
 database does not gain core identifiers through this read path. Authorization,
-redaction, and export contracts require deeper review in [[Security model]],
-[[Responses and encryption]], and [[Backend implementation]].
+redaction, and export contracts require deeper review in [[security-model|Security model]],
+[[responses-and-encryption|Responses and encryption]], and [[backend|Backend implementation]].
 
 ## Recovery flow
 
@@ -173,14 +175,14 @@ missing is marked `abandoned`; matched sessions are left unchanged.
 - Cross-database compensation and reconciliation do not cover every possible
   partial failure. Operational ownership and retry policy remain unresolved.
 - Cache, KMS, and secret-loading mechanics are intentionally left to
-  [[Security model]], [[Configuration implementation]], and
-  [[Secrets and configuration]].
+  [[security-model|Security model]], [[configuration|Configuration implementation]], and
+  [[secrets-and-configuration|Secrets and configuration]].
 
 ## Related documents
 
-- [[Component map]]
-- [[Trust boundaries]]
-- [[Surveys and versioning]]
-- [[Links and subjects]]
-- [[Submissions]]
-- [[Responses and encryption]]
+- [[component-map|Component map]]
+- [[trust-boundaries|Trust boundaries]]
+- [[surveys-and-versioning|Surveys and versioning]]
+- [[links-and-subjects|Links and subjects]]
+- [[submissions|Submissions]]
+- [[responses-and-encryption|Responses and encryption]]

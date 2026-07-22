@@ -59,6 +59,17 @@ def metadata_findings(docset: DocSet) -> list[Finding]:
         if not d.title:
             findings.append(Finding(d.rel_path, "metadata", "missing or empty title"))
             continue
+        aliases = d.front_matter.get("aliases", [])
+        if not isinstance(aliases, list):
+            findings.append(Finding(d.rel_path, "metadata", "aliases must be a list"))
+        elif d.title.casefold() not in {alias.casefold() for alias in aliases}:
+            findings.append(
+                Finding(
+                    d.rel_path,
+                    "metadata",
+                    f"aliases must include the document title '{d.title}'",
+                )
+            )
         key = d.title.casefold()
         if key in titles:
             findings.append(
@@ -86,11 +97,10 @@ def metadata_findings(docset: DocSet) -> list[Finding]:
 
 def link_findings(docset: DocSet) -> list[Finding]:
     findings: list[Finding] = []
-    titles = {d.title.casefold() for d in docset.docs if d.title}
     for d in docset.docs:
         body = strip_code(d.body)
         for target in _WIKI_LINK_RE.findall(body):
-            if target.strip().casefold() not in titles:
+            if docset.resolve_wiki(target.strip()) is None:
                 findings.append(
                     Finding(d.rel_path, "link", f"unresolved wiki link [[{target}]]")
                 )

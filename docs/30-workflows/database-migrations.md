@@ -1,5 +1,7 @@
 ---
 title: Database migrations
+aliases:
+  - "Database migrations"
 document_type: workflow
 status: scaffold
 authority: canonical
@@ -40,5 +42,5 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Backend implementation]]
-- [[Local infrastructure]]
+- [[backend|Backend implementation]]
+- [[local-infrastructure|Local infrastructure]]

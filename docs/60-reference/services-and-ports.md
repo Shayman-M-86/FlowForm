@@ -1,5 +1,7 @@
 ---
 title: Services and ports
+aliases:
+  - "Services and ports"
 document_type: reference
 status: scaffold
 authority: canonical
@@ -32,5 +34,5 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Runtime containers]]
-- [[Local infrastructure]]
+- [[runtime-containers|Runtime containers]]
+- [[local-infrastructure|Local infrastructure]]

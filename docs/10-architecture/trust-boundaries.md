@@ -1,5 +1,7 @@
 ---
 title: Trust boundaries
+aliases:
+  - "Trust boundaries"
 document_type: architecture
 status: draft
 authority: canonical
@@ -59,26 +61,26 @@ The core database owns identity, authorization, survey structure, link access, s
 
 The boundary is intentionally crossed inside the backend through non-atomic,
 application-coordinated writes and reads. Transaction order, compensation,
-reconciliation, and administrative retrieval belong in [[Data flows]] and
-[[Responses and encryption]].
+reconciliation, and administrative retrieval belong in [[data-flows|Data flows]] and
+[[responses-and-encryption|Responses and encryption]].
 
 ## Identity boundary
 
 Auth0 proves possession of an external account token; FlowForm then maps its `sub` to a local user and applies local authorization. An authenticated Auth0 token alone does not grant project or survey permissions. Conversely, public and link-based respondent access does not require a local operator membership.
 
-Participant identity verification is another explicit crossing: an authenticated survey link is usable only after the assigned participant identity is linked to the same local user. Subject-recognition cookies are not Auth0 authentication and must not be treated as operator credentials. See [[Identity and authentication]] and [[Links and subjects]].
+Participant identity verification is another explicit crossing: an authenticated survey link is usable only after the assigned participant identity is linked to the same local user. Subject-recognition cookies are not Auth0 authentication and must not be treated as operator credentials. See [[identity-and-authentication|Identity and authentication]] and [[links-and-subjects|Links and subjects]].
 
 ## Network boundary status
 
 The repository contains a coherent target definition for a public proxy EC2 instance, private app EC2 instance, isolated app and RDS subnets, restrictive security groups, Caddy ingress, and Squid-controlled egress. The runtime Compose files implement container hardening and private-address bindings for that shape.
 
-This is not yet a confirmed deployed boundary. `DatabaseStack` contains only TODOs, while `ApplicationStack` creates the instances but leaves runtime user-data/bootstrap attachment for later wiring. Development and test Compose files also publish backend and database ports to the host, so their boundary is the developer machine rather than the EC2 topology. See [[Deployment model]] and [[Local infrastructure]].
+This is not yet a confirmed deployed boundary. `DatabaseStack` contains only TODOs, while `ApplicationStack` creates the instances but leaves runtime user-data/bootstrap attachment for later wiring. Development and test Compose files also publish backend and database ports to the host, so their boundary is the developer machine rather than the EC2 topology. See [[deployment-model|Deployment model]] and [[local-infrastructure|Local infrastructure]].
 
 ## Header and client-address trust
 
 Caddy is intended to be the only network caller of the deployed backend, but the application itself accepts the first `X-Forwarded-For` value as the client IP without a trusted-proxy list. Request logging and the in-memory rate limiter use that value. The security-group boundary is therefore part of the correctness of client attribution; direct backend reachability or unfiltered forwarding would allow caller-controlled attribution.
 
-CORS is initialized for API routes with credentials enabled and falls back to wildcard origins unless `CORS_ORIGINS` is supplied through Flask configuration. No typed environment mapping for that value was found. Browser-origin and CSRF assumptions remain unresolved in [[Security model]].
+CORS is initialized for API routes with credentials enabled and falls back to wildcard origins unless `CORS_ORIGINS` is supplied through Flask configuration. No typed environment mapping for that value was found. Browser-origin and CSRF assumptions remain unresolved in [[security-model|Security model]].
 
 ## Open questions
 
@@ -91,11 +93,11 @@ CORS is initialized for API routes with credentials enabled and falls back to wi
 
 ## Related documents
 
-- [[Security model]]
-- [[System context]]
-- [[Data flows]]
-- [[Deployment model]]
-- [[Runtime containers]]
-- [[Identity and authentication]]
-- [[Responses and encryption]]
-- [[Secrets and configuration]]
+- [[security-model|Security model]]
+- [[system-context|System context]]
+- [[data-flows|Data flows]]
+- [[deployment-model|Deployment model]]
+- [[runtime-containers|Runtime containers]]
+- [[identity-and-authentication|Identity and authentication]]
+- [[responses-and-encryption|Responses and encryption]]
+- [[secrets-and-configuration|Secrets and configuration]]

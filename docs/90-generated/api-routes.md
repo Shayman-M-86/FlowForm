@@ -1,5 +1,7 @@
 ---
 title: API routes
+aliases:
+  - "API routes"
 document_type: generated
 status: scaffold
 authority: canonical
@@ -38,5 +40,5 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Generated documentation]]
-- [[Backend implementation]]
+- [[90-generated/README|Generated documentation]]
+- [[backend|Backend implementation]]

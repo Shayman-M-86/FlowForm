@@ -1,5 +1,7 @@
 ---
 title: Documentation health dashboard
+aliases:
+  - "Documentation health dashboard"
 document_type: generated
 status: scaffold
 authority: canonical
@@ -95,6 +97,6 @@ _None._
 
 ## Related documents
 
-- [[Generated documentation]]
-- [[Documentation model]]
-- [[Documentation generator guide]]
+- [[90-generated/README|Generated documentation]]
+- [[documentation-model|Documentation model]]
+- [[documentation-generator-guide|Documentation generator guide]]

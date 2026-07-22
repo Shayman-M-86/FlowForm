@@ -1,5 +1,7 @@
 ---
 title: Backend implementation
+aliases:
+  - "Backend implementation"
 document_type: implementation
 status: scaffold
 authority: canonical
@@ -43,8 +45,8 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Repository map]]
-- [[Component map]]
-- [[Database migrations]]
-- [[Testing workflow]]
-- [[API routes]]
+- [[repository-map|Repository map]]
+- [[component-map|Component map]]
+- [[database-migrations|Database migrations]]
+- [[testing|Testing workflow]]
+- [[api-routes|API routes]]

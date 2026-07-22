@@ -1,5 +1,7 @@
 ---
 title: Surveys and versioning
+aliases:
+  - "Surveys and versioning"
 document_type: domain
 status: scaffold
 authority: canonical
@@ -44,6 +46,6 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Projects and access]]
-- [[Builder and rules]]
-- [[Submissions]]
+- [[projects-and-access|Projects and access]]
+- [[builder-and-rules|Builder and rules]]
+- [[submissions|Submissions]]

@@ -1,5 +1,7 @@
 ---
 title: Documentation model
+aliases:
+  - "Documentation model"
 document_type: overview
 status: draft
 authority: canonical
@@ -44,11 +46,11 @@ The documentation is a connected network, not a collection of independent files.
 
 ### Titles are identifiers
 
-Every document declares a `title` in front matter. Titles are globally unique across `docs/` (case-insensitively) and are the canonical way to refer to a document. Use sentence case and prefer a name that is unambiguous on its own — for example `Backend implementation` rather than `Backend`, and `Testing workflow` rather than `Testing`.
+Every document declares a `title` in front matter. Titles are globally unique across `docs/` (case-insensitively) and are the canonical identifiers used by `related_docs` and documentation search. Each document also lists that exact title in its `aliases` front-matter property so it appears under that name in Obsidian's link suggestions. Use sentence case and prefer a name that is unambiguous on its own — for example `Backend implementation` rather than `Backend`, and `Testing workflow` rather than `Testing`.
 
 ### Wiki links
 
-Documents reference each other with wiki links: `[[Title]]`, or `[[Title|display text]]` when the surrounding sentence needs different wording. Wiki links resolve by title, never by path, so files can move between layers without breaking references. Use wiki links only for documents under `docs/`; refer to code with plain repository paths in backticks. Every document lists its most useful neighbours in `related_docs` (front matter, as titles) and, except for short prose-navigation pages, in a closing `## Related documents` section.
+Documents reference each other with Obsidian-compatible wiki links whose target is the note filename and whose display text is normally the document title: `[[proxmox-rehearsal|Proxmox rehearsal implementation]]`. A unique filename stem is sufficient; when stems collide, use the shortest distinguishing path relative to `docs/`, such as `[[90-generated/README|Generated documentation]]`. Do not use a front-matter title as the link target when it differs from the filename: aliases assist link creation, but Obsidian stores a durable alias link using the real note target plus display text. Use wiki links only for documents under `docs/`; refer to code with plain repository paths in backticks. Every document lists its most useful neighbours in `related_docs` (front matter, as titles) and, except for short prose-navigation pages, in a closing `## Related documents` section.
 
 Linking is cheap and encouraged: link a concept the first time a section mentions it, and prefer linking to the document that owns the explanation over restating it.
 
@@ -87,7 +89,7 @@ The documentation tooling under `scripts/docs/docsys/` reads these fields to bui
 
 Documentation work proceeds in narrow, reviewable stages. Inspect the target scaffold and implementation evidence, write only claims appropriate to that layer, record uncertainty instead of guessing, and use an independent review to remove unsupported claims and duplication. Stop at the stage boundary rather than filling adjacent scaffolds opportunistically.
 
-When a file is added or renamed, update navigation and related-document metadata. When a title changes, update every `[[wiki link]]` and `related_docs` entry that uses it — validation reports any that were missed. When implementation changes invalidate a claim, update the document and its verification commit together.
+When a file is added or renamed, update its wiki-link targets, navigation, and related-document metadata. When a title changes, update its matching `aliases` entry, wiki-link display text, and every `related_docs` entry that uses it. Validation reports unresolved note targets and metadata titles. When implementation changes invalidate a claim, update the document and its verification commit together.
 
 ## Validation
 
@@ -98,6 +100,6 @@ python3 scripts/docs/validate-doc-links.py
 python3 scripts/docs/validate-doc-metadata.py
 ```
 
-These checks cover local Markdown link targets, `[[wiki link]]` resolution, required front-matter fields, global title uniqueness, `related_docs` resolution, and the tag vocabulary. They do not establish that prose claims are correct; review against implementation evidence remains required.
+These checks cover local Markdown link targets, `[[wiki link]]` resolution, required front-matter fields, Obsidian title aliases, global title uniqueness, `related_docs` resolution, and the tag vocabulary. They do not establish that prose claims are correct; review against implementation evidence remains required.
 
 The layered documentation tree and current `scripts/docs/` checks are uncommitted Stage 1 working-tree work at the recorded implementation baseline. Re-verify them and advance `verified_against_commit` after they are committed.

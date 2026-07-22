@@ -95,6 +95,7 @@ services:
         sed -e "s|__APP_SOURCE_CIDR__|$${SQUID_APP_SOURCE_CIDR}|g" \
           -e "s|__DB_BOOTSTRAP_SOURCE_CIDR__|$${SQUID_DB_BOOTSTRAP_SOURCE_CIDR}|g" \
           /etc/squid/squid.conf.template > /tmp/squid.conf
+        su -s /bin/sh -c 'exec tail -n 0 -F /var/log/squid/access.log' proxy &
         exec squid -N -f /tmp/squid.conf
     logging:
       driver: json-file

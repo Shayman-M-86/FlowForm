@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 log() { printf '[flowform-image] %s\n' "$*"; }
+die() {
+  printf '[flowform-image] ERROR: %s\n' "$*" >&2
+  exit 1
+}
 if command -v dnf >/dev/null 2>&1; then
   export FLOWFORM_PKG=dnf
 elif command -v yum >/dev/null 2>&1; then

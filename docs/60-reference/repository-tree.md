@@ -1,5 +1,7 @@
 ---
 title: Repository tree
+aliases:
+  - "Repository tree"
 document_type: reference
 status: scaffold
 authority: canonical
@@ -130,8 +132,8 @@ The `find` results were filtered to exclude dependency directories, virtual envi
 1. Record the current commit with `git rev-parse HEAD`.
 2. Refresh tracked paths with `git ls-tree`; inspect new or removed manifests, entry points, test roots, infrastructure areas, and workflows.
 3. Keep this reference curated. Do not add dependency directories, caches, build products, or exhaustive internal module listings.
-4. Update the [[Repository map|repository map]] if a major area or reader navigation boundary changes.
-5. Regenerate [[Repository tree snapshot|the generated repository tree]] only through `scripts/docs/generate-repository-tree.py`; do not paste its exhaustive output into this reference.
+4. Update the [[repository-map|repository map]] if a major area or reader navigation boundary changes.
+5. Regenerate [[90-generated/repository-tree|the generated repository tree]] only through `scripts/docs/generate-repository-tree.py`; do not paste its exhaustive output into this reference.
 6. Update `verified_against_commit`, then run:
 
 ```sh
@@ -145,5 +147,5 @@ Implementation structure was verified at commit `ac7d021ad3716a68638759df684b9a3
 
 ## Related documents
 
-- [[Repository map]]
-- [[Repository tree snapshot]]
+- [[repository-map|Repository map]]
+- [[90-generated/repository-tree|Repository tree snapshot]]

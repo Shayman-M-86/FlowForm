@@ -637,6 +637,17 @@ class ManagementApiCallError(AppError):
         )
 
 
+class PasswordChangeUnsupportedError(AppError):
+    """Error raised when the user's identity provider cannot change passwords here."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=400,
+            code="PASSWORD_CHANGE_UNSUPPORTED",
+            message="Password changes are not available for this sign-in method.",
+        )
+
+
 class SubjectResolutionError(AppError):
     """Server-invariant error: a referenced project subject could not be resolved.
 
@@ -740,5 +751,4 @@ class CompletionValidationError(AppError):
             code="COMPLETION_VALIDATION_FAILED",
             message=message,
         )
-
 

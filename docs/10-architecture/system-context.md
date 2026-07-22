@@ -1,5 +1,7 @@
 ---
 title: System context
+aliases:
+  - "System context"
 document_type: architecture
 status: verified
 authority: canonical
@@ -27,7 +29,7 @@ related_docs:
 
 # System context
 
-Places FlowForm in relation to its users, externally operated services, and persistent stores. Internal component responsibilities belong in [[Component map]]; host, network, and environment topology belong in [[Deployment model]] and [[Trust boundaries]].
+Places FlowForm in relation to its users, externally operated services, and persistent stores. Internal component responsibilities belong in [[component-map|Component map]]; host, network, and environment topology belong in [[deployment-model|Deployment model]] and [[trust-boundaries|Trust boundaries]].
 
 ## People and entry points
 
@@ -37,7 +39,7 @@ Places FlowForm in relation to its users, externally operated services, and pers
 | Authorized Studio user | Signs in through Auth0, then uses the Studio application and authenticated API operations to manage projects, surveys, access, participants, and results. |
 | Respondent | Uses the respondent experience currently bundled with Studio. Public-slug and general-link access may be anonymous; authenticated links require an Auth0-backed account that satisfies the assigned participant checks. |
 
-The product concepts behind these interactions are owned by [[Identity and authentication]], [[Links and subjects]], and [[Submissions]].
+The product concepts behind these interactions are owned by [[identity-and-authentication|Identity and authentication]], [[links-and-subjects|Links and subjects]], and [[submissions|Submissions]].
 
 ## System boundary
 
@@ -70,7 +72,7 @@ This is a logical context, not a deployed-network diagram. It omits reverse prox
 | AWS Secrets Manager | Supplies versioned linkage-key material to the backend; deployment bootstrap also declares secret retrieval for mounted runtime secret files. |
 | AWS SES | Sends application email, including invitation and survey-link messages. |
 
-The two databases are separate application connections and transaction boundaries. Their data classification, encryption responsibilities, and failure cases belong in [[Responses and encryption]] and [[Data flows]].
+The two databases are separate application connections and transaction boundaries. Their data classification, encryption responsibilities, and failure cases belong in [[responses-and-encryption|Responses and encryption]] and [[data-flows|Data flows]].
 
 ## Deployment knowledge boundary
 
@@ -86,11 +88,11 @@ The root `README.md` assigns public form filling to the Astro site, while the cu
 
 ## Related documents
 
-- [[System summary]]
-- [[Component map]]
-- [[Deployment model]]
-- [[Trust boundaries]]
-- [[Identity and authentication]]
-- [[Links and subjects]]
-- [[Submissions]]
-- [[Responses and encryption]]
+- [[system-summary|System summary]]
+- [[component-map|Component map]]
+- [[deployment-model|Deployment model]]
+- [[trust-boundaries|Trust boundaries]]
+- [[identity-and-authentication|Identity and authentication]]
+- [[links-and-subjects|Links and subjects]]
+- [[submissions|Submissions]]
+- [[responses-and-encryption|Responses and encryption]]

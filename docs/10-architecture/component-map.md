@@ -1,5 +1,7 @@
 ---
 title: Component map
+aliases:
+  - "Component map"
 document_type: architecture
 status: verified
 authority: canonical
@@ -57,23 +59,23 @@ flowchart TD
     API <--> Auth0
 ```
 
-The arrows show dependency and communication direction, not a guarantee that every module follows one mechanically enforced layering rule. Detailed code entry points belong in [[Backend implementation]] and [[Frontend implementation]].
+The arrows show dependency and communication direction, not a guarantee that every module follows one mechanically enforced layering rule. Detailed code entry points belong in [[backend|Backend implementation]] and [[frontend|Frontend implementation]].
 
 ## Backend coordination boundary
 
 Flask routes handle HTTP parsing, authentication decorators, and response serialization. Services and domain modules apply use-case and policy rules; repositories and the database manager provide persistence access. Public-submission services are the main cross-store coordinator: they write core submission state and separately persist encrypted payloads in the response store.
 
-Because the stores use independent SQLAlchemy sessions, there is no transaction spanning both databases. Compensating cleanup and reconciliation exist for some partial failures, but complete sequence and recovery analysis belongs in [[Data flows]] and [[Responses and encryption]].
+Because the stores use independent SQLAlchemy sessions, there is no transaction spanning both databases. Compensating cleanup and reconciliation exist for some partial failures, but complete sequence and recovery analysis belongs in [[data-flows|Data flows]] and [[responses-and-encryption|Responses and encryption]].
 
 ## Frontend sharing boundary
 
 The two frontend applications are separate builds in one pnpm workspace. They import source from the shared packages rather than communicating with those packages as runtime services. Studio alone currently contains backend API clients and Auth0 setup; the public site's current pages do not call the backend.
 
-Generated frontend API and builder artifacts derive from `backend/openapi.yaml`. This keeps a contract-generation relationship between backend and frontend without making generated files independent sources of truth. Regeneration ownership belongs in [[Generated files]].
+Generated frontend API and builder artifacts derive from `backend/openapi.yaml`. This keeps a contract-generation relationship between backend and frontend without making generated files independent sources of truth. Regeneration ownership belongs in [[generated-files|Generated files]].
 
 ## Runtime realization boundary
 
-Local development Compose runs the backend with two PostgreSQL containers while the frontend applications run as separate development processes. The shared runtime Compose files declare a backend container on an app host and Caddy/Squid on a proxy host. AWS CDK declares static frontend hosting and parts of the proxy/app host shape, but the database stack and bootstrap integration are not complete. See [[Runtime containers]] and [[Deployment model]] before treating any one realization as the current production topology.
+Local development Compose runs the backend with two PostgreSQL containers while the frontend applications run as separate development processes. The shared runtime Compose files declare a backend container on an app host and Caddy/Squid on a proxy host. AWS CDK declares static frontend hosting and parts of the proxy/app host shape, but the database stack and bootstrap integration are not complete. See [[runtime-containers|Runtime containers]] and [[deployment-model|Deployment model]] before treating any one realization as the current production topology.
 
 ## Open questions
 
@@ -83,10 +85,10 @@ Local development Compose runs the backend with two PostgreSQL containers while 
 
 ## Related documents
 
-- [[System context]]
-- [[Runtime containers]]
-- [[Data flows]]
-- [[Backend implementation]]
-- [[Frontend implementation]]
-- [[Security model]]
-- [[Responses and encryption]]
+- [[system-context|System context]]
+- [[runtime-containers|Runtime containers]]
+- [[data-flows|Data flows]]
+- [[backend|Backend implementation]]
+- [[frontend|Frontend implementation]]
+- [[security-model|Security model]]
+- [[responses-and-encryption|Responses and encryption]]

@@ -1,5 +1,7 @@
 ---
 title: Documentation generator guide
+aliases:
+  - "Documentation generator guide"
 document_type: overview
 status: draft
 authority: canonical
@@ -28,8 +30,8 @@ committed and rechecked.
 
 Before changing documentation:
 
-1. Read [[FlowForm documentation home|the documentation home]] and this guide.
-2. Read the [[Documentation model]] to identify the target layer and its boundary.
+1. Read [[README|the documentation home]] and this guide.
+2. Read the [[documentation-model|Documentation model]] to identify the target layer and its boundary.
 3. Read the target document and its linked neighbours.
 4. Check repository-level and more specific `AGENTS.md` instructions that apply to the target path.
 
@@ -43,9 +45,9 @@ Record relevant repository paths in `related_code`. Keep that list selective: it
 
 ## Claim classification
 
-Use the layer and authority rules in the [[Documentation model]]. In particular,
-keep proposals and unresolved design in [[Planning workspace|planning]], use
-[[Architecture decision records|ADRs]] only for supported lasting decisions, and
+Use the layer and authority rules in the [[documentation-model|Documentation model]]. In particular,
+keep proposals and unresolved design in [[70-planning/README|planning]], use
+[[50-decisions/README|ADRs]] only for supported lasting decisions, and
 mark missing evidence or contradictions instead of turning assumptions into
 current behaviour.
 
@@ -56,7 +58,7 @@ Work in one small group of documents that share a subject and evidence boundary:
 1. Define what each page owns and what belongs in another layer.
 2. Inspect the current code, tests, schemas, configuration, CI, or infrastructure that owns each claim.
 3. Write the smallest useful explanation and link to pages that own adjacent detail.
-4. Update front matter, wiki links, and `related_docs` together.
+4. Update front matter (including the title-matching Obsidian `aliases` entry), wiki links, and `related_docs` together.
 5. Review the group for unsupported claims, repeated explanations, layer leakage, and unresolved gaps.
 6. Run the documentation validators from the repository root.
 
@@ -64,16 +66,18 @@ Set `verified_against_commit` to the inspected commit for implementation-backed 
 
 ## Reference and navigation discipline
 
-Follow the [[Documentation model|knowledge-network conventions]] for wiki links,
-titles, `related_docs`, tags, and code paths. When adding or changing a title,
-run the validators immediately so unresolved links do not spread.
+Follow the [[documentation-model|knowledge-network conventions]] for wiki links,
+titles, `aliases`, `related_docs`, tags, and code paths. Wiki-link targets use
+the actual note filename (or shortest distinguishing path), while their display
+text and `related_docs` use the document title. When changing a filename or
+title, run the validators immediately so unresolved links do not spread.
 
 ## Planning discipline
 
-Keep temporary plans in [[Planning workspace|planning]]. A completed plan does
+Keep temporary plans in [[70-planning/README|planning]]. A completed plan does
 not automatically become architecture: update the appropriate canonical page
 from implementation evidence, then move or retire the plan. For
-[[Generated documentation|generated pages]], change the generator rather than
+[[90-generated/README|generated pages]], change the generator rather than
 hand-editing generated content.
 
 ## Review checklist
@@ -82,7 +86,7 @@ For each completed group, check:
 
 - every current-state claim has an implementation evidence path;
 - metadata matches the document's actual maturity and scope;
-- wiki links and `related_docs` resolve by exact document title;
+- wiki links resolve to Obsidian note targets, while `related_docs` and `aliases` use the exact document title;
 - controlled tags add cross-cutting value and do not repeat the layer;
 - explanations are not duplicated across abstraction layers;
 - uncertainties and contradictions remain visible;
@@ -103,8 +107,8 @@ When documentation work accompanies a repository answer, report what changed, wh
 
 ## Related documents
 
-- [[FlowForm documentation home]]
-- [[Documentation model]]
-- [[Generated documentation]]
-- [[Planning workspace]]
-- [[Architecture decision records]]
+- [[README|FlowForm documentation home]]
+- [[documentation-model|Documentation model]]
+- [[90-generated/README|Generated documentation]]
+- [[70-planning/README|Planning workspace]]
+- [[50-decisions/README|Architecture decision records]]

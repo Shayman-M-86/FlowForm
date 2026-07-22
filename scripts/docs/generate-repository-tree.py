@@ -39,6 +39,8 @@ def walk(path, prefix="", depth=0, max_depth=4):
 
 body = """---
 title: Repository tree snapshot
+aliases:
+  - "Repository tree snapshot"
 document_type: generated
 status: scaffold
 authority: canonical
@@ -75,8 +77,8 @@ Run `python3 scripts/docs/generate-repository-tree.py` from the repository root.
 
 ## Related documents
 
-- [[Generated documentation]]
-- [[Repository tree]]
+- [[90-generated/README|Generated documentation]]
+- [[60-reference/repository-tree|Repository tree]]
 """
 OUT.write_text(body)
 print(f"wrote {OUT}")

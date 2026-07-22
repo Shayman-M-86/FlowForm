@@ -1,5 +1,7 @@
 ---
 title: Testing workflow
+aliases:
+  - "Testing workflow"
 document_type: workflow
 status: scaffold
 authority: canonical
@@ -41,7 +43,7 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Local development]]
-- [[Continuous integration]]
-- [[Backend implementation]]
-- [[Frontend implementation]]
+- [[local-development|Local development]]
+- [[continuous-integration|Continuous integration]]
+- [[backend|Backend implementation]]
+- [[frontend|Frontend implementation]]

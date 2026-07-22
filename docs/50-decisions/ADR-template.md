@@ -1,5 +1,7 @@
 ---
 title: ADR template
+aliases:
+  - "ADR template"
 document_type: decision-template
 status: scaffold
 authority: canonical
@@ -33,4 +35,4 @@ Link implementation evidence, related docs, and superseding ADRs. TODO: Verify t
 
 ## Related documents
 
-- [[Architecture decision records]]
+- [[50-decisions/README|Architecture decision records]]

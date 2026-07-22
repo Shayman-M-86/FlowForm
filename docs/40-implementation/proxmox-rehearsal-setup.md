@@ -1,5 +1,7 @@
 ---
 title: Proxmox rehearsal setup
+aliases:
+  - "Proxmox rehearsal setup"
 document_type: implementation
 status: draft
 authority: canonical
@@ -22,8 +24,8 @@ related_docs:
 The order of operations to stand up the Proxmox rehearsal on a fresh host, and
 to tear it down and rebuild. It describes the checked-in scripts; every step is a
 maintained entry point, not a hand-applied change. For the topology these steps
-produce, see [[Proxmox rehearsal implementation]]; for the fixture/egress model
-they exercise, see [[Proxmox rehearsal fixtures and egress]].
+produce, see [[proxmox-rehearsal|Proxmox rehearsal implementation]]; for the fixture/egress model
+they exercise, see [[proxmox-rehearsal-fixtures|Proxmox rehearsal fixtures and egress]].
 
 ## From-scratch setup
 
@@ -75,8 +77,8 @@ for them. The apply clones templates into VMs 210/220/230/240; the LocalStack VM
 seeds parameters and secrets on first boot. The app and DB boot independently;
 backend readiness recovers after the database becomes healthy. The app VM's
 bootstrap does not fail on the empty registry — it **waits** for its images,
-retrying the pull, and converges on its own once the next step lands them. No
-manual re-bootstrap is needed in the happy path.
+retrying the pull. That wait is bounded, so the combined rebuild command also
+reruns the idempotent app bootstrap after both images have landed.
 
 **5. Push the two images the app box needs.** The app Compose stack pulls
 **both** the backend and the Grafana Alloy sidecar, and the offline app box can
@@ -90,14 +92,15 @@ infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh
 Both relay through app VM 220's Docker daemon, so they require step 4's VMs to be
 running — the ordering apply → push is inherent. `compose pull` fails as a whole
 if *any* service image is missing, so mirroring Alloy is not optional: skip it
-and the bootstrap's waiting pull retries forever on the absent alloy image, which
-looks exactly like a stuck backend pull. Once both images land, the waiting pull
-succeeds and the backend comes up; you do not re-run the app one-shot yourself.
+and the bootstrap's waiting pull eventually fails on the absent Alloy image,
+which looks exactly like a stuck backend pull. When running the steps manually,
+rerun `/opt/flowform/scripts/run-bootstrap-app.sh` on VM 220 after both pushes if
+its initial bounded wait has already expired.
 
 **Steps 4–5 in one command.** `rebuild.sh` orchestrates apply → push backend →
-mirror Alloy in the one order they can go in (see the "why this order is
-inherent" note in its header). It calls the same wrapper and both registry
-scripts under the hood:
+mirror Alloy → app convergence in the one order they can go in (see the "why
+this order is inherent" note in its header). It calls the same wrapper, both
+registry scripts, and finally the app's idempotent bootstrap under the hood:
 
 ```bash
 infra/deployment/proxmox/scripts/rebuild.sh                 # converge + push both images
@@ -142,6 +145,6 @@ hand-applied to a built VM.
 
 ## Related documents
 
-- [[Proxmox rehearsal implementation]]
-- [[Proxmox rehearsal fixtures and egress]]
-- [[Proxmox rehearsal observability]]
+- [[proxmox-rehearsal|Proxmox rehearsal implementation]]
+- [[proxmox-rehearsal-fixtures|Proxmox rehearsal fixtures and egress]]
+- [[proxmox-rehearsal-observability|Proxmox rehearsal observability]]

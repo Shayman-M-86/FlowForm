@@ -1,5 +1,7 @@
 ---
 title: Identity and authentication
+aliases:
+  - "Identity and authentication"
 document_type: domain
 status: scaffold
 authority: canonical
@@ -46,7 +48,7 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Security model]]
-- [[Projects and access]]
-- [[Links and subjects]]
-- [[Glossary]]
+- [[security-model|Security model]]
+- [[projects-and-access|Projects and access]]
+- [[links-and-subjects|Links and subjects]]
+- [[glossary|Glossary]]

@@ -1,5 +1,7 @@
 ---
 title: Scripts catalogue
+aliases:
+  - "Scripts catalogue"
 document_type: reference
 status: scaffold
 authority: canonical
@@ -126,6 +128,6 @@ The `scripts/docs/` entries are uncommitted Stage 1 working-tree additions at th
 
 ## Related documents
 
-- [[Commands]]
-- [[Generated files]]
-- [[Scripts implementation]]
+- [[commands|Commands]]
+- [[generated-files|Generated files]]
+- [[scripts|Scripts implementation]]

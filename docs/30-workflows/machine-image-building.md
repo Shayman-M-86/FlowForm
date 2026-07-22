@@ -1,5 +1,7 @@
 ---
 title: Machine image building
+aliases:
+  - "Machine image building"
 document_type: workflow
 status: draft
 authority: canonical
@@ -22,7 +24,7 @@ related_docs:
 Describes the Packer workflow for AWS and Proxmox Amazon Linux 2023 golden
 images and the Proxmox-only LocalStack and PostgreSQL fixtures. The platforms share
 provisioning but deliberately use different official base images and disks.
-It covers image construction only; [[Deployment model|Terraform deployment]]
+It covers image construction only; [[deployment-model|Terraform deployment]]
 clones a completed Proxmox template and does not invoke Packer.
 
 ## Trigger
@@ -114,8 +116,8 @@ exceeds the configured maximum.
 
 ## Related documents
 
-- [[Cloud deployment]]
-- [[Packer implementation]]
-- [[Deployment model]]
-- [[Proxmox rehearsal implementation]]
-- [[Infrastructure resources]]
+- [[cloud-deployment|Cloud deployment]]
+- [[packer|Packer implementation]]
+- [[deployment-model|Deployment model]]
+- [[proxmox-rehearsal|Proxmox rehearsal implementation]]
+- [[infrastructure-resources|Infrastructure resources]]

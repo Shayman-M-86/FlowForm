@@ -1,5 +1,7 @@
 ---
 title: Proxmox rehearsal fixtures and egress
+aliases:
+  - "Proxmox rehearsal fixtures and egress"
 document_type: implementation
 status: draft
 authority: canonical
@@ -23,7 +25,7 @@ How the offline rehearsal fixtures fake AWS, how every call takes the same
 egress shape as real AWS, and the two deliberate holes in that isolation (Auth0
 and operator-facing TLS). It describes the checked-in design; it does not claim a
 fixture has been built or the rehearsal is end-to-end healthy. For the VM
-topology and ownership boundary, see [[Proxmox rehearsal implementation]].
+topology and ownership boundary, see [[proxmox-rehearsal|Proxmox rehearsal implementation]].
 
 ## Offline fixture boundary
 
@@ -84,9 +86,10 @@ its own: the Grafana Alloy sidecar. The companion helper
 `infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh`
 mirrors `grafana/alloy` into the fake registry over the identical relay-through-
 `220` path. Both pushes are required: `compose pull` fails as a whole if any one
-service image is absent, so a missing Alloy mirror strands the app bootstrap
-retrying forever on a pull that can never succeed. `rebuild.sh` runs both helpers
-after the apply; run manually, do both.
+service image is absent, so a missing Alloy mirror eventually exhausts the app
+bootstrap's bounded retry. `rebuild.sh` runs both helpers after the apply and
+then reruns the idempotent app bootstrap; run manually, do both pushes and rerun
+the bootstrap if its initial wait has already expired.
 
 The app VM uses the shared app Compose unchanged. VM `240` runs one tmpfs-backed
 PostgreSQL 17 cluster containing both databases. Its bootstrap briefly opens
@@ -112,6 +115,10 @@ Management API live on different domains:
 
 Both are entries in
 `infra/containers/strategies/rehearsal/services/squid/allowed-domains.txt`.
+The checked-in Management API entry is the canonical dev tenant used by
+`infra/env/dev/.backend.env`; the broader regional suffix beside it keeps the
+rehearsal valid for another Australian Auth0 tenant without admitting
+non-Auth0 internet destinations.
 Admitting only the issuer (as an earlier revision did) lets requests validate but
 crash-loops the backend at startup on `APPLICATION STARTUP FAILED` the moment
 management validation is enabled, because Squid `403`s the un-listed tenant
@@ -154,6 +161,6 @@ into their OS trust store once and it survives all rebuilds.
 
 ## Related documents
 
-- [[Proxmox rehearsal implementation]]
-- [[Proxmox rehearsal observability]]
-- [[Proxmox rehearsal setup]]
+- [[proxmox-rehearsal|Proxmox rehearsal implementation]]
+- [[proxmox-rehearsal-observability|Proxmox rehearsal observability]]
+- [[proxmox-rehearsal-setup|Proxmox rehearsal setup]]

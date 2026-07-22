@@ -1,5 +1,7 @@
 ---
 title: Frontend implementation
+aliases:
+  - "Frontend implementation"
 document_type: implementation
 status: scaffold
 authority: canonical
@@ -42,7 +44,7 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Repository map]]
-- [[Component map]]
-- [[Builder and rules]]
-- [[Testing workflow]]
+- [[repository-map|Repository map]]
+- [[component-map|Component map]]
+- [[builder-and-rules|Builder and rules]]
+- [[testing|Testing workflow]]

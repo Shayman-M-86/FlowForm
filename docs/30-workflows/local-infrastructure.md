@@ -1,5 +1,7 @@
 ---
 title: Local infrastructure
+aliases:
+  - "Local infrastructure"
 document_type: workflow
 status: scaffold
 authority: canonical
@@ -41,6 +43,6 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Local development]]
-- [[Runtime containers]]
-- [[Services and ports]]
+- [[local-development|Local development]]
+- [[runtime-containers|Runtime containers]]
+- [[services-and-ports|Services and ports]]

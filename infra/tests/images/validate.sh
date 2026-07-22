@@ -39,6 +39,7 @@ grep -Fq 'compose.localstack.yml' "${image_root}/packer/builds/localstack-fixtur
 grep -Fq 'docker pull' "${image_root}/packer/provisioners/proxmox/localstack/preload-images.sh"
 grep -Fq 'compose/db.yml' "${image_root}/packer/builds/db-fixture.pkr.hcl"
 grep -Fq 'docker pull' "${image_root}/packer/provisioners/proxmox/db/preload-image.sh"
+grep -Fq 'die()' "${image_root}/packer/provisioners/common/lib.sh"
 grep -Fq 'al2023-ami-minimal-' "${image_root}/packer/variables/aws.pkr.hcl"
 grep -Fq 'default = 10' "${image_root}/packer/variables/aws.pkr.hcl"
 grep -Fq 'verify-aws-ami.sh' "${image_root}/scripts/build-aws-image.sh"

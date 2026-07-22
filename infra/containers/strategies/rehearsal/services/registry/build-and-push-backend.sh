@@ -32,9 +32,9 @@ set -Eeuo pipefail
 # preflights retry until the stack converges instead of failing fast, so a fresh
 # apply → push in one command (see proxmox/scripts/rebuild.sh) does not need a
 # manual redo. A fully-up stack passes on the first attempt with no added wait.
-# Optional knobs (attempts x delay seconds; defaults wait ~60s each):
-#   PUSH_RELAY_MAX_ATTEMPTS (30) / PUSH_RELAY_RETRY_DELAY_SECONDS (2)
-#   PUSH_PREFLIGHT_MAX_ATTEMPTS (30) / PUSH_PREFLIGHT_RETRY_DELAY_SECONDS (2)
+# Optional knobs (attempts x delay seconds; defaults wait ~120s each):
+#   PUSH_RELAY_MAX_ATTEMPTS (60) / PUSH_RELAY_RETRY_DELAY_SECONDS (2)
+#   PUSH_PREFLIGHT_MAX_ATTEMPTS (60) / PUSH_PREFLIGHT_RETRY_DELAY_SECONDS (2)
 
 REGISTRY_HOST="${REGISTRY_HOST:-registry.localstack.test}"   # no port ⇒ 443/HTTPS
 IMAGE_NAME="${IMAGE_NAME:-flowform-backend}"
@@ -84,9 +84,9 @@ retry_with_backoff() {
 
 # How long to wait for the freshly-applied stack to converge before giving up.
 # The shim/registry on VM 230 are the slowest to come healthy after apply.
-RELAY_MAX_ATTEMPTS="${PUSH_RELAY_MAX_ATTEMPTS:-30}"
+RELAY_MAX_ATTEMPTS="${PUSH_RELAY_MAX_ATTEMPTS:-60}"
 RELAY_RETRY_DELAY_SECONDS="${PUSH_RELAY_RETRY_DELAY_SECONDS:-2}"
-PREFLIGHT_MAX_ATTEMPTS="${PUSH_PREFLIGHT_MAX_ATTEMPTS:-30}"
+PREFLIGHT_MAX_ATTEMPTS="${PUSH_PREFLIGHT_MAX_ATTEMPTS:-60}"
 PREFLIGHT_RETRY_DELAY_SECONDS="${PUSH_PREFLIGHT_RETRY_DELAY_SECONDS:-2}"
 
 cleanup() {

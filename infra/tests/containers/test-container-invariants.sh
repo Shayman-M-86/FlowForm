@@ -22,6 +22,7 @@ note() { printf 'FAIL: %s\n' "$*" >&2; FAIL=1; }
 CADDY_PROD="${REPO_ROOT}/infra/containers/strategies/aws/services/caddy/Caddyfile.proxy"
 CADDY_REH="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy"
 SQUID_CONF="${REPO_ROOT}/infra/containers/runtime/services/squid/squid.conf"
+PROXY_COMPOSE="${REPO_ROOT}/infra/containers/runtime/compose/proxy.yml"
 PROXY_OVERRIDE="${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/proxy.override.yml"
 PUSH_SCRIPT="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh"
 BACKEND_DOCKERFILE="infra/containers/images/backend/backend.Dockerfile"
@@ -52,6 +53,12 @@ fi
 grep -Fq '../services/squid/squid.conf:/etc/squid/squid.conf.template:ro' "${PROXY_OVERRIDE}" \
   || note "rehearsal proxy override no longer mounts the base squid.conf"
 [[ -f "${SQUID_CONF}" ]] || note "base squid.conf missing at ${SQUID_CONF}"
+grep -Fq 'access_log stdio:/var/log/squid/access.log flowform_access' "${SQUID_CONF}" \
+  || note "squid file access log required by verify.sh is missing"
+grep -Fq 'logformat flowform_access level=info' "${SQUID_CONF}" \
+  || note "squid access log no longer carries a Grafana severity"
+grep -Fq "su -s /bin/sh -c 'exec tail -n 0 -F /var/log/squid/access.log' proxy &" "${PROXY_COMPOSE}" \
+  || note "squid access logs are no longer exposed to Docker/Alloy"
 
 # (c) the four backend secret _FILE env vars are identical in runtime and test.
 secret_lines() {  # the four *_FILE=/run/secrets/... assignments, sorted

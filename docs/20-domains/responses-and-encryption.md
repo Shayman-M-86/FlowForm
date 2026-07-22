@@ -1,5 +1,7 @@
 ---
 title: Responses and encryption
+aliases:
+  - "Responses and encryption"
 document_type: domain
 status: scaffold
 authority: canonical
@@ -46,7 +48,7 @@ TODO: Verify this against the current implementation.
 
 ## Related documents
 
-- [[Submissions]]
-- [[Security model]]
-- [[Data flows]]
-- [[Backend implementation]]
+- [[submissions|Submissions]]
+- [[security-model|Security model]]
+- [[data-flows|Data flows]]
+- [[backend|Backend implementation]]
