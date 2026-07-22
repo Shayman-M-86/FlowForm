@@ -13,7 +13,10 @@ set -Eeuo pipefail
 #      the Docker daemon (HTTP(S)_PROXY -> Squid on the proxy box).
 #   2. Materialise Secrets Manager values into tmpfs secret files (0600).
 #   3. Render /opt/flowform/backend.env from SSM /flowform/<scope>/backend/*.
-#   4. docker compose up the app stack.
+#   4. Pull the backend image (with backoff), then docker compose up the stack.
+#      The pull retries so a not-yet-published image is a wait, not a failure:
+#      in prod the image is already in ECR (first attempt succeeds); in the
+#      rehearsal the registry starts empty until the operator's push lands.
 #
 # The ONLY prod-vs-rehearsal seam is BOOTSTRAP_ENDPOINT_URL: unset -> real
 # AWS; set (rehearsal) -> LocalStack reached through the same proxy. Every
@@ -31,6 +34,8 @@ set -Eeuo pipefail
 #   COMPOSE_FILE            defaults to the repo's docker-compose.app.yml
 #   FLOWFORM_SECRET_DIR     defaults to /run/flowform/secrets (tmpfs)
 #   BOOTSTRAP_DRY_RUN=1     print intended actions + file perms, change nothing
+#   BOOTSTRAP_IMAGE_PULL_MAX_ATTEMPTS         image-pull retries (default 60)
+#   BOOTSTRAP_IMAGE_PULL_RETRY_DELAY_SECONDS  delay between them (default 5)
 #
 # Exit codes: non-zero on any failure (fail closed — never leave a half-booted
 # host that looks healthy).
@@ -244,9 +249,23 @@ compose_up() {
     up_args+=(--force-recreate)
   fi
   if [[ "${DRY_RUN}" == "1" ]]; then
-    log "DRY_RUN: would run: docker compose --env-file ${BACKEND_ENV} ${compose_args[*]} ${up_args[*]}"
+    log "DRY_RUN: would pull (with retry) then run: docker compose --env-file ${BACKEND_ENV} ${compose_args[*]} ${up_args[*]}"
     return
   fi
+
+  # Pull the backend image first, with backoff. In prod the image is already in
+  # ECR so this succeeds on the first attempt and adds no latency. In the
+  # rehearsal the registry starts EMPTY — the operator's push (via app VM 220)
+  # lands shortly after the VMs come up — so a missing manifest is "not ready
+  # yet", not a fatal error: we wait it out rather than hard-failing the boot.
+  # Once the pull succeeds, `up` starts the stack exactly as before.
+  local pull_attempts="${BOOTSTRAP_IMAGE_PULL_MAX_ATTEMPTS:-60}"
+  local pull_delay="${BOOTSTRAP_IMAGE_PULL_RETRY_DELAY_SECONDS:-5}"
+  FLOWFORM_SECRET_DIR="${SECRET_DIR}" \
+    retry_with_backoff "backend image pull" "${pull_attempts}" "${pull_delay}" \
+    docker compose --env-file "${BACKEND_ENV}" "${compose_args[@]}" pull >/dev/null \
+    || die "backend image never became pullable after ${pull_attempts} attempts"
+
   FLOWFORM_SECRET_DIR="${SECRET_DIR}" \
     docker compose --env-file "${BACKEND_ENV}" "${compose_args[@]}" "${up_args[@]}"
   log "app compose stack started"
