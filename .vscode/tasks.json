@@ -36,6 +36,25 @@
     "problemMatcher": []
     },
     {
+        "label": "docs: auto-sync vault",
+        "type": "shell",
+        "command": "while true; do bash scripts/docs/sync-obsidian-vault.sh || true; sleep 600; done",
+        "options": {
+            "cwd": "${workspaceFolder}"
+        },
+        "isBackground": true,
+        "runOptions": {
+            "runOn": "folderOpen"
+        },
+        "presentation": {
+            "reveal": "silent",
+            "panel": "dedicated",
+            "close": true
+        },
+        "problemMatcher": [],
+        "detail": "Copies docs/ into the Windows Obsidian vault every 10 minutes. Auto-starts on folder open; stops when VS Code closes. No-ops if the vault path is absent."
+    },
+    {
         "label": "dev-env: up",
         "type": "shell",
         "command": "docker compose --env-file infra/env/dev/.env -f infra/containers/dev/compose/compose.yml up -d --build",
