@@ -7789,6 +7789,11 @@ components:
               value:
                 code: SUBMISSION_ANSWERS_REQUIRED
                 message: At least one answer is required.
+            password_change_unsupported:
+              summary: PasswordChangeUnsupportedError
+              value:
+                code: PASSWORD_CHANGE_UNSUPPORTED
+                message: Password changes are not available for this sign-in method.
             question_not_in_version:
               summary: QuestionNotInVersionError
               value:
