@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-verifier="${repo_root}/images/scripts/verify-aws-ami.sh"
+verifier="${repo_root}/images/scripts/lib/actions/aws-ami-verify.sh"
 tmp="$(mktemp -d)"
 trap 'rm -rf "${tmp}"' EXIT
 

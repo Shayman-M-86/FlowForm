@@ -135,9 +135,8 @@ Implement as a separate behavior-preserving commit:
 
 ```text
 # Linux/WSL build host
-infra/images/scripts/prepare-proxmox-source.sh --apply
-infra/images/scripts/build-proxmox-image.sh
-infra/images/scripts/build-proxmox-localstack-fixture.sh
+infra/images/scripts/image prepare proxmox --apply
+infra/images/scripts/image build proxmox all
 
 # Proxmox deployment
 host/01-setup-host.sh

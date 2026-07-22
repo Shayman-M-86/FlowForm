@@ -828,6 +828,7 @@ FlowForm/
 │   │   ├── bootstrap/
 │   │   │   ├── aws-cli-retry.sh
 │   │   │   ├── bootstrap-app.sh
+│   │   │   ├── bootstrap-common.sh
 │   │   │   ├── bootstrap-db.sh
 │   │   │   └── bootstrap-proxy.sh
 │   │   ├── config/
@@ -839,6 +840,10 @@ FlowForm/
 │   │       ├── host/
 │   │       │   └── setup-host.sh
 │   │       ├── scripts/
+│   │       │   ├── lib/
+│   │       │   ├── README.md
+│   │       │   ├── rehearsal
+│   │       │   └── rehearsal-common.sh
 │   │       ├── terraform/
 │   │       │   ├── .terraform.lock.hcl
 │   │       │   ├── locals.tf
@@ -875,17 +880,6 @@ FlowForm/
 │   │   │   ├── plugins.pkr.hcl
 │   │   │   └── README.md
 │   │   ├── scripts/
-│   │   │   ├── .env.example
-│   │   │   ├── build-aws-image.sh
-│   │   │   ├── build-proxmox-db-fixture.sh
-│   │   │   ├── build-proxmox-image.sh
-│   │   │   ├── build-proxmox-localstack-fixture.sh
-│   │   │   ├── extract-aws-ami-id.sh
-│   │   │   ├── prepare-proxmox-source.sh
-│   │   │   ├── publish-aws-ami.sh
-│   │   │   ├── source-bootstrap.user-data.yaml
-│   │   │   ├── verify-aws-ami.sh
-│   │   │   └── verify-proxmox-disk-sizes.sh
 │   │   └── IMAGE-CONTRACT.md
 │   └── tests/
 │       ├── containers/

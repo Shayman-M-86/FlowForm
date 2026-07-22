@@ -36,7 +36,7 @@ step.
 ## Preconditions
 - Packer and its configured Proxmox plugin are available on the Linux/WSL build
   host.
-- `infra/images/scripts/.env` exists and identifies the Proxmox SSH host,
+- `infra/images/config/proxmox-source.env` exists and identifies the Proxmox SSH host,
   pinned AL2023 KVM source, storage, source-template VMID, bridge, native disk
   policy, and maximum virtual disk size.
 - `infra/images/packer/variables/proxmox.auto.pkrvars.hcl` exists with Proxmox API
@@ -46,33 +46,37 @@ step.
   rejects a build if it does.
 
 ## Ordered steps
-1. Run `infra/images/scripts/prepare-proxmox-source.sh` for a
+1. Run `infra/images/scripts/image prepare proxmox` for a
    non-mutating preflight, then rerun with `--apply` when the pinned source
    template needs creation or replacement. It imports the official AL2023 KVM
    qcow2 and produces source template `8999` in the current local rehearsal.
    Use `--apply --replace` to rebuild an older oversized template; do not shrink
    its XFS disk in place.
-2. Run `infra/images/scripts/build-proxmox-image.sh`. It
+2. Run `infra/images/scripts/image build proxmox golden`. It
    initializes Packer plugins, validates the configuration, and runs only the
    Proxmox clone builder.
 3. Packer clones the source template, applies shared and Proxmox-specific build
    steps, cleans image identity state, and converts the result to template
    `9000` in the current local rehearsal.
-4. Run `infra/images/scripts/build-proxmox-localstack-fixture.sh`. Packer clones
+4. Run `infra/images/scripts/image build proxmox localstack`. Packer clones
    golden template `9000`, extracts the exact image references from the three
    maintained rehearsal Compose files, and preloads them into fixture `9001`.
-5. Run `infra/images/scripts/build-proxmox-db-fixture.sh`. Packer independently
+5. Run `infra/images/scripts/image build proxmox db`. Packer independently
    clones golden template `9000` and preloads only the image declared by the
    rehearsal DB Compose file into fixture `9002`.
 6. Run Terraform separately. Proxy and app clone the golden template, while
    LocalStack and PostgreSQL clone their respective fixture templates.
 
 For AWS, copy `variables/aws.auto.pkrvars.hcl.example`, authenticate the AWS
-CLI, and run `infra/images/scripts/build-aws-image.sh`. The builder selects the
+CLI, and run `infra/images/scripts/image build aws`. The builder selects the
 Amazon-owned minimal AL2023 EC2 AMI with kernel 6.1 and creates a 10 GiB
 encrypted gp3 root. It never imports the Proxmox QCOW2. After Packer completes,
-the wrapper verifies the resulting AMI and snapshot size, encryption, volume
+the dispatcher verifies the resulting AMI and snapshot size, encryption, volume
 type, and absence of additional EBS mappings before the AMI may be published.
+`image publish aws --environment <dev|staging|prod>` then derives the SSM
+parameter and region from the CDK environment configuration, verifies the AMI
+again, and publishes the ID for CDK to consume. Use `--dry-run` to exercise that
+contract without changing SSM.
 
 ## Inputs and outputs
 Inputs are the pinned AL2023 image configuration, Proxmox credentials, and the
@@ -103,7 +107,7 @@ Packer build. CDK declares the same 10 GiB root mapping for app and proxy.
 ## Verification commands
 ```bash
 infra/tests/images/validate.sh
-infra/images/scripts/verify-proxmox-disk-sizes.sh
+infra/images/scripts/image verify proxmox
 ```
 
 The validation script assembles each build's nested HCL into a temporary flat

@@ -28,25 +28,24 @@ Maps the current Packer and Proxmox image boundary to its implementation.
 locals, and required plugins. Shared steps live in `provisioners/common/`;
 platform-only steps live in `provisioners/aws/` and `provisioners/proxmox/`.
 
-`infra/images/scripts/` owns source preparation, selected Packer builds, and AWS
-AMI publication. Its common helper creates a temporary flat Packer project
+`infra/images/scripts/image` is the sole operator entry point for source
+preparation, selected Packer builds, verification, artifacts, and CDK-oriented
+AWS AMI publication. Its common helper creates a temporary flat Packer project
 because Packer does not recursively load the canonical nested HCL directories.
 Terraform is intentionally outside this ownership boundary under
 `infra/deployment/proxmox/terraform/`.
 
 ## Entry points
-- `prepare-proxmox-source.sh` imports and generalizes the minimal AL2023
-  source template while preserving its native disk size by default.
-- `verify-proxmox-disk-sizes.sh` reports the downloaded QCOW2 and source,
-  golden, and fixture virtual sizes and enforces the configured maximum.
-- `build-proxmox-image.sh` builds only the shared Proxmox golden template.
-- `build-proxmox-localstack-fixture.sh` builds only the fixture derived from the
-  golden template.
-- `build-proxmox-db-fixture.sh` builds the independent PostgreSQL fixture
-  derived from the same clean golden template.
-- `build-aws-image.sh` builds only the AWS golden AMI; `publish-aws-ami.sh`
-  publishes its manifest ID to an explicit SSM parameter.
-- `verify-aws-ami.sh` checks that the completed AWS AMI has one encrypted gp3
+- `image prepare proxmox` imports and generalizes the minimal AL2023 source
+  template while preserving its native disk size by default.
+- `image build proxmox golden|localstack|db|all` selects one builder or runs the
+  complete dependency-ordered lineage.
+- `image verify proxmox` reports source, golden, and fixture virtual sizes and
+  enforces the configured maximum.
+- `image build aws` builds and verifies the AWS golden AMI; `image publish aws
+  --environment ...` publishes its manifest ID to the SSM parameter declared by
+  that CDK environment.
+- `image verify aws` checks that the completed AWS AMI has one encrypted gp3
   root mapping and that both AMI and snapshot are exactly the configured size.
 - `sources/proxmox.pkr.hcl` defines the golden and two fixture clone sources with an
   explicit reserved SSH address.

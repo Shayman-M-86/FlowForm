@@ -35,8 +35,8 @@ listed under [Rehearsal areas](#rehearsal-areas) below.
 
 | Layer | Owned responsibility | Main location |
 | --- | --- | --- |
-| Source preparation | Import the pinned official AL2023 KVM image as a minimal Proxmox source template. | `infra/images/scripts/prepare-proxmox-source.sh` |
-| Packer | Build the shared golden template, then derive separate offline LocalStack and PostgreSQL fixtures. | `infra/images/packer/`, `infra/images/scripts/build-proxmox-image.sh`, `infra/images/scripts/build-proxmox-localstack-fixture.sh`, `infra/images/scripts/build-proxmox-db-fixture.sh` |
+| Source preparation | Import the pinned official AL2023 KVM image as a minimal Proxmox source template. | `infra/images/scripts/image prepare proxmox` |
+| Packer | Build the shared golden template, then derive separate offline LocalStack and PostgreSQL fixtures. | `infra/images/packer/`, `infra/images/scripts/image build proxmox all` |
 | Host bootstrap | Create the private rehearsal bridge and enable Proxmox snippet storage once. | `infra/deployment/proxmox/host/setup-host.sh` |
 | Terraform | Render cloud-init templates, upload the snippets, and clone the golden template into the rehearsal topology. | `infra/deployment/proxmox/terraform/`, `infra/deployment/proxmox/cloud-init/templates/` |
 | Workstation orchestration | Apply, synchronise secrets, converge guests, publish images, inspect logs, and verify the live rehearsal. | `infra/deployment/proxmox/scripts/rehearsal`, `infra/deployment/proxmox/scripts/lib/` |

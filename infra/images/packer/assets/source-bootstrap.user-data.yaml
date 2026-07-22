@@ -1,5 +1,5 @@
 #cloud-config
-# One-time bootstrap for the minimal Amazon Linux source template consumed by
+# One-time bootstrap asset for the minimal Amazon Linux source template consumed by
 # Packer's proxmox-clone builder. Amazon Linux 2023 does not package or support
 # qemu-guest-agent, so later Packer builds must use an explicit SSH host address.
 package_update: false

@@ -21,13 +21,13 @@ Generated snapshot of documentation health. Do not edit by hand; regenerate with
 
 > Generated-document scaffold: this file is reproducible from repository contents via `scripts/docs/docsys/health.py`.
 
-Repository head at generation: `ad26b87e9820`. 62 documents.
+Repository head at generation: `4338e10363ee`. 63 documents.
 
 ## Verification status
 
 | Status | Documents |
 | --- | --- |
-| draft | 51 |
+| draft | 52 |
 | scaffold | 8 |
 | verified | 3 |
 
@@ -35,10 +35,10 @@ Repository head at generation: `ad26b87e9820`. 62 documents.
 
 | Classification | Documents |
 | --- | --- |
-| Current | 35 |
-| Review suggested | 2 |
-| Likely stale | 5 |
-| Unknown | 20 |
+| Current | 5 |
+| Review suggested | 9 |
+| Likely stale | 20 |
+| Unknown | 29 |
 
 ## Documents to review
 
@@ -46,13 +46,35 @@ Documents whose owned code changed since verification, most urgent first.
 
 | Classification | Document | Reason |
 | --- | --- | --- |
-| likely stale | Architecture principles | 23 commit(s) since verification |
-| likely stale | System summary | 23 commit(s) since verification |
-| likely stale | Runtime containers | 23 commit(s) since verification |
-| likely stale | System context | 23 commit(s) since verification |
-| likely stale | Trust boundaries | 23 commit(s) since verification |
-| review suggested | Glossary | 23 commit(s) since verification |
-| review suggested | Component map | 23 commit(s) since verification |
+| likely stale | Architecture principles | 26 commit(s) since verification |
+| likely stale | Documentation generator guide | 3 commit(s) since verification |
+| likely stale | Documentation model | 3 commit(s) since verification |
+| likely stale | Glossary | 26 commit(s) since verification |
+| likely stale | System summary | 26 commit(s) since verification |
+| likely stale | Component map | 26 commit(s) since verification |
+| likely stale | Runtime containers | 26 commit(s) since verification |
+| likely stale | System context | 26 commit(s) since verification |
+| likely stale | Trust boundaries | 26 commit(s) since verification |
+| likely stale | Machine image building | 3 commit(s) since verification |
+| likely stale | Backend implementation | 3 commit(s) since verification |
+| likely stale | Infrastructure implementation | 3 commit(s) since verification |
+| likely stale | Scripts implementation | 3 commit(s) since verification |
+| likely stale | Commands | 3 commit(s) since verification |
+| likely stale | Configuration catalogue | 3 commit(s) since verification |
+| likely stale | Environment variables | 3 commit(s) since verification |
+| likely stale | Repository tree | 3 commit(s) since verification |
+| likely stale | Scripts catalogue | 3 commit(s) since verification |
+| likely stale | Services and ports | 3 commit(s) since verification |
+| likely stale | FlowForm documentation home | 3 commit(s) since verification |
+| review suggested | Data flows | 26 commit(s) since verification |
+| review suggested | Identity and authentication | 3 commit(s) since verification |
+| review suggested | Responses and encryption | 3 commit(s) since verification |
+| review suggested | Cloud deployment | 3 commit(s) since verification |
+| review suggested | Database migrations | 3 commit(s) since verification |
+| review suggested | Local development | 3 commit(s) since verification |
+| review suggested | Local infrastructure | 3 commit(s) since verification |
+| review suggested | Frontend implementation | 3 commit(s) since verification |
+| review suggested | Generated files | 3 commit(s) since verification |
 
 ## Heavily connected documents
 
@@ -91,7 +113,7 @@ _None._
 | Builder and rules | 6 |
 | Identity and authentication | 5 |
 | Links and subjects | 6 |
-| Observability | 7 |
+| Observability | 8 |
 | Projects and access | 6 |
 | Responses and encryption | 6 |
 | Submissions | 7 |

@@ -2,8 +2,8 @@
 set -Eeuo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-script="${repo_root}/images/scripts/prepare-proxmox-source.sh"
-example_env="${repo_root}/images/scripts/.env.example"
+script="${repo_root}/images/scripts/lib/actions/proxmox-source.sh"
+example_env="${repo_root}/images/config/proxmox-source.env.example"
 tmp="$(mktemp -d)"
 trap 'rm -rf "${tmp}"' EXIT
 

@@ -66,7 +66,8 @@ linked workflows define their preconditions.
   directory from local and AWS-owned sources.
 - `scripts/docs/docsys/` is both a Python CLI/module and MCP server for focused
   context, impact, freshness, search, and health queries; it does not edit docs.
-- `infra/images/scripts/lib/packer-build.sh` assembles nested Packer source into
+- `infra/images/scripts/image` is the sole image operator entry point, and
+  `infra/images/scripts/lib/packer-project.sh` assembles nested Packer source into
   temporary flat projects for selected builders.
 
 ## Dependency direction

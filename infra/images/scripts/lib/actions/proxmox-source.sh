@@ -2,8 +2,9 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-DEFAULT_ENV_FILE="${SCRIPT_DIR}/.env"
-BOOTSTRAP_FILE="${SCRIPT_DIR}/source-bootstrap.user-data.yaml"
+IMAGE_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
+DEFAULT_ENV_FILE="${IMAGE_CONFIG_FILE:-${IMAGE_ROOT}/config/proxmox-source.env}"
+BOOTSTRAP_FILE="${IMAGE_ROOT}/packer/assets/source-bootstrap.user-data.yaml"
 
 ENV_FILE="${DEFAULT_ENV_FILE}"
 MODE="preflight"
@@ -11,7 +12,7 @@ REPLACE="0"
 
 usage() {
   cat <<'USAGE'
-Usage: prepare-proxmox-source.sh [options]
+Usage: image prepare proxmox [options]
 
 Prepare the cloud-init-enabled Amazon Linux source template used by the
 FlowForm Packer Proxmox clone builder.
@@ -27,19 +28,19 @@ Options:
   --help           Show this help.
 
 Examples:
-  cp infra/images/scripts/.env.example infra/images/scripts/.env
-  infra/images/scripts/prepare-proxmox-source.sh
-  infra/images/scripts/prepare-proxmox-source.sh --apply
+  cp infra/images/config/proxmox-source.env.example infra/images/config/proxmox-source.env
+  infra/images/scripts/image prepare proxmox
+  infra/images/scripts/image prepare proxmox --apply
 USAGE
 }
 
 die() {
-  printf '[prepare-proxmox-source] ERROR: %s\n' "$*" >&2
+  printf '[image-proxmox-source] ERROR: %s\n' "$*" >&2
   exit 1
 }
 
 log() {
-  printf '[prepare-proxmox-source] %s\n' "$*"
+  printf '[image-proxmox-source] %s\n' "$*"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -70,7 +71,7 @@ done
 [[ "${REPLACE}" == "0" || "${MODE}" == "apply" ]] \
   || die "--replace is only valid with --apply"
 [[ -f "${ENV_FILE}" ]] \
-  || die "environment file not found: ${ENV_FILE} (copy ${SCRIPT_DIR}/.env.example to ${DEFAULT_ENV_FILE})"
+  || die "environment file not found: ${ENV_FILE} (copy ${IMAGE_ROOT}/config/proxmox-source.env.example to ${DEFAULT_ENV_FILE})"
 [[ -f "${BOOTSTRAP_FILE}" ]] || die "bootstrap user-data missing: ${BOOTSTRAP_FILE}"
 
 set -a
@@ -215,7 +216,7 @@ image_sha256="${19}"
 disk_max_size="${20}"
 bootstrap_b64="${21}"
 
-prefix='[prepare-proxmox-source:remote]'
+prefix='[image-proxmox-source:remote]'
 description="FlowForm Packer source; al2023=${al2023_release}; cpu=${cpu_type}; disk=${disk_size}; max=${disk_max_size}; sha256=${image_sha256}"
 snippet_name="flowform-packer-source-${vmid}.user-data.yaml"
 snippet_path="${snippet_dir}/${snippet_name}"

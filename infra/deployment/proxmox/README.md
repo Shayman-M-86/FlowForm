@@ -7,11 +7,9 @@ snippets here.
 Build the shared golden template and then its two offline fixtures:
 
 ```bash
-infra/images/scripts/prepare-proxmox-source.sh
-infra/images/scripts/build-proxmox-image.sh
-infra/images/scripts/build-proxmox-localstack-fixture.sh
-infra/images/scripts/build-proxmox-db-fixture.sh
-infra/images/scripts/verify-proxmox-disk-sizes.sh
+infra/images/scripts/image prepare proxmox
+infra/images/scripts/image prepare proxmox --apply
+infra/images/scripts/image build proxmox all
 ```
 
 The source and Packer templates default to the official AL2023 image's native

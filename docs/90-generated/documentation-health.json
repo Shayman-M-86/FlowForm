@@ -1,9 +1,9 @@
 {
   "schema": "flowform.docsys.health/1",
-  "repo_head": "ad26b87e98207763669367a2e9b70ffa2632ce19",
-  "document_count": 62,
+  "repo_head": "4338e10363ee735bf07955787fd12f30ce38175a",
+  "document_count": 63,
   "status_counts": {
-    "draft": 51,
+    "draft": 52,
     "verified": 3,
     "scaffold": 8
   },
@@ -17,14 +17,15 @@
     "decision-index": 1,
     "reference": 7,
     "planning-index": 4,
+    "planning": 1,
     "generated-index": 1,
     "generated": 7
   },
   "freshness_counts": {
-    "current": 35,
-    "review suggested": 2,
-    "likely stale": 5,
-    "unknown": 20
+    "current": 5,
+    "review suggested": 9,
+    "likely stale": 20,
+    "unknown": 29
   },
   "stale_documents": [
     {
@@ -34,15 +35,24 @@
       "document_type": "overview",
       "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
       "classification": "likely stale",
-      "commit_distance": 23,
+      "commit_distance": 26,
       "changed_owned_files": [
         "backend/app/core/config.py",
+        "backend/app/crypto/_internal/models.py",
+        "backend/app/crypto/models.py",
         "backend/app/domain/errors.py",
         "backend/app/logging/logging_config.py",
+        "backend/app/logging/request_logging.py",
+        "backend/app/logging/request_timing.py",
+        "backend/app/logging/sensitive_data.py",
         "backend/app/middleware/auth/auth0.py",
         "backend/app/services/account.py",
         "backend/openapi.yaml",
+        "frontend/apps/public-site/AGENTS.md",
+        "frontend/apps/public-site/CLAUDE.md",
+        "frontend/apps/public-site/package.json",
         "frontend/apps/studio-app/src/pages/AccountSettingsPage.tsx",
+        "frontend/apps/studio-app/vite.config.ts",
         "infra/database/init/schema/flowform_core_db_schema_v4.sql",
         "infra/database/init/schema/flowform_response_db_schema_v4.sql",
         "infra/database/init/schema/sqlalchemy_constraint_naming_rules.md",
@@ -98,8 +108,62 @@
         "infra/deployment/aws/cdk/uv.lock"
       ],
       "reasons": [
-        "23 commit(s) since verification",
-        "60 owned file(s) changed across 5/7 declared code areas"
+        "26 commit(s) since verification",
+        "69 owned file(s) changed across 5/7 declared code areas"
+      ]
+    },
+    {
+      "path": "docs/00-overview/documentation-generator-guide.md",
+      "title": "Documentation generator guide",
+      "status": "draft",
+      "document_type": "overview",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "likely stale",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "scripts/docs/generate-repository-tree.py"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "1 owned file(s) changed across 1/2 declared code areas"
+      ]
+    },
+    {
+      "path": "docs/00-overview/documentation-model.md",
+      "title": "Documentation model",
+      "status": "draft",
+      "document_type": "overview",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "likely stale",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "scripts/docs/generate-repository-tree.py"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "1 owned file(s) changed across 1/1 declared code areas"
+      ]
+    },
+    {
+      "path": "docs/00-overview/glossary.md",
+      "title": "Glossary",
+      "status": "draft",
+      "document_type": "overview",
+      "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
+      "classification": "likely stale",
+      "commit_distance": 26,
+      "changed_owned_files": [
+        "frontend/apps/public-site/AGENTS.md",
+        "frontend/apps/public-site/CLAUDE.md",
+        "frontend/apps/public-site/package.json",
+        "frontend/apps/studio-app/src/pages/AccountSettingsPage.tsx",
+        "frontend/apps/studio-app/vite.config.ts",
+        "infra/database/init/schema/flowform_core_db_schema_v4.sql",
+        "infra/database/init/schema/flowform_response_db_schema_v4.sql"
+      ],
+      "reasons": [
+        "26 commit(s) since verification",
+        "7 owned file(s) changed across 4/7 declared code areas"
       ]
     },
     {
@@ -109,14 +173,23 @@
       "document_type": "overview",
       "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
       "classification": "likely stale",
-      "commit_distance": 23,
+      "commit_distance": 26,
       "changed_owned_files": [
         "backend/app/core/config.py",
+        "backend/app/crypto/_internal/models.py",
+        "backend/app/crypto/models.py",
         "backend/app/domain/errors.py",
         "backend/app/logging/logging_config.py",
+        "backend/app/logging/request_logging.py",
+        "backend/app/logging/request_timing.py",
+        "backend/app/logging/sensitive_data.py",
         "backend/app/middleware/auth/auth0.py",
         "backend/app/services/account.py",
+        "frontend/apps/public-site/AGENTS.md",
+        "frontend/apps/public-site/CLAUDE.md",
+        "frontend/apps/public-site/package.json",
         "frontend/apps/studio-app/src/pages/AccountSettingsPage.tsx",
+        "frontend/apps/studio-app/vite.config.ts",
         "infra/cdk/.vscode/settings.json",
         "infra/containers/README.md",
         "infra/containers/images/backend/backend.Dockerfile",
@@ -130,6 +203,7 @@
         "infra/containers/strategies/dev/compose/compose.test.yml",
         "infra/containers/strategies/dev/compose/compose.yml",
         "infra/containers/strategies/dev/services/backend/backend.test.Dockerfile",
+        "infra/containers/strategies/rehearsal/compose/app.override.yml",
         "infra/containers/strategies/rehearsal/compose/db.yml",
         "infra/containers/strategies/rehearsal/compose/proxy.override.yml",
         "infra/containers/strategies/rehearsal/fixtures/compose.localstack.yml",
@@ -140,6 +214,7 @@
         "infra/containers/strategies/rehearsal/services/caddy/certs/api.key",
         "infra/containers/strategies/rehearsal/services/caddy/certs/generate-api-cert.sh",
         "infra/containers/strategies/rehearsal/services/localstack/seed-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/localstack/sync-secrets-into-localstack.sh",
         "infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh",
         "infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh",
         "infra/containers/strategies/rehearsal/services/squid/allowed-domains.txt",
@@ -220,6 +295,7 @@
         "infra/deployment/aws/scripts/seed-secrets.sh",
         "infra/deployment/bootstrap/aws-cli-retry.sh",
         "infra/deployment/bootstrap/bootstrap-app.sh",
+        "infra/deployment/bootstrap/bootstrap-common.sh",
         "infra/deployment/bootstrap/bootstrap-db.sh",
         "infra/deployment/bootstrap/bootstrap-proxy.sh",
         "infra/deployment/config/runtime-parameter-contract.json",
@@ -231,10 +307,17 @@
         "infra/deployment/proxmox/cloud-init/templates/localstack.yaml.tftpl",
         "infra/deployment/proxmox/cloud-init/templates/proxy.yaml.tftpl",
         "infra/deployment/proxmox/host/setup-host.sh",
-        "infra/deployment/proxmox/scripts/logs.sh",
-        "infra/deployment/proxmox/scripts/rebuild.sh",
-        "infra/deployment/proxmox/scripts/verify.sh",
-        "infra/deployment/proxmox/scripts/with-dev-auth0-env.sh",
+        "infra/deployment/proxmox/scripts/README.md",
+        "infra/deployment/proxmox/scripts/lib/cmd_build.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_logs.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_rotate.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_sync.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_terraform.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_verify.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-secrets.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-terraform.sh",
+        "infra/deployment/proxmox/scripts/rehearsal",
+        "infra/deployment/proxmox/scripts/rehearsal-common.sh",
         "infra/deployment/proxmox/terraform/.terraform.lock.hcl",
         "infra/deployment/proxmox/terraform/README.md",
         "infra/deployment/proxmox/terraform/locals.tf",
@@ -291,6 +374,7 @@
         "infra/images/packer/variables/common.pkr.hcl",
         "infra/images/packer/variables/proxmox.auto.pkrvars.hcl.example",
         "infra/images/packer/variables/proxmox.pkr.hcl",
+        "infra/images/provisioning/common/install-base.sh",
         "infra/images/provisioning/proxmox/install-qemu-agent.sh",
         "infra/images/scripts/.env.example",
         "infra/images/scripts/build-aws-image.sh",
@@ -317,7 +401,11 @@
         "infra/rehearsal/proxmox/create-dev-template.sh",
         "infra/rehearsal/proxmox/create-localstack-template.sh",
         "infra/rehearsal/proxmox/create-template.sh",
+        "infra/runtime/bootstrap/bootstrap-app.sh",
+        "infra/runtime/bootstrap/bootstrap-proxy.sh",
+        "infra/runtime/cloud-init/app.user-data.yaml.template",
         "infra/runtime/cloud-init/localstack.user-data.yaml.template",
+        "infra/runtime/cloud-init/proxy.user-data.yaml.template",
         "infra/runtime/compose/docker-compose.proxy.yml",
         "infra/runtime/config/squid/squid.conf",
         "infra/tests/containers/test-container-invariants.sh",
@@ -328,8 +416,32 @@
         "infra/tests/images/validate.sh"
       ],
       "reasons": [
-        "23 commit(s) since verification",
-        "40 owned file(s) were deleted since verification"
+        "26 commit(s) since verification",
+        "55 owned file(s) were deleted since verification"
+      ]
+    },
+    {
+      "path": "docs/10-architecture/component-map.md",
+      "title": "Component map",
+      "status": "verified",
+      "document_type": "architecture",
+      "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
+      "classification": "likely stale",
+      "commit_distance": 26,
+      "changed_owned_files": [
+        "backend/app/services/account.py",
+        "frontend/apps/public-site/AGENTS.md",
+        "frontend/apps/public-site/CLAUDE.md",
+        "frontend/apps/public-site/package.json",
+        "frontend/apps/studio-app/src/pages/AccountSettingsPage.tsx",
+        "frontend/apps/studio-app/vite.config.ts",
+        "infra/database/init/schema/flowform_core_db_schema_v4.sql",
+        "infra/database/init/schema/flowform_response_db_schema_v4.sql",
+        "infra/database/init/schema/sqlalchemy_constraint_naming_rules.md"
+      ],
+      "reasons": [
+        "26 commit(s) since verification",
+        "9 owned file(s) changed across 3/8 declared code areas"
       ]
     },
     {
@@ -339,12 +451,13 @@
       "document_type": "architecture",
       "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
       "classification": "likely stale",
-      "commit_distance": 23,
+      "commit_distance": 26,
       "changed_owned_files": [
         "infra/containers/runtime/compose/app.yml",
         "infra/containers/runtime/compose/proxy.yml",
         "infra/containers/strategies/dev/compose/compose.test.yml",
         "infra/containers/strategies/dev/compose/compose.yml",
+        "infra/containers/strategies/rehearsal/compose/app.override.yml",
         "infra/containers/strategies/rehearsal/compose/db.yml",
         "infra/containers/strategies/rehearsal/compose/proxy.override.yml",
         "infra/containers/strategies/rehearsal/fixtures/compose.localstack.yml",
@@ -355,6 +468,7 @@
         "infra/containers/strategies/rehearsal/services/caddy/certs/api.key",
         "infra/containers/strategies/rehearsal/services/caddy/certs/generate-api-cert.sh",
         "infra/containers/strategies/rehearsal/services/localstack/seed-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/localstack/sync-secrets-into-localstack.sh",
         "infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh",
         "infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh",
         "infra/containers/strategies/rehearsal/services/squid/allowed-domains.txt",
@@ -368,12 +482,13 @@
         "infra/containers/strategies/rehearsal/services/tls-shim/ca/san.cnf",
         "infra/deployment/bootstrap/aws-cli-retry.sh",
         "infra/deployment/bootstrap/bootstrap-app.sh",
+        "infra/deployment/bootstrap/bootstrap-common.sh",
         "infra/deployment/bootstrap/bootstrap-db.sh",
         "infra/deployment/bootstrap/bootstrap-proxy.sh"
       ],
       "reasons": [
-        "23 commit(s) since verification",
-        "29 owned file(s) changed across 5/6 declared code areas"
+        "26 commit(s) since verification",
+        "32 owned file(s) changed across 5/6 declared code areas"
       ]
     },
     {
@@ -383,7 +498,7 @@
       "document_type": "architecture",
       "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
       "classification": "likely stale",
-      "commit_distance": 23,
+      "commit_distance": 26,
       "changed_owned_files": [
         "backend/app/core/config.py",
         "backend/app/middleware/auth/auth0.py",
@@ -400,6 +515,7 @@
         "infra/containers/strategies/dev/compose/compose.test.yml",
         "infra/containers/strategies/dev/compose/compose.yml",
         "infra/containers/strategies/dev/services/backend/backend.test.Dockerfile",
+        "infra/containers/strategies/rehearsal/compose/app.override.yml",
         "infra/containers/strategies/rehearsal/compose/db.yml",
         "infra/containers/strategies/rehearsal/compose/proxy.override.yml",
         "infra/containers/strategies/rehearsal/fixtures/compose.localstack.yml",
@@ -410,6 +526,7 @@
         "infra/containers/strategies/rehearsal/services/caddy/certs/api.key",
         "infra/containers/strategies/rehearsal/services/caddy/certs/generate-api-cert.sh",
         "infra/containers/strategies/rehearsal/services/localstack/seed-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/localstack/sync-secrets-into-localstack.sh",
         "infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh",
         "infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh",
         "infra/containers/strategies/rehearsal/services/squid/allowed-domains.txt",
@@ -473,8 +590,8 @@
         "infra/deployment/aws/cdk/uv.lock"
       ],
       "reasons": [
-        "23 commit(s) since verification",
-        "86 owned file(s) changed across 5/8 declared code areas"
+        "26 commit(s) since verification",
+        "88 owned file(s) changed across 5/8 declared code areas"
       ]
     },
     {
@@ -484,8 +601,10 @@
       "document_type": "architecture",
       "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
       "classification": "likely stale",
-      "commit_distance": 23,
+      "commit_distance": 26,
       "changed_owned_files": [
+        "backend/app/crypto/_internal/models.py",
+        "backend/app/crypto/models.py",
         "backend/app/middleware/auth/auth0.py",
         "infra/containers/runtime/compose/app.yml",
         "infra/containers/runtime/compose/proxy.yml",
@@ -504,6 +623,7 @@
         "infra/deployment/aws/cdk/flowform_infra/stacks/security_stack.py",
         "infra/deployment/bootstrap/aws-cli-retry.sh",
         "infra/deployment/bootstrap/bootstrap-app.sh",
+        "infra/deployment/bootstrap/bootstrap-common.sh",
         "infra/deployment/bootstrap/bootstrap-db.sh",
         "infra/deployment/bootstrap/bootstrap-proxy.sh",
         "infra/deployment/proxmox/README.md",
@@ -514,10 +634,17 @@
         "infra/deployment/proxmox/cloud-init/templates/localstack.yaml.tftpl",
         "infra/deployment/proxmox/cloud-init/templates/proxy.yaml.tftpl",
         "infra/deployment/proxmox/host/setup-host.sh",
-        "infra/deployment/proxmox/scripts/logs.sh",
-        "infra/deployment/proxmox/scripts/rebuild.sh",
-        "infra/deployment/proxmox/scripts/verify.sh",
-        "infra/deployment/proxmox/scripts/with-dev-auth0-env.sh",
+        "infra/deployment/proxmox/scripts/README.md",
+        "infra/deployment/proxmox/scripts/lib/cmd_build.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_logs.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_rotate.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_sync.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_terraform.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_verify.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-secrets.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-terraform.sh",
+        "infra/deployment/proxmox/scripts/rehearsal",
+        "infra/deployment/proxmox/scripts/rehearsal-common.sh",
         "infra/deployment/proxmox/terraform/.terraform.lock.hcl",
         "infra/deployment/proxmox/terraform/README.md",
         "infra/deployment/proxmox/terraform/locals.tf",
@@ -529,46 +656,629 @@
         "infra/deployment/proxmox/terraform/virtual-machines.tf"
       ],
       "reasons": [
-        "23 commit(s) since verification",
-        "41 owned file(s) changed across 7/11 declared code areas"
+        "26 commit(s) since verification",
+        "51 owned file(s) changed across 8/11 declared code areas"
       ]
     },
     {
-      "path": "docs/00-overview/glossary.md",
-      "title": "Glossary",
+      "path": "docs/30-workflows/machine-image-building.md",
+      "title": "Machine image building",
       "status": "draft",
-      "document_type": "overview",
-      "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
-      "classification": "review suggested",
-      "commit_distance": 23,
+      "document_type": "workflow",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "likely stale",
+      "commit_distance": 3,
       "changed_owned_files": [
-        "frontend/apps/studio-app/src/pages/AccountSettingsPage.tsx",
-        "infra/database/init/schema/flowform_core_db_schema_v4.sql",
-        "infra/database/init/schema/flowform_response_db_schema_v4.sql"
+        "infra/images/packer/provisioners/common/install-base.sh"
       ],
       "reasons": [
-        "23 commit(s) since verification",
-        "3 owned file(s) changed since verification"
+        "3 commit(s) since verification",
+        "1 owned file(s) changed across 2/4 declared code areas"
       ]
     },
     {
-      "path": "docs/10-architecture/component-map.md",
-      "title": "Component map",
-      "status": "verified",
+      "path": "docs/40-implementation/backend.md",
+      "title": "Backend implementation",
+      "status": "draft",
+      "document_type": "implementation",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "likely stale",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "backend/tests/conftest.py",
+        "backend/tests/integration/environment/conftest.py",
+        "backend/tests/integration/environment/test_environment_variables.py",
+        "backend/tests/unit/conftest.py",
+        "backend/tests/unit/core/test_config.py",
+        "backend/tests/unit/crypto/test_linkage_key_service.py",
+        "backend/tests/unit/logging/test_logging_config.py",
+        "backend/tests/unit/logging/test_request_logging.py",
+        "backend/tests/unit/logging/test_sensitive_data.py"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "9 owned file(s) changed across 1/8 declared code areas"
+      ]
+    },
+    {
+      "path": "docs/40-implementation/infrastructure.md",
+      "title": "Infrastructure implementation",
+      "status": "draft",
+      "document_type": "implementation",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "likely stale",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "infra/containers/runtime/compose/proxy.yml",
+        "infra/containers/runtime/services/alloy/config.alloy",
+        "infra/containers/strategies/aws/services/caddy/Caddyfile.proxy",
+        "infra/containers/strategies/dev/compose/compose.test.yml",
+        "infra/containers/strategies/rehearsal/compose/app.override.yml",
+        "infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy",
+        "infra/containers/strategies/rehearsal/services/localstack/seed-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/localstack/sync-secrets-into-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh",
+        "infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh",
+        "infra/deployment/aws/cdk/pyproject.toml",
+        "infra/deployment/bootstrap/aws-cli-retry.sh",
+        "infra/deployment/bootstrap/bootstrap-app.sh",
+        "infra/deployment/bootstrap/bootstrap-common.sh",
+        "infra/deployment/bootstrap/bootstrap-db.sh",
+        "infra/deployment/bootstrap/bootstrap-proxy.sh",
+        "infra/deployment/config/runtime-parameter-contract.json",
+        "infra/deployment/proxmox/README.md",
+        "infra/deployment/proxmox/cloud-init/templates/app.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/db.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/localstack.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/proxy.yaml.tftpl",
+        "infra/deployment/proxmox/scripts/README.md",
+        "infra/deployment/proxmox/scripts/lib/cmd_build.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_logs.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_rotate.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_sync.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_terraform.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_verify.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-secrets.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-terraform.sh",
+        "infra/deployment/proxmox/scripts/logs.sh",
+        "infra/deployment/proxmox/scripts/rebuild.sh",
+        "infra/deployment/proxmox/scripts/rehearsal",
+        "infra/deployment/proxmox/scripts/rehearsal-common.sh",
+        "infra/deployment/proxmox/scripts/verify.sh",
+        "infra/deployment/proxmox/scripts/with-dev-auth0-env.sh",
+        "infra/deployment/proxmox/terraform/README.md",
+        "infra/deployment/proxmox/terraform/locals.tf",
+        "infra/deployment/proxmox/terraform/variables.tf",
+        "infra/images/packer/provisioners/common/install-base.sh",
+        "infra/tests/containers/test-container-invariants.sh",
+        "infra/tests/deployment/test-localstack-seed.sh"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "4 owned file(s) were deleted since verification"
+      ]
+    },
+    {
+      "path": "docs/40-implementation/scripts.md",
+      "title": "Scripts implementation",
+      "status": "draft",
+      "document_type": "implementation",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "likely stale",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "backend/scripts/run-tests.py",
+        "backend/scripts/run_backend_security.sh",
+        "infra/deployment/bootstrap/aws-cli-retry.sh",
+        "infra/deployment/bootstrap/bootstrap-app.sh",
+        "infra/deployment/bootstrap/bootstrap-common.sh",
+        "infra/deployment/bootstrap/bootstrap-db.sh",
+        "infra/deployment/bootstrap/bootstrap-proxy.sh",
+        "infra/deployment/proxmox/scripts/README.md",
+        "infra/deployment/proxmox/scripts/lib/cmd_build.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_logs.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_rotate.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_sync.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_terraform.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_verify.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-secrets.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-terraform.sh",
+        "infra/deployment/proxmox/scripts/logs.sh",
+        "infra/deployment/proxmox/scripts/rebuild.sh",
+        "infra/deployment/proxmox/scripts/rehearsal",
+        "infra/deployment/proxmox/scripts/rehearsal-common.sh",
+        "infra/deployment/proxmox/scripts/verify.sh",
+        "infra/deployment/proxmox/scripts/with-dev-auth0-env.sh",
+        "scripts/docs/generate-repository-tree.py",
+        "scripts/secrets/generate_secrets.py",
+        "scripts/tools/count_lines.sh",
+        "tools/mcp/pyproject.toml",
+        "tools/mcp/uv.lock"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "4 owned file(s) were deleted since verification"
+      ]
+    },
+    {
+      "path": "docs/60-reference/commands.md",
+      "title": "Commands",
+      "status": "draft",
+      "document_type": "reference",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "likely stale",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        ".github/workflows/ci.yml",
+        "backend/scripts/run-tests.py",
+        "backend/scripts/run_backend_security.sh",
+        "frontend/apps/public-site/package.json",
+        "frontend/package.json",
+        "scripts/docs/generate-repository-tree.py",
+        "scripts/secrets/generate_secrets.py",
+        "scripts/tools/count_lines.sh"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "8 owned file(s) changed across 5/5 declared code areas"
+      ]
+    },
+    {
+      "path": "docs/60-reference/configuration-catalogue.md",
+      "title": "Configuration catalogue",
+      "status": "draft",
+      "document_type": "reference",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "likely stale",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        ".github/workflows/ci.yml",
+        "backend/pyproject.toml",
+        "frontend/AGENTS.md",
+        "frontend/CLAUDE.md",
+        "frontend/apps/public-site/AGENTS.md",
+        "frontend/apps/public-site/CLAUDE.md",
+        "frontend/apps/public-site/package.json",
+        "frontend/apps/studio-app/vite.config.ts",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "infra/containers/runtime/compose/proxy.yml",
+        "infra/containers/runtime/services/alloy/config.alloy",
+        "infra/containers/strategies/aws/services/caddy/Caddyfile.proxy",
+        "infra/containers/strategies/dev/compose/compose.test.yml",
+        "infra/containers/strategies/rehearsal/compose/app.override.yml",
+        "infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy",
+        "infra/containers/strategies/rehearsal/services/localstack/seed-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/localstack/sync-secrets-into-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh",
+        "infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh",
+        "infra/deployment/aws/cdk/pyproject.toml",
+        "infra/deployment/bootstrap/aws-cli-retry.sh",
+        "infra/deployment/bootstrap/bootstrap-app.sh",
+        "infra/deployment/bootstrap/bootstrap-common.sh",
+        "infra/deployment/bootstrap/bootstrap-db.sh",
+        "infra/deployment/bootstrap/bootstrap-proxy.sh",
+        "infra/deployment/config/runtime-parameter-contract.json",
+        "infra/deployment/proxmox/README.md",
+        "infra/deployment/proxmox/cloud-init/templates/app.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/db.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/localstack.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/proxy.yaml.tftpl",
+        "infra/deployment/proxmox/scripts/README.md",
+        "infra/deployment/proxmox/scripts/lib/cmd_build.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_logs.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_rotate.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_sync.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_terraform.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_verify.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-secrets.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-terraform.sh",
+        "infra/deployment/proxmox/scripts/logs.sh",
+        "infra/deployment/proxmox/scripts/rebuild.sh",
+        "infra/deployment/proxmox/scripts/rehearsal",
+        "infra/deployment/proxmox/scripts/rehearsal-common.sh",
+        "infra/deployment/proxmox/scripts/verify.sh",
+        "infra/deployment/proxmox/scripts/with-dev-auth0-env.sh",
+        "infra/deployment/proxmox/terraform/README.md",
+        "infra/deployment/proxmox/terraform/locals.tf",
+        "infra/deployment/proxmox/terraform/variables.tf",
+        "infra/images/packer/provisioners/common/install-base.sh",
+        "infra/tests/containers/test-container-invariants.sh",
+        "infra/tests/deployment/test-localstack-seed.sh"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "4 owned file(s) were deleted since verification"
+      ]
+    },
+    {
+      "path": "docs/60-reference/environment-variables.md",
+      "title": "Environment variables",
+      "status": "draft",
+      "document_type": "reference",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "likely stale",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "frontend/apps/public-site/AGENTS.md",
+        "frontend/apps/public-site/CLAUDE.md",
+        "frontend/apps/public-site/package.json",
+        "frontend/apps/studio-app/vite.config.ts",
+        "infra/containers/runtime/compose/proxy.yml",
+        "infra/containers/runtime/services/alloy/config.alloy",
+        "infra/containers/strategies/aws/services/caddy/Caddyfile.proxy",
+        "infra/containers/strategies/dev/compose/compose.test.yml",
+        "infra/containers/strategies/rehearsal/compose/app.override.yml",
+        "infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy",
+        "infra/containers/strategies/rehearsal/services/localstack/seed-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/localstack/sync-secrets-into-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh",
+        "infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh",
+        "infra/deployment/bootstrap/aws-cli-retry.sh",
+        "infra/deployment/bootstrap/bootstrap-app.sh",
+        "infra/deployment/bootstrap/bootstrap-common.sh",
+        "infra/deployment/bootstrap/bootstrap-db.sh",
+        "infra/deployment/bootstrap/bootstrap-proxy.sh"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "19 owned file(s) changed across 3/4 declared code areas"
+      ]
+    },
+    {
+      "path": "docs/60-reference/repository-tree.md",
+      "title": "Repository tree",
+      "status": "draft",
+      "document_type": "reference",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "likely stale",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        ".github/workflows/ci.yml",
+        "backend/AGENTS.md",
+        "backend/CLAUDE.md",
+        "backend/app/crypto/_internal/models.py",
+        "backend/app/crypto/models.py",
+        "backend/app/logging/logging_config.py",
+        "backend/app/logging/request_logging.py",
+        "backend/app/logging/request_timing.py",
+        "backend/app/logging/sensitive_data.py",
+        "backend/app/middleware/auth/auth0.py",
+        "backend/pyproject.toml",
+        "backend/requirements.txt",
+        "backend/scripts/run-tests.py",
+        "backend/scripts/run_backend_security.sh",
+        "backend/tests/conftest.py",
+        "backend/tests/integration/environment/conftest.py",
+        "backend/tests/integration/environment/test_environment_variables.py",
+        "backend/tests/unit/conftest.py",
+        "backend/tests/unit/core/test_config.py",
+        "backend/tests/unit/crypto/test_linkage_key_service.py",
+        "backend/tests/unit/logging/test_logging_config.py",
+        "backend/tests/unit/logging/test_request_logging.py",
+        "backend/tests/unit/logging/test_sensitive_data.py",
+        "backend/uv.lock",
+        "frontend/AGENTS.md",
+        "frontend/CLAUDE.md",
+        "frontend/apps/public-site/AGENTS.md",
+        "frontend/apps/public-site/CLAUDE.md",
+        "frontend/apps/public-site/package.json",
+        "frontend/apps/studio-app/vite.config.ts",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "infra/containers/runtime/compose/proxy.yml",
+        "infra/containers/runtime/services/alloy/config.alloy",
+        "infra/containers/strategies/aws/services/caddy/Caddyfile.proxy",
+        "infra/containers/strategies/dev/compose/compose.test.yml",
+        "infra/containers/strategies/rehearsal/compose/app.override.yml",
+        "infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy",
+        "infra/containers/strategies/rehearsal/services/localstack/seed-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/localstack/sync-secrets-into-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh",
+        "infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh",
+        "infra/deployment/aws/cdk/pyproject.toml",
+        "infra/deployment/bootstrap/aws-cli-retry.sh",
+        "infra/deployment/bootstrap/bootstrap-app.sh",
+        "infra/deployment/bootstrap/bootstrap-common.sh",
+        "infra/deployment/bootstrap/bootstrap-db.sh",
+        "infra/deployment/bootstrap/bootstrap-proxy.sh",
+        "infra/deployment/config/runtime-parameter-contract.json",
+        "infra/deployment/proxmox/README.md",
+        "infra/deployment/proxmox/cloud-init/templates/app.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/db.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/localstack.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/proxy.yaml.tftpl",
+        "infra/deployment/proxmox/scripts/README.md",
+        "infra/deployment/proxmox/scripts/lib/cmd_build.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_logs.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_rotate.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_sync.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_terraform.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_verify.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-secrets.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-terraform.sh",
+        "infra/deployment/proxmox/scripts/logs.sh",
+        "infra/deployment/proxmox/scripts/rebuild.sh",
+        "infra/deployment/proxmox/scripts/rehearsal",
+        "infra/deployment/proxmox/scripts/rehearsal-common.sh",
+        "infra/deployment/proxmox/scripts/verify.sh",
+        "infra/deployment/proxmox/scripts/with-dev-auth0-env.sh",
+        "infra/deployment/proxmox/terraform/README.md",
+        "infra/deployment/proxmox/terraform/locals.tf",
+        "infra/deployment/proxmox/terraform/variables.tf",
+        "infra/images/packer/provisioners/common/install-base.sh",
+        "infra/tests/containers/test-container-invariants.sh",
+        "infra/tests/deployment/test-localstack-seed.sh",
+        "scripts/docs/generate-repository-tree.py",
+        "scripts/secrets/generate_secrets.py",
+        "scripts/tools/count_lines.sh",
+        "tools/mcp/pyproject.toml",
+        "tools/mcp/uv.lock"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "4 owned file(s) were deleted since verification"
+      ]
+    },
+    {
+      "path": "docs/60-reference/scripts-catalogue.md",
+      "title": "Scripts catalogue",
+      "status": "draft",
+      "document_type": "reference",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "likely stale",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "backend/scripts/run-tests.py",
+        "backend/scripts/run_backend_security.sh",
+        "infra/containers/runtime/compose/proxy.yml",
+        "infra/containers/runtime/services/alloy/config.alloy",
+        "infra/containers/strategies/aws/services/caddy/Caddyfile.proxy",
+        "infra/containers/strategies/dev/compose/compose.test.yml",
+        "infra/containers/strategies/rehearsal/compose/app.override.yml",
+        "infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy",
+        "infra/containers/strategies/rehearsal/services/localstack/seed-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/localstack/sync-secrets-into-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh",
+        "infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh",
+        "infra/deployment/aws/cdk/pyproject.toml",
+        "infra/deployment/bootstrap/aws-cli-retry.sh",
+        "infra/deployment/bootstrap/bootstrap-app.sh",
+        "infra/deployment/bootstrap/bootstrap-common.sh",
+        "infra/deployment/bootstrap/bootstrap-db.sh",
+        "infra/deployment/bootstrap/bootstrap-proxy.sh",
+        "infra/deployment/config/runtime-parameter-contract.json",
+        "infra/deployment/proxmox/README.md",
+        "infra/deployment/proxmox/cloud-init/templates/app.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/db.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/localstack.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/proxy.yaml.tftpl",
+        "infra/deployment/proxmox/scripts/README.md",
+        "infra/deployment/proxmox/scripts/lib/cmd_build.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_logs.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_rotate.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_sync.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_terraform.sh",
+        "infra/deployment/proxmox/scripts/lib/cmd_verify.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-secrets.sh",
+        "infra/deployment/proxmox/scripts/lib/rehearsal-terraform.sh",
+        "infra/deployment/proxmox/scripts/logs.sh",
+        "infra/deployment/proxmox/scripts/rebuild.sh",
+        "infra/deployment/proxmox/scripts/rehearsal",
+        "infra/deployment/proxmox/scripts/rehearsal-common.sh",
+        "infra/deployment/proxmox/scripts/verify.sh",
+        "infra/deployment/proxmox/scripts/with-dev-auth0-env.sh",
+        "infra/deployment/proxmox/terraform/README.md",
+        "infra/deployment/proxmox/terraform/locals.tf",
+        "infra/deployment/proxmox/terraform/variables.tf",
+        "infra/images/packer/provisioners/common/install-base.sh",
+        "infra/tests/containers/test-container-invariants.sh",
+        "infra/tests/deployment/test-localstack-seed.sh",
+        "scripts/docs/generate-repository-tree.py",
+        "scripts/secrets/generate_secrets.py",
+        "scripts/tools/count_lines.sh",
+        "tools/mcp/pyproject.toml",
+        "tools/mcp/uv.lock"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "4 owned file(s) were deleted since verification"
+      ]
+    },
+    {
+      "path": "docs/60-reference/services-and-ports.md",
+      "title": "Services and ports",
+      "status": "draft",
+      "document_type": "reference",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "likely stale",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "infra/containers/runtime/compose/proxy.yml",
+        "infra/containers/runtime/services/alloy/config.alloy",
+        "infra/containers/strategies/aws/services/caddy/Caddyfile.proxy",
+        "infra/containers/strategies/dev/compose/compose.test.yml",
+        "infra/containers/strategies/rehearsal/compose/app.override.yml",
+        "infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy",
+        "infra/containers/strategies/rehearsal/services/localstack/seed-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/localstack/sync-secrets-into-localstack.sh",
+        "infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh",
+        "infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh",
+        "infra/deployment/proxmox/cloud-init/templates/app.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/db.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/localstack.yaml.tftpl",
+        "infra/deployment/proxmox/cloud-init/templates/proxy.yaml.tftpl"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "14 owned file(s) changed across 2/3 declared code areas"
+      ]
+    },
+    {
+      "path": "docs/README.md",
+      "title": "FlowForm documentation home",
+      "status": "draft",
+      "document_type": "overview",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "likely stale",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "scripts/docs/generate-repository-tree.py"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "1 owned file(s) changed across 1/1 declared code areas"
+      ]
+    },
+    {
+      "path": "docs/10-architecture/data-flows.md",
+      "title": "Data flows",
+      "status": "draft",
       "document_type": "architecture",
       "verified_against_commit": "ed0fb65df856e18807ee243b4bca512a8d0442b0",
       "classification": "review suggested",
-      "commit_distance": 23,
+      "commit_distance": 26,
       "changed_owned_files": [
-        "backend/app/services/account.py",
-        "frontend/apps/studio-app/src/pages/AccountSettingsPage.tsx",
-        "infra/database/init/schema/flowform_core_db_schema_v4.sql",
-        "infra/database/init/schema/flowform_response_db_schema_v4.sql",
-        "infra/database/init/schema/sqlalchemy_constraint_naming_rules.md"
+        "backend/app/crypto/_internal/models.py",
+        "backend/app/crypto/models.py"
       ],
       "reasons": [
-        "23 commit(s) since verification",
-        "5 owned file(s) changed since verification"
+        "26 commit(s) since verification",
+        "2 owned file(s) changed since verification"
+      ]
+    },
+    {
+      "path": "docs/20-domains/identity-and-authentication.md",
+      "title": "Identity and authentication",
+      "status": "draft",
+      "document_type": "domain",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "review suggested",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "backend/app/middleware/auth/auth0.py"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "1 owned file(s) changed since verification"
+      ]
+    },
+    {
+      "path": "docs/20-domains/responses-and-encryption.md",
+      "title": "Responses and encryption",
+      "status": "draft",
+      "document_type": "domain",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "review suggested",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "backend/app/crypto/_internal/models.py",
+        "backend/app/crypto/models.py"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "2 owned file(s) changed since verification"
+      ]
+    },
+    {
+      "path": "docs/30-workflows/cloud-deployment.md",
+      "title": "Cloud deployment",
+      "status": "draft",
+      "document_type": "workflow",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "review suggested",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        ".github/workflows/ci.yml"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "1 owned file(s) changed since verification"
+      ]
+    },
+    {
+      "path": "docs/30-workflows/database-migrations.md",
+      "title": "Database migrations",
+      "status": "draft",
+      "document_type": "workflow",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "review suggested",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "backend/scripts/run-tests.py"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "1 owned file(s) changed since verification"
+      ]
+    },
+    {
+      "path": "docs/30-workflows/local-development.md",
+      "title": "Local development",
+      "status": "draft",
+      "document_type": "workflow",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "review suggested",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "frontend/package.json"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "1 owned file(s) changed since verification"
+      ]
+    },
+    {
+      "path": "docs/30-workflows/local-infrastructure.md",
+      "title": "Local infrastructure",
+      "status": "draft",
+      "document_type": "workflow",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "review suggested",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "infra/containers/strategies/dev/compose/compose.test.yml",
+        "infra/tests/containers/test-container-invariants.sh"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "2 owned file(s) changed since verification"
+      ]
+    },
+    {
+      "path": "docs/40-implementation/frontend.md",
+      "title": "Frontend implementation",
+      "status": "draft",
+      "document_type": "implementation",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "review suggested",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "frontend/package.json",
+        "frontend/pnpm-workspace.yaml"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "2 owned file(s) changed since verification"
+      ]
+    },
+    {
+      "path": "docs/60-reference/generated-files.md",
+      "title": "Generated files",
+      "status": "draft",
+      "document_type": "reference",
+      "verified_against_commit": "ad26b87e9820",
+      "classification": "review suggested",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        "infra/images/packer/provisioners/common/install-base.sh",
+        "scripts/docs/generate-repository-tree.py"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "2 owned file(s) changed since verification"
       ]
     }
   ],
@@ -699,7 +1409,7 @@
     {
       "title": "Observability",
       "path": "docs/20-domains/observability.md",
-      "count": 7
+      "count": 8
     },
     {
       "title": "Projects and access",

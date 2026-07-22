@@ -39,7 +39,7 @@ after losing the host entirely.
 
 - `infra/images/packer/variables/proxmox.auto.pkrvars.hcl.example` → `.hcl` —
   Proxmox endpoint/credentials for Packer.
-- `infra/images/scripts/.env.example` → `.env` — image-build settings.
+- `infra/images/config/proxmox-source.env.example` → `proxmox-source.env` — image-build settings.
 - `infra/deployment/proxmox/terraform/terraform.tfvars.example` →
   `terraform.tfvars` — Proxmox API endpoint and token, node name, storage
   pools, and the SSH public keys baked into every VM.
@@ -59,11 +59,8 @@ Creates the isolated `vmbr10` bridge and enables snippet storage.
 **3. Build the templates (Packer, from the workstation):**
 
 ```bash
-infra/images/scripts/prepare-proxmox-source.sh --apply    # create source template 8999
-infra/images/scripts/build-proxmox-image.sh               # golden template 9000
-infra/images/scripts/build-proxmox-localstack-fixture.sh  # offline fixture 9001
-infra/images/scripts/build-proxmox-db-fixture.sh          # offline DB fixture 9002
-infra/images/scripts/verify-proxmox-disk-sizes.sh
+infra/images/scripts/image prepare proxmox --apply  # create source template 8999
+infra/images/scripts/image build proxmox all        # build 9000, 9001, 9002 and verify
 ```
 
 **4. Deploy and converge the topology:**

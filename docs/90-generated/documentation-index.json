@@ -1,8 +1,8 @@
 {
   "schema": "flowform.docsys.index/1",
   "generated_by": "scripts/docs/docsys/index.py",
-  "repo_head": "ad26b87e98207763669367a2e9b70ffa2632ce19",
-  "document_count": 62,
+  "repo_head": "4338e10363ee735bf07955787fd12f30ce38175a",
+  "document_count": 63,
   "documents": [
     {
       "path": "docs/00-overview/architecture-principles.md",
@@ -918,7 +918,7 @@
         "infrastructure",
         "security"
       ],
-      "verified_against_commit": "ad26b87e9820",
+      "verified_against_commit": null,
       "code_confidence": "medium",
       "headings": [
         "Security model",
@@ -941,7 +941,9 @@
         "../../backend/app/core/config.py",
         "../../backend/app/middleware/rate_limit/",
         "../../infra/containers/",
-        "../../infra/deployment/aws/cdk/flowform_infra/stacks/"
+        "../../infra/deployment/aws/cdk/flowform_infra/stacks/",
+        "../../.github/workflows/ci.yml",
+        "../../backend/scripts/run_backend_security.sh"
       ],
       "change_triggers": [],
       "exclusions": [],
@@ -953,7 +955,9 @@
         "backend/app/core/config.py",
         "backend/app/middleware/rate_limit/",
         "infra/containers/",
-        "infra/deployment/aws/cdk/flowform_infra/stacks/"
+        "infra/deployment/aws/cdk/flowform_infra/stacks/",
+        ".github/workflows/ci.yml",
+        "backend/scripts/run_backend_security.sh"
       ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
@@ -1411,7 +1415,7 @@
         "backend",
         "infrastructure"
       ],
-      "verified_against_commit": "ad26b87e9820",
+      "verified_against_commit": null,
       "code_confidence": "medium",
       "headings": [
         "Observability",
@@ -1430,7 +1434,9 @@
         "../../backend/app/schema/orm/core/audit_log.py",
         "../../infra/containers/runtime/compose/",
         "../../infra/containers/runtime/services/alloy/",
-        "../../infra/containers/runtime/services/alloy-app/"
+        "../../infra/containers/runtime/services/alloy-app/",
+        "../../infra/containers/strategies/aws/services/caddy/Caddyfile.proxy",
+        "../../infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy"
       ],
       "change_triggers": [],
       "exclusions": [],
@@ -1440,7 +1446,9 @@
         "backend/app/schema/orm/core/audit_log.py",
         "infra/containers/runtime/compose/",
         "infra/containers/runtime/services/alloy/",
-        "infra/containers/runtime/services/alloy-app/"
+        "infra/containers/runtime/services/alloy-app/",
+        "infra/containers/strategies/aws/services/caddy/Caddyfile.proxy",
+        "infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy"
       ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
@@ -1819,7 +1827,7 @@
       "tags": [
         "ci-cd"
       ],
-      "verified_against_commit": "ad26b87e9820",
+      "verified_against_commit": null,
       "code_confidence": "medium",
       "headings": [
         "Continuous integration",
@@ -2119,6 +2127,7 @@
       "neighbours": [
         "Cloud deployment",
         "Deployment model",
+        "Image script consolidation plan",
         "Infrastructure implementation",
         "Infrastructure resources",
         "Packer implementation",
@@ -2141,7 +2150,7 @@
         "configuration",
         "security"
       ],
-      "verified_against_commit": "ad26b87e9820",
+      "verified_against_commit": null,
       "code_confidence": "medium",
       "headings": [
         "Secrets and configuration",
@@ -2211,7 +2220,7 @@
       "authority": "canonical",
       "status": "draft",
       "tags": [],
-      "verified_against_commit": "ad26b87e9820",
+      "verified_against_commit": null,
       "code_confidence": "medium",
       "headings": [
         "Testing workflow",
@@ -2250,7 +2259,6 @@
         "Frontend implementation"
       ],
       "wiki_links": [
-        "continuous-integration",
         "continuous-integration",
         "local-development",
         "continuous-integration",
@@ -2362,7 +2370,7 @@
       "tags": [
         "ci-cd"
       ],
-      "verified_against_commit": "ad26b87e9820",
+      "verified_against_commit": null,
       "code_confidence": "medium",
       "headings": [
         "CI/CD implementation",
@@ -2425,7 +2433,7 @@
       "tags": [
         "configuration"
       ],
-      "verified_against_commit": "ad26b87e9820",
+      "verified_against_commit": null,
       "code_confidence": "medium",
       "headings": [
         "Configuration implementation",
@@ -2687,6 +2695,7 @@
       ],
       "neighbours": [
         "Deployment model",
+        "Image script consolidation plan",
         "Infrastructure implementation",
         "Machine image building",
         "Proxmox rehearsal implementation"
@@ -2824,7 +2833,7 @@
       "tags": [
         "infrastructure"
       ],
-      "verified_against_commit": "ad26b87e9820",
+      "verified_against_commit": null,
       "code_confidence": "medium",
       "headings": [
         "Proxmox rehearsal setup",
@@ -3001,6 +3010,7 @@
       "neighbours": [
         "Commands",
         "Generated files",
+        "Image script consolidation plan",
         "Repository map",
         "Scripts catalogue"
       ],
@@ -3661,6 +3671,7 @@
         "70-planning/README"
       ],
       "neighbours": [
+        "Image script consolidation plan",
         "Planning workspace"
       ],
       "extra_metadata": {
@@ -3706,6 +3717,85 @@
       "extra_metadata": {
         "aliases": [
           "Completed plans"
+        ]
+      }
+    },
+    {
+      "path": "docs/70-planning/completed/image-script-consolidation.md",
+      "title": "Image script consolidation plan",
+      "document_type": "planning",
+      "authority": "planning",
+      "status": "draft",
+      "tags": [
+        "infrastructure",
+        "tooling"
+      ],
+      "verified_against_commit": null,
+      "code_confidence": "medium",
+      "headings": [
+        "Image script consolidation plan",
+        "Completion",
+        "Purpose",
+        "Verified current surface",
+        "Target operator contract",
+        "Legacy-to-target mapping",
+        "Target filesystem",
+        "Shared behavior",
+        "Safety decisions",
+        "Implementation phases",
+        "Phase 1: Freeze behavior with tests",
+        "Phase 2: Introduce dispatcher and common libraries",
+        "Phase 3: Migrate build and mutation commands",
+        "Phase 4: Cut over and remove legacy entry points",
+        "Phase 5: Documentation and generated outputs",
+        "Validation matrix",
+        "Decisions to confirm at implementation start",
+        "Exit criteria",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../infra/images/",
+        "../../../infra/tests/images/"
+      ],
+      "change_triggers": [
+        "../../../infra/deployment/proxmox/",
+        "../../../.github/workflows/"
+      ],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/images/",
+        "infra/tests/images/"
+      ],
+      "change_triggers_resolved": [
+        "infra/deployment/proxmox/",
+        ".github/workflows/"
+      ],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Active plans",
+        "Machine image building",
+        "Packer implementation",
+        "Scripts implementation"
+      ],
+      "wiki_links": [
+        "machine-image-building",
+        "machine-image-building",
+        "packer",
+        "scripts",
+        "70-planning/active/README",
+        "machine-image-building",
+        "packer",
+        "scripts"
+      ],
+      "neighbours": [
+        "Active plans",
+        "Machine image building",
+        "Packer implementation",
+        "Scripts implementation"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Image script consolidation plan"
         ]
       }
     },

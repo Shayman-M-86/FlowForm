@@ -17,8 +17,8 @@ packer/
 └── plugins.pkr.hcl
 ```
 
-Packer loads one directory non-recursively. The scripts under
-`infra/images/scripts/` therefore assemble the selected canonical HCL files as
+Packer loads one directory non-recursively. The
+`infra/images/scripts/image` dispatcher therefore assembles selected HCL files as
 links in a temporary flat project, then run `packer init`, `packer validate`,
 and only the requested builder. No HCL definition is duplicated.
 
@@ -69,17 +69,15 @@ place; rebuild templates from the original QCOW2 when reducing a prior size.
 ## Build order
 
 ```bash
-cp infra/images/scripts/.env.example infra/images/scripts/.env
-infra/images/scripts/prepare-proxmox-source.sh
-infra/images/scripts/prepare-proxmox-source.sh --apply
+cp infra/images/config/proxmox-source.env.example infra/images/config/proxmox-source.env
+infra/images/scripts/image prepare proxmox
+infra/images/scripts/image prepare proxmox --apply
 
 cp infra/images/packer/variables/proxmox.auto.pkrvars.hcl.example \
   infra/images/packer/variables/proxmox.auto.pkrvars.hcl
 # Fill in the local Proxmox values.
-infra/images/scripts/build-proxmox-image.sh
-infra/images/scripts/build-proxmox-localstack-fixture.sh
-infra/images/scripts/build-proxmox-db-fixture.sh
-infra/images/scripts/verify-proxmox-disk-sizes.sh
+infra/images/scripts/image build proxmox all
+infra/images/scripts/image verify proxmox
 
 cd infra/deployment/proxmox/terraform
 terraform init
@@ -88,13 +86,14 @@ terraform plan
 ```
 
 For AWS, copy the AWS variable example and run
-`infra/images/scripts/build-aws-image.sh`. The wrapper accepts only a minimal
-AL2023 source and an 8–12 GiB root, then runs `verify-aws-ami.sh` against the
+`infra/images/scripts/image build aws`. The dispatcher accepts only a minimal
+AL2023 source and an 8–12 GiB root, then verifies the AMI against the
 completed artifact. To publish the resulting manifest AMI ID to the CDK
 configuration parameter, run:
 
 ```bash
-infra/images/scripts/publish-aws-ami.sh /flowform/staging/ec2/baseAmiId ap-southeast-2
+infra/images/scripts/image publish aws --environment staging --dry-run
+infra/images/scripts/image publish aws --environment staging
 ```
 
 See `infra/images/IMAGE-CONTRACT.md` for the allowed image contents.

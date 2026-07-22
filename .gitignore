@@ -140,4 +140,4 @@ infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.crt
 infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.key
 infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.srl
 !infra/deployment/proxmox/scripts/lib
-infra/images/scripts/lib
+!infra/images/scripts/lib

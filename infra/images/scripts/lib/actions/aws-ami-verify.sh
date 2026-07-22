@@ -2,13 +2,13 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PACKER_DIR="$(cd -- "${SCRIPT_DIR}/../packer" && pwd)"
+PACKER_DIR="${PACKER_DIR:-$(cd -- "${SCRIPT_DIR}/../../../packer" && pwd)}"
 VARS_FILE="${PACKER_DIR}/variables/aws.auto.pkrvars.hcl"
 MANIFEST="${PACKER_DIR}/manifests/packer-manifest.json"
 
 usage() {
   cat <<'USAGE'
-Usage: verify-aws-ami.sh [--vars-file PATH] [--manifest PATH]
+Usage: image verify aws [--vars-file PATH] [--manifest PATH]
 
 Verify that the most recent amazon-ebs artifact has exactly the configured
 root volume size, uses gp3, is encrypted, and has no additional EBS mappings.
@@ -16,7 +16,7 @@ USAGE
 }
 
 die() {
-  printf '[verify-aws-ami] ERROR: %s\n' "$*" >&2
+  printf '[image-aws-verify] ERROR: %s\n' "$*" >&2
   exit 1
 }
 
@@ -74,7 +74,10 @@ expected_encrypted="$(awk -F '=' '$1 ~ /^[[:space:]]*aws_encrypt_boot[[:space:]]
 [[ "${expected_encrypted}" == "true" ]] \
   || die "aws_encrypt_boot must remain true for the FlowForm AWS image contract"
 
-ami_id="$(${SCRIPT_DIR}/extract-aws-ami-id.sh "${MANIFEST}")"
+ami_id="$(jq -er '
+  .builds | map(select(.builder_type == "amazon-ebs")) | last | .artifact_id // empty
+  | select(type == "string") | split(":") | .[1] // empty
+' "${MANIFEST}")" || die "no amazon-ebs artifact found in ${MANIFEST}"
 [[ "${ami_id}" =~ ^ami-[0-9a-f]+$ ]] || die "invalid amazon-ebs artifact ID: ${ami_id}"
 
 image_json="$(aws ec2 describe-images --region "${region}" --image-ids "${ami_id}" --output json)"

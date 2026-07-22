@@ -2,12 +2,13 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-ENV_FILE="${SCRIPT_DIR}/.env"
+IMAGE_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
+ENV_FILE="${IMAGE_CONFIG_FILE:-${IMAGE_ROOT}/config/proxmox-source.env}"
 vmids=()
 
 usage() {
   cat <<'USAGE'
-Usage: verify-proxmox-disk-sizes.sh [--env-file PATH] [VMID...]
+Usage: image verify proxmox [--env-file PATH] [VMID...]
 
 Report the downloaded QCOW2 file/virtual sizes and validate Proxmox virtual
 disk sizes against PROXMOX_DISK_MAX_SIZE. With no VMIDs, checks the source,
@@ -16,7 +17,7 @@ USAGE
 }
 
 die() {
-  printf '[verify-proxmox-disk-sizes] ERROR: %s\n' "$*" >&2
+  printf '[image-proxmox-verify] ERROR: %s\n' "$*" >&2
   exit 1
 }
 
