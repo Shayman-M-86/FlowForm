@@ -33,6 +33,12 @@ def pytest_configure() -> None:
 
 
 @pytest.hookimpl(trylast=True)
+def pytest_sessionstart() -> None:
+    """Protect pytest's capture handlers before test-module collection begins."""
+    protect_root_handlers()
+
+
+@pytest.hookimpl(trylast=True)
 def pytest_runtest_setup() -> None:
     """Protect capture handlers that pytest installs after initial configuration."""
     protect_root_handlers()

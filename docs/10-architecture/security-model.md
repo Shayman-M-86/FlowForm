@@ -5,7 +5,7 @@ aliases:
 document_type: architecture
 status: draft
 authority: canonical
-verified_against_commit: ad26b87e9820
+verified_against_commit: null
 tags: [backend, infrastructure, security]
 related_code:
   - "../../backend/app/middleware/auth/"
@@ -16,6 +16,8 @@ related_code:
   - "../../backend/app/middleware/rate_limit/"
   - "../../infra/containers/"
   - "../../infra/deployment/aws/cdk/flowform_infra/stacks/"
+  - "../../.github/workflows/ci.yml"
+  - "../../backend/scripts/run_backend_security.sh"
 related_docs:
   - "Trust boundaries"
   - "Identity and authentication"
@@ -98,7 +100,11 @@ The application registers a configurable in-memory, per-IP sliding-window rate l
 - What distributed or edge-level abuse protection is intended beyond the current per-process rate limiter?
 - Are plaintext-key cache lifetime, eviction on session completion, worker memory exposure, and key rotation covered by operational policy and tests?
 - When the database and application stacks are completed, which controls will prove RDS encryption, credential separation, backups, deletion protection, and runtime bootstrap attachment?
-- No evidence in this pass establishes vulnerability scanning, security-event alerting, audit-log retention, incident response, backup restore testing, or formal threat-model coverage.
+- CI runs exact-lock Python dependency auditing and Bandit for the backend plus
+  a low-threshold pnpm audit for frontend changes. This is not comprehensive
+  repository or deployed-image scanning, and no evidence in this pass
+  establishes security-event alerting, audit-log retention, incident response,
+  backup restore testing, or formal threat-model coverage.
 
 ## Related documents
 

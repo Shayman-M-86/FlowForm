@@ -5,7 +5,7 @@ aliases:
 document_type: implementation
 status: draft
 authority: canonical
-verified_against_commit: ad26b87e9820
+verified_against_commit: null
 tags: [ci-cd]
 related_code:
   - "../../.github/workflows/ci.yml"
@@ -70,8 +70,8 @@ keys in repository secrets.
 
 ## Generated versus handwritten code
 
-Workflow YAML and helper scripts are handwritten. CI produces coverage, debug,
-CDK diff, and documentation-impact artifacts; frontend deployment produces
+Workflow YAML and helper scripts are handwritten. CI produces coverage, CDK
+diff, and documentation-impact artifacts; frontend deployment produces
 application `dist/` trees and remote S3/CloudFront side effects. OpenAPI and
 frontend contract files are checked-in generated artifacts whose drift is
 tested. The linked generated CI-workflow page is still a scaffold and does not
@@ -82,16 +82,19 @@ replace direct workflow inspection.
 Each job invokes the implementation-owned command: backend pytest/Ruff/Pyright
 and security helpers, frontend pnpm audit/ESLint/Vitest/builds, OpenAPI drift,
 CDK pytest/Ruff/Pyright/synth/diff, and documentation metadata/link/impact
-checks. Failure artifacts preserve backend logs and rendered Compose output;
-the test stack is always torn down.
+checks. Backend and CDK pytest suppress captured output in CI. Disposable test
+credentials are masked before services start, only explicitly allowlisted
+non-secret repository variables reach the backend-test environment, backend
+failures report Compose service status without printing or uploading raw
+service logs, and the test stack is always torn down.
 
 ## Known gaps
 
-The backend-test job still references
-`infra/containers/dev/compose/compose.test.yml` and
-`infra/containers/dev/services/backend/backend.test.Dockerfile`; the maintained
-files are under `infra/containers/strategies/dev/`. That job cannot use the
-current paths until the workflow is corrected.
+The backend-test job now uses the maintained
+`infra/containers/strategies/dev/` paths. Its environment generation remains
+incomplete because `scripts/secrets/generate-env-files.sh` omits several
+required non-Auth0 backend settings, so only a hosted run can attest successful
+settings initialization.
 
 CI does not run the checked-in container, rehearsal-deployment, or Packer
 invariant suites under `infra/tests/`. Deployment publishes only staging

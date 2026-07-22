@@ -5,7 +5,7 @@ aliases:
 document_type: workflow
 status: draft
 authority: canonical
-verified_against_commit: ad26b87e9820
+verified_against_commit: null
 tags: [configuration, security]
 related_code:
   - "../../backend/app/core/config.py"
@@ -75,8 +75,10 @@ failure test.
    export FLOWFORM_SECRET_DIR="${XDG_RUNTIME_DIR}/flowform-secrets"
    ```
 
-4. For tests, generate per-run database and Flask values. CI separately writes
-   `FLOWFORM_AUTH0_MGMT_SECRET.test.secret.txt` from a GitHub Actions secret
+4. For tests, generate per-run database and Flask values. Test Compose overrides
+   inherited management settings with a dummy identity, a direct throwaway
+   Auth0 secret, and startup validation disabled; it does not mount a persisted
+   or real Auth0 management secret. CI generates and masks its throwaway value
    before starting Compose.
 5. In the shared-host model, CDK owns scoped `app-secrets`, `db-secrets`, and
    `linkage-secret` resources plus SSM parameters. App bootstrap

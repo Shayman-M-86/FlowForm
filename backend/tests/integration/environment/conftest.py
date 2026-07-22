@@ -19,7 +19,8 @@ REQUIRED_ENV_VARS = (
     "DATABASE_CORE_NAME",
     "DATABASE_CORE_APP_USER",
     "DATABASE_CORE_APP_PASSWORD_FILE",
-    "FLOWFORM_AUTH0_MGMT_SECRET_FILE",
+    "FLOWFORM_AUTH0_MGMT_SECRET",
+    "FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP",
     "DATABASE_RESPONSE_HOST",
     "DATABASE_RESPONSE_PORT",
     "DATABASE_RESPONSE_NAME",
@@ -54,7 +55,6 @@ def validate_test_environment() -> None:
     for env_name in (
         "DATABASE_CORE_APP_PASSWORD_FILE",
         "DATABASE_RESPONSE_APP_PASSWORD_FILE",
-        "FLOWFORM_AUTH0_MGMT_SECRET_FILE",
     ):
         secret_path = Path(read_env(env_name))
         if not secret_path.is_file():

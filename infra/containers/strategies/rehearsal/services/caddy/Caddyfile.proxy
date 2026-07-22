@@ -18,7 +18,11 @@
 {
 	log {
 		output stdout
-		format json
+		format filter {
+			request>uri regexp "^(/api/v1/account/invitations/resolve/)[^/?]+" "${1}[REDACTED]"
+			request>headers>Referer replace REDACTED
+			wrap json
+		}
 	}
 }
 

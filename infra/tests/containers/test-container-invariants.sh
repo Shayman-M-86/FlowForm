@@ -48,6 +48,12 @@ if ! diff <(strip_caddy "${CADDY_PROD}") <(strip_caddy "${CADDY_REH}") >/dev/nul
   note "prod and rehearsal Caddyfile.proxy differ beyond the tls issuer line"
   diff <(strip_caddy "${CADDY_PROD}") <(strip_caddy "${CADDY_REH}") | sed 's/^/    /' >&2
 fi
+for caddy_file in "${CADDY_PROD}" "${CADDY_REH}"; do
+  grep -Fq 'request>uri regexp "^(/api/v1/account/invitations/resolve/)[^/?]+" "${1}[REDACTED]"' "${caddy_file}" \
+    || note "${caddy_file##*/} no longer redacts invitation tokens from Caddy error URIs"
+  grep -Fq 'request>headers>Referer replace REDACTED' "${caddy_file}" \
+    || note "${caddy_file##*/} no longer removes Referer values from Caddy error logs"
+done
 
 # (b) the rehearsal proxy override mounts the BASE squid.conf (no fork).
 grep -Fq '../services/squid/squid.conf:/etc/squid/squid.conf.template:ro' "${PROXY_OVERRIDE}" \
@@ -60,18 +66,29 @@ grep -Fq 'logformat flowform_access level=info' "${SQUID_CONF}" \
 grep -Fq "su -s /bin/sh -c 'exec tail -n 0 -F /var/log/squid/access.log' proxy &" "${PROXY_COMPOSE}" \
   || note "squid access logs are no longer exposed to Docker/Alloy"
 
-# (c) the four backend secret _FILE env vars are identical in runtime and test.
-secret_lines() {  # the four *_FILE=/run/secrets/... assignments, sorted
-  grep -oE '(FLOWFORM_APP_SECRET_KEY|FLOWFORM_AUTH0_MGMT_SECRET|DATABASE_CORE_APP_PASSWORD|DATABASE_RESPONSE_APP_PASSWORD)_FILE: */run/secrets/[A-Z_]+' "$1" \
+# (c) runtime keeps its four file-backed secrets; tests share only the DB/app
+# files and use a direct, throwaway Auth0 value with live validation disabled.
+shared_secret_lines() {  # the three shared *_FILE assignments, sorted
+  grep -oE '(FLOWFORM_APP_SECRET_KEY|DATABASE_CORE_APP_PASSWORD|DATABASE_RESPONSE_APP_PASSWORD)_FILE: */run/secrets/[A-Z_]+' "$1" \
     | tr -d ' ' | sort -u
 }
-ref="$(secret_lines "${APP_COMPOSE}")"
-[[ -n "${ref}" ]] || note "no secret _FILE env vars found in ${APP_COMPOSE##*/}"
-for f in "${TEST_COMPOSE}"; do
-  if [[ "$(secret_lines "$f")" != "${ref}" ]]; then
-    note "secret _FILE env vars in ${f##*/} diverge from ${APP_COMPOSE##*/}"
-  fi
-done
+ref="$(shared_secret_lines "${APP_COMPOSE}")"
+[[ "$(printf '%s\n' "${ref}" | sed '/^$/d' | wc -l)" -eq 3 ]] \
+  || note "runtime compose no longer has the three shared DB/app secret files"
+[[ "$(shared_secret_lines "${TEST_COMPOSE}")" == "${ref}" ]] \
+  || note "shared DB/app secret _FILE env vars in test compose diverge from runtime"
+
+grep -Fq 'FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET' "${APP_COMPOSE}" \
+  || note "runtime compose no longer requires its file-backed Auth0 management secret"
+grep -Fq 'FLOWFORM_AUTH0_MGMT_SECRET: ${FLOWFORM_TEST_AUTH0_MGMT_SECRET:-flowform-local-test-auth0-secret}' "${TEST_COMPOSE}" \
+  || note "test compose no longer uses the direct throwaway Auth0 management secret"
+grep -Fq 'FLOWFORM_AUTH0_MGMT_SECRET_FILE: ""' "${TEST_COMPOSE}" \
+  || note "test compose no longer clears the inherited Auth0 secret-file setting"
+grep -Fq 'FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP: "false"' "${TEST_COMPOSE}" \
+  || note "test compose no longer disables live Auth0 management validation"
+if grep -Eq '^[[:space:]]+- FLOWFORM_AUTH0_MGMT_SECRET$' "${TEST_COMPOSE}"; then
+  note "test compose still mounts an Auth0 management secret file"
+fi
 
 # (d) rehearsal DB is an offline, single-cluster fixture using the real init tree.
 grep -Fq 'image: postgres:17' "${DB_COMPOSE}" || note "rehearsal DB image is not postgres:17"

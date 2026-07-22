@@ -2,10 +2,11 @@
 """Generate throwaway secret files for the dev/test Docker environments.
 
 Only machine-local, regenerable values are produced here — the local
-Postgres passwords and (for test) the Flask secret key. Values that must
-persist or cannot be generated (Flask dev secret key, Auth0 management
+Postgres passwords and (for test) the Flask secret key. The test stack uses
+a direct throwaway Auth0 value and never reads a persisted Auth0 secret file.
+Values that must persist (the Flask dev secret key and real Auth0 management
 secret) live in AWS Secrets Manager and are fetched by
-scripts/secrets/fetch-dev-secrets.sh instead.
+scripts/secrets/fetch-dev-secrets.sh for dev instead.
 
 Prod values are deliberately NOT generatable: prod secrets are created and
 stored in Secrets Manager only, never as local files.
@@ -47,9 +48,9 @@ _DB_PASSWORDS = (
     "DATABASE_RESPONSE_INIT_PASSWORD",
 )
 
-# dev's Flask secret key and Auth0 management secret come from Secrets
-# Manager (they must persist / can't be generated); test is fully
-# self-contained apart from the Auth0 secret, which CI injects.
+# Dev's Flask secret key and Auth0 management secret come from Secrets
+# Manager. Test's Auth0 credential is an intentionally throwaway direct
+# environment value, not a generated or persisted secret file.
 ENV_SECRETS = {
     "dev": _DB_PASSWORDS,
     "test": (*_DB_PASSWORDS, "FLOWFORM_APP_SECRET_KEY"),

@@ -36,7 +36,7 @@ FlowForm is split into three main experiences.
 
 The public site provides the marketing, documentation, and public-facing entry point for FlowForm.
 
-It is built with **Astro 6**, using a static-first architecture with React islands where interactivity is needed. This keeps the site fast, SEO-friendly, and simple to deploy.
+It is built with **Astro 7**, using a static-first architecture with React islands where interactivity is needed. This keeps the site fast, SEO-friendly, and simple to deploy.
 
 ### Studio
 
@@ -128,7 +128,7 @@ FlowForm already includes the major foundations of a production-style SaaS appli
 
 ### Public site
 
-* Marketing and landing pages built with **Astro 6**
+* Marketing and landing pages built with **Astro 7**
 * Static-first architecture with React islands
 * Public form-filler experience for published surveys
 * `FormFillerPage` embedded from `@flowform/builder`
@@ -165,7 +165,7 @@ A Flask REST API under `/api/v1/...`, including:
 ```text
 FlowForm
 ├── Public site
-│   ├── Astro 6
+│   ├── Astro 7
 │   ├── Static marketing/docs pages
 │   └── React islands for public form filling
 │
@@ -305,7 +305,7 @@ Core technologies:
 
 ### Public site
 
-The public site is built with Astro 6.
+The public site is built with Astro 7.
 
 It provides:
 
@@ -335,7 +335,7 @@ This keeps the product consistent across Studio, the public site, and the respon
 | Backend            | Python 3.14+, Flask 3, SQLAlchemy 2, Pydantic v2                  |
 | Backend auth       | Auth0, RS256 JWTs, JWKS verification, `@auth.require_auth(scope)` |
 | Database           | PostgreSQL, split into `core` and `response` databases            |
-| Public site        | Astro 6                                                           |
+| Public site        | Astro 7                                                           |
 | Studio app         | React 19, TypeScript, Vite 8                                      |
 | Routing            | TanStack Router v1                                                |
 | Server state       | TanStack Query v5                                                 |

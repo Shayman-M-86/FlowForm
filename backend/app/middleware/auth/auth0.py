@@ -1,3 +1,6 @@
+# ruff: noqa: E402
+"""Auth0 integration; the warning filter must precede auth0-api-python imports."""
+
 from __future__ import annotations
 
 import asyncio

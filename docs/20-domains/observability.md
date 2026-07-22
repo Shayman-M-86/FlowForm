@@ -14,6 +14,8 @@ related_code:
   - "../../infra/containers/runtime/compose/"
   - "../../infra/containers/runtime/services/alloy/"
   - "../../infra/containers/runtime/services/alloy-app/"
+  - "../../infra/containers/strategies/aws/services/caddy/Caddyfile.proxy"
+  - "../../infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy"
 related_docs:
   - "Runtime containers"
   - "Backend implementation"
@@ -34,9 +36,9 @@ the proxy host journal to Grafana Cloud Loki.
 
 ## Responsibilities
 
-- Configure console JSON or human-readable logging, optional rotating files,
-  root severity, selected dependency logger levels, and handler-level redaction
-  for recognised credential-bearing fields and strings.
+- Configure console JSON or human-readable logging, optional owner-only (`0600`)
+  rotating files, root severity, selected dependency logger levels, and
+  handler-level redaction for recognised credential-bearing fields and strings.
 - Attach a generated request ID to request logs and the `X-Request-ID` response
   header, with optional end-to-end duration.
 - Emit debug timing checkpoints for session start and answer-save steps without
@@ -46,6 +48,8 @@ the proxy host journal to Grafana Cloud Loki.
 - Provide structured audit-log helpers and a core `audit_logs` table shape.
 - Rotate container JSON logs locally and use Grafana Alloy to collect Docker
   logs on both hosts plus the proxy host's systemd journal.
+- Redact invitation-token path segments and the complete `Referer` header from
+  Caddy runtime/error records before those records reach the container log.
 - Forward app-host backend logs to the proxy-host Alloy gateway, then to Grafana
   Cloud Loki; parse backend JSON and label only selected low-cardinality fields.
 
@@ -118,8 +122,11 @@ local source.
   values, and unmatched requests use a fixed sentinel. Handler filters also mask
   recognised secret fields and string patterns. These controls do not make an
   arbitrary unlabelled value safe to log; call sites must still exclude secrets.
-- Caddy access logs are outside the application filter and still observe the raw
-  request URI. No secondary Alloy masking stage is configured for proxy logs.
+- Caddy runtime/error records are outside the Python application filter. Their
+  logger now removes invitation-token path segments and the complete `Referer`
+  header, while Caddy handles Authorization and Cookie redaction. The URI rule
+  is deliberately path-specific, and no secondary Alloy masking stage is
+  configured for other caller-controlled proxy fields.
 - Alloy deployment labels are hard-coded as `rehearsal` and `proxmox` in the
   checked-in configs even though the shared Compose files describe staging/prod
   reuse. Environment-label ownership needs clarification.

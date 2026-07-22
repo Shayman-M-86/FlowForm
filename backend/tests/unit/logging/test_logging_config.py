@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import stat
 from types import SimpleNamespace
 from typing import cast
 
@@ -43,4 +44,5 @@ def test_setup_logging_writes_exceptions_to_app_log(tmp_path) -> None:
         handler.flush()
 
     assert "RuntimeError: boom" in app_log.read_text(encoding="utf-8")
+    assert stat.S_IMODE(app_log.stat().st_mode) == 0o600
     assert not (tmp_path / "error.log").exists()

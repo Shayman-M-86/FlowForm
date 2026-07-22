@@ -13,7 +13,11 @@ REDACTED = "[REDACTED]"
 _SENSITIVE_KEYS = frozenset(
     {
         "apikey",
+        "accesskeyid",
         "authorization",
+        "awsaccesskeyid",
+        "awssecretaccesskey",
+        "awssessiontoken",
         "clientsecret",
         "connectionstring",
         "cookie",
@@ -23,10 +27,13 @@ _SENSITIVE_KEYS = frozenset(
         "password",
         "passwd",
         "privatekey",
+        "providermessage",
         "proxyauthorization",
         "refreshtoken",
         "secret",
+        "secretaccesskey",
         "secretstring",
+        "sessiontoken",
         "setcookie",
         "token",
         "accesstoken",
@@ -36,8 +43,10 @@ _SENSITIVE_KEYS = frozenset(
 
 _SENSITIVE_KEY_PATTERN = (
     r"authorization|proxy[-_]?authorization|cookie|set[-_]?cookie|password|passwd|"
+    r"(?:aws[-_]?)?secret[-_]?access[-_]?key|(?:aws[-_]?)?session[-_]?token|"
+    r"(?:aws[-_]?)?access[-_]?key[-_]?id|"
     r"secret(?:string|_string)?|token|access[-_]?token|refresh[-_]?token|id[-_]?token|"
-    r"client[-_]?secret|api[-_]?key|private[-_]?key|database[-_]?url|"
+    r"client[-_]?secret|api[-_]?key|private[-_]?key|provider[-_]?message|database[-_]?url|"
     r"connection[-_]?string|wrapped[-_]?dek|linkage[-_]?secret"
 )
 

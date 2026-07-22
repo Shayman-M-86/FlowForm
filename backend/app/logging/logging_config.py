@@ -141,6 +141,15 @@ class ColorFormatter(logging.Formatter):
 # =============================================================================
 
 
+class PrivateRotatingFileHandler(logging.handlers.RotatingFileHandler):
+    """Keep the active and newly rotated application log files owner-only."""
+
+    def _open(self):
+        stream = super()._open()
+        os.chmod(self.baseFilename, 0o600)
+        return stream
+
+
 def build_stream_handler(
     *,
     json_logs: bool,
@@ -167,7 +176,7 @@ def build_file_handler(
     """Build a rotating file handler."""
     ensure_parent_dir(path)
 
-    handler = logging.handlers.RotatingFileHandler(
+    handler = PrivateRotatingFileHandler(
         filename=path,
         maxBytes=max_bytes,
         backupCount=backup_count,

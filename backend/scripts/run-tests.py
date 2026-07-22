@@ -34,14 +34,13 @@ if isinstance(sys.stderr, TextIOWrapper):
 #   ./run-tests.sh [--ai] [--verbose] [--logs=all|none] [--log-tail=N] [--clean-rebuild] [pytest args]
 #
 # Options:
-#   --ai              Compact output for agents/CI: hide Compose startup chatter
-#                     and omit pytest captured stdout/log sections.
+#   --ai              Compact output for agents/CI: hide Compose startup chatter.
 #   --verbose, -v     Show full Docker/test command output and run pytest without
-#                     the script's quiet defaults.
-#   --logs=all        On failure, print Docker logs from all services.
-#   --logs=none       On failure, skip Docker logs. This is the default.
-#   --log-tail=N      Number of Docker log lines to print with --logs=all
-#                     (default: 250).
+#                     the script's quiet defaults. Pytest capture stays hidden.
+#   --logs=all        Compatibility flag: on failure, print service status only.
+#                     Raw Docker logs are intentionally never emitted.
+#   --logs=none       On failure, skip service diagnostics. This is the default.
+#   --log-tail=N      Deprecated compatibility option; raw log tails are disabled.
 #   --clean-rebuild   Force a full clean rebuild before running tests.
 #   --help, -h        Print this help text.
 #
@@ -539,12 +538,12 @@ def wait_for_backend() -> None:
         wait_elapsed += 1
 
 
-def dump_logs(log_mode: str, log_tail: int) -> None:
+def dump_logs(log_mode: str, _log_tail: int) -> None:
     if log_mode == "none":
         return
 
-    print_section(f"Docker logs from all services, last {log_tail} lines")
-    run(compose_args("logs", "--no-color", f"--tail={log_tail}"), check=False)
+    print_section("Test service status (raw Docker logs suppressed)")
+    run(compose_args("ps", "--all"), check=False)
 
 
 def print_changed_bucket_preview(changed: dict[str, list[str]]) -> None:
@@ -681,7 +680,7 @@ def pytest_output_mode(args: argparse.Namespace) -> list[str]:
 
     output_mode = ["-q", "--tb=short"]
     if args.ai:
-        output_mode.extend(["--show-capture=no", "--color=no"])
+        output_mode.append("--color=no")
     return output_mode
 
 

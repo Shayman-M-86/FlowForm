@@ -100,12 +100,21 @@ services:
       DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
 
       FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
-      FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET
+      # Test runs must never consume the real dev/Auth0 credential inherited
+      # from .backend.env. CI supplies a masked per-run throwaway; local runs
+      # use the explicit non-secret fallback.
+      FLOWFORM_AUTH0_MGMT_ID: flowform-test-management-client
+      FLOWFORM_AUTH0_MGMT_DOMAIN: auth0.test.invalid
+      FLOWFORM_AUTH0_MGMT_SECRET: ${FLOWFORM_TEST_AUTH0_MGMT_SECRET:-flowform-local-test-auth0-secret}
+      FLOWFORM_AUTH0_MGMT_SECRET_FILE: ""
+      FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP: "false"
+      FLOWFORM_LOGGING_LOG_FILE: ""
     command: ["sh", "-lc", "tail -f /dev/null"]
     volumes:
       - ../../../../../backend:/app
-      - ../../../../../backend/logs:/app/logs
       - flowform_backend_test_venv:/opt/flowform/backend-test-venv
+    tmpfs:
+      - /app/logs:size=16m,mode=0700
     depends_on:
       postgres-core:
         condition: service_healthy
@@ -115,7 +124,6 @@ services:
       - DATABASE_CORE_APP_PASSWORD
       - DATABASE_RESPONSE_APP_PASSWORD
       - FLOWFORM_APP_SECRET_KEY
-      - FLOWFORM_AUTH0_MGMT_SECRET
     networks:
       - flowform_net
     ports:
@@ -144,5 +152,3 @@ secrets:
     file: ${FLOWFORM_SECRET_DIR:-../../../../env/test/secrets}/DATABASE_RESPONSE_APP_PASSWORD.test.secret.txt
   FLOWFORM_APP_SECRET_KEY:
     file: ${FLOWFORM_SECRET_DIR:-../../../../env/test/secrets}/FLOWFORM_APP_SECRET_KEY.test.secret.txt
-  FLOWFORM_AUTH0_MGMT_SECRET:
-    file: ${FLOWFORM_SECRET_DIR:-../../../../env/test/secrets}/FLOWFORM_AUTH0_MGMT_SECRET.test.secret.txt

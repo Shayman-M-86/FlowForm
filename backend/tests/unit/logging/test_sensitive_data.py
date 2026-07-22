@@ -14,10 +14,14 @@ from app.logging.logging_config import (
 from app.logging.sensitive_data import REDACTED, SensitiveDataFilter, protect_root_handlers
 
 _CANARIES = {
+    "aws_access_key": "FLOWFORM_TEST_AWS_ACCESS_KEY_5a96e",
+    "aws_secret_key": "FLOWFORM_TEST_AWS_SECRET_KEY_244ad",
+    "aws_session_token": "FLOWFORM_TEST_AWS_SESSION_TOKEN_014b8",
     "bearer": "FLOWFORM_TEST_BEARER_8bd22",
     "cookie": "FLOWFORM_TEST_SESSION_COOKIE_1de54",
     "database": "FLOWFORM_TEST_DB_PASSWORD_7ad91",
     "linkage": "FLOWFORM_TEST_LINKAGE_SECRET_3fc43",
+    "provider_body": "FLOWFORM_TEST_PROVIDER_BODY_c1387",
 }
 
 
@@ -35,10 +39,16 @@ def test_handler_output_redacts_sensitive_values_without_dropping_context(json_l
             raise RuntimeError(f"client_secret={_CANARIES['linkage']}")
         except RuntimeError:
             logger.exception(
-                "redaction-canary-event database=%s authorization=Bearer %s Cookie: session=%s aws_response=%s",
+                "redaction-canary-event database=%s authorization=Bearer %s Cookie: session=%s "
+                "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s "
+                "provider_message=%s aws_response=%s",
                 f"postgresql://flowform:{_CANARIES['database']}@postgres-core/flowform",
                 _CANARIES["bearer"],
                 _CANARIES["cookie"],
+                _CANARIES["aws_access_key"],
+                _CANARIES["aws_secret_key"],
+                _CANARIES["aws_session_token"],
+                _CANARIES["provider_body"],
                 {
                     "SecretString": _CANARIES["linkage"],
                     "VersionId": "safe-version",
@@ -50,6 +60,14 @@ def test_handler_output_redacts_sensitive_values_without_dropping_context(json_l
                             {"secret_string": _CANARIES["linkage"]},
                             {"safe_field": "safe-context"},
                         ],
+                        "aws_response": {
+                            "Credentials": {
+                                "AccessKeyId": _CANARIES["aws_access_key"],
+                                "SecretAccessKey": _CANARIES["aws_secret_key"],
+                                "SessionToken": _CANARIES["aws_session_token"],
+                            },
+                            "safe_field": "safe-aws-context",
+                        },
                     }
                 },
             )
@@ -70,6 +88,7 @@ def test_handler_output_redacts_sensitive_values_without_dropping_context(json_l
     if json_logs:
         payload = json.loads(rendered)
         assert payload["metadata"]["nested"][1]["safe_field"] == "safe-context"
+        assert payload["metadata"]["aws_response"]["safe_field"] == "safe-aws-context"
 
 
 def test_stream_handlers_are_protected_at_construction() -> None:
@@ -90,6 +109,27 @@ def test_existing_root_handlers_receive_redaction_filter() -> None:
     finally:
         root.removeHandler(handler)
         handler.close()
+
+
+def test_pytest_capture_never_retains_raw_secret_values(caplog: pytest.LogCaptureFixture) -> None:
+    logger = logging.getLogger("app.tests.redaction.pytest_capture")
+    protect_root_handlers()
+
+    with caplog.at_level(logging.INFO, logger=logger.name):
+        logger.info(
+            "pytest-capture-canary authorization=Bearer %s",
+            _CANARIES["bearer"],
+            extra={"metadata": {"client_secret": _CANARIES["linkage"]}},
+        )
+
+    assert caplog.records
+    assert "pytest-capture-canary" in caplog.text
+    assert REDACTED in caplog.text
+
+    for canary in _CANARIES.values():
+        assert canary not in caplog.text
+        assert all(canary not in record.getMessage() for record in caplog.records)
+        assert all(canary not in str(record.__dict__) for record in caplog.records)
 
 
 def test_dangerous_dependency_debug_loggers_default_to_warning() -> None:

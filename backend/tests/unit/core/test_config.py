@@ -61,13 +61,14 @@ def test_database_settings_rejects_missing_password_file(tmp_path: Path) -> None
         )
 
 
-def test_settings_loads_auth0_mgmt_from_flat_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_settings_prefers_direct_auth0_test_secret_over_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     secret_key_file = tmp_path / "secret-key.txt"
-    auth0_mgmt_secret_file = tmp_path / "auth0-mgmt-secret.txt"
     core_password_file = tmp_path / "core-password.txt"
     response_password_file = tmp_path / "response-password.txt"
     secret_key_file.write_text("app-secret\n", encoding="utf-8")
-    auth0_mgmt_secret_file.write_text("management-client-secret\n", encoding="utf-8")
     core_password_file.write_text("core-secret\n", encoding="utf-8")
     response_password_file.write_text("response-secret\n", encoding="utf-8")
 
@@ -77,7 +78,9 @@ def test_settings_loads_auth0_mgmt_from_flat_env(monkeypatch: pytest.MonkeyPatch
         "FLOWFORM_AUTH0_DOMAIN": "example.auth0.com",
         "FLOWFORM_AUTH0_AUDIENCE": "https://api.example.test",
         "FLOWFORM_AUTH0_MGMT_ID": "management-client-id",
-        "FLOWFORM_AUTH0_MGMT_SECRET_FILE": str(auth0_mgmt_secret_file),
+        "FLOWFORM_AUTH0_MGMT_SECRET": "throwaway-management-client-secret",
+        "FLOWFORM_AUTH0_MGMT_SECRET_FILE": str(tmp_path / "must-not-be-read.txt"),
+        "FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP": "false",
         "FLOWFORM_AWS_ACCESS_KEY_ID": "test-access-key",
         "FLOWFORM_AWS_SECRET_ACCESS_KEY": "test-secret-key",
         "FLOWFORM_ENCRYPTION_KMS_KEY_ARN": "arn:aws:kms:ap-southeast-2:000000000000:key/test",
@@ -102,7 +105,8 @@ def test_settings_loads_auth0_mgmt_from_flat_env(monkeypatch: pytest.MonkeyPatch
 
     assert settings.flowform.auth0.mgmt is not None
     assert settings.flowform.auth0.mgmt.id == "management-client-id"
-    assert settings.flowform.auth0.mgmt.secret.get_secret_value() == "management-client-secret"
+    assert settings.flowform.auth0.mgmt.secret.get_secret_value() == "throwaway-management-client-secret"
+    assert settings.flowform.auth0.mgmt.validate_on_startup is False
 
 
 def test_auth0_mgmt_settings_loads_secret_from_file(tmp_path: Path) -> None:

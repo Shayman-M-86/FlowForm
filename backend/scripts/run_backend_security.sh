@@ -39,8 +39,17 @@ install_uv_if_missing
 
 cd "${BACKEND_DIR}"
 
-echo "==> Generating requirements.txt..."
-uv pip compile pyproject.toml --extra dev --extra test -o requirements.txt
+echo "==> Exporting the locked runtime, development, and test requirements..."
+# Audit the exact locked dependency graph, including the development and test
+# extras covered by this script. `--locked` also fails if pyproject.toml and
+# uv.lock have drifted apart, rather than silently resolving newer packages.
+uv export \
+  --locked \
+  --extra dev \
+  --extra test \
+  --no-emit-project \
+  --no-hashes \
+  --output-file requirements.txt
 
 pip_audit_status=0
 bandit_app_status=0
