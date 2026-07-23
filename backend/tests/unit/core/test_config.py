@@ -6,9 +6,31 @@ from typing import Any, cast
 import pytest  # type: ignore[import]
 from pydantic import SecretStr, ValidationError
 
-from app.core.config import AppSettings, Auth0MgmtSettings, DatabaseSettings, FlowForm, Settings
+from app.core.config import (
+    AppSettings,
+    Auth0MgmtSettings,
+    DatabaseSettings,
+    FlowForm,
+    Settings,
+    TracingSettings,
+)
 
 logger = logging.getLogger("app.tests")
+
+
+def test_tracing_settings_are_disabled_by_default() -> None:
+    settings = TracingSettings()
+
+    assert settings.enabled is False
+    assert settings.otlp_endpoint == "http://alloy:4317"
+    assert settings.sample_ratio == 1.0
+    assert settings.service_name == "backend"
+
+
+@pytest.mark.parametrize("sample_ratio", [-0.01, 1.01])
+def test_tracing_settings_reject_invalid_sample_ratio(sample_ratio: float) -> None:
+    with pytest.raises(ValidationError):
+        TracingSettings(sample_ratio=sample_ratio)
 
 
 def test_app_version_defaults_to_pyproject_version(tmp_path: Path) -> None:

@@ -1,11 +1,11 @@
 // FlowForm app-box observability agent (Grafana Alloy).
 //
-// Phase 2 (logs): ships the backend container's logs off the OFFLINE app box.
+// Ships backend logs and traces off the OFFLINE app box.
 // The app box (10.10.10.20) has no internet route — its only egress is Squid,
 // which does not admit Grafana Cloud — so this agent does NOT talk to Grafana
-// directly. It forwards to the proxy-box Alloy (10.10.10.10:3500) over the
-// private net, and that gateway Alloy fans out to Grafana Cloud. Keeping the app
-// box offline is the whole point of the rehearsal, so we add no internet hole.
+// directly. It forwards logs to the proxy-box Alloy on :3500 and OTLP traces on
+// :4317 over the private net; that gateway fans both signals out to Grafana
+// Cloud. Keeping the app box offline is the whole point of the rehearsal.
 //
 // The backend emits one JSON object per log record (FLOWFORM_LOGGING_LOG_JSON=
 // true; see backend/app/logging/logging_config.py JsonFormatter). We parse that
@@ -13,11 +13,38 @@
 // keep high-cardinality context (request_id, user_id, ids) as fields, not labels.
 //
 // Injected by docker compose from the app bootstrap env:
-//   PROXY_PRIVATE_IP   proxy-box Alloy gateway host (loki.source.api on :3500)
+//   PROXY_PRIVATE_IP   proxy-box Alloy gateway host (:3500 logs, :4317 traces)
 
 logging {
   level  = "info"
   format = "logfmt"
+}
+
+// --- OTLP traces: backend -> local receiver -> proxy-box gateway -------------
+otelcol.receiver.otlp "backend" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  output {
+    traces = [otelcol.processor.batch.traces.input]
+  }
+}
+
+otelcol.processor.batch "traces" {
+  output {
+    traces = [otelcol.exporter.otlp.proxy_gateway.input]
+  }
+}
+
+otelcol.exporter.otlp "proxy_gateway" {
+  client {
+    endpoint = sys.env("PROXY_PRIVATE_IP") + ":4317"
+
+    tls {
+      insecure = true
+    }
+  }
 }
 
 // --- Forward to the proxy-box gateway Alloy ----------------------------------
@@ -41,19 +68,23 @@ discovery.relabel "containers" {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     target_label  = "service_name"
   }
+
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     target_label  = "service"
   }
+
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
     target_label  = "compose_project"
   }
+
   rule {
     source_labels = ["__meta_docker_container_name"]
     regex         = "/(.*)"
     target_label  = "container"
   }
+
   rule {
     source_labels = ["__meta_docker_container_log_stream"]
     target_label  = "stream"
@@ -64,10 +95,12 @@ discovery.relabel "containers" {
     replacement  = "rehearsal"
     target_label = "environment"
   }
+
   rule {
     replacement  = "proxmox"
     target_label = "platform"
   }
+
   rule {
     replacement  = "app"
     target_label = "host_role"
@@ -77,7 +110,7 @@ discovery.relabel "containers" {
 loki.source.docker "containers" {
   host       = "unix:///var/run/docker.sock"
   targets    = discovery.relabel.containers.output
-  labels     = { job = "docker" }
+  labels     = {job = "docker"}
   forward_to = [loki.process.backend.receiver]
 }
 
@@ -93,18 +126,20 @@ loki.process "backend" {
     // request_id, duration_ms, event_type, ...
     stage.json {
       expressions = {
-        level        = "level",
-        logger       = "logger",
-        message      = "message",
-        method       = "method",
-        path         = "path",
-        status       = "status",
-        client_ip    = "client_ip",
-        event_type   = "event_type",
-        request_id   = "request_id",
-        duration_ms  = "duration_ms",
-        user_id      = "user_id",
-        environment  = "environment",
+        level       = "level",
+        logger      = "logger",
+        message     = "message",
+        method      = "method",
+        path        = "path",
+        status      = "status",
+        client_ip   = "client_ip",
+        event_type  = "event_type",
+        request_id  = "request_id",
+        duration_ms = "duration_ms",
+        user_id     = "user_id",
+        environment = "environment",
+        trace_id    = "trace_id",
+        span_id     = "span_id",
       }
     }
 
@@ -126,6 +161,7 @@ loki.process "backend" {
       source   = "level"
       template = "{{ ToLower .Value }}"
     }
+
     stage.labels {
       values = {
         level = "",
@@ -146,9 +182,10 @@ loki.process "backend" {
     // (keyed off `method` being present) to avoid the same duplication we
     // stripped from squid/caddy. Only non-empty fields render.
     stage.template {
-      source = "line"
-      template = "{{ if and .message (not .method) }}msg=\"{{ .message }}\" {{ end }}{{ if .logger }}logger={{ .logger }} {{ end }}{{ if .method }}method={{ .method }} {{ end }}{{ if .status }}status={{ .status }} {{ end }}{{ if .path }}path=\"{{ .path }}\" {{ end }}{{ if .client_ip }}client_ip={{ .client_ip }} {{ end }}{{ if .duration_ms }}duration_ms={{ .duration_ms }} {{ end }}{{ if .request_id }}request_id={{ .request_id }} {{ end }}{{ if .user_id }}user_id={{ .user_id }} {{ end }}{{ if .event_type }}event_type={{ .event_type }} {{ end }}{{ if .environment }}environment={{ .environment }}{{ end }}"
+      source   = "line"
+      template = "{{ if and .message (not .method) }}msg=\"{{ .message }}\" {{ end }}{{ if .logger }}logger={{ .logger }} {{ end }}{{ if .method }}method={{ .method }} {{ end }}{{ if .status }}status={{ .status }} {{ end }}{{ if .path }}path=\"{{ .path }}\" {{ end }}{{ if .client_ip }}client_ip={{ .client_ip }} {{ end }}{{ if .duration_ms }}duration_ms={{ .duration_ms }} {{ end }}{{ if .request_id }}request_id={{ .request_id }} {{ end }}{{ if .trace_id }}trace_id={{ .trace_id }} {{ end }}{{ if .span_id }}span_id={{ .span_id }} {{ end }}{{ if .user_id }}user_id={{ .user_id }} {{ end }}{{ if .event_type }}event_type={{ .event_type }} {{ end }}{{ if .environment }}environment={{ .environment }}{{ end }}"
     }
+
     stage.output {
       source = "line"
     }
@@ -173,15 +210,18 @@ loki.process "backend" {
         component = "",
       }
     }
+
     stage.labels {
       values = {
         level = "",
       }
     }
+
     stage.template {
       source   = "level"
       template = "{{ ToLower .Value }}"
     }
+
     stage.labels {
       values = {
         level = "",
@@ -191,9 +231,10 @@ loki.process "backend" {
     // Rebuild as logfmt from the parsed fields, dropping ts/level. Only non-empty
     // fields render, so lines without a component key still stay well-formed.
     stage.template {
-      source = "line"
+      source   = "line"
       template = "{{ if .logger }}logger={{ .logger }} {{ end }}{{ if .component }}component={{ .component }} {{ end }}{{ if .msg }}msg=\"{{ .msg }}\"{{ end }}"
     }
+
     stage.output {
       source = "line"
     }

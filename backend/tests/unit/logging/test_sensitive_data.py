@@ -5,13 +5,19 @@ import json
 import logging
 
 import pytest
+from pydantic import SecretBytes, SecretStr
 
 from app.logging.logging_config import (
     THIRD_PARTY_LOG_LEVELS,
     build_stream_handler,
     configure_third_party_loggers,
 )
-from app.logging.sensitive_data import REDACTED, SensitiveDataFilter, protect_root_handlers
+from app.logging.sensitive_data import (
+    REDACTED,
+    SensitiveDataFilter,
+    protect_root_handlers,
+    redact_text,
+)
 
 _CANARIES = {
     "aws_access_key": "FLOWFORM_TEST_AWS_ACCESS_KEY_5a96e",
@@ -97,6 +103,74 @@ def test_stream_handlers_are_protected_at_construction() -> None:
         assert any(isinstance(item, SensitiveDataFilter) for item in handler.filters)
     finally:
         handler.close()
+
+
+@pytest.mark.parametrize(
+    ("source", "secret", "safe_context"),
+    [
+        ("Authorization: Bearer plain-token", "plain-token", "Authorization:"),
+        (
+            "database=postgresql://flowform:db-password@postgres/flowform",
+            "db-password",
+            "postgresql://flowform:",
+        ),
+        ("AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE", "AKIAIOSFODNN7EXAMPLE", "AWS_ACCESS_KEY_ID="),
+        (
+            "token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature123",
+            "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature123",
+            "token=",
+        ),
+        (
+            "github_token=ghp_abcdefghijklmnopqrstuvwxyz123456",
+            "ghp_abcdefghijklmnopqrstuvwxyz123456",
+            "github_token=",
+        ),
+        (
+            "{'Client-Secret': 'client-secret', 'safe': 'visible'}",
+            "client-secret",
+            "'safe': 'visible'",
+        ),
+    ],
+)
+def test_text_redaction_uses_canonical_key_rules(source: str, secret: str, safe_context: str) -> None:
+    rendered = redact_text(source)
+
+    assert secret not in rendered
+    assert REDACTED in rendered
+    assert safe_context in rendered
+    assert redact_text(rendered) == rendered
+
+
+def test_secret_types_are_redacted_in_structured_fields() -> None:
+    output = io.StringIO()
+    handler = build_stream_handler(json_logs=True, stream=output)
+    logger = logging.getLogger("app.tests.redaction.secret_types")
+    logger.handlers = [handler]
+    logger.propagate = False
+    logger.setLevel(logging.INFO)
+
+    try:
+        logger.info(
+            "secret-wrapper-canary",
+            extra={
+                "metadata": {
+                    "text": SecretStr("secret-str-canary"),
+                    "bytes": SecretBytes(b"secret-bytes-canary"),
+                    "safe": "visible",
+                }
+            },
+        )
+    finally:
+        handler.flush()
+        handler.close()
+        logger.handlers = []
+
+    payload = json.loads(output.getvalue())
+    assert payload["metadata"] == {
+        "text": REDACTED,
+        "bytes": REDACTED,
+        "safe": "visible",
+    }
 
 
 def test_existing_root_handlers_receive_redaction_filter() -> None:

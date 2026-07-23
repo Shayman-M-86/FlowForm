@@ -63,10 +63,12 @@ Maps configuration concepts to verified repository implementation.
 
 `DatabaseSettings` accepts either a full PostgreSQL URL or validated parts and
 supports password files. `Auth0Settings`, `AppSettings`, `AwsSettings`,
-`EncryptionSettings`, `EmailSettings`, and logging/server/rate-limit models form
-the remaining backend boundary. `EnvConfig` controls which CDK stacks exist and
-their environment-specific lifecycle; `SecurityScopeConfig` separates the
-shared non-production security namespace from production.
+`EncryptionSettings`, `EmailSettings`, and logging/tracing/server/rate-limit
+models form the remaining backend boundary. `TracingSettings` controls
+enablement, the OTLP/gRPC endpoint, parent-based sampling ratio, and service
+name. `EnvConfig` controls which CDK stacks exist and their
+environment-specific lifecycle; `SecurityScopeConfig` separates the shared
+non-production security namespace from production.
 
 `FlowForm` requires a file-backed Auth0 management secret and enabled Auth0
 startup validation in dev and production. Test mode permits a direct throwaway
@@ -86,8 +88,9 @@ and cloud-init then feed application and container consumers. Runtime code does
 not write back to the canonical models. Confidential values are generally
 intended to travel through secret files or Secrets Manager, while identifiers
 and ordinary runtime settings use environment files or SSM parameters. The
-Grafana token follows the proxy's file-backed observability secret path; only
-its URL and user remain in the proxy SSM parameter group.
+Grafana token follows the proxy's file-backed observability secret path and is
+shared by the Loki and OTLP basic-auth clients; only destination URLs and
+user/instance IDs remain in the proxy SSM parameter group.
 
 ## Generated versus handwritten code
 

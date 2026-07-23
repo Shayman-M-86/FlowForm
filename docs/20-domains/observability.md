@@ -9,6 +9,7 @@ verified_against_commit: null
 tags: [backend, infrastructure]
 related_code:
   - "../../backend/app/logging/"
+  - "../../backend/gunicorn.conf.py"
   - "../../backend/app/api/v1/system/health.py"
   - "../../backend/app/schema/orm/core/audit_log.py"
   - "../../infra/containers/runtime/compose/"
@@ -19,11 +20,12 @@ related_code:
 related_docs:
   - "Runtime containers"
   - "Backend implementation"
+  - "Distributed tracing"
 ---
 
 # Observability
 
-Defines the health and logging signals currently emitted or transported by the
+Defines the health, logging, and tracing signals currently emitted or transported by the
 application runtime. It describes checked-in behavior, not proof that a live
 environment has working retention, dashboards, alerts, or incident response.
 
@@ -31,8 +33,8 @@ environment has working retention, dashboards, alerts, or incident response.
 
 The domain provides enough signals to diagnose startup, HTTP requests,
 cross-store submission steps, dependency readiness, and selected failures. The
-shared host runtime also defines a logs-only path from app/proxy containers and
-the proxy host journal to Grafana Cloud Loki.
+shared host runtime ships app/proxy logs to Grafana Cloud Loki and backend/Caddy
+traces to Grafana Cloud Tempo.
 
 ## Responsibilities
 
@@ -55,11 +57,16 @@ the proxy host journal to Grafana Cloud Loki.
   Caddy runtime/error records before those records reach the container log.
 - Forward app-host backend logs to the proxy-host Alloy gateway, then to Grafana
   Cloud Loki; parse backend JSON and label only selected low-cardinality fields.
+- Create Caddy and backend request spans with W3C trace-context propagation,
+  instrument backend HTTP, SQLAlchemy, AWS SDK, and outbound `requests` calls,
+  and export sampled spans through the two Alloy agents to Grafana Cloud Tempo.
+- Inject active OpenTelemetry trace and span IDs into backend JSON logs and
+  retain the equivalent Caddy access-log fields for Loki-to-Tempo correlation.
 
 ## Non-responsibilities
 
-- No metrics, distributed traces, profiling, SLOs, alert rules, or on-call
-  workflow are implemented by the inspected application/runtime definitions.
+- No metrics, profiling, SLOs, alert rules, or on-call workflow are implemented
+  by the inspected application/runtime definitions.
 - Health endpoints do not attest Auth0, KMS, Secrets Manager, SES, proxy, or
   frontend availability.
 - Request timing logs are diagnostic checkpoints, not durable performance
@@ -78,6 +85,8 @@ the proxy host journal to Grafana Cloud Loki.
 | Readiness | `GET /api/v1/system/health/ready` | Timestamp and backend version; HTTP 200 only when both configured PostgreSQL sessions execute `SELECT 1`, otherwise 503. |
 | Audit record | Logger helper or core row | Actor/action/resource metadata shape exists, but call-site coverage is not established. |
 | Runtime log stream | Alloy/Loki | App/proxy container logs and proxy-host journal records; explicitly logs only. |
+| Distributed trace | Caddy and backend OpenTelemetry instrumentation | Caddy ingress and backend Flask/dependency spans exported over OTLP; parent-based ratio sampling is configured by the backend. |
+| Log/trace correlation | Backend formatter and Caddy access logs | Sampled request logs carry `trace_id` and `span_id`; request IDs remain available for log-only sources. |
 
 Alloy keeps request IDs, route templates, status, and duration as parsed fields
 rather than Loki labels to avoid high-cardinality streams. Backend, Caddy,
@@ -100,12 +109,16 @@ local source.
 6. Proxy Alloy combines those records with proxy-container and proxy-host
    journal logs and sends them to Grafana Cloud Loki with configured basic-auth
    credentials.
+7. The backend exports OTLP/gRPC to app Alloy on `alloy:4317`; app Alloy relays
+   to the proxy private address on `:4317`; proxy Alloy exports OTLP/HTTP to
+   Grafana Cloud. Caddy exports directly to its local proxy Alloy receiver.
 
 ## Implementation map
 
 - `backend/app/logging/logging_config.py` defines handlers, formatters, and
   startup configuration; `sensitive_data.py` filters emitted records;
-  `request_logging.py` and `request_timing.py` own request-scoped signals.
+  `request_logging.py` and `request_timing.py` own request-scoped signals;
+  `tracing.py` owns OpenTelemetry instrumentation and export.
 - `backend/app/api/v1/system/health.py` owns liveness and database readiness.
 - `backend/app/logging/audit_logging.py`, `services/audit_log.py`, and
   `schema/orm/core/audit_log.py` define two audit-emission primitives.
@@ -120,8 +133,8 @@ local source.
 
 - No application call sites were found for either audit helper, so the presence
   of `audit_logs` does not currently provide action coverage.
-- No metrics, traces, alert definitions, dashboards, log-retention policy, or
-  tested notification path were found in the inspected boundary.
+- No metrics, alert definitions, checked-in dashboards, log/trace-retention
+  policy, or tested notification path were found in the inspected boundary.
 - Matched request logs use Flask route templates instead of caller-provided path
   values, and unmatched requests use a fixed sentinel. Handler filters also mask
   recognised secret fields and string patterns. These controls do not make an
@@ -140,6 +153,9 @@ local source.
 - Grafana credentials and destination parameters are wired through runtime
   configuration, but successful delivery, tenant retention, access controls, and
   production deployment were not verified.
+- Squid observes HTTPS CONNECT tunnels and cannot participate in the application
+  trace context. Its access logs remain correlated by request/network timing
+  rather than an exact `trace_id`.
 - Readiness checks only PostgreSQL. The desired behavior during Auth0, AWS key
   service, email, or log-sink outages is not defined.
 
@@ -147,3 +163,4 @@ local source.
 
 - [[runtime-containers|Runtime containers]]
 - [[backend|Backend implementation]]
+- [[tracing|Distributed tracing]]

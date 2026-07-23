@@ -196,13 +196,19 @@ variable "localstack_seed_values" {
     FLOWFORM_ENV                            = "prod"
     FLOWFORM_LOGGING_LEVEL                  = "INFO"
     FLOWFORM_LOGGING_LOG_JSON               = "true"
+    FLOWFORM_TRACING_ENABLED                = "true"
+    FLOWFORM_TRACING_OTLP_ENDPOINT          = "http://alloy:4317"
+    FLOWFORM_TRACING_SAMPLE_RATIO           = "1.0"
+    FLOWFORM_TRACING_SERVICE_NAME           = "backend"
     # Grafana Cloud Loki target for the proxy-box Alloy agent. URL + user id are
     # non-secret and default here. The secret token is NOT a seed value at all: it
     # is delivered as the observability-secrets Secrets Manager entry by the
     # deploy-time SSH sync, never through this map or Terraform. Override the
     # URL/user for a real GC stack via TF_VAR_localstack_seed_values.
-    GRAFANA_CLOUD_LOKI_URL  = "https://logs-prod-026.grafana.net/loki/api/v1/push"
-    GRAFANA_CLOUD_LOKI_USER = "1687659"
+    GRAFANA_CLOUD_LOKI_URL       = "https://logs-prod-026.grafana.net/loki/api/v1/push"
+    GRAFANA_CLOUD_LOKI_USER      = "1687659"
+    GRAFANA_CLOUD_TEMPO_ENDPOINT = "tempo-prod-16-prod-au-southeast-1.grafana.net:443"
+    GRAFANA_CLOUD_TEMPO_USER     = "1681960"
   }
 
   validation {

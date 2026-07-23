@@ -1,11 +1,12 @@
 // FlowForm proxy-box observability agent (Grafana Alloy).
 //
-// Phase 1 scope: LOGS ONLY. This config ships two log sources to Grafana Cloud
-// Loki and nothing else — no metrics, no traces, no app instrumentation:
+// This config ships two log sources to Grafana Cloud Loki:
 //   1. the host systemd journal (host + per-unit)
 //   2. every Docker container on the box (Caddy, Squid, and Alloy itself),
 //      labelled with service_name (for Grafana Logs Drilldown) and a level
 //      extracted from the plain-text lines.
+// It also receives OTLP traces from Caddy and the app-box Alloy relay and sends
+// them to Grafana Cloud Tempo. Application instrumentation lives in the backend.
 //
 // The two NON-SECRET Grafana Cloud identifiers are injected as environment
 // variables by docker compose from /opt/flowform/proxy.env (rendered by
@@ -14,6 +15,8 @@
 //   GRAFANA_CLOUD_LOKI_URL   full Loki push URL, e.g.
 //                            https://logs-prod-XX.grafana.net/loki/api/v1/push
 //   GRAFANA_CLOUD_LOKI_USER  Loki tenant / user id (basic-auth username)
+//   GRAFANA_CLOUD_TEMPO_ENDPOINT  Tempo OTLP/gRPC endpoint (host:port)
+//   GRAFANA_CLOUD_TEMPO_USER      Tempo tenant id (basic-auth username)
 //
 // The SECRET (basic-auth password) is NOT an environment variable. It is
 // delivered as a file-backed Docker secret at GRAFANA_CLOUD_TOKEN_FILE
@@ -36,6 +39,43 @@ logging {
 local.file "grafana_cloud_token" {
   filename  = sys.env("GRAFANA_CLOUD_TOKEN_FILE")
   is_secret = true
+}
+
+// --- OTLP traces: Caddy + app gateway -> Grafana Cloud Tempo -----------------
+otelcol.auth.basic "grafana_cloud" {
+  // Alloy v1.5 uses the top-level client credentials. Keep this aligned with
+  // the runtime image until that image is upgraded.
+  username = sys.env("GRAFANA_CLOUD_TEMPO_USER")
+  password = local.file.grafana_cloud_token.content
+}
+
+otelcol.receiver.otlp "gateway" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  // Caddy's standard tracing handler exports OTLP/HTTP rather than gRPC.
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces = [otelcol.processor.batch.traces.input]
+  }
+}
+
+otelcol.processor.batch "traces" {
+  output {
+    traces = [otelcol.exporter.otlp.grafana_cloud.input]
+  }
+}
+
+// Grafana Cloud's Tempo instance accepts OTLP/gRPC with TLS on :443.
+otelcol.exporter.otlp "grafana_cloud" {
+  client {
+    endpoint = sys.env("GRAFANA_CLOUD_TEMPO_ENDPOINT")
+    auth     = otelcol.auth.basic.grafana_cloud.handler
+  }
 }
 
 // --- Grafana Cloud Loki sink -------------------------------------------------
@@ -76,6 +116,7 @@ loki.relabel "journal" {
     source_labels = ["__journal__systemd_unit"]
     target_label  = "unit"
   }
+
   rule {
     source_labels = ["__journal__hostname"]
     target_label  = "hostname"
@@ -87,7 +128,7 @@ loki.source.journal "host" {
   // read-only into the container (see proxy.yml).
   max_age       = "12h"
   relabel_rules = loki.relabel.journal.rules
-  labels        = { job = "systemd-journal" }
+  labels        = {job = "systemd-journal"}
   forward_to    = [loki.write.grafana_cloud.receiver]
 }
 
@@ -110,10 +151,12 @@ discovery.relabel "containers" {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     target_label  = "service_name"
   }
+
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     target_label  = "service"
   }
+
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
     target_label  = "compose_project"
@@ -125,6 +168,7 @@ discovery.relabel "containers" {
     regex         = "/(.*)"
     target_label  = "container"
   }
+
   rule {
     source_labels = ["__meta_docker_container_log_stream"]
     target_label  = "stream"
@@ -137,10 +181,12 @@ discovery.relabel "containers" {
     replacement  = "rehearsal"
     target_label = "environment"
   }
+
   rule {
     replacement  = "proxmox"
     target_label = "platform"
   }
+
   rule {
     replacement  = "proxy"
     target_label = "host_role"
@@ -150,7 +196,7 @@ discovery.relabel "containers" {
 loki.source.docker "containers" {
   host       = "unix:///var/run/docker.sock"
   targets    = discovery.relabel.containers.output
-  labels     = { job = "docker" }
+  labels     = {job = "docker"}
   forward_to = [loki.process.docker.receiver]
 }
 
@@ -176,28 +222,31 @@ loki.process "docker" {
 
     stage.json {
       expressions = {
-        level       = "level",
-        msg         = "msg",
-        logger      = "logger",
-        status      = "status",
-        method      = "request.method",
-        path        = "request.uri",
-        host        = "request.host",
-        client_ip   = "request.client_ip",
+        level     = "level",
+        msg       = "msg",
+        logger    = "logger",
+        status    = "status",
+        method    = "request.method",
+        path      = "request.uri",
+        host      = "request.host",
+        client_ip = "request.client_ip",
         // Top-level `request_id` comes from the Caddyfile's `log_append
         // request_id {http.request.uuid}`. The same UUID is forwarded upstream
         // as X-Request-ID, so this matches the backend record's request_id and
         // lets a Caddy line be joined to its backend line in Loki.
-        request_id  = "request_id",
-        err_id      = "err_id",
+        request_id = "request_id",
+        trace_id   = "traceID",
+        span_id    = "spanID",
+        err_id     = "err_id",
         // Caddy reports `duration` in SECONDS (float); converted to ms below so
         // duration_ms means the same unit across backend/squid/caddy.
-        duration_s  = "duration",
+        duration_s = "duration",
         // Top-level `host` on runtime lines (e.g. the reverse-proxy health
         // checker) is the UPSTREAM target, distinct from request.host above.
-        upstream    = "host",
+        upstream = "host",
       }
     }
+
     stage.labels {
       values = {
         level  = "",
@@ -218,9 +267,10 @@ loki.process "docker" {
     // relevant keys. Free-text values (msg, path, host) are quoted. A trailing
     // space when the last field is absent is harmless for logfmt parsing.
     stage.template {
-      source = "line"
-      template = "{{ if .msg }}msg=\"{{ .msg }}\" {{ end }}{{ if .logger }}logger={{ .logger }} {{ end }}{{ if .method }}method={{ .method }} {{ end }}{{ if .status }}status={{ .status }} {{ end }}{{ if .path }}path=\"{{ .path }}\" {{ end }}{{ if .host }}host=\"{{ .host }}\" {{ end }}{{ if .client_ip }}client_ip={{ .client_ip }} {{ end }}{{ if .request_id }}request_id={{ .request_id }} {{ end }}{{ if .upstream }}upstream=\"{{ .upstream }}\" {{ end }}{{ if .duration_ms }}duration_ms={{ .duration_ms }} {{ end }}{{ if .err_id }}err_id={{ .err_id }}{{ end }}"
+      source   = "line"
+      template = "{{ if .msg }}msg=\"{{ .msg }}\" {{ end }}{{ if .logger }}logger={{ .logger }} {{ end }}{{ if .method }}method={{ .method }} {{ end }}{{ if .status }}status={{ .status }} {{ end }}{{ if .path }}path=\"{{ .path }}\" {{ end }}{{ if .host }}host=\"{{ .host }}\" {{ end }}{{ if .client_ip }}client_ip={{ .client_ip }} {{ end }}{{ if .request_id }}request_id={{ .request_id }} {{ end }}{{ if .trace_id }}trace_id={{ .trace_id }} {{ end }}{{ if .span_id }}span_id={{ .span_id }} {{ end }}{{ if .upstream }}upstream=\"{{ .upstream }}\" {{ end }}{{ if .duration_ms }}duration_ms={{ .duration_ms }} {{ end }}{{ if .err_id }}err_id={{ .err_id }}{{ end }}"
     }
+
     stage.output {
       source = "line"
     }
@@ -248,6 +298,7 @@ loki.process "docker" {
         bytes        = "",
       }
     }
+
     stage.labels {
       values = {
         method = "",
@@ -285,6 +336,7 @@ loki.process "docker" {
         component = "",
       }
     }
+
     stage.labels {
       values = {
         level = "",
@@ -294,9 +346,10 @@ loki.process "docker" {
     // Rebuild as logfmt from the parsed fields, dropping ts/level. Only non-empty
     // fields render, so lines without a component key still stay well-formed.
     stage.template {
-      source = "line"
+      source   = "line"
       template = "{{ if .logger }}logger={{ .logger }} {{ end }}{{ if .component }}component={{ .component }} {{ end }}{{ if .msg }}msg=\"{{ .msg }}\"{{ end }}"
     }
+
     stage.output {
       source = "line"
     }
@@ -310,6 +363,7 @@ loki.process "docker" {
     source   = "level"
     template = "{{ ToLower .Value }}"
   }
+
   stage.labels {
     values = {
       level = "",

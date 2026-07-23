@@ -129,6 +129,10 @@ main() {
 
   put_runtime_parameter backend logging_json "${FLOWFORM_LOGGING_LOG_JSON}"
   put_runtime_parameter backend logging_level "${FLOWFORM_LOGGING_LEVEL}"
+  put_runtime_parameter backend tracing_enabled "${FLOWFORM_TRACING_ENABLED}"
+  put_runtime_parameter backend tracing_otlp_endpoint "${FLOWFORM_TRACING_OTLP_ENDPOINT}"
+  put_runtime_parameter backend tracing_sample_ratio "${FLOWFORM_TRACING_SAMPLE_RATIO}"
+  put_runtime_parameter backend tracing_service_name "${FLOWFORM_TRACING_SERVICE_NAME}"
   put_runtime_parameter backend runtime_environment "${FLOWFORM_ENV}"
   put_runtime_parameter backend backend_image "${BACKEND_IMAGE}"
   put_runtime_parameter backend auth0_domain "${FLOWFORM_AUTH0_DOMAIN}"
@@ -151,6 +155,9 @@ main() {
   put_runtime_parameter proxy api_domain "${API_DOMAIN}"
   put_runtime_parameter proxy grafana_cloud_loki_url "${GRAFANA_CLOUD_LOKI_URL}"
   put_runtime_parameter proxy grafana_cloud_loki_user "${GRAFANA_CLOUD_LOKI_USER}"
+  put_runtime_parameter proxy grafana_cloud_tempo_endpoint "${GRAFANA_CLOUD_TEMPO_ENDPOINT}"
+  put_runtime_parameter proxy grafana_cloud_tempo_user "${GRAFANA_CLOUD_TEMPO_USER}"
+  put_runtime_parameter proxy runtime_environment "${FLOWFORM_ENV}"
 
   log "boot seed complete for /flowform/${FLOWFORM_SCOPE} (KMS + non-secret SSM only)"
 }

@@ -6,8 +6,8 @@ aliases:
 document_type: reference
 status: draft
 authority: canonical
-verified_against_commit: 13b44c8
-tags: [logging, observability, infrastructure]
+verified_against_commit: null
+tags: [backend, infrastructure]
 related_code:
   - "../../backend/app/logging/logging_config.py"
   - "../../backend/app/logging/request_logging.py"
@@ -20,6 +20,7 @@ related_code:
 related_docs:
   - "Observability"
   - "Runtime containers"
+  - "Distributed tracing"
 ---
 
 # Logging schema
@@ -77,6 +78,8 @@ IDs) must **never** be labels.
 | `client_ip` | client address |
 | `duration_ms` | request duration in **milliseconds** |
 | `request_id` | per-request correlation ID (see below) |
+| `trace_id` | 32-character OpenTelemetry trace ID when an active sampled span exists |
+| `span_id` | 16-character OpenTelemetry span ID when an active sampled span exists |
 | `logger` | emitting logger name |
 | `event_type` | e.g. `app_startup` |
 | `user_id` | when available |
@@ -102,6 +105,9 @@ object per record with canonical keys directly:
   `status_code` → `status`, `remote_addr` → `client_ip`. `request_id`,
   `method`, `path`, `duration_ms`, `logger`, `event_type`, `user_id`,
   `environment` pass through under their own names.
+- OpenTelemetry logging instrumentation injects `otelTraceID` and `otelSpanID`
+  into active-span records; the formatter emits them as `trace_id` and
+  `span_id`, omitting zero or unset values.
 - `message` is the fully-interpolated human string.
 
 The app-box Alloy ([alloy-app/config.alloy](../../infra/containers/runtime/services/alloy-app/config.alloy))
@@ -126,7 +132,8 @@ are fixed and can't be renamed in the Caddyfile, so the canonical names are
 produced by **Alloy remapping**, not by Caddy. The proxy Alloy `stage.json`
 maps `request.uri` → `path`, `request.client_ip` → `client_ip`,
 `request.method` → `method`, and converts Caddy's `duration` (seconds) to
-`duration_ms`, then rebuilds the line as logfmt.
+`duration_ms`. It also maps the tracing handler's `traceID` and `spanID` fields
+to canonical `trace_id` and `span_id`, then rebuilds the line as logfmt.
 
 Two Caddyfile facts are load-bearing:
 
@@ -180,6 +187,15 @@ Because the header is client-influenced, adoption is defensive:
   characters — a newline can't forge a second log line.
 - A bad header never raises into the request; it falls back to a fresh UUID.
 
+## Trace correlation
+
+For sampled requests, Caddy and backend logs carry canonical `trace_id` and
+`span_id` fields. The W3C trace context propagated from Caddy into the backend
+keeps their spans in one trace. Query Loki with `| logfmt | trace_id="<id>"`,
+then open that trace in the configured Tempo data source. `request_id` remains
+the fallback correlation key for unsampled requests and for Squid, whose HTTPS
+CONNECT view does not expose application trace context.
+
 ## Level mapping
 
 `get_log_level` in [general.py](../../backend/app/utils/general.py) maps HTTP
@@ -208,8 +224,9 @@ no such marker, emits normally.
 
 ## Validation
 
-- **Alloy config:** `docker run --rm -v <config>:/c.alloy:ro grafana/alloy:latest validate /c.alloy`
-  (empty output + exit 0 = valid).
+- **Alloy config:** run the pinned `grafana/alloy:v1.5.1` image briefly with
+  each configuration and placeholder environment values. A successful graph
+  evaluation and receiver startup prove the checked-in component syntax.
 - **Caddyfile:** `caddy adapt --config <Caddyfile>` (via the `caddy:latest`
   image, passing `API_DOMAIN`/`APP_PRIVATE_IP` env). The AWS copy reports a
   `dns.providers.route53` "module not registered" error under the stock image —
@@ -220,3 +237,4 @@ no such marker, emits normally.
 
 - [[observability|Observability]]
 - [[runtime-containers|Runtime containers]]
+- [[tracing|Distributed tracing]]

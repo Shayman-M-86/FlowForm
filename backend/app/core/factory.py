@@ -13,6 +13,7 @@ from app.db.session import init_db_sessions
 from app.logging.logging_config import setup_bootstrap_logging, setup_logging
 from app.middleware.rate_limit import register_rate_limiting
 from app.services.access.permissions_service import init_seed_data
+from app.tracing import configure_tracing
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +45,17 @@ def create_app(
     try:
         resolved_settings: Settings = settings or get_settings()
         app = Flask(__name__)
-        setup_logging(app, resolved_settings)
 
         if flask_config:
             app.config.update(flask_config)
 
         apply_settings_to_flask(app, resolved_settings)
+        configure_tracing(app, resolved_settings)
+        # Register request logging after Flask instrumentation. Flask executes
+        # after_request hooks in reverse registration order, so this keeps the
+        # request log inside the active server span and allows
+        # LoggingInstrumentor to inject trace/span IDs.
+        setup_logging(app, resolved_settings)
         init_extensions(app)
         init_db_sessions(app)
 

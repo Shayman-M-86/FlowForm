@@ -20,6 +20,8 @@
 #                                    loopback sentinel when disabled
 #   GRAFANA_CLOUD_LOKI_URL   - Grafana Cloud Loki push URL for the Alloy agent
 #   GRAFANA_CLOUD_LOKI_USER  - Grafana Cloud Loki tenant/user id (basic-auth user)
+#   GRAFANA_CLOUD_TEMPO_ENDPOINT - Tempo OTLP/gRPC endpoint (host:port)
+#   GRAFANA_CLOUD_TEMPO_USER     - Tempo tenant id
 #
 # The two NON-SECRET GRAFANA_CLOUD_LOKI_* values arrive the same prod-shaped way
 # as CADDY_IMAGE and API_DOMAIN: bootstrap-proxy.sh renders them into proxy.env
@@ -27,7 +29,7 @@
 # secret and does NOT come through proxy.env/SSM: bootstrap-proxy.sh materialises
 # it from the observability-secrets Secrets Manager entry into a tmpfs 0600 file
 # that this compose mounts as the GRAFANA_CLOUD_TOKEN Docker secret. The alloy
-# service ships host + container logs to Grafana Cloud (Loki); LOGS ONLY for now.
+# service ships host/container logs to Loki and traces to Tempo.
 
 name: flowform-proxy
 
@@ -39,6 +41,11 @@ services:
       API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN}
       APP_PRIVATE_IP: ${APP_PRIVATE_IP:?set APP_PRIVATE_IP}
       AWS_REGION: ${AWS_REGION:?set AWS_REGION}
+      # Caddy's tracing handler exports OTLP/HTTP. Use Alloy's HTTP receiver and
+      # the complete traces path; :4317 is reserved for OTLP/gRPC from app Alloy.
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://alloy:4318/v1/traces
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=${FLOWFORM_ENV:-prod}
+      OTEL_SERVICE_NAME: caddy
     ports:
       - "80:80/tcp"
       - "443:443/tcp"
@@ -107,8 +114,8 @@ services:
     networks:
       - proxy_net
 
-  # Observability agent — ships host journal + Docker container logs to Grafana
-  # Cloud (Loki). Logs only for now. Reads GRAFANA_CLOUD_* from proxy.env.
+  # Observability agent — ships host/container logs to Loki and receives OTLP
+  # traces from Caddy and the app-box relay for export to Grafana Cloud Tempo.
   alloy:
     image: grafana/alloy:v1.5.1
     restart: unless-stopped
@@ -124,15 +131,17 @@ services:
       - --server.http.listen-addr=127.0.0.1:12345
       - --storage.path=/var/lib/alloy/data
       - /etc/alloy/config.alloy
-    # Gateway receiver for the offline app box: the config's loki.source.api
-    # listens on :3500 and this publishes it bound to the proxy's PRIVATE IP only,
-    # so only the rehearsal private net (the app box) can push logs in — never the
-    # public LAN interface. The :12345 UI stays loopback-only inside the container.
+    # Private gateways for the offline app box: Loki on :3500 and OTLP/gRPC on
+    # :4317. Both bind only to the proxy's private IP. The :12345 UI remains
+    # loopback-only inside the container.
     ports:
       - "${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP}:3500:3500/tcp"
+      - "${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP}:4317:4317/tcp"
     environment:
       GRAFANA_CLOUD_LOKI_URL: ${GRAFANA_CLOUD_LOKI_URL:?set GRAFANA_CLOUD_LOKI_URL}
       GRAFANA_CLOUD_LOKI_USER: ${GRAFANA_CLOUD_LOKI_USER:?set GRAFANA_CLOUD_LOKI_USER}
+      GRAFANA_CLOUD_TEMPO_ENDPOINT: ${GRAFANA_CLOUD_TEMPO_ENDPOINT:?set GRAFANA_CLOUD_TEMPO_ENDPOINT}
+      GRAFANA_CLOUD_TEMPO_USER: ${GRAFANA_CLOUD_TEMPO_USER:?set GRAFANA_CLOUD_TEMPO_USER}
       # The token is NOT an environment variable. Alloy reads it from a file-backed
       # Docker secret (see `secrets:` below) via local.file in config.alloy, so it
       # never appears in the container's environment or `docker inspect`.

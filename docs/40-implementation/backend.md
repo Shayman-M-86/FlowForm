@@ -17,6 +17,7 @@ related_code:
   - "../../backend/tests/"
   - "../../backend/openapi.yaml"
 related_docs:
+  - "Backend implementation guides"
   - "Repository map"
   - "Component map"
   - "Database migrations"
@@ -28,6 +29,10 @@ related_docs:
 # Backend implementation
 
 Maps backend concepts to verified repository implementation.
+
+For construction-level guidance, examples, and reusable patterns, use
+[[40-implementation/backend/README|Backend implementation guides]]. This page remains the concise
+map of the backend rather than becoming a file-by-file handbook.
 
 ## Directory ownership
 
@@ -116,6 +121,7 @@ implemented per use case rather than guaranteed by one transaction boundary.
 
 ## Related documents
 
+- [[40-implementation/backend/README|Backend implementation guides]]
 - [[repository-map|Repository map]]
 - [[component-map|Component map]]
 - [[database-migrations|Database migrations]]

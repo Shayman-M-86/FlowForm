@@ -4,31 +4,13 @@ hooks = true
 [sandbox_workspace_write]
 network_access = true
 
-[mcp_servers.chrome-devtools]
-command = "cmd.exe"
-args = [
-    "/c",
-    "npx",
-    "chrome-devtools-mcp@latest",
-    "--autoConnect",
-    "-y",
-]
 
 [mcp_servers.flowform-openapi]
 command = "/usr/bin/bash"
 args = ["/home/shayman86/my-repos/FlowForm/tools/mcp/run.sh"]
 
-[mcp_servers.flowform-repomap]
-command = "/usr/bin/bash"
-args = ["/home/shayman86/my-repos/FlowForm/tools/mcp/repomap_run.sh"]
 
 [mcp_servers.flowform-docs]
 command = "/usr/bin/bash"
 args = ["/home/shayman86/my-repos/FlowForm/tools/mcp/docsys_run.sh"]
 
-[mcp_servers.shadcn]
-command = "npx"
-args = [
-    "shadcn@latest",
-    "mcp",
-]

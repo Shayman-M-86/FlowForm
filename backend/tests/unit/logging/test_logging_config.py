@@ -59,6 +59,27 @@ def test_json_formatter_omits_absent_optional_fields() -> None:
         assert absent not in payload
 
 
+def test_json_formatter_emits_active_otel_context() -> None:
+    record = _make_record(
+        otelTraceID="0123456789abcdef0123456789abcdef",
+        otelSpanID="0123456789abcdef",
+    )
+
+    payload = json.loads(JsonFormatter().format(record))
+
+    assert payload["trace_id"] == "0123456789abcdef0123456789abcdef"
+    assert payload["span_id"] == "0123456789abcdef"
+
+
+def test_json_formatter_omits_empty_otel_context() -> None:
+    record = _make_record(otelTraceID="0", otelSpanID="0")
+
+    payload = json.loads(JsonFormatter().format(record))
+
+    assert "trace_id" not in payload
+    assert "span_id" not in payload
+
+
 def test_json_formatter_emits_startup_environment_field() -> None:
     record = _make_record(
         level=logging.INFO,

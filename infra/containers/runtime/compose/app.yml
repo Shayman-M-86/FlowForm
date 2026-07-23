@@ -39,7 +39,7 @@ services:
       # CAUTION: Python requests/boto3 ignore CIDR entries in NO_PROXY. Use
       # hostnames or suffixes here; the Docker daemon's no-proxy can still use
       # VPC CIDRs in its host-level proxy config.
-      NO_PROXY: "localhost,127.0.0.1,169.254.169.254,.rds.amazonaws.com"
+      NO_PROXY: "localhost,127.0.0.1,alloy,169.254.169.254,.rds.amazonaws.com"
       DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
       DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
       FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
@@ -72,10 +72,9 @@ services:
         max-size: "10m"
         max-file: "5"
 
-  # Observability agent — reads the backend container (and host journal) and
-  # forwards to the proxy-box Alloy gateway (PROXY_PRIVATE_IP:3500), which fans
-  # out to Grafana Cloud. The app box has no internet route, so it never talks to
-  # Grafana directly. Logs only. See runtime/services/alloy-app/config.alloy.
+  # Observability agent — forwards backend logs and traces to the proxy-box
+  # Alloy gateways (:3500 for Loki, :4317 for OTLP). The app box has no internet
+  # route, so it never talks to Grafana directly.
   alloy:
     # Default to the public image (proxy/AWS can pull it). The OFFLINE app box has
     # no Docker Hub route — its only egress is Squid — so its bootstrap env

@@ -112,6 +112,13 @@ class JsonFormatter(logging.Formatter):
             if value is not None:
                 payload[json_key] = value
 
+        trace_id = getattr(record, "otelTraceID", None)
+        span_id = getattr(record, "otelSpanID", None)
+        if trace_id not in (None, 0, "0"):
+            payload["trace_id"] = trace_id
+        if span_id not in (None, 0, "0"):
+            payload["span_id"] = span_id
+
         if record.exc_info:
             payload["exception"] = record.exc_text or self.formatException(record.exc_info)
 

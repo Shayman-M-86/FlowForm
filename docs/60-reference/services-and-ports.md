@@ -5,7 +5,7 @@ aliases:
 document_type: reference
 status: draft
 authority: canonical
-verified_against_commit: ad26b87e9820
+verified_against_commit: null
 tags: [infrastructure]
 related_code:
   - "../../infra/containers/"
@@ -43,7 +43,10 @@ Compose files under `infra/containers/` and `frontend/docker-compose.dev.yml` ow
 | Runtime proxy | Caddy | `0.0.0.0:80`, `0.0.0.0:443` | `80`, `443` | Public HTTP/HTTPS entry point. |
 | Runtime proxy | Squid | `${PROXY_PRIVATE_IP}:3128` | `3128` | Private app egress proxy. |
 | Runtime proxy | Alloy gateway | `${PROXY_PRIVATE_IP}:3500` | `3500` | Private log receiver for the app host. |
+| Runtime proxy | Alloy OTLP gateway | `${PROXY_PRIVATE_IP}:4317` | `4317` | Private OTLP/gRPC trace receiver for the app-host Alloy relay. |
+| Runtime proxy | Alloy OTLP/HTTP receiver | Compose network only | `4318` | Caddy trace receiver; not published on the host. |
 | Runtime app | Backend | `${APP_PRIVATE_IP}:5000` | `5000` | Private bind intended for proxy access. |
+| Runtime app | Alloy OTLP receiver | Compose network only | `4317` | Backend trace receiver; relays to the proxy-host Alloy gateway. |
 | Rehearsal DB | PostgreSQL | `10.10.10.40:5432` | `5432` | Rehearsal private bridge. |
 | Rehearsal fixture | TLS shim | `10.10.10.30:443` | host-network `443` | HTTPS/SNI front door for LocalStack and the fixture registry. |
 | Rehearsal fixture | LocalStack | `127.0.0.1:4566` | `4566` | Fixture-host loopback; TLS shim/proxy provides the remote path. |

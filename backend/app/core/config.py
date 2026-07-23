@@ -294,6 +294,24 @@ class LoggingSettings(BaseModel):
     duration: bool = False  # Whether to log request duration
 
 
+class TracingSettings(BaseModel):
+    """OpenTelemetry trace export settings."""
+
+    enabled: bool = False
+    otlp_endpoint: str = "http://alloy:4317"
+    sample_ratio: float = Field(default=1.0, ge=0.0, le=1.0)
+    service_name: str = Field(default="backend", min_length=1)
+
+    defer_provider: bool = False
+    """Delay tracer-provider creation until after Gunicorn forks its workers.
+
+    The batch span processor owns a background thread that must be created in
+    each worker, not inherited across a fork. Gunicorn's config sets
+    ``FLOWFORM_TRACING_DEFER_PROVIDER=true`` before boot so ``configure_tracing``
+    skips provider setup and ``post_fork`` initializes it per worker instead.
+    """
+
+
 class FlowForm(BaseModel):
     """Top-level application settings loaded from environment variables."""
 
@@ -303,6 +321,7 @@ class FlowForm(BaseModel):
     server: ServerSettings = Field(default_factory=ServerSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
+    tracing: TracingSettings = Field(default_factory=TracingSettings)
     aws: AwsSettings
     encryption: EncryptionSettings
     email: EmailSettings

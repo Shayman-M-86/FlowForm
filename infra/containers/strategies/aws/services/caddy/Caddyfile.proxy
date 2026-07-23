@@ -1,6 +1,10 @@
 {$API_DOMAIN} {
 	encode zstd gzip
 
+	tracing {
+		span caddy.request
+	}
+
 	# Per-request access log. This MUST live inside the site block: a `log`
 	# directive in the global options block only reconfigures Caddy's runtime
 	# logger (`default` — health-checker, TLS, admin), NOT access logging, so

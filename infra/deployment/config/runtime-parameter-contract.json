@@ -19,6 +19,22 @@
           "name": "FLOWFORM_LOGGING_LEVEL",
           "seed_value_key": "FLOWFORM_LOGGING_LEVEL"
         },
+        "tracing_enabled": {
+          "name": "FLOWFORM_TRACING_ENABLED",
+          "seed_value_key": "FLOWFORM_TRACING_ENABLED"
+        },
+        "tracing_otlp_endpoint": {
+          "name": "FLOWFORM_TRACING_OTLP_ENDPOINT",
+          "seed_value_key": "FLOWFORM_TRACING_OTLP_ENDPOINT"
+        },
+        "tracing_sample_ratio": {
+          "name": "FLOWFORM_TRACING_SAMPLE_RATIO",
+          "seed_value_key": "FLOWFORM_TRACING_SAMPLE_RATIO"
+        },
+        "tracing_service_name": {
+          "name": "FLOWFORM_TRACING_SERVICE_NAME",
+          "seed_value_key": "FLOWFORM_TRACING_SERVICE_NAME"
+        },
         "runtime_environment": {
           "name": "FLOWFORM_ENV",
           "seed_value_key": "FLOWFORM_ENV"
@@ -109,6 +125,18 @@
         "grafana_cloud_loki_user": {
           "name": "GRAFANA_CLOUD_LOKI_USER",
           "seed_value_key": "GRAFANA_CLOUD_LOKI_USER"
+        },
+        "grafana_cloud_tempo_endpoint": {
+          "name": "GRAFANA_CLOUD_TEMPO_ENDPOINT",
+          "seed_value_key": "GRAFANA_CLOUD_TEMPO_ENDPOINT"
+        },
+        "grafana_cloud_tempo_user": {
+          "name": "GRAFANA_CLOUD_TEMPO_USER",
+          "seed_value_key": "GRAFANA_CLOUD_TEMPO_USER"
+        },
+        "runtime_environment": {
+          "name": "FLOWFORM_ENV",
+          "seed_value_key": "FLOWFORM_ENV"
         }
       }
     }
