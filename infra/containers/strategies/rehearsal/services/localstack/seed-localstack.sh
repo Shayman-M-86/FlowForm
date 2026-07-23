@@ -134,6 +134,8 @@ main() {
   put_runtime_parameter backend tracing_sample_ratio "${FLOWFORM_TRACING_SAMPLE_RATIO}"
   put_runtime_parameter backend tracing_service_name "${FLOWFORM_TRACING_SERVICE_NAME}"
   put_runtime_parameter backend runtime_environment "${FLOWFORM_ENV}"
+  put_runtime_parameter backend cors_origins "${FLOWFORM_CORS_ORIGINS}"
+  put_runtime_parameter backend cors_supports_credentials "${FLOWFORM_CORS_SUPPORTS_CREDENTIALS}"
   put_runtime_parameter backend backend_image "${BACKEND_IMAGE}"
   put_runtime_parameter backend auth0_domain "${FLOWFORM_AUTH0_DOMAIN}"
   put_runtime_parameter backend auth0_management_domain "${FLOWFORM_AUTH0_MGMT_DOMAIN}"

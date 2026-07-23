@@ -76,6 +76,11 @@ Terraform declares:
 | 230 | LocalStack | Fixture `9001` | `10.10.10.30/24` on `vmbr10`; no gateway |
 | 240 | Database | Fixture `9002` | `10.10.10.40/24` on `vmbr10`; no gateway |
 
+The proxy also serves its externally synchronized clock over NTP on
+`10.10.10.10:123/udp`. The offline app selects that private source before
+application convergence so timestamps from Caddy and backend spans remain
+comparable; it does not gain an additional internet route.
+
 The proxy's LAN address is static on purpose. It is the one address operators,
 docs, and hosts files name, and a DHCP lease does not survive VM recreation:
 each rebuild changes the NIC MAC and the machine-id-derived DHCP client

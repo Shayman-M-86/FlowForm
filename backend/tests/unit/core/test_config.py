@@ -27,6 +27,80 @@ def test_tracing_settings_are_disabled_by_default() -> None:
     assert settings.service_name == "backend"
 
 
+def _production_flowform(tmp_path: Path, origins: list[str]) -> dict[str, Any]:
+    secret_key_file = tmp_path / "secret-key.txt"
+    auth0_secret_file = tmp_path / "auth0-secret.txt"
+    secret_key_file.write_text("app-secret\n", encoding="utf-8")
+    auth0_secret_file.write_text("auth0-secret\n", encoding="utf-8")
+    return {
+        "env": "prod",
+        "app": {"secret_key_file": str(secret_key_file)},
+        "auth0": {
+            "domain": "example.auth0.com",
+            "audience": "https://api.example.test",
+            "mgmt": {"id": "management-client-id", "secret_file": str(auth0_secret_file)},
+        },
+        "cors": {"origins": origins},
+        "aws": {},
+        "encryption": {
+            "kms_key_arn": "arn:aws:kms:ap-southeast-2:000000000000:key/test",
+            "linkage_secret_arn": "arn:aws:secretsmanager:ap-southeast-2:000000000000:secret:flowform/test/linkage",
+        },
+        "email": {"from_address": "no-reply@example.com"},
+    }
+
+
+@pytest.mark.parametrize("origins", [[], [""], ["*"]])
+def test_production_rejects_empty_or_wildcard_cors_origins(tmp_path: Path, origins: list[str]) -> None:
+    with pytest.raises(ValidationError):
+        FlowForm.model_validate(_production_flowform(tmp_path, origins))
+
+
+def test_production_rejects_missing_cors_origins(tmp_path: Path) -> None:
+    data = _production_flowform(tmp_path, ["https://studio.example.test"])
+    data.pop("cors")
+    with pytest.raises(ValidationError, match="FLOWFORM_CORS_ORIGINS"):
+        FlowForm.model_validate(data)
+
+
+def test_cors_origins_are_loaded_as_multiple_environment_values(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    secret_key_file = tmp_path / "secret-key.txt"
+    core_password_file = tmp_path / "core-password.txt"
+    response_password_file = tmp_path / "response-password.txt"
+    for path in (secret_key_file, core_password_file, response_password_file):
+        path.write_text("test-secret\n", encoding="utf-8")
+
+    env = {
+        "FLOWFORM_ENV": "test",
+        "FLOWFORM_APP_SECRET_KEY_FILE": str(secret_key_file),
+        "FLOWFORM_AUTH0_DOMAIN": "example.auth0.com",
+        "FLOWFORM_AUTH0_AUDIENCE": "https://api.example.test",
+        "FLOWFORM_AWS_ACCESS_KEY_ID": "test-access-key",
+        "FLOWFORM_AWS_SECRET_ACCESS_KEY": "test-secret-key",
+        "FLOWFORM_ENCRYPTION_KMS_KEY_ARN": "arn:aws:kms:ap-southeast-2:000000000000:key/test",
+        "FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN": (
+            "arn:aws:secretsmanager:ap-southeast-2:000000000000:secret:flowform/test/linkage"
+        ),
+        "FLOWFORM_EMAIL_FROM_ADDRESS": "no-reply@example.com",
+        "FLOWFORM_CORS_ORIGINS": '["https://studio.example.test", "https://site.example.test"]',
+        "DATABASE_CORE_APP_USER": "flowform_core_app",
+        "DATABASE_CORE_HOST": "postgres-core",
+        "DATABASE_CORE_NAME": "flowform_core",
+        "DATABASE_CORE_APP_PASSWORD_FILE": str(core_password_file),
+        "DATABASE_RESPONSE_APP_USER": "flowform_response_app",
+        "DATABASE_RESPONSE_HOST": "postgres-response",
+        "DATABASE_RESPONSE_NAME": "flowform_response",
+        "DATABASE_RESPONSE_APP_PASSWORD_FILE": str(response_password_file),
+    }
+    for key, value in env.items():
+        monkeypatch.setenv(key, value)
+
+    settings = cast(Any, Settings)()
+    assert settings.flowform.cors.origins == ["https://studio.example.test", "https://site.example.test"]
+
+
 @pytest.mark.parametrize("sample_ratio", [-0.01, 1.01])
 def test_tracing_settings_reject_invalid_sample_ratio(sample_ratio: float) -> None:
     with pytest.raises(ValidationError):

@@ -12,6 +12,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app import tracing
 from app.cache import get_app_cache
 from app.crypto._internal.client_extension import get_crypto_clients
 from app.crypto.locators import derive_session_locator, load_current_linkage_key
@@ -78,6 +79,7 @@ class SessionStarter:
         self._cache = cache or get_app_cache()
         self._clients = clients or get_crypto_clients()
 
+    @tracing.action("submission.session.start")
     def start(
         self,
         db: Session,
@@ -140,6 +142,7 @@ class SessionStarter:
             session_locator=session_locator,
         )
         request_timing.log("session_start.core_committed")
+        tracing.event("flowform.submission.core_committed")
         self._cache.sessions.write_context.put(
             session.browser_session_token_hash,
             SubmissionSessionContext(
@@ -165,6 +168,7 @@ class SessionStarter:
             survey_version_id=access.survey_version_id,
             subject_code=subject.subject_code,
         )
+        tracing.fields(outcome="started")
         return response, raw_browser_session_token, subject.raw_recognition_token
 
     def _consume_single_use_link_if_needed(
@@ -230,6 +234,7 @@ class SessionStarter:
 
             commit_with_err_handle(response_db, contexts=[])
             request_timing.log("session_start.envelope.response_committed")
+            tracing.event("flowform.submission.response_committed")
 
         except Exception as err:
             logger.error("session_start.envelope_creation_failed", exc_info=True)

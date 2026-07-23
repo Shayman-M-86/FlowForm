@@ -26,6 +26,30 @@
 # Shape note: this is the proxy analogue of the future CDK ec2.UserData.
 
 write_files:
+  # The app VM has no default route, so it cannot reach public NTP servers.
+  # Serve the proxy's synchronized clock only on the isolated rehearsal subnet;
+  # binding the private address keeps UDP/123 off the operator-facing LAN NIC.
+  - path: /etc/chrony.d/flowform-rehearsal-server.conf
+    permissions: '0644'
+    owner: root:root
+    content: |
+      bindaddress 10.10.10.10
+      bindaddress ::1
+      allow 10.10.10.0/24
+  - path: /etc/systemd/system/chronyd.service.d/flowform-rehearsal-network.conf
+    permissions: '0644'
+    owner: root:root
+    content: |
+      [Unit]
+      Wants=network-online.target
+      After=network-online.target
+      [Service]
+      # Replace Amazon Linux's non-idempotent fallback-source pre-start command:
+      # its plain `ln -s` fails on every restart when the symlink already exists.
+      ExecStartPre=
+      ExecStartPre=/usr/bin/mkdir -p /run/chrony.d
+      ExecStartPre=/usr/bin/ln -sfn /usr/share/chrony/ntp-pool.sources /run/chrony.d/ntp-pool.sources
+
   # --- rehearsal CA: trusted so the shim's *.localstack.test cert validates ---
   - path: /etc/pki/ca-trust/source/anchors/flowform-rehearsal-ca.crt
     encoding: b64
@@ -164,6 +188,10 @@ write_files:
       WantedBy=multi-user.target
 
 runcmd:
+  # Apply the private NTP listener after cloud-init has written its drop-in and
+  # both NICs are configured. The proxy keeps its normal external NTP sources.
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, restart, chronyd.service ]
   # Trust the rehearsal CA (the proxy box also dials the shim's *.localstack.test).
   - [ update-ca-trust, extract ]
   # Resolve the fake-AWS SNI names + fake-ECR registry to the aws-fixtures-vm.
@@ -171,5 +199,4 @@ runcmd:
   - [ bash, -c, "grep -q registry.localstack.test /etc/hosts || echo '10.10.10.30 secretsmanager.localstack.test ssm.localstack.test kms.localstack.test registry.localstack.test' >> /etc/hosts" ]
   # First convergence is owned by `rehearsal build`; enable only for later
   # reboots so cloud-init and the orchestrator never run the same bootstrap.
-  - [ systemctl, daemon-reload ]
   - [ systemctl, enable, flowform-proxy.service ]

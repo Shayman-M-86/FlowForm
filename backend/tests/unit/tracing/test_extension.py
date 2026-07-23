@@ -32,7 +32,12 @@ def test_configure_tracing_is_noop_when_disabled(monkeypatch) -> None:
 
 def test_configure_tracing_defers_provider_when_requested(monkeypatch) -> None:
     app = Flask(__name__)
-    monkeypatch.setattr(extension.FlaskInstrumentor, "instrument_app", lambda *_a, **_k: None)
+    instrument_calls: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        extension.FlaskInstrumentor,
+        "instrument_app",
+        lambda *_a, **kwargs: instrument_calls.append(kwargs),
+    )
     monkeypatch.setattr(extension, "_instrument_libraries", lambda: None)
     monkeypatch.setattr(
         extension,
@@ -43,3 +48,4 @@ def test_configure_tracing_defers_provider_when_requested(monkeypatch) -> None:
     extension.configure_tracing(app, _settings(enabled=True, defer_provider=True))
 
     assert app.extensions["tracing_instrumented"] is True
+    assert instrument_calls == [{"excluded_urls": extension._HEALTH_TRACE_EXCLUDED_URLS}]

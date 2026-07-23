@@ -39,6 +39,14 @@
           "name": "FLOWFORM_ENV",
           "seed_value_key": "FLOWFORM_ENV"
         },
+        "cors_origins": {
+          "name": "FLOWFORM_CORS_ORIGINS",
+          "seed_value_key": "FLOWFORM_CORS_ORIGINS"
+        },
+        "cors_supports_credentials": {
+          "name": "FLOWFORM_CORS_SUPPORTS_CREDENTIALS",
+          "seed_value_key": "FLOWFORM_CORS_SUPPORTS_CREDENTIALS"
+        },
         "backend_image": {
           "name": "BACKEND_IMAGE",
           "seed_value_key": "BACKEND_IMAGE"

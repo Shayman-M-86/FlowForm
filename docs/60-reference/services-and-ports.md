@@ -45,6 +45,7 @@ Compose files under `infra/containers/` and `frontend/docker-compose.dev.yml` ow
 | Runtime proxy | Alloy gateway | `${PROXY_PRIVATE_IP}:3500` | `3500` | Private log receiver for the app host. |
 | Runtime proxy | Alloy OTLP gateway | `${PROXY_PRIVATE_IP}:4317` | `4317` | Private OTLP/gRPC trace receiver for the app-host Alloy relay. |
 | Runtime proxy | Alloy OTLP/HTTP receiver | Compose network only | `4318` | Caddy trace receiver; not published on the host. |
+| Rehearsal proxy | Chrony/NTP | `10.10.10.10:123/udp` | Host `chronyd` | Private time source for the isolated app VM; bound only to `vmbr10` plus IPv6 loopback. |
 | Runtime app | Backend | `${APP_PRIVATE_IP}:5000` | `5000` | Private bind intended for proxy access. |
 | Runtime app | Alloy OTLP receiver | Compose network only | `4317` | Backend trace receiver; relays to the proxy-host Alloy gateway. |
 | Rehearsal DB | PostgreSQL | `10.10.10.40:5432` | `5432` | Rehearsal private bridge. |

@@ -16,6 +16,7 @@ DB_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/db.yml"
 DB_BOOTSTRAP="${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-db.sh"
 APP_BOOTSTRAP="${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-app.sh"
 BUILD_COMMAND="${REPO_ROOT}/infra/deployment/proxmox/scripts/lib/cmd_build.sh"
+VERIFY_COMMAND="${REPO_ROOT}/infra/deployment/proxmox/scripts/lib/cmd_verify.sh"
 TLS_SHIM_CADDYFILE="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/tls-shim/Caddyfile"
 REGISTRY_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.registry.yml"
 LOCALSTACK_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.localstack.yml"
@@ -80,6 +81,8 @@ while IFS= read -r key; do
   export "${key}=test-${key,,}"
 done < <(jq -r '(.runtime_groups[].parameters[].seed_value_key // empty),
                 (.secret_seed_value_keys[]? // empty)' "${CONTRACT}" | sort -u)
+export FLOWFORM_CORS_ORIGINS='["https://studio.example.test"]'
+export FLOWFORM_CORS_SUPPORTS_CREDENTIALS=true
 export AWS_REGION="ap-southeast-2"
 
 "${SEED_SCRIPT}" >/dev/null
@@ -122,6 +125,20 @@ for cloud_init in "${APP_CLOUD_INIT}" "${PROXY_CLOUD_INIT}" "${DB_CLOUD_INIT}"; 
   grep -F 'BOOTSTRAP_AWS_MAX_ATTEMPTS=120' "${cloud_init}" >/dev/null
 done
 grep -F 'COMPOSE_FORCE_RECREATE=1' "${APP_CLOUD_INIT}" >/dev/null
+# Cross-host traces require the isolated app clock to use the synchronized proxy.
+grep -F 'bindaddress 10.10.10.10' "${PROXY_CLOUD_INIT}" >/dev/null
+grep -F 'bindaddress ::1' "${PROXY_CLOUD_INIT}" >/dev/null
+grep -F 'allow 10.10.10.0/24' "${PROXY_CLOUD_INIT}" >/dev/null
+grep -F 'server 10.10.10.10 iburst prefer minpoll 4 maxpoll 4' "${APP_CLOUD_INIT}" >/dev/null
+grep -F 'Disabled: the rehearsal app has no route to public NTP.' "${APP_CLOUD_INIT}" >/dev/null
+grep -F 'ExecStartPre=' "${APP_CLOUD_INIT}" >/dev/null
+grep -F 'ln -sfn /usr/share/chrony/ntp-pool.sources' "${PROXY_CLOUD_INIT}" >/dev/null
+grep -F 'rm -f /run/chrony.d/ntp-pool.sources' "${APP_CLOUD_INIT}" >/dev/null
+grep -F 'chronyc -n waitsync 30 0.0 0.0 1' "${APP_CLOUD_INIT}" >/dev/null
+grep -F 'chronyc -a makestep' "${APP_CLOUD_INIT}" >/dev/null
+grep -F 'chronyc -n waitsync 10 0.05 0.0 1' "${APP_CLOUD_INIT}" >/dev/null
+grep -F 'proxy clock synchronized and serving private NTP' "${VERIFY_COMMAND}" >/dev/null
+grep -F 'app clock synchronized from proxy private NTP' "${VERIFY_COMMAND}" >/dev/null
 # Cloud-init prepares and enables reboot recovery, while `rehearsal build` owns
 # first convergence. Starting these services here would recreate the old lock
 # race and make app cloud-init wait for images the orchestrator has not built.
@@ -143,7 +160,7 @@ grep -F '"${dispatcher}" verify' "${BUILD_COMMAND}" >/dev/null
 grep -F 'RESULT: FAIL — stopped during ${BUILD_CURRENT_STEP}' "${BUILD_COMMAND}" >/dev/null
 grep -F 'RESULT: PASS — rehearsal build and verification completed' "${BUILD_COMMAND}" >/dev/null
 grep -F 'failed check: ${failed_check}' \
-  "${REPO_ROOT}/infra/deployment/proxmox/scripts/lib/cmd_verify.sh" >/dev/null
+  "${VERIFY_COMMAND}" >/dev/null
 grep -E 'DATABASE_CORE_HOST += "10.10.10.40"' "${PROXMOX_VARIABLES}" >/dev/null
 grep -E 'DATABASE_RESPONSE_HOST += "10.10.10.40"' "${PROXMOX_VARIABLES}" >/dev/null
 grep -E 'FLOWFORM_EMAIL_FROM_ADDRESS += "no-reply@flow-form.com.au"' "${PROXMOX_VARIABLES}" >/dev/null

@@ -17,7 +17,9 @@ rules, constants) in :mod:`app.tracing.vocabulary`.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextlib import AbstractContextManager
+from typing import Protocol, TypeVar
 
 from opentelemetry import trace
 from opentelemetry.trace import Span
@@ -30,13 +32,26 @@ from app.tracing.vocabulary import (
     valid_event_name,
 )
 
+_F = TypeVar("_F", bound=Callable[..., object])
+
+
+class SpanScope(AbstractContextManager[Span], Protocol):
+    """A span handle usable as either a ``with`` block or a ``@decorator``.
+
+    OpenTelemetry's ``start_as_current_span`` returns an object that is both, but
+    its declared type advertises only the context-manager half. This models both
+    so ``action`` type-checks in either form.
+    """
+
+    def __call__(self, func: _F) -> _F: ...
+
 
 def current_recording_span() -> Span | None:
     span = trace.get_current_span()
     return span if span.is_recording() else None
 
 
-def action(name: str) -> AbstractContextManager[Span]:
+def action(name: str) -> SpanScope:
     """Wrap a business operation in a named span.
 
     ``start_as_current_span`` is itself both a decorator and a context manager,
@@ -48,7 +63,7 @@ def action(name: str) -> AbstractContextManager[Span]:
     if not valid_action_name(name):
         reject(f"invalid action name {name!r}")
         name = FALLBACK_ACTION
-    return trace.get_tracer(TRACER_NAME).start_as_current_span(name)
+    return trace.get_tracer(TRACER_NAME).start_as_current_span(name)  # type: ignore[return-value]
 
 
 def fields(**values: object) -> None:

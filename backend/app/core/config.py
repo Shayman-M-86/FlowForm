@@ -15,6 +15,7 @@ from pydantic import (
     SecretStr,
     ValidationError,
     computed_field,
+    field_validator,
     model_validator,
 )
 from pydantic.networks import PostgresDsn
@@ -144,6 +145,22 @@ class ServerSettings(BaseModel):
     host: str = "127.0.0.1"
     port: int = 5000
     site_url: str = "http://localhost:5174"
+
+
+class CorsSettings(BaseModel):
+    """Browser cross-origin policy for API routes."""
+
+    origins: list[str] = Field(default_factory=list)
+    supports_credentials: bool = True
+
+    @field_validator("origins")
+    @classmethod
+    def normalize_origins(cls, origins: list[str]) -> list[str]:
+        """Reject empty origin entries and normalize surrounding whitespace."""
+        normalized = [origin.strip() for origin in origins if origin.strip()]
+        if len(normalized) != len(origins):
+            raise ValueError("origins must not contain empty entries")
+        return normalized
 
 
 class Auth0MgmtSettings(BaseModel):
@@ -319,6 +336,7 @@ class FlowForm(BaseModel):
     app: AppSettings
     auth0: Auth0Settings
     server: ServerSettings = Field(default_factory=ServerSettings)
+    cors: CorsSettings = Field(default_factory=CorsSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     tracing: TracingSettings = Field(default_factory=TracingSettings)
@@ -338,6 +356,20 @@ class FlowForm(BaseModel):
         if not mgmt.validate_on_startup:
             raise ValueError("FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP must be true when FLOWFORM_ENV is dev or prod")
 
+        return self
+
+    @model_validator(mode="after")
+    def validate_cors_settings(self) -> FlowForm:
+        """Fail closed for production browser-origin settings."""
+        if self.env != "prod":
+            return self
+
+        if not self.cors.origins:
+            raise ValueError(
+                "FLOWFORM_CORS_ORIGINS must contain at least one explicit origin when FLOWFORM_ENV is prod"
+            )
+        if self.cors.supports_credentials and "*" in self.cors.origins:
+            raise ValueError("FLOWFORM_CORS_ORIGINS must not contain '*' when credentials are enabled in production")
         return self
 
 

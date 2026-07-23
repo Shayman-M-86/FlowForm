@@ -126,6 +126,30 @@ cmd_verify_main() {
   fi
   [[ "${code}" == "200" ]] && ok "health 200 via proxy" || bad "health expected 200, got ${code}"
 
+  # Trace timelines and JWT validation require both hosts to share a trustworthy
+  # clock. The proxy synchronizes externally and serves NTP only on vmbr10; the
+  # isolated app must select that private source and settle within 50 ms.
+  if guest_ssh "${PROXY_IP}" \
+      "chronyc -n waitsync 10 0.05 0.0 1 >/dev/null 2>&1 \
+       && ss -H -lun | awk '\$4 ~ /:123$/ {
+            seen_private = seen_private || \$4 == \"10.10.10.10:123\"
+            unexpected = unexpected || (\$4 != \"10.10.10.10:123\" && \$4 != \"[::1]:123\")
+          }
+          END { exit !(seen_private && !unexpected) }'" >/dev/null 2>&1; then
+    ok "proxy clock synchronized and serving private NTP"
+  else
+    bad "proxy clock is unsynchronized or not serving 10.10.10.10:123/udp"
+  fi
+
+  if guest_ssh "${APP_IP}" \
+      "chronyc -n waitsync 10 0.05 0.0 1 >/dev/null 2>&1 \
+       && chronyc -n sources | awk '\$1 == \"^*\" && \$2 == \"${PROXY_IP}\" { found=1 } END { exit !found }'" \
+      >/dev/null 2>&1; then
+    ok "app clock synchronized from proxy private NTP"
+  else
+    bad "app clock is unsynchronized or did not select ${PROXY_IP} as its NTP source"
+  fi
+
   # 2. Fake JWT → 401 (not 500): JWKS fetched through Squid, kid mismatch.
   if ! code="$(curl_lan -o /dev/null -w '%{http_code}' -X POST \
     -H "Authorization: Bearer $(fake_jwt)" \

@@ -32,6 +32,7 @@ use one focused guide while making a change:
 | [[code-organization|Backend code organization]] | deciding where a new module belongs or what it may depend on |
 | [[feature-slices|Backend feature slices]] | adding or changing an endpoint, use case, persistence operation, or API contract |
 | [[backend-configuration-patterns|Backend configuration patterns]] | adding a runtime setting, secret, environment variable, or startup validation |
+| [[business-tracing|Business tracing]] | adding a business span, span field, or event, or deciding whether a value belongs in a trace or a log |
 
 ## Working rule
 

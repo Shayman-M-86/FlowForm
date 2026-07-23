@@ -21,6 +21,11 @@ This directory stores work that is currently being designed or executed, keeping
 ## Entry criteria
 Keep a plan here only while it has unfinished decisions or implementation work. State its owner or next action when that is known.
 
+## Current plans
+
+- [[aws-cdk-staging-plan|AWS CDK staging plan]] — proposed low-cost staging
+  architecture, delivery sequence, and acceptance gate for the AWS CDK target.
+
 ## Required content
 Each plan should include purpose, scope, verified evidence, assumptions, decisions needed, validation, and exit criteria.
 

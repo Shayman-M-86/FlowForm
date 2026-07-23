@@ -138,9 +138,11 @@ infra/deployment/proxmox/scripts/rehearsal verify          # full egress model
 success. `rehearsal verify` remains the independent definitive check: health `200`, a structurally
 valid but unsigned JWT returning `401` (kid mismatch — the live Auth0 JWKS path,
 never a `500`), every fake-AWS/ECR name appearing as a `CONNECT` in Squid's
-access log, and the direct-bypass paths all blocked. `--disruptive` also stops
-Squid to prove egress fails closed. Note it reads Squid's log as the in-container
-squid uid (`docker exec -u 13`), which the hardened container requires.
+access log, the direct-bypass paths all blocked, and the app clock synchronized
+from the proxy's private NTP listener. That clock check is required for truthful
+Caddy-to-backend trace timelines. `--disruptive` also stops Squid to prove
+egress fails closed. Note it reads Squid's log as the in-container squid uid
+(`docker exec -u 13`), which the hardened container requires.
 
 **Teardown and rebuild.** `terraform destroy` removes the VMs and with them the
 registry contents and seeded LocalStack state, but not the PVE-host secret

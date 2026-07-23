@@ -27,6 +27,7 @@ from auth0_api_python.utils import get_unverified_header
 from authlib.jose import JsonWebKey, JsonWebToken
 from flask import Flask, g, request
 
+from app import tracing
 from app.core.config import Settings
 from app.core.errors import ConfigError
 
@@ -548,14 +549,19 @@ class AuthExtension:
         def decorator(fn: F) -> F:
             @wraps(fn)
             def wrapper(*args: Any, **kwargs: Any):
-                self._clear_auth_context()
-                token = self._extract_bearer_token()
-                claims = self._verify_access_token(token)
+                # Span covers only the auth work; the route body runs after it
+                # closes so it is not lumped into the auth span. A raised
+                # AuthError is auto-recorded by OTel and marks this span errored.
+                with tracing.action("auth.access_token.verify"):
+                    self._clear_auth_context()
+                    token = self._extract_bearer_token()
+                    claims = self._verify_access_token(token)
 
-                if required_scope is not None:
-                    self._require_scope(claims, required_scope)
+                    if required_scope is not None:
+                        self._require_scope(claims, required_scope)
 
-                self._store_auth_context(claims)
+                    self._store_auth_context(claims)
+                    tracing.fields(authentication_method="access_token")
 
                 return fn(*args, **kwargs)
 
@@ -571,12 +577,15 @@ class AuthExtension:
             def wrapper(*args: Any, **kwargs: Any):
                 self._clear_auth_context()
 
+                # Anonymous path does no auth work, so it stays un-spanned.
                 if not request.headers.get("Authorization", "").strip():
                     return fn(*args, **kwargs)
 
-                token = self._extract_bearer_token()
-                claims = self._verify_access_token(token)
-                self._store_auth_context(claims)
+                with tracing.action("auth.access_token.verify"):
+                    token = self._extract_bearer_token()
+                    claims = self._verify_access_token(token)
+                    self._store_auth_context(claims)
+                    tracing.fields(authentication_method="access_token")
 
                 return fn(*args, **kwargs)
 

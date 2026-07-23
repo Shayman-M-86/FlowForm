@@ -8,6 +8,7 @@ authority: canonical
 verified_against_commit: null
 tags: [infrastructure]
 related_code:
+  - "../../infra/deployment/proxmox/cloud-init/templates/"
   - "../../infra/deployment/proxmox/scripts/"
   - "../../infra/containers/runtime/services/alloy/"
   - "../../infra/containers/runtime/services/alloy-app/"
@@ -75,6 +76,16 @@ each worker owns its batching thread and shuts it down on worker exit. Caddy's
 tracing handler creates the ingress span and propagates W3C trace context to the
 backend. Squid only sees HTTPS CONNECT tunnels, so it remains log-correlated and
 does not emit or carry application trace IDs.
+
+Caddy and backend span timestamps originate on different VM clocks. The proxy
+keeps its normal external Chrony sources and serves NTP only on
+`10.10.10.10:123/udp` to the isolated `10.10.10.0/24` network. App cloud-init
+removes Amazon Linux's unreachable public-pool fallback, selects the proxy as
+its sole source, and makes application convergence wait for synchronization.
+`rehearsal verify` checks that the proxy is synchronized and listening only on
+the private address, and that the app has selected the proxy with less than
+50 ms of remaining clock correction. Without that invariant, Tempo can render
+false cross-host gaps and overlaps even when trace propagation is correct.
 
 Both agents run as `user: root` under `cap_drop: [ALL]` with only
 `DAC_OVERRIDE` and `DAC_READ_SEARCH` restored: the root-owned journal and Docker

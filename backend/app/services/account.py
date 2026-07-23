@@ -5,6 +5,7 @@ from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
+from app import tracing
 from app.cache import get_app_cache
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import ManagementApiCallError, ManagementApiUnavailableError, PasswordChangeUnsupportedError
@@ -181,6 +182,7 @@ class UserAccountService:
         """Trigger an email-verification job for the current user."""
         _call_mgmt(_mgmt().send_verification_email, actor.auth0_user_id)
 
+    @tracing.action("account.email_verification.check")
     def check_email_verified(
         self,
         db: Session,
@@ -205,6 +207,7 @@ class UserAccountService:
         source of truth that every other request actually trusts.
         """
         if actor.email_verified:
+            tracing.fields(outcome="verified")
             return True
 
         live_verified = get_app_cache().account.email_verified.get_or_load(
@@ -215,4 +218,5 @@ class UserAccountService:
         if live_verified:
             ur.set_email_verified(actor, email_verified=True)
             commit_with_err_handle(db)
+        tracing.fields(outcome="verified" if live_verified else "unverified")
         return live_verified

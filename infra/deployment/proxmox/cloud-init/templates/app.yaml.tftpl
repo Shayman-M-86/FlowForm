@@ -25,6 +25,37 @@
 # LocalStack — exactly the prod-shaped path.
 
 write_files:
+  # The app VM is deliberately offline. Use the synchronized proxy as its only
+  # NTP source so cross-host Caddy/backend span timestamps share one clock.
+  - path: /etc/chrony.d/flowform-rehearsal.sources
+    permissions: '0644'
+    owner: root:root
+    content: |
+      server 10.10.10.10 iburst prefer minpoll 4 maxpoll 4
+  # The golden Amazon Linux image also carries a persistent public-pool source.
+  # Keep the file in place for package ownership, but remove every source from it.
+  - path: /etc/chrony.d/ntp-pool.sources
+    permissions: '0644'
+    owner: root:root
+    content: |
+      # Disabled: the rehearsal app has no route to public NTP.
+
+  # Amazon Linux's chronyd unit creates a public-pool source in /run on every
+  # start when DHCP supplies none. The app cannot reach that pool. Replace the
+  # vendor pre-start entries, mark runtime sources configured, and remove the
+  # fallback symlink before chronyd starts.
+  - path: /etc/systemd/system/chronyd.service.d/flowform-rehearsal-sources.conf
+    permissions: '0644'
+    owner: root:root
+    content: |
+      [Service]
+      # Clear Amazon Linux's fallback-source commands before replacing them.
+      # Otherwise its plain `ln -s` fails before our cleanup can run on restart.
+      ExecStartPre=
+      ExecStartPre=/usr/bin/mkdir -p /run/chrony.d
+      ExecStartPre=/usr/bin/touch /run/chrony.d/.configured
+      ExecStartPre=/usr/bin/rm -f /run/chrony.d/ntp-pool.sources
+
   # --- rehearsal CA: trusted so the shim's *.localstack.test cert validates ---
   - path: /etc/pki/ca-trust/source/anchors/flowform-rehearsal-ca.crt
     encoding: b64
@@ -147,6 +178,24 @@ write_files:
     content: |
       #!/usr/bin/env bash
       set -Eeuo pipefail
+      # JWT validation and distributed traces both depend on a trustworthy host
+      # clock. Acquire the proxy-backed source and settle the remaining
+      # correction below 50 ms before converging the application.
+      if ! systemctl is-active --quiet chronyd.service; then
+        echo "chronyd is not running; application convergence requires synchronized time" >&2
+        exit 1
+      fi
+      if ! chronyc -n waitsync 30 0.0 0.0 1 >/dev/null; then
+        echo "clock did not acquire the rehearsal proxy time source within 30 seconds" >&2
+        exit 1
+      fi
+      # This runs before the backend starts. Step the initial correction once
+      # instead of waiting minutes for a sub-second template-clock error to slew.
+      if ! chronyc -a makestep >/dev/null \
+          || ! chronyc -n waitsync 10 0.05 0.0 1 >/dev/null; then
+        echo "clock did not settle within 50 ms of the rehearsal proxy" >&2
+        exit 1
+      fi
       # Load the rehearsal env (endpoints, IPs, scope) then run the REAL script.
       set -a; . /etc/flowform/bootstrap-app.env; set +a
       exec /opt/flowform/scripts/bootstrap/bootstrap-app.sh
@@ -167,6 +216,10 @@ write_files:
       WantedBy=multi-user.target
 
 runcmd:
+  # Reload the chronyd unit drop-in and replace unreachable public pools with
+  # the proxy's private NTP endpoint.
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, restart, chronyd.service ]
   # 1. Trust the rehearsal CA so the shim's TLS validates like real AWS TLS.
   - [ update-ca-trust, extract ]
   # 2. Resolve the fake-AWS SNI names AND the fake-ECR registry to the ls-vm
@@ -177,5 +230,4 @@ runcmd:
   # First convergence is owned by `rehearsal build`, after secrets and images
   # exist. Enable the service only for later VM reboots; `enable` does not start
   # it during this cloud-init boot and therefore cannot race the orchestrator.
-  - [ systemctl, daemon-reload ]
   - [ systemctl, enable, flowform-app.service ]

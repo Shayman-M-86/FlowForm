@@ -20,6 +20,7 @@ from app.core.config import Settings
 from app.tracing.provider import DEFERRED_EXTENSION, initialize_tracing_provider
 
 _INSTRUMENTED_EXTENSION = "tracing_instrumented"
+_HEALTH_TRACE_EXCLUDED_URLS = r"/api/v1/system/health(?:/ready)?(?:\?.*)?$"
 _libraries_instrumented = False
 
 
@@ -47,7 +48,7 @@ def configure_tracing(app: Flask, settings: Settings) -> None:
     if not tracing.enabled:
         return
 
-    FlaskInstrumentor().instrument_app(app)
+    FlaskInstrumentor().instrument_app(app, excluded_urls=_HEALTH_TRACE_EXCLUDED_URLS)
     _instrument_libraries()
     app.extensions[_INSTRUMENTED_EXTENSION] = True
 

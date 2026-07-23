@@ -9,6 +9,7 @@ verified_against_commit: null
 tags: [backend, infrastructure]
 related_code:
   - "../../backend/app/logging/"
+  - "../../backend/app/tracing/"
   - "../../backend/gunicorn.conf.py"
   - "../../backend/app/api/v1/system/health.py"
   - "../../backend/app/schema/orm/core/audit_log.py"
@@ -20,6 +21,7 @@ related_code:
 related_docs:
   - "Runtime containers"
   - "Backend implementation"
+  - "Business tracing"
   - "Distributed tracing"
 ---
 
@@ -60,6 +62,9 @@ traces to Grafana Cloud Tempo.
 - Create Caddy and backend request spans with W3C trace-context propagation,
   instrument backend HTTP, SQLAlchemy, AWS SDK, and outbound `requests` calls,
   and export sampled spans through the two Alloy agents to Grafana Cloud Tempo.
+- Add FlowForm-owned business spans to that existing trace context with bounded,
+  non-identifying operation fields and events; see
+  [[business-tracing|Business tracing]] for the construction API and data policy.
 - Inject active OpenTelemetry trace and span IDs into backend JSON logs and
   retain the equivalent Caddy access-log fields for Loki-to-Tempo correlation.
 
@@ -81,11 +86,12 @@ traces to Grafana Cloud Tempo.
 | Application log | Python logging | Timestamp, severity, logger, message, optional request/resource/timing fields; JSON in the shared runtime. |
 | HTTP request log | Flask hooks | Request ID, method, matched route template or an unmatched sentinel, status, client address, and optional duration. |
 | Timing checkpoint | Submission services | Debug-only elapsed and step-delta fields tied to the current request when present. |
-| Liveness | `GET /api/v1/system/health` | Process-level timestamp and backend version response; no dependency check. |
-| Readiness | `GET /api/v1/system/health/ready` | Timestamp and backend version; HTTP 200 only when both configured PostgreSQL sessions execute `SELECT 1`, otherwise 503. |
+| Liveness | `GET /api/v1/system/health` | Process-level timestamp and backend version response; no dependency check. The backend excludes this probe from Flask tracing. |
+| Readiness | `GET /api/v1/system/health/ready` | Timestamp and backend version; the worker caches the latest two-database `SELECT 1` result, including a 503 failure, for ten seconds. The backend excludes this probe from Flask tracing. |
 | Audit record | Logger helper or core row | Actor/action/resource metadata shape exists, but call-site coverage is not established. |
 | Runtime log stream | Alloy/Loki | App/proxy container logs and proxy-host journal records; explicitly logs only. |
 | Distributed trace | Caddy and backend OpenTelemetry instrumentation | Caddy ingress and backend Flask/dependency spans exported over OTLP; parent-based ratio sampling is configured by the backend. |
+| Business trace span | Backend service and middleware call sites | Named FlowForm action spans add bounded, non-identifying fields and interior events to a request trace; they do not carry raw identifiers or answer data. |
 | Log/trace correlation | Backend formatter and Caddy access logs | Sampled request logs carry `trace_id` and `span_id`; request IDs remain available for log-only sources. |
 
 Alloy keeps request IDs, route templates, status, and duration as parsed fields
@@ -102,8 +108,11 @@ local source.
 3. Submission orchestration emits timing checkpoints and explicit warning,
    error, or critical records for important partial failures and reconciliation.
 4. Container health invokes the backend readiness endpoint; Docker uses its
-   status to report backend health. Both health responses report the version
-   loaded into application settings from `backend/pyproject.toml` at startup.
+   status to report backend health. Each backend worker performs the underlying
+   core/response probes at most once every ten seconds and reuses the latest
+   result in between, so readiness can be stale for that short interval. Both
+   health responses report the version loaded into application settings from
+   `backend/pyproject.toml` at startup.
 5. App-host Alloy reads Docker logs, parses backend JSON records, and forwards
    them over the private network to the proxy Alloy gateway.
 6. Proxy Alloy combines those records with proxy-container and proxy-host
@@ -117,8 +126,9 @@ local source.
 
 - `backend/app/logging/logging_config.py` defines handlers, formatters, and
   startup configuration; `sensitive_data.py` filters emitted records;
-  `request_logging.py` and `request_timing.py` own request-scoped signals;
-  `tracing.py` owns OpenTelemetry instrumentation and export.
+  `request_logging.py` and `request_timing.py` own request-scoped signals.
+  `backend/app/tracing/` owns OpenTelemetry instrumentation/export and the
+  bounded FlowForm business-span surface.
 - `backend/app/api/v1/system/health.py` owns liveness and database readiness.
 - `backend/app/logging/audit_logging.py`, `services/audit_log.py`, and
   `schema/orm/core/audit_log.py` define two audit-emission primitives.
@@ -163,4 +173,5 @@ local source.
 
 - [[runtime-containers|Runtime containers]]
 - [[backend|Backend implementation]]
+- [[business-tracing|Business tracing]]
 - [[tracing|Distributed tracing]]

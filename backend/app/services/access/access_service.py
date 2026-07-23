@@ -9,10 +9,15 @@ from typing import Any, TypeVar
 from flask import g
 from sqlalchemy.orm import Session
 
+from app import tracing
+from app.core.extensions import auth
+from app.db.context import get_core_db
 from app.domain import access_rules
+from app.domain.errors import ForbiddenError
 from app.repositories import access_repo as ar
 from app.repositories import surveys_repo as sr
 from app.schema.orm.core import ProjectMembership, SurveyMembershipRole, User
+from app.services.users import UserService
 
 logger = logging.getLogger(__name__)
 
@@ -184,6 +189,7 @@ class AccessService:
 
 
 access_service = AccessService()
+users_service = UserService()
 
 
 @dataclass(frozen=True, slots=True)
@@ -202,11 +208,6 @@ def _get_or_load_actor() -> User:
     if actor is not None:
         return actor
 
-    from app.core.extensions import auth
-    from app.db.context import get_core_db
-    from app.services.users import UserService
-
-    users_service = UserService()
     actor = users_service.get_user_by_sub(db=get_core_db(), auth0_user_id=auth.get_current_user_sub())
     g.actor = actor
     return actor
@@ -225,22 +226,34 @@ def require_project_permission(permission: str) -> Callable[[F], F]:
     def decorator(view: F) -> F:
         @wraps(view)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
-            from app.db.context import get_core_db
+            # Span covers only the permission decision; the view runs after it
+            # closes. A denied permission raises inside the span, which OTel
+            # auto-records and marks errored.
+            with tracing.action("access.project_permission.check"):
+                actor = _get_or_load_actor()
 
-            actor = _get_or_load_actor()
+                if actor.platform_admin:
+                    g.project_access = None
+                    tracing.fields(outcome="admin_bypass")
+                else:
+                    project_id: int = kwargs["project_id"]
+                    access = access_service.get_project_access(
+                        db=get_core_db(),
+                        project_id=project_id,
+                        user_id=actor.id,
+                    )
+                    try:
+                        access_rules.ensure_project_permission(access, permission)
+                    except ForbiddenError:
+                        tracing.fields(outcome="denied")
+                        logger.warning(
+                            "Project permission denied",
+                            extra={"user_id": actor.id, "project_id": project_id, "permission": permission},
+                        )
+                        raise
+                    g.project_access = access
+                    tracing.fields(outcome="granted")
 
-            if actor.platform_admin:
-                g.project_access = None
-                return view(*args, **kwargs)
-
-            project_id: int = kwargs["project_id"]
-            access = access_service.get_project_access(
-                db=get_core_db(),
-                project_id=project_id,
-                user_id=actor.id,
-            )
-            access_rules.ensure_project_permission(access, permission)
-            g.project_access = access
             return view(*args, **kwargs)
 
         wrapped.__flowform_rbac__ = requirement  # type: ignore[attr-defined]
@@ -263,24 +276,41 @@ def require_survey_permission(permission: str) -> Callable[[F], F]:
     def decorator(view: F) -> F:
         @wraps(view)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
-            from app.db.context import get_core_db
+            # Span covers only the permission decision; the view runs after it
+            # closes. A denied permission raises inside the span, which OTel
+            # auto-records and marks errored.
+            with tracing.action("access.survey_permission.check"):
+                actor = _get_or_load_actor()
 
-            actor = _get_or_load_actor()
+                if actor.platform_admin:
+                    g.survey_access = None
+                    tracing.fields(outcome="admin_bypass")
+                else:
+                    project_id: int = kwargs["project_id"]
+                    survey_id: int = kwargs["survey_id"]
+                    access = access_service.get_survey_access(
+                        db=get_core_db(),
+                        project_id=project_id,
+                        survey_id=survey_id,
+                        user_id=actor.id,
+                    )
+                    try:
+                        access_rules.ensure_survey_permission(access, permission)
+                    except ForbiddenError:
+                        tracing.fields(outcome="denied")
+                        logger.warning(
+                            "Survey permission denied",
+                            extra={
+                                "user_id": actor.id,
+                                "project_id": project_id,
+                                "survey_id": survey_id,
+                                "permission": permission,
+                            },
+                        )
+                        raise
+                    g.survey_access = access
+                    tracing.fields(outcome="granted")
 
-            if actor.platform_admin:
-                g.survey_access = None
-                return view(*args, **kwargs)
-
-            project_id: int = kwargs["project_id"]
-            survey_id: int = kwargs["survey_id"]
-            access = access_service.get_survey_access(
-                db=get_core_db(),
-                project_id=project_id,
-                survey_id=survey_id,
-                user_id=actor.id,
-            )
-            access_rules.ensure_survey_permission(access, permission)
-            g.survey_access = access
             return view(*args, **kwargs)
 
         wrapped.__flowform_rbac__ = requirement  # type: ignore[attr-defined]

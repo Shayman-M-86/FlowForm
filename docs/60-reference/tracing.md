@@ -9,7 +9,7 @@ authority: canonical
 verified_against_commit: null
 tags: [backend, infrastructure]
 related_code:
-  - "../../backend/app/logging/tracing.py"
+  - "../../backend/app/tracing/"
   - "../../backend/app/logging/logging_config.py"
   - "../../backend/gunicorn.conf.py"
   - "../../infra/containers/runtime/services/alloy-app/config.alloy"
@@ -20,6 +20,7 @@ related_code:
   - "../../infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy"
 related_docs:
   - "Observability"
+  - "Business tracing"
   - "Logging schema"
   - "Proxmox rehearsal observability"
 ---
@@ -30,11 +31,20 @@ Reference for FlowForm's backend and Caddy spans, two-hop Alloy transport, and
 log-to-trace correlation. It describes checked-in behavior, not proof of live
 Grafana Cloud delivery or retention.
 
+FlowForm's application-owned action spans, bounded attributes, and events are
+documented separately in [[business-tracing|Business tracing]]. This reference
+owns the transport, provider lifecycle, and trace/log correlation facts.
+
 ## Trace path
 
 1. Caddy starts an ingress span and propagates W3C trace context upstream.
 2. Flask continues that context. OpenTelemetry instrumentation creates spans
    for Flask, SQLAlchemy, Botocore, and outbound `requests` operations.
+   FlowForm services and middleware can add business-action child spans to that
+   active context through the bounded API described in [[business-tracing|Business
+   tracing]].
+   The liveness and readiness probe URLs are excluded from Flask tracing to
+   avoid high-frequency operational noise.
 3. The backend exports OTLP/gRPC to app Alloy at `http://alloy:4317`.
 4. App Alloy batches and relays spans to `${PROXY_PRIVATE_IP}:4317`.
 5. Caddy exports OTLP/HTTP to proxy Alloy at
@@ -94,5 +104,6 @@ Grafana stack before adding derived-field links or dashboards.
 ## Related documents
 
 - [[observability|Observability]]
+- [[business-tracing|Business tracing]]
 - [[logging-schema|Logging schema]]
 - [[proxmox-rehearsal-observability|Proxmox rehearsal observability]]
