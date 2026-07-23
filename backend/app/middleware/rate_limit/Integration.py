@@ -78,4 +78,3 @@ def register_rate_limiting(app: Flask, settings: Settings):
             )
         )
         rate_limiting(app, rate_limit_service)
-

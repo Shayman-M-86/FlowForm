@@ -36,11 +36,52 @@
     "problemMatcher": []
     },
     {
-        "label": "test-env: setup",
+        "label": "docs: auto-sync vault",
         "type": "shell",
-        "command": "docker compose -f infra/docker/docker-compose.test.yml up -d --build && docker compose -f infra/docker/docker-compose.test.yml exec backend-test uv sync --extra dev --extra test && docker compose -f infra/docker/docker-compose.test.yml exec backend-test uv python find",
+        "command": "while true; do bash scripts/docs/sync-obsidian-vault.sh || true; sleep 600; done",
         "options": {
             "cwd": "${workspaceFolder}"
+        },
+        "isBackground": true,
+        "runOptions": {
+            "runOn": "folderOpen"
+        },
+        "presentation": {
+            "reveal": "silent",
+            "panel": "dedicated",
+            "close": true
+        },
+        "problemMatcher": [],
+        "detail": "Copies docs/ into the Windows Obsidian vault every 10 minutes. Auto-starts on folder open; stops when VS Code closes. No-ops if the vault path is absent."
+    },
+    {
+        "label": "dev-env: up",
+        "type": "shell",
+        "command": "docker compose --env-file infra/env/dev/.env -f infra/containers/dev/compose/compose.yml up -d --build",
+        "options": {
+            "cwd": "${workspaceFolder}"
+        },
+        "problemMatcher": [],
+        "detail": "Start the local dev stack (postgres core/response + backend) with the dev env file."
+    },
+    {
+        "label": "dev-env: down",
+        "type": "shell",
+        "command": "docker compose --env-file infra/env/dev/.env -f infra/containers/dev/compose/compose.yml down",
+        "options": {
+            "cwd": "${workspaceFolder}"
+        },
+        "problemMatcher": []
+    },
+    {
+        "label": "test-env: setup",
+        "type": "shell",
+        "command": "docker compose --env-file infra/env/dev/.env -f infra/containers/dev/compose/compose.test.yml up -d --build && docker compose --env-file infra/env/dev/.env -f infra/containers/dev/compose/compose.test.yml exec backend-test uv sync --extra dev --extra test && docker compose --env-file infra/env/dev/.env -f infra/containers/dev/compose/compose.test.yml exec backend-test uv python find",
+        "options": {
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "FLOWFORM_SECRET_DIR": "${workspaceFolder}/infra/env/test/secrets"
+            }
         },
         "problemMatcher": [],
         "detail": "Start the integration test stack and set up the Python environment inside the backend test container."
@@ -48,18 +89,24 @@
     {
         "label": "test-env: up",
         "type": "shell",
-        "command": "docker compose -f infra/docker/docker-compose.test.yml up -d --build",
+        "command": "docker compose --env-file infra/env/dev/.env -f infra/containers/dev/compose/compose.test.yml up -d --build",
         "options": {
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "FLOWFORM_SECRET_DIR": "${workspaceFolder}/infra/env/test/secrets"
+            }
         },
         "problemMatcher": []
     },
     {
         "label": "test-env: down",
         "type": "shell",
-        "command": "docker compose -f infra/docker/docker-compose.test.yml down",
+        "command": "docker compose --env-file infra/env/dev/.env -f infra/containers/dev/compose/compose.test.yml down",
         "options": {
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "FLOWFORM_SECRET_DIR": "${workspaceFolder}/infra/env/test/secrets"
+            }
         },
         "problemMatcher": []
     }

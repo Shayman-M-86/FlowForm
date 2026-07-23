@@ -7,6 +7,7 @@ import boto3
 from botocore.config import Config
 from flask import Flask, current_app
 
+from app.aws.startup_validation import validate_aws_runtime_access
 from app.core.config import AwsSettings, Settings
 
 if TYPE_CHECKING:
@@ -40,12 +41,14 @@ class AwsClientManager:
         settings: Settings = app.extensions["settings"]
         aws = settings.flowform.aws
 
-        self._clients = AwsClients(
+        clients = AwsClients(
             kms=self._build_client("kms", aws=aws),
             secretsmanager=self._build_client("secretsmanager", aws=aws),
             sesv2=self._build_client("sesv2", aws=aws),
         )
+        validate_aws_runtime_access(settings=settings, clients=clients)
 
+        self._clients = clients
         app.extensions[EXTENSION_KEY] = self
 
     @property

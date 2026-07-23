@@ -13,6 +13,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app import tracing
 from app.logging.request_timing import request_timing
 from app.repositories.core import project_subject_identities as sub_id
 from app.repositories.core import project_subjects as subjects
@@ -49,6 +50,7 @@ class SessionSubjectService:
             token_service=self._token_service,
         )
 
+    @tracing.action("submission.subject.resolve")
     def resolve_for_session_start(
         self,
         db: Session,
@@ -80,6 +82,7 @@ class SessionSubjectService:
             existing_raw_token=recognition_token,
         )
         request_timing.log("session_start.token_action_applied")
+        tracing.fields(outcome=resolution.subject_source)
 
         return SessionSubjectResult(
             final_subject_id=resolution.final_subject_id,

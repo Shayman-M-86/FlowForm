@@ -7,6 +7,7 @@ Do NOT use context-mode tools at any point during this command — use Read dire
 ## Phase 1 — Curate
 
 Ask the user:
+
 1. What are you implementing? (one paragraph, plain language)
 2. Do relevant docs already exist in `docs/`? If yes, which ones?
 3. What is the rough scope — how many distinct passes do you expect?
@@ -15,6 +16,7 @@ Then do the following:
 
 **Audit existing docs (if any):**
 Read each doc the user named using Read. For each, check:
+
 - Is the behavior fully specified or are there gaps?
 - Do any two docs contradict each other?
 - Is there a clear "done" signal for each behavior described?
@@ -88,11 +90,13 @@ After scaffolding, do the following automatically:
    **Naming convention:** stub is `context/<topic>.md`, full reference is
    `source/<topic>-full.md`. Each stub must end with an explicit instruction
    to add a todo item before the relevant action:
+
    ```
    **Before <action>**, add a todo item:
    "Read `.claude/workflows/<slug>/source/<topic>-full.md` for <what it covers>."
    Do NOT skip this — the stub above is a summary, not the full specification.
    ```
+
    This ensures the agent schedules the full-reference read in its todo list
    rather than forgetting or skipping it.
 
@@ -211,9 +215,11 @@ After scaffolding, do the following automatically:
    ```
 
    Run this with the Bash tool directly — do NOT use context-mode or ctx_batch_execute. The output is the context: agent rules, source docs, current pass spec, and prompt are all injected inline. Read the full output, then begin the current pass.
+
    ```
 
 5. Print the setup checklist from the workflow's `README.md` with each item
+
    marked [done] or [todo].
 
 Tell the user:

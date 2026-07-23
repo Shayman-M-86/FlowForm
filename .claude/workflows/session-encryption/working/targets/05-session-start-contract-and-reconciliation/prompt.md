@@ -7,6 +7,7 @@ Dependency check: confirm `.claude/workflows/session-encryption/working/pass-rep
 This pass tightens the session-start contract before answer-save and session-loader work begins.
 
 Files likely to modify:
+
 - `docs/session-encryption/01-service-boundary.md`
 - `docs/session-encryption/06-failure-and-logging-rules.md`
 - `backend/app/services/public_submissions/core/session_starter.py`
@@ -14,6 +15,7 @@ Files likely to modify:
 - session-start contract tests and E2E tests that currently expect `survey_schema`
 
 Pass-specific constraints:
+
 - Do not expose the browser resume token unless the core session and response envelope both commit.
 - Explicitly handle the response-DB-committed/core-DB-failed session-start partial.
 - Remove survey schema from session-start responses; schema delivery belongs to discovery/link-resolution flows.

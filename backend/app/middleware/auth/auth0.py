@@ -1,20 +1,33 @@
+# ruff: noqa: E402
+"""Auth0 integration; the warning filter must precede auth0-api-python imports."""
+
 from __future__ import annotations
 
 import asyncio
 import logging
 import threading
 import time
+import warnings
 from collections.abc import Callable
 from functools import wraps
 from typing import Any, TypeVar, cast
 
 import requests
+from authlib.deprecate import AuthlibDeprecationWarning
+
+warnings.filterwarnings(
+    "ignore",
+    category=AuthlibDeprecationWarning,
+    module="auth0_api_python\\.api_client",
+)
+
 from auth0_api_python import ApiClient, ApiClientOptions
 from auth0_api_python.errors import BaseAuthError
 from auth0_api_python.utils import get_unverified_header
 from authlib.jose import JsonWebKey, JsonWebToken
 from flask import Flask, g, request
 
+from app import tracing
 from app.core.config import Settings
 from app.core.errors import ConfigError
 
@@ -26,6 +39,7 @@ logger = logging.getLogger(__name__)
 # Refresh the M2M token this many seconds before it actually expires.
 _MGMT_TOKEN_REFRESH_BUFFER = 60
 _MGMT_REQUEST_TIMEOUT_SECONDS = 10
+_PASSWORD_CHANGE_UNSUPPORTED_MESSAGE = "the user's main connection does not support this operation"
 _MGMT_REQUIRED_SCOPES = frozenset(
     {
         "create:user_tickets",
@@ -79,6 +93,9 @@ def _management_error_from_response(response: requests.Response) -> ManagementAp
         or provider_error
         or "Management API error"
     )
+    normalized_provider_message = str(provider_message).strip().rstrip(".").casefold()
+    if response.status_code == 400 and normalized_provider_message == _PASSWORD_CHANGE_UNSUPPORTED_MESSAGE:
+        provider_error = "operation_not_supported"
 
     return ManagementApiError(
         status_code=response.status_code,
@@ -178,10 +195,7 @@ class ManagementApiClient:
 
     def _get_token(self) -> str:
         """Return a valid M2M access token, refreshing if necessary."""
-        if (
-            self._access_token is None
-            or time.monotonic() >= self._token_expires_at - _MGMT_TOKEN_REFRESH_BUFFER
-        ):
+        if self._access_token is None or time.monotonic() >= self._token_expires_at - _MGMT_TOKEN_REFRESH_BUFFER:
             with self._lock:
                 # Double-checked locking: another thread may have refreshed already.
                 if (
@@ -351,30 +365,40 @@ class AuthExtension:
 
         mgmt_settings = self.settings.flowform.auth0.mgmt
         if mgmt_settings is not None:
+            # The Management API (/api/v2) is not served on Auth0 custom
+            # domains, so use the canonical tenant domain when one is
+            # configured; otherwise fall back to the issuer domain.
+            mgmt_domain = mgmt_settings.domain or self.settings.flowform.auth0.domain
             mgmt_client = ManagementApiClient(
-                domain=self.settings.flowform.auth0.domain,
+                domain=mgmt_domain,
                 client_id=mgmt_settings.id,
                 client_secret=mgmt_settings.secret.get_secret_value(),
             )
-            try:
-                mgmt_client.validate_connection()
-            except ManagementApiError as exc:
-                msg = "Auth0 Management API client validation failed. Check the configured client grant and scopes."
-                logger.error(
-                    "%s status=%s provider_error=%s provider_message=%r",
-                    msg,
-                    exc.status_code,
-                    exc.provider_error,
-                    exc.provider_message,
+            if getattr(mgmt_settings, "validate_on_startup", True):
+                try:
+                    mgmt_client.validate_connection()
+                except ManagementApiError as exc:
+                    msg = "Auth0 Management API client validation failed. Check the configured client grant and scopes."
+                    logger.error(
+                        "%s status=%s provider_error=%s provider_message=%r",
+                        msg,
+                        exc.status_code,
+                        exc.provider_error,
+                        exc.provider_message,
+                    )
+                    raise ConfigError(msg) from exc
+            else:
+                logger.warning(
+                    "Auth0 Management API startup validation is disabled. "
+                    "Management operations will still fail closed if the provider is unavailable."
                 )
-                raise ConfigError(msg) from exc
             self.mgmt = mgmt_client
-            logger.info("Auth0 Management API client initialized and validated.")
+            logger.info("Auth0 Management API client initialized.")
         else:
             logger.warning(
                 "Auth0 Management API client is not configured. "
                 "Account-management features will be unavailable. "
-                "Set FLOWFORM_AUTH0_MGMT_ID and FLOWFORM_AUTH0_MGMT_SECRET to enable them."
+                "Set FLOWFORM_AUTH0_MGMT_ID and FLOWFORM_AUTH0_MGMT_SECRET_FILE to enable them."
             )
 
     def _extract_bearer_token(self) -> str:
@@ -525,14 +549,19 @@ class AuthExtension:
         def decorator(fn: F) -> F:
             @wraps(fn)
             def wrapper(*args: Any, **kwargs: Any):
-                self._clear_auth_context()
-                token = self._extract_bearer_token()
-                claims = self._verify_access_token(token)
+                # Span covers only the auth work; the route body runs after it
+                # closes so it is not lumped into the auth span. A raised
+                # AuthError is auto-recorded by OTel and marks this span errored.
+                with tracing.action("auth.access_token.verify"):
+                    self._clear_auth_context()
+                    token = self._extract_bearer_token()
+                    claims = self._verify_access_token(token)
 
-                if required_scope is not None:
-                    self._require_scope(claims, required_scope)
+                    if required_scope is not None:
+                        self._require_scope(claims, required_scope)
 
-                self._store_auth_context(claims)
+                    self._store_auth_context(claims)
+                    tracing.fields(authentication_method="access_token")
 
                 return fn(*args, **kwargs)
 
@@ -548,12 +577,15 @@ class AuthExtension:
             def wrapper(*args: Any, **kwargs: Any):
                 self._clear_auth_context()
 
+                # Anonymous path does no auth work, so it stays un-spanned.
                 if not request.headers.get("Authorization", "").strip():
                     return fn(*args, **kwargs)
 
-                token = self._extract_bearer_token()
-                claims = self._verify_access_token(token)
-                self._store_auth_context(claims)
+                with tracing.action("auth.access_token.verify"):
+                    token = self._extract_bearer_token()
+                    claims = self._verify_access_token(token)
+                    self._store_auth_context(claims)
+                    tracing.fields(authentication_method="access_token")
 
                 return fn(*args, **kwargs)
 

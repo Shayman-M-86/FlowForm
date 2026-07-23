@@ -1,0 +1,23 @@
+# AWS proxy Compose override — layered on top of the shared proxy runtime:
+#
+#   docker compose -f infra/containers/runtime/compose/proxy.yml \
+#                  -f infra/containers/strategies/aws/compose/proxy.override.yml up -d
+#
+# The shared file owns services, hardening, ports, networks, and strategy-neutral
+# configuration. This override selects the two AWS-only files:
+#   - Caddy uses Route 53 DNS-01 for the public API certificate.
+#   - Squid permits the approved real AWS and external service destinations.
+#
+# Docker Compose resolves these relative bind mounts against the project
+# directory of the first -f file: infra/containers/runtime/compose/.
+
+name: flowform-proxy
+
+services:
+  caddy:
+    volumes:
+      - ../../strategies/aws/services/caddy/Caddyfile.proxy:/etc/caddy/Caddyfile:ro
+
+  squid:
+    volumes:
+      - ../../strategies/aws/services/squid/allowed-domains.txt:/etc/squid/allowed-domains.txt:ro

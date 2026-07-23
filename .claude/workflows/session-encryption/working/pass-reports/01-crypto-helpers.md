@@ -3,6 +3,7 @@
 Pass: 01 — crypto-helpers
 
 Changed files:
+
 * `backend/app/crypto/__init__.py` (created)
 * `backend/app/crypto/locators.py` (created)
 * `backend/app/crypto/aes_gcm.py` (created)
@@ -17,6 +18,7 @@ Changed files:
 * `backend/tests/unit/crypto/test_nonces.py` (created)
 
 Behavior implemented:
+
 * `derive_session_locator(core_session_id, linkage_secret) -> bytes` — HMAC-SHA256 over session ID
 * `derive_answer_locator(core_session_id, question_node_id, linkage_secret) -> bytes` — HMAC-SHA256 over `"<session_id>:<question_node_id>"`
 * `encrypt_answer(plaintext, dek, nonce, aad) -> bytes` — AES-256-GCM encryption with 32-byte DEK validation
@@ -27,15 +29,19 @@ Behavior implemented:
 * `generate_nonce() -> bytes` — 12-byte `os.urandom`
 
 Tests run:
+
 * `bash backend/scripts/run-tests.sh --ai -k "crypto"` — 28 passed
 
 Failures or skipped validation:
+
 * none
 
 Policy change during pass:
+
 * none
 
 Trace notes:
+
 * entry points touched: none (pure library code)
 * service methods touched: none
 * repository helpers touched: none
@@ -44,6 +50,7 @@ Trace notes:
 * tests that now describe behavior: `test_locators.py`, `test_aes_gcm.py`, `test_payload.py`, `test_aad.py`, `test_nonces.py`
 
 Remaining risks:
+
 * none
 
 ## Pass-forward

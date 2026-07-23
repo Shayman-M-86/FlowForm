@@ -1,57 +1,44 @@
-# FlowForm - Codex Guide
+# FlowForm agent instructions
+Purpose: Defines repository-wide rules for future agents working in FlowForm.
 
-## What is FlowForm?
+## Metadata
+- document_type: agent-instructions
+- status: scaffold
+- authority: canonical
+- verified_against_commit: null
+- related_docs: docs/README.md, docs/00-overview/documentation-generator-guide.md
 
-FlowForm is a survey platform. Teams use it to create and publish surveys,
-collect responses from end users, and review the results. The **Studio** app
-is the back-office dashboard where authenticated users manage projects,
-design surveys, and track responses. The **Public Site** is what respondents
-see - the form-filling experience delivered to end users.
+## Core rule
+The implementation is the source of truth. Documentation may be incomplete, historical, or wrong until verified against source code, tests, configuration, CI, and infrastructure definitions.
+TODO: Verify this against the current implementation.
 
-The backend exposes a REST API consumed by both apps. Responses are stored
-with privacy in mind: submission payloads are isolated in a separate database
-and linked back via HMAC-derived opaque locators rather than a shared key or
-a real user ID.
+## Documentation context (Docsys MCP)
+Before meaningful implementation work — whenever existing FlowForm architecture, behaviour, workflows, or domain rules are relevant — call `get_task_context` on the `flowform-docs` MCP server to load focused context. Prefer this retrieval over broadly grepping documentation or reading large parts of the repository. The `flowform-doc-context` skill describes the full workflow.
 
----
+- Available MCP tools: `search_docs`, `get_document`, `get_related`, `get_task_context`, `get_impacted_docs`, `check_freshness`, `doc_health`. (CLI equivalents live under `scripts/docs/docsys/`; run `python3 -m docsys <command>` with `scripts/docs` on `PYTHONPATH`.)
+- Code, tests, schemas, configuration, and infrastructure remain the source of truth. Documentation provides focused context and implementation boundaries, not authority.
+- Load only the documents returned as relevant; do not load the whole documentation tree.
+- Treat `old-docs/` as historical, never as current architecture.
+- Never manually edit generated documentation under `docs/90-generated/`; regenerate it instead.
+- After behavioural or architectural changes, call `get_impacted_docs` and review each high-confidence result, updating docs only when documented behaviour, responsibilities, boundaries, invariants, or workflows actually changed.
+- Skip this for trivial changes: spelling fixes, formatting, or isolated mechanical renames.
 
-## Repo layout
+## Documentation rules
+Read `docs/README.md` and `docs/00-overview/documentation-generator-guide.md` before updating documentation. Keep canonical, planning, reference, and generated documents separate.
+TODO: Verify this against the current implementation.
 
-```text
-FlowForm/
-├── backend/        Flask API - see backend/AGENTS.md
-└── frontend/       JS monorepo - see frontend/AGENTS.md
-    ├── apps/
-    │   ├── studio-app/     Admin dashboard - see frontend/apps/studio-app/AGENTS.md
-    │   └── public-site/    Marketing + form-filler - see frontend/apps/public-site/AGENTS.md
-    └── packages/           Shared libs - see frontend/packages/AGENTS.md
-```
+## Historical documentation warning
+Treat `old-docs/` as untrusted historical context. Do not copy claims from it unless every claim is re-verified against the current implementation.
+TODO: Verify this against the current implementation.
 
----
+## Correct behavior examples
+Correct: inspect code before updating a domain document, cite verified paths, record the commit SHA, and update navigation. Correct: place temporary plans under `docs/70-planning/` instead of architecture docs.
+TODO: Verify this against the current implementation.
 
-## Architecture in brief
+## Incorrect behavior examples
+Incorrect: invent ports, commands, architecture guarantees, or security behavior from memory. Incorrect: treat a plan as an accepted decision. Incorrect: leave scaffold files empty or title-only.
+TODO: Verify this against the current implementation.
 
-**Backend** is a Flask app managed with **uv**. It uses two PostgreSQL
-databases (`core` and `response`) with strict separation: `core` holds survey
-structure, subjects, and session metadata; `response` holds only encrypted
-answer payloads. There are no cross-db SQL foreign keys - the two sides are
-linked via HMAC-derived opaque locators (`session_locator`, `answer_locator`)
-computed from a versioned linkage secret. See
-[docs/session-encryption/](docs/session-encryption/) for the full model.
-Cross-db orchestration lives exclusively in `services/`. The response DB
-never stores a real user ID, project ID, or survey ID.
-
-**Frontend** is a Vite/React 19 monorepo. Studio is an authenticated SPA for
-survey management. Public site is the end-user form-filling experience.
-
----
-
-## Sub-guides
-
-| Area | Guide |
-|---|---|
-| Backend (Flask, DBs, layers) | [backend/AGENTS.md](backend/AGENTS.md) |
-| Frontend monorepo | [frontend/AGENTS.md](frontend/AGENTS.md) |
-| Studio app | [frontend/apps/studio-app/AGENTS.md](frontend/apps/studio-app/AGENTS.md) |
-| Public site | [frontend/apps/public-site/AGENTS.md](frontend/apps/public-site/AGENTS.md) |
-| Shared packages | [frontend/packages/AGENTS.md](frontend/packages/AGENTS.md) |
+## Pull request expectations
+Summaries should state what changed, what was validated, and whether any documentation remains scaffold-only. Documentation-only changes still require link and metadata validation when available.
+TODO: Verify this against the current implementation.

@@ -2,5 +2,6 @@
   "css.customData": [],
   "css.lint.unknownAtRules": "ignore",
   "scss.lint.unknownAtRules": "ignore",
-  
+  "python.testing.pytestEnabled": false,
+  "python.testing.unittestEnabled": false
 }

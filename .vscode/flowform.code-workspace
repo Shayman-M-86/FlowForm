@@ -13,23 +13,19 @@
             "path": "../frontend"
         },
         {
-            "name": "infra/cdk",
-            "path": "../infra/cdk"
+            "name": "cdk",
+            "path": "../infra/deployment/aws/cdk/"
         }
     ],
     "settings": {
         "workbench.colorCustomizations": {
             "statusBar.background": "#be1635"
         },
-        "python.defaultInterpreterPath": "${workspaceFolder:backend}/.venv/bin/python",
-        "python.envFile": "${workspaceFolder:backend}/.env.dev",
-        "python.analysis.extraPaths": [
-            "${workspaceFolder:backend}"
-        ],
-        "python.analysis.include": [
-            "${workspaceFolder:backend}",
-            "${workspaceFolder:infra/cdk}"
-        ],
+        "markdownlint.config": {
+            "default": true,
+            "MD013": false,
+            "MD060": false
+        },
         "python.analysis.exclude": [
             "**/.git/**",
             "**/.venv/**",
@@ -52,11 +48,6 @@
         "python-hover.diagnostics.enabled": false,
         "python-hover.ui.showBadges": false,
         "python-hover.ui.showCallouts": false,
-        "python.testing.pytestEnabled": true,
-        "python.testing.unittestEnabled": false,
-        "python.testing.pytestArgs": [
-            "tests"
-        ],
         "python.terminal.activateEnvironment": true,
         // "task.allowAutomaticTasks": "on",
         "files.exclude": {
@@ -81,6 +72,7 @@
             "**/.mypy_cache/**": true,
             "**/.ruff_cache/**": true,
             "**/node_modules/**": true,
+            "**/cloud-init/**": true,
             "**/on_hold/**": true
         },
         "search.exclude": {
@@ -91,8 +83,18 @@
             "**/.mypy_cache": true,
             "**/.ruff_cache": true,
             "**/node_modules": true,
+            "**/cloud-init/**": true,
             "**/on_hold/**": true
         },
+        "files.associations": {
+            "**/infra/deployment/proxmox/cloud-init/templates/*.yaml.tftpl": "terraform"
+          },
+        // cloud-init user-data files use a .template extension but are NOT
+        // CloudFormation; exclude them so cfn-lint stops emitting false E1001s.
+        "cfnLint.ignoreTemplates": [
+            "**/cloud-init/*.template",
+            "**/cloud-init/**/*.template"
+        ],
         "json.schemas": [
             {
                 "fileMatch": [".mcp.json"],

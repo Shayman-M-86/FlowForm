@@ -32,6 +32,7 @@ mutation.mutate({ body: { name: 'My Project' } })
 ## Named hooks (optional but preferred for reuse)
 
 Write a thin hook in `src/api/<domain>/hooks.ts` when:
+
 - the hook is used in more than one place, or
 - it needs cache invalidation, `enabled` conditions, or optimistic updates
 

@@ -6,6 +6,8 @@ from typing import Any
 
 from flask import g, has_request_context, request
 
+from app.logging.request_logging import get_request_log_path
+
 REQUEST_TIMING_LOGGER = logging.getLogger("app.request_timing")
 
 
@@ -43,7 +45,7 @@ class RequestTimingLogger:
                 {
                     "request_id": getattr(g, "request_id", None),
                     "method": request.method,
-                    "path": request.path,
+                    "path": get_request_log_path(),
                 }
             )
 

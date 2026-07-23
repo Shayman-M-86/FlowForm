@@ -14,6 +14,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app import tracing
 from app.cache import get_app_cache
 from app.crypto._internal.client_extension import get_crypto_clients
 from app.crypto.locators import resolve_existing_session_locator
@@ -126,6 +127,7 @@ class AdminResultsService:
         ]
         return SubjectTreeResult(subject=subject, sessions=session_results)
 
+    @tracing.action("results.export.generate")
     def export_results(
         self,
         db: Session,
@@ -160,8 +162,11 @@ class AdminResultsService:
             for session in sessions
         ]
         rows = [row for result in session_results for row in to_export_rows(result)]
-        return format_export_file(rows, export_format=export_format, survey_id=survey_id)
+        export = format_export_file(rows, export_format=export_format, survey_id=survey_id)
+        tracing.fields(outcome="generated", answer_count=len(rows))
+        return export
 
+    @tracing.action("results.session.delete")
     def delete_session(
         self,
         db: Session,
@@ -189,10 +194,13 @@ class AdminResultsService:
             raise EnvelopeNotFoundError()
 
         commit_with_err_handle(response_db, contexts=[])
+        tracing.event("flowform.results.response_deleted")
 
         # Step 2: Delete core session
         ssr.delete_session(db, submission_session=session)
         commit_with_err_handle(db, contexts=[session])
+        tracing.event("flowform.results.core_deleted")
+        tracing.fields(outcome="deleted")
 
         return DeletionResult(
             session_id=session.id,

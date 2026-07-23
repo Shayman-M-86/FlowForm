@@ -25,9 +25,10 @@ route, change a request or response schema), run this script to keep the
 backend spec and frontend types in sync:
 
 ```bash
-bash scripts/shared_script/sync-openapi.sh
+bash scripts/ci/sync-openapi.sh
 ```
 
 This runs two steps in sequence:
+
 1. Exports `backend/openapi.yaml` from the Python sources
 2. Generates `src/api/generated/schema.ts` from that YAML

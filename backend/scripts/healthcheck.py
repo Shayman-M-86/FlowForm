@@ -10,7 +10,7 @@ def main() -> int:
     try:
         with urlopen(HEALTHCHECK_URL, timeout=TIMEOUT_SECONDS) as response:
             return 0 if response.status == 200 else 1
-    except HTTPError, URLError, TimeoutError:
+    except (HTTPError, URLError, TimeoutError):
         return 1
 
 

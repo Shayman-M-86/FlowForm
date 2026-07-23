@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+  cat <<'USAGE'
+Usage: image <command> ...
+
+FlowForm machine-image operator entry point.
+
+  image doctor <aws|proxmox|all>
+  image prepare proxmox [--apply] [--replace] [--env-file PATH]
+  image build aws [--validate-only] [--syntax-only]
+  image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]
+  image verify <aws|proxmox|all> [options]
+  image artifact aws [--manifest PATH]
+  image publish aws --environment <dev|staging|prod> [--dry-run]
+
+Run `image <command> --help` for command details. Set IMAGE_COLOR to
+auto (default), always, or never; NO_COLOR disables ANSI colour.
+USAGE
+}
+
+command="${1:-}"
+[[ $# -gt 0 ]] && shift || true
+case "${command}" in
+  build|verify|prepare|publish|artifact|doctor) ;;
+  ""|-h|--help|help) usage; exit 0 ;;
+  *) printf 'image: unknown command: %s\n\n' "${command}" >&2; usage >&2; exit 2 ;;
+esac
+
+export IMAGE_SUBCOMMAND="image ${command}"
+# shellcheck source=image-common.sh
+source "${SCRIPT_DIR}/image-common.sh"
+
+IMAGE_STARTED_AT="$(date +%s)"
+IMAGE_CURRENT_PHASE="startup"
+IMAGE_SUMMARY_EMITTED=0
+cleanup() {
+  local status=$? failed_phase="${IMAGE_CURRENT_PHASE}"
+  trap - EXIT INT TERM HUP
+  if (( status != 0 && IMAGE_SUMMARY_EMITTED == 0 )); then
+    phase "command summary"
+    error "RESULT: FAIL — ${failed_phase} after $(( $(date +%s) - IMAGE_STARTED_AT ))s"
+  fi
+  exit "${status}"
+}
+interrupted() {
+  local interrupted_phase="${IMAGE_CURRENT_PHASE}"
+  trap - EXIT INT TERM HUP
+  phase "command summary"
+  warn "RESULT: INTERRUPTED — ${interrupted_phase}"
+  exit 130
+}
+trap cleanup EXIT
+trap interrupted INT TERM HUP
+
+lib="${SCRIPT_DIR}/lib/cmd_${command}.sh"
+[[ -r "${lib}" ]] || die "command implementation missing: ${lib}"
+# shellcheck source=/dev/null
+source "${lib}"
+"cmd_${command}_main" "$@"
+
+if (( IMAGE_SUMMARY_EMITTED == 0 )); then
+  success "RESULT: PASS — completed in $(( $(date +%s) - IMAGE_STARTED_AT ))s"
+  IMAGE_SUMMARY_EMITTED=1
+fi

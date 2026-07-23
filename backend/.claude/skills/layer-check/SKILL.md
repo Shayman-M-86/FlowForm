@@ -6,6 +6,7 @@ paths: ["backend/**/*.py"]
 ---
 
 Before editing any backend Python file, verify the edit respects the layer contract:
+
 - Routes: HTTP parsing only — no SQL, no session management, no business logic
 - Services: Only layer that coordinates both DBs
 - Repositories: One DB only, named query methods, no workflow logic

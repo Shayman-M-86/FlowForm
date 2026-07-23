@@ -13,6 +13,7 @@ from pydantic import (
     ConfigDict,
     Field,
     JsonValue,
+    SecretStr,
     field_validator,
 )
 
@@ -121,9 +122,10 @@ class SecretValue(AliasedCryptoValueModel):
 
     model_config = ConfigDict(extra="ignore")
 
-    secret_string: NonEmptyStr = Field(
+    secret_string: SecretStr = Field(
         validation_alias="SecretString",
         serialization_alias="SecretString",
+        repr=False,
     )
     version_id: NonEmptyStr = Field(
         validation_alias="VersionId",

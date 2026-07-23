@@ -1,0 +1,244 @@
+// FlowForm app-box observability agent (Grafana Alloy).
+//
+// Ships backend logs and traces off the OFFLINE app box.
+// The app box (10.10.10.20) has no internet route — its only egress is Squid,
+// which does not admit Grafana Cloud — so this agent does NOT talk to Grafana
+// directly. It forwards logs to the proxy-box Alloy on :3500 and OTLP traces on
+// :4317 over the private net; that gateway fans both signals out to Grafana
+// Cloud. Keeping the app box offline is the whole point of the rehearsal.
+//
+// The backend emits one JSON object per log record (FLOWFORM_LOGGING_LOG_JSON=
+// true; see backend/app/logging/logging_config.py JsonFormatter). We parse that
+// here so Grafana shows the human message and a few low-cardinality labels, and
+// keep high-cardinality context (request_id, user_id, ids) as fields, not labels.
+//
+// Injected by docker compose from the app bootstrap env:
+//   PROXY_PRIVATE_IP   proxy-box Alloy gateway host (:3500 logs, :4317 traces)
+
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// --- OTLP traces: backend -> local receiver -> proxy-box gateway -------------
+otelcol.receiver.otlp "backend" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  output {
+    traces = [otelcol.processor.batch.traces.input]
+  }
+}
+
+otelcol.processor.batch "traces" {
+  output {
+    traces = [otelcol.exporter.otlp.proxy_gateway.input]
+  }
+}
+
+otelcol.exporter.otlp "proxy_gateway" {
+  client {
+    endpoint = sys.env("PROXY_PRIVATE_IP") + ":4317"
+
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// --- Forward to the proxy-box gateway Alloy ----------------------------------
+loki.write "gateway" {
+  endpoint {
+    url = "http://" + sys.env("PROXY_PRIVATE_IP") + ":3500/loki/api/v1/push"
+  }
+}
+
+// --- Docker container logs (backend only lives here) -------------------------
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  // service_name is the Grafana Logs Drilldown key. Compose sets
+  // com.docker.compose.service (= "backend") on the container.
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service_name"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "compose_project"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_log_stream"]
+    target_label  = "stream"
+  }
+
+  // Static deployment identity (this file only ships to the Proxmox app box).
+  rule {
+    replacement  = "rehearsal"
+    target_label = "environment"
+  }
+
+  rule {
+    replacement  = "proxmox"
+    target_label = "platform"
+  }
+
+  rule {
+    replacement  = "app"
+    target_label = "host_role"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  labels     = {job = "docker"}
+  forward_to = [loki.process.backend.receiver]
+}
+
+// --- Parse the backend's JSON records ----------------------------------------
+loki.process "backend" {
+  // Only the backend logs JSON. gunicorn's own startup banner is plain text, so
+  // scope JSON parsing to the backend service and leave anything else untouched.
+  stage.match {
+    selector = "{service_name=\"backend\"}"
+
+    // Field names match backend JsonFormatter (canonical schema shared with
+    // caddy/squid): level, logger, message, method, path, status, client_ip,
+    // request_id, duration_ms, event_type, ...
+    stage.json {
+      expressions = {
+        level       = "level",
+        logger      = "logger",
+        message     = "message",
+        method      = "method",
+        path        = "path",
+        status      = "status",
+        client_ip   = "client_ip",
+        event_type  = "event_type",
+        request_id  = "request_id",
+        duration_ms = "duration_ms",
+        user_id     = "user_id",
+        environment = "environment",
+        trace_id    = "trace_id",
+        span_id     = "span_id",
+      }
+    }
+
+    // Index only stable, low-cardinality fields. `path` is the RAW request path
+    // (request.path — carries UUIDs), and request_id / duration_ms / status
+    // are per-request, so none of them become labels: that would explode Loki
+    // stream cardinality. They remain parsed values in the record.
+    stage.labels {
+      values = {
+        level      = "",
+        method     = "",
+        event_type = "",
+      }
+    }
+
+    // Guard against any stray uppercase level so `{level="error"}` matches the
+    // whole fleet (backend already emits lowercase; this is belt-and-braces).
+    stage.template {
+      source   = "level"
+      template = "{{ ToLower .Value }}"
+    }
+
+    stage.labels {
+      values = {
+        level = "",
+      }
+    }
+
+    // Rebuild the visible line as canonical logfmt from the parsed JSON fields
+    // so every field is queryable via `| logfmt` — matching caddy/squid — rather
+    // than the fields being trapped in the JSON and the line being free prose.
+    // `ts`/`level` are deliberately omitted (ts is Loki's timestamp column,
+    // level is the indexed label) to avoid duplication.
+    //
+    // The human `message` is folded in as a quoted `msg` field ONLY on non-
+    // request lines (startup banner, business events, errors) where it is the
+    // sole content. On request lines the message is just prose restating
+    // method/path/status/duration (e.g. "1.2.3.4 | GET /x -> 200 duration_ms=5"),
+    // which the structured fields already carry — so `msg` is suppressed there
+    // (keyed off `method` being present) to avoid the same duplication we
+    // stripped from squid/caddy. Only non-empty fields render.
+    stage.template {
+      source   = "line"
+      template = "{{ if and .message (not .method) }}msg=\"{{ .message }}\" {{ end }}{{ if .logger }}logger={{ .logger }} {{ end }}{{ if .method }}method={{ .method }} {{ end }}{{ if .status }}status={{ .status }} {{ end }}{{ if .path }}path=\"{{ .path }}\" {{ end }}{{ if .client_ip }}client_ip={{ .client_ip }} {{ end }}{{ if .duration_ms }}duration_ms={{ .duration_ms }} {{ end }}{{ if .request_id }}request_id={{ .request_id }} {{ end }}{{ if .trace_id }}trace_id={{ .trace_id }} {{ end }}{{ if .span_id }}span_id={{ .span_id }} {{ end }}{{ if .user_id }}user_id={{ .user_id }} {{ end }}{{ if .event_type }}event_type={{ .event_type }} {{ end }}{{ if .environment }}environment={{ .environment }}{{ end }}"
+    }
+
+    stage.output {
+      source = "line"
+    }
+  }
+
+  // --- This agent's own logs: canonical logfmt -------------------------------
+  // The app-box Alloy also emits logs into this pipeline. Normalise them to the
+  // same schema as the proxy-box agent (see alloy/config.alloy): parse the
+  // logfmt fields, label a lowercase `level`, then REBUILD the line as logfmt
+  // WITHOUT `ts`/`level` so every field stays queryable via `| logfmt` while the
+  // timestamp (Loki's column) and level (the label) aren't duplicated in the
+  // body. The `msg=` line filter keeps non-logfmt internal lines (startup
+  // banner) out of the decoder so it never emits `failed to decode logfmt`.
+  stage.match {
+    selector = "{service_name=\"alloy\"} |= \"msg=\""
+
+    stage.logfmt {
+      mapping = {
+        level     = "",
+        msg       = "",
+        logger    = "",
+        component = "",
+      }
+    }
+
+    stage.labels {
+      values = {
+        level = "",
+      }
+    }
+
+    stage.template {
+      source   = "level"
+      template = "{{ ToLower .Value }}"
+    }
+
+    stage.labels {
+      values = {
+        level = "",
+      }
+    }
+
+    // Rebuild as logfmt from the parsed fields, dropping ts/level. Only non-empty
+    // fields render, so lines without a component key still stay well-formed.
+    stage.template {
+      source   = "line"
+      template = "{{ if .logger }}logger={{ .logger }} {{ end }}{{ if .component }}component={{ .component }} {{ end }}{{ if .msg }}msg=\"{{ .msg }}\"{{ end }}"
+    }
+
+    stage.output {
+      source = "line"
+    }
+  }
+
+  forward_to = [loki.write.gateway.receiver]
+}

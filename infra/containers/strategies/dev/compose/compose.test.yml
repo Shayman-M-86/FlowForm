@@ -1,0 +1,159 @@
+name: flowform-test-Environment
+
+services:
+  postgres-core:
+    image: postgres:17
+    container_name: flowform-postgres-core-test
+    env_file:
+      - ../../../../env/dev/.db.core.env
+    environment:
+      DATABASE_INIT_TARGET: core
+
+      POSTGRES_USER: ${DATABASE_CORE_INIT_USER}
+      POSTGRES_DB: ${DATABASE_CORE_INIT_DB}
+      POSTGRES_PASSWORD_FILE: /run/secrets/DATABASE_CORE_INIT_PASSWORD
+
+      DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+    ports:
+      # Host-side ports for the test stack are offset by 10 so the test
+      # stack can run side-by-side with the dev stack (5432/5433/5000).
+      - "127.0.0.1:5442:${DATABASE_CORE_PORT}"
+    command: [
+      "postgres", 
+      "-c", "password_encryption=scram-sha-256", 
+      "-c", "hba_file=/etc/postgresql/pg_hba.conf", 
+      "-c", "listen_addresses=*", 
+      "-c", "port=${DATABASE_CORE_PORT}"
+      ]
+    volumes:
+      - flowform_postgres_core_data:/var/lib/postgresql/data
+      - ../../../../database/init:/docker-entrypoint-initdb.d:ro
+      - ../../../../database/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    secrets:
+      - DATABASE_CORE_APP_PASSWORD
+      - DATABASE_CORE_INIT_PASSWORD
+    networks:
+      - flowform_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_CORE_INIT_USER} -d ${DATABASE_CORE_INIT_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-response:
+    image: postgres:17
+    container_name: flowform-postgres-response-test
+    env_file:
+      - ../../../../env/dev/.db.response.env
+    environment:
+      DATABASE_INIT_TARGET: response
+
+      POSTGRES_USER: ${DATABASE_RESPONSE_INIT_USER}
+      POSTGRES_DB: ${DATABASE_RESPONSE_INIT_DB}
+      POSTGRES_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_INIT_PASSWORD
+
+      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
+    ports:
+      - "127.0.0.1:5443:${DATABASE_RESPONSE_PORT}"
+    command: [
+      "postgres", 
+      "-c", "password_encryption=scram-sha-256", 
+      "-c", "hba_file=/etc/postgresql/pg_hba.conf", 
+      "-c", "listen_addresses=*", 
+      "-c", "port=${DATABASE_RESPONSE_PORT}"
+      ]
+    volumes:
+      - flowform_postgres_response_data:/var/lib/postgresql/data
+      - ../../../../database/init:/docker-entrypoint-initdb.d:ro
+      - ../../../../database/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    secrets:
+      
+      - DATABASE_RESPONSE_INIT_PASSWORD
+      - DATABASE_RESPONSE_APP_PASSWORD
+    networks:
+      - flowform_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_RESPONSE_INIT_USER} -d ${DATABASE_RESPONSE_INIT_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend-test:
+    image: flowform-backend-test:ci
+    build:
+      context: ../../../../..
+      dockerfile: infra/containers/strategies/dev/services/backend/backend.test.Dockerfile
+    working_dir: /app
+    init: true
+    container_name: flowform-backend-test
+    env_file:
+      - ../../../../env/dev/.backend.env
+      - ../../../../env/dev/.db.core.env
+      - ../../../../env/dev/.db.response.env
+    environment:
+      FLOWFORM_ENV: test
+      PYTHONUNBUFFERED: "1"
+
+      DATABASE_CORE_PORT: ${DATABASE_CORE_PORT}
+      DATABASE_RESPONSE_PORT: ${DATABASE_RESPONSE_PORT}
+      DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
+
+      FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
+      # Test runs must never consume the real dev/Auth0 credential inherited
+      # from .backend.env. CI supplies a masked per-run throwaway; local runs
+      # use the explicit non-secret fallback.
+      FLOWFORM_AUTH0_MGMT_ID: flowform-test-management-client
+      FLOWFORM_AUTH0_MGMT_DOMAIN: auth0.test.invalid
+      FLOWFORM_AUTH0_MGMT_SECRET: ${FLOWFORM_TEST_AUTH0_MGMT_SECRET:-flowform-local-test-auth0-secret}
+      FLOWFORM_AUTH0_MGMT_SECRET_FILE: ""
+      FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP: "false"
+      FLOWFORM_LOGGING_LOG_FILE: ""
+      FLOWFORM_CORS_ORIGINS: '["http://localhost:5173", "http://localhost:5174"]'
+    command: ["sh", "-lc", "tail -f /dev/null"]
+    volumes:
+      - ../../../../../backend:/app
+      - flowform_backend_test_venv:/opt/flowform/backend-test-venv
+    tmpfs:
+      - /app/logs:size=16m,mode=0700
+    depends_on:
+      postgres-core:
+        condition: service_healthy
+      postgres-response:
+        condition: service_healthy
+    secrets:
+      - DATABASE_CORE_APP_PASSWORD
+      - DATABASE_RESPONSE_APP_PASSWORD
+      - FLOWFORM_APP_SECRET_KEY
+    networks:
+      - flowform_net
+    ports:
+      - "127.0.0.1:5010:5000"
+
+volumes:
+  flowform_postgres_core_data:
+  flowform_postgres_response_data:
+  flowform_backend_test_venv:
+
+networks:
+  flowform_net:
+    driver: bridge
+    # The normal local and CI suites are hermetic: services can reach each
+    # other, but containers have no route to the public internet. The explicit
+    # live-test Compose override is the only place that enables outbound access.
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.50.0.0/16
+
+secrets:
+  DATABASE_CORE_INIT_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-../../../../env/test/secrets}/DATABASE_CORE_INIT_PASSWORD.test.secret.txt
+  DATABASE_CORE_APP_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-../../../../env/test/secrets}/DATABASE_CORE_APP_PASSWORD.test.secret.txt
+  DATABASE_RESPONSE_INIT_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-../../../../env/test/secrets}/DATABASE_RESPONSE_INIT_PASSWORD.test.secret.txt
+  DATABASE_RESPONSE_APP_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-../../../../env/test/secrets}/DATABASE_RESPONSE_APP_PASSWORD.test.secret.txt
+  FLOWFORM_APP_SECRET_KEY:
+    file: ${FLOWFORM_SECRET_DIR:-../../../../env/test/secrets}/FLOWFORM_APP_SECRET_KEY.test.secret.txt

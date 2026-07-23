@@ -9,6 +9,7 @@ session scripts all live together.
 ## When to use this
 
 Use a workflow when you have:
+
 - A body of spec/policy docs that the AI must treat as ground truth
 - Implementation work that can be broken into ordered, discrete passes
 - A need to resume across multiple sessions without re-establishing context
@@ -95,6 +96,7 @@ bash .claude/workflows/scripts/new-workflow.sh
 ```
 
 It will prompt for:
+
 - Workflow name (used as the directory name, kebab-case)
 - A one-line description
 - Number of passes (creates numbered target directories)

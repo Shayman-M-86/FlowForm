@@ -14,10 +14,6 @@ from __future__ import annotations
 import logging
 import re
 import threading
-import tomllib
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as _pkg_version
-from pathlib import Path
 from typing import Any, Literal, get_args, get_origin
 
 from apispec import APISpec
@@ -25,6 +21,7 @@ from flask import Blueprint, Flask, jsonify
 from pydantic import BaseModel, TypeAdapter
 from werkzeug.routing import Rule
 
+from app.core.config import PROJECT_VERSION
 from app.openapi.errors import (
     ERROR_SCHEMA,
     ERROR_SCHEMA_NAME,
@@ -152,40 +149,6 @@ _COMPONENT_STRING_FIELD_MAX_LENGTHS = {
         "description": limits.PROJECT_ROLE_DESCRIPTION_MAX,
     },
 }
-
-# Fallback when the package metadata can't be read (e.g. running from a source
-# checkout that was never installed). Keep in sync with backend/pyproject.toml
-# if you ever care, but the lookup below is the primary source.
-_VERSION_FALLBACK = "0.0.0"
-
-
-def _backend_package_version() -> str:
-    """Return the backend's declared version.
-
-    Reads ``backend/pyproject.toml`` directly so the source of truth works
-    whether the project is installed (``uv sync``) or running from a source
-    checkout. Falls back to ``importlib.metadata`` when the file isn't
-    findable from the current working directory, then to a static fallback.
-    """
-    candidates = [
-        Path("pyproject.toml"),
-        Path(__file__).resolve().parents[2] / "pyproject.toml",
-    ]
-    for path in candidates:
-        if not path.is_file():
-            continue
-        try:
-            data = tomllib.loads(path.read_text(encoding="utf-8"))
-        except OSError, tomllib.TOMLDecodeError:
-            continue
-        version = data.get("project", {}).get("version")
-        if isinstance(version, str) and version:
-            return version
-
-    try:
-        return _pkg_version("backend")
-    except PackageNotFoundError:
-        return _VERSION_FALLBACK
 
 
 def _operation_id_from_qualname(handler_qualname: str) -> str:
@@ -554,7 +517,7 @@ def build_spec(app: Flask) -> dict[str, Any]:
     """
     spec = APISpec(
         title=app.config.get("OPENAPI_TITLE", "FlowForm API"),
-        version=app.config.get("OPENAPI_VERSION") or _backend_package_version(),
+        version=app.config.get("OPENAPI_VERSION") or app.config.get("APP_VERSION", PROJECT_VERSION),
         openapi_version="3.1.1",
         info={
             "description": app.config.get(

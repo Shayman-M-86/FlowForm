@@ -1,0 +1,13 @@
+[req]
+distinguished_name = dn
+req_extensions = v3_req
+prompt = no
+[dn]
+CN = localstack.test
+[v3_req]
+subjectAltName = @alt
+[alt]
+DNS.1 = secretsmanager.localstack.test
+DNS.2 = ssm.localstack.test
+DNS.3 = kms.localstack.test
+DNS.4 = registry.localstack.test

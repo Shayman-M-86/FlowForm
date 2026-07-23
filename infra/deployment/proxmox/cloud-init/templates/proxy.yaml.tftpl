@@ -1,0 +1,202 @@
+#cloud-config
+# ===========================================================================
+# Proxy-box (210) runtime cloud-init — the PUBLIC entry + egress gateway.
+# ===========================================================================
+# Terraform renders this template directly from the real repository files and
+# uploads the result to Proxmox. No rendered cloud-init file is stored locally.
+#
+# The proxy box is EGRESS-ONLY: it simulates the controlled egress gateway and
+# nothing else. `rehearsal build` runs the shared proxy stack (Caddy + Squid)
+# through bootstrap-proxy.sh, with a rehearsal override that selects the two
+# configurations that can work offline: a fixed test certificate instead of
+# Route 53 DNS-01, and the *.localstack.test Squid allow-list instead of the
+# real AWS/external destination list.
+#
+# It does NOT host the image registry — that's fake ECR, which lives on the
+# aws-fixtures-vm (230) alongside LocalStack. Mixing "firewall" and "image
+# service" on one box would muddy exactly the egress boundary this rehearsal
+# exists to prove. The proxy box is the ONLY VM with an internet route (net0 on
+# vmbr0), which it needs for its own SSM reads — not for serving images.
+#
+# Repo layout on the box mirrors the real tree so relative bind-mounts and
+# bootstrap-proxy.sh's REPO_ROOT math (scripts/bootstrap → ../../..) both work:
+#   /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-proxy.sh
+#   /opt/flowform/repo/infra/containers/runtime/{compose/,services/squid/}
+#   /opt/flowform/repo/infra/containers/strategies/rehearsal/{compose/,services/caddy/,services/squid/}
+#
+# Shape note: this is the proxy analogue of the future CDK ec2.UserData.
+
+write_files:
+  # The app VM has no default route, so it cannot reach public NTP servers.
+  # Serve the proxy's synchronized clock only on the isolated rehearsal subnet;
+  # binding the private address keeps UDP/123 off the operator-facing LAN NIC.
+  - path: /etc/chrony.d/flowform-rehearsal-server.conf
+    permissions: '0644'
+    owner: root:root
+    content: |
+      bindaddress 10.10.10.10
+      bindaddress ::1
+      allow 10.10.10.0/24
+  - path: /etc/systemd/system/chronyd.service.d/flowform-rehearsal-network.conf
+    permissions: '0644'
+    owner: root:root
+    content: |
+      [Unit]
+      Wants=network-online.target
+      After=network-online.target
+      [Service]
+      # Replace Amazon Linux's non-idempotent fallback-source pre-start command:
+      # its plain `ln -s` fails on every restart when the symlink already exists.
+      ExecStartPre=
+      ExecStartPre=/usr/bin/mkdir -p /run/chrony.d
+      ExecStartPre=/usr/bin/ln -sfn /usr/share/chrony/ntp-pool.sources /run/chrony.d/ntp-pool.sources
+
+  # --- rehearsal CA: trusted so the shim's *.localstack.test cert validates ---
+  - path: /etc/pki/ca-trust/source/anchors/flowform-rehearsal-ca.crt
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${REHEARSAL_CA_CRT_B64}
+
+  # --- real bootstrap script (rendered from infra/deployment/bootstrap/) -------
+  - path: /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-proxy.sh
+    encoding: b64
+    permissions: '0755'
+    owner: root:root
+    content: ${BOOTSTRAP_PROXY_SH_B64}
+  - path: /opt/flowform/repo/infra/deployment/bootstrap/aws-cli-retry.sh
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${AWS_CLI_RETRY_SH_B64}
+  # shared bootstrap library; sourced by bootstrap-proxy.sh and the retry shim,
+  # so it must sit beside them in this same directory.
+  - path: /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-common.sh
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${BOOTSTRAP_COMMON_SH_B64}
+
+  # --- shared proxy Compose base and strategy-neutral service config -----------
+  - path: /opt/flowform/repo/infra/containers/runtime/compose/proxy.yml
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${DOCKER_COMPOSE_PROXY_B64}
+  - path: /opt/flowform/repo/infra/containers/runtime/services/squid/squid.conf
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${SQUID_CONF_B64}
+  # Observability agent config, bind-mounted by the alloy service in the base
+  # proxy compose. Must exist as a FILE before compose up, or Docker auto-creates
+  # the path as a directory and the :/etc/alloy/config.alloy mount fails.
+  - path: /opt/flowform/repo/infra/containers/runtime/services/alloy/config.alloy
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${CONFIG_ALLOY_B64}
+
+  # --- rehearsal override + the two rehearsal configs it swaps in --------------
+  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/compose/proxy.override.yml
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${DOCKER_COMPOSE_PROXY_REHEARSAL_B64}
+  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${CADDYFILE_PROXY_REHEARSAL_B64}
+  # TLS leaf for the API domain, signed by the committed rehearsal CA — the
+  # stable trust anchor operators install once (see generate-api-cert.sh).
+  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/services/caddy/certs/api.crt
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${PROXY_API_CRT_B64}
+  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/services/caddy/certs/api.key
+    encoding: b64
+    permissions: '0600'
+    owner: root:root
+    content: ${PROXY_API_KEY_B64}
+  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/services/squid/allowed-domains.txt
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${SQUID_ALLOWED_DOMAINS_REHEARSAL_B64}
+
+  # (no registry, no insecure-registries here — the proxy is egress-only. Fake
+  #  ECR lives on the aws-fixtures-vm.)
+
+  # --- env consumed by the proxy bootstrap runcmd ------------------------------
+  # The proxy holds NO app secrets. It talks to fake-AWS the same prod-shaped way
+  # (per-service SNI endpoints) to read its OWN /flowform/<scope>/proxy/* params.
+  # Since the proxy box HAS internet + is on the private net, it reaches the shim
+  # on 10.10.10.30 directly; the *.localstack.test names resolve via /etc/hosts.
+  - path: /etc/flowform/bootstrap-proxy.env
+    permissions: '0644'
+    owner: root:root
+    content: |
+      FLOWFORM_SCOPE=nonprod
+      AWS_REGION=ap-southeast-2
+      PROXY_PRIVATE_IP=10.10.10.10
+      APP_PRIVATE_IP=10.10.10.20
+      DB_BOOTSTRAP_PRIVATE_IP=10.10.10.40
+      # proxy stack image + public API host (else must come from SSM)
+      CADDY_IMAGE=caddy:2-alpine
+      API_DOMAIN=api.localstack.test
+      # run the shared proxy Compose base PLUS the rehearsal override, each
+      # as its own -f (bootstrap-proxy.sh assembles them). docker compose resolves
+      # relative mounts against the first/base file's dir = infra/containers/runtime/compose/,
+      # which is why the override's paths are written ../../rehearsal/... .
+      COMPOSE_FILE=/opt/flowform/repo/infra/containers/runtime/compose/proxy.yml
+      COMPOSE_OVERRIDE_FILE=/opt/flowform/repo/infra/containers/strategies/rehearsal/compose/proxy.override.yml
+      # per-service fake-AWS endpoints (each = its own SNI)
+      AWS_ENDPOINT_URL_SECRETS_MANAGER=https://secretsmanager.localstack.test
+      AWS_ENDPOINT_URL_SSM=https://ssm.localstack.test
+      AWS_ENDPOINT_URL_KMS=https://kms.localstack.test
+      # AWS CLI v2 bundles its own CA; point it at the system store so it trusts
+      # the rehearsal CA. REHEARSAL delta — prod leaves this UNSET.
+      AWS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt
+      AWS_ACCESS_KEY_ID=test
+      AWS_SECRET_ACCESS_KEY=test
+      BOOTSTRAP_AWS_MAX_ATTEMPTS=120
+
+  - path: /opt/flowform/scripts/run-bootstrap-proxy.sh
+    permissions: '0755'
+    owner: root:root
+    content: |
+      #!/usr/bin/env bash
+      set -Eeuo pipefail
+      set -a; . /etc/flowform/bootstrap-proxy.env; set +a
+      exec /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-proxy.sh
+  - path: /etc/systemd/system/flowform-proxy.service
+    permissions: '0644'
+    owner: root:root
+    content: |
+      [Unit]
+      Description=FlowForm proxy convergence
+      Requires=docker.service
+      After=docker.service network-online.target
+      Wants=network-online.target
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/opt/flowform/scripts/run-bootstrap-proxy.sh
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  # Apply the private NTP listener after cloud-init has written its drop-in and
+  # both NICs are configured. The proxy keeps its normal external NTP sources.
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, restart, chronyd.service ]
+  # Trust the rehearsal CA (the proxy box also dials the shim's *.localstack.test).
+  - [ update-ca-trust, extract ]
+  # Resolve the fake-AWS SNI names + fake-ECR registry to the aws-fixtures-vm.
+  # (Squid's own extra_hosts is the load-bearing resolution; this aids debugging.)
+  - [ bash, -c, "grep -q registry.localstack.test /etc/hosts || echo '10.10.10.30 secretsmanager.localstack.test ssm.localstack.test kms.localstack.test registry.localstack.test' >> /etc/hosts" ]
+  # First convergence is owned by `rehearsal build`; enable only for later
+  # reboots so cloud-init and the orchestrator never run the same bootstrap.
+  - [ systemctl, enable, flowform-proxy.service ]

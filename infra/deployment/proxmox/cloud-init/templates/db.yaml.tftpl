@@ -1,0 +1,121 @@
+#cloud-config
+# Dedicated rehearsal database VM (240). The image is preloaded by template
+# 9002. Cloud-init prepares firewall/configuration and enables reboot recovery;
+# `rehearsal build` owns the creation boot's secret fetch and PostgreSQL start.
+
+write_files:
+  - path: /etc/pki/ca-trust/source/anchors/flowform-rehearsal-ca.crt
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${REHEARSAL_CA_CRT_B64}
+  - path: /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-db.sh
+    encoding: b64
+    permissions: '0755'
+    owner: root:root
+    content: ${BOOTSTRAP_DB_SH_B64}
+  - path: /opt/flowform/repo/infra/deployment/bootstrap/aws-cli-retry.sh
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${AWS_CLI_RETRY_SH_B64}
+  # shared bootstrap library; sourced by bootstrap-db.sh and the retry shim,
+  # so it must sit beside them in this same directory.
+  - path: /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-common.sh
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${BOOTSTRAP_COMMON_SH_B64}
+  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/compose/db.yml
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${DOCKER_COMPOSE_DB_B64}
+  - path: /opt/flowform/db/pg_hba.conf
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${PG_HBA_CONF_B64}
+${DB_INIT_WRITE_FILES}
+  - path: /etc/flowform/bootstrap-db.env
+    permissions: '0600'
+    owner: root:root
+    content: |
+      FLOWFORM_SCOPE=nonprod
+      AWS_REGION=ap-southeast-2
+      DB_PRIVATE_IP=10.10.10.40
+      PROXY_PRIVATE_IP=10.10.10.10
+      COMPOSE_FILE=/opt/flowform/repo/infra/containers/strategies/rehearsal/compose/db.yml
+      BOOTSTRAP_ENDPOINT_URL=https://secretsmanager.localstack.test
+      AWS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt
+      AWS_ACCESS_KEY_ID=test
+      AWS_SECRET_ACCESS_KEY=test
+      BOOTSTRAP_AWS_MAX_ATTEMPTS=120
+  - path: /etc/nftables/flowform-db.nft
+    permissions: '0644'
+    owner: root:root
+    content: |
+      table inet flowform_db {
+        chain bootstrap_egress {
+        }
+        chain input {
+          type filter hook input priority 0; policy drop;
+          iif "lo" accept
+          ct state established,related accept
+          ip saddr 10.10.10.1 tcp dport 22 accept
+          ip protocol icmp accept
+          icmpv6 type { nd-neighbor-solicit, nd-neighbor-advert, nd-router-advert, nd-router-solicit } accept
+        }
+        chain forward {
+          type filter hook forward priority 0; policy drop;
+          ct state established,related accept
+          ip saddr 10.10.10.20 ip daddr 172.60.0.2 tcp dport 5432 accept
+        }
+        chain output {
+          type filter hook output priority 0; policy drop;
+          oif "lo" accept
+          ct state established,related accept
+          jump bootstrap_egress
+          ip protocol icmp accept
+          icmpv6 type { nd-neighbor-solicit, nd-neighbor-advert, nd-router-advert, nd-router-solicit } accept
+        }
+      }
+  - path: /opt/flowform/scripts/run-bootstrap-db.sh
+    permissions: '0755'
+    owner: root:root
+    content: |
+      #!/usr/bin/env bash
+      set -Eeuo pipefail
+      set -a; . /etc/flowform/bootstrap-db.env; set +a
+      exec /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-db.sh
+  - path: /etc/systemd/system/flowform-db.service
+    permissions: '0644'
+    owner: root:root
+    content: |
+      [Unit]
+      Description=FlowForm rehearsal PostgreSQL
+      Requires=docker.service nftables.service
+      After=docker.service nftables.service network-online.target
+      Wants=network-online.target
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/opt/flowform/scripts/run-bootstrap-db.sh
+      ExecStop=/usr/bin/docker compose -f /opt/flowform/repo/infra/containers/strategies/rehearsal/compose/db.yml down
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  - [ update-ca-trust, extract ]
+  - [ bash, -c, "grep -q secretsmanager.localstack.test /etc/hosts || echo '10.10.10.30 secretsmanager.localstack.test' >> /etc/hosts" ]
+  - [ bash, -c, "grep -q flowform-db.nft /etc/sysconfig/nftables.conf || echo 'include \"/etc/nftables/flowform-db.nft\"' >> /etc/sysconfig/nftables.conf" ]
+  # Load only the FlowForm table here. Restarting nftables after Docker is
+  # already running flushes Docker's iptables-nft chains, which prevents
+  # Compose from creating the dedicated database bridge network. The include
+  # above remains the persistent boot-time source; this targeted load provides
+  # the required first-boot firewall without disturbing Docker's tables.
+  - [ nft, -f, /etc/nftables/flowform-db.nft ]
+  - [ systemctl, daemon-reload ]
+  # First convergence is owned by `rehearsal build`. Enable for later reboots
+  # without starting it during cloud-init and racing the orchestrator.
+  - [ systemctl, enable, flowform-db.service ]
