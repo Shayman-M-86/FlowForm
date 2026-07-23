@@ -109,6 +109,7 @@ class RegistryStack(Stack):
             iam.PolicyStatement(
                 actions=[
                     "ecr:BatchCheckLayerAvailability",
+                    "ecr:BatchGetImage",
                     "ecr:CompleteLayerUpload",
                     "ecr:DescribeImages",
                     "ecr:InitiateLayerUpload",

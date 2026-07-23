@@ -108,6 +108,7 @@ def test_image_publisher_policy_is_limited_to_registry_repositories():
                             {
                                 "Action": [
                                     "ecr:BatchCheckLayerAvailability",
+                                    "ecr:BatchGetImage",
                                     "ecr:CompleteLayerUpload",
                                     "ecr:DescribeImages",
                                     "ecr:InitiateLayerUpload",
