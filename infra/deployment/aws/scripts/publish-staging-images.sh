@@ -159,6 +159,25 @@ wait_for_digest() {
   die "ECR did not report a digest for ${repository}:${tag}"
 }
 
+metadata_digest() {
+  local kind="$1"
+  local metadata_file="$2"
+  local selector digest
+
+  if [[ "${kind}" == "build" ]]; then
+    selector='."containerimage.digest"'
+  else
+    # `imagetools create` reports an OCI descriptor rather than the flat
+    # build-result field emitted by `buildx build`.
+    selector='."containerimage.descriptor".digest'
+  fi
+  digest="$(jq -er "${selector}" "${metadata_file}")" \
+    || die "${kind} publisher metadata did not contain an image digest"
+  [[ "${digest}" =~ ^sha256:[0-9a-f]{64}$ ]] \
+    || die "${kind} publisher metadata contained an invalid image digest"
+  printf '%s\n' "${digest}"
+}
+
 publish_images() {
   require_command aws
   validate_manifest
@@ -209,7 +228,7 @@ publish_images() {
         --sbom=false \
         --metadata-file "${metadata_file}" \
         "${REPO_ROOT}/${context}"
-      expected_digest="$(jq -er '."containerimage.digest"' "${metadata_file}")"
+      expected_digest="$(metadata_digest "${kind}" "${metadata_file}")"
       entry="$(
         jq -n \
           --arg name "${image_name}" \
@@ -235,7 +254,7 @@ publish_images() {
         --tag "${target}" \
         --metadata-file "${metadata_file}" \
         "${source_ref}"
-      expected_digest="$(jq -er '."containerimage.digest"' "${metadata_file}")"
+      expected_digest="$(metadata_digest "${kind}" "${metadata_file}")"
       entry="$(
         jq -n \
           --arg name "${image_name}" \
