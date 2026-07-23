@@ -102,23 +102,57 @@ def test_nonprod_creates_staging_named_ci_roles():
     template.has_resource_properties(
         "AWS::IAM::Role", {"RoleName": "flowform-staging-ci-preview"}
     )
+
+
+def test_ci_roles_trust_only_their_required_github_oidc_subjects():
+    template = _synth_security_stack("dev")
+    environment_subject = "repo:Shayman-M-86/FlowForm:environment:staging"
+    staging_branch_subject = "repo:Shayman-M-86/FlowForm:ref:refs/heads/staging"
+
+    for role_name in [
+        "flowform-staging-frontend-deploy",
+        "flowform-staging-image-publisher",
+    ]:
+        template.has_resource_properties(
+            "AWS::IAM::Role",
+            {
+                "RoleName": role_name,
+                "AssumeRolePolicyDocument": {
+                    "Statement": Match.array_with(
+                        [
+                            Match.object_like(
+                                {
+                                    "Action": "sts:AssumeRoleWithWebIdentity",
+                                    "Condition": {
+                                        "StringEquals": {
+                                            "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                                            "token.actions.githubusercontent.com:sub": environment_subject,
+                                        }
+                                    },
+                                }
+                            )
+                        ]
+                    )
+                },
+            },
+        )
+
     template.has_resource_properties(
         "AWS::IAM::Role",
         {
-            "RoleName": "flowform-staging-image-publisher",
+            "RoleName": "flowform-staging-ci-preview",
             "AssumeRolePolicyDocument": {
                 "Statement": Match.array_with(
                     [
                         Match.object_like(
                             {
+                                "Action": "sts:AssumeRoleWithWebIdentity",
                                 "Condition": {
                                     "StringEquals": {
                                         "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-                                        "token.actions.githubusercontent.com:sub": (
-                                            "repo:Shayman-M-86/FlowForm:ref:refs/heads/staging"
-                                        ),
+                                        "token.actions.githubusercontent.com:sub": staging_branch_subject,
                                     }
-                                }
+                                },
                             }
                         )
                     ]
@@ -126,6 +160,11 @@ def test_nonprod_creates_staging_named_ci_roles():
             },
         },
     )
+
+
+def test_ci_roles_do_not_trust_an_arbitrary_repository_oidc_subject():
+    template = _synth_security_stack("dev").to_json()
+    assert "repo:Shayman-M-86/FlowForm:*" not in str(template)
 
 
 def test_ssm_parameters_created():

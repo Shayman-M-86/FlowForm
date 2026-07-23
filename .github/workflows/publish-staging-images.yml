@@ -23,6 +23,9 @@ jobs:
   publish:
     name: Publish immutable images
     if: github.ref == 'refs/heads/staging'
+    # The IAM role only trusts this environment OIDC subject. Configure the
+    # GitHub environment to permit the staging branch before deploying this.
+    environment: staging
     runs-on: ubuntu-latest
     permissions:
       contents: read

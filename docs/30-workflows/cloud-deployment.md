@@ -36,7 +36,7 @@ bootstrap/rollout, database provisioning or migration, and production release
 are not wired into either workflow.
 
 The CDK now declares private Backend, Caddy, Squid, and Alloy repositories plus
-a branch-restricted image-publisher role with exact push permissions. The
+a protected-`staging`-environment image-publisher role with exact push permissions. The
 application stack also declares exact app-host and proxy-host pull policies.
 The manual image workflow assumes that publisher role, builds or mirrors exactly
 the checked-in linux/amd64 sources, and retains a four-image digest manifest as
@@ -118,9 +118,11 @@ ECR; those images are inert until a separate promotion selects their digests.
   buckets, CloudFront distributions, Route 53 aliases, frontend SSM parameters,
   and `flowform-staging-frontend-deploy` role. The workflow does not create or
   update them.
-- GitHub OIDC must be trusted by that role, and the role must retain the S3,
-  CloudFront, and `/flowform/staging/frontend/*` SSM permissions granted by the
-  security and frontend stacks.
+- The GitHub `staging` environment must restrict deployments to the `staging`
+  branch before it is used. The frontend-deploy role trusts only that
+  environment's OIDC subject and must retain the S3, CloudFront, and
+  `/flowform/staging/frontend/*` SSM permissions granted by the security and
+  frontend stacks.
 - The SSM path must contain Auth0 domain, client ID, audience, API base URL, and
   both distribution IDs. These are browser-visible build settings, not
   application secrets.

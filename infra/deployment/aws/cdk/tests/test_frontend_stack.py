@@ -245,8 +245,10 @@ def test_staging_security_creates_github_oidc_and_deploy_role():
                             "Action": "sts:AssumeRoleWithWebIdentity",
                             "Condition": Match.object_like(
                                 {
-                                    "StringLike": {
-                                        "token.actions.githubusercontent.com:sub": "repo:Shayman-M-86/FlowForm:*"
+                                    "StringEquals": {
+                                        "token.actions.githubusercontent.com:sub": (
+                                            "repo:Shayman-M-86/FlowForm:environment:staging"
+                                        )
                                     }
                                 }
                             ),

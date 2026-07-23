@@ -399,11 +399,12 @@ jobs:
   # cdk.context.json, and the Auth0 public config comes from repo variables
   # (non-secret — these values ship in the built JS bundle anyway).
   #
-  # Diff assumes the read-only flowform-staging-ci-preview role via OIDC.
-  # CI uses template-only diff because the default change-set mode spends
+  # Diff on the protected staging branch assumes the read-only
+  # flowform-staging-ci-preview role via OIDC. PRs synthesize and test the
+  # same CDK code without AWS credentials. CI uses template-only diff because
+  # the default change-set mode spends
   # extra time trying to publish assets and assume bootstrap roles that this
-  # preview role intentionally cannot use. Fork PRs can't mint OIDC tokens,
-  # so the credential + diff steps are skipped for them.
+  # preview role intentionally cannot use.
   cdk:
     runs-on: ubuntu-latest
     needs: backend-security
@@ -445,13 +446,13 @@ jobs:
       - name: Synth dev
         run: npx --no-install cdk synth -c env=dev --quiet
       - uses: aws-actions/configure-aws-credentials@v4
-        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         with:
           role-to-assume: arn:aws:iam::908123139858:role/flowform-staging-ci-preview
           aws-region: ap-southeast-2
       - name: Diff staging
         id: diff_staging
-        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         run: |
           diff_output_path="$RUNNER_TEMP/cdk-diff-staging.txt"
           npx --no-install cdk diff -c env=staging --method=template 2>&1 | tee "$diff_output_path"

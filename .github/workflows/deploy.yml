@@ -39,6 +39,9 @@ env:
 
 jobs:
   deploy-frontends:
+    # The IAM role only trusts this environment OIDC subject. Configure the
+    # GitHub environment to permit the staging branch before deploying this.
+    environment: staging
     runs-on: ubuntu-latest
     # Manual dispatch always runs; workflow_run only deploys a green CI.
     if: >-

@@ -221,11 +221,29 @@ class SecurityStack(Stack):
         else:
             oidc_provider_arn = f"arn:aws:iam::{scope_config.account}:oidc-provider/token.actions.githubusercontent.com"
 
-        github_actions_principal = iam.FederatedPrincipal(
+        staging_environment_principal = iam.FederatedPrincipal(
             oidc_provider_arn,
             conditions={
-                "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
-                "StringLike": {"token.actions.githubusercontent.com:sub": f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:*"},
+                "StringEquals": {
+                    "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                    "token.actions.githubusercontent.com:sub": (
+                        f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:"
+                        f"environment:{scope_config.ci_env_name}"
+                    ),
+                },
+            },
+            assume_role_action="sts:AssumeRoleWithWebIdentity",
+        )
+        staging_branch_preview_principal = iam.FederatedPrincipal(
+            oidc_provider_arn,
+            conditions={
+                "StringEquals": {
+                    "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                    "token.actions.githubusercontent.com:sub": (
+                        f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:"
+                        f"ref:refs/heads/{scope_config.ci_deploy_branch}"
+                    ),
+                },
             },
             assume_role_action="sts:AssumeRoleWithWebIdentity",
         )
@@ -236,40 +254,29 @@ class SecurityStack(Stack):
             # Deterministic name so the GitHub workflow can reference the
             # role ARN without reading stack outputs.
             role_name=f"flowform-{scope_config.ci_env_name}-frontend-deploy",
-            assumed_by=github_actions_principal,
+            assumed_by=staging_environment_principal,
             description=f"GitHub Actions frontend deploy ({scope_config.ci_env_name})",
         )
 
         # Read-only role for CI preview work (`cdk diff` describes the
         # deployed stacks to compare against the synthesized templates).
-        # Same OIDC trust as the deploy role, but no write access at all.
+        # Only the protected deployment branch can request this role. PR
+        # code still synthesizes and tests infrastructure, but never receives
+        # AWS credentials for a live-environment diff.
         self.ci_preview_role = iam.Role(
             self,
             "CiPreviewRole",
             role_name=f"flowform-{scope_config.ci_env_name}-ci-preview",
-            assumed_by=github_actions_principal,
+            assumed_by=staging_branch_preview_principal,
             managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("ReadOnlyAccess")],
             description=f"GitHub Actions read-only CI preview, e.g. cdk diff ({scope_config.ci_env_name})",
         )
 
-        image_publisher_principal = iam.FederatedPrincipal(
-            oidc_provider_arn,
-            conditions={
-                "StringEquals": {
-                    "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-                    "token.actions.githubusercontent.com:sub": (
-                        f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:"
-                        f"ref:refs/heads/{scope_config.ci_deploy_branch}"
-                    ),
-                }
-            },
-            assume_role_action="sts:AssumeRoleWithWebIdentity",
-        )
         self.image_publisher_role = iam.Role(
             self,
             "ImagePublisherRole",
             role_name=f"flowform-{scope_config.ci_env_name}-image-publisher",
-            assumed_by=image_publisher_principal,
+            assumed_by=staging_environment_principal,
             description=f"GitHub Actions image publisher ({scope_config.ci_env_name})",
         )
 

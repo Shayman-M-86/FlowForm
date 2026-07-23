@@ -81,8 +81,8 @@ application role with read access to the declared secrets, KMS
 encrypt/decrypt, SES send, and scoped SSM reads. The environment-level registry
 and application stacks attach exact ECR publisher and host-specific pull
 policies: the app host receives Backend/Alloy access, while the proxy host
-receives Caddy/Squid/Alloy access. The image-publisher role is restricted to the
-declared deployment branch. A manual publication-only workflow assumes it and
+receives Caddy/Squid/Alloy access. The image-publisher role trusts only the
+protected staging GitHub environment. A manual publication-only workflow assumes it and
 can write or inspect images only in those four repositories; it cannot select
 runtime parameters or roll hosts. Runtime crypto also lets the backend call KMS
 and fetch versioned linkage secrets directly. Operational handling and rotation belong in

@@ -93,8 +93,9 @@ class SecurityScopeConfig:
     # The env whose GitHub Actions deploy/CI roles live in this scope's
     # stack (role names stay flowform-<env>-... so workflows don't change).
     ci_env_name: str
-    # Branch permitted to assume mutating GitHub Actions roles. Preview work
-    # has a separate read-only role and intentionally broader repository trust.
+    # Protected branch permitted to assume the read-only GitHub Actions
+    # preview role. Mutating roles instead require the matching protected
+    # GitHub environment subject.
     ci_deploy_branch: str
     # The OIDC identity provider is an account-level singleton; exactly one
     # scope creates it, the others import it by its deterministic ARN.

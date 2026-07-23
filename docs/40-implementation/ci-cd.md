@@ -61,8 +61,8 @@ implementation they validate.
 - The contract job verifies backend OpenAPI export and all checked-in frontend
   contract artifacts.
 - The CDK job runs tests, lint, types, hermetic dev synth, then assumes a
-  read-only staging preview role for template diff on pushes and same-repository
-  pull requests.
+  read-only staging preview role for its template diff only on pushes to
+  `staging`. Pull requests receive no AWS credentials.
 - The PR-only documentation job validates metadata/links and publishes Docsys
   impact output; it is advisory unless configured critical documents are
   impacted without updates.
@@ -80,8 +80,11 @@ security gates the path-selected application jobs. Contracts consume both
 backend and frontend generators. Automatic staging deployment consumes a green
 CI result and its recorded commit; CI does not invoke deployment directly.
 GitHub assumes scoped AWS roles through OIDC rather than storing AWS access
-keys in repository secrets. The image publisher has exact repository access and
-cannot promote its output into runtime SSM parameters.
+keys in repository secrets. Frontend deployment and image publication require
+the protected `staging` GitHub environment; their roles trust its environment
+OIDC subject rather than an arbitrary repository workflow. The image publisher
+has exact repository access and cannot promote its output into runtime SSM
+parameters.
 
 ## Generated versus handwritten code
 
