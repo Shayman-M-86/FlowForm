@@ -86,18 +86,23 @@ cmd_verify_main() {
   }
 
   local LAN_VIA_PVE=0
-  curl_lan() {  # curl to the proxy LAN IP; fall back through PVE from WSL/NAT
+  curl_lan() {  # curl to the proxy LAN IP; fall back through the proxy guest
     local local_output
     if ((LAN_VIA_PVE == 0)) && local_output="$(curl -sS --connect-timeout 4 --max-time 8 \
       --cacert "${CA_CRT}" --resolve "${API_DOMAIN}:443:${PROXY_LAN_IP}" "$@")"; then
       printf '%s' "${local_output}"
       return 0
     fi
+    # From WSL/NAT the management host has no route to the proxy's LAN NIC (the
+    # same limitation the certificate check above works around). The proxy guest
+    # does reach its own LAN interface, so run the LAN curl from there. The
+    # committed CA is already installed in the guest's trust store (cloud-init
+    # update-ca-trust), so verified TLS still holds — no -k.
     LAN_VIA_PVE=1
     local remote
-    printf -v remote '%q ' curl -k -sS --connect-timeout 4 --max-time 8 \
+    printf -v remote '%q ' curl -sS --connect-timeout 4 --max-time 8 \
       --resolve "${API_DOMAIN}:443:${PROXY_LAN_IP}" "$@"
-    pve_ssh "${remote}"
+    guest_ssh "${PROXY_IP}" "${remote}"
   }
 
   phase "running rehearsal egress verification"
@@ -146,7 +151,10 @@ cmd_verify_main() {
     "sudo docker exec -u ${SQUID_LOG_UID} ${SQUID_CONTAINER} tail -n 3000 /var/log/squid/access.log" 2>/dev/null || true)"
   for name in secretsmanager.localstack.test ssm.localstack.test kms.localstack.test \
               registry.localstack.test auth.flow-form.com.au; do
-    if grep -Fq "CONNECT ${name}:443" <<<"${squid_log}"; then
+    # Squid logs via the custom flowform_access logfmt (see squid.conf), so a
+    # CONNECT tunnel serialises as `method=CONNECT path="host:443"`, NOT the
+    # native `CONNECT host:443` request line.
+    if grep -Fq "method=CONNECT path=\"${name}:443\"" <<<"${squid_log}"; then
       ok "Squid tunneled ${name}"
     else
       bad "no CONNECT for ${name} in Squid access.log"

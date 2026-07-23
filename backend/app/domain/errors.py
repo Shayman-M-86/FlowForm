@@ -186,6 +186,7 @@ class SurveyNotFoundError(AppError):
             message=f"Survey {survey_id} was not found in project {project_id}.",
         )
 
+
 class SurveyDeletePublishedError(AppError):
     """Error raised when attempting to delete a survey that has a published version."""
 
@@ -195,6 +196,7 @@ class SurveyDeletePublishedError(AppError):
             code="SURVEY_HAS_PUBLISHED_VERSION",
             message=f"Cannot delete survey {survey_id} because it has a published version.",
         )
+
 
 class SurveyNotPublishedError(AppError):
     """Error raised when attempting to access a survey that has not been published."""
@@ -427,6 +429,7 @@ class SubmissionNotFoundError(AppError):
             message=f"Submission {submission_id} not found.",
         )
 
+
 class UserNotFoundError(AppError):
     """Error raised when a user cannot be found."""
 
@@ -644,7 +647,9 @@ class PasswordChangeUnsupportedError(AppError):
         super().__init__(
             status_code=400,
             code="PASSWORD_CHANGE_UNSUPPORTED",
-            message="Password changes are not available for this sign-in method.",
+            message=(
+                "This account's password is managed by its sign-in provider and cannot be changed through FlowForm."
+            ),
         )
 
 
@@ -751,4 +756,3 @@ class CompletionValidationError(AppError):
             code="COMPLETION_VALIDATION_FAILED",
             message=message,
         )
-

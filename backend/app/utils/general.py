@@ -21,11 +21,17 @@ def get_client_ip() -> str:
 
 
 def get_log_level(status_code: int) -> int:
-    """Map an HTTP status code to an appropriate logging level."""
+    """Map an HTTP status code to an appropriate logging level.
+
+    Successful (2xx) and redirect (3xx) responses log at INFO so completed
+    requests are visible at the default INFO root level in every environment.
+    Previously 2xx logged at DEBUG, so under gunicorn (prod/rehearsal) — which,
+    unlike the Flask dev server, emits no werkzeug access line — successful
+    requests produced no log at all. Client errors escalate to WARNING and
+    server errors to ERROR.
+    """
     if status_code >= 500:
         return logging.ERROR
     if status_code >= 400:
         return logging.WARNING
-    if status_code >= 300:
-        return logging.INFO
-    return logging.DEBUG
+    return logging.INFO

@@ -2,14 +2,96 @@ from __future__ import annotations
 
 import logging
 import types
+import uuid
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from typing import Any
 
 import pytest  # type: ignore[import]
-from flask import Flask, Response, g, make_response
+from flask import Flask, Response, g, make_response, request
 
 from app.logging import request_logging
+from app.utils.general import get_log_level
+
+
+@pytest.mark.parametrize(
+    ("status_code", "expected_level"),
+    [
+        (200, logging.INFO),
+        (204, logging.INFO),
+        (302, logging.INFO),
+        (404, logging.WARNING),
+        (422, logging.WARNING),
+        (500, logging.ERROR),
+        (503, logging.ERROR),
+    ],
+)
+def test_get_log_level_maps_status_to_level(status_code: int, expected_level: int) -> None:
+    # 2xx/3xx log at INFO so completed requests surface at the INFO root level in
+    # every environment (previously 2xx was DEBUG and vanished under gunicorn).
+    assert get_log_level(status_code) == expected_level
+
+
+_VALID_UUID = "123e4567-e89b-12d3-a456-426614174000"
+
+
+@pytest.fixture
+def resolver_app() -> Flask:
+    """Minimal app for exercising _resolve_request_id in a request context."""
+    return Flask(__name__)
+
+
+def test_resolve_request_id_adopts_valid_inbound_header(resolver_app: Flask) -> None:
+    with resolver_app.test_request_context(headers={"X-Request-ID": _VALID_UUID}):
+        assert request_logging._resolve_request_id() == _VALID_UUID
+
+
+def test_resolve_request_id_normalises_uppercase_uuid(resolver_app: Flask) -> None:
+    # A valid-but-noncanonical UUID is re-rendered by us, never echoed verbatim.
+    with resolver_app.test_request_context(headers={"X-Request-ID": _VALID_UUID.upper()}):
+        assert request_logging._resolve_request_id() == _VALID_UUID
+
+
+def test_resolve_request_id_mints_when_header_absent(resolver_app: Flask) -> None:
+    with resolver_app.test_request_context():
+        resolved = request_logging._resolve_request_id()
+    uuid.UUID(resolved)  # a fresh, well-formed UUID
+
+
+@pytest.mark.parametrize(
+    "bad_value",
+    [
+        "not-a-uuid",
+        "'; DROP TABLE x;--",
+        "line\ninjection field=evil",  # newline reaches us only via a raw environ
+        "x" * 200,  # oversized: rejected without reaching the parser
+    ],
+)
+def test_resolve_request_id_rejects_and_warns_on_malformed_header(
+    resolver_app: Flask,
+    bad_value: str,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # Inject via the WSGI environ rather than the test client's header dict: the
+    # client validates headers and would reject a newline before our code runs,
+    # but a value that somehow reaches request.headers must still be handled.
+    with (
+        resolver_app.test_request_context(environ_overrides={"HTTP_X_REQUEST_ID": bad_value}),
+        caplog.at_level(logging.WARNING, logger=request_logging.logger.name),
+    ):
+        assert request.headers.get("X-Request-ID") == bad_value
+        resolved = request_logging._resolve_request_id()
+
+    uuid.UUID(resolved)  # falls back to a fresh, well-formed UUID
+    assert any(r.levelno == logging.WARNING for r in caplog.records)
+    # The value is logged only through repr(), which escapes control characters:
+    # a newline in the header must not survive as a literal newline that could
+    # forge a second log line (log injection). It appears escaped as "\n" instead.
+    warning = next(r for r in caplog.records if r.levelno == logging.WARNING)
+    rendered = warning.getMessage()
+    assert "\n" not in rendered
+    # And the rendered value is length-bounded regardless of how large the header is.
+    assert len(rendered) < 200
 
 
 @pytest.fixture(scope="module")

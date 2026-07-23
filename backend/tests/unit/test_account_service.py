@@ -99,6 +99,9 @@ def test_change_password_reports_unsupported_connection(monkeypatch: pytest.Monk
 
     assert exc_info.value.status_code == 400
     assert exc_info.value.code == "PASSWORD_CHANGE_UNSUPPORTED"
+    assert exc_info.value.message == (
+        "This account's password is managed by its sign-in provider and cannot be changed through FlowForm."
+    )
     assert "google-oauth2|user-123" not in exc_info.value.message
 
 

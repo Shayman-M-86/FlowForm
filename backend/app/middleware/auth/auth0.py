@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 # Refresh the M2M token this many seconds before it actually expires.
 _MGMT_TOKEN_REFRESH_BUFFER = 60
 _MGMT_REQUEST_TIMEOUT_SECONDS = 10
+_PASSWORD_CHANGE_UNSUPPORTED_MESSAGE = "the user's main connection does not support this operation"
 _MGMT_REQUIRED_SCOPES = frozenset(
     {
         "create:user_tickets",
@@ -91,6 +92,9 @@ def _management_error_from_response(response: requests.Response) -> ManagementAp
         or provider_error
         or "Management API error"
     )
+    normalized_provider_message = str(provider_message).strip().rstrip(".").casefold()
+    if response.status_code == 400 and normalized_provider_message == _PASSWORD_CHANGE_UNSUPPORTED_MESSAGE:
+        provider_error = "operation_not_supported"
 
     return ManagementApiError(
         status_code=response.status_code,

@@ -88,8 +88,9 @@ loki.process "backend" {
   stage.match {
     selector = "{service_name=\"backend\"}"
 
-    // Field names match backend JsonFormatter: level, logger, message, method,
-    // path, status_code, request_id, duration_ms, event_type, ...
+    // Field names match backend JsonFormatter (canonical schema shared with
+    // caddy/squid): level, logger, message, method, path, status, client_ip,
+    // request_id, duration_ms, event_type, ...
     stage.json {
       expressions = {
         level        = "level",
@@ -97,15 +98,18 @@ loki.process "backend" {
         message      = "message",
         method       = "method",
         path         = "path",
-        status_code  = "status_code",
+        status       = "status",
+        client_ip    = "client_ip",
         event_type   = "event_type",
         request_id   = "request_id",
         duration_ms  = "duration_ms",
+        user_id      = "user_id",
+        environment  = "environment",
       }
     }
 
     // Index only stable, low-cardinality fields. `path` is the RAW request path
-    // (request.path — carries UUIDs), and request_id / duration_ms / status_code
+    // (request.path — carries UUIDs), and request_id / duration_ms / status
     // are per-request, so none of them become labels: that would explode Loki
     // stream cardinality. They remain parsed values in the record.
     stage.labels {
@@ -116,9 +120,82 @@ loki.process "backend" {
       }
     }
 
-    // Show the human message as the log line instead of the raw JSON object.
+    // Guard against any stray uppercase level so `{level="error"}` matches the
+    // whole fleet (backend already emits lowercase; this is belt-and-braces).
+    stage.template {
+      source   = "level"
+      template = "{{ ToLower .Value }}"
+    }
+    stage.labels {
+      values = {
+        level = "",
+      }
+    }
+
+    // Rebuild the visible line as canonical logfmt from the parsed JSON fields
+    // so every field is queryable via `| logfmt` — matching caddy/squid — rather
+    // than the fields being trapped in the JSON and the line being free prose.
+    // `ts`/`level` are deliberately omitted (ts is Loki's timestamp column,
+    // level is the indexed label) to avoid duplication.
+    //
+    // The human `message` is folded in as a quoted `msg` field ONLY on non-
+    // request lines (startup banner, business events, errors) where it is the
+    // sole content. On request lines the message is just prose restating
+    // method/path/status/duration (e.g. "1.2.3.4 | GET /x -> 200 duration_ms=5"),
+    // which the structured fields already carry — so `msg` is suppressed there
+    // (keyed off `method` being present) to avoid the same duplication we
+    // stripped from squid/caddy. Only non-empty fields render.
+    stage.template {
+      source = "line"
+      template = "{{ if and .message (not .method) }}msg=\"{{ .message }}\" {{ end }}{{ if .logger }}logger={{ .logger }} {{ end }}{{ if .method }}method={{ .method }} {{ end }}{{ if .status }}status={{ .status }} {{ end }}{{ if .path }}path=\"{{ .path }}\" {{ end }}{{ if .client_ip }}client_ip={{ .client_ip }} {{ end }}{{ if .duration_ms }}duration_ms={{ .duration_ms }} {{ end }}{{ if .request_id }}request_id={{ .request_id }} {{ end }}{{ if .user_id }}user_id={{ .user_id }} {{ end }}{{ if .event_type }}event_type={{ .event_type }} {{ end }}{{ if .environment }}environment={{ .environment }}{{ end }}"
+    }
     stage.output {
-      source = "message"
+      source = "line"
+    }
+  }
+
+  // --- This agent's own logs: canonical logfmt -------------------------------
+  // The app-box Alloy also emits logs into this pipeline. Normalise them to the
+  // same schema as the proxy-box agent (see alloy/config.alloy): parse the
+  // logfmt fields, label a lowercase `level`, then REBUILD the line as logfmt
+  // WITHOUT `ts`/`level` so every field stays queryable via `| logfmt` while the
+  // timestamp (Loki's column) and level (the label) aren't duplicated in the
+  // body. The `msg=` line filter keeps non-logfmt internal lines (startup
+  // banner) out of the decoder so it never emits `failed to decode logfmt`.
+  stage.match {
+    selector = "{service_name=\"alloy\"} |= \"msg=\""
+
+    stage.logfmt {
+      mapping = {
+        level     = "",
+        msg       = "",
+        logger    = "",
+        component = "",
+      }
+    }
+    stage.labels {
+      values = {
+        level = "",
+      }
+    }
+    stage.template {
+      source   = "level"
+      template = "{{ ToLower .Value }}"
+    }
+    stage.labels {
+      values = {
+        level = "",
+      }
+    }
+
+    // Rebuild as logfmt from the parsed fields, dropping ts/level. Only non-empty
+    // fields render, so lines without a component key still stay well-formed.
+    stage.template {
+      source = "line"
+      template = "{{ if .logger }}logger={{ .logger }} {{ end }}{{ if .component }}component={{ .component }} {{ end }}{{ if .msg }}msg=\"{{ .msg }}\"{{ end }}"
+    }
+    stage.output {
+      source = "line"
     }
   }
 

@@ -4,7 +4,6 @@
       "Bash(/path/to/FlowForm/tools/mcp/run.sh)",
       "Read(/home/shayman86/my-repos/FlowForm/**)",
       "Edit(/home/shayman86/my-repos/FlowForm/**)",
-      
       "Write(/home/shayman86/my-repos/FlowForm/**)",
       "Bash(ls:*)",
       "Bash(find:*)",
@@ -97,7 +96,6 @@
       "Read(.claude/agents/**)",
       "Write(.claude/agents/**)",
       "Edit(.claude/agents/**)"
-
     ],
     "deny": [
       "Bash(rm -rf:*)",
@@ -177,7 +175,8 @@
     ]
   },
   "enabledPlugins": {
-    "claude-code-setup@claude-plugins-official": false
+    "claude-code-setup@claude-plugins-official": false,
+    "grafana-cloud-mcp@claude-plugins-official": true
   },
   "mode": "acceptEdits"
 }

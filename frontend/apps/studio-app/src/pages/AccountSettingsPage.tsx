@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { Badge, Button, Card, Input, Modal, Toast } from '@flowform/ui'
 import { useCurrentUser } from '@/auth/UserContext'
+import { getPasswordManagement } from '@/auth/passwordManagement'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 import {
   useChangePassword,
@@ -86,6 +87,8 @@ export function AccountSettingsPage() {
   const displayName = draftDisplayName.trim() || email
   const canDeleteConfirm = deleteConfirm.trim() === email
   const displayNameDirty = draftDisplayNameOverride !== null && draftDisplayName !== profileDisplayName
+  const passwordManagement = getPasswordManagement(profile.data?.auth0_user_id ?? auth0User?.sub)
+  const passwordProviderName = passwordManagement.providerName ?? 'your sign-in provider'
 
   function showToast(message: string, variant: 'success' | 'error') {
     setToast({ message, variant })
@@ -109,7 +112,7 @@ export function AccountSettingsPage() {
       window.location.assign(ticket.ticket_url)
     } catch (error) {
       if ((error as { code?: string } | undefined)?.code === 'PASSWORD_CHANGE_UNSUPPORTED') {
-        showToast('Password changes are managed by your sign-in provider for this account.', 'error')
+        showToast(`Password changes are managed by ${passwordProviderName} for this account.`, 'error')
         return
       }
       showToast('Failed to start password change. Please try again.', 'error')
@@ -210,17 +213,30 @@ export function AccountSettingsPage() {
 
         <SettingsSection
           title="Password"
-          description="Open Auth0's secure password change page for this account."
+          description={passwordManagement.managedExternally
+            ? `${passwordManagement.providerName ?? 'Your sign-in provider'} manages this account's password. FlowForm cannot change it.`
+            : "Open Auth0's secure password change page for this account."}
           className="border-t border-border pt-8"
         >
-          <Button
-            variant="secondary"
-            className="w-fit"
-            disabled={changePassword.isPending}
-            onClick={() => void handleChangePassword()}
-          >
-            {changePassword.isPending ? 'Opening…' : 'Change password'}
-          </Button>
+          {passwordManagement.managedExternally ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge variant="muted" size="xs">
+                Managed by {passwordProviderName}
+              </Badge>
+              <p className="text-sm text-muted-foreground">
+                Change it through {passwordProviderName} account settings.
+              </p>
+            </div>
+          ) : (
+            <Button
+              variant="secondary"
+              className="w-fit"
+              disabled={changePassword.isPending}
+              onClick={() => void handleChangePassword()}
+            >
+              {changePassword.isPending ? 'Opening…' : 'Change password'}
+            </Button>
+          )}
         </SettingsSection>
       </Card>
 
