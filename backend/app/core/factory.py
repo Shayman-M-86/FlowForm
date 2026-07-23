@@ -56,7 +56,7 @@ def create_app(
         # request log inside the active server span and allows
         # LoggingInstrumentor to inject trace/span IDs.
         setup_logging(app, resolved_settings)
-        init_extensions(app)
+        init_extensions(app, resolved_settings)
         init_db_sessions(app)
 
         register_api_v1(app)
