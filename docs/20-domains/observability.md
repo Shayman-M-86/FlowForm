@@ -39,8 +39,11 @@ the proxy host journal to Grafana Cloud Loki.
 - Configure console JSON or human-readable logging, optional owner-only (`0600`)
   rotating files, root severity, selected dependency logger levels, and
   handler-level redaction for recognised credential-bearing fields and strings.
-- Attach a generated request ID to request logs and the `X-Request-ID` response
-  header, with optional end-to-end duration.
+- Attach a request ID to request logs and the `X-Request-ID` response header,
+  with optional end-to-end duration. The backend adopts a validated inbound
+  `X-Request-ID` from Caddy (else mints its own) so proxy and backend lines share
+  one ID — see [[logging-schema|Logging schema]] for the canonical field set and
+  the correlation flow.
 - Emit debug timing checkpoints for session start and answer-save steps without
   making them application state.
 - Expose liveness and readiness endpoints; readiness executes `SELECT 1` against
