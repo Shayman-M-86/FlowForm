@@ -10,6 +10,15 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../../.." && pwd)"
 SOURCE_MANIFEST="${SOURCE_MANIFEST:-${REPO_ROOT}/infra/containers/strategies/aws/image-sources.json}"
 RELEASE_MANIFEST_PATH="${RELEASE_MANIFEST_PATH:-${REPO_ROOT}/staging-image-release.json}"
+PUBLISH_TEMP_DIR=""
+
+cleanup_temp_dir() {
+  if [[ -n "${PUBLISH_TEMP_DIR}" && -d "${PUBLISH_TEMP_DIR}" ]]; then
+    rm -rf -- "${PUBLISH_TEMP_DIR}"
+  fi
+}
+
+trap cleanup_temp_dir EXIT
 
 die() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -170,8 +179,8 @@ publish_images() {
   [[ "${caller_account}" == "${account_id}" ]] \
     || die "AWS caller account ${caller_account} does not match manifest account ${account_id}"
 
-  temp_dir="$(mktemp -d)"
-  trap 'rm -rf -- "${temp_dir}"' EXIT
+  PUBLISH_TEMP_DIR="$(mktemp -d)"
+  temp_dir="${PUBLISH_TEMP_DIR}"
 
   for image_name in backend caddy squid alloy; do
     repository="$(manifest_value ".images.${image_name}.repository")"
