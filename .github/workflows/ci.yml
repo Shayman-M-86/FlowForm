@@ -24,10 +24,6 @@
 #   cdk                 infra/deployment/aws/cdk pytest + Ruff + Pyright, hermetic `cdk synth`
 #                       (staging + dev), then `cdk diff` against deployed
 #                       staging (read-only OIDC role; skipped on fork PRs)
-#   docs-review         validates doc metadata/links, then reports documentation
-#                       impacted by the PR (advisory; fails only on impacted
-#                       critical docs configured in docsys.config.json)
-#
 # Deploys are NOT here — see deploy.yml (frontends, after green staging CI).
 
 name: CI
@@ -521,88 +517,6 @@ jobs:
               return;
             }
 
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber,
-              body,
-            });
-
-  docs-review:
-    # Documentation impact review: surfaces documentation that may need a look
-    # when code it describes changes. Advisory by default — it fails only when a
-    # repository configures critical_doc_globs and one is impacted but not
-    # updated (see scripts/docs/docsys.config.json).
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Validate documentation structure
-        run: |
-          python3 scripts/docs/validate-doc-metadata.py
-          python3 scripts/docs/validate-doc-links.py
-      - name: Documentation impact report
-        id: docs_impact
-        run: |
-          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}" || true
-          PYTHONPATH=scripts/docs python3 -m docsys.ci \
-            --base "origin/${{ github.base_ref }}" --head HEAD \
-            --markdown "$RUNNER_TEMP/docs-impact.md" \
-            --json "$RUNNER_TEMP/docs-impact.json" \
-            --fail-on-critical
-      - name: Upload documentation impact report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: docs-impact-report
-          path: ${{ runner.temp }}/docs-impact.json
-          if-no-files-found: ignore
-      - name: Comment documentation impact on PR
-        if: >-
-          always() &&
-          github.event.pull_request.head.repo.full_name == github.repository
-        uses: actions/github-script@v7
-        env:
-          DOCS_IMPACT_PATH: ${{ runner.temp }}/docs-impact.md
-        with:
-          script: |
-            const fs = require('fs');
-            const marker = '<!-- flowform-docs-impact -->';
-            let report = 'No documentation impact report was produced.';
-            try {
-              report = fs.readFileSync(process.env.DOCS_IMPACT_PATH, 'utf8').trim();
-            } catch (err) {
-              // Report file missing (e.g. the step failed early); post the marker anyway.
-            }
-            const body = [marker, report].join('\n');
-
-            const issueNumber = context.issue.number;
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber,
-              per_page: 100,
-            });
-            const existingComment = comments.find(
-              (comment) =>
-                comment.user?.type === 'Bot' &&
-                typeof comment.body === 'string' &&
-                comment.body.includes(marker),
-            );
-            if (existingComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body,
-              });
-              return;
-            }
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,

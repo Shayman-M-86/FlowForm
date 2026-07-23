@@ -14,6 +14,10 @@ echo "Project root: $PROJECT_ROOT"
 
 DOCKER_DIR="$PROJECT_ROOT/infra/env/dev"
 
+# The directory is gitignored and therefore absent on fresh CI checkouts.
+# Create it before mktemp allocates the validation files below.
+mkdir -p "$DOCKER_DIR"
+
 BACKEND_ENV="$DOCKER_DIR/.backend.env"
 DB_CORE_ENV="$DOCKER_DIR/.db.core.env"
 DB_RESPONSE_ENV="$DOCKER_DIR/.db.response.env"

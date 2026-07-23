@@ -32,13 +32,13 @@ Maps ci cd concepts to verified repository implementation.
 ## Directory ownership
 
 `.github/workflows/ci.yml` owns pull-request and branch validation for backend,
-frontend, contracts, CDK, and documentation impact. `deploy.yml` owns the
+frontend, contracts, and CDK. `deploy.yml` owns the
 staging frontend publication path. `publish-staging-images.yml` owns manual,
 publication-only ECR writes, while the AWS source manifest and deployment
 helper own immutable inputs, validation, build/mirror operations, and the
 digest release record. `scripts/ci/` owns the shared OpenAPI drift contract;
-backend, frontend, CDK, and Docsys keep their detailed checks beside the
-implementation they validate.
+backend, frontend, and CDK keep their detailed checks beside the implementation
+they validate.
 
 ## Entry points
 
@@ -63,9 +63,6 @@ implementation they validate.
 - The CDK job runs tests, lint, types, hermetic dev synth, then assumes a
   read-only staging preview role for its template diff only on pushes to
   `staging`. Pull requests receive no AWS credentials.
-- The PR-only documentation job validates metadata/links and publishes Docsys
-  impact output; it is advisory unless configured critical documents are
-  impacted without updates.
 - Deployment builds both frontends, reads public build configuration from SSM,
   publishes content-hashed assets before `index.html`, and invalidates both
   CloudFront distributions through GitHub OIDC credentials.

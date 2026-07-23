@@ -82,9 +82,7 @@ status.
 
 Security jobs gate their dependent lint/test/build jobs. Conditional frontend
 and contract jobs are skipped when their path filters do not match; a skipped
-fork CDK diff is not evidence that staging has no infrastructure drift. The
-documentation impact report is advisory unless an impacted path matches the
-configured critical-document policy.
+CDK diff is not evidence that staging has no infrastructure drift.
 
 The backend-test job uses the maintained
 `infra/containers/strategies/dev/...` Compose and Dockerfile paths and validates
