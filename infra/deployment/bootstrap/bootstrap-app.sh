@@ -30,6 +30,7 @@ set -Eeuo pipefail
 # Optional:
 #   BACKEND_IMAGE           overrides the image ref in backend.env (rehearsal
 #                           points this at the local registry)
+#   ALLOY_IMAGE             overrides the Alloy image ref in backend.env
 #   BOOTSTRAP_ENDPOINT_URL  AWS endpoint override (rehearsal: LocalStack)
 #   COMPOSE_FILE            defaults to the repo's docker-compose.app.yml
 #   FLOWFORM_SECRET_DIR     defaults to /run/flowform/secrets (tmpfs)
@@ -249,7 +250,7 @@ render_backend_env() {
     || die "failed to render SSM parameters under ${param_path} into ${BACKEND_ENV}"
 
   # Inject values only the host knows (not in SSM): its own and the proxy IP,
-  # and the image ref if the caller overrode it.
+  # and image refs if the caller overrode them.
   {
     printf 'APP_PRIVATE_IP=%s\n'  "${APP_PRIVATE_IP}"
     printf 'PROXY_PRIVATE_IP=%s\n' "${PROXY_PRIVATE_IP}"
@@ -257,12 +258,13 @@ render_backend_env() {
     printf 'HTTPS_PROXY=http://%s:3128\n' "${PROXY_PRIVATE_IP}"
     printf 'NO_PROXY=%s\n' "${NO_PROXY}"
     [[ -n "${BACKEND_IMAGE:-}" ]] && printf 'BACKEND_IMAGE=%s\n' "${BACKEND_IMAGE}"
+    [[ -n "${ALLOY_IMAGE:-}" ]] && printf 'ALLOY_IMAGE=%s\n' "${ALLOY_IMAGE}"
   } >> "${tmp}"
 
-  # Validate: must define a NON-EMPTY BACKEND_IMAGE (from SSM or override) or
-  # compose interpolation fails closed. The .+ guards against a present-but-empty
-  # value that would still satisfy a bare prefix match.
+  # Validate both image inputs before Compose interpolation. The .+ guards
+  # against present-but-empty values.
   grep -Eq '^BACKEND_IMAGE=.+$' "${tmp}" || die "backend.env has no non-empty BACKEND_IMAGE (not in SSM and no override)"
+  grep -Eq '^ALLOY_IMAGE=.+$' "${tmp}" || die "backend.env has no non-empty ALLOY_IMAGE (not in SSM and no override)"
 
   mv "${tmp}" "${BACKEND_ENV}"
   chmod 0600 "${BACKEND_ENV}"

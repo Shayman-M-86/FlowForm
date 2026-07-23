@@ -92,10 +92,9 @@ Both agents run as `user: root` under `cap_drop: [ALL]` with only
 socket and the `alloy`-owned `0770` storage volume are otherwise unreadable/
 unwritable even to root once all capabilities are dropped. The docker socket and
 journal are mounted read-only; state (WAL, positions) lives in the writable
-`alloy_data` named volume, which is why the container is not `read_only`. The app
-box's default image is `grafana/alloy` from Docker Hub, but the offline box
-cannot reach it, so its bootstrap env overrides `ALLOY_IMAGE` to the
-fake-registry mirror (`registry.localstack.test/grafana/alloy:…`, pushed by
+`alloy_data` named volume, which is why the container is not `read_only`.
+Deployed Compose requires an explicit `ALLOY_IMAGE`. The offline app box uses
+the fake-registry mirror (`registry.localstack.test/grafana/alloy:…`, pushed by
 `infra/containers/strategies/rehearsal/services/registry/mirror-alloy-image.sh`
 the same relay way as the backend image).
 

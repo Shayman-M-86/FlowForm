@@ -224,13 +224,13 @@ no such marker, emits normally.
 
 ## Validation
 
-- **Alloy config:** run the pinned `grafana/alloy:v1.5.1` image briefly with
+- **Alloy config:** run the pinned `grafana/alloy:v1.18.0` image briefly with
   each configuration and placeholder environment values. A successful graph
   evaluation and receiver startup prove the checked-in component syntax.
-- **Caddyfile:** `caddy adapt --config <Caddyfile>` (via the `caddy:latest`
-  image, passing `API_DOMAIN`/`APP_PRIVATE_IP` env). The AWS copy reports a
-  `dns.providers.route53` "module not registered" error under the stock image —
-  that plugin is baked into the real deployment and the error is expected here.
+- **Caddyfile:** build the AWS Caddy Dockerfile and run `caddy adapt` with
+  `API_DOMAIN` and `APP_PRIVATE_IP`. That image contains the pinned Route 53
+  provider required by the AWS configuration; the Dockerfile also fails its
+  build if the provider is absent.
 - **Backend:** `bash backend/scripts/run-tests.sh --ai -k logging`.
 
 ## Related documents

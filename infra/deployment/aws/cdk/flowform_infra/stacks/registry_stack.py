@@ -110,6 +110,7 @@ class RegistryStack(Stack):
                 actions=[
                     "ecr:BatchCheckLayerAvailability",
                     "ecr:CompleteLayerUpload",
+                    "ecr:DescribeImages",
                     "ecr:InitiateLayerUpload",
                     "ecr:PutImage",
                     "ecr:UploadLayerPart",

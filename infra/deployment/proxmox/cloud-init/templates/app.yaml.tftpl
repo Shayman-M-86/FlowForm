@@ -142,7 +142,7 @@ write_files:
       # Alloy image mirrored into the fake registry (the app box is offline and
       # cannot reach Docker Hub). Mirror it with mirror-alloy-image.sh before/at
       # deploy, the same relay path as the backend image.
-      ALLOY_IMAGE=registry.localstack.test/grafana/alloy:v1.5.1
+      ALLOY_IMAGE=registry.localstack.test/grafana/alloy:v1.18.0
       # explicit compose path: the script is baked at /opt/flowform/scripts/... so
       # its own REPO_ROOT math (../../..) would look under /opt, not where we put
       # the compose file. Point at the baked location directly.

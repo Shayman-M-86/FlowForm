@@ -151,7 +151,7 @@ goal is to turn the implemented registry definitions into a usable,
 reproducible image-publication path. It ends before NetworkStack, DatabaseStack,
 EC2 bootstrap, database migrations, or public traffic are changed.
 
-### Already implemented locally
+### Implemented and deployed
 
 - `RegistryStack` defines the Backend, Caddy, Squid, and Alloy repositories.
 - The repositories use immutable tags, scan-on-push, KMS encryption, and
@@ -162,9 +162,25 @@ EC2 bootstrap, database migrations, or public traffic are changed.
 - CDK assertions cover the repository controls, publisher access, runtime pull
   boundaries, and shared non-production Security template.
 
-These changes are not evidence that the repositories or role exist in AWS.
+On 24 July 2026, the first operator deployment completed in account
+`908123139858`, region `ap-southeast-2`:
 
-### Step 1: Review and activate Security and Registry
+- `FlowForm-Nonprod-Security` reached `UPDATE_COMPLETE`.
+- `FlowForm-Staging-Registry` reached `CREATE_COMPLETE`.
+- AWS inspection confirmed all four repositories are immutable, scan on push,
+  use the shared non-production KMS key, expire untagged images after seven
+  days, and retain the newest 30 images.
+- The deployed publisher role trusts only
+  `repo:Shayman-M-86/FlowForm:ref:refs/heads/staging`.
+- Its push actions reference only the four staging repositories;
+  `ecr:GetAuthorizationToken` is the only account-wide ECR action.
+- A post-deployment CDK diff reported zero differences for both stacks.
+
+The repositories are empty until the image-publication workflow is implemented.
+This deployment is not evidence for any later Network, Database, Application,
+Frontend, or Observability stack.
+
+### Step 1: Review and activate Security and Registry (complete)
 
 1. Review and land the current CDK and documentation changes.
 2. Confirm the target AWS account and `ap-southeast-2` region.
@@ -182,34 +198,42 @@ This step does not deploy Network, Database, Application, Frontend, or
 Observability stacks. Bootstrapping `us-east-1` is not part of this slice
 because it does not deploy the CloudFront certificate stack.
 
-### Step 2: Make all four image inputs reproducible
+### Step 2: Make all four image inputs reproducible (implemented)
 
 Before writing the workflow, close the image-source gaps:
 
-- Backend: use `infra/containers/images/backend/backend.Dockerfile`.
-- Caddy: add a tracked build definition for the custom Caddy binary and its
-  Route 53 module; a Caddy runtime configuration file is not an image build
-  definition.
-- Squid: replace the current `ubuntu/squid:latest` assumption with an approved,
-  pinned upstream digest to mirror.
-- Alloy: mirror the approved version by upstream digest, not by a floating tag.
-- Select the target platform from the EC2 AMI/instance architecture and use the
-  same platform consistently for all four images.
+- Backend: `infra/containers/images/backend/backend.Dockerfile` now pins the
+  Python and uv source versions and index digests.
+- Caddy: complete.
+  `infra/containers/strategies/aws/services/caddy/caddy.Dockerfile` pins Caddy
+  2.11.4, its official builder/runtime image digests, and the Route 53 module at
+  v1.6.2; the build fails if the resulting binary lacks
+  `dns.providers.route53`. This definition is AWS-specific; the Proxmox
+  rehearsal continues to use stock Caddy with its static test certificate.
+- Squid: the source manifest selects the tested Canonical Ubuntu 24.04/Squid
+  6.6 amd64 manifest. The newer Squid 7.2 image lacks utilities used by the
+  current hardened startup command and is therefore not the selected input.
+- Alloy: the source manifest selects the validated Alloy v1.18.0 amd64
+  manifest.
+- `infra/containers/strategies/aws/image-sources.json` fixes `linux/amd64` for
+  every source and target to match the current x86_64 EC2/AMI contract.
 
 The upstream source, version, digest, target repository, and resulting ECR
 digest must be visible in a machine-readable release manifest. Mirroring must
 not silently advance when an upstream tag changes.
 
-### Step 3: Add a dedicated image-publication workflow
+### Step 3: Add a dedicated image-publication workflow (implemented, live proof pending)
 
 Add a separate workflow rather than expanding the existing frontend
 `deploy.yml` into a full infrastructure release now. The first version should
 support manual dispatch and may add automatic publication after successful CI
 on `staging` once the manual path is proven.
 
-The workflow must:
+The manual workflow now:
 
-1. Check out the exact commit that passed CI.
+1. Checks out the selected staging commit. Until an automatic post-CI trigger
+   is added, the operator must confirm that exact commit has green CI before
+   dispatch.
 2. Request only `contents: read` and `id-token: write`.
 3. Assume `flowform-staging-image-publisher` through GitHub OIDC.
 4. Build Backend and Caddy and mirror the pinned Squid and Alloy inputs.
@@ -230,7 +254,7 @@ Image publication is not application deployment. This workflow must not deploy
 CDK, write secrets, access RDS, run migrations, update EC2, or change frontend
 content.
 
-### Step 4: Define the digest handoff without promoting a release
+### Step 4: Define the digest handoff without promoting a release (implemented)
 
 Add Backend, Caddy, Squid, and Alloy image fields to the tracked runtime
 parameter contract, because the current contract does not carry both mirrored
@@ -247,21 +271,21 @@ validate and consume without rebuilding the images.
 
 ### Current-slice exit criteria
 
-- The Security and Registry changes are reviewed and tracked in version
+- [x] The Security and Registry changes are reviewed and tracked in version
   control.
-- The account/region and CDK bootstrap identity are confirmed from AWS.
-- `FlowForm-Nonprod-Security` and `FlowForm-Staging-Registry` deploy through the
+- [x] The account/region and CDK bootstrap identity are confirmed from AWS.
+- [x] `FlowForm-Nonprod-Security` and `FlowForm-Staging-Registry` deploy through the
   existing operator path with a reviewed diff.
-- AWS inspection confirms four empty-or-populated hardened repositories and the
+- [x] AWS inspection confirms four empty-or-populated hardened repositories and the
   branch-restricted publisher role.
-- A manually dispatched workflow publishes all four images through OIDC without
+- [ ] A manually dispatched workflow publishes all four images through OIDC without
   stored AWS access keys.
-- The workflow cannot publish outside the four staging repositories.
-- One manifest records four complete ECR digest references and matches
+- [ ] The workflow cannot publish outside the four staging repositories.
+- [ ] One manifest records four complete ECR digest references and matches
   `ecr:DescribeImages` results.
-- The runtime parameter contract has explicit fields for all image consumers.
-- No infrastructure-deployment role, runtime SSM promotion, EC2 rollout,
-  database action, or frontend deployment is bundled into the image workflow.
+- [x] The runtime parameter contract has explicit fields for all image consumers.
+- [x] No infrastructure-deployment role, runtime SSM promotion, EC2 rollout,
+  database action, or frontend deployment was bundled into registry activation.
 
 After these criteria pass, the next active slice is Phase 3: finish and prove
 the network boundary, then implement RDS. Live pulls using the EC2 runtime roles
@@ -284,12 +308,13 @@ created incrementally in the phases that own their consumers.
 
 ## Phase 2: Add the registry and tighten the existing contracts
 
-**Implementation status: source implementation complete; AWS activation and
-image publication open.** The current working tree adds the four KMS-encrypted
-repositories, the branch-restricted image-publisher role, exact publisher
-permissions, and host-specific app/proxy pull policies. The current execution
-slice above owns their first deployment, the missing image build/mirror
-contracts, the publication workflow, and the digest manifest.
+**Implementation status: source implementation and AWS activation complete;
+first hosted image publication open.** The current implementation includes the
+four KMS-encrypted repositories, the branch-restricted image-publisher role,
+exact publisher permissions, host-specific app/proxy pull policies, immutable
+source contracts, a manual publisher, and the digest-manifest handoff. The live
+exit criteria remain open until the updated Registry policy is deployed and
+one hosted workflow run proves all four pushes through OIDC.
 
 The infrastructure-deployment role is intentionally deferred until the actual
 CDK bootstrap roles are confirmed. Live EC2 pull proof is deferred until the
@@ -579,6 +604,8 @@ Provision:
 - One public EC2 instance
 - Elastic IP
 - Caddy, Squid, and Alloy Compose services
+- The shared proxy Compose base plus the AWS strategy override that selects the
+  Route 53 Caddyfile and real-service Squid allow-list
 - Route 53 DNS-01 certificate permissions
 - API DNS record pointing to the Elastic IP
 - User data supplying only host identity, environment, region, and bootstrap

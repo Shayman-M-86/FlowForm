@@ -11,8 +11,9 @@
 #     -f docker-compose.app.yml up -d
 #
 # /opt/flowform/backend.env must include non-secret runtime config and compose
-# interpolation values such as BACKEND_IMAGE, APP_PRIVATE_IP, PROXY_PRIVATE_IP,
-# DB hosts/names/users, Auth0 IDs, KMS/linkage ARNs, SES config, and logging.
+# interpolation values such as BACKEND_IMAGE, ALLOY_IMAGE, APP_PRIVATE_IP,
+# PROXY_PRIVATE_IP, DB hosts/names/users, Auth0 IDs, KMS/linkage ARNs, SES
+# config, and logging.
 # With read_only enabled, production logging must be stdout JSON:
 # FLOWFORM_LOGGING_LOG_JSON=true, and do not set FLOWFORM_LOGGING_LOG_FILE (or
 # any legacy LOG_FILE value). Docker owns log rotation below.
@@ -76,12 +77,10 @@ services:
   # Alloy gateways (:3500 for Loki, :4317 for OTLP). The app box has no internet
   # route, so it never talks to Grafana directly.
   alloy:
-    # Default to the public image (proxy/AWS can pull it). The OFFLINE app box has
-    # no Docker Hub route — its only egress is Squid — so its bootstrap env
-    # overrides ALLOY_IMAGE to the fake-registry mirror
-    # (registry.localstack.test/grafana/alloy:...), pushed there the same relay way
-    # as the backend image. See strategies/rehearsal/services/registry/.
-    image: ${ALLOY_IMAGE:-grafana/alloy:v1.5.1}
+    # AWS uses the mirrored ECR digest. The offline rehearsal app uses its
+    # fake-registry mirror, pushed through the same relay as the backend image.
+    # There is no public fallback: missing release configuration fails closed.
+    image: ${ALLOY_IMAGE:?set ALLOY_IMAGE}
     restart: unless-stopped
     # As on the proxy: the host journal and docker socket are root-owned and the
     # image's storage dir is alloy-owned 0770, so run as root and restore only

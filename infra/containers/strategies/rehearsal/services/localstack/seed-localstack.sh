@@ -137,6 +137,7 @@ main() {
   put_runtime_parameter backend cors_origins "${FLOWFORM_CORS_ORIGINS}"
   put_runtime_parameter backend cors_supports_credentials "${FLOWFORM_CORS_SUPPORTS_CREDENTIALS}"
   put_runtime_parameter backend backend_image "${BACKEND_IMAGE}"
+  put_runtime_parameter backend alloy_image "${BACKEND_ALLOY_IMAGE}"
   put_runtime_parameter backend auth0_domain "${FLOWFORM_AUTH0_DOMAIN}"
   put_runtime_parameter backend auth0_management_domain "${FLOWFORM_AUTH0_MGMT_DOMAIN}"
   put_runtime_parameter backend auth0_audience "${FLOWFORM_AUTH0_AUDIENCE}"
@@ -154,6 +155,8 @@ main() {
   put_runtime_parameter backend database_response_app_user "${DATABASE_RESPONSE_APP_USER}"
 
   put_runtime_parameter proxy caddy_image "${CADDY_IMAGE}"
+  put_runtime_parameter proxy squid_image "${SQUID_IMAGE}"
+  put_runtime_parameter proxy alloy_image "${PROXY_ALLOY_IMAGE}"
   put_runtime_parameter proxy api_domain "${API_DOMAIN}"
   put_runtime_parameter proxy grafana_cloud_loki_url "${GRAFANA_CLOUD_LOKI_URL}"
   put_runtime_parameter proxy grafana_cloud_loki_user "${GRAFANA_CLOUD_LOKI_USER}"

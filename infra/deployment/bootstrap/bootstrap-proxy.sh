@@ -19,15 +19,16 @@ set -Eeuo pipefail
 #   AWS_REGION              e.g. ap-southeast-2
 # Optional:
 #   CADDY_IMAGE             overrides the image ref in proxy.env
+#   SQUID_IMAGE             overrides the Squid image ref in proxy.env
+#   ALLOY_IMAGE             overrides the Alloy image ref in proxy.env
 #   API_DOMAIN              public API hostname (else must come from SSM)
 #   BOOTSTRAP_ENDPOINT_URL  AWS endpoint override (rehearsal: LocalStack)
 #   DB_BOOTSTRAP_PRIVATE_IP rehearsal DB host temporarily admitted to Squid;
 #                           unset elsewhere, producing a loopback sentinel ACL
-#   COMPOSE_FILE            defaults to the repo's docker-compose.proxy.yml
-#   COMPOSE_OVERRIDE_FILE   optional extra compose file layered on top with a
-#                           second -f (empty in prod; rehearsal uses it to swap
-#                           the Caddy TLS + Squid allow-list configs). This is a
-#                           prod-safe seam, like BOOTSTRAP_ENDPOINT_URL.
+#   COMPOSE_FILE            defaults to the shared proxy runtime Compose file
+#   COMPOSE_OVERRIDE_FILE   strategy Compose file layered on top with a second
+#                           -f; defaults to AWS, while rehearsal supplies its
+#                           own Caddy TLS and Squid allow-list selection.
 #   BOOTSTRAP_DRY_RUN=1     print intended actions, change nothing
 
 # Shared library provides log/die (as info/fatal aliases), the ERR trap, the
@@ -57,8 +58,9 @@ install_err_trap
 SECRET_DIR="${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}"
 GRAFANA_TOKEN_FILE="${SECRET_DIR}/GRAFANA_CLOUD_TOKEN.secret.txt"
 COMPOSE_FILE="${COMPOSE_FILE:-${REPO_ROOT}/infra/containers/runtime/compose/proxy.yml}"
-# Optional override compose file (rehearsal). Assembled into the -f list below.
-COMPOSE_OVERRIDE_FILE="${COMPOSE_OVERRIDE_FILE:-}"
+# AWS is the deployment default. Rehearsal explicitly replaces this path in its
+# cloud-init environment while retaining the same shared base.
+COMPOSE_OVERRIDE_FILE="${COMPOSE_OVERRIDE_FILE:-${REPO_ROOT}/infra/containers/strategies/aws/compose/proxy.override.yml}"
 # Rendered proxy env-file consumed by docker compose --env-file.
 PROXY_ENV="${PROXY_ENV:-/opt/flowform/proxy.env}"
 
@@ -152,12 +154,16 @@ render_proxy_env() {
     fi
     printf 'AWS_REGION=%s\n' "${AWS_REGION}"
     [[ -n "${CADDY_IMAGE:-}" ]] && printf 'CADDY_IMAGE=%s\n' "${CADDY_IMAGE}"
+    [[ -n "${SQUID_IMAGE:-}" ]] && printf 'SQUID_IMAGE=%s\n' "${SQUID_IMAGE}"
+    [[ -n "${ALLOY_IMAGE:-}" ]] && printf 'ALLOY_IMAGE=%s\n' "${ALLOY_IMAGE}"
     [[ -n "${API_DOMAIN:-}" ]]  && printf 'API_DOMAIN=%s\n'  "${API_DOMAIN}"
   } >> "${tmp}"
 
   # Require NON-EMPTY values (.+ guards against present-but-empty entries that a
   # bare prefix match would accept and that would break compose interpolation).
   grep -Eq '^CADDY_IMAGE=.+$' "${tmp}" || die "proxy.env has no non-empty CADDY_IMAGE (not in SSM and no override)"
+  grep -Eq '^SQUID_IMAGE=.+$' "${tmp}" || die "proxy.env has no non-empty SQUID_IMAGE (not in SSM and no override)"
+  grep -Eq '^ALLOY_IMAGE=.+$' "${tmp}" || die "proxy.env has no non-empty ALLOY_IMAGE (not in SSM and no override)"
   grep -Eq '^API_DOMAIN=.+$'  "${tmp}" || die "proxy.env has no non-empty API_DOMAIN (not in SSM and no override)"
   # API_DOMAIN must be a bare hostname (Caddy's site address + Route 53 record),
   # not a URL or arbitrary string. Reject anything with a scheme, path, or space.
@@ -174,13 +180,10 @@ render_proxy_env() {
 
 compose_up() {
   [[ -f "${COMPOSE_FILE}" ]] || die "compose file not found: ${COMPOSE_FILE}"
-  # Base compose, plus an optional override layered on with a second -f (prod
-  # leaves COMPOSE_OVERRIDE_FILE empty, so this is exactly the single-file case).
+  # Shared base plus the selected strategy override.
   local compose_args=(-f "${COMPOSE_FILE}")
-  if [[ -n "${COMPOSE_OVERRIDE_FILE}" ]]; then
-    [[ -f "${COMPOSE_OVERRIDE_FILE}" ]] || die "compose override not found: ${COMPOSE_OVERRIDE_FILE}"
-    compose_args+=(-f "${COMPOSE_OVERRIDE_FILE}")
-  fi
+  [[ -f "${COMPOSE_OVERRIDE_FILE}" ]] || die "compose override not found: ${COMPOSE_OVERRIDE_FILE}"
+  compose_args+=(-f "${COMPOSE_OVERRIDE_FILE}")
   local health_timeout="${BOOTSTRAP_HEALTH_TIMEOUT_SECONDS:-180}"
   if [[ "${DRY_RUN}" == "1" ]]; then
     log "DRY_RUN: would validate config then run: FLOWFORM_SECRET_DIR=${SECRET_DIR} docker compose --env-file ${PROXY_ENV} ${compose_args[*]} up -d --wait --wait-timeout ${health_timeout}"

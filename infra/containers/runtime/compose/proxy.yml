@@ -1,16 +1,20 @@
-# FlowForm public proxy EC2 stack.
+# FlowForm shared public proxy runtime.
 #
-# Bootstrap writes the env file consumed by docker compose. Staging and prod use
-# this same file; differences such as image digests, private IPs, AWS region,
-# API domain, and the exact Squid source CIDR come from the bootstrap env file.
+# Bootstrap layers the AWS or rehearsal strategy override on this file, then
+# supplies image references, addresses, region, domain, and source CIDRs through
+# the generated env file. This base deliberately contains no strategy-specific
+# Caddyfile or Squid destination allow-list.
 #
 # Expected invocation on the proxy instance:
 #
 #   docker compose --env-file /opt/flowform/proxy.env \
-#     -f docker-compose.proxy.yml up -d
+#     -f proxy.yml \
+#     -f ../../strategies/aws/compose/proxy.override.yml up -d
 #
 # Required env:
-#   CADDY_IMAGE              - ECR ref for the xcaddy + route53 image
+#   CADDY_IMAGE              - Caddy image selected by the strategy
+#   SQUID_IMAGE              - immutable Squid image reference
+#   ALLOY_IMAGE              - immutable Alloy image reference
 #   API_DOMAIN               - public API hostname, e.g. api.flow-form.com.au
 #   AWS_REGION               - Route 53 provider region context
 #   PROXY_PRIVATE_IP         - private IP to bind Squid on
@@ -35,7 +39,7 @@ name: flowform-proxy
 
 services:
   caddy:
-    image: ${CADDY_IMAGE:?set CADDY_IMAGE to the custom Caddy ECR ref}
+    image: ${CADDY_IMAGE:?set CADDY_IMAGE}
     restart: unless-stopped
     environment:
       API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN}
@@ -50,7 +54,6 @@ services:
       - "80:80/tcp"
       - "443:443/tcp"
     volumes:
-      - ../../strategies/aws/services/caddy/Caddyfile.proxy:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     read_only: true
@@ -71,7 +74,7 @@ services:
       - proxy_net
 
   squid:
-    image: ubuntu/squid:latest
+    image: ${SQUID_IMAGE:?set SQUID_IMAGE}
     restart: unless-stopped
     environment:
       SQUID_APP_SOURCE_CIDR: ${SQUID_APP_SOURCE_CIDR:?set exact app source CIDR, usually APP_PRIVATE_IP/32}
@@ -82,7 +85,6 @@ services:
       - "${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP}:3128:3128/tcp"
     volumes:
       - ../services/squid/squid.conf:/etc/squid/squid.conf.template:ro
-      - ../../strategies/aws/services/squid/allowed-domains.txt:/etc/squid/allowed-domains.txt:ro
       - squid_logs:/var/log/squid
     read_only: true
     tmpfs:
@@ -117,7 +119,7 @@ services:
   # Observability agent — ships host/container logs to Loki and receives OTLP
   # traces from Caddy and the app-box relay for export to Grafana Cloud Tempo.
   alloy:
-    image: grafana/alloy:v1.5.1
+    image: ${ALLOY_IMAGE:?set ALLOY_IMAGE}
     restart: unless-stopped
     # Runs as root: the host journal (/var/log/journal, root:systemd-journal) and
     # docker socket are not world-readable, and the storage dir the image ships is

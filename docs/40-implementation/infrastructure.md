@@ -27,9 +27,13 @@ Maps infrastructure concepts to verified repository implementation.
 
 ## Directory ownership
 
-- `infra/containers/images/` owns buildable application images;
-  `containers/runtime/` owns shared app/proxy Compose and service configuration;
-  `containers/strategies/` owns AWS, development, and rehearsal differences.
+- `infra/containers/images/` owns buildable base images shared across deployment
+  strategies; `containers/runtime/` owns shared app/proxy Compose and service
+  configuration; `containers/strategies/` owns AWS, development, and rehearsal
+  differences, including strategy-specific image definitions. The AWS Caddy
+  image therefore lives beside its Route 53 Caddy configuration under
+  `containers/strategies/aws/services/caddy/`; rehearsal uses the stock Caddy
+  image with its static test certificate.
 - `infra/database/` owns PostgreSQL configuration, initialization templates,
   maintained core/response schemas, and local mock data.
 - `infra/images/` owns the shared Packer image contract, AWS/Proxmox builders,
@@ -39,6 +43,10 @@ Maps infrastructure concepts to verified repository implementation.
   rehearsal operator scripts.
 - `infra/deployment/bootstrap/` owns runtime host bootstrap shared by deployment
   strategies, while `infra/env/` holds local environment material.
+- `infra/containers/strategies/aws/image-sources.json` owns the reproducible
+  linux/amd64 image inputs. Its publisher lives under
+  `infra/deployment/aws/scripts/`, and the manual GitHub workflow supplies OIDC
+  execution without owning release promotion.
 
 ## Entry points
 
@@ -104,12 +112,14 @@ source.
 ## Known gaps
 
 AWS `DatabaseStack` and `ObservabilityStack` create no substantive resources.
-`RegistryStack` creates repositories and IAM policies, but no workflow
-publishes the declared images. `ApplicationStack` creates hosts but does not
-attach runtime bootstrap or create the public API DNS path. The deploy workflow
-publishes only staging frontends. Consequently CDK synthesis is not evidence of
-a complete backend deployment, database, observability path, or production
-release.
+`RegistryStack` creates repositories and exact publisher IAM policies, and a
+manual workflow now defines publication of all four declared images. That path
+still lacks hosted-run proof and deliberately does not promote the resulting
+digests. `ApplicationStack` creates hosts but does not attach runtime bootstrap
+or create the public API DNS path. The existing deploy workflow publishes only
+staging frontends. Consequently CDK synthesis or image publication is not
+evidence of a complete backend deployment, database, observability path, or
+production release.
 
 ## Related documents
 

@@ -19,11 +19,12 @@ set -Eeuo pipefail
 #
 # Usage:
 #   mirror-alloy-image.sh                       # mirrors the default tag
-#   ALLOY_VERSION=v1.5.1 mirror-alloy-image.sh   # pin a tag
+#   ALLOY_VERSION=v1.18.0 mirror-alloy-image.sh  # select the approved version
 
 REGISTRY_HOST="${REGISTRY_HOST:-registry.localstack.test}"   # no port ⇒ 443/HTTPS
-ALLOY_VERSION="${ALLOY_VERSION:-v1.5.1}"
-SOURCE_IMAGE="${SOURCE_IMAGE:-grafana/alloy:${ALLOY_VERSION}}"
+ALLOY_VERSION="${ALLOY_VERSION:-v1.18.0}"
+ALLOY_PLATFORM_DIGEST="${ALLOY_PLATFORM_DIGEST:-sha256:eb21f4c0858edffcdd1b385910ddeef26f692fc2c282f61baa724fc09d274a17}"
+SOURCE_IMAGE="${SOURCE_IMAGE:-grafana/alloy:${ALLOY_VERSION}@${ALLOY_PLATFORM_DIGEST}}"
 # Must match ALLOY_IMAGE in the app cloud-init (app.yaml.tftpl).
 DEST_IMAGE="${DEST_IMAGE:-${REGISTRY_HOST}/grafana/alloy:${ALLOY_VERSION}}"
 

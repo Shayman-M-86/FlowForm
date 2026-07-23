@@ -6,10 +6,11 @@
 # uploads the result to Proxmox. No rendered cloud-init file is stored locally.
 #
 # The proxy box is EGRESS-ONLY: it simulates the controlled egress gateway and
-# nothing else. `rehearsal build` runs the REAL prod proxy stack (Caddy + Squid)
-# via bootstrap-proxy.sh, with a rehearsal OVERRIDE that swaps only the two configs
-# that can't work offline: Caddy TLS (route53 → internal) and the Squid allow-list
-# (real AWS → *.localstack.test). Prod compose + prod configs are untouched.
+# nothing else. `rehearsal build` runs the shared proxy stack (Caddy + Squid)
+# through bootstrap-proxy.sh, with a rehearsal override that selects the two
+# configurations that can work offline: a fixed test certificate instead of
+# Route 53 DNS-01, and the *.localstack.test Squid allow-list instead of the
+# real AWS/external destination list.
 #
 # It does NOT host the image registry — that's fake ECR, which lives on the
 # aws-fixtures-vm (230) alongside LocalStack. Mixing "firewall" and "image
@@ -76,8 +77,7 @@ write_files:
     owner: root:root
     content: ${BOOTSTRAP_COMMON_SH_B64}
 
-  # --- prod proxy compose (base) + its prod config files (kept, referenced by
-  #     the override which only swaps two of them) -------------------------------
+  # --- shared proxy Compose base and strategy-neutral service config -----------
   - path: /opt/flowform/repo/infra/containers/runtime/compose/proxy.yml
     encoding: b64
     permissions: '0644'
@@ -146,7 +146,7 @@ write_files:
       # proxy stack image + public API host (else must come from SSM)
       CADDY_IMAGE=caddy:2-alpine
       API_DOMAIN=api.localstack.test
-      # run the REAL prod proxy compose (base) PLUS the rehearsal override, each
+      # run the shared proxy Compose base PLUS the rehearsal override, each
       # as its own -f (bootstrap-proxy.sh assembles them). docker compose resolves
       # relative mounts against the first/base file's dir = infra/containers/runtime/compose/,
       # which is why the override's paths are written ../../rehearsal/... .

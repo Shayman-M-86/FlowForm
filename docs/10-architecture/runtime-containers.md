@@ -11,6 +11,7 @@ related_code:
   - "../../infra/containers/strategies/dev/compose/compose.yml"
   - "../../infra/containers/strategies/dev/compose/compose.test.yml"
   - "../../infra/containers/runtime/compose/"
+  - "../../infra/containers/strategies/aws/"
   - "../../frontend/docker-compose.dev.yml"
   - "../../infra/deployment/bootstrap/"
   - "../../infra/containers/strategies/rehearsal/"
@@ -41,8 +42,8 @@ The repository does not use one Compose model unchanged in every context.
 | Frontend development | Astro public site, Vite Studio app, optional Studio preview | Provides containerised frontend development independently of the backend Compose project. |
 | Backend test | Long-running backend test container, core PostgreSQL, response PostgreSQL | Gives tests an isolated application image and two disposable database services on an internal-only network; CI enters the running backend container to execute the hermetic suite, while an explicit local live-test override enables public egress. |
 | Split-runtime local proof | Caddy, Squid, Gunicorn backend, core PostgreSQL, response PostgreSQL | Exercises the proxy/app communication and hardening shape on one Docker host. It is explicitly a workstation proof, not the cloud topology. |
-| Shared host runtime | Caddy and Squid on a proxy host; Gunicorn backend on a separate app host | Defines the staging/prod container contract. PostgreSQL and the static frontends are outside these Compose projects. |
-| Proxmox rehearsal | Shared proxy/app Compose files, a proxy override, and dedicated fixture/database services | Exercises the shared host bootstrap and images on local VMs while replacing cloud-only dependencies with local equivalents. |
+| Shared host runtime | Caddy and Squid on a proxy host; Gunicorn backend on a separate app host | Defines the shared container contract. The proxy base is completed by an AWS or rehearsal strategy override; PostgreSQL and the static frontends are outside these Compose projects. |
+| Proxmox rehearsal | Shared proxy/app Compose files, a rehearsal proxy override, and dedicated fixture/database services | Exercises the shared host bootstrap and images on local VMs while replacing cloud-only dependencies with local equivalents. |
 
 The development and test definitions are operationally useful variants, not
 evidence that their networks, credentials, writable mounts, or database
@@ -73,14 +74,24 @@ observable controls, not a complete statement of the [[security-model|Security m
 
 ## Bootstrap and configuration boundary
 
-Host bootstrap is outside the container images. The proxy bootstrap renders its
-Compose environment from SSM plus host-known addresses. The app bootstrap
+Host bootstrap is outside the container images. The proxy bootstrap layers the
+shared Compose base with the selected strategy override and renders its Compose
+environment from SSM plus host-known addresses. AWS selects its Route 53
+Caddyfile and real-service Squid allow-list; rehearsal selects its fixed test
+certificate and local-service allow-list. The app bootstrap
 configures forced proxy egress, materialises Secrets Manager values into a host
 `tmpfs`, renders non-secret configuration from SSM, and then starts Compose.
 Staging and prod are intended to consume the same base Compose and bootstrap
 files with environment-specific values. See [[secrets-and-configuration|Secrets and configuration]] for
 the configuration lifecycle and [[infrastructure|Infrastructure implementation]] for source
 locations.
+
+Each deployed service image is now an explicit bootstrap parameter rather than
+a Compose fallback: Backend and app-host Alloy are in the backend parameter
+group; Caddy, Squid, and proxy-host Alloy are in the proxy group. AWS
+publication records complete private ECR digest references for all four image
+types. Publication does not select them; a separate promotion boundary must
+copy a chosen release manifest's values into the runtime parameters.
 
 This idempotent bootstrap is the platform-neutral lifecycle contract. Native
 provisioning supplies and invokes it at first boot, while systemd invokes it
@@ -124,10 +135,9 @@ runtime bootstrap as instance user data. That implementation gap is tracked in
   EC2 hosts before invoking bootstrap?
 - How will backend image publication and host restart be coordinated and rolled
   back once the backend deployment workflow exists?
-- How will the deployment pipeline publish and record the immutable Backend,
-  Caddy, Squid, and Alloy image digests required by
-  [[0001-aws-staging-infrastructure-target|AWS staging infrastructure target]]
-  before host bootstrap consumes them?
+- How will a release select one retained four-image manifest, promote its
+  immutable ECR references into SSM, coordinate migrations and host restart,
+  and roll back without rebuilding?
 
 ## Related documents
 
