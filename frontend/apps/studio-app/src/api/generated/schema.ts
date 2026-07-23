@@ -1308,26 +1308,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/health/test-email": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Test email sending
-         * @description Test email sending
-         */
-        post: operations["testEmail"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6464,32 +6444,6 @@ export interface operations {
         };
     };
     readinessCheck: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    testEmail: {
         parameters: {
             query?: never;
             header?: never;

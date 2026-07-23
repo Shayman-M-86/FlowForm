@@ -13,6 +13,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app import tracing
 from app.cache import get_app_cache
 from app.crypto.models import SubmissionSessionContext
 from app.db.error_handling import commit_with_err_handle
@@ -32,6 +33,7 @@ class CompletionResult:
     completed_at: datetime
 
 
+@tracing.action("submission.session.complete")
 def complete_session(
     db: Session,
     *,
@@ -64,6 +66,7 @@ def complete_session(
     commit_with_err_handle(db, contexts=[])
 
     get_app_cache().sessions.write_context.evict(ctx.browser_session_token_hash)
+    tracing.fields(outcome="completed", completion_state="completed")
 
     return CompletionResult(
         session_id=ctx.session_id,

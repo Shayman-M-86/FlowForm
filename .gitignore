@@ -5,7 +5,7 @@ __pycache__/
 
 # Compiled extensions
 *.so
-
+docs/.obsidian/
 # Distribution / packaging
 .Python
 build/
@@ -46,7 +46,7 @@ venv.bak/
 node_modules/
 
 # CDK
-infra/cdk/cdk.out/
+infra/deployment/aws/cdk/cdk.out/
 
 # Environment files
 *.env
@@ -73,7 +73,7 @@ pytest_cache/
 cover/
 
 # Logs / temp files
-*.log
+*.log*
 *temp
 
 # Jupyter
@@ -97,3 +97,47 @@ cover/
 *test.secret.txt
 *prod.secret.txt
 *dev.secret.txt
+
+# NOTE: the rehearsal TLS-shim CA (infra/containers/rehearsal/services/tls-shim/ca/*.crt/.key) is a
+# DELIBERATELY COMMITTED THROWAWAY — it only signs *.localstack.test on an
+# un-routed private net and is trusted only inside the rehearsal. See
+# infra/containers/rehearsal/services/tls-shim/README.md. It is NOT ignored so a fresh checkout can
+# build template 9001 and render the app user-data without regenerating certs.
+
+# Terraform working directories, state, plans, and local values
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfplan
+**/tfplan
+**/terraform.tfvars
+**/*.auto.tfvars
+
+# Generated Proxmox cloud-init artifacts (templates are source files)
+infra/deployment/proxmox/cloud-init/generated/*
+!infra/deployment/proxmox/cloud-init/generated/.gitkeep
+
+# Packer local image-build artifacts and credentials
+*.pkrvars.hcl
+!*.pkrvars.hcl.example
+.packer.d/
+packer_cache/
+**/packer_cache/
+packer-manifest.json
+**/packer-manifest.json
+*.pem
+*.key.local
+infra/images/*/manifests/*.json
+!infra/images/*/manifests/README.md
+
+# Docsys documentation hook per-session state (transient)
+.docsys/
+infra/containers/strategies/rehearsal/services/caddy/certs/api.crt
+infra/containers/strategies/rehearsal/services/caddy/certs/api.key
+infra/containers/strategies/rehearsal/services/tls-shim/ca/localstack.crt
+infra/containers/strategies/rehearsal/services/tls-shim/ca/localstack.key
+infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.crt
+infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.key
+infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.srl
+!infra/deployment/proxmox/scripts/lib
+!infra/images/scripts/lib

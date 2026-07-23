@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest  # type: ignore[import]
 
+from app.logging.logging_config import configure_third_party_loggers
+from app.logging.sensitive_data import protect_root_handlers
 from tests.integration.environment.helpers import current_database_name, read_env
 
 logger = logging.getLogger("app.tests.integration.environment")
@@ -17,6 +19,8 @@ REQUIRED_ENV_VARS = (
     "DATABASE_CORE_NAME",
     "DATABASE_CORE_APP_USER",
     "DATABASE_CORE_APP_PASSWORD_FILE",
+    "FLOWFORM_AUTH0_MGMT_SECRET",
+    "FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP",
     "DATABASE_RESPONSE_HOST",
     "DATABASE_RESPONSE_PORT",
     "DATABASE_RESPONSE_NAME",
@@ -30,6 +34,9 @@ def pytest_configure() -> None:
         level=logging.DEBUG,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+
+    configure_third_party_loggers()
+    protect_root_handlers()
 
     logging.getLogger("sqlalchemy").setLevel(logging.WARNING)
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
@@ -45,7 +52,10 @@ def validate_test_environment() -> None:
             returncode=1,
         )
 
-    for env_name in ("DATABASE_CORE_APP_PASSWORD_FILE", "DATABASE_RESPONSE_APP_PASSWORD_FILE"):
+    for env_name in (
+        "DATABASE_CORE_APP_PASSWORD_FILE",
+        "DATABASE_RESPONSE_APP_PASSWORD_FILE",
+    ):
         secret_path = Path(read_env(env_name))
         if not secret_path.is_file():
             pytest.exit(

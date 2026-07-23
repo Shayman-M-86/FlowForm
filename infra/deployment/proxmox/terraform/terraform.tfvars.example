@@ -1,0 +1,15 @@
+# Copy to terraform.tfvars. The real file is ignored; do not commit its token.
+proxmox_endpoint                 = "https://pve.example.lan:8006/api2/json"
+# Use a deployment-specific token; do not reuse the Packer image-build token.
+proxmox_api_token                = "terraform@pve!flowform=REPLACE_ME"
+proxmox_insecure_skip_tls_verify = true
+proxmox_node                     = "pve"
+golden_template_vmid             = 9000
+localstack_fixture_template_vmid  = 9001
+db_fixture_template_vmid          = 9002
+proxmox_storage_pool             = "ZFS-RAIDZ"
+proxmox_snippet_storage          = "local"
+proxmox_cpu_type                 = "x86-64-v2-AES"
+
+# Example: ssh_public_keys = ["ssh-ed25519 AAAA... your-user@host"]
+ssh_public_keys = []

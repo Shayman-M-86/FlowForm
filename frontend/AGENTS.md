@@ -9,7 +9,7 @@ The frontend is a pnpm workspaces monorepo with two apps and five shared package
 | App | Path | Purpose |
 | --- | --- | --- |
 | `studio-app` | `apps/studio-app/` | Admin dashboard - React 19 + Vite SPA, port 5174 |
-| `public-site` | `apps/public-site/` | Marketing site + form-filler - Astro 6 + React islands |
+| `public-site` | `apps/public-site/` | Marketing site + form-filler - Astro 7 + React islands |
 
 ## Packages
 

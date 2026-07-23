@@ -1,0 +1,45 @@
+# Rehearsal proxy Compose override — layered on top of the shared proxy runtime:
+#
+#   docker compose -f infra/containers/runtime/compose/proxy.yml \
+#                  -f infra/containers/strategies/rehearsal/compose/proxy.override.yml up -d
+#
+# It exists so rehearsal can run the shared proxy stack while selecting the two
+# strategy-specific files that work on the offline private network:
+#   - caddy   : rehearsal Caddyfile.proxy (fixed test cert, not Route 53 DNS-01)
+#   - squid   : rehearsal allow-list (admits *.localstack.test, not real AWS)
+# Everything else (images, hardening, ports, env, and shared service
+# configuration) comes from the base file unchanged.
+#
+# bootstrap-proxy.sh consumes this through COMPOSE_OVERRIDE_FILE (see the proxy
+# cloud-init) and supplies it as the second -f file.
+#
+# PATH RESOLUTION FOOTGUN: docker compose resolves relative bind-mount paths in
+# ALL files against the PROJECT DIRECTORY, which is the dir of the FIRST -f file
+# — here infra/containers/runtime/compose/ (the shared base). So the override
+# paths below are written relative to infra/containers/runtime/compose/, not
+# relative to this file.
+
+name: flowform-proxy
+
+services:
+  caddy:
+    volumes:
+      # select the rehearsal Caddyfile and its pre-generated leaf signed by the
+      # committed rehearsal CA — see Caddyfile.proxy.
+      # paths are relative to the project dir (infra/containers/runtime/compose/)
+      - ../../strategies/rehearsal/services/caddy/Caddyfile.proxy:/etc/caddy/Caddyfile:ro
+      - ../../strategies/rehearsal/services/caddy/certs/api.crt:/etc/caddy/certs/api.crt:ro
+      - ../../strategies/rehearsal/services/caddy/certs/api.key:/etc/caddy/certs/api.key:ro
+
+  squid:
+    extra_hosts:
+      # Docker containers do not inherit the VM's /etc/hosts. Resolve the fake-AWS
+      # service names AND the fake-ECR registry to the private fixture VM so Squid
+      # can open the CONNECT tunnel to the TLS shim there.
+      - "secretsmanager.localstack.test:10.10.10.30"
+      - "ssm.localstack.test:10.10.10.30"
+      - "kms.localstack.test:10.10.10.30"
+      - "registry.localstack.test:10.10.10.30"
+    volumes:
+      # select the rehearsal allow-list (*.localstack.test).
+      - ../../strategies/rehearsal/services/squid/allowed-domains.txt:/etc/squid/allowed-domains.txt:ro

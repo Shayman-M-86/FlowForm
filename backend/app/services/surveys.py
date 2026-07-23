@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session  # noqa: I001
 
+from app import tracing
 from app.cache import get_app_cache
 from app.crypto._internal.client_extension import get_crypto_clients
 from app.crypto.survey_key import (
@@ -166,6 +167,7 @@ class SurveyService:
         commit_with_err_handle(db, contexts=[draft])
         return draft
 
+    @tracing.action("survey.version.publish")
     def publish_version(
         self,
         db: Session,
@@ -212,6 +214,7 @@ class SurveyService:
 
         result = sr.publish_version(db, survey, version, compiled)
         commit_with_err_handle(db, contexts=[result, survey, version])
+        tracing.fields(outcome="published", version_number=version_number)
         return result
 
     def _ensure_survey_encryption_key(

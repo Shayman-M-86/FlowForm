@@ -3,6 +3,7 @@
 Read `.claude/workflows/session-encryption/working/targets/03-aws-wiring-and-crypto-smoke-test/spec.md` in full before writing any code.
 
 Dependency checks:
+
 - Confirm `backend/app/crypto/aes_gcm.py` exists (pass 01). If not, stop.
 - Confirm `backend/app/repositories/response/` exists (pass 02). If not, stop.
 - Confirm `ENCRYPTION_KMS_KEY_ARN` and `ENCRYPTION_LINKAGE_SECRET_ARN` are set. If not, stop and tell the operator what AWS resources need provisioning (see spec "Human action required" section).

@@ -1,0 +1,6 @@
+# Applied only by backend/scripts/run-tests.py --live-external.
+# The base test network is internal-only so normal local and CI tests cannot
+# make outbound requests, even if a live test is accidentally selected.
+networks:
+  flowform_net:
+    internal: false

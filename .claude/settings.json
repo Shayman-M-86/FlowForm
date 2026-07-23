@@ -4,7 +4,6 @@
       "Bash(/path/to/FlowForm/tools/mcp/run.sh)",
       "Read(/home/shayman86/my-repos/FlowForm/**)",
       "Edit(/home/shayman86/my-repos/FlowForm/**)",
-      
       "Write(/home/shayman86/my-repos/FlowForm/**)",
       "Bash(ls:*)",
       "Bash(find:*)",
@@ -41,10 +40,10 @@
       "Bash(docker images:*)",
       "Bash(docker volume ls:*)",
       "Bash(docker network ls:*)",
-      "Bash(docker compose -f infra/docker/docker-compose.test.yml up:*)",
-      "Bash(docker compose -f infra/docker/docker-compose.test.yml down:*)",
-      "Bash(docker compose -f infra/docker/docker-compose.test.yml stop:*)",
-      "Bash(docker compose -f infra/docker/docker-compose.test.yml build:*)",
+      "Bash(docker compose --env-file infra/environments/development/compose/.env -f infra/tests/compose/docker-compose.test.yml up:*)",
+      "Bash(docker compose --env-file infra/environments/development/compose/.env -f infra/tests/compose/docker-compose.test.yml down:*)",
+      "Bash(docker compose --env-file infra/environments/development/compose/.env -f infra/tests/compose/docker-compose.test.yml stop:*)",
+      "Bash(docker compose --env-file infra/environments/development/compose/.env -f infra/tests/compose/docker-compose.test.yml build:*)",
       "Bash(docker exec flowform-backend-test:*)",
       "Bash(bash backend/scripts/run-tests-fast.sh:*)",
       "Bash(bash backend/scripts/run-tests.sh:*)",
@@ -97,7 +96,6 @@
       "Read(.claude/agents/**)",
       "Write(.claude/agents/**)",
       "Edit(.claude/agents/**)"
-
     ],
     "deny": [
       "Bash(rm -rf:*)",
@@ -120,17 +118,8 @@
       "Bash(docker system prune:*)",
       "Bash(docker kill:*)",
       "Bash(docker stop:*)",
-      "Bash(curl:*)",
-      "Bash(wget:*)",
-      "Bash(nc:*)",
-      "Bash(ncat:*)",
-      "Bash(ssh:*)",
-      "Bash(scp:*)",
-      "Bash(rsync:*)",
       "Bash(sudo:*)",
       "Bash(su:*)",
-      "Bash(chmod:*)",
-      "Bash(chown:*)",
       "Bash(psql:*)",
       "Bash(pg_dump:*)",
       "Bash(pg_restore:*)",
@@ -139,13 +128,9 @@
       "Bash(uv run flask db upgrade:*)",
       "Bash(uv run flask db downgrade:*)",
       "Bash(uv run flask db stamp:*)",
-      "Bash(npm install:*)",
       "Bash(npm install --save:*)",
       "Bash(npm install --save-dev:*)",
-      "Bash(npm uninstall:*)",
-      "Bash(npm ci:*)",
       "Bash(npx --yes:*)",
-      "Bash(npx eslint --fix:*)",
       "Bash(npm publish:*)",
       "Bash(npm pack:*)",
       "Bash(npm link:*)",
@@ -165,10 +150,33 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/shayman86/my-repos/FlowForm/.claude/hooks/session_start_capture_base.py",
+            "statusMessage": "docsys: capture base commit"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/shayman86/my-repos/FlowForm/.claude/hooks/stop_doc_impact_review.py",
+            "statusMessage": "docsys: documentation impact review"
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
-    "claude-code-setup@claude-plugins-official": false
+    "claude-code-setup@claude-plugins-official": false,
+    "grafana-cloud-mcp@claude-plugins-official": true
   },
   "mode": "acceptEdits"
 }

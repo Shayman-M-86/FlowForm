@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import tomllib
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -14,6 +15,7 @@ from pydantic import (
     SecretStr,
     ValidationError,
     computed_field,
+    field_validator,
     model_validator,
 )
 from pydantic.networks import PostgresDsn
@@ -22,6 +24,33 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.core.errors import ConfigError
 
 logger = logging.getLogger(__name__)
+
+_PYPROJECT_PATH = Path(__file__).resolve().parents[2] / "pyproject.toml"
+
+
+def _load_project_version() -> str:
+    """Load the backend version declared in pyproject.toml."""
+    try:
+        project = tomllib.loads(_PYPROJECT_PATH.read_text(encoding="utf-8"))["project"]
+        version = project["version"]
+    except (KeyError, OSError, tomllib.TOMLDecodeError) as exc:
+        raise RuntimeError(f"Unable to load backend version from {_PYPROJECT_PATH}") from exc
+
+    if not isinstance(version, str) or not version:
+        raise RuntimeError(f"Invalid backend version in {_PYPROJECT_PATH}")
+    return version
+
+
+PROJECT_VERSION = _load_project_version()
+
+
+def _load_secret_from_file(secret_file: str, *, label: str) -> SecretStr:
+    """Load a secret value from a mounted secret file."""
+    secret_path = Path(secret_file)
+    if not secret_path.is_file():
+        raise ValueError(f"{label} file not found: {secret_file}")
+
+    return SecretStr(secret_path.read_text(encoding="utf-8").strip())
 
 
 class DatabaseSettings(BaseModel):
@@ -43,11 +72,10 @@ class DatabaseSettings(BaseModel):
         if self.password is not None or self.app_password_file is None:
             return self
 
-        password_path = Path(self.app_password_file)
-        if not password_path.is_file():
-            raise ValueError(f"Database password file not found: {self.app_password_file}")
-
-        self.password = SecretStr(password_path.read_text(encoding="utf-8").strip())
+        self.password = _load_secret_from_file(
+            self.app_password_file,
+            label="Database password",
+        )
         return self
 
     @model_validator(mode="after")
@@ -92,13 +120,14 @@ class AwsSettings(BaseModel):
 
     region: str = "ap-southeast-2"
 
-    access_key_id: SecretStr
-    secret_access_key: SecretStr
+    access_key_id: SecretStr | None = None
+    secret_access_key: SecretStr | None = None
 
 
 class EmailSettings(BaseModel):
     """Email delivery settings for AWS SES."""
-    from_address: EmailStr 
+
+    from_address: EmailStr
     from_name: str = "FlowForm"
     reply_to_address: EmailStr | None = None
 
@@ -118,11 +147,74 @@ class ServerSettings(BaseModel):
     site_url: str = "http://localhost:5174"
 
 
+class CorsSettings(BaseModel):
+    """Browser cross-origin policy for API routes."""
+
+    origins: list[str] = Field(default_factory=list)
+    supports_credentials: bool = True
+
+    @field_validator("origins")
+    @classmethod
+    def normalize_origins(cls, origins: list[str]) -> list[str]:
+        """Reject empty origin entries and normalize surrounding whitespace."""
+        normalized = [origin.strip() for origin in origins if origin.strip()]
+        if len(normalized) != len(origins):
+            raise ValueError("origins must not contain empty entries")
+        return normalized
+
+
 class Auth0MgmtSettings(BaseModel):
     """Auth0 Management API credentials for user and role management."""
 
     id: str
     secret: SecretStr
+    secret_file: str | None = None
+    # Canonical tenant domain (e.g. dev-xxx.au.auth0.com) for the Management
+    # API. Auth0 does NOT serve /api/v2 on custom domains — requesting a token
+    # for https://<custom-domain>/api/v2/ fails with "Service not enabled
+    # within domain". When the login/issuer domain is a custom domain, set this
+    # to the canonical tenant so the mgmt client uses it. Falls back to the
+    # issuer domain when unset (tenants without a custom domain).
+    domain: str | None = None
+    validate_on_startup: bool = True
+
+    def __init__(
+        self,
+        *,
+        id: str,
+        secret: SecretStr | str | None = None,
+        secret_file: str | None = None,
+        domain: str | None = None,
+        validate_on_startup: bool = True,
+    ) -> None:
+        data: dict[str, Any] = {
+            "id": id,
+            "secret_file": secret_file,
+            "domain": domain,
+            "validate_on_startup": validate_on_startup,
+        }
+        if secret is not None:
+            data["secret"] = secret
+        super().__init__(**data)
+
+    @model_validator(mode="before")
+    @classmethod
+    def load_secret_from_file(cls, data: Any) -> Any:
+        """Prefer a configured mounted secret file over a direct secret."""
+        if not isinstance(data, dict):
+            return data
+
+        secret_file = data.get("secret_file")
+        if not secret_file:
+            return data
+
+        return {
+            **data,
+            "secret": _load_secret_from_file(
+                str(secret_file),
+                label="Auth0 management secret",
+            ),
+        }
 
 
 class Auth0Settings(BaseModel):
@@ -141,7 +233,10 @@ class Auth0Settings(BaseModel):
 
         mgmt_id = data.get("mgmt_id")
         mgmt_secret = data.get("mgmt_secret")
-        if mgmt_id is None and mgmt_secret is None:
+        mgmt_secret_file = data.get("mgmt_secret_file")
+        mgmt_domain = data.get("mgmt_domain")
+        mgmt_validate_on_startup = data.get("mgmt_validate_on_startup", True)
+        if mgmt_id is None and mgmt_secret is None and mgmt_secret_file is None:
             return data
 
         return {
@@ -149,6 +244,9 @@ class Auth0Settings(BaseModel):
             "mgmt": {
                 "id": mgmt_id,
                 "secret": mgmt_secret,
+                "secret_file": mgmt_secret_file,
+                "domain": mgmt_domain,
+                "validate_on_startup": mgmt_validate_on_startup,
             },
         }
 
@@ -156,6 +254,7 @@ class Auth0Settings(BaseModel):
 class AppSettings(BaseModel):
     """High-level application behavior settings."""
 
+    version: str = PROJECT_VERSION
     debug: bool = False
     secret_key: SecretStr | None = None
     secret_key_file: str
@@ -167,12 +266,10 @@ class AppSettings(BaseModel):
         Raises:
             ValueError: If the secret key file is not found.
         """
-        secret_key_path = Path(self.secret_key_file)
-
-        if not secret_key_path.is_file():
-            raise ValueError(f"Secret key file not found: {self.secret_key_file}")
-
-        self.secret_key = SecretStr(secret_key_path.read_text(encoding="utf-8").strip())
+        self.secret_key = _load_secret_from_file(
+            self.secret_key_file,
+            label="Secret key",
+        )
         return self
 
 
@@ -188,8 +285,7 @@ class EncryptionSettings(BaseModel):
 
     # How long (seconds) to cache linkage keys in memory before re-fetching
     linkage_key_cache_ttl_seconds: float = 1800.0
-    key_cache_enabled: bool = True  
-
+    key_cache_enabled: bool = True
 
 
 class RateLimitSettings(BaseModel):
@@ -209,10 +305,28 @@ class LoggingSettings(BaseModel):
     sqlalchemy_level: str = "WARNING"
     werkzeug_level: str = "WARNING"
     log_file: str | None = None
-    log_file_backup_count: int = 5
+    log_file_backup_count: int = 2
     log_file_max_bytes: int = 5 * 1024 * 1024  # 5 MB
     requests: bool = True  # Whether to log HTTP requests
     duration: bool = False  # Whether to log request duration
+
+
+class TracingSettings(BaseModel):
+    """OpenTelemetry trace export settings."""
+
+    enabled: bool = False
+    otlp_endpoint: str = "http://alloy:4317"
+    sample_ratio: float = Field(default=1.0, ge=0.0, le=1.0)
+    service_name: str = Field(default="backend", min_length=1)
+
+    defer_provider: bool = False
+    """Delay tracer-provider creation until after Gunicorn forks its workers.
+
+    The batch span processor owns a background thread that must be created in
+    each worker, not inherited across a fork. Gunicorn's config sets
+    ``FLOWFORM_TRACING_DEFER_PROVIDER=true`` before boot so ``configure_tracing``
+    skips provider setup and ``post_fork`` initializes it per worker instead.
+    """
 
 
 class FlowForm(BaseModel):
@@ -222,11 +336,41 @@ class FlowForm(BaseModel):
     app: AppSettings
     auth0: Auth0Settings
     server: ServerSettings = Field(default_factory=ServerSettings)
+    cors: CorsSettings = Field(default_factory=CorsSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
-    aws: AwsSettings 
+    tracing: TracingSettings = Field(default_factory=TracingSettings)
+    aws: AwsSettings
     encryption: EncryptionSettings
     email: EmailSettings
+
+    @model_validator(mode="after")
+    def validate_auth0_mgmt_secret_source(self) -> FlowForm:
+        """Require file-backed Auth0 management credentials outside tests."""
+        if self.env == "test":
+            return self
+
+        mgmt = self.auth0.mgmt
+        if mgmt is None or not mgmt.secret_file:
+            raise ValueError("FLOWFORM_AUTH0_MGMT_SECRET_FILE is required when FLOWFORM_ENV is dev or prod")
+        if not mgmt.validate_on_startup:
+            raise ValueError("FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP must be true when FLOWFORM_ENV is dev or prod")
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_cors_settings(self) -> FlowForm:
+        """Fail closed for production browser-origin settings."""
+        if self.env != "prod":
+            return self
+
+        if not self.cors.origins:
+            raise ValueError(
+                "FLOWFORM_CORS_ORIGINS must contain at least one explicit origin when FLOWFORM_ENV is prod"
+            )
+        if self.cors.supports_credentials and "*" in self.cors.origins:
+            raise ValueError("FLOWFORM_CORS_ORIGINS must not contain '*' when credentials are enabled in production")
+        return self
 
 
 class DataBase(BaseModel):
@@ -311,7 +455,6 @@ def get_settings() -> Settings:
         settings = cast(Any, Settings)()
     except ValidationError as exc:
         formatted = _format_settings_validation_error(exc)
-        logger.critical(formatted)
         raise ConfigError(formatted) from exc
 
     logger.info("Settings loaded for env=%s", settings.flowform.env)
@@ -322,6 +465,7 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
     """Apply loaded settings to a Flask application."""
     mapping = {
         "ENV_NAME": settings.flowform.env,
+        "APP_VERSION": settings.flowform.app.version,
         "DEBUG": settings.flowform.app.debug,
         "SECRET_KEY": settings.flowform.app.secret_key,
         "AUTH0_DOMAIN": settings.flowform.auth0.domain,

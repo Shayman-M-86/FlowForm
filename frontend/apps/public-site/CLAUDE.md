@@ -1,13 +1,13 @@
 # FlowForm Public Site — Claude Code Guide
 
 The public-facing app. Handles the marketing site and the end-user survey
-experience. Built with **Astro 6** — not a React SPA.
+experience. Built with **Astro 7** — not a React SPA.
 
 ---
 
 ## Tech stack
 
-- **Astro 6** — file-based routing, content collections, SSG/SSR
+- **Astro 7** — file-based routing, content collections, SSG/SSR
 - **React 19** — used only for interactive islands via `client:*` directives
 - **Tailwind v4** — via `@tailwindcss/vite` plugin
 - **`@flowform/builder`** — `NodePage` (editor) and `FormFillerPage` (filler)

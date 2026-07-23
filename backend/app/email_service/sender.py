@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from botocore.exceptions import BotoCoreError, ClientError
 
+from app import tracing
 from app.core.config import EmailSettings
 from app.email_service.exceptions import EmailSendError
 from app.email_service.schemas import EmailMessage, EmailRecipient
@@ -35,6 +36,7 @@ class SesEmailSender:
         self.settings = settings
         self.client = ses_client
 
+    @tracing.action("email.message.send")
     def send(self, message: EmailMessage) -> str | None:
         """Send an email message through SES.
 
@@ -45,6 +47,7 @@ class SesEmailSender:
         """
         if not self.settings.enabled:
             logger.debug("email.send_skipped", extra={"reason": "disabled"})
+            tracing.fields(outcome="disabled")
             return None
 
         payload = self._build_send_email_payload(message)
@@ -56,6 +59,7 @@ class SesEmailSender:
             raise EmailSendError("Failed to send email through AWS SES.") from exc
 
         message_id = response.get("MessageId")
+        tracing.fields(outcome="sent")
         return message_id if isinstance(message_id, str) else None
 
     def _build_send_email_payload(self, message: EmailMessage) -> dict[str, Any]:

@@ -703,4 +703,3 @@ This is the current v1 contract.
 Questions, answers, rules, and scoring are now defined at the structure level.
 
 Scoring strategy details are intentionally kept simple for backend evaluation.
-

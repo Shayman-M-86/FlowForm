@@ -65,7 +65,7 @@ class LinkageKey(CryptoValueModel):
 
     @classmethod
     def from_secret_value(cls, secret: SecretValue) -> Self:
-        payload = LinkageSecretPayload.model_validate_json(secret.secret_string)
+        payload = LinkageSecretPayload.model_validate_json(secret.secret_string.get_secret_value())
 
         return cls(
             version=payload.version,

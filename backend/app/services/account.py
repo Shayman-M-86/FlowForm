@@ -5,9 +5,10 @@ from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
+from app import tracing
 from app.cache import get_app_cache
 from app.db.error_handling import commit_with_err_handle
-from app.domain.errors import ManagementApiCallError, ManagementApiUnavailableError
+from app.domain.errors import ManagementApiCallError, ManagementApiUnavailableError, PasswordChangeUnsupportedError
 from app.middleware.auth.auth0 import ManagementApiClient, ManagementApiError
 from app.repositories import users_repo as ur
 from app.schema.api.requests.me import (
@@ -36,7 +37,7 @@ def _mgmt() -> ManagementApiClient:
     if auth.mgmt is None:
         logger.error(
             "Auth0 Management API client is not configured. "
-            "Set FLOWFORM_AUTH0_MGMT_ID and FLOWFORM_AUTH0_MGMT_SECRET."
+            "Set FLOWFORM_AUTH0_MGMT_ID and FLOWFORM_AUTH0_MGMT_SECRET_FILE."
         )
         raise ManagementApiUnavailableError()
     return auth.mgmt
@@ -132,7 +133,20 @@ class UserAccountService:
         actor: User,
     ) -> str:
         """Create a hosted Auth0 password-change URL for the current user."""
-        return _call_mgmt(_mgmt().create_password_change_ticket, actor.auth0_user_id)
+        try:
+            return _mgmt().create_password_change_ticket(actor.auth0_user_id)
+        except ManagementApiError as exc:
+            if exc.provider_error == "operation_not_supported":
+                logger.info(
+                    "Auth0 password-change ticket is unsupported for the user's primary connection."
+                )
+                raise PasswordChangeUnsupportedError() from exc
+            logger.error(
+                "Auth0 Management API call failed (HTTP %s, provider_error=%s)",
+                exc.status_code,
+                exc.provider_error,
+            )
+            raise ManagementApiCallError() from exc
 
     def clear_mfa_devices(
         self,
@@ -168,6 +182,7 @@ class UserAccountService:
         """Trigger an email-verification job for the current user."""
         _call_mgmt(_mgmt().send_verification_email, actor.auth0_user_id)
 
+    @tracing.action("account.email_verification.check")
     def check_email_verified(
         self,
         db: Session,
@@ -192,6 +207,7 @@ class UserAccountService:
         source of truth that every other request actually trusts.
         """
         if actor.email_verified:
+            tracing.fields(outcome="verified")
             return True
 
         live_verified = get_app_cache().account.email_verified.get_or_load(
@@ -202,4 +218,5 @@ class UserAccountService:
         if live_verified:
             ur.set_email_verified(actor, email_verified=True)
             commit_with_err_handle(db)
+        tracing.fields(outcome="verified" if live_verified else "unverified")
         return live_verified

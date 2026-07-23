@@ -22,15 +22,18 @@ repositories only move rows.
 ## In scope
 
 ### ResponseEnvelopeRepo
+
 - `create(session_locator: bytes, linkage_key_version: int, wrapped_dek: bytes, kms_key_ref: str, kms_context_version: int, crypto_version: int) -> ResponseEnvelope`
 - `get_by_locator(session_locator: bytes) -> ResponseEnvelope | None`
 
 ### ResponseAnswerRepo
+
 - `get_or_create(envelope_id: uuid.UUID, answer_locator: bytes) -> tuple[ResponseAnswer, bool]` — bool is True if created; handles simultaneous first-save via unique constraint retry
 - `get_by_locator(envelope_id: uuid.UUID, answer_locator: bytes) -> ResponseAnswer | None`
 - `lock_for_update(answer_id: uuid.UUID) -> ResponseAnswer | None` — SELECT FOR UPDATE
 
 ### ResponseAnswerRevisionRepo
+
 - `get_by_mutation_id(answer_id: uuid.UUID, client_mutation_id: uuid.UUID) -> ResponseAnswerRevision | None`
 - `create(answer_id: uuid.UUID, envelope_id: uuid.UUID, revision_number: int, nonce: bytes, ciphertext: bytes, client_mutation_id: uuid.UUID) -> ResponseAnswerRevision`
 - `get_latest(answer_id: uuid.UUID) -> ResponseAnswerRevision | None`

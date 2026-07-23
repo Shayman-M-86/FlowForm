@@ -3,6 +3,7 @@
 Read `.claude/workflows/session-encryption/working/targets/04-session-start/spec.md` in full before writing any code.
 
 Dependency checks:
+
 - Confirm `backend/app/crypto/kms.py` exists (pass 03). If not, stop.
 - Confirm `backend/app/repositories/response/response_envelope_repo.py` exists (pass 02). If not, stop.
 

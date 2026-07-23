@@ -49,6 +49,7 @@ If this is the final pass, write "n/a".>
 ```
 
 Rules:
+
 - Every section must be filled — use "none" if nothing applies.
 - "Tests run" must include the exact command and pass count.
 - "Failures or skipped validation" — skipped validation is not green. Record what was skipped and why.

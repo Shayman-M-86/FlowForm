@@ -1,0 +1,26 @@
+# Copy to proxmox.auto.pkrvars.hcl and fill with your Proxmox values. Do not commit the copy.
+# proxmox_source_template should be a minimal template imported from the official
+# Amazon Linux 2023 KVM qcow2 image and bootable with cloud-init/SSH for ec2-user.
+proxmox_api_url         = "https://pve.example.lan:8006/api2/json"
+proxmox_node            = "pve"
+proxmox_token_id        = "packer@pve!flowform"
+proxmox_token_secret    = "REPLACE_ME"
+proxmox_storage_pool    = "ZFS-RAIDZ"
+proxmox_source_template = "amazon-linux-2023-kvm-base"
+proxmox_network_bridge  = "vmbr0"
+# Reserve this address outside the DHCP pool. Only one Proxmox Packer build may
+# use it at a time; deployment scripts replace this temporary network metadata.
+proxmox_build_ip_cidr = "192.168.1.240/24"
+proxmox_build_gateway = "192.168.1.1"
+proxmox_vm_id           = 9000
+proxmox_template_name   = "flowform-rehearsal-golden-al2023"
+proxmox_golden_template = "flowform-rehearsal-golden-al2023"
+proxmox_localstack_fixture_vm_id         = 9001
+proxmox_localstack_fixture_template_name = "flowform-rehearsal-localstack-fixture-al2023"
+proxmox_db_fixture_vm_id                 = 9002
+proxmox_db_fixture_template_name         = "flowform-rehearsal-db-fixture-al2023"
+proxmox_cpu             = 2
+proxmox_cpu_type        = "x86-64-v2-AES"
+proxmox_memory          = 2048
+ssh_username            = "ec2-user"
+source_commit           = "git-sha-here"

@@ -63,6 +63,7 @@ file before continuing. Document the change in the pass report under
 ## Hard stops
 
 Stop and ask the operator if:
+
 - Source docs contradict each other
 - Code and source disagree in a way you cannot resolve by reading both
 - A required behavior is not yet implemented by a prior pass (dependency gap)

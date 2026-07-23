@@ -7,7 +7,8 @@ This integration test setup is meant for tests that need to run **inside the Doc
 Run this from the **project root**:
 
 ```bash
-docker compose -f infra/docker/docker-compose.test.yml up -d --build
+export FLOWFORM_SECRET_DIR="$PWD/infra/env/test/secrets"
+docker compose --env-file infra/env/dev/.env -f infra/containers/strategies/dev/compose/compose.test.yml up -d --build
 ```
 
 ## Attach VS Code to the test container

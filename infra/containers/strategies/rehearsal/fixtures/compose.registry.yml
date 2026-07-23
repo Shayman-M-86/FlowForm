@@ -1,0 +1,40 @@
+# Private image registry for the rehearsal — fake ECR.
+#
+# This file is the runtime source rendered into cloud-init. The Proxmox fixture
+# build reads only its image reference and preloads that image; registry data,
+# service units, networking, and startup remain runtime concerns.
+#
+# Runs on the aws-fixtures-vm (230, 10.10.10.30) ALONGSIDE LocalStack + the TLS
+# shim — the box that hosts every always-on fake-AWS backend:
+#   :4566  LocalStack  (Secrets Manager / SSM / KMS)
+#   :443   TLS shim    (*.localstack.test → LocalStack)
+#   :5000  registry    (fake ECR — the backend image)
+#
+# This stands in for ECR/image delivery, NOT for proxy/egress behaviour — the
+# proxy box (210) is egress-only (Squid + TLS shim path). Keeping the registry
+# here (not on the proxy) keeps that boundary clean, and here it is always-on
+# during isolation runs (unlike the toggleable dev box).
+#
+# Clients reach it as https://registry.localstack.test through Squid + the TLS
+# shim (CONNECT :443 → shim → here), mirroring prod's ECR-over-HTTPS — NOT as a
+# plain-HTTP insecure registry. Plain HTTP survives only on the shim→registry
+# hop over loopback on this same VM; no insecure-registries trust anywhere.
+#
+# Bound to LOOPBACK only: nothing off-box can reach :5000 directly, so the ONLY
+# path in is through the shim on :443 — the enforcement that makes bypassing
+# Squid structurally impossible (an AWS security group equivalent).
+
+services:
+  registry:
+    image: registry:2
+    container_name: flowform-registry
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5000:5000"     # loopback only; shim (network_mode: host) reaches it over lo
+    environment:
+      - REGISTRY_STORAGE_DELETE_ENABLED=true
+    volumes:
+      - registry-data:/var/lib/registry
+
+volumes:
+  registry-data:

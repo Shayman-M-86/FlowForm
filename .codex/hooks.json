@@ -10,6 +10,26 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/shayman86/my-repos/FlowForm/.claude/hooks/session_start_capture_base.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/shayman86/my-repos/FlowForm/.claude/hooks/stop_doc_impact_review.py"
+          }
+        ]
+      }
     ]
   }
 }

@@ -1,0 +1,135 @@
+---
+title: Configuration implementation
+aliases:
+  - "Configuration implementation"
+document_type: implementation
+status: draft
+authority: canonical
+verified_against_commit: null
+tags: [configuration]
+related_code:
+  - "../../backend/app/core/config.py"
+  - "../../backend/app/aws/client_extension.py"
+  - "../../backend/app/aws/startup_validation.py"
+  - "../../infra/deployment/config/runtime-parameter-contract.json"
+  - "../../infra/deployment/aws/cdk/flowform_infra/config/environments.py"
+  - "../../infra/deployment/bootstrap/"
+  - "../../infra/containers/runtime/"
+  - "../../infra/containers/strategies/dev/"
+  - "../../scripts/secrets/"
+related_docs:
+  - "Secrets and configuration"
+  - "Configuration catalogue"
+  - "Environment variables"
+  - "Configuration index"
+---
+
+# Configuration implementation
+
+Maps configuration concepts to verified repository implementation.
+
+## Directory ownership
+
+- `backend/app/core/config.py` owns the typed backend runtime model, nested
+  environment-variable mapping, defaults, validation errors, and mounted-file
+  loading for application and database secrets.
+- `infra/deployment/config/runtime-parameter-contract.json` owns the shared
+  parameter names consumed by AWS CDK, Proxmox Terraform, LocalStack seeding,
+  and host bootstrap.
+- `infra/deployment/aws/cdk/flowform_infra/config/environments.py` owns typed
+  dev, staging, production, and shared security-scope deployment data.
+- `infra/env/` holds local per-environment values and gitignored secret files;
+  maintained examples live beside CDK, Packer, Terraform, and image scripts.
+- Compose, cloud-init, bootstrap scripts, and frontend build commands own the
+  final mapping from maintained configuration into each process.
+
+## Entry points
+
+- `get_settings()` is called by the Flask application factory and requires a
+  valid `FLOWFORM_ENV` before constructing nested Pydantic settings.
+- AWS client initialization calls `validate_aws_runtime_access()` before
+  attaching the clients to Flask. It skips test mode; dev and production must
+  prove Secrets Manager read access and a KMS encrypt/decrypt round trip.
+- `get_env_config()` is called by `infra/deployment/aws/cdk/app.py` for the CDK
+  context selected by `-c env=<name>` or `CDK_ENV`.
+- Proxmox `terraform/locals.tf` reads the runtime-parameter contract, checks the
+  exact rehearsal seed-key set, and renders role-specific cloud-init.
+- `bootstrap-app.sh`, `bootstrap-proxy.sh`, and `bootstrap-db.sh` fetch runtime
+  parameters or secrets and materialize the files consumed by shared Compose.
+- `scripts/secrets/` generates local throwaways, fetches persistent development
+  secrets, and builds the development environment files.
+
+## Important modules
+
+`DatabaseSettings` accepts either a full PostgreSQL URL or validated parts and
+supports password files. `Auth0Settings`, `AppSettings`, `AwsSettings`,
+`EncryptionSettings`, `EmailSettings`, and logging/tracing/server/rate-limit
+models form the remaining backend boundary. `TracingSettings` controls
+enablement, the OTLP/gRPC endpoint, parent-based sampling ratio, and service
+name. `EnvConfig` controls which CDK stacks exist and their
+environment-specific lifecycle; `SecurityScopeConfig` separates the shared
+non-production security namespace from production and records the branch
+allowed to assume mutating GitHub deployment identities.
+
+`FlowForm` requires a file-backed Auth0 management secret and enabled Auth0
+startup validation in dev and production. Test mode permits a direct throwaway
+secret and skips both Auth0 and AWS live startup probes so ordinary local and CI
+test runs do not require credentials or network egress.
+
+The runtime-parameter contract separates scoped values, backend/proxy runtime
+groups, and secret resource names. Its rehearsal seed-key set is non-secret;
+managed secret values use the separate deploy-time sync path. Consumers derive
+paths from the contract instead of maintaining independent SSM name lists.
+
+## Dependency direction
+
+Maintained models, contracts, examples, and templates feed generators or
+bootstrap steps; generated local env files, mounted secret files, SSM values,
+and cloud-init then feed application and container consumers. Runtime code does
+not write back to the canonical models. Confidential values are generally
+intended to travel through secret files or Secrets Manager, while identifiers
+and ordinary runtime settings use environment files or SSM parameters. The
+Grafana token follows the proxy's file-backed observability secret path and is
+shared by the Loki and OTLP basic-auth clients; only destination URLs and
+user/instance IDs remain in the proxy SSM parameter group.
+
+## Generated versus handwritten code
+
+Settings models, the runtime contract, Compose files, Terraform/CDK source, and
+`.example` files are handwritten. Local `.env*`, `*.secret.txt`, Packer variable
+files, Terraform variables/state, rendered cloud-init, and CDK output are local
+or generated artifacts and are not configuration authority. Terraform state and
+rendered user data must be treated as sensitive because they can contain
+materialized configuration.
+
+## Tests and validation
+
+- Backend unit and integration tests exercise settings validation and
+  environment assembly through the application factory.
+- `backend/tests/unit/aws/test_startup_validation.py` proves test-mode isolation
+  and the dev/prod failure boundary with fake clients. Real-provider smoke tests
+  remain opt-in under `backend/tests/live/`.
+- `infra/deployment/aws/cdk/tests/test_environments.py` and
+  `test_runtime_parameter_contract.py` cover typed deployment configuration and
+  contract-derived parameter names.
+- `infra/tests/deployment/test-localstack-seed.sh` checks that Terraform,
+  bootstrap, and LocalStack agree on the contract and rehearsal boundaries.
+- `docker compose ... config`, `terraform validate`, and CDK synth are the
+  executable validation boundaries for their respective consumers.
+
+## Known gaps
+
+The generated [[configuration-index|Configuration index]] remains a scaffold;
+the maintained [[environment-variables|Environment variables]] reference is a
+curated draft rather than an exhaustive generated inventory. No single generated
+catalogue currently proves that every consumer is represented. Configuration
+is also split across local development, Proxmox rehearsal, and incomplete AWS
+deployment paths; a valid configuration for one path is not proof that another
+path is operational.
+
+## Related documents
+
+- [[secrets-and-configuration|Secrets and configuration]]
+- [[configuration-catalogue|Configuration catalogue]]
+- [[environment-variables|Environment variables]]
+- [[configuration-index|Configuration index]]

@@ -1,0 +1,52 @@
+# Rehearsal app compose OVERRIDE — layered on top of the prod app compose:
+#
+#   docker compose -f infra/containers/runtime/compose/app.yml \
+#                  -f infra/containers/strategies/rehearsal/compose/app.override.yml up -d
+#
+# It exists so the rehearsal can run the REAL prod backend image and compose
+# stack while supplying ONLY the fake-AWS deltas the offline private net needs.
+# The prod base (app.yml) stays free of static credentials and endpoint
+# overrides — exactly as it must for the AWS deployment, where boto3 talks to
+# real AWS via the instance role. Everything here is a REHEARSAL-only addition.
+#
+# bootstrap-app.sh consumes this via the COMPOSE_OVERRIDE_FILE seam (empty in
+# prod → the base file is used unchanged).
+#
+# PATH RESOLUTION FOOTGUN: docker compose resolves relative bind-mount paths in
+# ALL files against the PROJECT DIRECTORY, which is the dir of the FIRST -f file
+# — here infra/containers/runtime/compose/ (the shared base). So the override
+# paths below are written relative to infra/containers/runtime/compose/, not
+# relative to this file.
+
+name: flowform-app
+
+services:
+  backend:
+    environment:
+      # Per-service fake-AWS endpoints. botocore honours AWS_ENDPOINT_URL_<SERVICE>
+      # natively, so each backend AWS call dials its OWN SNI hostname — riding
+      # Squid + the SNI allow-list independently, matching prod's distinct
+      # per-service endpoints. The prod base sets NONE of these (real AWS).
+      AWS_ENDPOINT_URL_SECRETS_MANAGER: https://secretsmanager.localstack.test
+      AWS_ENDPOINT_URL_SSM: https://ssm.localstack.test
+      AWS_ENDPOINT_URL_KMS: https://kms.localstack.test
+      AWS_ENDPOINT_URL_SESV2: https://email.localstack.test
+      # Harmless LocalStack Community credentials. LocalStack ignores validity but
+      # boto3 requires presence. These are NON-SECRET fixed literals ("test") — the
+      # rehearsal enforces no IAM — and they live ONLY in this rehearsal override,
+      # never in the prod base or any Secrets Manager entry.
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      # The app box has no IMDS. Disable the metadata probe so boto3 does not stall
+      # trying to reach 169.254.169.254 for credentials/region on the offline net.
+      AWS_EC2_METADATA_DISABLED: "true"
+      # boto3/botocore honour the system trust store via AWS_CA_BUNDLE. Point it at
+      # the system bundle, which includes the rehearsal CA (update-ca-trust in the
+      # app cloud-init), so the TLS shim's *.localstack.test cert validates. Prod
+      # leaves this UNSET — real AWS TLS validates against public CAs.
+      AWS_CA_BUNDLE: /etc/pki/tls/certs/ca-bundle.crt
+    volumes:
+      # Mount the host system CA bundle (rehearsal CA already extracted into it)
+      # read-only so the container's AWS_CA_BUNDLE path resolves. Path is relative
+      # to the project dir (the shared base compose dir); see the footgun note.
+      - /etc/pki/tls/certs/ca-bundle.crt:/etc/pki/tls/certs/ca-bundle.crt:ro

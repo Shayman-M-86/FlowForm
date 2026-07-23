@@ -3,6 +3,7 @@
 Pass: 08 — Completion, Admin Paths, and Deletion
 
 Changed files:
+
 * `backend/app/services/public_submissions/core/completion.py` (new)
 * `backend/app/services/public_submissions/core/admin_decrypt.py` (new)
 * `backend/app/services/public_submissions/core/deletion.py` (new)
@@ -19,6 +20,7 @@ Changed files:
 * `backend/tests/integration/response/test_deletion_encryption.py` (new)
 
 Behavior implemented:
+
 * Session completion: loads and decrypts all latest revisions, validates required questions from `question_schema.required`, marks core session completed with `completed_at` and `last_activity_at`, inserts `session_completed` analytics event
 * Completion idempotency: checks `session_status == "completed"` before locking; returns stored `CompletionResult` immediately without duplicate DB writes
 * Admin detail decrypt: derives session locator, loads envelope, unwraps DEK via KMS, decrypts latest revisions, maps question node IDs to question keys from frozen survey version
@@ -29,16 +31,20 @@ Behavior implemented:
 * Pass 07 test gap: added `test_saved_ciphertext_round_trips_to_original_answer` — verifies saved ciphertext decrypts back to the original answer payload; removed unused imports (`MagicMock`, `DekCache`, `SessionExpiredError`, `SessionInvalidError`)
 
 Tests run:
+
 * `bash backend/scripts/run-tests.sh --ai -k "completion or admin_decrypt or deletion"` — 11 passed
 * `bash backend/scripts/run-tests.sh --clean-rebuild --ai` — 472 passed (full suite with rebuilt DB, no regressions)
 
 Failures or skipped validation:
+
 * none
 
 Policy change during pass:
+
 * Response DB app user granted DELETE privilege — `infra/postgres/init/templates/response/03-grant-permissions.sql` changed from `SELECT, INSERT, UPDATE` to `SELECT, INSERT, UPDATE, DELETE`. Required by doc 06 deletion ordering. Existing deployments need a manual `GRANT DELETE` or re-run of the init script.
 
 Trace notes:
+
 * entry points touched: `public.py:complete_submission_session` wired to `SessionManagementService.complete_session` → `CompletionService.complete_session`
 * service methods touched: `SessionManagementService.complete_session` (wired, was `NotImplementedError`), `CompletionService.complete_session`, `decrypt_session_detail`, `decrypt_session_history`, `delete_session_responses`
 * repository helpers touched: `response_answer_repo.get_all_by_envelope`, `submission_sessions.mark_completed`

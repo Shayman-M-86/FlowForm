@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "scope_parameters": {
+    "kms_key_arn": "kms-key-arn",
+    "aws_region": "aws-region",
+    "linkage_secret_arn": "linkage-secret-arn",
+    "hosted_zone_id": "hosted-zone-id",
+    "app_role_arn": "app-role-arn"
+  },
+  "runtime_groups": {
+    "backend": {
+      "path": "backend",
+      "parameters": {
+        "logging_json": {
+          "name": "FLOWFORM_LOGGING_LOG_JSON",
+          "seed_value_key": "FLOWFORM_LOGGING_LOG_JSON"
+        },
+        "logging_level": {
+          "name": "FLOWFORM_LOGGING_LEVEL",
+          "seed_value_key": "FLOWFORM_LOGGING_LEVEL"
+        },
+        "tracing_enabled": {
+          "name": "FLOWFORM_TRACING_ENABLED",
+          "seed_value_key": "FLOWFORM_TRACING_ENABLED"
+        },
+        "tracing_otlp_endpoint": {
+          "name": "FLOWFORM_TRACING_OTLP_ENDPOINT",
+          "seed_value_key": "FLOWFORM_TRACING_OTLP_ENDPOINT"
+        },
+        "tracing_sample_ratio": {
+          "name": "FLOWFORM_TRACING_SAMPLE_RATIO",
+          "seed_value_key": "FLOWFORM_TRACING_SAMPLE_RATIO"
+        },
+        "tracing_service_name": {
+          "name": "FLOWFORM_TRACING_SERVICE_NAME",
+          "seed_value_key": "FLOWFORM_TRACING_SERVICE_NAME"
+        },
+        "runtime_environment": {
+          "name": "FLOWFORM_ENV",
+          "seed_value_key": "FLOWFORM_ENV"
+        },
+        "cors_origins": {
+          "name": "FLOWFORM_CORS_ORIGINS",
+          "seed_value_key": "FLOWFORM_CORS_ORIGINS"
+        },
+        "cors_supports_credentials": {
+          "name": "FLOWFORM_CORS_SUPPORTS_CREDENTIALS",
+          "seed_value_key": "FLOWFORM_CORS_SUPPORTS_CREDENTIALS"
+        },
+        "backend_image": {
+          "name": "BACKEND_IMAGE",
+          "seed_value_key": "BACKEND_IMAGE"
+        },
+        "alloy_image": {
+          "name": "ALLOY_IMAGE",
+          "seed_value_key": "BACKEND_ALLOY_IMAGE"
+        },
+        "auth0_domain": {
+          "name": "FLOWFORM_AUTH0_DOMAIN",
+          "seed_value_key": "FLOWFORM_AUTH0_DOMAIN"
+        },
+        "auth0_management_domain": {
+          "name": "FLOWFORM_AUTH0_MGMT_DOMAIN",
+          "seed_value_key": "FLOWFORM_AUTH0_MGMT_DOMAIN"
+        },
+        "auth0_audience": {
+          "name": "FLOWFORM_AUTH0_AUDIENCE",
+          "seed_value_key": "FLOWFORM_AUTH0_AUDIENCE"
+        },
+        "auth0_client_id": {
+          "name": "FLOWFORM_AUTH0_CLIENT_ID",
+          "seed_value_key": "FLOWFORM_AUTH0_CLIENT_ID"
+        },
+        "auth0_management_id": {
+          "name": "FLOWFORM_AUTH0_MGMT_ID",
+          "seed_value_key": "FLOWFORM_AUTH0_MGMT_ID"
+        },
+        "auth0_management_validate_on_startup": {
+          "name": "FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP",
+          "seed_value_key": "FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP"
+        },
+        "aws_region": {
+          "name": "FLOWFORM_AWS_REGION",
+          "seed_value_key": "AWS_REGION"
+        },
+        "email_from_address": {
+          "name": "FLOWFORM_EMAIL_FROM_ADDRESS",
+          "seed_value_key": "FLOWFORM_EMAIL_FROM_ADDRESS"
+        },
+        "kms_key_arn": {
+          "name": "FLOWFORM_ENCRYPTION_KMS_KEY_ARN"
+        },
+        "linkage_secret_arn": {
+          "name": "FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN"
+        },
+        "database_core_host": {
+          "name": "DATABASE_CORE_HOST",
+          "seed_value_key": "DATABASE_CORE_HOST"
+        },
+        "database_core_name": {
+          "name": "DATABASE_CORE_NAME",
+          "seed_value_key": "DATABASE_CORE_NAME"
+        },
+        "database_core_app_user": {
+          "name": "DATABASE_CORE_APP_USER",
+          "seed_value_key": "DATABASE_CORE_APP_USER"
+        },
+        "database_response_host": {
+          "name": "DATABASE_RESPONSE_HOST",
+          "seed_value_key": "DATABASE_RESPONSE_HOST"
+        },
+        "database_response_name": {
+          "name": "DATABASE_RESPONSE_NAME",
+          "seed_value_key": "DATABASE_RESPONSE_NAME"
+        },
+        "database_response_app_user": {
+          "name": "DATABASE_RESPONSE_APP_USER",
+          "seed_value_key": "DATABASE_RESPONSE_APP_USER"
+        }
+      }
+    },
+    "proxy": {
+      "path": "proxy",
+      "parameters": {
+        "caddy_image": {
+          "name": "CADDY_IMAGE",
+          "seed_value_key": "CADDY_IMAGE"
+        },
+        "squid_image": {
+          "name": "SQUID_IMAGE",
+          "seed_value_key": "SQUID_IMAGE"
+        },
+        "alloy_image": {
+          "name": "ALLOY_IMAGE",
+          "seed_value_key": "PROXY_ALLOY_IMAGE"
+        },
+        "api_domain": {
+          "name": "API_DOMAIN",
+          "seed_value_key": "API_DOMAIN"
+        },
+        "grafana_cloud_loki_url": {
+          "name": "GRAFANA_CLOUD_LOKI_URL",
+          "seed_value_key": "GRAFANA_CLOUD_LOKI_URL"
+        },
+        "grafana_cloud_loki_user": {
+          "name": "GRAFANA_CLOUD_LOKI_USER",
+          "seed_value_key": "GRAFANA_CLOUD_LOKI_USER"
+        },
+        "grafana_cloud_tempo_endpoint": {
+          "name": "GRAFANA_CLOUD_TEMPO_ENDPOINT",
+          "seed_value_key": "GRAFANA_CLOUD_TEMPO_ENDPOINT"
+        },
+        "grafana_cloud_tempo_user": {
+          "name": "GRAFANA_CLOUD_TEMPO_USER",
+          "seed_value_key": "GRAFANA_CLOUD_TEMPO_USER"
+        },
+        "runtime_environment": {
+          "name": "FLOWFORM_ENV",
+          "seed_value_key": "FLOWFORM_ENV"
+        }
+      }
+    }
+  },
+  "secrets": {
+    "app": "app-secrets",
+    "database": "db-secrets",
+    "linkage": "linkage-secret",
+    "observability": "observability-secrets"
+  },
+  "secret_seed_value_keys": []
+}

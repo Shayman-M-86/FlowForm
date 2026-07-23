@@ -1,15 +1,9 @@
-"""Smoke tests: crypto round-trip exercising the primitives.
-
-The local tests verify the full tier-2 and tier-3 chain without AWS.
-The AWS test (skipped without env vars) exercises KMS tier-1 wrapping.
-"""
+"""Local-only smoke tests for crypto primitives."""
 
 from __future__ import annotations
 
 import os
 import uuid
-
-import pytest
 
 from app.cache import LockedTTLCache
 from app.crypto._internal.aad import build_session_dek_wrap_aad
@@ -27,20 +21,6 @@ from app.crypto.models import (
     PlaintextSurveyKey,
     SessionDEKContext,
     SessionLocator,
-)
-
-
-def _real_aws_available() -> bool:
-    arn = os.environ.get("FLOWFORM_ENCRYPTION_KMS_KEY_ARN", "")
-    if not arn:
-        return False
-    env = os.environ.get("FLOWFORM_ENV", os.environ.get("FLASK_ENV", os.environ.get("APP_ENV", "")))
-    return env not in ("test", "testing")
-
-
-skip_no_aws = pytest.mark.skipif(
-    not _real_aws_available(),
-    reason="KMS smoke tests skipped in test environment",
 )
 
 
@@ -112,26 +92,3 @@ class TestLocalCryptoRoundTrip:
 
         cache.evict(session_locator)
         assert cache.get(session_locator) is None
-
-
-@skip_no_aws
-class TestKmsSmokeRoundTrip:
-    """End-to-end crypto round-trip against real KMS."""
-
-    def test_survey_key_wrap_unwrap_via_kms(self, settings, app_ctx) -> None:  # noqa: ARG002
-        from app.crypto._internal.client_extension import get_crypto_clients
-        from app.crypto._internal.kms_context import build_survey_kms_context
-        from app.crypto._internal.wrapping import unwrap_survey_key, wrap_survey_key
-
-        enc = settings.flowform.encryption
-        assert enc is not None, "EncryptionSettings not loaded"
-
-        survey_key = PlaintextSurveyKey(os.urandom(32))
-        context = build_survey_kms_context(project_id=1, survey_id=1)
-        kms_client = get_crypto_clients().kms
-
-        wrapped = wrap_survey_key(survey_key, enc.kms_key_arn, context, client=kms_client)
-        assert wrapped != survey_key
-
-        unwrapped = unwrap_survey_key(wrapped, enc.kms_key_arn, context, client=kms_client)
-        assert unwrapped == survey_key

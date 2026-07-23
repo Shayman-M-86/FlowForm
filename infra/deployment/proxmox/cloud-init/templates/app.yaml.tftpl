@@ -1,0 +1,233 @@
+#cloud-config
+# ===========================================================================
+# App-box (220) runtime cloud-init — the PRIVATE, offline box under test.
+# ===========================================================================
+# Terraform renders this template directly from the real repository files and
+# uploads the result to Proxmox. No rendered cloud-init file is stored locally.
+#
+# Shape note: this write_files/runcmd structure is the direct template for the
+# future CDK `ec2.UserData.for_linux()` — keep it faithful to what EC2 will do.
+#
+# What this does on first boot (and is safe to re-run on redeploy):
+#   1. Trust the rehearsal CA          → the shim's TLS validates like real AWS.
+#   2. /etc/hosts *.localstack.test     → the 3 AWS SNI names resolve to the ls-vm.
+#   3. Per-service AWS endpoint env     → each service dials its OWN SNI, so each
+#                                         rides Squid + the SNI allow-list
+#                                         independently (matches prod's distinct
+#                                         per-service endpoints). BOOTSTRAP_ENDPOINT_URL
+#                                         stays UNSET so bootstrap-app.sh applies no
+#                                         single global override.
+#   4. Enable reboot recovery            → first convergence remains owned by
+#                                         the workstation `rehearsal build`.
+#
+# The app box has NO internet route (structural: single vmbr10 NIC, no gateway).
+# Its ONLY path to fake-AWS is app → Squid (on 210) → TLS shim (on 230) →
+# LocalStack — exactly the prod-shaped path.
+
+write_files:
+  # The app VM is deliberately offline. Use the synchronized proxy as its only
+  # NTP source so cross-host Caddy/backend span timestamps share one clock.
+  - path: /etc/chrony.d/flowform-rehearsal.sources
+    permissions: '0644'
+    owner: root:root
+    content: |
+      server 10.10.10.10 iburst prefer minpoll 4 maxpoll 4
+  # The golden Amazon Linux image also carries a persistent public-pool source.
+  # Keep the file in place for package ownership, but remove every source from it.
+  - path: /etc/chrony.d/ntp-pool.sources
+    permissions: '0644'
+    owner: root:root
+    content: |
+      # Disabled: the rehearsal app has no route to public NTP.
+
+  # Amazon Linux's chronyd unit creates a public-pool source in /run on every
+  # start when DHCP supplies none. The app cannot reach that pool. Replace the
+  # vendor pre-start entries, mark runtime sources configured, and remove the
+  # fallback symlink before chronyd starts.
+  - path: /etc/systemd/system/chronyd.service.d/flowform-rehearsal-sources.conf
+    permissions: '0644'
+    owner: root:root
+    content: |
+      [Service]
+      # Clear Amazon Linux's fallback-source commands before replacing them.
+      # Otherwise its plain `ln -s` fails before our cleanup can run on restart.
+      ExecStartPre=
+      ExecStartPre=/usr/bin/mkdir -p /run/chrony.d
+      ExecStartPre=/usr/bin/touch /run/chrony.d/.configured
+      ExecStartPre=/usr/bin/rm -f /run/chrony.d/ntp-pool.sources
+
+  # --- rehearsal CA: trusted so the shim's *.localstack.test cert validates ---
+  - path: /etc/pki/ca-trust/source/anchors/flowform-rehearsal-ca.crt
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${REHEARSAL_CA_CRT_B64}
+
+  # --- the REAL bootstrap script (rendered from infra/deployment/bootstrap/) ---
+  - path: /opt/flowform/scripts/bootstrap/bootstrap-app.sh
+    encoding: b64
+    permissions: '0755'
+    owner: root:root
+    content: ${BOOTSTRAP_APP_SH_B64}
+  - path: /opt/flowform/scripts/bootstrap/aws-cli-retry.sh
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${AWS_CLI_RETRY_SH_B64}
+  # shared bootstrap library; sourced by bootstrap-app.sh and the retry shim,
+  # so it must sit beside them in this same directory.
+  - path: /opt/flowform/scripts/bootstrap/bootstrap-common.sh
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${BOOTSTRAP_COMMON_SH_B64}
+
+  # --- the shared app compose file ----------------------------------------------
+  # bootstrap-app.sh's REPO_ROOT math is scripts/bootstrap → ../../.. , so the
+  # compose file must sit at <root>/infra/containers/runtime/compose/app.yml
+  # relative to the script. We reproduce that layout under /opt/flowform/repo.
+  - path: /opt/flowform/repo/infra/containers/runtime/compose/app.yml
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${DOCKER_COMPOSE_APP_B64}
+  # Rehearsal app compose override — supplies the fake-AWS deltas (per-service
+  # LocalStack endpoints, harmless creds, rehearsal CA bundle, IMDS disabled) to
+  # the backend CONTAINER. Layered via COMPOSE_OVERRIDE_FILE below. The shared
+  # base app.yml stays free of static creds/endpoints (prod uses the instance
+  # role against real AWS). Path mirrors the repo layout under /opt/flowform/repo
+  # so the override's project dir resolves against the base compose dir.
+  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/compose/app.override.yml
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${DOCKER_COMPOSE_APP_REHEARSAL_B64}
+  # Observability agent config, bind-mounted by the alloy service in app.yml.
+  # Must exist as a FILE before compose up, or Docker auto-creates the path as a
+  # directory and the :/etc/alloy/config.alloy mount fails (learned on the proxy).
+  - path: /opt/flowform/repo/infra/containers/runtime/services/alloy-app/config.alloy
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${CONFIG_ALLOY_APP_B64}
+  # --- trust the fake-ECR registry's TLS (mirrors prod ECR-over-HTTPS) ---------
+  # bootstrap-app.sh pulls BACKEND_IMAGE as https://registry.localstack.test
+  # through Squid → TLS shim → registry, exactly as prod pulls ECR over HTTPS —
+  # so dockerd validates real TLS rather than trusting a plain-HTTP registry.
+  # The rehearsal CA is in the system bundle (update-ca-trust, runcmd step 1),
+  # and this explicit /etc/docker/certs.d anchor makes the registry-TLS trust
+  # deterministic and self-documenting. Same committed CA the app CLI trusts.
+  - path: /etc/docker/certs.d/registry.localstack.test/ca.crt
+    encoding: b64
+    permissions: '0644'
+    owner: root:root
+    content: ${REHEARSAL_CA_CRT_B64}
+
+  # --- env consumed by the bootstrap runcmd ------------------------------------
+  # Per-service endpoints (option chosen: AWS_ENDPOINT_URL_<SERVICE>) so each
+  # AWS service call goes to its own SNI hostname. AWS CLI v2 >= 2.13 honours
+  # these. BOOTSTRAP_ENDPOINT_URL is intentionally ABSENT (no global override).
+  - path: /etc/flowform/bootstrap-app.env
+    permissions: '0644'
+    owner: root:root
+    content: |
+      # scope / topology
+      FLOWFORM_SCOPE=nonprod
+      AWS_REGION=ap-southeast-2
+      APP_PRIVATE_IP=10.10.10.20
+      PROXY_PRIVATE_IP=10.10.10.10
+      # rehearsal image ref (fake-ECR registry, reached over HTTPS through Squid +
+      # the TLS shim on the aws-fixtures-vm, 230 — no port = 443)
+      BACKEND_IMAGE=registry.localstack.test/flowform-backend:rehearsal
+      # Alloy image mirrored into the fake registry (the app box is offline and
+      # cannot reach Docker Hub). Mirror it with mirror-alloy-image.sh before/at
+      # deploy, the same relay path as the backend image.
+      ALLOY_IMAGE=registry.localstack.test/grafana/alloy:v1.18.0
+      # explicit compose path: the script is baked at /opt/flowform/scripts/... so
+      # its own REPO_ROOT math (../../..) would look under /opt, not where we put
+      # the compose file. Point at the baked location directly.
+      COMPOSE_FILE=/opt/flowform/repo/infra/containers/runtime/compose/app.yml
+      # Rehearsal app override layered on with a second -f. It carries the fake-AWS
+      # deltas for the backend CONTAINER (per-service LocalStack endpoints, harmless
+      # creds, rehearsal CA, IMDS disabled). Prod leaves this unset. The env vars
+      # below in THIS file are for the bootstrap's own AWS CLI calls, a separate
+      # process from the container the override configures.
+      COMPOSE_OVERRIDE_FILE=/opt/flowform/repo/infra/containers/strategies/rehearsal/compose/app.override.yml
+      COMPOSE_FORCE_RECREATE=1
+      # per-service fake-AWS endpoints (each = its own SNI → own Squid tunnel)
+      AWS_ENDPOINT_URL_SECRETS_MANAGER=https://secretsmanager.localstack.test
+      AWS_ENDPOINT_URL_SSM=https://ssm.localstack.test
+      AWS_ENDPOINT_URL_KMS=https://kms.localstack.test
+      # AWS CLI v2 ships its OWN CA bundle and ignores the system trust store, so
+      # it wouldn't trust the rehearsal CA (added via update-ca-trust). Point
+      # it at the system bundle, which now includes the rehearsal CA. REHEARSAL
+      # delta — prod leaves this UNSET (real AWS TLS validates against the public
+      # CAs the CLI already bundles).
+      AWS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt
+      # dummy creds — LocalStack ignores validity but the SDK requires presence
+      AWS_ACCESS_KEY_ID=test
+      AWS_SECRET_ACCESS_KEY=test
+      # Allow the internet-enabled proxy VM time to pull and start Squid during
+      # a simultaneous three-VM Terraform deployment.
+      BOOTSTRAP_AWS_MAX_ATTEMPTS=120
+
+  # --- runtime launcher + reboot recovery --------------------------------------
+  - path: /opt/flowform/scripts/run-bootstrap-app.sh
+    permissions: '0755'
+    owner: root:root
+    content: |
+      #!/usr/bin/env bash
+      set -Eeuo pipefail
+      # JWT validation and distributed traces both depend on a trustworthy host
+      # clock. Acquire the proxy-backed source and settle the remaining
+      # correction below 50 ms before converging the application.
+      if ! systemctl is-active --quiet chronyd.service; then
+        echo "chronyd is not running; application convergence requires synchronized time" >&2
+        exit 1
+      fi
+      if ! chronyc -n waitsync 30 0.0 0.0 1 >/dev/null; then
+        echo "clock did not acquire the rehearsal proxy time source within 30 seconds" >&2
+        exit 1
+      fi
+      # This runs before the backend starts. Step the initial correction once
+      # instead of waiting minutes for a sub-second template-clock error to slew.
+      if ! chronyc -a makestep >/dev/null \
+          || ! chronyc -n waitsync 10 0.05 0.0 1 >/dev/null; then
+        echo "clock did not settle within 50 ms of the rehearsal proxy" >&2
+        exit 1
+      fi
+      # Load the rehearsal env (endpoints, IPs, scope) then run the REAL script.
+      set -a; . /etc/flowform/bootstrap-app.env; set +a
+      exec /opt/flowform/scripts/bootstrap/bootstrap-app.sh
+  - path: /etc/systemd/system/flowform-app.service
+    permissions: '0644'
+    owner: root:root
+    content: |
+      [Unit]
+      Description=FlowForm application convergence
+      Requires=docker.service
+      After=docker.service network-online.target
+      Wants=network-online.target
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/opt/flowform/scripts/run-bootstrap-app.sh
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  # Reload the chronyd unit drop-in and replace unreachable public pools with
+  # the proxy's private NTP endpoint.
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, restart, chronyd.service ]
+  # 1. Trust the rehearsal CA so the shim's TLS validates like real AWS TLS.
+  - [ update-ca-trust, extract ]
+  # 2. Resolve the fake-AWS SNI names AND the fake-ECR registry to the ls-vm
+  #    (shim + LocalStack + registry live there). The pull path resolves inside
+  #    Squid; these entries serve operator debugging + the harness's direct-fail
+  #    probes. Idempotent guard greps the registry name (the last one appended).
+  - [ bash, -c, "grep -q registry.localstack.test /etc/hosts || echo '10.10.10.30 secretsmanager.localstack.test ssm.localstack.test kms.localstack.test registry.localstack.test' >> /etc/hosts" ]
+  # First convergence is owned by `rehearsal build`, after secrets and images
+  # exist. Enable the service only for later VM reboots; `enable` does not start
+  # it during this cloud-init boot and therefore cannot race the orchestrator.
+  - [ systemctl, enable, flowform-app.service ]

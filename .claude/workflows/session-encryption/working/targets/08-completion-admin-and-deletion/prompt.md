@@ -8,6 +8,7 @@ New file: `backend/app/services/public_submissions/core/completion.py`.
 Existing file to extend: `backend/app/services/results.py` — read it fully before editing.
 
 Pass-specific constraints:
+
 - Deletion ordering is non-negotiable: response DB first, then core (doc 06)
 - Completion idempotency: SELECT before any lock; if already completed return stored state immediately
 - Admin paths must go through explicit authorization — never query response tables from API handlers (doc 01)

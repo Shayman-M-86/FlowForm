@@ -1,0 +1,12 @@
+# Two Auth0 hosts: the custom login/issuer domain the backend validates tokens
+# against, and the canonical tenant domain the Management API (/api/v2) is
+# served from — Auth0 does not serve /api/v2 on custom domains, so the backend
+# dials both. Replace <tenant> with the real tenant slug (e.g. dev-xxxx).
+auth.flow-form.com.au
+<tenant>.au.auth0.com
+secretsmanager.ap-southeast-2.amazonaws.com
+kms.ap-southeast-2.amazonaws.com
+ssm.ap-southeast-2.amazonaws.com
+email.ap-southeast-2.amazonaws.com
+api.ecr.ap-southeast-2.amazonaws.com
+<aws-account-id>.dkr.ecr.ap-southeast-2.amazonaws.com

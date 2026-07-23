@@ -42,8 +42,8 @@ Use `-k` for filtering. Do not pass file paths as filters.
 
 Other useful flags for `run-tests.sh`:
 
-- `--logs=all` prints Docker logs from all services on failure
-- `--verbose` prints full output without the spinner
+- `--logs=all` reports service status on failure; raw Docker logs stay suppressed
+- `--verbose` prints full command output without the spinner; pytest capture stays hidden
 
 ### Schema checks
 

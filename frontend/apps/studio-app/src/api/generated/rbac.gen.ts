@@ -87,7 +87,6 @@ export const operationPermissions: Record<string, FlowFormPermission | null> = {
   sendInvitation: "project:manage_members",
   sendSurveyLinkEmail: "survey:edit",
   startSubmissionSession: null,
-  testEmail: null,
   updateMember: "project:manage_members",
   updateMyProfile: null,
   updateNode: "survey:edit",

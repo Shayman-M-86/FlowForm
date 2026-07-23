@@ -182,6 +182,7 @@ def test_init_app_validates_management_client(
                 mgmt=SimpleNamespace(
                     id="client-id",
                     secret=SecretStr("client-secret"),
+                    domain=None,
                 ),
             )
         )
@@ -192,9 +193,52 @@ def test_init_app_validates_management_client(
     auth_extension.init_app(flask_app)
 
     assert isinstance(auth_extension.mgmt, FakeManagementApiClient)
+    # mgmt.domain unset -> mgmt client falls back to the issuer domain.
     assert auth_extension.mgmt.domain == "example.auth0.com"
     assert auth_extension.mgmt.client_id == "client-id"
     assert auth_extension.mgmt.client_secret == "client-secret"
+    assert auth_extension.mgmt.validated is True
+
+
+def test_init_app_mgmt_uses_canonical_domain_when_set(
+    auth_extension: AuthExtension,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """With a custom issuer domain, the mgmt client uses the canonical tenant."""
+
+    class FakeManagementApiClient:
+        validated = False
+
+        def __init__(self, *, domain: str, client_id: str, client_secret: str) -> None:
+            self.domain = domain
+            self.client_id = client_id
+            self.client_secret = client_secret
+
+        def validate_connection(self) -> None:
+            self.validated = True
+
+    flask_app = Flask(__name__)
+    flask_app.extensions["settings"] = SimpleNamespace(
+        flowform=SimpleNamespace(
+            auth0=SimpleNamespace(
+                audience="https://api.example.test",
+                domain="auth.custom.example",
+                mgmt=SimpleNamespace(
+                    id="client-id",
+                    secret=SecretStr("client-secret"),
+                    domain="tenant.au.auth0.com",
+                ),
+            )
+        )
+    )
+    monkeypatch.setattr(auth0_module, "ApiClient", lambda _options: object())
+    monkeypatch.setattr(auth0_module, "ManagementApiClient", FakeManagementApiClient)
+
+    auth_extension.init_app(flask_app)
+
+    assert isinstance(auth_extension.mgmt, FakeManagementApiClient)
+    # Issuer stays custom; mgmt client targets the canonical tenant instead.
+    assert auth_extension.mgmt.domain == "tenant.au.auth0.com"
     assert auth_extension.mgmt.validated is True
 
 
@@ -222,6 +266,7 @@ def test_init_app_rejects_failed_management_validation(
                 mgmt=SimpleNamespace(
                     id="client-id",
                     secret=SecretStr("client-secret"),
+                    domain=None,
                 ),
             )
         )
@@ -233,6 +278,43 @@ def test_init_app_rejects_failed_management_validation(
         auth_extension.init_app(flask_app)
 
     assert auth_extension.mgmt is None
+
+
+def test_init_app_can_defer_management_validation(
+    auth_extension: AuthExtension,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeManagementApiClient:
+        validated = False
+
+        def __init__(self, *, domain: str, client_id: str, client_secret: str) -> None:
+            pass
+
+        def validate_connection(self) -> None:
+            self.validated = True
+
+    flask_app = Flask(__name__)
+    flask_app.extensions["settings"] = SimpleNamespace(
+        flowform=SimpleNamespace(
+            auth0=SimpleNamespace(
+                audience="https://api.example.test",
+                domain="example.auth0.com",
+                mgmt=SimpleNamespace(
+                    id="client-id",
+                    secret=SecretStr("client-secret"),
+                    domain=None,
+                    validate_on_startup=False,
+                ),
+            )
+        )
+    )
+    monkeypatch.setattr(auth0_module, "ApiClient", lambda _options: object())
+    monkeypatch.setattr(auth0_module, "ManagementApiClient", FakeManagementApiClient)
+
+    auth_extension.init_app(flask_app)
+
+    assert isinstance(auth_extension.mgmt, FakeManagementApiClient)
+    assert auth_extension.mgmt.validated is False
 
 
 def test_management_token_error_is_translated(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -289,9 +371,7 @@ def test_management_token_response_requires_access_token(monkeypatch: pytest.Mon
     assert str(exc_info.value) == "Auth0 Management API request failed."
 
 
-_ALL_MGMT_SCOPES = (
-    "create:user_tickets create:users delete:guardian_enrollments delete:users read:users update:users"
-)
+_ALL_MGMT_SCOPES = "create:user_tickets create:users delete:guardian_enrollments delete:users read:users update:users"
 
 
 def test_management_token_request_includes_required_scopes(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -433,6 +513,46 @@ def test_management_creates_password_change_ticket(monkeypatch: pytest.MonkeyPat
         "url": "https://example.auth0.com/api/v2/tickets/password-change",
         "json": {"user_id": "auth0|user-123"},
     }
+
+
+def test_management_classifies_unsupported_password_connection(monkeypatch: pytest.MonkeyPatch) -> None:
+    class UnsupportedTicketResponse:
+        ok = False
+        status_code = 400
+        reason = "Bad Request"
+        text = (
+            '{"statusCode":400,"error":"Bad Request",'
+            '"message":"The user\'s main connection does not support this operation"}'
+        )
+
+        def json(self) -> dict[str, object]:
+            return {
+                "statusCode": 400,
+                "error": "Bad Request",
+                "message": "The user's main connection does not support this operation",
+            }
+
+    monkeypatch.setattr(
+        auth0_module.requests,
+        "request",
+        lambda *_args, **_kwargs: UnsupportedTicketResponse(),
+    )
+
+    client = ManagementApiClient(
+        domain="example.auth0.com",
+        client_id="client-id",
+        client_secret="client-secret",
+    )
+    client._access_token = "cached-token"
+    client._token_expires_at = 10**12
+    client._token_scopes = {"create:user_tickets"}
+
+    with pytest.raises(ManagementApiError) as exc_info:
+        client.create_password_change_ticket("google-oauth2|user-123")
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.provider_error == "operation_not_supported"
+    assert exc_info.value.provider_message == "The user's main connection does not support this operation"
 
 
 def test_management_password_change_ticket_response_requires_ticket(

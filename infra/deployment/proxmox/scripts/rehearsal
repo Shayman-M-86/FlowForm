@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# FlowForm Proxmox rehearsal — one entrypoint for every workstation-side action.
+#
+#   rehearsal build [--fresh] [-- <terraform args>]
+#                       (re)build the rehearsal: [destroy] -> apply -> sync
+#                       secrets -> converge proxy/db -> publish images -> app.
+#                       --fresh tears down first (VMs, registry, seeded state);
+#                       the persistent secret bundle on the PVE host survives.
+#   rehearsal verify [--disruptive]
+#                       assert the AWS-shaped egress model end to end. --disruptive
+#                       also proves AWS calls fail when Squid is down.
+#   rehearsal logs <proxy|app|fixtures|db> [options] [-- <docker logs args>]
+#                       tail/flatten container logs from a VM. `rehearsal logs -h`.
+#   rehearsal sync      synchronise the real secret bundle into the rehearsal
+#                       (the only path a real secret reaches it).
+#   rehearsal rotate <app|database|linkage>
+#                       rotate a managed secret and reconverge its consumers.
+#   rehearsal terraform <arguments...>
+#                       run Terraform directly with the same Auth0 identifier
+#                       loading and PVE SSH preflight used by `build`.
+#
+# All subcommands share connection settings via rehearsal-common.sh. Override any
+# with env: PVE_HOST, PVE_USER, PVE_SSH_KEY, GUEST_USER, BRIDGE, BRIDGE_CIDR.
+# Logs use UTC timestamps and terminal-aware colour. Set REHEARSAL_COLOR to
+# auto (default), always, or never; NO_COLOR disables ANSI colour as well.
+#
+# `build` and `terraform` share one Terraform preparation implementation; there
+# is no second operator entrypoint or wrapper script.
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="${SCRIPT_DIR}/lib"
+
+usage() {
+  sed -n '4,/^SCRIPT_DIR=/p' "${BASH_SOURCE[0]}" | sed -n 's/^# \{0,1\}//p'
+}
+
+sub="${1:-}"
+[[ $# -gt 0 ]] && shift || true
+
+case "${sub}" in
+  build|verify|logs|sync|rotate|terraform) ;;
+  ""|-h|--help|help) usage; exit 0 ;;
+  *) printf 'rehearsal: unknown subcommand: %s\n\n' "${sub}" >&2; usage >&2; exit 2 ;;
+esac
+
+# log/die in common tag their output with this.
+export REHEARSAL_SUBCOMMAND="rehearsal ${sub}"
+
+# shellcheck source=rehearsal-common.sh
+source "${SCRIPT_DIR}/rehearsal-common.sh"
+
+lib_file="${LIB_DIR}/cmd_${sub}.sh"
+[[ -r "${lib_file}" ]] || die "missing subcommand implementation: ${lib_file}"
+# shellcheck source=/dev/null
+source "${lib_file}"
+
+"cmd_${sub}_main" "$@"

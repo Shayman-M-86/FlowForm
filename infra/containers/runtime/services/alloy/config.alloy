@@ -1,0 +1,374 @@
+// FlowForm proxy-box observability agent (Grafana Alloy).
+//
+// This config ships two log sources to Grafana Cloud Loki:
+//   1. the host systemd journal (host + per-unit)
+//   2. every Docker container on the box (Caddy, Squid, and Alloy itself),
+//      labelled with service_name (for Grafana Logs Drilldown) and a level
+//      extracted from the plain-text lines.
+// It also receives OTLP traces from Caddy and the app-box Alloy relay and sends
+// them to Grafana Cloud Tempo. Application instrumentation lives in the backend.
+//
+// The two NON-SECRET Grafana Cloud identifiers are injected as environment
+// variables by docker compose from /opt/flowform/proxy.env (rendered by
+// bootstrap-proxy.sh from the /flowform/<scope>/proxy/* SSM path — the same
+// prod-shaped seam as CADDY_IMAGE and API_DOMAIN):
+//   GRAFANA_CLOUD_LOKI_URL   full Loki push URL, e.g.
+//                            https://logs-prod-XX.grafana.net/loki/api/v1/push
+//   GRAFANA_CLOUD_LOKI_USER  Loki tenant / user id (basic-auth username)
+//   GRAFANA_CLOUD_TEMPO_ENDPOINT  Tempo OTLP/gRPC endpoint (host:port)
+//   GRAFANA_CLOUD_TEMPO_USER      Tempo tenant id (basic-auth username)
+//
+// The SECRET (basic-auth password) is NOT an environment variable. It is
+// delivered as a file-backed Docker secret at GRAFANA_CLOUD_TOKEN_FILE
+// (/run/secrets/GRAFANA_CLOUD_TOKEN), which bootstrap-proxy.sh materialises from
+// the observability-secrets Secrets Manager entry. local.file reads it with
+// is_secret = true so the value is redacted in the Alloy UI and never logged.
+//
+// Until a real token is seeded the token file simply holds a placeholder; Alloy
+// still starts and gets 401s from Grafana Cloud, so the wiring is exercised end
+// to end.
+
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// --- Grafana Cloud token (file-backed Docker secret) -------------------------
+// is_secret marks the exported content sensitive: Alloy redacts it in the UI and
+// keeps it out of logs. The path comes from the env the compose file sets.
+local.file "grafana_cloud_token" {
+  filename  = sys.env("GRAFANA_CLOUD_TOKEN_FILE")
+  is_secret = true
+}
+
+// --- OTLP traces: Caddy + app gateway -> Grafana Cloud Tempo -----------------
+otelcol.auth.basic "grafana_cloud" {
+  // Alloy v1.5 uses the top-level client credentials. Keep this aligned with
+  // the runtime image until that image is upgraded.
+  username = sys.env("GRAFANA_CLOUD_TEMPO_USER")
+  password = local.file.grafana_cloud_token.content
+}
+
+otelcol.receiver.otlp "gateway" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  // Caddy's standard tracing handler exports OTLP/HTTP rather than gRPC.
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces = [otelcol.processor.batch.traces.input]
+  }
+}
+
+otelcol.processor.batch "traces" {
+  output {
+    traces = [otelcol.exporter.otlp.grafana_cloud.input]
+  }
+}
+
+// Grafana Cloud's Tempo instance accepts OTLP/gRPC with TLS on :443.
+otelcol.exporter.otlp "grafana_cloud" {
+  client {
+    endpoint = sys.env("GRAFANA_CLOUD_TEMPO_ENDPOINT")
+    auth     = otelcol.auth.basic.grafana_cloud.handler
+  }
+}
+
+// --- Grafana Cloud Loki sink -------------------------------------------------
+loki.write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_LOKI_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_LOKI_USER")
+      password = local.file.grafana_cloud_token.content
+    }
+  }
+}
+
+// --- Gateway receiver for the offline app box --------------------------------
+// The app box (10.10.10.20) has no internet route — its only egress is Squid,
+// which does not admit Grafana Cloud. So the app-box Alloy ships the backend
+// logs HERE over the private net, and this proxy Alloy (which does have internet)
+// fans them out to Grafana Cloud. Listen on all interfaces so 10.10.10.20 can
+// reach it; the compose publishes this port bound to the proxy's private IP only,
+// and the app box already labels the records (service_name=backend, level, ...),
+// so this side just forwards them on untouched.
+loki.source.api "app_gateway" {
+  http {
+    listen_address = "0.0.0.0"
+    listen_port    = 3500
+  }
+  forward_to = [loki.write.grafana_cloud.receiver]
+}
+
+// --- Host systemd journal ----------------------------------------------------
+loki.relabel "journal" {
+  // forward_to is required but unused here: this component only exposes .rules,
+  // which loki.source.journal consumes via relabel_rules.
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+
+  rule {
+    source_labels = ["__journal__hostname"]
+    target_label  = "hostname"
+  }
+}
+
+loki.source.journal "host" {
+  // Defaults to /var/log/journal and /run/log/journal; both are bind-mounted
+  // read-only into the container (see proxy.yml).
+  max_age       = "12h"
+  relabel_rules = loki.relabel.journal.rules
+  labels        = {job = "systemd-journal"}
+  forward_to    = [loki.write.grafana_cloud.receiver]
+}
+
+// --- Docker container logs ---------------------------------------------------
+// This agent only sees the proxy-box stack: caddy, squid, and alloy itself. The
+// backend runs on a separate VM with no Alloy in Phase 1, so there is no backend
+// container (and no backend-JSON parsing) here yet.
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  // service_name is the label Grafana Logs Drilldown keys on to identify where a
+  // log comes from; without it everything shows up under "Unknown". Compose sets
+  // com.docker.compose.service on each container (caddy / squid / alloy), so map
+  // that to service_name (and keep a plain `service` alias).
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service_name"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "compose_project"
+  }
+
+  // Trim the leading "/" Docker puts on container names.
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_log_stream"]
+    target_label  = "stream"
+  }
+
+  // Static deployment identity. This config file only ever ships to the Proxmox
+  // proxy box, so these are constants rather than env-driven. Revisit when Alloy
+  // also runs on the app box / real AWS, where values genuinely vary.
+  rule {
+    replacement  = "rehearsal"
+    target_label = "environment"
+  }
+
+  rule {
+    replacement  = "proxmox"
+    target_label = "platform"
+  }
+
+  rule {
+    replacement  = "proxy"
+    target_label = "host_role"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  labels     = {job = "docker"}
+  forward_to = [loki.process.docker.receiver]
+}
+
+// Normalise every proxy-box service into the SAME canonical schema the backend
+// uses (see alloy-app/config.alloy): a lowercase `level` label, an HTTP `method`
+// label where applicable, and canonical parsed FIELDS (status, path, client_ip,
+// duration_ms, ...) — never labels, to keep Loki stream cardinality bounded.
+// Access-style services (caddy, squid) render their line as canonical logfmt so
+// every field is queryable via `| logfmt`; Alloy's own logs render their human
+// `msg`. Each service has a distinct wire format, so parse per service.
+loki.process "docker" {
+  // --- Caddy: native JSON ----------------------------------------------------
+  // Caddy's top-level JSON keys (ts/level/msg/status/request.*) are fixed and
+  // can't be stripped at source like Squid. So parse them into canonical fields
+  // here, then REBUILD the visible line as logfmt so every field stays queryable
+  // via `| logfmt` — matching Squid — without duplicating `ts`/`level` in the
+  // body (ts is Loki's timestamp; level is an indexed label). `msg` is folded in
+  // as a field so runtime/error lines (which carry no request context) keep
+  // their content. Absent fields (e.g. request.* on non-access lines) render as
+  // empty via `<no value>`-safe templating below.
+  stage.match {
+    selector = "{service_name=\"caddy\"}"
+
+    stage.json {
+      expressions = {
+        level     = "level",
+        msg       = "msg",
+        logger    = "logger",
+        status    = "status",
+        method    = "request.method",
+        path      = "request.uri",
+        host      = "request.host",
+        client_ip = "request.client_ip",
+        // Top-level `request_id` comes from the Caddyfile's `log_append
+        // request_id {http.request.uuid}`. The same UUID is forwarded upstream
+        // as X-Request-ID, so this matches the backend record's request_id and
+        // lets a Caddy line be joined to its backend line in Loki.
+        request_id = "request_id",
+        trace_id   = "traceID",
+        span_id    = "spanID",
+        err_id     = "err_id",
+        // Caddy reports `duration` in SECONDS (float); converted to ms below so
+        // duration_ms means the same unit across backend/squid/caddy.
+        duration_s = "duration",
+        // Top-level `host` on runtime lines (e.g. the reverse-proxy health
+        // checker) is the UPSTREAM target, distinct from request.host above.
+        upstream = "host",
+      }
+    }
+
+    stage.labels {
+      values = {
+        level  = "",
+        method = "",
+      }
+    }
+
+    // Normalise Caddy's seconds duration to milliseconds (rounded) so the
+    // duration_ms field is comparable with the other services.
+    stage.template {
+      source   = "duration_ms"
+      template = "{{ if .duration_s }}{{ printf \"%.2f\" (mulf .duration_s 1000.0) }}{{ end }}"
+    }
+
+    // Reconstruct the line as logfmt from the parsed fields so every field is
+    // queryable via `| logfmt` (matching Squid). Only non-empty fields are
+    // emitted, so access lines and runtime/error lines each render just their
+    // relevant keys. Free-text values (msg, path, host) are quoted. A trailing
+    // space when the last field is absent is harmless for logfmt parsing.
+    stage.template {
+      source   = "line"
+      template = "{{ if .msg }}msg=\"{{ .msg }}\" {{ end }}{{ if .logger }}logger={{ .logger }} {{ end }}{{ if .method }}method={{ .method }} {{ end }}{{ if .status }}status={{ .status }} {{ end }}{{ if .path }}path=\"{{ .path }}\" {{ end }}{{ if .host }}host=\"{{ .host }}\" {{ end }}{{ if .client_ip }}client_ip={{ .client_ip }} {{ end }}{{ if .request_id }}request_id={{ .request_id }} {{ end }}{{ if .trace_id }}trace_id={{ .trace_id }} {{ end }}{{ if .span_id }}span_id={{ .span_id }} {{ end }}{{ if .upstream }}upstream=\"{{ .upstream }}\" {{ end }}{{ if .duration_ms }}duration_ms={{ .duration_ms }} {{ end }}{{ if .err_id }}err_id={{ .err_id }}{{ end }}"
+    }
+
+    stage.output {
+      source = "line"
+    }
+  }
+
+  // --- Squid: canonical logfmt (see squid.conf logformat) --------------------
+  // Squid access lines carry no `level=`/`ts=` (stripped at source to avoid
+  // duplicating Loki's timestamp and the level label in the rendered line), so
+  // the level label is applied statically here — access logging is always info.
+  // The `method=` line filter restricts logfmt parsing to real access lines;
+  // the container entrypoint's `tail` chatter ("cannot open .../access.log",
+  // "has appeared; following new file") shares this stream but is plain text,
+  // and parsing it would emit `failed to decode logfmt`.
+  stage.match {
+    selector = "{service_name=\"squid\"} |= \"method=\""
+
+    stage.logfmt {
+      mapping = {
+        status       = "",
+        method       = "",
+        path         = "",
+        client_ip    = "",
+        duration_ms  = "",
+        cache_result = "",
+        bytes        = "",
+      }
+    }
+
+    stage.labels {
+      values = {
+        method = "",
+      }
+    }
+  }
+
+  // Every squid stream entry is info (access lines + entrypoint tail chatter);
+  // set it statically so the stream stays uniformly severity-tagged.
+  stage.match {
+    selector = "{service_name=\"squid\"}"
+
+    stage.static_labels {
+      values = {
+        level = "info",
+      }
+    }
+  }
+
+  // --- Alloy's own logs: canonical logfmt ------------------------------------
+  // Alloy emits logfmt (`ts= level= msg= logger= ...`). Parse the fields, label
+  // `level`, then REBUILD the line as logfmt WITHOUT `ts`/`level` — matching
+  // caddy/squid: every field stays queryable via `| logfmt`, but the timestamp
+  // (Loki's column) and level (the indexed label) aren't duplicated in the body.
+  // The `msg=` line filter keeps non-logfmt internal lines (startup banner) out
+  // of the decoder so it never emits `failed to decode logfmt`.
+  stage.match {
+    selector = "{service_name=\"alloy\"} |= \"msg=\""
+
+    stage.logfmt {
+      mapping = {
+        level     = "",
+        msg       = "",
+        logger    = "",
+        component = "",
+      }
+    }
+
+    stage.labels {
+      values = {
+        level = "",
+      }
+    }
+
+    // Rebuild as logfmt from the parsed fields, dropping ts/level. Only non-empty
+    // fields render, so lines without a component key still stay well-formed.
+    stage.template {
+      source   = "line"
+      template = "{{ if .logger }}logger={{ .logger }} {{ end }}{{ if .component }}component={{ .component }} {{ end }}{{ if .msg }}msg=\"{{ .msg }}\"{{ end }}"
+    }
+
+    stage.output {
+      source = "line"
+    }
+  }
+
+  // --- Fleet-wide level casing normalisation ---------------------------------
+  // Backend/caddy already emit lowercase; Squid/Alloy do too. This guards any
+  // stray uppercase (e.g. a service logging WARN) so `{level="error"}` matches
+  // the whole fleet regardless of source.
+  stage.template {
+    source   = "level"
+    template = "{{ ToLower .Value }}"
+  }
+
+  stage.labels {
+    values = {
+      level = "",
+    }
+  }
+
+  forward_to = [loki.write.grafana_cloud.receiver]
+}

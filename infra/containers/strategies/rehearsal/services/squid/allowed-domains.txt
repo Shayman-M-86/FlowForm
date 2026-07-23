@@ -1,0 +1,51 @@
+# Rehearsal Squid allow-list — REPLACES infra/containers/strategies/aws/services/squid/allowed-domains.txt
+# ONLY for the local Proxmox rehearsal. The prod file is NOT modified.
+#
+# The app box reaches fake-AWS the prod way: CONNECT <svc>.localstack.test:443 →
+# Squid (this allow-list) → TLS tunnel → shim (on the ls-vm) → LocalStack. So the
+# three fake-AWS SNI names must be admitted here, exactly as prod admits the real
+# secretsmanager/ssm/kms .<region>.amazonaws.com names. The fake-ECR registry
+# rides the same path (registry.localstack.test:443 → shim → registry), mirroring
+# how prod admits api.ecr/dkr.ecr — so image pulls/pushes traverse Squid too.
+#
+# Leading dot = match the domain AND its subdomains (Squid dstdomain semantics).
+# Listing the bare names too keeps it explicit.
+#
+# Auth0 is the ONE dependency that is not faked, so this list is not purely
+# *.localstack.test: the rehearsal validates tokens against the REAL tenant,
+# exactly as prod does. Token validation needs the issuer's OIDC metadata and
+# JWKS, and there is no local issuer to serve them — without this entry Squid
+# refuses the CONNECT and every authenticated request 500s.
+#
+# Two distinct Auth0 hosts are needed:
+#   - the token ISSUER (auth.flow-form.com.au) for request-time JWT validation;
+#   - the MANAGEMENT API tenant (FLOWFORM_AUTH0_MGMT_DOMAIN, a *.auth0.com host)
+#     for the boot-time management-client check when
+#     FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP=true. That check dials
+#     https://<tenant>/oauth/token; without this entry Squid 403s the CONNECT and
+#     the backend crash-loops on APPLICATION STARTUP FAILED before serving.
+#
+# This is a deliberate hole in the isolation: the app box makes real outbound
+# calls here, so authenticated flows need the tenant reachable and up. Public
+# endpoints stay fully offline.
+#
+# NOT here on purpose:
+#   - real AWS/ECR domains: fake-AWS and fake-ECR are served by LocalStack + the
+#     registry behind the shim, so the app box only ever dials *.localstack.test.
+
+.localstack.test
+secretsmanager.localstack.test
+ssm.localstack.test
+kms.localstack.test
+
+# Fake-ECR registry — image pulls/pushes over HTTPS (mirrors prod api.ecr/dkr.ecr).
+registry.localstack.test
+
+# Auth0 issuer — token validation (OIDC discovery + JWKS).
+auth.flow-form.com.au
+
+# Auth0 Management API tenant — boot-time management-client validation
+# (FLOWFORM_AUTH0_MGMT_DOMAIN, dials /oauth/token). Leading dot admits the tenant
+# host and any sibling in the same regional Auth0 domain.
+.au.auth0.com
+dev-3wccg4jx4o5wvedn.au.auth0.com

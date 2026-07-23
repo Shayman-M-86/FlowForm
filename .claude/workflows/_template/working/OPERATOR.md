@@ -55,6 +55,7 @@ report exists, mark the pass done, increment `state.md` to the next pass,
 and print the next target's context.
 
 Or edit `state.md` manually:
+
 ```
 current_pass: 2
 status: in-progress

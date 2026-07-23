@@ -1,0 +1,62 @@
+# Manually build or mirror the four staging runtime images into private ECR.
+# This workflow does not deploy CDK, select SSM runtime parameters, run
+# migrations, or restart either EC2 host.
+
+name: Publish staging images
+
+on:
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  AWS_REGION: ap-southeast-2
+  AWS_ACCOUNT_ID: "908123139858"
+  IMAGE_PUBLISHER_ROLE: arn:aws:iam::908123139858:role/flowform-staging-image-publisher
+  SOURCE_MANIFEST: infra/containers/strategies/aws/image-sources.json
+  RELEASE_MANIFEST_PATH: staging-image-release.json
+
+concurrency:
+  group: publish-staging-images
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish immutable images
+    if: github.ref == 'refs/heads/staging'
+    # The IAM role only trusts this environment OIDC subject. Configure the
+    # GitHub environment to permit the staging branch before deploying this.
+    environment: staging
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out selected staging commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.IMAGE_PUBLISHER_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate immutable source manifest
+        run: ./infra/deployment/aws/scripts/publish-staging-images.sh validate
+
+      - name: Build and publish staging images
+        env:
+          RELEASE_COMMIT_SHA: ${{ github.sha }}
+        run: ./infra/deployment/aws/scripts/publish-staging-images.sh publish
+
+      - name: Upload digest release manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-image-release-${{ github.sha }}
+          path: ${{ env.RELEASE_MANIFEST_PATH }}
+          if-no-files-found: error
+          retention-days: 30

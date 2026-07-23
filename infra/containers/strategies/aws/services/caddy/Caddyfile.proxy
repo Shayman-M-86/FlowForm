@@ -1,0 +1,57 @@
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	tracing {
+		span caddy.request
+	}
+
+	# Per-request access log. This MUST live inside the site block: a `log`
+	# directive in the global options block only reconfigures Caddy's runtime
+	# logger (`default` — health-checker, TLS, admin), NOT access logging, so
+	# with it there Caddy emitted zero request lines. Here it produces one
+	# `http.log.access` entry per proxied request. Native Caddy JSON keys
+	# (ts/msg/status/request>uri/duration) are fixed and can't be renamed here;
+	# the proxy Alloy agent's stage.json remaps them into the canonical field
+	# names shared with backend/squid (status, path, client_ip, duration_ms) and
+	# rebuilds the line as logfmt. The filter redacts the invitation token in the
+	# request URI and the Referer header before the line is ever written.
+	log {
+		output stdout
+		format filter {
+			request>uri regexp "^(/api/v1/account/invitations/resolve/)[^/?]+" "${1}[REDACTED]"
+			request>headers>Referer replace REDACTED
+			wrap json
+		}
+	}
+
+	# Per-request correlation ID. {http.request.uuid} yields ONE stable UUID for
+	# the request; we both record it in Caddy's access line (log_append -> a
+	# top-level `request_id` field the proxy Alloy maps into the canonical schema)
+	# and forward the SAME value upstream as X-Request-ID (header_up, below). The
+	# backend adopts a valid inbound X-Request-ID (else mints its own), so a Caddy
+	# line and its backend line share one request_id and can be joined in Loki.
+	log_append request_id {http.request.uuid}
+
+	tls {
+		dns route53
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy http://{$APP_PRIVATE_IP}:5000 {
+		# Forward the same per-request UUID logged above so the backend adopts it
+		# as its request_id (proxy-aware header manipulation: header_up, not
+		# request_header). This is the client-influenced header the backend
+		# validates as a UUID before trusting it.
+		header_up X-Request-ID {http.request.uuid}
+
+		health_uri /api/v1/system/health/ready
+		health_interval 30s
+		health_timeout 5s
+	}
+}

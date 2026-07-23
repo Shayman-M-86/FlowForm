@@ -1,0 +1,196 @@
+# FlowForm shared public proxy runtime.
+#
+# Bootstrap layers the AWS or rehearsal strategy override on this file, then
+# supplies image references, addresses, region, domain, and source CIDRs through
+# the generated env file. This base deliberately contains no strategy-specific
+# Caddyfile or Squid destination allow-list.
+#
+# Expected invocation on the proxy instance:
+#
+#   docker compose --env-file /opt/flowform/proxy.env \
+#     -f proxy.yml \
+#     -f ../../strategies/aws/compose/proxy.override.yml up -d
+#
+# Required env:
+#   CADDY_IMAGE              - Caddy image selected by the strategy
+#   SQUID_IMAGE              - immutable Squid image reference
+#   ALLOY_IMAGE              - immutable Alloy image reference
+#   API_DOMAIN               - public API hostname, e.g. api.flow-form.com.au
+#   AWS_REGION               - Route 53 provider region context
+#   PROXY_PRIVATE_IP         - private IP to bind Squid on
+#   APP_PRIVATE_IP           - private app EC2 IP for Caddy upstream
+#   SQUID_APP_SOURCE_CIDR    - exact app source CIDR, usually <APP_PRIVATE_IP>/32
+#   SQUID_DB_BOOTSTRAP_SOURCE_CIDR - optional DB bootstrap source; use a
+#                                    loopback sentinel when disabled
+#   GRAFANA_CLOUD_LOKI_URL   - Grafana Cloud Loki push URL for the Alloy agent
+#   GRAFANA_CLOUD_LOKI_USER  - Grafana Cloud Loki tenant/user id (basic-auth user)
+#   GRAFANA_CLOUD_TEMPO_ENDPOINT - Tempo OTLP/gRPC endpoint (host:port)
+#   GRAFANA_CLOUD_TEMPO_USER     - Tempo tenant id
+#
+# The two NON-SECRET GRAFANA_CLOUD_LOKI_* values arrive the same prod-shaped way
+# as CADDY_IMAGE and API_DOMAIN: bootstrap-proxy.sh renders them into proxy.env
+# from the /flowform/<scope>/proxy/* SSM path. The Grafana Cloud TOKEN is a
+# secret and does NOT come through proxy.env/SSM: bootstrap-proxy.sh materialises
+# it from the observability-secrets Secrets Manager entry into a tmpfs 0600 file
+# that this compose mounts as the GRAFANA_CLOUD_TOKEN Docker secret. The alloy
+# service ships host/container logs to Loki and traces to Tempo.
+
+name: flowform-proxy
+
+services:
+  caddy:
+    image: ${CADDY_IMAGE:?set CADDY_IMAGE}
+    restart: unless-stopped
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN}
+      APP_PRIVATE_IP: ${APP_PRIVATE_IP:?set APP_PRIVATE_IP}
+      AWS_REGION: ${AWS_REGION:?set AWS_REGION}
+      # Caddy's tracing handler exports OTLP/HTTP. Use Alloy's HTTP receiver and
+      # the complete traces path; :4317 is reserved for OTLP/gRPC from app Alloy.
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://alloy:4318/v1/traces
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=${FLOWFORM_ENV:-prod}
+      OTEL_SERVICE_NAME: caddy
+    ports:
+      - "80:80/tcp"
+      - "443:443/tcp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - proxy_net
+
+  squid:
+    image: ${SQUID_IMAGE:?set SQUID_IMAGE}
+    restart: unless-stopped
+    environment:
+      SQUID_APP_SOURCE_CIDR: ${SQUID_APP_SOURCE_CIDR:?set exact app source CIDR, usually APP_PRIVATE_IP/32}
+      SQUID_DB_BOOTSTRAP_SOURCE_CIDR: ${SQUID_DB_BOOTSTRAP_SOURCE_CIDR:-127.0.0.1/32}
+    # Bound to the proxy EC2 private interface only. The security group must
+    # also admit 3128 only from the app EC2 security group.
+    ports:
+      - "${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP}:3128:3128/tcp"
+    volumes:
+      - ../services/squid/squid.conf:/etc/squid/squid.conf.template:ro
+      - squid_logs:/var/log/squid
+    read_only: true
+    tmpfs:
+      - /run
+      - /tmp
+      - /var/spool/squid
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    entrypoint:
+      - /bin/sh
+      - -ec
+    command:
+      - |
+        sed -e "s|__APP_SOURCE_CIDR__|$${SQUID_APP_SOURCE_CIDR}|g" \
+          -e "s|__DB_BOOTSTRAP_SOURCE_CIDR__|$${SQUID_DB_BOOTSTRAP_SOURCE_CIDR}|g" \
+          /etc/squid/squid.conf.template > /tmp/squid.conf
+        su -s /bin/sh -c 'exec tail -n 0 -F /var/log/squid/access.log' proxy &
+        exec squid -N -f /tmp/squid.conf
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - proxy_net
+
+  # Observability agent — ships host/container logs to Loki and receives OTLP
+  # traces from Caddy and the app-box relay for export to Grafana Cloud Tempo.
+  alloy:
+    image: ${ALLOY_IMAGE:?set ALLOY_IMAGE}
+    restart: unless-stopped
+    # Runs as root: the host journal (/var/log/journal, root:systemd-journal) and
+    # docker socket are not world-readable, and the storage dir the image ships is
+    # alloy-owned 0770. With cap_drop: ALL, even root is bound by those DAC bits,
+    # so restore just the two that let it traverse/read/write them (DAC_OVERRIDE
+    # for writes to the alloy-owned storage volume, DAC_READ_SEARCH for reading the
+    # journal). Nothing else is granted; no-new-privileges stays on.
+    user: root
+    command:
+      - run
+      - --server.http.listen-addr=127.0.0.1:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    # Private gateways for the offline app box: Loki on :3500 and OTLP/gRPC on
+    # :4317. Both bind only to the proxy's private IP. The :12345 UI remains
+    # loopback-only inside the container.
+    ports:
+      - "${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP}:3500:3500/tcp"
+      - "${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP}:4317:4317/tcp"
+    environment:
+      GRAFANA_CLOUD_LOKI_URL: ${GRAFANA_CLOUD_LOKI_URL:?set GRAFANA_CLOUD_LOKI_URL}
+      GRAFANA_CLOUD_LOKI_USER: ${GRAFANA_CLOUD_LOKI_USER:?set GRAFANA_CLOUD_LOKI_USER}
+      GRAFANA_CLOUD_TEMPO_ENDPOINT: ${GRAFANA_CLOUD_TEMPO_ENDPOINT:?set GRAFANA_CLOUD_TEMPO_ENDPOINT}
+      GRAFANA_CLOUD_TEMPO_USER: ${GRAFANA_CLOUD_TEMPO_USER:?set GRAFANA_CLOUD_TEMPO_USER}
+      # The token is NOT an environment variable. Alloy reads it from a file-backed
+      # Docker secret (see `secrets:` below) via local.file in config.alloy, so it
+      # never appears in the container's environment or `docker inspect`.
+      GRAFANA_CLOUD_TOKEN_FILE: /run/secrets/GRAFANA_CLOUD_TOKEN
+    secrets:
+      - GRAFANA_CLOUD_TOKEN
+    volumes:
+      - ../services/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # Docker log discovery + reads. Read-only socket: Alloy only lists
+      # containers and streams their logs.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Host systemd journal (persistent + runtime) and the machine-id the
+      # journal reader needs to resolve the boot.
+      - /var/log/journal:/var/log/journal:ro
+      - /run/log/journal:/run/log/journal:ro
+      - /etc/machine-id:/etc/machine-id:ro
+      # Writable state (WAL, positions). Not read_only because of this.
+      - alloy_data:/var/lib/alloy/data
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
+      - DAC_READ_SEARCH
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - proxy_net
+
+networks:
+  proxy_net:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  squid_logs:
+  alloy_data:
+
+secrets:
+  # The Grafana Cloud token, materialised by bootstrap-proxy.sh into a tmpfs
+  # 0600 file from the observability-secrets Secrets Manager entry. Compose
+  # mounts it read-only at /run/secrets/GRAFANA_CLOUD_TOKEN for Alloy. FLOWFORM_
+  # SECRET_DIR is exported by the bootstrap; it defaults here only for local use.
+  GRAFANA_CLOUD_TOKEN:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/GRAFANA_CLOUD_TOKEN.secret.txt
