@@ -144,10 +144,10 @@ normally handled by fingerprints; `--clean-rebuild` is the explicit fallback
 and destroys only the test project volumes.
 
 The test stack does not require a real Auth0 management credential. The hosted
-backend-test job still depends on repository variables plus
-`scripts/secrets/generate-env-files.sh`, whose incomplete allowlists can omit
-required non-Auth0 settings; only an actual Actions run proves hosted settings
-initialization. A passing focused/unit command is not a substitute for the
+backend-test job generates its env files and exports its fixed non-secret
+Compose topology without relying on a developer's ignored local `.env` file;
+only an actual Actions run proves hosted Docker and settings initialization. A
+passing focused/unit command is not a substitute for the
 Docker-backed database suite, frontend build, contract drift check, or deployed
 browser verification when those boundaries changed.
 

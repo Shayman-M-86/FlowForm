@@ -229,6 +229,20 @@ jobs:
           DATABASE_RESPONSE_SCHEMA_FILE: ${{ vars.DATABASE_RESPONSE_SCHEMA_FILE }}
         run: ./scripts/secrets/generate-env-files.sh
 
+      # These values drive Compose interpolation only. They are stable test
+      # topology, not credentials, so CI does not need the ignored local
+      # infra/env/dev/.env file from a developer machine.
+      - name: Export non-secret test Compose configuration
+        run: |
+          {
+            echo 'DATABASE_CORE_INIT_USER=flowform-admin'
+            echo 'DATABASE_CORE_INIT_DB=flowform_core'
+            echo 'DATABASE_CORE_PORT=5432'
+            echo 'DATABASE_RESPONSE_INIT_USER=flowform-admin'
+            echo 'DATABASE_RESPONSE_INIT_DB=flowform_response'
+            echo 'DATABASE_RESPONSE_PORT=5432'
+          } >> "$GITHUB_ENV"
+
       - name: Prepare CI Compose file
         run: |
           COMPOSE_FILE_RUNTIME="$GITHUB_WORKSPACE/infra/containers/strategies/dev/compose/compose.test.ci.runtime.yml"
@@ -238,7 +252,7 @@ jobs:
           echo "COMPOSE_FILE_RUNTIME=$COMPOSE_FILE_RUNTIME" >> "$GITHUB_ENV"
 
       - name: Validate rendered Compose config
-        run: docker compose --env-file infra/env/dev/.env -f "$COMPOSE_FILE_RUNTIME" config --quiet
+        run: docker compose -f "$COMPOSE_FILE_RUNTIME" config --quiet
 
       - name: Build backend test image
         env:
@@ -254,7 +268,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=flowform-backend-test,ignore-error=true
 
       - name: Start test environment
-        run: docker compose --env-file infra/env/dev/.env -f "$COMPOSE_FILE_RUNTIME" up -d --no-build
+        run: docker compose -f "$COMPOSE_FILE_RUNTIME" up -d --no-build
 
       - name: Wait for backend-test container
         run: |
@@ -285,7 +299,7 @@ jobs:
         if: failure()
         # Do not print raw service logs: test output can contain caller-provided
         # values that are not identifiable as secrets at workflow-authoring time.
-        run: docker compose --env-file infra/env/dev/.env -f "$COMPOSE_FILE_RUNTIME" ps --all
+        run: docker compose -f "$COMPOSE_FILE_RUNTIME" ps --all
 
       - name: Upload coverage report
         if: always() && github.event_name == 'push'

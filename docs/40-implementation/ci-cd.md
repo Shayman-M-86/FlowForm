@@ -111,11 +111,11 @@ public egress.
 
 ## Known gaps
 
-The backend-test job now uses the maintained
-`infra/containers/strategies/dev/` paths. Its environment generation remains
-incomplete because `scripts/secrets/generate-env-files.sh` omits several
-required non-Auth0 backend settings, so only a hosted run can attest successful
-settings initialization.
+The backend-test job uses the maintained
+`infra/containers/strategies/dev/` paths. It creates its ignored generated env
+directory on fresh runners and exports the fixed, non-secret Compose topology
+directly in CI, so it does not depend on a developer's local `.env` file. A
+hosted run is still required to verify Docker, image, and database startup.
 
 CI does not run the checked-in container, rehearsal-deployment, or Packer
 invariant suites under `infra/tests/`. The image workflow has not yet been
