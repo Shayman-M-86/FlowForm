@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import tomllib
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -22,6 +23,24 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.core.errors import ConfigError
 
 logger = logging.getLogger(__name__)
+
+_PYPROJECT_PATH = Path(__file__).resolve().parents[2] / "pyproject.toml"
+
+
+def _load_project_version() -> str:
+    """Load the backend version declared in pyproject.toml."""
+    try:
+        project = tomllib.loads(_PYPROJECT_PATH.read_text(encoding="utf-8"))["project"]
+        version = project["version"]
+    except (KeyError, OSError, tomllib.TOMLDecodeError) as exc:
+        raise RuntimeError(f"Unable to load backend version from {_PYPROJECT_PATH}") from exc
+
+    if not isinstance(version, str) or not version:
+        raise RuntimeError(f"Invalid backend version in {_PYPROJECT_PATH}")
+    return version
+
+
+PROJECT_VERSION = _load_project_version()
 
 
 def _load_secret_from_file(secret_file: str, *, label: str) -> SecretStr:
@@ -106,7 +125,8 @@ class AwsSettings(BaseModel):
 
 class EmailSettings(BaseModel):
     """Email delivery settings for AWS SES."""
-    from_address: EmailStr 
+
+    from_address: EmailStr
     from_name: str = "FlowForm"
     reply_to_address: EmailStr | None = None
 
@@ -163,12 +183,12 @@ class Auth0MgmtSettings(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def load_secret_from_file(cls, data: Any) -> Any:
-        """Load the Auth0 Management API secret from a mounted secret file."""
-        if not isinstance(data, dict) or data.get("secret") is not None:
+        """Prefer a configured mounted secret file over a direct secret."""
+        if not isinstance(data, dict):
             return data
 
         secret_file = data.get("secret_file")
-        if secret_file is None:
+        if not secret_file:
             return data
 
         return {
@@ -217,6 +237,7 @@ class Auth0Settings(BaseModel):
 class AppSettings(BaseModel):
     """High-level application behavior settings."""
 
+    version: str = PROJECT_VERSION
     debug: bool = False
     secret_key: SecretStr | None = None
     secret_key_file: str
@@ -247,8 +268,7 @@ class EncryptionSettings(BaseModel):
 
     # How long (seconds) to cache linkage keys in memory before re-fetching
     linkage_key_cache_ttl_seconds: float = 1800.0
-    key_cache_enabled: bool = True  
-
+    key_cache_enabled: bool = True
 
 
 class RateLimitSettings(BaseModel):
@@ -268,7 +288,7 @@ class LoggingSettings(BaseModel):
     sqlalchemy_level: str = "WARNING"
     werkzeug_level: str = "WARNING"
     log_file: str | None = None
-    log_file_backup_count: int = 5
+    log_file_backup_count: int = 2
     log_file_max_bytes: int = 5 * 1024 * 1024  # 5 MB
     requests: bool = True  # Whether to log HTTP requests
     duration: bool = False  # Whether to log request duration
@@ -283,9 +303,23 @@ class FlowForm(BaseModel):
     server: ServerSettings = Field(default_factory=ServerSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
-    aws: AwsSettings 
+    aws: AwsSettings
     encryption: EncryptionSettings
     email: EmailSettings
+
+    @model_validator(mode="after")
+    def validate_auth0_mgmt_secret_source(self) -> FlowForm:
+        """Require file-backed Auth0 management credentials outside tests."""
+        if self.env == "test":
+            return self
+
+        mgmt = self.auth0.mgmt
+        if mgmt is None or not mgmt.secret_file:
+            raise ValueError("FLOWFORM_AUTH0_MGMT_SECRET_FILE is required when FLOWFORM_ENV is dev or prod")
+        if not mgmt.validate_on_startup:
+            raise ValueError("FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP must be true when FLOWFORM_ENV is dev or prod")
+
+        return self
 
 
 class DataBase(BaseModel):
@@ -380,6 +414,7 @@ def apply_settings_to_flask(app: Flask, settings: Settings) -> None:
     """Apply loaded settings to a Flask application."""
     mapping = {
         "ENV_NAME": settings.flowform.env,
+        "APP_VERSION": settings.flowform.app.version,
         "DEBUG": settings.flowform.app.debug,
         "SECRET_KEY": settings.flowform.app.secret_key,
         "AUTH0_DOMAIN": settings.flowform.auth0.domain,

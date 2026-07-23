@@ -5,7 +5,7 @@ aliases:
 document_type: architecture
 status: draft
 authority: canonical
-verified_against_commit: ed0fb65df856e18807ee243b4bca512a8d0442b0
+verified_against_commit: null
 tags: [backend, frontend, infrastructure]
 related_code:
   - "../../infra/containers/strategies/dev/compose/compose.yml"
@@ -38,7 +38,7 @@ The repository does not use one Compose model unchanged in every context.
 | --- | --- | --- |
 | Backend development | Flask development backend, core PostgreSQL, response PostgreSQL | Runs the API and both persistence models on one developer machine with source and development-state mounts. |
 | Frontend development | Astro public site, Vite Studio app, optional Studio preview | Provides containerised frontend development independently of the backend Compose project. |
-| Backend test | Long-running backend test container, core PostgreSQL, response PostgreSQL | Gives tests an isolated application image and two disposable database services; CI enters the running backend container to execute the suite. |
+| Backend test | Long-running backend test container, core PostgreSQL, response PostgreSQL | Gives tests an isolated application image and two disposable database services on an internal-only network; CI enters the running backend container to execute the hermetic suite, while an explicit local live-test override enables public egress. |
 | Split-runtime local proof | Caddy, Squid, Gunicorn backend, core PostgreSQL, response PostgreSQL | Exercises the proxy/app communication and hardening shape on one Docker host. It is explicitly a workstation proof, not the cloud topology. |
 | Shared host runtime | Caddy and Squid on a proxy host; Gunicorn backend on a separate app host | Defines the staging/prod container contract. PostgreSQL and the static frontends are outside these Compose projects. |
 | Proxmox rehearsal | Shared proxy/app Compose files, a proxy override, and dedicated fixture/database services | Exercises the shared host bootstrap and images on local VMs while replacing cloud-only dependencies with local equivalents. |
@@ -81,10 +81,22 @@ files with environment-specific values. See [[secrets-and-configuration|Secrets 
 the configuration lifecycle and [[infrastructure|Infrastructure implementation]] for source
 locations.
 
+This idempotent bootstrap is the platform-neutral lifecycle contract. Native
+provisioning supplies and invokes it at first boot, while systemd invokes it
+again after later reboots. A release pipeline may invoke the same bootstrap to
+roll out a new image, but release coordination is not a prerequisite for a
+fresh host to start once its declared image and configuration already exist.
+AWS has not yet wired this first-boot path into EC2 user data.
+
 ## Rehearsal boundary
 
 The Proxmox rehearsal reuses the shared app runtime unchanged and deliberately
 changes only dependencies that cannot operate on its offline private network.
+It also delays the creation boot's first bootstrap invocation until the
+workstation has published images into the initially empty private registry.
+That workstation-owned first convergence is a rehearsal-only fixture seam;
+enabled systemd units still make later reboots self-starting, and the delay is
+not the intended AWS lifecycle.
 Its proxy override substitutes local TLS and egress allow-list configuration.
 A dedicated, isolated DB VM runs one ephemeral PostgreSQL cluster containing
 the core and response databases through the maintained initialization path.

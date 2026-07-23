@@ -5,13 +5,15 @@ aliases:
 document_type: workflow
 status: draft
 authority: canonical
-verified_against_commit: ad26b87e9820
+verified_against_commit: null
 tags: [infrastructure, ci-cd]
 related_code:
   - "../../.github/workflows/deploy.yml"
   - "../../.github/workflows/ci.yml"
   - "../../infra/deployment/aws/cdk/flowform_infra/stacks/frontend_stack.py"
+  - "../../infra/deployment/aws/cdk/flowform_infra/stacks/application_stack.py"
   - "../../infra/deployment/aws/cdk/flowform_infra/config/environments.py"
+  - "../../infra/deployment/bootstrap/"
 related_docs:
   - "Deployment model"
   - "Continuous integration"
@@ -26,6 +28,29 @@ and publishing the two static frontends to the staging S3 and CloudFront
 resources. It is not a full application deployment. CDK deployment, backend
 image publication, host bootstrap, database provisioning or migration, and
 production release are not wired into this workflow.
+
+## Target backend lifecycle (not implemented)
+
+The target backend path separates machine boot from release rollout:
+
+- CDK/CloudFormation must attach EC2 user data that installs and invokes the
+  shared app bootstrap. A newly created or replaced instance must start itself
+  once its declared ECR image, SSM parameters, secrets, and database are ready;
+  it must not wait for a workstation or a permanently running custom
+  orchestrator to issue its first start command.
+- The systemd unit must invoke the same idempotent bootstrap on later reboots.
+- Release automation must publish an immutable backend image before selecting
+  it for a host, run compatible migrations before application replacement, and
+  verify health after rollout.
+- The current implementation sketches propose GitHub Actions with OIDC for
+  release ordering and SSM Run Command or an SSM document for executing the
+  rollout on the private app host. This is a proposal, not checked-in backend
+  deployment automation.
+
+The Proxmox rehearsal's workstation-owned first convergence is not the cloud
+target. It exists because the rehearsal registry starts empty and uses the app
+VM as its image-publication relay. See [[deployment-model|Deployment model]] for
+the cross-platform boundary and the current implementation gaps.
 
 ## Trigger
 

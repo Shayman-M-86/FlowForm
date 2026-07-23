@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from logging import getLogger
 
-from flask import jsonify, request
+from flask import current_app, jsonify, request
 from sqlalchemy import text
 
 from app.api.v1.system import system_bp
@@ -21,7 +21,10 @@ def health_check():
         JSON response indicating the service is healthy.
     """
     return jsonify(
-        data={"timestamp": datetime.now(UTC).isoformat()},
+        data={
+            "timestamp": datetime.now(UTC).isoformat(),
+            "version": current_app.config["APP_VERSION"],
+        },
         message="Service is healthy",
     ), 200
 
@@ -36,7 +39,10 @@ def readiness_check():
     """
     db_status, status_code = db_check()
     return jsonify(
-        data={"timestamp": datetime.now(UTC).isoformat()},
+        data={
+            "timestamp": datetime.now(UTC).isoformat(),
+            "version": current_app.config["APP_VERSION"],
+        },
         message=db_status,
     ), status_code
 

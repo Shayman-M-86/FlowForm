@@ -78,6 +78,12 @@ Backend configuration supports file-backed database passwords, Flask secret key,
 
 The CDK security stack defines KMS and Secrets Manager resources plus an application role with read access to the declared secrets, KMS encrypt/decrypt, SES send, scoped SSM reads, and ECR pull access. ECR repository grants still use a name wildcard that the source marks for tightening. Runtime crypto also lets the backend call KMS and fetch versioned linkage secrets directly. Operational handling and rotation belong in [[secrets-and-configuration|Secrets and configuration]].
 
+Dev and production backend processes fail closed during initialization unless
+the configured Auth0 management credential can obtain a token, the linkage
+secret's current version can be read, and the configured KMS key completes an
+encrypt/decrypt round trip. Test mode skips these outbound probes. SES access is
+not boot-probed because a send would be externally visible.
+
 File-backed delivery protects against placing these values directly in normal container environment variables, but does not by itself prove secure secret creation, rotation, host access, backup handling, or absence from process memory.
 
 ## Network and runtime controls

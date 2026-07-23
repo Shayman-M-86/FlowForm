@@ -57,6 +57,8 @@ pythonpath = ["."]
 testpaths = ["tests"]
 addopts = [
     "-ra",
+    "-m",
+    "not live_external",
     "--strict-markers",
     "--strict-config",
     "--show-capture=no",
@@ -69,6 +71,7 @@ filterwarnings = [
 markers = [
     "unit: Fast unit tests",
     "integration: Tests that use external services or the database",
+    "live_external: Opt-in tests that call real external services and require local credentials",
 ]
 
 [tool.ruff]

@@ -9,6 +9,8 @@ verified_against_commit: null
 tags: [configuration]
 related_code:
   - "../../backend/app/core/config.py"
+  - "../../backend/app/aws/client_extension.py"
+  - "../../backend/app/aws/startup_validation.py"
   - "../../infra/deployment/config/runtime-parameter-contract.json"
   - "../../infra/deployment/aws/cdk/flowform_infra/config/environments.py"
   - "../../infra/deployment/bootstrap/"
@@ -45,6 +47,9 @@ Maps configuration concepts to verified repository implementation.
 
 - `get_settings()` is called by the Flask application factory and requires a
   valid `FLOWFORM_ENV` before constructing nested Pydantic settings.
+- AWS client initialization calls `validate_aws_runtime_access()` before
+  attaching the clients to Flask. It skips test mode; dev and production must
+  prove Secrets Manager read access and a KMS encrypt/decrypt round trip.
 - `get_env_config()` is called by `infra/deployment/aws/cdk/app.py` for the CDK
   context selected by `-c env=<name>` or `CDK_ENV`.
 - Proxmox `terraform/locals.tf` reads the runtime-parameter contract, checks the
@@ -62,6 +67,11 @@ supports password files. `Auth0Settings`, `AppSettings`, `AwsSettings`,
 the remaining backend boundary. `EnvConfig` controls which CDK stacks exist and
 their environment-specific lifecycle; `SecurityScopeConfig` separates the
 shared non-production security namespace from production.
+
+`FlowForm` requires a file-backed Auth0 management secret and enabled Auth0
+startup validation in dev and production. Test mode permits a direct throwaway
+secret and skips both Auth0 and AWS live startup probes so ordinary local and CI
+test runs do not require credentials or network egress.
 
 The runtime-parameter contract separates scoped values, backend/proxy runtime
 groups, and secret resource names. Its rehearsal seed-key set is non-secret;
@@ -92,6 +102,9 @@ materialized configuration.
 
 - Backend unit and integration tests exercise settings validation and
   environment assembly through the application factory.
+- `backend/tests/unit/aws/test_startup_validation.py` proves test-mode isolation
+  and the dev/prod failure boundary with fake clients. Real-provider smoke tests
+  remain opt-in under `backend/tests/live/`.
 - `infra/deployment/aws/cdk/tests/test_environments.py` and
   `test_runtime_parameter_contract.py` cover typed deployment configuration and
   contract-derived parameter names.

@@ -53,6 +53,14 @@ app, proxy, or database convergence during the creation boot. After proxy
 convergence, database convergence overlaps local backend/Alloy preparation;
 image publication and app convergence remain ordered behind their prerequisites.
 
+This is explicitly a rehearsal-only exception to the cross-platform lifecycle
+in [[deployment-model|Deployment model]]. It exists because the initially empty
+private registry needs the app VM as its image-publication relay. It must not be
+copied into AWS first boot: an AWS EC2 replacement is intended to invoke the
+shared bootstrap from user data/systemd after its image and configuration
+prerequisites have been published. Later Proxmox reboots already use that
+self-starting systemd path.
+
 ## Current topology
 
 The default golden template is VMID `9000`; fixture templates are LocalStack

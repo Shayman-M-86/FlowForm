@@ -71,8 +71,8 @@ the proxy host journal to Grafana Cloud Loki.
 | Application log | Python logging | Timestamp, severity, logger, message, optional request/resource/timing fields; JSON in the shared runtime. |
 | HTTP request log | Flask hooks | Request ID, method, matched route template or an unmatched sentinel, status, client address, and optional duration. |
 | Timing checkpoint | Submission services | Debug-only elapsed and step-delta fields tied to the current request when present. |
-| Liveness | `GET /api/v1/system/health` | Process-level timestamp response; no dependency check. |
-| Readiness | `GET /api/v1/system/health/ready` | HTTP 200 only when both configured PostgreSQL sessions execute `SELECT 1`; otherwise 503. |
+| Liveness | `GET /api/v1/system/health` | Process-level timestamp and backend version response; no dependency check. |
+| Readiness | `GET /api/v1/system/health/ready` | Timestamp and backend version; HTTP 200 only when both configured PostgreSQL sessions execute `SELECT 1`, otherwise 503. |
 | Audit record | Logger helper or core row | Actor/action/resource metadata shape exists, but call-site coverage is not established. |
 | Runtime log stream | Alloy/Loki | App/proxy container logs and proxy-host journal records; explicitly logs only. |
 
@@ -90,7 +90,8 @@ local source.
 3. Submission orchestration emits timing checkpoints and explicit warning,
    error, or critical records for important partial failures and reconciliation.
 4. Container health invokes the backend readiness endpoint; Docker uses its
-   status to report backend health.
+   status to report backend health. Both health responses report the version
+   loaded into application settings from `backend/pyproject.toml` at startup.
 5. App-host Alloy reads Docker logs, parses backend JSON records, and forwards
    them over the private network to the proxy Alloy gateway.
 6. Proxy Alloy combines those records with proxy-container and proxy-host

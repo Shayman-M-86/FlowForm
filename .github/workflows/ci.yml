@@ -282,6 +282,7 @@ jobs:
         run: >-
           docker exec "$BACKEND_CONTAINER"
           uv run pytest tests --show-capture=no
+          -m "not live_external"
           --cov=app --cov-report=xml:/app/coverage.xml
 
       - name: Report service status

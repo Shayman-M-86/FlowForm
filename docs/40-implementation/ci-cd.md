@@ -86,7 +86,11 @@ checks. Backend and CDK pytest suppress captured output in CI. Disposable test
 credentials are masked before services start, only explicitly allowlisted
 non-secret repository variables reach the backend-test environment, backend
 failures report Compose service status without printing or uploading raw
-service logs, and the test stack is always torn down.
+service logs, and the test stack is always torn down. Backend tests marked
+`live_external` are excluded explicitly; real Auth0/AWS smoke tests remain a
+local opt-in and the runner rejects that mode whenever `CI` is set. The normal
+test Compose network is internal-only; only the local live-test override enables
+public egress.
 
 ## Known gaps
 

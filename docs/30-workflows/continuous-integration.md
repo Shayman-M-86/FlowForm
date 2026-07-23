@@ -42,6 +42,11 @@ older one. There is no manual-dispatch trigger.
   live Auth0 management validation is disabled in the test stack. The workflow
   passes an explicit allowlist of required variables rather than exporting the
   complete GitHub variable namespace.
+- Backend tests marked `live_external` are excluded both by pytest defaults and
+  explicitly by the Actions command. The local runner refuses that opt-in when
+  `CI` is set, and the normal test Compose network is internal-only. The hosted
+  backend test containers therefore have no public egress route even if a test
+  is accidentally left unmocked.
 - Staging Auth0 public values must exist as repository variables for CDK synth.
 - Internal pushes and pull requests need GitHub OIDC access to the read-only
   staging preview role for `cdk diff`. Fork pull requests deliberately skip

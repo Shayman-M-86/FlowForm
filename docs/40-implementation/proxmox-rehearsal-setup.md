@@ -17,6 +17,7 @@ related_docs:
   - "Proxmox rehearsal implementation"
   - "Proxmox rehearsal fixtures and egress"
   - "Proxmox rehearsal observability"
+  - "Deployment model"
 ---
 
 # Proxmox rehearsal setup
@@ -75,6 +76,8 @@ of first convergence. Cloud-init installs configuration and enables app, proxy,
 and database systemd services for later VM reboots, but does not start those
 services during the creation boot. This avoids cloud-init racing the workstation
 over the same bootstrap locks or waiting for images that are not published yet.
+This is a rehearsal-only image-relay constraint, not the intended AWS
+first-boot contract; [[deployment-model|Deployment model]] owns that distinction.
 
 The orchestrator runs Terraform apply → secret synchronisation → proxy
 convergence → app image-relay preparation. It then converges the database while
@@ -151,3 +154,4 @@ fixes belong in scripts and templates, never hand-applied to a built VM.
 - [[proxmox-rehearsal|Proxmox rehearsal implementation]]
 - [[proxmox-rehearsal-fixtures|Proxmox rehearsal fixtures and egress]]
 - [[proxmox-rehearsal-observability|Proxmox rehearsal observability]]
+- [[deployment-model|Deployment model]]

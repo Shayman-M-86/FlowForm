@@ -5,7 +5,7 @@ aliases:
 document_type: reference
 status: draft
 authority: canonical
-verified_against_commit: ad26b87e9820
+verified_against_commit: null
 tags: [configuration]
 related_code:
   - "../../backend/app/core/config.py"
@@ -50,9 +50,9 @@ catalogue only points there.
 | --- | --- | --- |
 | Runtime selection | `FLOWFORM_ENV` | Required by `backend/app/core/config.py`; accepted values are `dev`, `test`, and `prod`. |
 | Flask application | `FLOWFORM_APP_DEBUG`, `FLOWFORM_APP_SECRET_KEY_FILE` | `FlowForm.app` settings. Production-style Compose supplies the key through a mounted file. |
-| Auth0 | `FLOWFORM_AUTH0_DOMAIN`, `FLOWFORM_AUTH0_AUDIENCE`, `FLOWFORM_AUTH0_CLIENT_ID`, `FLOWFORM_AUTH0_MGMT_ID`, `FLOWFORM_AUTH0_MGMT_SECRET_FILE`, `FLOWFORM_AUTH0_MGMT_DOMAIN` | `FlowForm.auth0` settings. The management secret supports file-backed loading; the canonical management domain may differ from the login custom domain. |
+| Auth0 | `FLOWFORM_AUTH0_DOMAIN`, `FLOWFORM_AUTH0_AUDIENCE`, `FLOWFORM_AUTH0_CLIENT_ID`, `FLOWFORM_AUTH0_MGMT_ID`, `FLOWFORM_AUTH0_MGMT_SECRET`, `FLOWFORM_AUTH0_MGMT_SECRET_FILE`, `FLOWFORM_AUTH0_MGMT_DOMAIN`, `FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP` | `FlowForm.auth0` settings. Dev and production require the management secret file and startup validation; only tests accept the direct throwaway secret or disabled probe. A configured file takes precedence. The canonical management domain may differ from the login custom domain. |
 | Databases | `DATABASE_CORE_*`, `DATABASE_RESPONSE_*` | `Settings.database` and Compose. Each database supports a URL or host/port/name/user plus an application-password file. Core and response settings are separate families. |
-| AWS and encryption | `FLOWFORM_AWS_REGION`, `FLOWFORM_ENCRYPTION_KMS_KEY_ARN`, `FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN`, `FLOWFORM_ENCRYPTION_*CACHE*` | AWS client and response-encryption settings in `backend/app/core/config.py`. Credential resolution normally comes from the AWS SDK chain or instance role. |
+| AWS and encryption | `FLOWFORM_AWS_REGION`, `FLOWFORM_ENCRYPTION_KMS_KEY_ARN`, `FLOWFORM_ENCRYPTION_LINKAGE_SECRET_ARN`, `FLOWFORM_ENCRYPTION_*CACHE*` | AWS client and response-encryption settings in `backend/app/core/config.py`. Credential resolution normally comes from the AWS SDK chain or instance role. Dev and production boot fails unless the role/credentials can read the linkage secret and complete a KMS round trip; test mode skips those calls. |
 | Email | `FLOWFORM_EMAIL_FROM_ADDRESS`, `FLOWFORM_EMAIL_FROM_NAME`, `FLOWFORM_EMAIL_REPLY_TO_ADDRESS`, `FLOWFORM_EMAIL_ENABLED`, rate/cooldown settings | SES sender and application-level email limits. |
 | HTTP and rate limits | `FLOWFORM_SERVER_HOST`, `FLOWFORM_SERVER_PORT`, `FLOWFORM_SERVER_SITE_URL`, `FLOWFORM_RATE_LIMIT_*` | Backend bind metadata, site URL, and in-process limiter settings. Container commands can override the process bind address. |
 | Logging | `FLOWFORM_LOGGING_LEVEL`, `FLOWFORM_LOGGING_LOG_JSON`, `FLOWFORM_LOGGING_LOG_FILE`, `FLOWFORM_LOGGING_REQUESTS`, `FLOWFORM_LOGGING_DURATION` | Backend logging configuration. Runtime Compose expects stdout JSON and Docker-owned rotation. |

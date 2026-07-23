@@ -14,6 +14,7 @@ related_code:
   - "../../infra/deployment/aws/cdk/flowform_infra/constructs/static_site_construct.py"
   - "../../infra/containers/"
   - "../../infra/containers/strategies/rehearsal/"
+  - "../../infra/deployment/bootstrap/"
   - "../../infra/images/packer/"
   - "../../infra/images/scripts/"
   - "../../infra/deployment/proxmox/"
@@ -52,6 +53,40 @@ separate stack implementations. Dev intentionally differs by omitting cloud
 compute, databases, and frontend hosting. Staging and prod select the same stack
 classes, but resource lifecycle, sizing, domains, and security scope differ.
 
+## Cross-platform host lifecycle
+
+The intended cross-platform boundary is the shared, idempotent host bootstrap,
+not the workstation-side Proxmox build script. A newly created or replaced
+application host should be able to reach a healthy runtime without an operator
+issuing a second command after machine provisioning:
+
+1. Release automation publishes the immutable container image and prepares any
+   configuration, secrets, and compatible database state required by that
+   image.
+2. The platform provisioner supplies its native first-boot payload: EC2 user
+   data in AWS or cloud-init attached by Terraform in Proxmox.
+3. First boot installs and invokes the same host bootstrap used by the systemd
+   reboot-recovery unit.
+4. The bootstrap renders configuration, materialises secrets, pulls images,
+   starts Compose, waits for health, and fails closed when a prerequisite is
+   unavailable.
+
+Release orchestration remains a separate responsibility. It coordinates image
+publication, migrations, rollout health, and rollback, but a permanently
+running custom orchestration service should not be required merely to wake a
+fresh host. The AWS implementation sketches propose GitHub Actions plus SSM
+Run Command for controlled releases; that mechanism is not yet implemented or
+accepted as a completed deployment boundary.
+
+The Proxmox rehearsal currently has one deliberate exception. Its private
+registry starts empty, and the app VM is itself used as the relay that publishes
+the backend and Alloy images. Guest cloud-init therefore installs and enables
+the bootstrap units without starting them during the creation boot; the
+workstation orchestrator publishes the images and owns first convergence.
+Ordinary VM reboots remain self-starting through systemd. This ordering is a
+rehearsal-fixture constraint and must not be generalized into the AWS host
+lifecycle.
+
 ## Proxmox image and deployment boundary
 
 The local Proxmox rehearsal uses separate tools for separate lifecycle scopes:
@@ -76,8 +111,10 @@ fixtures derive from it: template `9001` preloads exactly the LocalStack,
 registry, and TLS-shim images declared by rehearsal Compose, while template
 `9002` preloads only the PostgreSQL image declared by DB Compose. VMs `230` and
 `240` therefore need no runtime registry access. Terraform and cloud-init own IPs, SSH keys,
-Compose files, TLS material, service units, seed data, and service startup.
-Terraform consumes all completed template VMIDs and never invokes Packer.
+Compose files, TLS material, service units, and seed data. The workstation
+orchestrator owns first service startup; enabled systemd units own later reboot
+recovery. Terraform consumes all completed template VMIDs and never invokes
+Packer.
 
 LocalStack is not exposed to the development LAN for provisioning. Terraform
 validates the non-secret rehearsal seed values against the shared runtime
@@ -181,6 +218,9 @@ live deployment. Configuration and secret ownership belong in
   one instance? The database stack leaves this undecided.
 - What process will provision runtime files, invoke bootstrap, publish container
   images, migrate databases, and roll back a backend release?
+- Which AWS release mechanism will invoke the already-running host for a
+  controlled rollout: SSM Run Command, an SSM document, or another managed
+  deployment facility?
 - When will the public API DNS record and certificate path be implemented and
   verified end to end?
 - Which observability resources and release-health signals are required before

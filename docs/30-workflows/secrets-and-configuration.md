@@ -9,6 +9,7 @@ verified_against_commit: null
 tags: [configuration, security]
 related_code:
   - "../../backend/app/core/config.py"
+  - "../../backend/app/aws/startup_validation.py"
   - "../../scripts/secrets/"
   - "../../infra/deployment/config/runtime-parameter-contract.json"
   - "../../infra/deployment/bootstrap/"
@@ -77,8 +78,9 @@ failure test.
 4. For tests, generate per-run database and Flask values. Test Compose overrides
    inherited management settings with a dummy identity, a direct throwaway
    Auth0 secret, and startup validation disabled; it does not mount a persisted
-   or real Auth0 management secret. CI generates and masks its throwaway value
-   before starting Compose.
+   or real Auth0 management secret. `FLOWFORM_ENV=test` also skips the AWS
+   startup probes. CI generates and masks its throwaway value before starting
+   Compose.
 5. In the shared-host model, CDK owns scoped `app-secrets`, `db-secrets`, and
    `linkage-secret` resources plus SSM parameters. App, proxy, and database
    bootstrap materialize secret files into `/run/flowform/secrets` tmpfs while
@@ -104,6 +106,18 @@ the backend through its ARN.
 
 - Settings validation raises a configuration error for missing environment,
   database parts, secret files, or required Auth0/encryption/email values.
+  Dev and production require the Auth0 Management API secret to come from
+  `FLOWFORM_AUTH0_MGMT_SECRET_FILE`; only the test environment accepts the
+  direct throwaway `FLOWFORM_AUTH0_MGMT_SECRET` value. When both are present
+  outside tests, the mounted file takes precedence. Dev and production also
+  require Auth0 management startup validation to remain enabled.
+- During each dev or production backend process boot, initialization requests
+  an Auth0 Management API token, reads the configured linkage secret's
+  `AWSCURRENT` version, and performs a KMS encrypt/decrypt round trip with the
+  configured key. Failure of any probe raises a fatal initialization error and
+  prevents the process from serving requests. The KMS probe uses a random
+  ephemeral value and does not persist application data; SES is not probed
+  because proving send access would create an external side effect.
 - The dev fetch script refuses a disk-backed or out-of-scope destination and
   aborts if AWS returns an empty/missing JSON key. Re-run it after tmpfs is
   cleared; do not regenerate database passwords while their old volumes remain.

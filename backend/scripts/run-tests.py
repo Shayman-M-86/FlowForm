@@ -31,7 +31,7 @@ if isinstance(sys.stderr, TextIOWrapper):
 # and environment inputs so it can choose the smallest safe reset before a run.
 #
 # Usage:
-#   ./run-tests.sh [--ai] [--verbose] [--logs=all|none] [--log-tail=N] [--clean-rebuild] [pytest args]
+#   ./run-tests.sh [--ai] [--verbose] [--logs=all|none] [--log-tail=N] [--clean-rebuild] [--live-external] [pytest args]
 #
 # Options:
 #   --ai              Compact output for agents/CI: hide Compose startup chatter.
@@ -42,6 +42,9 @@ if isinstance(sys.stderr, TextIOWrapper):
 #   --logs=none       On failure, skip service diagnostics. This is the default.
 #   --log-tail=N      Deprecated compatibility option; raw log tails are disabled.
 #   --clean-rebuild   Force a full clean rebuild before running tests.
+#   --live-external   Opt in to tests that call real Auth0/AWS services. Refused
+#                     when CI is set. Required credentials are forwarded only
+#                     to the pytest docker exec process.
 #   --help, -h        Print this help text.
 #
 # Any other arguments are passed through to pytest. If no pytest args are
@@ -54,11 +57,13 @@ if isinstance(sys.stderr, TextIOWrapper):
 #   ./run-tests.sh --logs=all
 #   ./run-tests.sh --logs=none tests/integration
 #   ./run-tests.sh --clean-rebuild --ai
+#   ./run-tests.sh --live-external --ai
 #   ./run-tests.sh tests/ -k public_link
 # ------------------------------------------------------------------------------
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_FILE = PROJECT_ROOT / "infra/containers/strategies/dev/compose/compose.test.yml"
+LIVE_COMPOSE_FILE = PROJECT_ROOT / "infra/containers/strategies/dev/compose/compose.live-tests.yml"
 COMPOSE_ENV_FILE = PROJECT_ROOT / "infra/env/dev/.env"
 TEST_SECRET_DIR = PROJECT_ROOT / "infra/env/test/secrets"
 COMPOSE_PROJECT = "flowform-test-environment"
@@ -68,7 +73,19 @@ POSTGRES_CONTAINERS = ("flowform-postgres-core-test", "flowform-postgres-respons
 POSTGRES_VOLUMES = ("flowform_postgres_core_data", "flowform_postgres_response_data")
 BACKEND_VENV_VOLUME = "flowform_backend_test_venv"
 STATE_FILE = PROJECT_ROOT / ".cache/flowform-test-runner/rebuild-teardown-state.json"
-FINGERPRINT_VERSION = 2
+FINGERPRINT_VERSION = 3
+LIVE_EXTERNAL_MODE = False
+
+LIVE_EXTERNAL_ENV_NAMES = (
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    "AWS_SESSION_TOKEN",
+    "AWS_REGION",
+    "FLOWFORM_LIVE_AWS_KMS_KEY_ARN",
+    "FLOWFORM_LIVE_AUTH0_MGMT_DOMAIN",
+    "FLOWFORM_LIVE_AUTH0_MGMT_ID",
+    "FLOWFORM_LIVE_AUTH0_MGMT_SECRET",
+)
 
 COLOR_RESET = "\033[0m"
 COLOR_BLUE = "\033[34m"
@@ -78,6 +95,7 @@ COLOR_RED = "\033[31m"
 FINGERPRINT_INPUTS = {
     "environment": (
         "infra/containers/strategies/dev/compose/compose.test.yml",
+        "infra/containers/strategies/dev/compose/compose.live-tests.yml",
         "infra/env/dev/.backend.env",
         "infra/env/dev/.db.core.env",
         "infra/env/dev/.db.response.env",
@@ -107,13 +125,17 @@ class RunnerError(RuntimeError):
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         add_help=False,
-        usage="./run-tests.sh [--ai] [--verbose] [--logs=all|none] [--log-tail=N] [--clean-rebuild] [pytest args]",
+        usage=(
+            "./run-tests.sh [--ai] [--verbose] [--logs=all|none] [--log-tail=N] "
+            "[--clean-rebuild] [--live-external] [pytest args]"
+        ),
     )
     parser.add_argument("--ai", action="store_true")
     parser.add_argument("--verbose", "-v", action="store_true")
     parser.add_argument("--logs", choices=("all", "none"), default="none")
     parser.add_argument("--log-tail", type=int, default=250)
     parser.add_argument("--clean-rebuild", action="store_true")
+    parser.add_argument("--live-external", action="store_true")
     parser.add_argument("--help", "-h", action="store_true")
 
     known, pytest_args = parser.parse_known_args(argv)
@@ -122,6 +144,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         raise SystemExit(0)
     if known.log_tail < 1:
         raise RunnerError("ERROR: --log-tail must be greater than 0.")
+    if known.live_external and os.environ.get("CI", "").lower() not in {"", "0", "false", "no"}:
+        parser.error("--live-external is disabled when CI is set")
     known.pytest_args = pytest_args or ["tests/"]
     return known
 
@@ -143,9 +167,17 @@ def print_help() -> None:
                 break
 
 
-def run(args: list[str], *, check: bool = True, capture: bool = False) -> subprocess.CompletedProcess[str]:
+def run(
+    args: list[str],
+    *,
+    check: bool = True,
+    capture: bool = False,
+    environment_overrides: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
     environment = os.environ.copy()
     environment["FLOWFORM_SECRET_DIR"] = str(TEST_SECRET_DIR)
+    if environment_overrides:
+        environment.update(environment_overrides)
     completed = subprocess.run(
         args,
         cwd=PROJECT_ROOT,
@@ -163,7 +195,7 @@ def run(args: list[str], *, check: bool = True, capture: bool = False) -> subpro
 
 
 def compose_args(*args: str) -> list[str]:
-    return [
+    command = [
         "docker",
         "compose",
         "--env-file",
@@ -172,8 +204,10 @@ def compose_args(*args: str) -> list[str]:
         COMPOSE_PROJECT,
         "-f",
         str(COMPOSE_FILE),
-        *args,
     ]
+    if LIVE_EXTERNAL_MODE:
+        command.extend(["-f", str(LIVE_COMPOSE_FILE)])
+    return [*command, *args]
 
 
 def print_section(title: str) -> None:
@@ -370,6 +404,7 @@ def current_fingerprint() -> dict[str, Any]:
         digest.update(f"{bucket}\0{fingerprint['digest']}\n".encode())
     return {
         "version": FINGERPRINT_VERSION,
+        "live_external": LIVE_EXTERNAL_MODE,
         "digest": digest.hexdigest(),
         "buckets": buckets,
     }
@@ -577,6 +612,10 @@ def explain_fingerprint_decision(
         print("Test runner fingerprint version changed; rebuilding clean environment.")
         return True, False, False
 
+    if previous.get("live_external") != current.get("live_external"):
+        print("Test network mode changed; rebuilding clean environment.")
+        return True, False, False
+
     if previous.get("digest") != current.get("digest"):
         changed = changed_buckets(previous, current)
         print("Test environment inputs changed.")
@@ -684,9 +723,35 @@ def pytest_output_mode(args: argparse.Namespace) -> list[str]:
     return output_mode
 
 
+def live_external_environment() -> dict[str, str]:
+    """Build the allowlisted environment forwarded to live-test processes."""
+    environment = {
+        name: value
+        for name in LIVE_EXTERNAL_ENV_NAMES
+        if (value := os.environ.get(name))
+    }
+
+    secret_file = os.environ.get("FLOWFORM_LIVE_AUTH0_MGMT_SECRET_FILE", "")
+    if secret_file:
+        secret_path = Path(secret_file).expanduser()
+        if not secret_path.is_file():
+            raise RunnerError(
+                "ERROR: FLOWFORM_LIVE_AUTH0_MGMT_SECRET_FILE does not name a readable file."
+            )
+        secret = secret_path.read_text(encoding="utf-8").strip()
+        if not secret:
+            raise RunnerError("ERROR: FLOWFORM_LIVE_AUTH0_MGMT_SECRET_FILE is empty.")
+        environment["FLOWFORM_LIVE_AUTH0_MGMT_SECRET"] = secret
+
+    return environment
+
+
 def run_tests(args: argparse.Namespace) -> int:
     output_mode = pytest_output_mode(args)
-    pytest_command = ["uv", "run", "pytest", *output_mode, *args.pytest_args]
+    pytest_args = [*args.pytest_args]
+    if args.live_external:
+        pytest_args.extend(["-m", "live_external"])
+    pytest_command = ["uv", "run", "pytest", *output_mode, *pytest_args]
 
     if not args.ai:
         print_section("Running tests")
@@ -695,13 +760,25 @@ def run_tests(args: argparse.Namespace) -> int:
     docker_exec = ["docker", "exec"]
     if sys.stdin.isatty() and sys.stdout.isatty():
         docker_exec.append("-it")
+    environment_overrides: dict[str, str] = {}
+    if args.live_external:
+        environment_overrides = live_external_environment()
+        for name in sorted(environment_overrides):
+            docker_exec.extend(["--env", name])
     docker_exec.extend([CONTAINER, *pytest_command])
 
-    return run(docker_exec, check=False).returncode
+    return run(
+        docker_exec,
+        check=False,
+        environment_overrides=environment_overrides,
+    ).returncode
 
 
 def main(argv: list[str]) -> int:
+    global LIVE_EXTERNAL_MODE
+
     args = parse_args(argv)
+    LIVE_EXTERNAL_MODE = args.live_external
     ensure_docker_running()
 
     try:

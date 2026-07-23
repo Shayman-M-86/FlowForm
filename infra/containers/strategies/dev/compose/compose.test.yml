@@ -137,6 +137,10 @@ volumes:
 networks:
   flowform_net:
     driver: bridge
+    # The normal local and CI suites are hermetic: services can reach each
+    # other, but containers have no route to the public internet. The explicit
+    # live-test Compose override is the only place that enables outbound access.
+    internal: true
     ipam:
       config:
         - subnet: 172.50.0.0/16
