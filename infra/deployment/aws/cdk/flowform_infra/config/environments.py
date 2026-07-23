@@ -93,6 +93,9 @@ class SecurityScopeConfig:
     # The env whose GitHub Actions deploy/CI roles live in this scope's
     # stack (role names stay flowform-<env>-... so workflows don't change).
     ci_env_name: str
+    # Branch permitted to assume mutating GitHub Actions roles. Preview work
+    # has a separate read-only role and intentionally broader repository trust.
+    ci_deploy_branch: str
     # The OIDC identity provider is an account-level singleton; exactly one
     # scope creates it, the others import it by its deterministic ARN.
     creates_oidc_provider: bool
@@ -189,6 +192,7 @@ _SECURITY_SCOPES: dict[str, SecurityScopeConfig] = {
         region=_DEFAULT_REGION,
         removal_policy=RemovalPolicy.DESTROY,
         ci_env_name="staging",
+        ci_deploy_branch="staging",
         creates_oidc_provider=True,
         local_dev_assume=True,
     ),
@@ -198,6 +202,7 @@ _SECURITY_SCOPES: dict[str, SecurityScopeConfig] = {
         region=_DEFAULT_REGION,
         removal_policy=RemovalPolicy.RETAIN,
         ci_env_name="prod",
+        ci_deploy_branch="main",
         creates_oidc_provider=False,
         local_dev_assume=False,
     ),

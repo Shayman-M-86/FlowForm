@@ -76,7 +76,16 @@ The backend remains trusted across this split: it opens both database sessions, 
 
 Backend configuration supports file-backed database passwords, Flask secret key, and Auth0 Management API secret. The runtime bootstrap materializes those values from Secrets Manager into a root-owned tmpfs directory with mode `0700` and files with mode `0600`; Compose mounts them read-only under `/run/secrets`. Non-secret runtime configuration is rendered separately from SSM Parameter Store.
 
-The CDK security stack defines KMS and Secrets Manager resources plus an application role with read access to the declared secrets, KMS encrypt/decrypt, SES send, scoped SSM reads, and ECR pull access. ECR repository grants still use a name wildcard that the source marks for tightening. Runtime crypto also lets the backend call KMS and fetch versioned linkage secrets directly. Operational handling and rotation belong in [[secrets-and-configuration|Secrets and configuration]].
+The CDK security stack defines KMS and Secrets Manager resources plus an
+application role with read access to the declared secrets, KMS
+encrypt/decrypt, SES send, and scoped SSM reads. The environment-level registry
+and application stacks attach exact ECR publisher and host-specific pull
+policies: the app host receives Backend/Alloy access, while the proxy host
+receives Caddy/Squid/Alloy access. The image-publisher role is restricted to the
+declared deployment branch, but no checked-in workflow assumes it yet. Runtime
+crypto also lets the backend call KMS and fetch versioned linkage secrets
+directly. Operational handling and rotation belong in
+[[secrets-and-configuration|Secrets and configuration]].
 
 Dev and production backend processes fail closed during initialization unless
 the configured Auth0 management credential can obtain a token, the linkage

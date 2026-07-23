@@ -68,7 +68,8 @@ models form the remaining backend boundary. `TracingSettings` controls
 enablement, the OTLP/gRPC endpoint, parent-based sampling ratio, and service
 name. `EnvConfig` controls which CDK stacks exist and their
 environment-specific lifecycle; `SecurityScopeConfig` separates the shared
-non-production security namespace from production.
+non-production security namespace from production and records the branch
+allowed to assume mutating GitHub deployment identities.
 
 `FlowForm` requires a file-backed Auth0 management secret and enabled Auth0
 startup validation in dev and production. Test mode permits a direct throwaway

@@ -9,6 +9,7 @@ from aws_cdk.assertions import Match, Template
 from flowform_infra.config import DOMAIN_NAME, get_env_config
 from flowform_infra.stacks.application_stack import ApplicationStack
 from flowform_infra.stacks.network_stack import NetworkStack
+from flowform_infra.stacks.registry_stack import RegistryStack
 
 _EMPTY_ENV_DIR = Path(__file__).parent
 
@@ -47,13 +48,27 @@ def _synth_application_stack() -> Template:
         hosted_zone_id="Z1234567890ABC",
         zone_name=DOMAIN_NAME,
     )
+    image_publisher_role = iam.Role(
+        support,
+        "ImagePublisherRole",
+        assumed_by=iam.AccountRootPrincipal(),
+    )
 
     network = NetworkStack(app, "Network", env_config=env_config, env=cdk_env)
+    registry = RegistryStack(
+        app,
+        "Registry",
+        env_config=env_config,
+        kms_key=kms_key,
+        publisher_role=image_publisher_role,
+        env=cdk_env,
+    )
     application = ApplicationStack(
         app,
         "Application",
         env_config=env_config,
         network_stack=network,
+        registry_stack=registry,
         task_role=task_role,
         kms_key=kms_key,
         hosted_zone=hosted_zone,
@@ -187,6 +202,37 @@ def test_proxy_role_has_hosted_zone_scoped_route53_change_access():
             }
         },
     )
+
+
+def test_application_ecr_pulls_are_scoped_to_exact_host_repositories():
+    template = _synth_application_stack()
+    rendered = template.to_json()
+    policies = {
+        resource["Properties"]["PolicyName"]: resource["Properties"]["PolicyDocument"]["Statement"]
+        for resource in rendered["Resources"].values()
+        if resource["Type"] == "AWS::IAM::Policy"
+        and resource["Properties"]["PolicyName"].startswith(("AppEcrPullPolicy", "ProxyEcrPullPolicy"))
+    }
+
+    assert len(policies) == 2
+    assert "repository/flowform-staging-*" not in str(policies)
+
+    app_statements = next(value for key, value in policies.items() if key.startswith("AppEcrPullPolicy"))
+    proxy_statements = next(value for key, value in policies.items() if key.startswith("ProxyEcrPullPolicy"))
+    app_resources = app_statements[1]["Resource"]
+    proxy_resources = proxy_statements[1]["Resource"]
+
+    assert len(app_resources) == 2
+    assert "BackendRepository" in str(app_resources)
+    assert "AlloyRepository" in str(app_resources)
+    assert "CaddyRepository" not in str(app_resources)
+    assert "SquidRepository" not in str(app_resources)
+
+    assert len(proxy_resources) == 3
+    assert "CaddyRepository" in str(proxy_resources)
+    assert "SquidRepository" in str(proxy_resources)
+    assert "AlloyRepository" in str(proxy_resources)
+    assert "BackendRepository" not in str(proxy_resources)
 
 
 def test_application_instances_use_packer_ami_ssm_parameter_not_latest_base_image():

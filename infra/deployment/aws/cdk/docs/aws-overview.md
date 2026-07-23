@@ -9,16 +9,17 @@ secret values.
 
 | Stack | File | Status | Envs | Purpose |
 |---|---|---|---|---|
-| Security | `flowform_infra/stacks/security_stack.py` | Built | per scope: nonprod (dev+staging), prod | KMS key, Secrets Manager entries, SSM params, app IAM role — dev and staging share one `FlowForm-Nonprod-Security` stack (cost: no duplicate keys/secrets for simulation envs) |
-| Network | `flowform_infra/stacks/network_stack.py` | Stub | staging/prod | VPC, subnets, security groups |
+| Security | `flowform_infra/stacks/security_stack.py` | Built | per scope: nonprod (dev+staging), prod | KMS key, Secrets Manager entries, SSM params, app IAM role, GitHub OIDC roles — dev and staging share one `FlowForm-Nonprod-Security` stack |
+| Registry | `flowform_infra/stacks/registry_stack.py` | Built | staging/prod | KMS-encrypted immutable ECR repositories for Backend, Caddy, Squid, and Alloy; exact image-publisher policy |
+| Network | `flowform_infra/stacks/network_stack.py` | Built | staging/prod | VPC, subnet groups, security groups, S3 gateway endpoint, EC2 Instance Connect Endpoint |
 | Database | `flowform_infra/stacks/database_stack.py` | Stub | staging/prod | RDS PostgreSQL (core + response) |
-| Application | `flowform_infra/stacks/application_stack.py` | Stub | staging/prod | EC2 + Docker Compose (Caddy + Gunicorn) running the Flask API |
+| Application | `flowform_infra/stacks/application_stack.py` | Partial | staging/prod | Public proxy and private app EC2 instances, Elastic IP, roles, and exact host-specific ECR pulls; bootstrap and API DNS remain |
 | FrontendCert | `flowform_infra/stacks/frontend_cert_stack.py` | Built | staging/prod | ACM cert for CloudFront (us-east-1) |
 | Frontend | `flowform_infra/stacks/frontend_stack.py` | Built | staging/prod | S3 + CloudFront hosting for `public-site` and `studio-app` |
 | Observability | `flowform_infra/stacks/observability_stack.py` | Stub | staging/prod | CloudWatch log groups, alarms, dashboard |
 
-Security is deployed first — every other stack reads from it (KMS key,
-app role, secret ARNs). **dev deploys the Security stack only**: the app,
+Security is deployed first; Registry consumes its KMS key and image-publisher
+role, and Application consumes the resulting repositories. **dev deploys the Security stack only**: the app,
 databases, and frontends run locally, so dev's AWS footprint is just the
 resources the backend can't fake locally (KMS, secrets, SES send access).
 See [`environments.md`](environments.md).

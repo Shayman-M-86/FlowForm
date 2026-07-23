@@ -45,12 +45,13 @@ deliberate, so a deploy can't go out with missing Auth0 config.
 ## Deploy order
 
 For full deployments (staging/prod), `app.py` wires explicit stack
-dependencies: Security → Network → Database → Application →
-Observability, plus FrontendCert → Frontend (Frontend also depends on
-Security for the deploy role). `cdk deploy` (no stack name) respects this
-order automatically. Note `FrontendCert` lives in **us-east-1** (a
-CloudFront requirement) while everything else is in `ap-southeast-2`; CDK
-handles the cross-region wiring. For dev only the Security stack exists.
+dependencies: Security → Registry; Security + Network → Database; and
+Security + Registry + Network + Database → Application → Observability.
+FrontendCert → Frontend, and Frontend also depends on Security for its deploy
+role. `cdk deploy` (no stack name) respects this order automatically. Note
+`FrontendCert` lives in **us-east-1** (a CloudFront requirement) while
+everything else is in `ap-southeast-2`; CDK handles the cross-region wiring.
+For dev only the Security stack exists.
 
 ## Verifying a deploy
 

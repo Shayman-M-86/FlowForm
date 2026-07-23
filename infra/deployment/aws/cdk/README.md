@@ -27,8 +27,9 @@ flowform_infra/
 tests/                     # synth-time assertions (aws_cdk.assertions)
 ```
 
-`security_stack.py` is the only fully-built stack so far; the rest are
-structural stubs with `# TODO` markers — see `aws-overview.md` for status.
+Security, Registry, Network, and frontend hosting have substantive resources.
+Application is partial; Database and Observability remain structural stubs. See
+`aws-overview.md` for the current boundary.
 
 The app and proxy consume the Packer-built minimal AL2023 AMI and explicitly
 request a 10 GiB encrypted gp3 root volume. This must match

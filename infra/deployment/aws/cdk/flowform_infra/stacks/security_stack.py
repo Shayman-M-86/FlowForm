@@ -252,6 +252,27 @@ class SecurityStack(Stack):
             description=f"GitHub Actions read-only CI preview, e.g. cdk diff ({scope_config.ci_env_name})",
         )
 
+        image_publisher_principal = iam.FederatedPrincipal(
+            oidc_provider_arn,
+            conditions={
+                "StringEquals": {
+                    "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                    "token.actions.githubusercontent.com:sub": (
+                        f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:"
+                        f"ref:refs/heads/{scope_config.ci_deploy_branch}"
+                    ),
+                }
+            },
+            assume_role_action="sts:AssumeRoleWithWebIdentity",
+        )
+        self.image_publisher_role = iam.Role(
+            self,
+            "ImagePublisherRole",
+            role_name=f"flowform-{scope_config.ci_env_name}-image-publisher",
+            assumed_by=image_publisher_principal,
+            description=f"GitHub Actions image publisher ({scope_config.ci_env_name})",
+        )
+
     def _grant_backend_runtime_reads(self, scope_config: SecurityScopeConfig) -> None:
         """Grant EC2 app-host reads that belong to the shared backend role."""
         self.task_role.add_to_policy(
@@ -272,33 +293,6 @@ class SecurityStack(Stack):
                         resource="parameter",
                         resource_name=f"flowform/{scope_config.ci_env_name}/*",
                     ),
-                ],
-            )
-        )
-        self.task_role.add_to_policy(
-            iam.PolicyStatement(
-                actions=["ecr:GetAuthorizationToken"],
-                resources=["*"],
-            )
-        )
-        self.task_role.add_to_policy(
-            iam.PolicyStatement(
-                actions=[
-                    "ecr:BatchCheckLayerAvailability",
-                    "ecr:BatchGetImage",
-                    "ecr:GetDownloadUrlForLayer",
-                ],
-                # TODO: tighten to the exact backend ECR repository ARN when
-                # the repository is added to CDK. NOTE: the proxy box's role
-                # gets the matching grant in
-                # application_stack.py::_grant_ecr_pull — keep both ECR
-                # wildcards in sync until real repo ARNs replace them.
-                resources=[
-                    self.format_arn(
-                        service="ecr",
-                        resource="repository",
-                        resource_name=f"flowform-{scope_config.ci_env_name}-*",
-                    )
                 ],
             )
         )

@@ -60,11 +60,13 @@ Caddy, Squid, and Alloy proxy host. Development Compose combines backend and two
 PostgreSQL services for iteration; rehearsal adds isolated LocalStack, registry,
 TLS-shim, and PostgreSQL fixtures.
 
-AWS CDK separates security, network, application, frontend certificate,
-frontend hosting, database, and observability stacks. Proxmox Terraform creates
-full clones for proxy, app, LocalStack, and database roles and uploads
-role-specific cloud-init assembled from the shared runtime assets and parameter
-contract.
+AWS CDK separates security, registry, network, application, frontend
+certificate, frontend hosting, database, and observability stacks. The registry
+owns four private runtime-image repositories and exact publisher access;
+application-owned policies split image pulls between the app and proxy hosts.
+Proxmox Terraform creates full clones for proxy, app, LocalStack, and database
+roles and uploads role-specific cloud-init assembled from the shared runtime
+assets and parameter contract.
 
 ## Dependency direction
 
@@ -102,8 +104,9 @@ source.
 ## Known gaps
 
 AWS `DatabaseStack` and `ObservabilityStack` create no substantive resources.
-`ApplicationStack` creates hosts but does not attach runtime bootstrap, publish
-backend/proxy images, or create the public API DNS path. The deploy workflow
+`RegistryStack` creates repositories and IAM policies, but no workflow
+publishes the declared images. `ApplicationStack` creates hosts but does not
+attach runtime bootstrap or create the public API DNS path. The deploy workflow
 publishes only staging frontends. Consequently CDK synthesis is not evidence of
 a complete backend deployment, database, observability path, or production
 release.

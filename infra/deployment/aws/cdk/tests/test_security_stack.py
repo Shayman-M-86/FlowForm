@@ -102,6 +102,30 @@ def test_nonprod_creates_staging_named_ci_roles():
     template.has_resource_properties(
         "AWS::IAM::Role", {"RoleName": "flowform-staging-ci-preview"}
     )
+    template.has_resource_properties(
+        "AWS::IAM::Role",
+        {
+            "RoleName": "flowform-staging-image-publisher",
+            "AssumeRolePolicyDocument": {
+                "Statement": Match.array_with(
+                    [
+                        Match.object_like(
+                            {
+                                "Condition": {
+                                    "StringEquals": {
+                                        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                                        "token.actions.githubusercontent.com:sub": (
+                                            "repo:Shayman-M-86/FlowForm:ref:refs/heads/staging"
+                                        ),
+                                    }
+                                }
+                            }
+                        )
+                    ]
+                )
+            },
+        },
+    )
 
 
 def test_ssm_parameters_created():
@@ -114,7 +138,7 @@ def test_ssm_parameters_created():
     )
 
 
-def test_app_role_has_scoped_bootstrap_reads_and_ecr_pull():
+def test_app_role_has_scoped_bootstrap_reads_without_repository_wildcards():
     template = _synth_security_stack("dev")
     template.has_resource_properties(
         "AWS::IAM::Policy",
@@ -155,28 +179,9 @@ def test_app_role_has_scoped_bootstrap_reads_and_ecr_pull():
                                 ),
                             }
                         ),
-                        Match.object_like({"Action": "ecr:GetAuthorizationToken", "Resource": "*"}),
-                        Match.object_like(
-                            {
-                                "Action": [
-                                    "ecr:BatchCheckLayerAvailability",
-                                    "ecr:BatchGetImage",
-                                    "ecr:GetDownloadUrlForLayer",
-                                ],
-                                "Resource": {
-                                    "Fn::Join": [
-                                        "",
-                                        Match.array_with(
-                                            [
-                                                ":ecr:ap-southeast-2:908123139858:repository/flowform-staging-*"
-                                            ]
-                                        ),
-                                    ]
-                                },
-                            }
-                        ),
                     ]
                 )
             }
         },
     )
+    assert "repository/flowform-staging-*" not in str(template.to_json())

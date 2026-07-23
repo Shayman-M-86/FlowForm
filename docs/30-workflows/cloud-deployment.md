@@ -12,6 +12,8 @@ related_code:
   - "../../.github/workflows/ci.yml"
   - "../../infra/deployment/aws/cdk/flowform_infra/stacks/frontend_stack.py"
   - "../../infra/deployment/aws/cdk/flowform_infra/stacks/application_stack.py"
+  - "../../infra/deployment/aws/cdk/flowform_infra/stacks/registry_stack.py"
+  - "../../infra/deployment/aws/cdk/flowform_infra/stacks/security_stack.py"
   - "../../infra/deployment/aws/cdk/flowform_infra/config/environments.py"
   - "../../infra/deployment/bootstrap/"
 related_docs:
@@ -28,6 +30,13 @@ and publishing the two static frontends to the staging S3 and CloudFront
 resources. It is not a full application deployment. CDK deployment, backend
 image publication, host bootstrap, database provisioning or migration, and
 production release are not wired into this workflow.
+
+The CDK now declares private Backend, Caddy, Squid, and Alloy repositories plus
+a branch-restricted image-publisher role with exact push permissions. The
+application stack also declares exact app-host and proxy-host pull policies.
+These resources are prerequisites only: the checked-in workflow does not assume
+the publisher role, build or mirror the images, publish a digest release record,
+or roll either host.
 
 ## Target backend lifecycle (not implemented)
 

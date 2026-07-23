@@ -12,6 +12,8 @@ related_code:
   - "../../.github/workflows/deploy.yml"
   - "../../scripts/ci/"
   - "../../backend/scripts/run_backend_security.sh"
+  - "../../infra/deployment/aws/cdk/flowform_infra/stacks/registry_stack.py"
+  - "../../infra/deployment/aws/cdk/flowform_infra/stacks/security_stack.py"
   - "../../infra/deployment/aws/cdk/tests/"
   - "../../scripts/docs/docsys/ci.py"
 related_docs:
@@ -103,8 +105,10 @@ settings initialization.
 CI does not run the checked-in container, rehearsal-deployment, or Packer
 invariant suites under `infra/tests/`. Deployment publishes only staging
 frontends: it does not deploy CDK stacks, backend images/runtime, database
-migrations, observability, or production. Manual frontend deployment is not
-conditioned on a preceding successful CI run.
+migrations, observability, or production. CDK now declares a
+branch-restricted image-publisher role and exact ECR push policy, but no
+workflow assumes it. Manual frontend deployment is not conditioned on a
+preceding successful CI run.
 
 ## Related documents
 

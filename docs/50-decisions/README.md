@@ -10,6 +10,7 @@ tags: [meta]
 related_code: []
 related_docs:
   - "ADR template"
+  - "AWS staging infrastructure target"
   - "Planning workspace"
   - "Documentation model"
 ---
@@ -30,10 +31,12 @@ Temporary plans, task lists, investigations, and unaccepted proposals belong in 
 Use stable, sortable filenames such as `0001-short-title.md`. Keep the front-matter title globally unique and add the finished record to this index.
 
 ## Index
-No decision records currently exist beyond [[ADR-template|the ADR template]]. Add entries here only after the decision record contains evidence and a declared status.
+
+- [[0001-aws-staging-infrastructure-target|ADR 0001: AWS staging infrastructure target]] — accepted target and hard boundaries for the first AWS staging environment.
 
 ## Related documents
 
 - [[ADR-template|ADR template]]
+- [[0001-aws-staging-infrastructure-target|AWS staging infrastructure target]]
 - [[70-planning/README|Planning workspace]]
 - [[documentation-model|Documentation model]]

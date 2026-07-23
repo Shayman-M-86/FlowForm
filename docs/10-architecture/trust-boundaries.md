@@ -23,6 +23,7 @@ related_docs:
   - "Security model"
   - "System context"
   - "Data flows"
+  - "AWS staging infrastructure target"
   - "Deployment model"
   - "Runtime containers"
   - "Identity and authentication"
@@ -54,6 +55,7 @@ Identifies where data or authority crosses between users, external services, run
 | Rehearsal database bootstrap to Secrets Manager | Two application-role passwords during first boot | Host nftables temporarily admits only Squid, the DB image is preloaded with runtime pulls disabled, the init credential is locally generated, and the temporary chain is flushed before PostgreSQL starts | Squid and LocalStack are trusted during the brief bootstrap window; live enforcement requires an applied rehearsal verification |
 | Backend container to host-provided secrets | Database passwords, Flask secret, and Auth0 Management API secret files | Bootstrap fetches into root-owned tmpfs files; Compose mounts read-only secrets; container filesystem is read-only with reduced capabilities | Root/host compromise can read or replace secrets; correct bootstrap attachment to CDK instances is not implemented in `ApplicationStack` |
 | Frontend deployment workflow to AWS | Built frontend artifacts, staging S3 writes, CloudFront invalidations, and SSM parameter reads | GitHub OIDC assumes the declared deployment role rather than storing long-lived AWS credentials | The checked-in workflow is staging-only; it does not deploy CDK stacks, backend images, database changes, or production |
+| Declared image publisher to ECR | Backend, Caddy, Squid, and Alloy image layers and manifests | A branch-restricted GitHub OIDC role receives push operations only on the four environment repositories; runtime pull policies are split by host responsibility | The IAM and repository boundary synthesizes, but no checked-in workflow assumes the publisher role or proves a live push |
 
 ## Data-store boundary
 
@@ -87,7 +89,10 @@ CORS is initialized for API routes with credentials enabled and falls back to wi
 - Is TLS required between Caddy and the private backend, or is security-group/VPC isolation the accepted boundary?
 - Which component normalizes or overwrites forwarding headers, and should Flask explicitly trust only the proxy address?
 - What production values replace the Squid allow-list placeholders, and how is attempted egress outside the list monitored?
-- Will core and response data use separate RDS instances, one instance with separate databases, or another arrangement? `DatabaseStack` has not selected or implemented it.
+- How will `DatabaseStack` implement and prove the single-instance,
+  two-database boundary accepted by
+  [[0001-aws-staging-infrastructure-target|AWS staging infrastructure target]],
+  including separate users, credentials, and grants?
 - How will CDK attach and update the checked-in bootstrap/cloud-init resources, and how will deployment verify private addressing, tmpfs secrets, and container hardening?
 - What controls apply to plaintext responses after authorized decryption in browser views, exports, logs, caches, and support workflows?
 
@@ -96,6 +101,7 @@ CORS is initialized for API routes with credentials enabled and falls back to wi
 - [[security-model|Security model]]
 - [[system-context|System context]]
 - [[data-flows|Data flows]]
+- [[0001-aws-staging-infrastructure-target|AWS staging infrastructure target]]
 - [[deployment-model|Deployment model]]
 - [[runtime-containers|Runtime containers]]
 - [[identity-and-authentication|Identity and authentication]]

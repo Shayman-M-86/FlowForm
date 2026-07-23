@@ -16,6 +16,7 @@ related_code:
   - "../../infra/containers/strategies/rehearsal/"
 related_docs:
   - "Component map"
+  - "AWS staging infrastructure target"
   - "Deployment model"
   - "Local infrastructure"
   - "Testing workflow"
@@ -123,12 +124,15 @@ runtime bootstrap as instance user data. That implementation gap is tracked in
   EC2 hosts before invoking bootstrap?
 - How will backend image publication and host restart be coordinated and rolled
   back once the backend deployment workflow exists?
-- Which container images will be pinned by digest rather than mutable tags in
-  the deployed environment?
+- How will the deployment pipeline publish and record the immutable Backend,
+  Caddy, Squid, and Alloy image digests required by
+  [[0001-aws-staging-infrastructure-target|AWS staging infrastructure target]]
+  before host bootstrap consumes them?
 
 ## Related documents
 
 - [[component-map|Component map]]
+- [[0001-aws-staging-infrastructure-target|AWS staging infrastructure target]]
 - [[deployment-model|Deployment model]]
 - [[local-infrastructure|Local infrastructure]]
 - [[testing|Testing workflow]]

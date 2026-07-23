@@ -10,6 +10,7 @@ from flowform_infra.stacks.frontend_cert_stack import FrontendCertStack
 from flowform_infra.stacks.frontend_stack import FrontendStack
 from flowform_infra.stacks.network_stack import NetworkStack
 from flowform_infra.stacks.observability_stack import ObservabilityStack
+from flowform_infra.stacks.registry_stack import RegistryStack
 from flowform_infra.stacks.security_stack import SecurityStack
 
 app = cdk.App()
@@ -42,6 +43,16 @@ cdk.Tags.of(security_stack).add("flowform:env", scope_config.scope_name)
 # locally (infra/environments/development/compose/ + Vite dev servers), so dev's AWS footprint is the
 # Security stack only. staging/prod get the full compute/hosting set.
 if env_config.full_deployment:
+    registry_stack = RegistryStack(
+        app,
+        f"{name_prefix}-Registry",
+        env_config=env_config,
+        kms_key=security_stack.kms_key,
+        publisher_role=security_stack.image_publisher_role,
+        env=cdk_env,
+    )
+    registry_stack.add_dependency(security_stack)
+
     network_stack = NetworkStack(
         app,
         f"{name_prefix}-Network",
@@ -65,12 +76,14 @@ if env_config.full_deployment:
         f"{name_prefix}-Application",
         env_config=env_config,
         network_stack=network_stack,
+        registry_stack=registry_stack,
         task_role=security_stack.task_role,
         kms_key=security_stack.kms_key,
         hosted_zone=security_stack.email_identity.hosted_zone,
         env=cdk_env,
     )
     application_stack.add_dependency(network_stack)
+    application_stack.add_dependency(registry_stack)
     application_stack.add_dependency(security_stack)
     application_stack.add_dependency(database_stack)
 
@@ -106,6 +119,7 @@ if env_config.full_deployment:
     observability_stack.add_dependency(application_stack)
 
     all_stacks += [
+        registry_stack,
         network_stack,
         database_stack,
         application_stack,

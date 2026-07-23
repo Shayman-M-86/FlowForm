@@ -21,6 +21,7 @@ related_code:
   - "../../.github/workflows/deploy.yml"
 related_docs:
   - "System context"
+  - "AWS staging infrastructure target"
   - "Runtime containers"
   - "Trust boundaries"
   - "Cloud deployment"
@@ -132,7 +133,11 @@ artifact is published.
 
 ## Intended AWS topology
 
-The implemented and planned definitions collectively describe this target:
+The implemented and planned definitions collectively describe the target below.
+Its accepted hard boundaries are declared in
+[[0001-aws-staging-infrastructure-target|AWS staging infrastructure target]].
+This section continues to distinguish those decisions from implemented and
+deployed state.
 
 ```text
 public-site and Studio users
@@ -173,14 +178,15 @@ sets.
 
 | Stack area | Current implementation state |
 | --- | --- |
-| Security | Creates scoped KMS, Secrets Manager, SSM, IAM, and GitHub OIDC resources; imports the existing Route 53 zone and SES identity by reference. |
+| Security | Creates scoped KMS, Secrets Manager, SSM, IAM, and GitHub OIDC resources, including a branch-restricted image-publisher role with no embedded repository policy; imports the existing Route 53 zone and SES identity by reference. |
+| Registry | Creates separate KMS-encrypted, immutable, scan-on-push Backend, Caddy, Squid, and Alloy repositories with staging cleanup rules. It attaches exact push permissions to the image-publisher role. No workflow publishes images yet. |
 | Network | Creates the VPC, subnet groups, security groups, S3 gateway endpoint, and EC2 Instance Connect Endpoint for the split-host model. |
-| Application | Creates proxy and app EC2 instances, an Elastic IP, and host roles, using a Packer AMI reference. It does not attach runtime bootstrap/user data, create backend or proxy ECR repositories, or create the public API DNS record. |
+| Application | Creates proxy and app EC2 instances, an Elastic IP, and host roles, using a Packer AMI reference. Its policies restrict the app host to Backend/Alloy pulls and the proxy host to Caddy/Squid/Alloy pulls. It does not attach runtime bootstrap/user data or create the public API DNS record. |
 | Database | Is a placeholder and creates no RDS resources. Consequently the app stack's declared PostgreSQL destination is absent from CDK. |
 | Frontend certificate and hosting | Create the cross-region certificate, private S3 origins, CloudFront distributions, DNS aliases, cache policies, deployment permissions, and frontend SSM parameters. |
 | Observability | Is a placeholder and creates no log groups, alarms, or dashboard. |
 
-Because the database, application bootstrap, image repositories, API DNS, and
+Because the database, application bootstrap, image publication, API DNS, and
 observability pieces are incomplete, a successful synth is not evidence of a
 functional full deployment.
 
@@ -214,8 +220,9 @@ live deployment. Configuration and secret ownership belong in
 
 - Which checked-in topology, if any, matches the currently running production
   system?
-- Will core and response storage use separate RDS instances or two databases on
-  one instance? The database stack leaves this undecided.
+- How will `DatabaseStack` create and verify the accepted single-instance,
+  two-database layout, separate application users, migration credential, TLS
+  policy, backups, and restore path?
 - What process will provision runtime files, invoke bootstrap, publish container
   images, migrate databases, and roll back a backend release?
 - Which AWS release mechanism will invoke the already-running host for a
@@ -229,6 +236,7 @@ live deployment. Configuration and secret ownership belong in
 ## Related documents
 
 - [[system-context|System context]]
+- [[0001-aws-staging-infrastructure-target|AWS staging infrastructure target]]
 - [[runtime-containers|Runtime containers]]
 - [[trust-boundaries|Trust boundaries]]
 - [[cloud-deployment|Cloud deployment]]

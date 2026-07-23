@@ -1,7 +1,9 @@
+from collections.abc import Sequence
 from typing import cast
 
 from aws_cdk import Stack
 from aws_cdk import aws_ec2 as ec2
+from aws_cdk import aws_ecr as ecr
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_kms as kms
 from aws_cdk import aws_route53 as route53
@@ -9,6 +11,7 @@ from constructs import Construct
 
 from flowform_infra.config import EnvConfig
 from flowform_infra.stacks.network_stack import NetworkStack
+from flowform_infra.stacks.registry_stack import RegistryStack
 
 # Decided direction: TWO EC2 instances + Docker Compose (not ECS/ALB, no
 # NAT Gateway, no paid interface endpoints) — the "cheapest hardened"
@@ -28,9 +31,6 @@ from flowform_infra.stacks.network_stack import NetworkStack
 # (core + response) live on RDS (database_stack, later milestone).
 #
 # TODO: build out
-#   - aws_ecr.Repository for the Flask API image, the custom Caddy image
-#     (xcaddy + caddy-dns/route53 — stock Caddy lacks the provider), and
-#     Squid
 #   - network_stack: private app subnet with NO 0.0.0.0/0 route, free S3
 #     gateway endpoint, RDS subnets — see the notes doc
 #   - proxy instance (t4g.small, public subnet, EIP): SG inbound 80/443
@@ -89,6 +89,7 @@ class ApplicationStack(Stack):
         *,
         env_config: EnvConfig,
         network_stack: NetworkStack,
+        registry_stack: RegistryStack,
         task_role: iam.IRole,
         kms_key: kms.Key,
         hosted_zone: route53.IHostedZone | None = None,
@@ -98,6 +99,7 @@ class ApplicationStack(Stack):
 
         self.env_config = env_config
         self.network_stack = network_stack
+        self.registry_stack = registry_stack
         self.task_role = task_role
         self.kms_key = kms_key
         self.hosted_zone = hosted_zone
@@ -138,7 +140,23 @@ class ApplicationStack(Stack):
                 )
             )
 
-        self._grant_ecr_pull(cast(iam.IRole, self.proxy_role))
+        self._attach_ecr_pull_policy(
+            "AppEcrPullPolicy",
+            task_role,
+            [
+                registry_stack.backend_repository,
+                registry_stack.alloy_repository,
+            ],
+        )
+        self._attach_ecr_pull_policy(
+            "ProxyEcrPullPolicy",
+            cast(iam.IRole, self.proxy_role),
+            [
+                registry_stack.caddy_repository,
+                registry_stack.squid_repository,
+                registry_stack.alloy_repository,
+            ],
+        )
 
         instance_type = ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.SMALL)
         if env_config.ec2_base_ami_id:
@@ -210,32 +228,29 @@ class ApplicationStack(Stack):
         # the app host must configure Docker's proxy, mount tmpfs secrets,
         # write /opt/flowform/backend.env, and start docker-compose.app.yml.
 
-    def _grant_ecr_pull(self, role: iam.IRole) -> None:
-        """Grant enough ECR read access for EC2 hosts to pull FlowForm images."""
-        role.add_to_principal_policy(
-            iam.PolicyStatement(
-                actions=["ecr:GetAuthorizationToken"],
-                resources=["*"],
-            )
+    def _attach_ecr_pull_policy(
+        self,
+        construct_id: str,
+        role: iam.IRole,
+        repositories: Sequence[ecr.IRepository],
+    ) -> None:
+        """Attach exact ECR pull permissions without mutating another stack."""
+        policy = iam.Policy(
+            self,
+            construct_id,
+            statements=[
+                iam.PolicyStatement(
+                    actions=["ecr:GetAuthorizationToken"],
+                    resources=["*"],
+                ),
+                iam.PolicyStatement(
+                    actions=[
+                        "ecr:BatchCheckLayerAvailability",
+                        "ecr:BatchGetImage",
+                        "ecr:GetDownloadUrlForLayer",
+                    ],
+                    resources=[repository.repository_arn for repository in repositories],
+                ),
+            ],
         )
-        role.add_to_principal_policy(
-            iam.PolicyStatement(
-                actions=[
-                    "ecr:BatchCheckLayerAvailability",
-                    "ecr:BatchGetImage",
-                    "ecr:GetDownloadUrlForLayer",
-                ],
-                # TODO: tighten to exact backend/caddy/squid repository ARNs
-                # when the ECR repositories are added to CDK. NOTE: the app
-                # box's task_role gets the matching grant in
-                # security_stack.py::_grant_backend_runtime_reads — keep both
-                # ECR wildcards in sync until real repo ARNs replace them.
-                resources=[
-                    self.format_arn(
-                        service="ecr",
-                        resource="repository",
-                        resource_name=f"flowform-{self.env_config.env_name}-*",
-                    )
-                ],
-            )
-        )
+        policy.attach_to_role(role)
