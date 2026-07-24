@@ -5,7 +5,7 @@ aliases:
 document_type: implementation
 status: draft
 authority: canonical
-verified_against_commit: ad26b87e9820
+verified_against_commit: null
 tags: [infrastructure]
 related_code:
   - "../../infra/containers/"
@@ -72,6 +72,11 @@ AWS CDK separates security, registry, network, application, frontend
 certificate, frontend hosting, database, and observability stacks. The registry
 owns four private runtime-image repositories and exact publisher access;
 application-owned policies split image pulls between the app and proxy hosts.
+The network stack owns flow-log delivery, the private hosted zone, endpoint and
+security-group boundaries. Its manually declared subnet constructs keep the
+single proxy and app in the primary AZ while giving RDS the two-AZ subnet group
+AWS requires. The application stack publishes the proxy and app A records
+because it owns their EC2 private addresses.
 Proxmox Terraform creates full clones for proxy, app, LocalStack, and database
 roles and uploads role-specific cloud-init assembled from the shared runtime
 assets and parameter contract.
@@ -113,13 +118,13 @@ source.
 
 AWS `DatabaseStack` and `ObservabilityStack` create no substantive resources.
 `RegistryStack` creates repositories and exact publisher IAM policies, and a
-manual workflow now defines publication of all four declared images. That path
-still lacks hosted-run proof and deliberately does not promote the resulting
-digests. `ApplicationStack` creates hosts but does not attach runtime bootstrap
-or create the public API DNS path. The existing deploy workflow publishes only
-staging frontends. Consequently CDK synthesis or image publication is not
-evidence of a complete backend deployment, database, observability path, or
-production release.
+manual workflow publishes all four declared images and retains their digest
+manifest without promoting it. `ApplicationStack` creates hosts and private DNS
+records but does not attach runtime bootstrap or create the public API DNS path.
+The Network stack changes still require deployment and live VPC verification.
+The existing deploy workflow publishes only staging frontends. Consequently CDK
+synthesis or image publication is not evidence of a complete backend
+deployment, database, observability path, or production release.
 
 ## Related documents
 

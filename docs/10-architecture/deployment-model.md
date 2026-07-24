@@ -158,13 +158,20 @@ private app outbound HTTP(S)
   -> allow-listed external services
 ```
 
-The VPC definition provides public proxy, isolated app, and isolated database
-subnets without a NAT gateway. Security groups restrict public ingress to the
-proxy, proxy-to-app traffic to the backend port, app-to-proxy traffic to Squid,
-and app-to-database traffic to PostgreSQL. An S3 gateway endpoint supplies the
-declared direct path for container image layers, and an EC2 Instance Connect
-Endpoint supplies the private app management path. See [[trust-boundaries|Trust boundaries]] for
-the security interpretation and [[runtime-containers|Runtime containers]] for host service roles.
+The VPC definition provides one public proxy subnet and one isolated app subnet
+in the primary runtime AZ. RDS receives one isolated subnet in that AZ and a
+second isolated subnet in another AZ to satisfy the DB subnet-group contract;
+the staging database itself remains single-AZ. No NAT gateway is created.
+Security groups restrict public ingress to the proxy, proxy-to-app traffic to
+the backend port, app-to-proxy traffic to Squid, app-to-proxy telemetry traffic
+to Alloy, and app-to-database traffic to PostgreSQL. An S3 gateway endpoint
+supplies the declared direct path for container image layers, and an EC2
+Instance Connect Endpoint supplies the private app management path. VPC flow
+logs target an environment-owned CloudWatch log group, and a private Route 53
+zone gives the proxy and app stable VPC-only names that follow instance
+replacement. See
+[[trust-boundaries|Trust boundaries]] for the security interpretation and
+[[runtime-containers|Runtime containers]] for host service roles.
 
 The two static frontends use separate private S3 buckets and CloudFront
 distributions. A certificate stack lives in `us-east-1`, while DNS aliases,
@@ -179,16 +186,16 @@ sets.
 | Stack area | Current implementation state |
 | --- | --- |
 | Security | Creates scoped KMS, Secrets Manager, SSM, IAM, and GitHub OIDC resources, including a branch-restricted image-publisher role with no embedded repository policy; imports the existing Route 53 zone and SES identity by reference. |
-| Registry | Creates separate KMS-encrypted, immutable, scan-on-push Backend, Caddy, Squid, and Alloy repositories with staging cleanup rules. It attaches exact push permissions to the image-publisher role. No workflow publishes images yet. |
-| Network | Creates the VPC, subnet groups, security groups, S3 gateway endpoint, and EC2 Instance Connect Endpoint for the split-host model. |
-| Application | Creates proxy and app EC2 instances, an Elastic IP, and host roles, using a Packer AMI reference. Its policies restrict the app host to Backend/Alloy pulls and the proxy host to Caddy/Squid/Alloy pulls. It does not attach runtime bootstrap/user data or create the public API DNS record. |
+| Registry | Creates separate KMS-encrypted, immutable, scan-on-push Backend, Caddy, Squid, and Alloy repositories with staging cleanup rules and exact publisher access. A manual OIDC workflow publishes all four and retains their digest manifest without promoting it. |
+| Network | Creates the four-subnet VPC (one proxy, one app, and two RDS subnets across the minimum two AZs), security groups, S3 gateway endpoint, EC2 Instance Connect Endpoint, private hosted zone, and VPC flow-log destination for the split-host model. |
+| Application | Creates proxy and app EC2 instances, an Elastic IP, host roles, and VPC-only A records using a Packer AMI reference. Its policies restrict the app host to Backend/Alloy pulls and the proxy host to Caddy/Squid/Alloy pulls. It does not attach runtime bootstrap/user data or create the public API DNS record. |
 | Database | Is a placeholder and creates no RDS resources. Consequently the app stack's declared PostgreSQL destination is absent from CDK. |
 | Frontend certificate and hosting | Create the cross-region certificate, private S3 origins, CloudFront distributions, DNS aliases, cache policies, deployment permissions, and frontend SSM parameters. |
 | Observability | Is a placeholder and creates no log groups, alarms, or dashboard. |
 
-Because the database, application bootstrap, image publication, API DNS, and
-observability pieces are incomplete, a successful synth is not evidence of a
-functional full deployment.
+Because the database, application bootstrap, runtime image promotion, API DNS,
+and observability pieces are incomplete, a successful synth is not evidence of
+a functional full deployment.
 
 ## Deployment automation boundary
 

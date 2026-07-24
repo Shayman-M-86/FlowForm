@@ -175,8 +175,7 @@
     ]
   },
   "enabledPlugins": {
-    "claude-code-setup@claude-plugins-official": false,
-    "grafana-cloud-mcp@claude-plugins-official": true
+    "claude-code-setup@claude-plugins-official": false
   },
   "mode": "acceptEdits"
 }

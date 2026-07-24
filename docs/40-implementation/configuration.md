@@ -76,6 +76,9 @@ startup validation in dev and production. Test mode permits a direct throwaway
 secret and skips both Auth0 and AWS live startup probes so ordinary local and CI
 test runs do not require credentials or network egress.
 
+For full AWS environments, `EnvConfig` also declares the private DNS zone and
+VPC flow-log retention used by the network and application stacks.
+
 The runtime-parameter contract separates scoped values, backend/proxy runtime
 groups, and secret resource names. Its rehearsal seed-key set is non-secret;
 managed secret values use the separate deploy-time sync path. Consumers derive

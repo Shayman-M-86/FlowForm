@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from aws_cdk import aws_logs as logs
 
 from flowform_infra.config import get_env_config
 
@@ -19,6 +20,16 @@ def test_unknown_env_raises():
 
 def test_dev_is_not_full_deployment():
     assert get_env_config("dev", env_dir=_EMPTY_ENV_DIR).full_deployment is False
+
+
+def test_full_deployments_define_private_dns_and_flow_log_retention():
+    staging = get_env_config("staging", env_dir=_EMPTY_ENV_DIR)
+    prod = get_env_config("prod", env_dir=_EMPTY_ENV_DIR)
+
+    assert staging.private_dns_zone == "internal.staging.flow-form.com.au"
+    assert staging.vpc_flow_log_retention == logs.RetentionDays.ONE_WEEK
+    assert prod.private_dns_zone == "internal.flow-form.com.au"
+    assert prod.vpc_flow_log_retention == logs.RetentionDays.THREE_MONTHS
 
 
 def test_auth0_public_none_without_env_file():

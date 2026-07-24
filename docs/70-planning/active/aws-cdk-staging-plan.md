@@ -61,10 +61,9 @@ make the active plan authoritative over the implementation. Production
 retention, multi-AZ/high-availability upgrades, and migration of retained data
 remain later work.
 
-The immediate work is the
-[current registry execution slice](#current-execution-slice-activate-the-registry-path).
-Later phases remain in this document for sequencing context, but they are not
-part of the present implementation scope.
+The immediate work is the NetworkStack portion of
+[Phase 3](#phase-3-finish-the-network-and-data-layer). Database work follows
+only after the network template is reviewed and deployed.
 
 ## Current implementation baseline
 
@@ -144,12 +143,11 @@ This remains the intended low-cost shape: no ALB, no NAT Gateway, no RDS Proxy,
 no paid VPC interface endpoints, and initially one proxy and one application
 instance.
 
-## Current execution slice: activate the registry path
+## Completed execution slice: activate the registry path
 
-The next work is deliberately narrower than a complete staging deployment. Its
-goal is to turn the implemented registry definitions into a usable,
-reproducible image-publication path. It ends before NetworkStack, DatabaseStack,
-EC2 bootstrap, database migrations, or public traffic are changed.
+This completed slice turned the registry definitions into a usable,
+reproducible image-publication path without promoting a release or changing
+NetworkStack, DatabaseStack, EC2 bootstrap, migrations, or public traffic.
 
 ### Implemented and deployed
 
@@ -176,9 +174,9 @@ On 24 July 2026, the first operator deployment completed in account
   `ecr:GetAuthorizationToken` is the only account-wide ECR action.
 - A post-deployment CDK diff reported zero differences for both stacks.
 
-The repositories are empty until the image-publication workflow is implemented.
-This deployment is not evidence for any later Network, Database, Application,
-Frontend, or Observability stack.
+The manual workflow has since published all four images and retained a
+four-image digest manifest. This is not evidence for any later Network,
+Database, Application, Frontend, or Observability stack.
 
 ### Step 1: Review and activate Security and Registry (complete)
 
@@ -222,7 +220,7 @@ The upstream source, version, digest, target repository, and resulting ECR
 digest must be visible in a machine-readable release manifest. Mirroring must
 not silently advance when an upstream tag changes.
 
-### Step 3: Add a dedicated image-publication workflow (implemented, live proof pending)
+### Step 3: Add a dedicated image-publication workflow (complete)
 
 Add a separate workflow rather than expanding the existing frontend
 `deploy.yml` into a full infrastructure release now. The first version should
@@ -278,19 +276,21 @@ validate and consume without rebuilding the images.
   existing operator path with a reviewed diff.
 - [x] AWS inspection confirms four empty-or-populated hardened repositories and the
   branch-restricted publisher role.
-- [ ] A manually dispatched workflow publishes all four images through OIDC without
+- [x] A manually dispatched workflow publishes all four images through OIDC without
   stored AWS access keys.
-- [ ] The workflow cannot publish outside the four staging repositories.
-- [ ] One manifest records four complete ECR digest references and matches
+- [x] The workflow cannot publish outside the four staging repositories.
+- [x] One manifest records four complete ECR digest references and matches
   `ecr:DescribeImages` results.
 - [x] The runtime parameter contract has explicit fields for all image consumers.
 - [x] No infrastructure-deployment role, runtime SSM promotion, EC2 rollout,
   database action, or frontend deployment was bundled into registry activation.
 
-After these criteria pass, the next active slice is Phase 3: finish and prove
-the network boundary, then implement RDS. Live pulls using the EC2 runtime roles
-and the Squid/S3 paths remain Phase 4 evidence because those hosts do not yet
-exist as an operational deployment.
+The active slice is now Phase 3: finish and prove the network boundary, then
+implement RDS. Live pulls using the EC2 runtime roles and the Squid/S3 paths
+remain Phase 4 evidence because those hosts do not yet exist as an operational
+deployment. Image scan findings are explicitly deferred while the
+infrastructure is built; they must be triaged before staging is promoted as a
+release-ready environment.
 
 ## Phase 1: Accept the staging target
 
@@ -308,13 +308,11 @@ created incrementally in the phases that own their consumers.
 
 ## Phase 2: Add the registry and tighten the existing contracts
 
-**Implementation status: source implementation and AWS activation complete;
-first hosted image publication open.** The current implementation includes the
+**Implementation status: complete.** The current implementation includes the
 four KMS-encrypted repositories, the branch-restricted image-publisher role,
 exact publisher permissions, host-specific app/proxy pull policies, immutable
-source contracts, a manual publisher, and the digest-manifest handoff. The live
-exit criteria remain open until the updated Registry policy is deployed and
-one hosted workflow run proves all four pushes through OIDC.
+source contracts, a manual publisher, and the digest-manifest handoff. A hosted
+workflow run has proved all four pushes through OIDC.
 
 The infrastructure-deployment role is intentionally deferred until the actual
 CDK bootstrap roles are confirmed. Live EC2 pull proof is deferred until the
@@ -496,25 +494,38 @@ role and KMS key, and—after Phase 3—the database outputs.
 
 ### NetworkStack
 
-The current `NetworkStack` already creates the two-AZ public proxy, isolated
-application, and isolated RDS subnet groups; restrictive proxy/app/RDS/EICE
+**Source status: implemented; deployment and live verification pending.**
+
+The current `NetworkStack` creates one public proxy subnet, one isolated app
+subnet, and one isolated RDS subnet together in AZ A, plus a second isolated
+RDS subnet in AZ B solely to satisfy the RDS DB subnet-group requirement. The
+single proxy, app, and database resources remain in AZ A; this does not imply a
+Multi-AZ runtime. The stack also creates restrictive proxy/app/RDS/EICE
 security groups; no NAT Gateway; the S3 gateway endpoint and regional ECR-layer
-bucket policy; DNS/NTP egress; and the EC2 Instance Connect Endpoint.
+bucket policy; DNS/NTP egress; EC2 Instance Connect Endpoint; CloudWatch VPC
+flow logs with seven-day staging retention; and a private Route 53 zone.
+`ApplicationStack` publishes `proxy.internal.staging.flow-form.com.au` and
+`app.internal.staging.flow-form.com.au` from the instance private addresses.
+The security-group matrix also includes the app-to-proxy Alloy log and trace
+paths on TCP 3500 and 4317.
 
-Preserve those tested controls. Phase 3 network work is limited to closing and
-proving the remaining gaps:
+Synth assertions now cover the flow-log destination and retention, private DNS
+records, the four-subnet/AZ layout, all declared cross-host paths, the single
+app-subnet S3 route-table association, the narrow ECR-layer endpoint policy,
+the absence of NAT and paid interface endpoints, and the EICE management path.
 
-- Add VPC flow logs with a defined staging destination and retention.
-- Choose and implement stable proxy-to-app and app-to-proxy addressing, using
-  private DNS or controlled private addresses rather than deployment-time
-  guesswork.
-- Verify that the endpoint route-table associations and endpoint policy cover
-  real ECR layer downloads without granting general staging bucket access.
-- Add or refine synth assertions for the complete ingress/egress matrix,
-  endpoint policy, lack of NAT and paid interface endpoints, and management
-  path.
-- Prove the design in a deployed VPC before treating the repository definition
-  as an operational boundary.
+The remaining NetworkStack work is live proof:
+
+- Deploy the Network stack after reviewing the CloudFormation change set.
+- Verify the app-subnet route table uses the S3 gateway endpoint and inspect the
+  deployed endpoint policy.
+- Verify the private hosted zone is associated only with the staging VPC and
+  the VPC flow log is active with `/flowform/staging/vpc-flow` as its
+  destination.
+
+Actual ECR layer traffic, private-record resolution, and emitted flow records
+require the runtime instances. Those are Phase 4 live checks, not reasons to
+create temporary test hosts during the network deployment.
 
 The public internet must not be able to reach the app instance or RDS directly.
 
