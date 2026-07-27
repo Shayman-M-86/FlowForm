@@ -18,6 +18,7 @@ related_code:
 related_docs:
   - "Engineering planning"
   - "AWS CDK staging plan"
+  - "AWS stack specifications"
   - "AWS database roles and bootstrap design"
   - "ADR 0001: AWS staging infrastructure target"
   - "AWS network topology"
@@ -25,8 +26,9 @@ related_docs:
 
 # AWS DatabaseStack staging configuration
 
-> Working recommendation for the first staging RDS deployment. It records
-> proposed settings and gates, not implemented or live infrastructure.
+> Working design and execution note for the first staging RDS deployment. The
+> CDK source is implemented; the RDS resources are not yet deployed or live
+> verified.
 
 The first staging database should be a small, private, deliberately simple RDS
 PostgreSQL instance. The unresolved risk is concentrated in credentials,
@@ -37,6 +39,23 @@ This note owns the RDS service configuration and its deployment gates.
 [[aws-database-roles-and-bootstrap|AWS database roles and bootstrap design]]
 owns the PostgreSQL identities, object ownership, grants, and reuse of the
 existing initialization assets.
+
+## Implementation checkpoint
+
+`DatabaseStack` now implements the recommended RDS infrastructure boundary. Its
+assertions cover staging and production lifecycle differences, and the complete
+CDK suite passes. Staging synth succeeds, and a read-only AWS diff adds:
+
+- one explicit DB subnet group;
+- one PostgreSQL 17 parameter group;
+- PostgreSQL and upgrade CloudWatch log groups;
+- one private RDS DB instance;
+- only the Network stack exports required to consume its existing RDS subnets
+  and security group.
+
+This is source and diff evidence only. `FlowForm-Staging-Database` is not yet
+deployed, and no logical databases, PostgreSQL roles, extensions, schemas, or
+application data exist in it.
 
 ## Recommended staging shape
 
@@ -49,7 +68,7 @@ existing initialization assets.
 | Placement | `ap-southeast-2a` |
 | Logical databases | `flowform_core` and `flowform_response` on one instance |
 | Initial storage | 20 GiB gp3 |
-| Storage autoscaling | Enabled, capped at 100 GiB |
+| Storage autoscaling | Enabled, capped at 40 GiB |
 | Storage encryption | Existing FlowForm nonproduction KMS key |
 | Public access | Disabled |
 | Security group | Existing RDS security group from `NetworkStack` |
@@ -163,7 +182,7 @@ Start with:
 
 ```text
 allocated storage: 20 GiB gp3
-maximum allocated storage: 100 GiB
+maximum allocated storage: 40 GiB
 ```
 
 The cap prevents ordinary staging growth from expanding to an unnecessarily
@@ -188,9 +207,10 @@ Single-AZ is intentional for the first staging environment:
 - downtime during maintenance or an instance failure is acceptable in this
   nonproduction phase.
 
-Multi-AZ should be reconsidered for production availability. It is not required
-to validate Caddy, Route 53, TLS, or the staging application path, and its
-standby does not normally increase read-query throughput.
+FlowForm's current infrastructure target is deliberately Single-AZ in staging
+and production. The second RDS subnet exists only to satisfy the DB subnet-group
+coverage requirement. Multi-AZ is not a latent environment switch in the CDK;
+adopting it later would require an explicit availability and cost decision.
 
 ### One instance with two logical databases
 
@@ -287,10 +307,10 @@ This deliberately allows an operator to tear down staging while leaving a
 final recovery artifact. Automated backups and point-in-time recovery cover the
 whole RDS instance, not an individual logical database.
 
-This recommendation conflicts with the current staging `EnvConfig`, which uses
-`RemovalPolicy.DESTROY`. Implementation therefore requires an explicit choice
-and config change; it must not silently override the environment contract inside
-`DatabaseStack`.
+The environment contract now separates general resource removal from database
+removal. Staging keeps `RemovalPolicy.DESTROY` for ordinary disposable
+resources while `database_removal_policy` is `SNAPSHOT`. `DatabaseStack` does
+not silently reinterpret the general lifecycle setting.
 
 Snapshots continue to incur storage cost until removed. Give snapshots clear
 environment tags and establish a later cleanup policy. A snapshot-restore
@@ -523,7 +543,7 @@ CDK tests should establish at least:
 - no public accessibility or Multi-AZ;
 - an explicit subnet group containing only both RDS subnets;
 - only the existing RDS security group;
-- 20 GiB gp3 storage with a 100 GiB autoscaling ceiling;
+- 20 GiB gp3 storage with a 40 GiB autoscaling ceiling;
 - storage encryption using the FlowForm KMS key;
 - an RDS-managed `flowform_admin` secret using the KMS key;
 - a PostgreSQL 17 parameter group with TLS and SCRAM requirements;
@@ -554,29 +574,29 @@ After controlled bootstrap, additionally verify the identity, ownership, grant,
 extension, allowed-connection, and denied-connection contracts in
 [[aws-database-roles-and-bootstrap|AWS database roles and bootstrap design]].
 
-## Decisions to confirm before implementation
+## Implemented decisions and remaining gates
 
-The recommended answers are:
+The infrastructure source now implements:
 
 1. Use an RDS-managed master password.
 2. Change staging removal behavior from destroy to final snapshot.
 3. Pin PostgreSQL 17.9 without making this phase a CDK upgrade.
 4. Retain seven days of backups.
-5. Start at 20 GiB gp3 and cap autoscaling at 100 GiB.
+5. Start at 20 GiB gp3 and cap autoscaling at 40 GiB.
 6. Use Database Insights Standard-compatible seven-day history.
 7. Omit Enhanced Monitoring initially.
-8. Publish only non-secret connection values from the database boundary.
-9. Separate `staging` environment configuration from the `nonprod` security
-   scope.
-10. Use a one-off migration container on private app EC2 through SSM.
-11. Keep bootstrap as a gate after RDS infrastructure verification.
-12. Start with an application connection ceiling around 40 and measure it.
-13. Add `sslmode=verify-full` before application staging readiness.
-14. Defer application-password automation until in-place change, reload, test,
-   and rollback behavior are proven.
+8. Expose the managed secret and non-secret endpoint as CDK construct
+   properties without publishing secret values to outputs or SSM.
 
-These remain recommendations until accepted in the staging plan or its owning
-decision record.
+The remaining application and database-content gates are:
+
+1. Separate `staging` runtime configuration from the `nonprod` security scope.
+2. Build the one-off migration container and private SSM execution path.
+3. Keep schema bootstrap after live RDS infrastructure verification.
+4. Start with an application connection ceiling around 40 and measure it.
+5. Add `sslmode=verify-full` before application staging readiness.
+6. Defer application-password automation until in-place change, reload, test,
+   and rollback behavior are proven.
 
 ## AWS references
 
@@ -594,6 +614,7 @@ decision record.
 
 - [[planning-index|Engineering planning]]
 - [[aws-cdk-staging-plan|AWS CDK staging plan]]
+- [[aws-stack-specifications|AWS stack specifications]]
 - [[aws-database-roles-and-bootstrap|AWS database roles and bootstrap design]]
 - [[0001-aws-staging-infrastructure-target|ADR 0001: AWS staging infrastructure target]]
 - [[aws-network-topology|AWS network topology]]

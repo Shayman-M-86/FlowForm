@@ -48,6 +48,9 @@ objective --> scope --> sequence --> validation --> implementation
 
 ## Active plans
 
+- [[aws-stack-specifications|AWS stack specifications]] consolidates the
+  implemented settings, environment differences, dependencies, deployment
+  status, and remaining gaps for every AWS CDK stack.
 - [[aws-cdk-staging-plan|AWS CDK staging plan]] sequences proposed staging
   delivery work.
 - [[aws-database-roles-and-bootstrap|AWS database roles and bootstrap design]]

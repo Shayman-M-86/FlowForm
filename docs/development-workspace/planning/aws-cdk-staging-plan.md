@@ -16,12 +16,13 @@ related_code:
 related_docs:
   - "Engineering planning"
   - "ADR 0001: AWS staging infrastructure target"
+  - "AWS stack specifications"
   - "AWS database roles and bootstrap design"
   - "AWS DatabaseStack staging configuration"
 ---
 
 # AWS CDK staging plan
-wwa
+
 > Working execution plan, not current architecture or live-deployment truth.
 
 This plan sequences the first empty-data AWS staging environment around the
@@ -42,7 +43,7 @@ a retained-data cutover, or that a source-complete stack has been deployed.
 | Security and registry | Implemented | Last recorded as deployed on 2026-07-24 |
 | Image publication | Implemented and exercised through GitHub OIDC | Four-image digest manifest recorded by the earlier execution slice |
 | Network | Four-subnet design implemented and covered by CDK assertions | Deployed and verified on 2026-07-27 |
-| Database | Placeholder only | Not deployed |
+| Database | RDS infrastructure implemented, asserted, synthesized, and diff-reviewed | Not deployed |
 | Application compute | EC2 resource skeleton exists; convergence/bootstrap is incomplete | Not ready to deploy |
 | Frontend | Substantial CDK and deployment support exists | Outside the immediate infrastructure slice |
 | Observability | Placeholder CDK stack | Not deployed |
@@ -104,10 +105,11 @@ App EC2 in isolated subnet A ----> RDS in isolated subnet A
 
 ## Immediate next execution slice
 
-The Network portion of Phase 3 is complete. The next slice is to implement,
-review, deploy, and prove `DatabaseStack`. Do not begin application-host
-deployment merely because the EC2 resources synthesize: their bootstrap and
-convergence path is incomplete.
+The Network portion of Phase 3 is complete, and `DatabaseStack` is implemented
+and covered by CDK assertions. The next slice is to review the change through
+the staging branch, deploy it, and prove the live RDS infrastructure. Do not
+begin application-host deployment merely because the EC2 resources synthesize:
+their bootstrap and convergence path is incomplete.
 
 ### 1. Land the source through the staging workflow
 
@@ -153,23 +155,29 @@ Private DNS resolution, actual ECR layer routing, Squid service access, and
 emitted cross-host flow records still require the real runtime instances and
 remain Phase 4 checks.
 
-### 2. Implement `DatabaseStack`
+### 2. Review, deploy, and verify `DatabaseStack`
 
-After network proof, replace the placeholder with:
+The source now declares:
 
-- One single-AZ staging RDS PostgreSQL instance using a supported PostgreSQL
-  version compatible with the application.
-- A DB subnet group containing the two RDS subnets.
-- Placement in Availability Zone A without enabling Multi-AZ.
-- Ingress on TCP 5432 only from the application security group.
-- Storage encryption using the FlowForm KMS key.
-- A generated administrative credential in Secrets Manager.
-- Automated backups with an explicit staging retention period.
-- TLS enforcement and SCRAM authentication.
-- PostgreSQL and upgrade log exports.
-- Staging removal and deletion-protection behaviour from `EnvConfig`.
-- CDK assertions for placement, encryption, credentials, networking, backup,
-  logging, and removal behaviour.
+- one PostgreSQL 17.9 `db.t4g.small` instance, single-AZ in Availability Zone A;
+- an explicit DB subnet group containing both isolated RDS subnets;
+- only the existing RDS security group;
+- 20 GiB encrypted gp3 storage with a 40 GiB autoscaling ceiling;
+- an RDS-managed `flowform_admin` credential encrypted with the FlowForm KMS
+  key;
+- seven-day backups, retained automated backups, and a final snapshot on
+  replacement or deletion;
+- TLS and SCRAM requirements in a PostgreSQL 17 parameter group;
+- PostgreSQL and upgrade log exports with seven-day log retention;
+- Standard database insights with seven-day performance history;
+- explicit backup and maintenance windows, automatic minor updates, and no
+  automatic major upgrade.
+
+CDK tests, Pyright, synth, and a read-only AWS diff pass. The diff adds only the
+DB subnet group, parameter group, two log groups, RDS instance, and the Network
+stack outputs required for its existing subnets and security group. Review and
+merge this source through the staging workflow, then deploy and verify the live
+stack before marking the data portion of Phase 3 complete.
 
 The database host is not the schema. A later controlled migration/bootstrap
 step must create the two logical databases, separate core and response users,
@@ -304,12 +312,14 @@ Staging is ready for application use only when:
 - Deferred image vulnerabilities have been triaged before staging is described
   as release-ready.
 
-Production availability, retained-data migration, Multi-AZ resources, and
-production cutover remain separate work.
+Production availability, retained-data migration, and production cutover remain
+separate work. Multi-AZ is not part of the current FlowForm infrastructure
+target.
 
 ## Related documents
 
 - [[planning-index|Engineering planning]]
 - [[0001-aws-staging-infrastructure-target|ADR 0001: AWS staging infrastructure target]]
+- [[aws-stack-specifications|AWS stack specifications]]
 - [[aws-database-roles-and-bootstrap|AWS database roles and bootstrap design]]
 - [[aws-database-stack-configuration|AWS DatabaseStack staging configuration]]

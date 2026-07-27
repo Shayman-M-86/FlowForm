@@ -5,7 +5,7 @@ document_type: decision
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-07-28
 tags: [infrastructure, security, configuration, ci-cd]
 related_code:
   - "../../../infra/deployment/aws/cdk/"
@@ -15,6 +15,7 @@ related_code:
 related_docs:
   - "Engineering decisions"
   - "AWS CDK staging plan"
+  - "AWS stack specifications"
 ---
 
 # ADR 0001: AWS staging infrastructure target
@@ -58,3 +59,4 @@ infrastructure documentation before relying on any of these boundaries.
 
 - [[decisions-index|Engineering decisions]]
 - [[aws-cdk-staging-plan|AWS CDK staging plan]]
+- [[aws-stack-specifications|AWS stack specifications]]
