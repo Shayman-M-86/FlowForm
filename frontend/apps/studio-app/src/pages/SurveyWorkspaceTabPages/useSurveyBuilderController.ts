@@ -295,7 +295,7 @@ export function useSurveyBuilderController() {
         versionNumber: selectedVersion.version_number,
       })
       showToast('error', 'Failed to save draft.')
-      throw new Error('Failed to save draft')
+      throw new Error('Failed to save draft', { cause: error })
     } finally {
       setIsSaving(false)
     }

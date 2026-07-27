@@ -4,7 +4,7 @@ aliases: ["Frontend implementation"]
 document_type: implementation
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:22d1aedfc7f85a6292c04d6cd02dcebbd961fad806a72f2847bff347772fc59c
+verified_evidence_digest: sha256:31324dbf9dbb4b7b7c3c6e2d7f6c59b4ba94b7cbfb5c1a9b1945743cec658eec
 last_edited: 2026-07-27
 tags: [frontend]
 related_code:

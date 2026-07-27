@@ -1,9 +1,21 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - apps/*
+  - packages/*
 
 minimumReleaseAge: 10080
+
+minimumReleaseAgeExclude:
+  - brace-expansion
+  - react-router
+
 minimumReleaseAgeStrict: true
+
+auditConfig:
+  # openapi-typescript 7.13 requires @redocly/openapi-core 1.x. This advisory's
+  # only remaining path processes the trusted, checked-in backend OpenAPI file.
+  # Remove this exception when openapi-typescript supports Redocly core 2.x.
+  ignoreCves:
+    - CVE-2026-14257
 
 onlyBuiltDependencies:
   - browser-tabs-lock
@@ -11,12 +23,14 @@ onlyBuiltDependencies:
   - sharp
 
 overrides:
-  "brace-expansion@1.1.15": 1.1.16
-  "brace-expansion@2.1.1": 2.1.2
-  "brace-expansion@5.0.6": 5.0.7
+  brace-expansion@1.1.15: 1.1.16
+  brace-expansion@2.1.1: 2.1.2
+  brace-expansion@5.0.6: 5.0.8
   esbuild: 0.28.1
   fast-uri: 3.1.4
   js-yaml: 4.3.0
+  postcss: 8.5.18
+  react-router: 8.3.0
   sharp: 0.35.0
   svgo: 4.0.2
   undici: 7.28.0

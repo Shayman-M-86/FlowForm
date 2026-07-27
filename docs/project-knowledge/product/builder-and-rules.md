@@ -4,7 +4,7 @@ aliases: ["Builder and rules"]
 document_type: domain
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:8527d0906207a16a9bd9e69c9308baabfff6eff48ac4f1f02615de1c40b70b6f
+verified_evidence_digest: sha256:56a11a8be2ab2fa05669b962d4d1c785f072c813abe5b7d85aad46be55276a9d
 last_edited: 2026-07-27
 tags: [frontend]
 related_code:
