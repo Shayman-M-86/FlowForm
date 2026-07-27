@@ -2,9 +2,9 @@
 title: Links and subjects
 aliases: ["Links and subjects"]
 document_type: domain
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:c32dd420da148de7b4c588d69a6e2ae81eec019490a5c3e992e73146401aa70a
 last_edited: 2026-07-27
 tags: [backend, security]
 related_code:

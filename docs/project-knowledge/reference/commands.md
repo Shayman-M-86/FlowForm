@@ -2,9 +2,9 @@
 title: Commands
 aliases: ["Commands"]
 document_type: reference
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:f1d3ebe9c4cd77cc4a820de6d0ae78544c1fb5f2152f0715771aa5bbe2131a03
 last_edited: 2026-07-27
 tags: [tooling]
 related_code: ["../../../backend/scripts/", "../../../frontend/package.json", "../../../scripts/", "../../../.github/workflows/"]
@@ -15,8 +15,7 @@ related_docs: ["Scripts catalogue", "Local development", "Testing workflow"]
 
 This reference points to supported repository entry commands. It does not copy
 every option: inspect the owning script or package alias before destructive,
-deployment, or credential-handling work. Commands remain draft until each
-invocation and precondition is reverified against the current checkout.
+deployment, or credential-handling work.
 
 | Purpose | Entry point |
 | --- | --- |
