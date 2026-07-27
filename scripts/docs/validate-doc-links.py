@@ -8,7 +8,8 @@ Checks every Markdown file under docs/ for:
 
 Code fences and inline code spans are ignored, so conventions can be shown as
 literal examples. Exits 0 on success and 1 when validation issues are found.
-Dependency-free by design; see docs/00-overview/documentation-model.md.
+Dependency-free by design; see
+docs/project-knowledge/engineering-practices/documentation/documentation-model.md.
 """
 import re
 from pathlib import Path

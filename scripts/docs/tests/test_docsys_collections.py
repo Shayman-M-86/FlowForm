@@ -3,9 +3,13 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+import tomllib
+from docsys import mcp_server
+from docsys.context import build_context
 from docsys.debt import analyse, build_report, measure
-from docsys.model import ROOT, DocSet
+from docsys.model import ROOT, DocSet, resolve_docs_root
 from docsys.validate import all_findings
 
 
@@ -29,6 +33,134 @@ related_docs: []
 
 
 class CollectionModelTests(unittest.TestCase):
+    def test_active_docs_root_is_canonical_tree(self) -> None:
+        self.assertEqual(resolve_docs_root(), (ROOT / "docs").resolve())
+        with patch.dict("os.environ", {"FLOWFORM_DOCS_ROOT": "docs"}):
+            self.assertEqual(resolve_docs_root(), (ROOT / "docs").resolve())
+
+    def test_codex_and_claude_share_documentation_workflow(self) -> None:
+        codex_skill = (
+            ROOT / ".agents/skills/flowform-doc-context/SKILL.md"
+        ).read_text()
+        claude_skill = (
+            ROOT / ".claude/skills/flowform-doc-context/SKILL.md"
+        ).read_text()
+        codex_agent = tomllib.loads(
+            (ROOT / ".codex/agents/docs-maintainer.toml").read_text()
+        )
+        claude_agent = (
+            ROOT / ".claude/agents/docs-maintainer.md"
+        ).read_text()
+
+        self.assertEqual(codex_skill, claude_skill)
+        self.assertEqual(codex_agent["name"], "docs-maintainer")
+        self.assertEqual(codex_agent["model"], "gpt-5.6-terra")
+        self.assertIn("name: docs-maintainer", claude_agent)
+        self.assertIn("model: sonnet", claude_agent)
+        self.assertIn("- flowform-doc-context", claude_agent)
+
+    def test_every_mcp_document_tool_accepts_docs_root(self) -> None:
+        expected = {
+            "search_docs",
+            "get_document",
+            "get_related",
+            "get_task_context",
+            "get_impacted_docs",
+            "check_freshness",
+            "documentation_debt",
+            "doc_health",
+        }
+        schemas = {
+            tool["name"]: tool["inputSchema"]["properties"]
+            for tool in mcp_server.TOOLS
+        }
+
+        self.assertEqual(set(schemas), expected)
+        for name in expected:
+            self.assertIn("docs_root", schemas[name])
+
+    def test_mcp_retrieval_and_reports_use_requested_docs_root(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            docs_root = Path(temporary) / "isolated-docs"
+            docs_root.mkdir()
+            (docs_root / "isolated-root.md").write_text(
+                _document(
+                    "Isolated root",
+                    body="Unique documentation context. [[isolated-child|Isolated child]]",
+                )
+            )
+            (docs_root / "isolated-child.md").write_text(
+                _document("Isolated child", body="Child context.")
+            )
+            root_arg = docs_root.relative_to(ROOT).as_posix()
+
+            document = mcp_server._tool_get_document(
+                {"identifier": "Isolated root", "docs_root": root_arg}
+            )
+            related = mcp_server._tool_get_related(
+                {"identifier": "Isolated root", "docs_root": root_arg}
+            )
+            context = mcp_server._tool_task_context(
+                {"task": "unique documentation context", "docs_root": root_arg}
+            )
+            freshness = mcp_server._tool_freshness({"docs_root": root_arg})
+            health = mcp_server._tool_health({"docs_root": root_arg})
+
+            self.assertEqual(document["title"], "Isolated root")
+            self.assertEqual(
+                [item["title"] for item in related["related_documents"]],
+                ["Isolated child"],
+            )
+            self.assertEqual(
+                context["primary_documents"][0]["title"], "Isolated root"
+            )
+            self.assertEqual(freshness["counts"]["unknown"], 2)
+            self.assertEqual(health["document_count"], 2)
+            self.assertEqual(health["docs_root"], root_arg)
+
+            with patch.object(
+                mcp_server, "impact_report", return_value={"ok": True}
+            ) as impact:
+                self.assertEqual(
+                    mcp_server._tool_impacted({"docs_root": root_arg}),
+                    {"ok": True},
+                )
+            passed_docset = impact.call_args.kwargs["docset"]
+            self.assertEqual(passed_docset.docs_dir, docs_root.resolve())
+
+    def test_task_context_excludes_history_without_historical_intent(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            docs_root = Path(temporary) / "docs"
+            docs_root.mkdir()
+            (docs_root / "current.md").write_text(
+                _document("Current encryption", body="response locator encryption")
+            )
+            historical = _document(
+                "Historical encryption",
+                authority="historical",
+                body="response locator encryption security review",
+            )
+            (docs_root / "historical.md").write_text(historical)
+            docset = DocSet.load(docs_root)
+
+            current = build_context(
+                task="response locator encryption",
+                docset=docset,
+            )
+            history = build_context(
+                task="historical response locator encryption",
+                docset=docset,
+            )
+
+            self.assertNotIn(
+                "Historical encryption",
+                [doc.title for doc in current.primary],
+            )
+            self.assertIn(
+                "Historical encryption",
+                [doc.title for doc in history.primary],
+            )
+
     def test_parent_collection_and_profile_validation(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             docs_root = Path(temporary) / "docs"

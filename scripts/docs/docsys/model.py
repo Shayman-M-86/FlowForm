@@ -23,6 +23,7 @@ repo-relative POSIX strings so downstream tools can compare them against
 from __future__ import annotations
 
 import fnmatch
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
@@ -302,7 +303,13 @@ def _resolve_patterns(doc_path: Path, values) -> list[str]:
 
 
 def resolve_docs_root(value: str | Path | None = None) -> Path:
-    """Resolve a repository-relative documentation root."""
+    """Resolve a repository-relative documentation root.
+
+    An explicit argument wins, followed by ``FLOWFORM_DOCS_ROOT``. Without
+    either, use the canonical ``docs/`` tree.
+    """
+    if value is None:
+        value = os.environ.get("FLOWFORM_DOCS_ROOT")
     if value is None:
         return DOCS
     path = Path(value)
@@ -322,12 +329,15 @@ def folder_head_path(directory: Path) -> Path:
     return directory / f"{directory.name}-index.md"
 
 
-def load_document(path: Path, docs_dir: Path = DOCS) -> Document | None:
+def load_document(
+    path: Path, docs_dir: str | Path | None = None
+) -> Document | None:
     """Load and fully parse a single documentation file.
 
     Returns ``None`` for files without valid front matter, so callers can skip
     non-document Markdown without special-casing it.
     """
+    docs_dir = resolve_docs_root(docs_dir)
     text = path.read_text(errors="replace")
     fm = parse_front_matter(text)
     if fm is None:
@@ -384,8 +394,8 @@ class DocSet:
             self._by_wiki_target[target.casefold()] = d
 
     @classmethod
-    def load(cls, docs_dir: Path = DOCS) -> "DocSet":
-        docs_dir = docs_dir.resolve()
+    def load(cls, docs_dir: str | Path | None = None) -> DocSet:
+        docs_dir = resolve_docs_root(docs_dir)
         docs = []
         unparsed_paths = []
         for path in sorted(docs_dir.rglob("*.md")):

@@ -61,14 +61,14 @@ jobs:
           PYTHONPATH: scripts/docs
         run: >-
           python3 -m docsys validate
-          --docs-root docs-new
+          --docs-root docs
           --profile ci
       - name: Report documentation debt (advisory)
         env:
           PYTHONPATH: scripts/docs
         run: >-
           python3 -m docsys debt
-          --docs-root docs-new
+          --docs-root docs
           --format text
 
   backend-security:

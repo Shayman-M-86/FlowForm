@@ -1,11 +1,11 @@
 # docsys — FlowForm documentation tooling
 
-`docsys` treats the `docs/` tree as a queryable knowledge network shared
+`docsys` treats the active `docs/` tree as a queryable knowledge network shared
 between humans, AI agents, and the codebase. It does **not** generate more
 prose documentation; it makes the existing documentation maintainable,
 retrievable, and tightly coupled to development.
 
-Guiding principles (see [`Documentation model`](../../../docs/00-overview/documentation-model.md)):
+Guiding principles (see [`Documentation model`](../../../docs/project-knowledge/engineering-practices/documentation/documentation-model.md)):
 
 - Code is the source of truth; documentation is a projection of understanding.
 - Prefer many small, deterministic tools over one large AI-driven system.
@@ -22,7 +22,7 @@ Everything here is standard-library only, so it runs anywhere `python3` does.
 | `model.py` | Front-matter parser, `Document`/`DocSet` model, glob/path matching |
 | `gitutil.py` | Defensive `git` wrappers (diffs, commit ranges, distance) |
 | `config.py` | Optional `docsys.config.json` overrides |
-| `index.py` | Builds `docs/90-generated/documentation-index.json` |
+| `index.py` | Builds `docs/project-knowledge/reference/generated/documentation-index.json` |
 | `impact.py` | Maps code changes onto documents, ranks confidence, explains why |
 | `freshness.py` | Classifies documents against `verified_against_commit` |
 | `query.py` | Deterministic ranked search |
@@ -65,13 +65,12 @@ python3 -m docsys freshness
 
 # Ranked deterministic search.
 python3 -m docsys query "response encryption locator"
-python3 -m docsys search "networking" \
-  --docs-root docs-new --collection project-knowledge
+python3 -m docsys search "networking" --collection project-knowledge
 
 # Collection-aware structural validation and advisory debt analysis.
-python3 -m docsys validate --docs-root docs-new --profile editing
-python3 -m docsys validate --docs-root docs-new --profile commit
-python3 -m docsys debt --docs-root docs-new --changed --suggest-splits
+python3 -m docsys validate --profile editing
+python3 -m docsys validate --profile commit
+python3 -m docsys debt --changed --suggest-splits
 
 # Smallest useful context for a task or a set of changed files.
 python3 -m docsys context --task "add a new survey question type"
@@ -99,14 +98,15 @@ claude mcp add flowform-docs -- \
 ```
 
 Tools exposed: `search_docs`, `get_document`, `get_related`,
-`get_task_context`, `get_impacted_docs`, `check_freshness`, `doc_health`.
-The server also exposes `documentation_debt`; search and debt accept an
-optional `docs_root` while the parallel migration is in progress.
+`get_task_context`, `get_impacted_docs`, `check_freshness`,
+`documentation_debt`, and `doc_health`. Every tool accepts an optional
+`docs_root`. When omitted, Docsys selects `docs/`. Set
+`FLOWFORM_DOCS_ROOT` to override that process-wide default.
 
 ## Metadata the tooling reads
 
 Beyond the required front matter, documents may declare optional linkage fields
-(defined in the [documentation model](../../../docs/00-overview/documentation-model.md)):
+(defined in the [documentation model](../../../docs/project-knowledge/engineering-practices/documentation/documentation-model.md)):
 
 - `related_code` — files, directories (`trailing/`), or globs the document
   depends on, relative to the document.
@@ -129,7 +129,7 @@ Optional. Copy `scripts/docs/docsys.config.example.json` to
 ## CI integration
 
 The `documentation` job in `.github/workflows/ci.yml` runs the dependency-free
-unit tests, validates `docs-new/` with the strict `ci` profile, and prints an
+unit tests, validates `docs/` with the strict `ci` profile, and prints an
 advisory debt report. Debt findings never fail the initial rollout. The legacy
 standalone validators are not wired into this job while pre-existing abandoned
 review files remain outside their canonical front-matter and link conventions.

@@ -95,7 +95,8 @@
       "Edit(.claude/commands/**)",
       "Read(.claude/agents/**)",
       "Write(.claude/agents/**)",
-      "Edit(.claude/agents/**)"
+      "Edit(.claude/agents/**)",
+      "mcp__flowform-docs__*"
     ],
     "deny": [
       "Bash(rm -rf:*)",

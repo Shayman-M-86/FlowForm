@@ -3,7 +3,7 @@
 
 Subcommands map to the focused tools in this package:
 
-    index       (re)build docs/90-generated/documentation-index.json
+    index       (re)build the active tree's documentation-index.json
     impact      report documentation impacted by code changes
     freshness   classify documents against their verified commit
     query       ranked deterministic search over documentation

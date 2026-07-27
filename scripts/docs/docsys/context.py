@@ -117,6 +117,10 @@ def build_context(
 
     primary: list[Document] = []
     primary_paths: set[str] = set()
+    historical_intent = bool(
+        {"historical", "history", "archive", "archived", "legacy"}
+        & {token.lower() for token in re.findall(r"[A-Za-z0-9_]+", task)}
+    )
 
     def add_primary(doc: Document):
         if doc.rel_path not in primary_paths:
@@ -133,6 +137,8 @@ def build_context(
     if task:
         engine = QueryEngine(docset)
         for scored in engine.search(task, limit=max_primary * 2):
+            if scored.doc.authority == "historical" and not historical_intent:
+                continue
             add_primary(scored.doc)
 
     # Prefer documents carrying real claims; keep the bundle small.
@@ -147,6 +153,8 @@ def build_context(
     neighbour_paths: set[str] = set()
     for d in primary:
         for n in docset.neighbours(d):
+            if n.authority == "historical" and not historical_intent:
+                continue
             if n.rel_path not in primary_paths and n.rel_path not in neighbour_paths:
                 neighbours.append(n)
                 neighbour_paths.add(n.rel_path)
@@ -207,6 +215,11 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="changed file paths (default: working-tree diff if no task given)",
     )
+    parser.add_argument(
+        "--docs-root",
+        default=None,
+        help="documentation root (default: docs)",
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
@@ -214,7 +227,11 @@ def main(argv: list[str] | None = None) -> int:
     if changed is None and not args.task:
         changed = gitutil.changed_files().files
 
-    bundle = build_context(task=args.task, changed_files=changed or [])
+    bundle = build_context(
+        task=args.task,
+        changed_files=changed or [],
+        docset=DocSet.load(args.docs_root),
+    )
     if args.json:
         print(json.dumps(bundle.as_dict(), indent=2))
         return 0

@@ -1,44 +1,56 @@
-# FlowForm agent instructions
-Purpose: Defines repository-wide rules for future agents working in FlowForm.
+# FlowForm agent guide
 
-## Metadata
-- document_type: agent-instructions
-- status: scaffold
-- authority: canonical
-- verified_against_commit: null
-- related_docs: docs/README.md, docs/00-overview/documentation-generator-guide.md
+## Project overview
 
-## Core rule
-The implementation is the source of truth. Documentation may be incomplete, historical, or wrong until verified against source code, tests, configuration, CI, and infrastructure definitions.
-TODO: Verify this against the current implementation.
+FlowForm is a survey platform for designing and publishing surveys, collecting
+responses, and reviewing results.
 
-## Documentation context (Docsys MCP)
-Before meaningful implementation work — whenever existing FlowForm architecture, behaviour, workflows, or domain rules are relevant — call `get_task_context` on the `flowform-docs` MCP server to load focused context. Prefer this retrieval over broadly grepping documentation or reading large parts of the repository. The `flowform-doc-context` skill describes the full workflow.
+Its main user-facing areas are:
 
-- Available MCP tools: `search_docs`, `get_document`, `get_related`, `get_task_context`, `get_impacted_docs`, `check_freshness`, `doc_health`. (CLI equivalents live under `scripts/docs/docsys/`; run `python3 -m docsys <command>` with `scripts/docs` on `PYTHONPATH`.)
-- Code, tests, schemas, configuration, and infrastructure remain the source of truth. Documentation provides focused context and implementation boundaries, not authority.
-- Load only the documents returned as relevant; do not load the whole documentation tree.
-- Treat `old-docs/` as historical, never as current architecture.
-- Never manually edit generated documentation under `docs/90-generated/`; regenerate it instead.
-- After behavioural or architectural changes, call `get_impacted_docs` and review each high-confidence result, updating docs only when documented behaviour, responsibilities, boundaries, invariants, or workflows actually changed.
-- Skip this for trivial changes: spelling fixes, formatting, or isolated mechanical renames.
+- **Studio** for authenticated project and survey management.
+- **Public Site** for respondents completing published surveys.
+- **Backend** for the shared application behaviour and data services.
 
-## Documentation rules
-Read `docs/README.md` and `docs/00-overview/documentation-generator-guide.md` before updating documentation. Keep canonical, planning, reference, and generated documents separate.
-TODO: Verify this against the current implementation.
+## Repository map
 
-## Historical documentation warning
-Treat `old-docs/` as untrusted historical context. Do not copy claims from it unless every claim is re-verified against the current implementation.
-TODO: Verify this against the current implementation.
+| Area | Purpose | Local guidance |
+| --- | --- | --- |
+| `backend/` | Application services and API | `backend/AGENTS.md` |
+| `frontend/` | Studio, Public Site, and shared interface packages | `frontend/AGENTS.md` |
+| `infra/` | Environments, deployment, runtime, and supporting resources | Follow nearby documentation and scripts |
+| `scripts/` | Repository-wide development and maintenance automation | Read each entry point before running it |
+| `docs/` | Current Project Knowledge and Development Workspace | Start with `docs/docs-index.md` |
+| `tools/` | Development integrations and supporting utilities | Keep changes within the tool's boundary |
 
-## Correct behavior examples
-Correct: inspect code before updating a domain document, cite verified paths, record the commit SHA, and update navigation. Correct: place temporary plans under `docs/70-planning/` instead of architecture docs.
-TODO: Verify this against the current implementation.
+More specific `AGENTS.md` files override this guide within their directories.
 
-## Incorrect behavior examples
-Incorrect: invent ports, commands, architecture guarantees, or security behavior from memory. Incorrect: treat a plan as an accepted decision. Incorrect: leave scaffold files empty or title-only.
-TODO: Verify this against the current implementation.
+## Working principles
 
-## Pull request expectations
-Summaries should state what changed, what was validated, and whether any documentation remains scaffold-only. Documentation-only changes still require link and metadata validation when available.
-TODO: Verify this against the current implementation.
+- Treat the implementation, tests, configuration, and automation as the source
+  of truth.
+- Keep changes within the requested area and preserve unrelated work.
+- Understand the owning area before editing across boundaries.
+- Validate changes in proportion to their impact and report uncertainty
+  honestly.
+- Keep proposals and unfinished work separate from descriptions of current
+  behaviour.
+
+## Documentation
+
+For non-trivial work where existing behaviour or project boundaries matter,
+use the `flowform-doc-context` skill and the `flowform-docs` MCP server to load
+focused context from `docs/`. Read only the relevant documents and verify their
+claims against the repository.
+
+After behavioural or architectural changes, review the impacted documentation.
+Update only pages whose meaning changed, and regenerate generated documentation
+instead of editing it manually. Treat `old-docs/` as historical material.
+
+Codex and Claude provide a `docs-maintainer` specialist for bounded
+documentation work. The parent agent remains responsible for integration and
+final validation.
+
+## Handoff
+
+Summarize what changed, what was validated, and any remaining gaps or
+assumptions. Do not commit or push unless the user explicitly requests it.

@@ -3,8 +3,8 @@
 #
 # Exposes the deterministic docsys documentation tools (search_docs,
 # get_document, get_related, get_task_context, get_impacted_docs,
-# check_freshness, doc_health) over MCP stdio. It reuses the existing
-# scripts/docs/docsys package; it does not reimplement anything.
+# check_freshness, documentation_debt, doc_health) over MCP stdio. It reuses
+# the existing scripts/docs/docsys package; it does not reimplement anything.
 #
 # The server is standard-library only, so no virtualenv or dependency install
 # is required — just a Python 3 interpreter.

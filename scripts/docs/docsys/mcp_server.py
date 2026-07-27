@@ -19,6 +19,7 @@ Tools exposed:
     get_task_context    smallest useful context for a task / changed files
     get_impacted_docs   documentation impacted by a git range
     check_freshness     freshness classification for all documents
+    documentation_debt  structural complexity and split candidates
     doc_health          documentation health snapshot
 
 Register with a client, e.g. Claude Code:
@@ -35,8 +36,8 @@ import sys
 
 from . import freshness as freshness_mod
 from . import health as health_mod
-from .debt import build_report as build_debt_report
 from .context import build_context
+from .debt import build_report as build_debt_report
 from .impact import impact_report
 from .model import DocSet, resolve_docs_root
 from .query import QueryEngine
@@ -46,6 +47,11 @@ PROTOCOL_VERSION = "2024-11-05"
 SERVER_INFO = {"name": "flowform-docsys", "version": "1.0.0"}
 
 # --- tool schema declarations --------------------------------------------
+
+_DOCS_ROOT = {
+    "type": "string",
+    "description": "repository-relative docs root; defaults to docs",
+}
 
 TOOLS = [
     {
@@ -75,10 +81,7 @@ TOOLS = [
                         "root",
                     ],
                 },
-                "docs_root": {
-                    "type": "string",
-                    "description": "repository-relative docs root (default docs)",
-                },
+                "docs_root": _DOCS_ROOT,
             },
             "required": ["query"],
         },
@@ -91,6 +94,7 @@ TOOLS = [
             "properties": {
                 "identifier": {"type": "string"},
                 "include_body": {"type": "boolean", "default": True},
+                "docs_root": _DOCS_ROOT,
             },
             "required": ["identifier"],
         },
@@ -100,7 +104,10 @@ TOOLS = [
         "description": "Retrieve documents linked to a document (links + backlinks).",
         "inputSchema": {
             "type": "object",
-            "properties": {"identifier": {"type": "string"}},
+            "properties": {
+                "identifier": {"type": "string"},
+                "docs_root": _DOCS_ROOT,
+            },
             "required": ["identifier"],
         },
     },
@@ -119,6 +126,7 @@ TOOLS = [
                     "type": "array",
                     "items": {"type": "string"},
                 },
+                "docs_root": _DOCS_ROOT,
             },
         },
     },
@@ -134,6 +142,7 @@ TOOLS = [
             "properties": {
                 "base": {"type": "string"},
                 "head": {"type": "string"},
+                "docs_root": _DOCS_ROOT,
             },
         },
     },
@@ -154,7 +163,8 @@ TOOLS = [
                         "likely stale",
                         "unknown",
                     ],
-                }
+                },
+                "docs_root": _DOCS_ROOT,
             },
         },
     },
@@ -176,7 +186,7 @@ TOOLS = [
                         "root",
                     ],
                 },
-                "docs_root": {"type": "string"},
+                "docs_root": _DOCS_ROOT,
                 "suggest_splits": {"type": "boolean", "default": False},
             },
         },
@@ -188,7 +198,10 @@ TOOLS = [
             "docs, orphans, heavily connected docs, open questions, invalid "
             "metadata, and broken links."
         ),
-        "inputSchema": {"type": "object", "properties": {}},
+        "inputSchema": {
+            "type": "object",
+            "properties": {"docs_root": _DOCS_ROOT},
+        },
     },
 ]
 
@@ -209,8 +222,11 @@ def _tool_search(args: dict) -> dict:
 
 
 def _tool_get_document(args: dict) -> dict:
+    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
     doc = get_document(
-        args["identifier"], include_body=args.get("include_body", True)
+        args["identifier"],
+        docset=docset,
+        include_body=args.get("include_body", True),
     )
     if doc is None:
         return {"error": f"no document matching {args['identifier']!r}"}
@@ -218,26 +234,31 @@ def _tool_get_document(args: dict) -> dict:
 
 
 def _tool_get_related(args: dict) -> dict:
-    rel = get_related(args["identifier"])
+    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
+    rel = get_related(args["identifier"], docset=docset)
     if rel is None:
         return {"error": f"no document matching {args['identifier']!r}"}
     return rel
 
 
 def _tool_task_context(args: dict) -> dict:
+    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
     bundle = build_context(
         task=args.get("task", ""),
         changed_files=args.get("changed_files") or [],
+        docset=docset,
     )
     return bundle.as_dict()
 
 
 def _tool_impacted(args: dict) -> dict:
-    return impact_report(args.get("base"), args.get("head"))
+    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
+    return impact_report(args.get("base"), args.get("head"), docset=docset)
 
 
 def _tool_freshness(args: dict) -> dict:
-    report = freshness_mod.health_report()
+    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
+    report = freshness_mod.health_report(docset=docset)
     only = args.get("only")
     if only:
         report["documents"] = [
@@ -247,7 +268,8 @@ def _tool_freshness(args: dict) -> dict:
 
 
 def _tool_health(args: dict) -> dict:
-    return health_mod.build_health()
+    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
+    return health_mod.build_health(docset=docset)
 
 
 def _tool_debt(args: dict) -> dict:

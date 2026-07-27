@@ -13,7 +13,9 @@ Checks every Markdown file under docs/ for:
   and exclusions must be lists; code_confidence must be high/medium/low
 
 Exits 0 on success and 1 when validation issues are found. Dependency-free by
-design; see docs/00-overview/documentation-model.md for the conventions.
+design; see
+docs/project-knowledge/engineering-practices/documentation/documentation-model.md
+for the conventions.
 """
 import re
 from pathlib import Path

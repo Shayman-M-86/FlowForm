@@ -146,7 +146,7 @@ def save_state(session_id: str, state: dict) -> None:
 
 def is_impl_file(path: str) -> bool:
     """True when a changed path is an implementation surface, not docs/noise."""
-    if path.startswith(("docs/", "docs-new/", "old-docs/")):
+    if path.startswith(("docs/", "old-docs/")):
         return False
     if any(sub in path for sub in _IGNORE_SUBSTRINGS):
         return False
@@ -176,7 +176,7 @@ def changed_files_since(base: str | None) -> tuple[list[str], list[str]]:
     files.update(x for x in untracked.splitlines() if x.strip())
 
     impl = sorted(f for f in files if is_impl_file(f))
-    docs = sorted(f for f in files if f.startswith(("docs/", "docs-new/")))
+    docs = sorted(f for f in files if f.startswith("docs/"))
     return impl, docs
 
 

@@ -6,7 +6,7 @@ tools rather than one large AI-driven system:
 
 - ``model``      shared front-matter parser, document model, and glob matching
 - ``gitutil``    thin wrappers over ``git`` for diffs and commit ranges
-- ``index``      builds ``docs/90-generated/documentation-index.json``
+- ``index``      builds the active tree's ``documentation-index.json``
 - ``impact``     maps git changes onto documents via ``related_code``
 - ``freshness``  classifies documents against ``verified_against_commit``
 - ``query``      deterministic ranked search over the index
@@ -17,7 +17,7 @@ tools rather than one large AI-driven system:
 
 The design keeps deterministic tooling first; AI is only ever used by callers
 (agents, the MCP server) for interpretation and summarisation, never inside the
-core tools. See ``docs/00-overview/documentation-model.md`` for the conventions
+core tools. See the active tree's ``documentation-model.md`` for the conventions
 these tools enforce, and ``scripts/docs/docsys/README.md`` for usage.
 """
 

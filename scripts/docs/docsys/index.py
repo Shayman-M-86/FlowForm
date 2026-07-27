@@ -115,7 +115,11 @@ def main(argv: list[str] | None = None) -> int:
     import argparse
 
     parser = argparse.ArgumentParser(prog="docsys index")
-    parser.add_argument("--docs-root", default="docs")
+    parser.add_argument(
+        "--docs-root",
+        default=None,
+        help="documentation root (default: active root)",
+    )
     args = parser.parse_args(argv)
     docs_dir = resolve_docs_root(args.docs_root)
     index = build_index(DocSet.load(docs_dir))
