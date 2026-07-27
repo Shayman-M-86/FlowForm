@@ -2,9 +2,9 @@
 title: Documentation practice
 aliases: ["Documentation practice"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_against_commit: null
+verified_against_commit: 316cebefe28d16b601a91a498b2038f474bdf050
 tags: [meta]
 related_code:
   - "../../../../scripts/docs/"
