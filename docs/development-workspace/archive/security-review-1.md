@@ -4,7 +4,7 @@ aliases: ["Historical security review 1"]
 document_type: historical-review
 status: draft
 authority: historical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [security]
 related_code: []
 related_docs:

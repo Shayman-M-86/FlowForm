@@ -4,7 +4,7 @@ aliases: ["Glossary"]
 document_type: reference
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [backend, frontend, security]
 related_code:
   - "../../../backend/app/schema/orm/core/"

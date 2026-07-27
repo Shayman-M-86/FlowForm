@@ -4,7 +4,7 @@ aliases: ["Security model"]
 document_type: architecture
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [backend, infrastructure, security]
 related_code:
   - "../../../backend/app/middleware/auth/"

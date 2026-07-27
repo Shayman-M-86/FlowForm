@@ -8,6 +8,7 @@ from unittest.mock import patch
 import tomllib
 from docsys import mcp_server
 from docsys.context import assess_reliability, build_context
+from docsys.evidence import EvidenceEntry, EvidenceSource
 from docsys.freshness import CURRENT, Freshness
 from docsys.debt import analyse, build_report, measure
 from docsys.model import ROOT, DocSet, resolve_docs_root
@@ -21,7 +22,7 @@ aliases: ["{title}"]
 document_type: overview
 status: scaffold
 authority: {authority}
-verified_against_commit: null
+verified_evidence_digest: null
 tags: []
 related_code: []
 related_docs: []
@@ -34,6 +35,55 @@ related_docs: []
 
 
 class CollectionModelTests(unittest.TestCase):
+    def test_evidence_digest_changes_only_for_matching_blobs(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            area = Path(temporary)
+            docs_root = area / "docs"
+            docs_root.mkdir()
+            doc_path = docs_root / "evidence.md"
+            code_path = area / "implementation.py"
+            doc_path.write_text(
+                _document("Evidence", body="Checked implementation.").replace(
+                    "related_code: []",
+                    'related_code: ["../implementation.py"]',
+                )
+            )
+            doc = DocSet.load(docs_root).docs[0]
+            code_rel = code_path.relative_to(ROOT).as_posix()
+            unrelated_rel = (area / "unrelated.py").relative_to(ROOT).as_posix()
+
+            first = EvidenceSource(
+                {
+                    code_rel: EvidenceEntry(code_rel, "100644", "a" * 40),
+                    unrelated_rel: EvidenceEntry(
+                        unrelated_rel, "100644", "b" * 40
+                    ),
+                },
+                "first",
+            ).snapshot(doc)
+            unrelated_changed = EvidenceSource(
+                {
+                    code_rel: EvidenceEntry(code_rel, "100644", "a" * 40),
+                    unrelated_rel: EvidenceEntry(
+                        unrelated_rel, "100644", "c" * 40
+                    ),
+                },
+                "unrelated changed",
+            ).snapshot(doc)
+            evidence_changed = EvidenceSource(
+                {
+                    code_rel: EvidenceEntry(code_rel, "100644", "d" * 40),
+                    unrelated_rel: EvidenceEntry(
+                        unrelated_rel, "100644", "b" * 40
+                    ),
+                },
+                "evidence changed",
+            ).snapshot(doc)
+
+            self.assertEqual(first.digest, unrelated_changed.digest)
+            self.assertNotEqual(first.digest, evidence_changed.digest)
+            self.assertEqual(first.files, (code_rel,))
+
     def test_active_docs_root_is_canonical_tree(self) -> None:
         self.assertEqual(resolve_docs_root(), (ROOT / "docs").resolve())
         with patch.dict("os.environ", {"FLOWFORM_DOCS_ROOT": "docs"}):
@@ -278,7 +328,7 @@ class CollectionModelTests(unittest.TestCase):
             for optional_line in (
                 'aliases: ["Workspace"]\n',
                 "authority: working\n",
-                "verified_against_commit: null\n",
+                "verified_evidence_digest: null\n",
                 "related_code: []\n",
                 "related_docs: []\n",
             ):
@@ -293,7 +343,7 @@ class CollectionModelTests(unittest.TestCase):
                     "missing_authority",
                     "missing_related_code",
                     "missing_related_docs",
-                    "missing_verified_against_commit",
+                    "missing_verified_evidence_digest",
                 },
             )
             self.assertTrue(all(item.severity == "warning" for item in findings))

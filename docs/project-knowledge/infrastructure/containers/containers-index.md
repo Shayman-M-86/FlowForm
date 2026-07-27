@@ -4,7 +4,7 @@ aliases: ["Container runtime documentation"]
 document_type: overview
 status: verified
 authority: canonical
-verified_against_commit: 0edae9082dc3381cc1376e8a81276bf5c7bebf88
+verified_evidence_digest: sha256:d44d410c9781be22efc0c482ff8cece91acf82bb26239bc80a2ba20e6e0e9126
 tags: [infrastructure, backend]
 related_code:
   - "../../../../infra/containers/"

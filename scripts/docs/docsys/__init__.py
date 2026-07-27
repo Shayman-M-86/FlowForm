@@ -8,7 +8,8 @@ tools rather than one large AI-driven system:
 - ``gitutil``    thin wrappers over ``git`` for diffs and commit ranges
 - ``index``      builds the active tree's ``documentation-index.json``
 - ``impact``     maps git changes onto documents via ``related_code``
-- ``freshness``  classifies documents against ``verified_against_commit``
+- ``evidence``   calculates verification digests from staged Git blobs
+- ``freshness``  compares recorded and current evidence digests
 - ``query``      deterministic ranked search over the index
 - ``context``    assembles the smallest useful context for a task
 - ``health``     documentation health report and dashboard generators
@@ -23,13 +24,14 @@ these tools enforce, and ``scripts/docs/docsys/README.md`` for usage.
 
 # Bind the documented public modules so ``from docsys import index`` and
 # ``from docsys import *`` agree with this export list.
-from . import context, freshness, gitutil, health, impact, index, model, propose, query
+from . import context, evidence, freshness, gitutil, health, impact, index, model, propose, query
 
 __all__ = [
     "model",
     "gitutil",
     "index",
     "impact",
+    "evidence",
     "freshness",
     "query",
     "context",

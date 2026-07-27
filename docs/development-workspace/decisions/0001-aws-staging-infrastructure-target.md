@@ -4,7 +4,7 @@ aliases: ["ADR 0001: AWS staging infrastructure target"]
 document_type: decision
 status: draft
 authority: working
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [infrastructure, security, configuration, ci-cd]
 related_code:
   - "../../../infra/deployment/aws/cdk/"

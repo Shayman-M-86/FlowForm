@@ -4,7 +4,7 @@ aliases: ["Projects and access"]
 document_type: domain
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [backend, security]
 related_code:
   - "../../../backend/app/services/access/"
@@ -50,7 +50,7 @@ authenticated user
 This page does not define survey versions, answer storage, or access tokens.
 Those boundaries are described by [[surveys-and-versioning|Surveys and versioning]],
 [[submissions|Submissions]], and the security branch. This page remains draft
-until its claims are checked against a committed implementation baseline.
+until its claims are checked against staged implementation evidence.
 
 ## Related documents
 

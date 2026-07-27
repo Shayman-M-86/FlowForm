@@ -30,7 +30,7 @@ _PROMOTED = {
     "document_type",
     "status",
     "authority",
-    "verified_against_commit",
+    "verified_evidence_digest",
     "tags",
     "related_code",
     "related_docs",
@@ -55,7 +55,7 @@ def _entry(doc: Document, docset: DocSet) -> dict:
         "parent": parent.title if parent else None,
         "children": [child.title for child in docset.children(doc)],
         "tags": sorted(doc.tags),
-        "verified_against_commit": doc.verified_against_commit,
+        "verified_evidence_digest": doc.verified_evidence_digest,
         "code_confidence": doc.code_confidence,
         "headings": list(doc.headings),
         # Raw declarations, as written by the author (relative to the doc).

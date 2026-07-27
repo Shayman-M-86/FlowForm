@@ -4,7 +4,7 @@ aliases: ["Security knowledge"]
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [security]
 related_code:
   - "../../../backend/app/middleware/auth/"

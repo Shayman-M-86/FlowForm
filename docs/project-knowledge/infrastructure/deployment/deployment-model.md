@@ -4,7 +4,7 @@ aliases: ["Deployment model"]
 document_type: architecture
 status: verified
 authority: canonical
-verified_against_commit: 0edae9082dc3381cc1376e8a81276bf5c7bebf88
+verified_evidence_digest: sha256:4e60579a93ca2a5b217dc6ef723540d3333d98e5fecf1e780a67a74f508cbf91
 tags: [infrastructure, configuration]
 related_code:
   - "../../../../infra/deployment/aws/cdk/app.py"

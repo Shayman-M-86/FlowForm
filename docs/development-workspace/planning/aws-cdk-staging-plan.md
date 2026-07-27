@@ -4,7 +4,7 @@ aliases: ["AWS CDK staging plan"]
 document_type: planning
 status: draft
 authority: working
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [infrastructure, configuration, ci-cd]
 related_code:
   - "../../../infra/deployment/aws/cdk/"

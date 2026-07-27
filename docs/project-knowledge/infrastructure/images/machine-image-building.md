@@ -4,7 +4,7 @@ aliases: ["Machine image building"]
 document_type: workflow
 status: verified
 authority: canonical
-verified_against_commit: 0edae9082dc3381cc1376e8a81276bf5c7bebf88
+verified_evidence_digest: sha256:fd147e99a1c4dc18268ac4134b761f1896ac02519be6f2b9e7aed16b29af360b
 tags: [infrastructure]
 related_code:
   - "../../../../infra/images/scripts/"

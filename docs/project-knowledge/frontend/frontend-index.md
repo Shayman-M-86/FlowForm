@@ -4,7 +4,7 @@ aliases: ["Frontend implementation"]
 document_type: implementation
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [frontend]
 related_code:
   - "../../../frontend/package.json"

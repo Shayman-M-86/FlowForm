@@ -4,7 +4,7 @@ aliases: ["Runtime containers"]
 document_type: architecture
 status: verified
 authority: canonical
-verified_against_commit: 0edae9082dc3381cc1376e8a81276bf5c7bebf88
+verified_evidence_digest: sha256:91b6754c7fa5ba494dc8bf963bdbbf7ba13662d4a4cfca74a2539a47fe40c737
 tags: [infrastructure, backend]
 related_code:
   - "../../../../infra/containers/runtime/compose/"

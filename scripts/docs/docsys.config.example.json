@@ -4,6 +4,5 @@
     "docs/10-architecture/security-model.md",
     "docs/20-domains/responses-and-encryption.md"
   ],
-  "stale_commit_distance": 200,
   "trigger_weight": 0.6
 }

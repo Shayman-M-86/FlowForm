@@ -4,7 +4,7 @@ aliases: ["Generated files"]
 document_type: reference
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [tooling]
 related_code: ["../../../backend/scripts/export-openapi.sh", "../../../frontend/scripts/generate-types.mjs", "../../../scripts/ci/sync-openapi.sh", "../../../scripts/docs/", "../../../scripts/secrets/generate-env-files.sh", "../../../infra/images/"]
 related_docs: ["Generated reference documentation", "Scripts catalogue", "Repository map"]

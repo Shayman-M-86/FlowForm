@@ -4,7 +4,7 @@ aliases: ["Testing workflow"]
 document_type: workflow
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [tooling]
 related_code:
   - "../../../backend/scripts/run-tests.sh"

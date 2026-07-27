@@ -4,7 +4,7 @@ aliases: ["Engineering practices"]
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [tooling]
 related_code: []
 related_docs:
@@ -62,7 +62,7 @@ testing establishes component confidence, and CI applies selected repository
 gates; delivery remains an operational concern with infrastructure ownership.
 
 Pages remain draft until their practice descriptions and code linkage are
-checked against a committed implementation baseline.
+checked against staged implementation evidence.
 
 ## Related documents
 

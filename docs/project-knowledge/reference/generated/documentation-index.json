@@ -1,7 +1,7 @@
 {
   "schema": "flowform.docsys.index/1",
   "generated_by": "scripts/docs/docsys/index.py",
-  "repo_head": "70e4196790305f6a16dc4ecf376ae42f2a5505a6",
+  "repo_head": "4afab53fbdb4c04cd59d31f914b90dfce72f9591",
   "document_count": 92,
   "documents": [
     {
@@ -21,7 +21,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Engineering archive",
@@ -81,7 +81,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Completed workspace material",
@@ -127,7 +127,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Documentation restructure plan",
@@ -174,7 +174,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Documentation system migration",
@@ -227,7 +227,7 @@
         "infrastructure",
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Image script consolidation plan",
@@ -273,7 +273,7 @@
       "tags": [
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Historical security review 1",
@@ -320,7 +320,7 @@
       "tags": [
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Historical security review 2",
@@ -368,7 +368,7 @@
         "infrastructure",
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "ADR 0001: AWS staging infrastructure target",
@@ -422,7 +422,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "ADR template",
@@ -467,7 +467,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Engineering decisions",
@@ -532,7 +532,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Development workspace",
@@ -596,7 +596,7 @@
       "tags": [
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Engineering experiments",
@@ -644,7 +644,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Engineering ideas",
@@ -693,7 +693,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Engineering investigations",
@@ -746,7 +746,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Engineering migrations",
@@ -797,7 +797,7 @@
         "configuration",
         "infrastructure"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "AWS CDK staging plan",
@@ -855,7 +855,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Engineering planning",
@@ -910,7 +910,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Engineering research",
@@ -960,7 +960,7 @@
       "tags": [
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Technical debt workspace",
@@ -1013,7 +1013,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "FlowForm documentation",
@@ -1071,7 +1071,7 @@
       "tags": [
         "backend"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Backend knowledge",
@@ -1137,7 +1137,7 @@
         "frontend",
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Data flows",
@@ -1206,7 +1206,7 @@
         "backend",
         "configuration"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Backend configuration patterns",
@@ -1264,7 +1264,7 @@
       "tags": [
         "backend"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Backend code organization",
@@ -1325,7 +1325,7 @@
       "tags": [
         "backend"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Backend feature slices",
@@ -1390,7 +1390,7 @@
       "tags": [
         "backend"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Backend implementation documentation",
@@ -1448,7 +1448,7 @@
         "backend",
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Links and subjects",
@@ -1459,7 +1459,9 @@
         "../../../backend/app/services/participants.py",
         "../../../backend/app/services/public_submissions/core/resolution/",
         "../../../backend/app/schema/orm/core/project_subject.py",
-        "../../../backend/app/schema/orm/core/survey_access.py"
+        "../../../backend/app/schema/orm/core/survey_access.py",
+        "../../../frontend/apps/studio-app/src/lib/surveyAccessDesign.ts",
+        "../../../frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/SurveyAccessTab.tsx"
       ],
       "change_triggers": [],
       "exclusions": [],
@@ -1468,7 +1470,9 @@
         "backend/app/services/participants.py",
         "backend/app/services/public_submissions/core/resolution/",
         "backend/app/schema/orm/core/project_subject.py",
-        "backend/app/schema/orm/core/survey_access.py"
+        "backend/app/schema/orm/core/survey_access.py",
+        "frontend/apps/studio-app/src/lib/surveyAccessDesign.ts",
+        "frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/SurveyAccessTab.tsx"
       ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
@@ -1519,7 +1523,7 @@
         "backend",
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Projects and access",
@@ -1587,7 +1591,7 @@
       "tags": [
         "backend"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Submissions",
@@ -1598,7 +1602,8 @@
         "../../../backend/app/schema/orm/core/submission_session.py",
         "../../../backend/app/schema/orm/core/submission_answer_slot.py",
         "../../../backend/app/api/v1/respondent/submission_sessions.py",
-        "../../../backend/tests/e2e/test_submission_session_flows.py"
+        "../../../backend/tests/e2e/test_submission_session_flows.py",
+        "../../../frontend/apps/studio-app/src/pages/RespondPage.tsx"
       ],
       "change_triggers": [],
       "exclusions": [],
@@ -1607,7 +1612,8 @@
         "backend/app/schema/orm/core/submission_session.py",
         "backend/app/schema/orm/core/submission_answer_slot.py",
         "backend/app/api/v1/respondent/submission_sessions.py",
-        "backend/tests/e2e/test_submission_session_flows.py"
+        "backend/tests/e2e/test_submission_session_flows.py",
+        "frontend/apps/studio-app/src/pages/RespondPage.tsx"
       ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
@@ -1659,7 +1665,7 @@
       "tags": [
         "backend"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Surveys and versioning",
@@ -1727,7 +1733,7 @@
         "backend",
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Data knowledge",
@@ -1785,7 +1791,7 @@
       "tags": [
         "backend"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Database migrations",
@@ -1845,7 +1851,7 @@
       "tags": [
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Responses and encryption",
@@ -1932,7 +1938,7 @@
       "tags": [
         "ci-cd"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "CI/CD implementation",
@@ -1999,7 +2005,7 @@
       "tags": [
         "ci-cd"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Continuous integration",
@@ -2067,7 +2073,7 @@
         "infrastructure",
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Architecture principles",
@@ -2138,7 +2144,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Documentation authoring guide",
@@ -2209,7 +2215,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Documentation practice",
@@ -2272,7 +2278,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Documentation model",
@@ -2341,12 +2347,14 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Documentation validation and review",
         "Validation profiles",
         "Running validation",
+        "Reliability disclosure during retrieval",
+        "Staged verification gate",
         "Review checklist",
         "Debt is advisory",
         "Related documents"
@@ -2412,7 +2420,7 @@
       "tags": [
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Engineering practices",
@@ -2479,7 +2487,7 @@
         "infrastructure",
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Local development",
@@ -2545,7 +2553,7 @@
       "tags": [
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Testing workflow",
@@ -2617,7 +2625,7 @@
       "tags": [
         "frontend"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Frontend implementation",
@@ -2677,7 +2685,7 @@
         "configuration",
         "infrastructure"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:c4e18e6f60c3cf2eaa16332ef93756aa8da9eb3a0546d83ea87c1bebb7684256",
       "code_confidence": "medium",
       "headings": [
         "Configuration implementation",
@@ -2742,7 +2750,7 @@
         "backend",
         "infrastructure"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:d44d410c9781be22efc0c482ff8cece91acf82bb26239bc80a2ba20e6e0e9126",
       "code_confidence": "medium",
       "headings": [
         "Container runtime documentation",
@@ -2797,7 +2805,7 @@
         "backend",
         "infrastructure"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:91b6754c7fa5ba494dc8bf963bdbbf7ba13662d4a4cfca74a2539a47fe40c737",
       "code_confidence": "medium",
       "headings": [
         "Runtime containers",
@@ -2852,7 +2860,7 @@
         "ci-cd",
         "infrastructure"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:0b98483f153f03ab4e5a7e4ff4c68d8d45e06c91fcf44257c78bbfe312feb540",
       "code_confidence": "medium",
       "headings": [
         "Cloud deployment",
@@ -2896,7 +2904,7 @@
       "title": "Deployment documentation",
       "document_type": "overview",
       "authority": "canonical",
-      "status": "verified",
+      "status": "draft",
       "collection": "project-knowledge",
       "is_folder_head": true,
       "parent": "Infrastructure knowledge",
@@ -2908,7 +2916,7 @@
         "ci-cd",
         "infrastructure"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Deployment documentation",
@@ -2971,7 +2979,7 @@
         "configuration",
         "infrastructure"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:4e60579a93ca2a5b217dc6ef723540d3333d98e5fecf1e780a67a74f508cbf91",
       "code_confidence": "medium",
       "headings": [
         "Deployment model",
@@ -3030,7 +3038,7 @@
       "tags": [
         "infrastructure"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:7667a4ec4de0f675fd567a181cc5b598498ee170e578931eda4a11bac9eff2b4",
       "code_confidence": "medium",
       "headings": [
         "Machine images",
@@ -3084,7 +3092,7 @@
       "tags": [
         "infrastructure"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:fd147e99a1c4dc18268ac4134b761f1896ac02519be6f2b9e7aed16b29af360b",
       "code_confidence": "medium",
       "headings": [
         "Machine image building",
@@ -3138,7 +3146,7 @@
       "tags": [
         "infrastructure"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:e03d2145266fc0eea8f52b8e3347e7733943631ad774aa862304c2356b4b9ca0",
       "code_confidence": "medium",
       "headings": [
         "Packer implementation",
@@ -3200,7 +3208,7 @@
       "tags": [
         "infrastructure"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:dd20a4e7fcfa97b188ad92dc1c4aced2809d23ca903dcc9566d26bf0e8cf6b7c",
       "code_confidence": "medium",
       "headings": [
         "Infrastructure knowledge",
@@ -3286,7 +3294,7 @@
         "configuration",
         "infrastructure"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:4502de4900ed8b8f89b88e4fb7f6fea232838cb77c86db6a5a6f458c97850206",
       "code_confidence": "medium",
       "headings": [
         "Local infrastructure",
@@ -3347,7 +3355,7 @@
       "tags": [
         "infrastructure"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:568d3bd466edd76072978dfd1cdbdd1889b41422fb415717744bab57e78869c5",
       "code_confidence": "medium",
       "headings": [
         "Proxmox rehearsal",
@@ -3411,7 +3419,7 @@
         "infrastructure",
         "security"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:9d41c41b4f72d2f373107e99760b5400c86544d1551351b73b6bf4270d1ca465",
       "code_confidence": "medium",
       "headings": [
         "Proxmox rehearsal fixtures and egress",
@@ -3470,7 +3478,7 @@
         "infrastructure",
         "tooling"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:9394b4e8f66c45800bba03fa2dd3122d142a94ab6f645d13260de84e5fe3e44c",
       "code_confidence": "medium",
       "headings": [
         "Proxmox rehearsal observability",
@@ -3529,7 +3537,7 @@
         "infrastructure",
         "tooling"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:3cc1f93cc619710125a2dd68e116f36c9b7a7fc5622b8764d6a576b0f8cd6771",
       "code_confidence": "medium",
       "headings": [
         "Proxmox rehearsal setup",
@@ -3590,7 +3598,7 @@
         "infrastructure",
         "security"
       ],
-      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "verified_evidence_digest": "sha256:2cfb51ed43b55b203122afc9a88117ae12034b33e7bfdda40bdc832b6153d8c4",
       "code_confidence": "medium",
       "headings": [
         "Secrets and configuration",
@@ -3653,7 +3661,7 @@
         "backend",
         "infrastructure"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Observability",
@@ -3715,7 +3723,7 @@
       "tags": [
         "infrastructure"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Operations knowledge",
@@ -3768,7 +3776,7 @@
       "tags": [
         "backend"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Business tracing",
@@ -3825,7 +3833,7 @@
         "backend",
         "infrastructure"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Distributed tracing",
@@ -3881,7 +3889,7 @@
       "tags": [
         "frontend"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Builder and rules",
@@ -3944,7 +3952,7 @@
         "frontend",
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Product knowledge",
@@ -4002,7 +4010,7 @@
         "backend",
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Respondent access and continuity",
@@ -4021,7 +4029,10 @@
         "../../../backend/app/services/public_submissions/core/resolution/",
         "../../../backend/app/schema/orm/core/project_subject.py",
         "../../../backend/app/schema/orm/core/survey_access.py",
-        "../../../backend/tests/integration/core/test_flow_matrix.py"
+        "../../../backend/tests/integration/core/test_flow_matrix.py",
+        "../../../frontend/apps/studio-app/src/lib/surveyAccessDesign.ts",
+        "../../../frontend/apps/studio-app/src/pages/RespondPage.tsx",
+        "../../../frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/SurveyAccessTab.tsx"
       ],
       "change_triggers": [],
       "exclusions": [],
@@ -4033,7 +4044,10 @@
         "backend/app/services/public_submissions/core/resolution/",
         "backend/app/schema/orm/core/project_subject.py",
         "backend/app/schema/orm/core/survey_access.py",
-        "backend/tests/integration/core/test_flow_matrix.py"
+        "backend/tests/integration/core/test_flow_matrix.py",
+        "frontend/apps/studio-app/src/lib/surveyAccessDesign.ts",
+        "frontend/apps/studio-app/src/pages/RespondPage.tsx",
+        "frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/SurveyAccessTab.tsx"
       ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
@@ -4092,7 +4106,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Project Knowledge",
@@ -4190,7 +4204,7 @@
       "tags": [
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Commands",
@@ -4250,7 +4264,7 @@
         "infrastructure",
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Component map",
@@ -4317,7 +4331,7 @@
       "tags": [
         "configuration"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Configuration catalogue",
@@ -4380,7 +4394,7 @@
       "tags": [
         "configuration"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Environment variables",
@@ -4436,7 +4450,7 @@
       "tags": [
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Generated files",
@@ -4497,7 +4511,7 @@
       "tags": [
         "backend"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "API routes",
@@ -4545,7 +4559,7 @@
       "tags": [
         "ci-cd"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "CI workflows",
@@ -4595,7 +4609,7 @@
       "tags": [
         "configuration"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Configuration index",
@@ -4645,7 +4659,7 @@
       "tags": [
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Dependency map",
@@ -4693,7 +4707,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Documentation health dashboard",
@@ -4763,7 +4777,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Generated reference documentation",
@@ -4824,7 +4838,7 @@
       "tags": [
         "infrastructure"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Infrastructure resources",
@@ -4872,7 +4886,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Repository tree snapshot",
@@ -4922,7 +4936,7 @@
         "frontend",
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Glossary",
@@ -4993,7 +5007,7 @@
         "backend",
         "infrastructure"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Logging schema",
@@ -5066,7 +5080,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Reference documentation",
@@ -5133,7 +5147,7 @@
       "tags": [
         "meta"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Repository map",
@@ -5192,7 +5206,7 @@
       "tags": [
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Scripts catalogue",
@@ -5252,7 +5266,7 @@
       "tags": [
         "tooling"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Scripts implementation",
@@ -5325,7 +5339,7 @@
       "tags": [
         "infrastructure"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Services and ports",
@@ -5376,7 +5390,7 @@
       "tags": [
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Identity and authentication",
@@ -5447,7 +5461,7 @@
       "tags": [
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Security knowledge",
@@ -5513,7 +5527,7 @@
         "infrastructure",
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Security model",
@@ -5597,7 +5611,7 @@
         "infrastructure",
         "security"
       ],
-      "verified_against_commit": null,
+      "verified_evidence_digest": null,
       "code_confidence": "medium",
       "headings": [
         "Trust boundaries",

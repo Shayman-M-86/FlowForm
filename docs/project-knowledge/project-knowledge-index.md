@@ -4,7 +4,7 @@ aliases: ["Project Knowledge"]
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [meta]
 related_code:
   - "../../backend/app/"

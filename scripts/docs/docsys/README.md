@@ -11,7 +11,8 @@ Guiding principles (see [`Documentation model`](../../../docs/project-knowledge/
 - Prefer many small, deterministic tools over one large AI-driven system.
 - AI is used only by callers (agents, the MCP server) for interpretation and
   summarisation — never inside the core tools.
-- The tooling proposes and surfaces; it never silently rewrites documentation.
+- Content changes remain explicit. The Git hook may only downgrade invalidated
+  verification metadata and stage that small, reviewable change.
 
 Everything here is standard-library only, so it runs anywhere `python3` does.
 
@@ -24,7 +25,8 @@ Everything here is standard-library only, so it runs anywhere `python3` does.
 | `config.py` | Optional `docsys.config.json` overrides |
 | `index.py` | Builds `docs/project-knowledge/reference/generated/documentation-index.json` |
 | `impact.py` | Maps code changes onto documents, ranks confidence, explains why |
-| `freshness.py` | Classifies documents against `verified_against_commit` |
+| `evidence.py` | Calculates verification digests from staged or committed Git blobs |
+| `freshness.py` | Compares recorded and current evidence digests |
 | `query.py` | Deterministic ranked search |
 | `context.py` | Smallest useful documentation context for a task / change |
 | `retrieve.py` | Single-document and related-document retrieval |
@@ -62,6 +64,12 @@ python3 -m docsys impact --base origin/main
 
 # Which documents are drifting from the code they describe?
 python3 -m docsys freshness
+
+# After semantic review, record the exact staged implementation evidence.
+python3 -m docsys evidence promote --staged docs/path.md
+
+# Pre-commit check; automatically stages honest verification invalidations.
+python3 -m docsys evidence check-staged --sync-invalidations
 
 # Ranked deterministic search.
 python3 -m docsys query "response encryption locator"
@@ -122,6 +130,12 @@ Beyond the required front matter, documents may declare optional linkage fields
 - `code_confidence` — `high` / `medium` / `low`, weighting impact and
   freshness.
 
+`verified_evidence_digest` is maintained by `docsys evidence`, not by hand. It
+is the SHA-256 digest of the staged Git blobs selected by `related_code` and
+`change_triggers`, after `exclusions`. Documentation content is excluded, so
+implementation, documentation, and verification metadata can be committed
+together without a self-referential commit SHA.
+
 ## Configuration
 
 Optional. Copy `scripts/docs/docsys.config.example.json` to
@@ -129,16 +143,15 @@ Optional. Copy `scripts/docs/docsys.config.example.json` to
 
 - `critical_doc_globs` — documents whose impact-but-not-modified state fails
   the CI `docs-review` job (empty by default, so CI never fails on docs).
-- `stale_commit_distance` — commit distance beyond which a verified document is
-  flagged for review even if no owned code changed.
 
-## CI integration
+## Commit integration
 
-The `documentation` job in `.github/workflows/ci.yml` runs the dependency-free
-unit tests, validates `docs/` with the strict `ci` profile, and prints an
-advisory debt report. Debt findings never fail the initial rollout. The legacy
-standalone validators are not wired into this job while pre-existing abandoned
-review files remain outside their canonical front-matter and link conventions.
+The repository Git pre-commit hook checks verified documents affected by staged
+implementation changes against the staged index, then runs the `commit`
+validation profile. A mismatch is downgraded to `draft`, staged, and reported;
+the current commit attempt stops so the author can review it. Promotion is
+never automatic because factual review is semantic. This verification workflow
+is intentionally not part of CI.
 
 ## Relationship to the existing validators
 

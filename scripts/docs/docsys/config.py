@@ -22,9 +22,6 @@ class Config:
     # Documents whose path matches any of these globs cause the CI review step
     # to fail when they are impacted but unmodified. Empty = never fail CI.
     critical_doc_globs: list[str] = field(default_factory=list)
-    # Number of commits since verification beyond which a document is treated
-    # as "review suggested" even if no related code changed.
-    stale_commit_distance: int = 200
     # Weight applied to change-trigger matches relative to related_code.
     trigger_weight: float = 0.6
 

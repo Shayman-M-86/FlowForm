@@ -33,7 +33,7 @@ def get_document(
     result = {
         **_brief(doc),
         "tags": sorted(doc.tags),
-        "verified_against_commit": doc.verified_against_commit,
+        "verified_evidence_digest": doc.verified_evidence_digest,
         "related_code": list(doc.front_matter.get("related_code") or []),
         "related_code_resolved": list(doc.related_patterns),
         "related_docs": list(doc.related_docs),

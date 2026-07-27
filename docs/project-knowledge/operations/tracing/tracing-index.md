@@ -4,7 +4,7 @@ aliases: ["Distributed tracing", "Tracing"]
 document_type: reference
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [backend, infrastructure]
 related_code:
   - "../../../../backend/app/tracing/"

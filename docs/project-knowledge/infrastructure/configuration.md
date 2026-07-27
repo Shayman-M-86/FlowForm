@@ -4,7 +4,7 @@ aliases: ["Configuration implementation"]
 document_type: implementation
 status: verified
 authority: canonical
-verified_against_commit: 0edae9082dc3381cc1376e8a81276bf5c7bebf88
+verified_evidence_digest: sha256:c4e18e6f60c3cf2eaa16332ef93756aa8da9eb3a0546d83ea87c1bebb7684256
 tags: [configuration, infrastructure]
 related_code:
   - "../../../backend/app/core/config.py"

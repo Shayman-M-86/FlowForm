@@ -4,7 +4,7 @@ aliases: ["Secrets and configuration"]
 document_type: workflow
 status: verified
 authority: canonical
-verified_against_commit: 0edae9082dc3381cc1376e8a81276bf5c7bebf88
+verified_evidence_digest: sha256:2cfb51ed43b55b203122afc9a88117ae12034b33e7bfdda40bdc832b6153d8c4
 tags: [configuration, security, infrastructure]
 related_code:
   - "../../../scripts/secrets/"

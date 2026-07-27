@@ -4,7 +4,7 @@ aliases: ["Proxmox rehearsal observability"]
 document_type: implementation
 status: verified
 authority: canonical
-verified_against_commit: 0edae9082dc3381cc1376e8a81276bf5c7bebf88
+verified_evidence_digest: sha256:9394b4e8f66c45800bba03fa2dd3122d142a94ab6f645d13260de84e5fe3e44c
 tags: [infrastructure, tooling]
 related_code:
   - "../../../../infra/deployment/proxmox/scripts/lib/cmd_logs.sh"

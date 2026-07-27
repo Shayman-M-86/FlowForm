@@ -55,7 +55,7 @@ aliases: [\"{title}\"]
 document_type: generated
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [{tag_line}]
 related_code: []
 related_docs: [\"Generated reference documentation\", \"Reference documentation\"]

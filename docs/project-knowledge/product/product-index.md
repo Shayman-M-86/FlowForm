@@ -4,7 +4,7 @@ aliases: ["Product knowledge"]
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [backend, frontend, security]
 related_code:
   - "../../../frontend/packages/builder/src/"

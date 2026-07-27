@@ -4,7 +4,7 @@ aliases: ["Business tracing", "Tracing API"]
 document_type: implementation
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [backend]
 related_code:
   - "../../../../backend/app/tracing/"

@@ -4,7 +4,7 @@ aliases: ["Identity and authentication"]
 document_type: domain
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [security]
 related_code:
   - "../../../backend/app/middleware/auth/auth0.py"

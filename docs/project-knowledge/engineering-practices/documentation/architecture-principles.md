@@ -4,7 +4,7 @@ aliases: ["Architecture principles"]
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [backend, frontend, infrastructure, security]
 related_code:
   - "../../../../backend/app/"

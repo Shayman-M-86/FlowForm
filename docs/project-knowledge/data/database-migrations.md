@@ -4,7 +4,7 @@ aliases: ["Database migrations"]
 document_type: workflow
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [backend]
 related_code:
   - "../../../infra/database/init/"

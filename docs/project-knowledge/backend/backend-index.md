@@ -4,7 +4,7 @@ aliases: ["Backend knowledge"]
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [backend]
 related_code:
   - "../../../backend/app/"
@@ -47,8 +47,8 @@ Studio / respondent / system clients
 Core and response stores are independent persistence boundaries. Consequently,
 workflows that span them need explicit sequencing, compensation, or
 reconciliation rather than a distributed database transaction. Pages remain
-draft until their claims are checked against a committed implementation
-baseline; code and tests remain authoritative.
+draft until their claims are checked against staged implementation evidence;
+code and tests remain authoritative.
 
 ## Topics
 

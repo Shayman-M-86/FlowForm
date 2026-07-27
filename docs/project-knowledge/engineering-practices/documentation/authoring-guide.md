@@ -4,7 +4,7 @@ aliases: ["Documentation authoring guide"]
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [meta]
 related_code:
   - "../../../../scripts/docs/"
@@ -18,9 +18,8 @@ related_docs:
 # Documentation authoring guide
 
 Guides agents and scripts that update FlowForm documentation from verified
-repository evidence. This guide and the documentation validators are tracked
-repository content; a verification commit records the checked process and script
-boundary, not the correctness of any generated prose.
+repository evidence. The recorded evidence digest identifies the checked
+implementation boundary; it does not replace review of the prose.
 
 ## Required reading order
 
@@ -113,11 +112,20 @@ the relationship between its subcategories. A heading followed only by child
 links is navigation, not an overview. If no meaningful overview exists yet,
 defer the branch instead of preserving an empty taxonomy.
 
-Set `verified_against_commit` to the inspected commit for implementation-backed
-prose. A commit value is an evidence baseline, not a substitute for review. Use
-`null` when a page has not been checked against a committed implementation
-baseline, including a scaffold, workspace page, or documentation process that
-exists only in the working tree.
+After checking the claims, stage the implementation and documentation changes,
+then run:
+
+```sh
+PYTHONPATH=scripts/docs python3 -m docsys evidence promote --staged \
+  docs/path-to-reviewed-document.md
+```
+
+Docsys sets `status: verified`, calculates `verified_evidence_digest` from the
+staged blobs selected by the document's evidence metadata, and re-stages the
+document. Do not paste a digest manually. Leave the field `null` for an
+unreviewed draft or scaffold. The pre-commit hook checks affected verified pages
+against the same staged snapshot and stops after staging any required downgrade
+to `draft`.
 
 ## Reference and navigation discipline
 
@@ -150,9 +158,9 @@ evidence, and are refreshed rather than hand-verified.
 ## Answering repository questions
 
 When documentation work accompanies a repository answer, report what changed,
-what was validated, the commit used for verification, and which documents remain
-scaffold-only. Include contradictions or missing evidence rather than hiding them
-in prose.
+what was validated, which evidence boundary was reviewed, and which documents
+remain draft or scaffold-only. Include contradictions or missing evidence
+rather than hiding them in prose.
 
 ## Related documents
 

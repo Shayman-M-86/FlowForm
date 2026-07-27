@@ -4,7 +4,7 @@ aliases: ["Machine images"]
 document_type: overview
 status: verified
 authority: canonical
-verified_against_commit: 0edae9082dc3381cc1376e8a81276bf5c7bebf88
+verified_evidence_digest: sha256:7667a4ec4de0f675fd567a181cc5b598498ee170e578931eda4a11bac9eff2b4
 tags: [infrastructure]
 related_code:
   - "../../../../infra/images/"

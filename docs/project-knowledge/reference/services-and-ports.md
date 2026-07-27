@@ -4,7 +4,7 @@ aliases: ["Services and ports"]
 document_type: reference
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [infrastructure]
 related_code: ["../../../infra/containers/", "../../../infra/deployment/proxmox/cloud-init/", "../../../frontend/docker-compose.dev.yml"]
 related_docs: ["Runtime containers", "Local infrastructure"]

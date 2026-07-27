@@ -60,7 +60,8 @@ before expanding.
 - When implementation evidence contradicts a document, report the document
   claim and the conflicting repository evidence explicitly. If documentation
   editing is in scope, correct the claim, set `status: draft`, and clear
-  `verified_against_commit` until the revised page is checked against a commit.
+  `verified_evidence_digest` until the revised page is checked against staged
+  implementation evidence.
   In read-only work, report that metadata update as required instead of editing.
 - Never silently preserve `status: verified` after finding a material
   contradiction.
@@ -85,10 +86,31 @@ before expanding.
 7. Do not create empty branches or taxonomy-only scaffolds. Change generators
    instead of hand-editing generated documentation.
 8. Update front matter, code linkage, cross-links, and affected navigation with
-   the content change. Keep status and `verified_against_commit` honest.
+   the content change. Keep status and `verified_evidence_digest` honest.
 9. Run the relevant Docsys validation profile, link and metadata checks, and
    documentation-tool tests before reporting completion.
 10. Do not commit independently unless the user explicitly asks.
+
+## Verify a documentation update
+
+Verification is a semantic review followed by deterministic automation:
+
+1. Check the document's current-state claims against its declared
+   implementation evidence.
+2. Stage the implementation and documentation changes that belong in one
+   commit.
+3. Promote each reviewed document with
+   `PYTHONPATH=scripts/docs python3 -m docsys evidence promote --staged
+   docs/path.md`. Docsys writes the staged evidence digest and re-stages the
+   document; do not calculate or paste a digest manually.
+4. Let the Git pre-commit hook compare verified pages with the exact staged
+   blobs and run the `commit` validation profile. If it stages an automatic
+   downgrade to `draft`, review that page and either update and promote it or
+   commit the honest draft state.
+
+This permits implementation, documentation, and verification metadata to land
+in one commit. The hook validates deterministic evidence; it does not replace
+the semantic review required before promotion.
 
 ## Supporting tools
 

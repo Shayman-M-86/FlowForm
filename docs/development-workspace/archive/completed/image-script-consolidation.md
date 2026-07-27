@@ -4,7 +4,7 @@ aliases: ["Image script consolidation plan"]
 document_type: completed-plan
 status: draft
 authority: working
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [infrastructure, tooling]
 related_code:
   - "../../../../infra/images/"

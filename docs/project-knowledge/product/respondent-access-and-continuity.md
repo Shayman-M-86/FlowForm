@@ -4,7 +4,7 @@ aliases: ["Respondent access and continuity"]
 document_type: domain
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [backend, security]
 related_code:
   - "../../../backend/app/domain/public_link_rules.py"

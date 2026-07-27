@@ -5,7 +5,7 @@ aliases:
 document_type: implementation
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [tooling]
 related_code:
   - "../../../scripts/"

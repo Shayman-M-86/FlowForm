@@ -4,7 +4,7 @@ aliases: ["Environment variables"]
 document_type: reference
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [configuration]
 related_code: ["../../../backend/app/core/config.py", "../../../infra/deployment/bootstrap/", "../../../infra/containers/", "../../../frontend/apps/"]
 related_docs: ["Configuration catalogue", "Secrets and configuration", "Configuration index"]

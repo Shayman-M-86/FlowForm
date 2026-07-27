@@ -4,7 +4,7 @@ aliases: ["Commands"]
 document_type: reference
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [tooling]
 related_code: ["../../../backend/scripts/", "../../../frontend/package.json", "../../../scripts/", "../../../.github/workflows/"]
 related_docs: ["Scripts catalogue", "Local development", "Testing workflow"]

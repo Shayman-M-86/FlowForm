@@ -4,7 +4,7 @@ aliases: ["Engineering decisions"]
 document_type: decision-index
 status: draft
 authority: working
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [meta]
 related_code: []
 related_docs: ["Development workspace"]

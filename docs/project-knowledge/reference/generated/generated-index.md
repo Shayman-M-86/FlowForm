@@ -4,7 +4,7 @@ aliases: ["Generated reference documentation"]
 document_type: generated
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [meta]
 related_code: []
 related_docs: ["Reference documentation"]

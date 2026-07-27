@@ -53,7 +53,7 @@ class ImpactedDoc:
             "title": self.doc.title,
             "document_type": self.doc.document_type,
             "status": self.doc.status,
-            "verified_against_commit": self.doc.verified_against_commit,
+            "verified_evidence_digest": self.doc.verified_evidence_digest,
             "confidence": self.confidence,
             "reasons": self.reasons,
             "matched_files": sorted({m.file for m in self.matches}),

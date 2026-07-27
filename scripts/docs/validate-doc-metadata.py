@@ -3,7 +3,7 @@
 
 Checks every Markdown file under docs/ for:
 - required front-matter keys (title, document_type, status, authority,
-  verified_against_commit, aliases, related_code, related_docs)
+  verified_evidence_digest, aliases, related_code, related_docs)
 - an allowed status value
 - globally unique titles (case-insensitive), since wiki links resolve by title
 - an Obsidian alias matching each document title
@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 
 REQUIRED = ["title", "document_type", "status", "authority",
-            "verified_against_commit", "aliases", "related_code", "related_docs"]
+            "verified_evidence_digest", "aliases", "related_code", "related_docs"]
 ALLOWED_STATUS = {"scaffold", "draft", "verified"}
 ALLOWED_CONFIDENCE = {"high", "medium", "low"}
 # Optional tooling fields (consumed by scripts/docs/docsys/): related_code may
@@ -83,6 +83,18 @@ for path in sorted(DOCS.rglob("*.md")):
     status = fm.get("status")
     if status is not None and status not in ALLOWED_STATUS:
         issues.append(f"{rel}: status '{status}' not in {sorted(ALLOWED_STATUS)}")
+    digest = fm.get("verified_evidence_digest")
+    if digest not in (None, "null") and not re.fullmatch(
+            r"sha256:[0-9a-f]{64}", str(digest)):
+        issues.append(
+            f"{rel}: verified_evidence_digest must be null or "
+            "sha256:<64 lowercase hex>")
+    if status == "verified" and digest in (None, "null"):
+        issues.append(f"{rel}: verified documents require an evidence digest")
+    if status != "verified" and digest not in (None, "null"):
+        issues.append(
+            f"{rel}: draft/scaffold documents must use "
+            "verified_evidence_digest: null")
     for tag in fm.get("tags", []):
         if tag not in TAG_VOCABULARY:
             issues.append(f"{rel}: tag '{tag}' not in controlled vocabulary "

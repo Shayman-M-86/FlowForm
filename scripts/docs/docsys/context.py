@@ -60,7 +60,7 @@ class ContextBundle:
                 "title": d.title,
                 "document_type": d.document_type,
                 "status": d.status,
-                "verified_against_commit": d.verified_against_commit,
+                "verified_evidence_digest": d.verified_evidence_digest,
                 "summary": _first_sentence(d),
             }
 
@@ -142,7 +142,7 @@ def assess_reliability(primary: list[Document]) -> dict:
                 {
                     "path": doc.rel_path,
                     "status": doc.status,
-                    "verified_against_commit": doc.verified_against_commit,
+                    "verified_evidence_digest": doc.verified_evidence_digest,
                     "freshness": freshness.classification,
                     "working_tree_modified": working_tree_modified,
                     "reasons": list(dict.fromkeys(doc_reasons)),

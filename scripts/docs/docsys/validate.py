@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from dataclasses import asdict, dataclass
 
 from .model import (
@@ -40,7 +41,7 @@ def _severity(code: str, collection: str, profile: str) -> str:
         "missing_authority",
         "missing_related_code",
         "missing_related_docs",
-        "missing_verified_against_commit",
+        "missing_verified_evidence_digest",
     }
     if profile == "editing":
         return "warning"
@@ -111,6 +112,37 @@ def metadata_findings(
                     "metadata",
                     "invalid_status",
                     f"invalid status '{doc.status}'",
+                    profile,
+                )
+            )
+        digest = doc.verified_evidence_digest
+        if digest is not None and not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+            findings.append(
+                _finding(
+                    doc,
+                    "metadata",
+                    "invalid_verified_evidence_digest",
+                    "verified_evidence_digest must be null or sha256:<64 lowercase hex>",
+                    profile,
+                )
+            )
+        if doc.status == "verified" and digest is None:
+            findings.append(
+                _finding(
+                    doc,
+                    "metadata",
+                    "verified_without_evidence_digest",
+                    "verified documents require verified_evidence_digest",
+                    profile,
+                )
+            )
+        if doc.status != "verified" and digest is not None:
+            findings.append(
+                _finding(
+                    doc,
+                    "metadata",
+                    "unverified_with_evidence_digest",
+                    "draft and scaffold documents must use verified_evidence_digest: null",
                     profile,
                 )
             )

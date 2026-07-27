@@ -4,7 +4,7 @@ aliases: ["Local development"]
 document_type: workflow
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [tooling, infrastructure]
 related_code:
   - "../../../infra/containers/strategies/dev/compose/compose.yml"

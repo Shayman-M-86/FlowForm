@@ -5,7 +5,8 @@ Subcommands map to the focused tools in this package:
 
     index       (re)build the active tree's documentation-index.json
     impact      report documentation impacted by code changes
-    freshness   classify documents against their verified commit
+    freshness   classify documents against their evidence digest
+    evidence    promote/invalidate staged documentation verification
     query       ranked deterministic search over documentation
     context     assemble minimal task/change context
     health      regenerate the documentation health report + dashboard
@@ -25,6 +26,7 @@ _COMMANDS = {
     "index": "docsys.index",
     "impact": "docsys.impact",
     "freshness": "docsys.freshness",
+    "evidence": "docsys.evidence",
     "query": "docsys.query",
     "search": "docsys.query",
     "context": "docsys.context",

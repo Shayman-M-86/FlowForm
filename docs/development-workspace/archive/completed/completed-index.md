@@ -4,7 +4,7 @@ aliases: ["Completed workspace material"]
 document_type: archive-index
 status: draft
 authority: working
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [meta]
 related_code: []
 related_docs: ["Engineering archive"]

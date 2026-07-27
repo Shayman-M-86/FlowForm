@@ -2,9 +2,9 @@
 title: Deployment documentation
 aliases: ["Deployment documentation"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_against_commit: 0edae9082dc3381cc1376e8a81276bf5c7bebf88
+verified_evidence_digest: null
 tags: [infrastructure, ci-cd]
 related_code:
   - "../../../../infra/deployment/"

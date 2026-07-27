@@ -46,7 +46,10 @@ instead of silently choosing one source.
 
 After behavioural or architectural changes, review the impacted documentation.
 Update only pages whose meaning changed, and regenerate generated documentation
-instead of editing it manually. Treat `old-docs/` as historical material.
+instead of editing it manually. After reviewing implementation-backed claims,
+use `docsys evidence promote --staged` to record their staged evidence; the
+pre-commit hook enforces verification drift. Treat `old-docs/` as historical
+material.
 
 Codex and Claude provide a `docs-maintainer` specialist for bounded
 documentation work. The parent agent remains responsible for integration and

@@ -175,7 +175,7 @@ def render_dashboard(health: dict) -> str:
         "document_type: generated",
         "status: scaffold",
         "authority: canonical",
-        "verified_against_commit: null",
+        "verified_evidence_digest: null",
         "tags: [meta]",
         "related_code:",
         '  - "../../../../scripts/docs/docsys/"',

@@ -4,7 +4,7 @@ aliases: ["Scripts catalogue"]
 document_type: reference
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [tooling]
 related_code: ["../../../scripts/", "../../../backend/scripts/", "../../../frontend/scripts/", "../../../infra/", "../../../tools/mcp/", "../../../.githooks/"]
 related_docs: ["Commands", "Generated files", "Scripts implementation"]

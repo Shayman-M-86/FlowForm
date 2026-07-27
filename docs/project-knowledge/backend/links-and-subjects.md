@@ -4,7 +4,7 @@ aliases: ["Links and subjects"]
 document_type: domain
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [backend, security]
 related_code:
   - "../../../backend/app/services/survey_links.py"

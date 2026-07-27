@@ -4,7 +4,7 @@ aliases: ["Documentation validation and review"]
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [meta]
 related_code:
   - "../../../../scripts/docs/docsys/"
@@ -45,7 +45,7 @@ documents with no inferable structural parent, duplicate titles, unresolved
 claiming canonical authority, and documents placed outside the two collections.
 
 Optional workspace metadata — `aliases`, `authority`, `related_code`,
-`related_docs`, `verified_against_commit` — stays advisory for
+`related_docs`, `verified_evidence_digest` — stays advisory for
 Development workspace documents, so honest incompleteness there does not fail
 CI.
 
@@ -99,7 +99,7 @@ against implementation evidence remains required.
 ## Reliability disclosure during retrieval
 
 `get_task_context` returns a `documentation_reliability` assessment for its
-primary documents. It combines status, `verified_against_commit`, freshness,
+primary documents. It combines status, `verified_evidence_digest`, freshness,
 and working-tree state so an agent does not silently present unfinished or
 changing documentation as confirmed behaviour.
 
@@ -120,13 +120,27 @@ When repository evidence contradicts a material documentation claim:
 
 1. report the document claim and conflicting evidence;
 2. correct the page when documentation editing is in scope;
-3. set `status: draft` and clear `verified_against_commit`;
-4. re-verify the revised page against a commit before promoting it to
-   `verified`.
+3. set `status: draft` and clear `verified_evidence_digest`;
+4. stage the implementation and documentation changes;
+5. after semantic review, run `docsys evidence promote --staged` for the revised
+   page before committing it as `verified`.
 
 Read-only investigations report the required metadata change without modifying
 the repository. Draft status alone is not a contradiction, and an agent must
 not claim one without implementation evidence.
+
+## Staged verification gate
+
+The Git pre-commit hook compares affected verified documents with the exact
+implementation blobs in the staged index. When a staged code change invalidates
+a digest, Docsys changes that document to `draft`, clears the digest, stages the
+metadata update, and stops the commit attempt for review. It never promotes a
+document: an agent or author must first perform the semantic evidence review and
+run `docsys evidence promote --staged`.
+
+This keeps the workflow to one final commit. The digest is stable because it
+excludes documentation content, avoiding a self-reference to the commit being
+created. The gate is local pre-commit automation and is not repeated in CI.
 
 ## Review checklist
 

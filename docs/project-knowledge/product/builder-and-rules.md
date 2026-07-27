@@ -4,7 +4,7 @@ aliases: ["Builder and rules"]
 document_type: domain
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [frontend]
 related_code:
   - "../../../frontend/packages/builder/src/"

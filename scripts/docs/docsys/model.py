@@ -41,7 +41,7 @@ REQUIRED_KEYS = (
     "document_type",
     "status",
     "authority",
-    "verified_against_commit",
+    "verified_evidence_digest",
     "aliases",
     "related_code",
     "related_docs",
@@ -264,8 +264,8 @@ class Document:
         ).name.casefold()
 
     @property
-    def verified_against_commit(self) -> str | None:
-        v = self.front_matter.get("verified_against_commit")
+    def verified_evidence_digest(self) -> str | None:
+        v = self.front_matter.get("verified_evidence_digest")
         return None if v in (None, "", "null") else str(v)
 
     @property
@@ -339,6 +339,20 @@ def load_document(
     """
     docs_dir = resolve_docs_root(docs_dir)
     text = path.read_text(errors="replace")
+    return load_document_text(path, text, docs_dir)
+
+
+def load_document_text(
+    path: Path,
+    text: str,
+    docs_dir: str | Path | None = None,
+) -> Document | None:
+    """Load a document from supplied text.
+
+    Git-index and historical-ref verification use this to parse the exact
+    staged or committed document without checking out that tree.
+    """
+    docs_dir = resolve_docs_root(docs_dir)
     fm = parse_front_matter(text)
     if fm is None:
         return None

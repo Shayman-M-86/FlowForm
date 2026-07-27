@@ -4,7 +4,7 @@ aliases: ["Documentation model"]
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [meta]
 related_code:
   - "../../../../scripts/docs/"
@@ -30,14 +30,22 @@ material under `old-docs/` is context only and is never sufficient evidence by
 itself.
 
 A document's `authority` identifies its role, while `status` reports its
-maturity. `verified_against_commit` records the implementation baseline used for
-meaningful claims; it does not make unchecked sections verified.
+maturity. `verified_evidence_digest` records the exact Git blobs used as the
+implementation baseline for meaningful claims; it does not make unchecked
+sections verified.
 
 When a material contradiction with implementation evidence is confirmed, the
 owning document returns to `status: draft` and its
-`verified_against_commit` is cleared until the corrected claims are checked
-against a commit. Retrieval tools expose provisional and unreliable context so
-agents can disclose uncertainty before using it.
+`verified_evidence_digest` is cleared until the corrected claims are checked
+against staged implementation evidence. Retrieval tools expose provisional and
+unreliable context so agents can disclose uncertainty before using it.
+
+The digest is calculated from the staged blobs selected by `related_code` and
+`change_triggers`, after `exclusions`; document content is not part of it. This
+avoids the impossible requirement for a file to contain the SHA of the same
+commit that contains the file. After semantic review, Docsys writes the digest
+automatically, allowing code, documentation, and verification metadata to land
+in one commit.
 
 ## Two collections
 

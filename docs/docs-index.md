@@ -4,7 +4,7 @@ aliases: ["FlowForm documentation"]
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [meta]
 related_code: ["../scripts/docs/"]
 related_docs: ["Project Knowledge", "Development workspace"]
@@ -57,8 +57,8 @@ its own right, not a directory listing.
 
 Document metadata makes confidence visible. `status` distinguishes scaffolds,
 drafts, and verified pages; `authority` distinguishes accepted knowledge from
-working material; and `verified_against_commit` records the implementation
-baseline actually inspected.
+working material; and `verified_evidence_digest` records the staged
+implementation evidence actually inspected.
 
 The previous documentation tree is retained under
 `old-docs/documentation-v1/` as historical input. It is not a source of

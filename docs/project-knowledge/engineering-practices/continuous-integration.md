@@ -4,7 +4,7 @@ aliases: ["Continuous integration"]
 document_type: workflow
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [ci-cd]
 related_code:
   - "../../../.github/workflows/ci.yml"

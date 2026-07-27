@@ -4,7 +4,7 @@ aliases: ["Engineering experiments"]
 document_type: planning-index
 status: draft
 authority: working
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [tooling]
 related_code: []
 related_docs: ["Development workspace"]

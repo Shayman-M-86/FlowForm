@@ -150,7 +150,8 @@ TOOLS = [
         "name": "check_freshness",
         "description": (
             "Classify documents as current / review suggested / likely stale / "
-            "unknown, using verified_against_commit and related_code."
+            "unknown by comparing verified_evidence_digest with current "
+            "related_code and change_triggers evidence."
         ),
         "inputSchema": {
             "type": "object",

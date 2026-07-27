@@ -4,7 +4,7 @@ aliases: ["Configuration catalogue"]
 document_type: reference
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [configuration]
 related_code: ["../../../backend/app/core/config.py", "../../../backend/gunicorn.conf.py", "../../../frontend/", "../../../infra/", "../../../.github/workflows/", "../../../.vscode/"]
 related_docs: ["Environment variables", "Configuration implementation", "Secrets and configuration", "Configuration index"]

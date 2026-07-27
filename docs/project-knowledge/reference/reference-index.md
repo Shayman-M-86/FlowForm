@@ -4,7 +4,7 @@ aliases: ["Reference documentation"]
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [meta]
 related_code:
   - "../../../backend/"
@@ -44,7 +44,7 @@ not hand-authored authority.
 
 When reference entries conflict with code, tests, configuration, or regenerated
 output, those implementation sources prevail. Authored entries remain draft
-until checked against a committed evidence baseline.
+until checked against staged implementation evidence.
 
 ## Related documents
 

@@ -4,7 +4,7 @@ aliases: ["Documentation system migration"]
 document_type: historical-plan
 status: draft
 authority: historical
-verified_against_commit: null
+verified_evidence_digest: null
 tags: [meta]
 related_code: []
 related_docs: ["Completed workspace material"]
@@ -22,8 +22,8 @@ use the documentation model, authoring guide, and Docsys context workflow.
 - **move unchanged** — content is accurate as-is; move file, fix path-sensitive
   fields only.
 - **move and verify** — move, then verify claims against code/tests/config and
-  set `verified_against_commit` if verification occurred; otherwise
-  `status: draft`/`scaffold` with `verified_against_commit: null`.
+  record `verified_evidence_digest` if verification occurred; otherwise use
+  `status: draft`/`scaffold` with `verified_evidence_digest: null`.
 - **merge into another document** — fold content into a named destination that
   already owns the topic.
 - **split into children** — promote to a folder with an index head plus child
@@ -204,7 +204,7 @@ All regenerated from the new tree; never copied. Destinations live under
   destination through move, merge, archive, or regeneration. The resulting
   91-document tree passes all five collection-validation profiles. Remaining
   implementation-backed pages stay `draft` with
-  `verified_against_commit: null` until their claims receive focused review.
+  `verified_evidence_digest: null` until their claims receive focused review.
 
 - **Phase 4 (governance) — done.** Built the real
   `project-knowledge/engineering-practices/documentation/` branch with four
