@@ -10,7 +10,8 @@ Commands:
 
     python3 -m docsys evidence promote --staged docs/path.md [...]
     python3 -m docsys evidence sync-last-edited
-    python3 -m docsys evidence check-staged --sync-invalidations
+    python3 -m docsys evidence check-last-edited
+    python3 -m docsys evidence check-staged
 """
 
 from __future__ import annotations
@@ -197,14 +198,6 @@ def _repo_path(value: str) -> Path:
     return path
 
 
-def _has_unstaged(repo_path: str) -> bool:
-    proc = subprocess.run(
-        ["git", "diff", "--quiet", "--", repo_path],
-        cwd=ROOT,
-    )
-    return proc.returncode != 0
-
-
 def _load_index_document(doc: Document) -> Document:
     """Return the exact indexed version when the worktree has later edits."""
     try:
@@ -215,20 +208,13 @@ def _load_index_document(doc: Document) -> Document:
 
 
 def promote_staged(values: list[str]) -> int:
-    """Promote explicitly reviewed staged documents and record their digest."""
+    """Prepare verified metadata against staged evidence without staging it."""
     source = EvidenceSource.from_index()
     promoted: list[str] = []
 
     for value in values:
         path = _repo_path(value)
         rel = path.relative_to(ROOT).as_posix()
-        if _has_unstaged(rel):
-            raise ValueError(
-                f"{rel} has unstaged edits; stage a single reviewable version first"
-            )
-        # A clean document may be selected for fresh verification. Promotion
-        # itself changes and stages its metadata, so a dummy content edit is
-        # neither necessary nor desirable.
         doc = load_document(path)
         if doc is None:
             raise ValueError(f"{rel} has invalid front matter")
@@ -246,21 +232,19 @@ def promote_staged(values: list[str]) -> int:
                 f"{rel} resolves no evidence files; correct related_code before verification"
             )
         _set_metadata(path, status="verified", digest=snapshot.digest)
-        subprocess.run(["git", "add", "--", rel], cwd=ROOT, check=True)
         promoted.append(rel)
 
     for rel in promoted:
-        print(f"verified {rel} against staged evidence")
+        print(f"prepared verified metadata against staged evidence: {rel}")
+    if promoted:
+        print()
+        print("Stage the updated documents, then retry the commit:")
+        print(f"  git add -- {' '.join(shlex.quote(path) for path in promoted)}")
     return 0
 
 
-def check_staged(*, sync_invalidations: bool = False) -> int:
-    """Check verified documents against the staged Git snapshot.
-
-    When requested, verified documents invalidated only by staged evidence
-    changes are automatically downgraded and staged. The hook then fails once
-    so the author can review the added documentation changes.
-    """
+def check_staged() -> int:
+    """Read-only check of verified documents against the staged Git snapshot."""
     source = EvidenceSource.from_index()
     docset = DocSet.load()
     staged_paths = set(
@@ -271,12 +255,6 @@ def check_staged(*, sync_invalidations: bool = False) -> int:
     staged_docs = {
         path for path in staged_paths if path.startswith("docs/") and path.endswith(".md")
     }
-    partially_staged = sorted(path for path in staged_docs if _has_unstaged(path))
-    if partially_staged:
-        for path in partially_staged:
-            print(f"verification blocked by unstaged document edits: {path}")
-        return 1
-
     staged_evidence = {
         path for path in staged_paths if not path.startswith("docs/")
     }
@@ -285,16 +263,9 @@ def check_staged(*, sync_invalidations: bool = False) -> int:
         for item in detect_impact(sorted(staged_evidence), docset)
     }
     mismatches: list[Document] = []
-    refreshed: list[str] = []
-    skipped_refresh: list[str] = []
 
     for worktree_doc in docset.docs:
-        doc = (
-            _load_index_document(worktree_doc)
-            if worktree_doc.rel_path not in staged_docs
-            and _has_unstaged(worktree_doc.rel_path)
-            else worktree_doc
-        )
+        doc = _load_index_document(worktree_doc)
         impact = impact_by_doc.get(doc.rel_path)
         if doc.rel_path not in staged_docs and impact is None:
             continue
@@ -304,52 +275,13 @@ def check_staged(*, sync_invalidations: bool = False) -> int:
         snapshot = source.snapshot(doc)
         if current == snapshot.digest:
             continue
-        if (
-            doc.rel_path not in staged_docs
-            and impact is not None
-            and impact.confidence != "high"
-        ):
-            if _has_unstaged(doc.rel_path):
-                skipped_refresh.append(doc.rel_path)
-                continue
-            _set_metadata(doc.path, status="verified", digest=snapshot.digest)
-            subprocess.run(
-                ["git", "add", "--", doc.rel_path],
-                cwd=ROOT,
-                check=True,
-            )
-            refreshed.append(doc.rel_path)
+        if impact is not None and impact.confidence != "high":
             continue
         mismatches.append(doc)
 
-    for path in refreshed:
-        print(
-            "refreshed verified evidence after a lower-confidence impact: "
-            f"{path}"
-        )
-    for path in skipped_refresh:
-        print(
-            "left lower-confidence evidence unchanged because the document "
-            f"has unstaged edits: {path}"
-        )
-
     if not mismatches:
-        if not refreshed and not skipped_refresh:
-            print("staged documentation evidence is current")
+        print("staged documentation evidence is current")
         return 0
-
-    changed: list[str] = []
-    blocked: list[str] = []
-    for doc in mismatches:
-        if not sync_invalidations:
-            blocked.append(doc.rel_path)
-            continue
-        if doc.rel_path in staged_paths or _has_unstaged(doc.rel_path):
-            blocked.append(doc.rel_path)
-            continue
-        _set_metadata(doc.path, status="draft", digest=None)
-        subprocess.run(["git", "add", "--", doc.rel_path], cwd=ROOT, check=True)
-        changed.append(doc.rel_path)
 
     print()
     print("DOCUMENTATION REVIEW REQUIRED — COMMIT STOPPED")
@@ -358,15 +290,13 @@ def check_staged(*, sync_invalidations: bool = False) -> int:
         "Project Knowledge documents."
     )
     print()
-    for path in changed:
-        print(f"downgraded stale documentation to draft: {path}")
-    for path in blocked:
+    for doc in mismatches:
         print(
             "verification required: "
-            f"{path} does not match its staged evidence digest"
+            f"{doc.rel_path} does not match its staged evidence digest"
         )
 
-    paths = changed + blocked
+    paths = [doc.rel_path for doc in mismatches]
     quoted_paths = " ".join(shlex.quote(path) for path in paths)
     print()
     print("What to do next:")
@@ -380,20 +310,16 @@ def check_staged(*, sync_invalidations: bool = False) -> int:
         f"promote --staged {quoted_paths}"
     )
     print(
-        "     - If a document is outdated, correct it, stage it with "
-        "`git add`, then run the same promote command."
+        "     - If a document is outdated, correct it before promoting."
     )
     print(
-        "     - If verification can wait, leave automatically downgraded "
-        "documents as draft."
+        "     - To leave it unverified, set `status: draft` and "
+        "`verified_evidence_digest: null`."
     )
-    if blocked:
-        print(
-            "       For a still-verified blocked document, first set "
-            "`status: draft` and `verified_evidence_digest: null`, then stage it."
-        )
     print()
-    print("  3. Run the commit again.")
+    print("  3. Stage the documentation changes and run the commit again.")
+    print()
+    print("No files were changed or staged by this check.")
     print()
     print(
         "For a guided review, ask a coding agent to use "
@@ -403,7 +329,7 @@ def check_staged(*, sync_invalidations: bool = False) -> int:
 
 
 def sync_last_edited_staged() -> int:
-    """Set ISO last-edited dates on staged authored Markdown documents."""
+    """Update working-tree dates for staged docs without staging them."""
     staged_paths = sorted(
         line
         for line in _git_text(["diff", "--cached", "--name-only"]).splitlines()
@@ -414,15 +340,51 @@ def sync_last_edited_staged() -> int:
         path = ROOT / rel
         if not path.exists():  # staged deletion
             continue
-        if _has_unstaged(rel):
-            raise ValueError(
-                f"{rel} has unstaged edits; stage a single reviewable version first"
-            )
         if _set_last_edited(path):
-            subprocess.run(["git", "add", "--", rel], cwd=ROOT, check=True)
             updated.append(rel)
     print(f"last_edited is current for {len(staged_paths)} staged document(s)")
+    if updated:
+        print()
+        print("Stage the updated documents, then retry the commit:")
+        print(f"  git add -- {' '.join(shlex.quote(path) for path in updated)}")
     return 0
+
+
+def check_last_edited_staged() -> int:
+    """Read-only check that staged documentation carries today's edit date."""
+    staged_paths = sorted(
+        line
+        for line in _git_text(["diff", "--cached", "--name-only"]).splitlines()
+        if line.startswith("docs/") and line.endswith(".md")
+    )
+    stale: list[str] = []
+    for rel in staged_paths:
+        try:
+            text = _git_text(["show", f":{rel}"])
+        except RuntimeError:
+            continue  # staged deletion
+        match = _LAST_EDITED_RE.search(text)
+        value = match.group(0).split(":", 1)[1].strip() if match else None
+        if value != _today():
+            stale.append(rel)
+
+    if not stale:
+        print(f"last_edited is current for {len(staged_paths)} staged document(s)")
+        return 0
+
+    quoted_paths = " ".join(shlex.quote(path) for path in stale)
+    print()
+    print("DOCUMENTATION DATES OUT OF DATE — COMMIT STOPPED")
+    for path in stale:
+        print(f"last_edited must be {_today()}: {path}")
+    print()
+    print("Run:")
+    print("  PYTHONPATH=tools/docs python3 -m docsys evidence sync-last-edited")
+    print(f"  git add -- {quoted_paths}")
+    print("  git commit")
+    print()
+    print("No files were changed or staged by this check.")
+    return 1
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -440,11 +402,14 @@ def main(argv: list[str] | None = None) -> int:
         "check-staged",
         help="validate verified documents against staged evidence",
     )
-    check.add_argument("--sync-invalidations", action="store_true")
 
     subparsers.add_parser(
         "sync-last-edited",
-        help="set last_edited on staged documentation",
+        help="update last_edited in the working tree for staged documentation",
+    )
+    subparsers.add_parser(
+        "check-last-edited",
+        help="validate last_edited in staged documentation without writing",
     )
 
     args = parser.parse_args(argv)
@@ -452,9 +417,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "promote":
             return promote_staged(args.paths)
         if args.command == "check-staged":
-            return check_staged(sync_invalidations=args.sync_invalidations)
+            return check_staged()
         if args.command == "sync-last-edited":
             return sync_last_edited_staged()
+        if args.command == "check-last-edited":
+            return check_last_edited_staged()
         raise ValueError(f"unknown evidence command: {args.command}")
     except (RuntimeError, ValueError, subprocess.CalledProcessError) as exc:
         print(f"documentation evidence error: {exc}")

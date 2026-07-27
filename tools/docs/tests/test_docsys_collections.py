@@ -11,6 +11,7 @@ from docsys.context import assess_reliability, build_context
 from docsys.evidence import (
     EvidenceEntry,
     EvidenceSource,
+    check_last_edited_staged,
     check_staged,
 )
 from docsys.impact import detect_impact
@@ -84,7 +85,7 @@ class CollectionModelTests(unittest.TestCase):
             self.assertEqual(impacts["Exact"], "high")
             self.assertEqual(impacts["Broad"], "medium")
 
-    def test_staged_evidence_auto_refreshes_broad_impact(self) -> None:
+    def test_staged_evidence_ignores_broad_impact_without_writing(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             area = Path(temporary)
             docs_root = area / "docs"
@@ -122,21 +123,19 @@ class CollectionModelTests(unittest.TestCase):
             ), patch(
                 "docsys.evidence._git_text",
                 return_value=f"{code_rel}\n",
-            ), patch(
-                "docsys.evidence._has_unstaged",
-                return_value=False,
-            ), patch("docsys.evidence.subprocess.run"):
-                result = check_staged(sync_invalidations=True)
+            ), patch("docsys.evidence._set_metadata") as set_metadata:
+                result = check_staged()
 
-            refreshed = DocSet.load(docs_root).docs[0]
+            unchanged = DocSet.load(docs_root).docs[0]
             self.assertEqual(result, 0)
-            self.assertEqual(refreshed.status, "verified")
-            self.assertNotEqual(
-                refreshed.verified_evidence_digest,
+            self.assertEqual(unchanged.status, "verified")
+            self.assertEqual(
+                unchanged.verified_evidence_digest,
                 f"sha256:{'a' * 64}",
             )
+            set_metadata.assert_not_called()
 
-    def test_staged_evidence_invalidates_exact_impact(self) -> None:
+    def test_staged_evidence_reports_exact_impact_without_writing(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             area = Path(temporary)
             docs_root = area / "docs"
@@ -173,16 +172,41 @@ class CollectionModelTests(unittest.TestCase):
             ), patch(
                 "docsys.evidence._git_text",
                 return_value=f"{code_rel}\n",
-            ), patch(
-                "docsys.evidence._has_unstaged",
-                return_value=False,
-            ), patch("docsys.evidence.subprocess.run"):
-                result = check_staged(sync_invalidations=True)
+            ), patch("docsys.evidence._set_metadata") as set_metadata:
+                result = check_staged()
 
-            invalidated = DocSet.load(docs_root).docs[0]
+            unchanged = DocSet.load(docs_root).docs[0]
             self.assertEqual(result, 1)
-            self.assertEqual(invalidated.status, "draft")
-            self.assertIsNone(invalidated.verified_evidence_digest)
+            self.assertEqual(unchanged.status, "verified")
+            self.assertEqual(
+                unchanged.verified_evidence_digest,
+                f"sha256:{'a' * 64}",
+            )
+            set_metadata.assert_not_called()
+
+    def test_last_edited_check_does_not_write_or_stage(self) -> None:
+        staged = "docs/project-knowledge/example.md"
+        old_document = _document("Example").replace(
+            "last_edited: 2026-07-27",
+            "last_edited: 2026-07-26",
+        )
+
+        with patch(
+            "docsys.evidence._git_text",
+            side_effect=[f"{staged}\n", old_document],
+        ), patch(
+            "docsys.evidence._today",
+            return_value="2026-07-27",
+        ), patch(
+            "docsys.evidence._set_last_edited"
+        ) as set_last_edited, patch(
+            "docsys.evidence.subprocess.run"
+        ) as run:
+            result = check_last_edited_staged()
+
+        self.assertEqual(result, 1)
+        set_last_edited.assert_not_called()
+        run.assert_not_called()
 
     def test_evidence_digest_changes_only_for_matching_blobs(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:

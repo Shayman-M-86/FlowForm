@@ -51,7 +51,8 @@ Update only pages whose meaning changed, and regenerate generated documentation
 instead of editing it manually. After reviewing implementation-backed claims,
 use `docsys evidence promote --staged` to record staged evidence for Project
 Knowledge; Development Workspace is not verified. The pre-commit hook enforces
-verification drift and maintains document `last_edited` dates. Treat
+verification drift and checks document `last_edited` dates without modifying
+or staging files. Treat
 `old-docs/` as historical material.
 
 Codex and Claude provide a `docs-maintainer` specialist for bounded

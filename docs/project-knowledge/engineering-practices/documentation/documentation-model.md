@@ -2,9 +2,9 @@
 title: Documentation model
 aliases: ["Documentation model"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:afa3193dd854d63536115c0e650ff16673da74d1174d20e50bf75e914b567121
+verified_evidence_digest: null
 last_edited: 2026-07-27
 tags: [meta]
 related_code:
@@ -65,8 +65,10 @@ collections:
   evidence verification: workspace pages remain `draft` or `scaffold` with a
   null digest.
 
-The pre-commit hook maintains `last_edited: YYYY-MM-DD` for staged documents in
-both collections. Authors and agents do not update that date by hand.
+The pre-commit hook checks `last_edited: YYYY-MM-DD` for staged documents in
+both collections without modifying them. If it is stale, the reported
+`docsys evidence sync-last-edited` repair command updates the working tree for
+the author or agent to review and stage explicitly.
 
 Membership is derived from the physical tree: the first path segment under the
 documentation root selects the collection. A document outside both collections

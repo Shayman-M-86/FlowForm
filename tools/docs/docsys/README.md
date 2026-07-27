@@ -68,11 +68,12 @@ python3 -m docsys freshness
 # After semantic review, record the exact staged implementation evidence.
 python3 -m docsys evidence promote --staged docs/path.md
 
-# Maintain dates on staged documents (normally called by pre-commit).
+# Repair dates in the working tree after a read-only pre-commit failure.
 python3 -m docsys evidence sync-last-edited
 
-# Pre-commit check; automatically stages honest verification invalidations.
-python3 -m docsys evidence check-staged --sync-invalidations
+# Read-only pre-commit checks.
+python3 -m docsys evidence check-last-edited
+python3 -m docsys evidence check-staged
 
 # Ranked deterministic search.
 python3 -m docsys query "response encryption locator"
@@ -140,9 +141,9 @@ implementation, documentation, and verification metadata can be committed
 together without a self-referential commit SHA. This applies only to Project
 Knowledge; Development Workspace does not use evidence verification.
 
-`last_edited` uses `YYYY-MM-DD`. The pre-commit hook updates it automatically
-for every staged document in either collection. Partially staged documents are
-blocked so this metadata update never stages unrelated prose.
+`last_edited` uses `YYYY-MM-DD`. Pre-commit checks the staged value but never
+changes it. When the date is stale, run `docsys evidence sync-last-edited`,
+review the working-tree update, and stage it explicitly.
 
 ## Configuration
 
@@ -154,13 +155,13 @@ Optional. Copy `tools/docs/docsys.config.example.json` to
 
 ## Commit integration
 
-The repository Git pre-commit hook first maintains `last_edited`, then checks
-verified Project Knowledge affected by staged implementation changes against
-the staged index and runs the `commit` validation profile. A mismatch is
-downgraded to `draft`, staged, and reported; the current commit attempt stops so
-the author can review it. Promotion is never automatic because factual review
-is semantic. Development Workspace bypasses verification. This verification
-workflow is intentionally not part of CI.
+The repository Git pre-commit hook checks `last_edited`, verifies Project
+Knowledge affected by staged implementation changes against the staged index,
+and runs the `commit` validation profile. Every check is read-only. On failure,
+Docsys prints the repair command and exits without changing the working tree or
+index. Repair commands update the working tree; the author reviews and stages
+those changes explicitly. Development Workspace bypasses evidence verification.
+This workflow is intentionally not part of CI.
 
 ## Relationship to the existing validators
 

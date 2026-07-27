@@ -56,4 +56,4 @@ ambiguous, or internally contradictory.
 - Use `$flowform-doc-verification` when the user wants to review and promote
   Project Knowledge. That workflow handles approval and staged verification
   metadata.
-- Let pre-commit maintain `last_edited` and check evidence drift.
+- Let pre-commit check `last_edited` and evidence drift without changing files.

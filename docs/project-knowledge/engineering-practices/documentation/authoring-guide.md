@@ -126,17 +126,17 @@ PYTHONPATH=tools/docs python3 -m docsys evidence promote --staged \
   docs/path-to-reviewed-document.md
 ```
 
-Docsys sets `status: verified`, calculates `verified_evidence_digest` from the
-staged blobs selected by the document's evidence metadata, and re-stages the
+Docsys sets `status: verified` and calculates `verified_evidence_digest` from
+the staged blobs selected by the document's evidence metadata. It updates only
+the working tree and prints the `git add` command; it does not stage the
 document. Do not paste a digest manually. Leave the field `null` for an
 unreviewed draft or scaffold. The pre-commit hook checks affected verified pages
-against the same staged snapshot and stops after staging any required downgrade
-to `draft`.
+against the same staged snapshot and fails without changing files.
 
 Do not promote Development Workspace pages. They are intentionally working
-material and do not use evidence verification. The pre-commit hook updates
-`last_edited: YYYY-MM-DD` on staged documents in either collection, so authors
-should not maintain that field manually.
+material and do not use evidence verification. The pre-commit hook checks
+`last_edited: YYYY-MM-DD` on staged documents in either collection. If it is
+stale, run the printed repair command and stage the resulting edit explicitly.
 
 ## Reference and navigation discipline
 

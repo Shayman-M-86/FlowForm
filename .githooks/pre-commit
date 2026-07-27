@@ -6,12 +6,10 @@ cd "${REPO_ROOT}"
 
 LC_ALL=C.utf8 LANG=C.utf8 bash scripts/ci/check-openapi-contracts.sh
 
-# Maintain edit dates for all staged docs. Project Knowledge verification is
-# calculated from the exact implementation blobs about to be committed. If
-# staged code invalidates a verified page, Docsys stages an honest draft status
-# and stops the commit so the author can review it.
-PYTHONPATH=tools/docs python3 -m docsys evidence sync-last-edited
-PYTHONPATH=tools/docs python3 -m docsys evidence check-staged \
-  --sync-invalidations
+# Documentation checks are read-only, like the OpenAPI contract check above.
+# Repair commands update the working tree; the author stages those changes and
+# retries the commit explicitly.
+PYTHONPATH=tools/docs python3 -m docsys evidence check-last-edited
+PYTHONPATH=tools/docs python3 -m docsys evidence check-staged
 PYTHONPATH=tools/docs python3 -m docsys validate \
   --docs-root docs --profile commit

@@ -20,9 +20,11 @@ Run the promotion workflow promptly. Do not turn it into a review project.
      docs/project-knowledge/path.md
    ```
 
-4. If selected documents have unstaged edits, stage only those documents and
-   retry. Otherwise, report any command error without starting a broader audit.
-5. Report the promoted paths. Let pre-commit perform the remaining validation.
+4. Report the updated paths and the `git add` command printed by Docsys. Do not
+   stage them unless the user explicitly asks.
+5. Report any command error without starting a broader audit. Let pre-commit
+   perform the remaining read-only validation.
 
 Do not inspect implementation, run tests, present an approval packet, or review
-every claim unless the user explicitly asks. Do not commit or push unless asked.
+every claim unless the user explicitly asks. Do not stage, commit, or push
+unless asked.

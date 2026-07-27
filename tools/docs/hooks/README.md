@@ -67,6 +67,6 @@ identical:
 tasks that cached the former path before this consolidation. It contains no
 hook logic and may be removed once no old tasks remain.
 
-The Git pre-commit hook is a separate workflow. It maintains documentation edit
-dates, validates staged Project Knowledge evidence, and runs the documentation
-commit profile.
+The Git pre-commit hook is a separate, read-only workflow. It checks
+documentation edit dates, validates staged Project Knowledge evidence, and runs
+the documentation commit profile without changing or staging files.

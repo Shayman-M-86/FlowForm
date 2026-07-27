@@ -2,9 +2,9 @@
 title: Documentation validation and review
 aliases: ["Documentation validation and review"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:297bf487f5160e129566fa915d64574629a9f76995dff3506e22393f2069d370
+verified_evidence_digest: null
 last_edited: 2026-07-27
 tags: [meta]
 related_code:
@@ -152,26 +152,26 @@ not claim one without implementation evidence.
 
 The Git pre-commit hook uses Docsys impact confidence before comparing affected
 verified Project Knowledge documents with the exact implementation blobs in the
-staged index. An exact file named in `related_code` is high confidence: when
-that change invalidates a digest, Docsys changes the document to `draft`, clears
-the digest, stages the metadata update, and stops the commit attempt for review.
-Broader directory, glob, and `change_triggers` matches keep their verified
-status; the hook refreshes their evidence digest and allows the commit to
-continue. A document edited in the same commit is always checked regardless of
-impact confidence.
+staged index. An exact file named in `related_code` is high confidence and a
+digest mismatch stops the commit. Broader directory, glob, and
+`change_triggers` matches do not block. A verified document edited in the same
+commit is always checked.
 
-The hook never promotes an invalidated document: an agent or author must first
-perform the semantic evidence review and run `docsys evidence promote --staged`.
+The check is read-only: it never changes status, refreshes a digest, edits a
+date, or stages a file. It reports the affected paths and repair commands. An
+agent or author then corrects the page or runs
+`docsys evidence promote --staged`, reviews the working-tree change, stages it,
+and retries the commit.
 
 This keeps the workflow to one final commit. The digest is stable because it
 excludes documentation content, avoiding a self-reference to the commit being
 created. The gate is local pre-commit automation and is not repeated in CI.
 Development Workspace documents bypass it entirely.
 
-Before that check, the hook sets `last_edited` to the current `YYYY-MM-DD` date
-for every staged Markdown document under `docs/` and re-stages the metadata.
-Partially staged documents are rejected so the date cannot accidentally pull
-unstaged prose into the commit.
+Before that check, the hook verifies that every staged Markdown document under
+`docs/` already has the current `last_edited` date. A stale date fails with the
+`docsys evidence sync-last-edited` repair command. That command updates the
+working tree only; staging remains explicit.
 
 ## Review checklist
 
