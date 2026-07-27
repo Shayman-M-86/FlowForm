@@ -42,6 +42,7 @@ REQUIRED_KEYS = (
     "status",
     "authority",
     "verified_evidence_digest",
+    "last_edited",
     "aliases",
     "related_code",
     "related_docs",
@@ -266,6 +267,11 @@ class Document:
     @property
     def verified_evidence_digest(self) -> str | None:
         v = self.front_matter.get("verified_evidence_digest")
+        return None if v in (None, "", "null") else str(v)
+
+    @property
+    def last_edited(self) -> str | None:
+        v = self.front_matter.get("last_edited")
         return None if v in (None, "", "null") else str(v)
 
     @property

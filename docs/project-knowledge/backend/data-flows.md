@@ -5,6 +5,7 @@ document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [backend, frontend, security]
 related_code:
   - "../../../backend/app/api/v1/"

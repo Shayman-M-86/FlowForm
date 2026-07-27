@@ -47,6 +47,7 @@ class Freshness:
             "status": self.doc.status,
             "document_type": self.doc.document_type,
             "verified_evidence_digest": self.doc.verified_evidence_digest,
+            "last_edited": self.doc.last_edited,
             "classification": self.classification,
             "evidence_file_count": len(self.evidence_files),
             "evidence_files": sorted(self.evidence_files),
@@ -61,6 +62,13 @@ def classify_document(
 ) -> Freshness:
     del config
     digest = doc.verified_evidence_digest
+
+    if doc.collection == "development-workspace":
+        return Freshness(
+            doc,
+            UNKNOWN,
+            ["evidence verification does not apply to Development Workspace"],
+        )
 
     if digest is None:
         reason = (

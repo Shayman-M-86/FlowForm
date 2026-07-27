@@ -5,6 +5,7 @@ document_type: workflow
 status: verified
 authority: canonical
 verified_evidence_digest: sha256:3cc1f93cc619710125a2dd68e116f36c9b7a7fc5622b8764d6a576b0f8cd6771
+last_edited: 2026-07-27
 tags: [infrastructure, tooling]
 related_code:
   - "../../../../infra/images/scripts/image"

@@ -5,6 +5,7 @@ document_type: overview
 status: verified
 authority: canonical
 verified_evidence_digest: sha256:568d3bd466edd76072978dfd1cdbdd1889b41422fb415717744bab57e78869c5
+last_edited: 2026-07-27
 tags: [infrastructure]
 related_code:
   - "../../../../infra/deployment/proxmox/terraform/"

@@ -5,6 +5,7 @@ document_type: implementation
 status: verified
 authority: canonical
 verified_evidence_digest: sha256:e03d2145266fc0eea8f52b8e3347e7733943631ad774aa862304c2356b4b9ca0
+last_edited: 2026-07-27
 tags: [infrastructure]
 related_code:
   - "../../../../infra/images/packer/"

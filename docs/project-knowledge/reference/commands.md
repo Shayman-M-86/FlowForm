@@ -5,6 +5,7 @@ document_type: reference
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [tooling]
 related_code: ["../../../backend/scripts/", "../../../frontend/package.json", "../../../scripts/", "../../../.github/workflows/"]
 related_docs: ["Scripts catalogue", "Local development", "Testing workflow"]

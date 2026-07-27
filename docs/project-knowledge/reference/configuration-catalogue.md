@@ -5,6 +5,7 @@ document_type: reference
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [configuration]
 related_code: ["../../../backend/app/core/config.py", "../../../backend/gunicorn.conf.py", "../../../frontend/", "../../../infra/", "../../../.github/workflows/", "../../../.vscode/"]
 related_docs: ["Environment variables", "Configuration implementation", "Secrets and configuration", "Configuration index"]

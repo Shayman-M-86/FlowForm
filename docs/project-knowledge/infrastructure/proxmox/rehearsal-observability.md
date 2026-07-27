@@ -5,6 +5,7 @@ document_type: implementation
 status: verified
 authority: canonical
 verified_evidence_digest: sha256:9394b4e8f66c45800bba03fa2dd3122d142a94ab6f645d13260de84e5fe3e44c
+last_edited: 2026-07-27
 tags: [infrastructure, tooling]
 related_code:
   - "../../../../infra/deployment/proxmox/scripts/lib/cmd_logs.sh"

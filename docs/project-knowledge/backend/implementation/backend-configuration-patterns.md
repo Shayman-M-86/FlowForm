@@ -5,6 +5,7 @@ document_type: implementation
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [backend, configuration]
 related_code:
   - "../../../../backend/app/core/config.py"

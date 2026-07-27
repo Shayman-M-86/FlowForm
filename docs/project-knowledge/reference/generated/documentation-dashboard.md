@@ -6,6 +6,7 @@ document_type: generated
 status: scaffold
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [meta]
 related_code:
   - "../../../../scripts/docs/docsys/"

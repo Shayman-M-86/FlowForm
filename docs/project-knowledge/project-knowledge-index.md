@@ -5,6 +5,7 @@ document_type: overview
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [meta]
 related_code:
   - "../../backend/app/"

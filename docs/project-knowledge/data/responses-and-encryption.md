@@ -5,6 +5,7 @@ document_type: domain
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [security]
 related_code:
   - "../../../backend/app/crypto/"

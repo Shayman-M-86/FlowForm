@@ -54,6 +54,7 @@ class ImpactedDoc:
             "document_type": self.doc.document_type,
             "status": self.doc.status,
             "verified_evidence_digest": self.doc.verified_evidence_digest,
+            "last_edited": self.doc.last_edited,
             "confidence": self.confidence,
             "reasons": self.reasons,
             "matched_files": sorted({m.file for m in self.matches}),

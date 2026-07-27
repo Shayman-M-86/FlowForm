@@ -5,6 +5,7 @@ document_type: reference
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [configuration]
 related_code: ["../../../backend/app/core/config.py", "../../../infra/deployment/bootstrap/", "../../../infra/containers/", "../../../frontend/apps/"]
 related_docs: ["Configuration catalogue", "Secrets and configuration", "Configuration index"]

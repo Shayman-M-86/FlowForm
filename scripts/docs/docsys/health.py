@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
+from datetime import date
 from pathlib import Path
 
 from . import gitutil
@@ -176,6 +177,7 @@ def render_dashboard(health: dict) -> str:
         "status: scaffold",
         "authority: canonical",
         "verified_evidence_digest: null",
+        f"last_edited: {date.today().isoformat()}",
         "tags: [meta]",
         "related_code:",
         '  - "../../../../scripts/docs/docsys/"',

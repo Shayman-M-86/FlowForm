@@ -5,6 +5,7 @@ document_type: decision-index
 status: draft
 authority: working
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [meta]
 related_code: []
 related_docs: ["Development workspace"]

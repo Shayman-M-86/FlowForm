@@ -34,6 +34,7 @@ def get_document(
         **_brief(doc),
         "tags": sorted(doc.tags),
         "verified_evidence_digest": doc.verified_evidence_digest,
+        "last_edited": doc.last_edited,
         "related_code": list(doc.front_matter.get("related_code") or []),
         "related_code_resolved": list(doc.related_patterns),
         "related_docs": list(doc.related_docs),

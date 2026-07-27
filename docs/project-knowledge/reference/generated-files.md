@@ -5,6 +5,7 @@ document_type: reference
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [tooling]
 related_code: ["../../../backend/scripts/export-openapi.sh", "../../../frontend/scripts/generate-types.mjs", "../../../scripts/ci/sync-openapi.sh", "../../../scripts/docs/", "../../../scripts/secrets/generate-env-files.sh", "../../../infra/images/"]
 related_docs: ["Generated reference documentation", "Scripts catalogue", "Repository map"]

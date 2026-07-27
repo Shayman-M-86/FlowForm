@@ -6,6 +6,7 @@ document_type: implementation
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [tooling]
 related_code:
   - "../../../scripts/"

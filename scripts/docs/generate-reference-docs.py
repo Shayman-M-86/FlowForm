@@ -10,6 +10,7 @@ import argparse
 import json
 import re
 import subprocess
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -56,6 +57,7 @@ document_type: generated
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: {date.today().isoformat()}
 tags: [{tag_line}]
 related_code: []
 related_docs: [\"Generated reference documentation\", \"Reference documentation\"]

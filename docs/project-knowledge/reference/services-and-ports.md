@@ -5,6 +5,7 @@ document_type: reference
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [infrastructure]
 related_code: ["../../../infra/containers/", "../../../infra/deployment/proxmox/cloud-init/", "../../../frontend/docker-compose.dev.yml"]
 related_docs: ["Runtime containers", "Local infrastructure"]

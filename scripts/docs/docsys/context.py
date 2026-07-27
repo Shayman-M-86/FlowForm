@@ -61,6 +61,7 @@ class ContextBundle:
                 "document_type": d.document_type,
                 "status": d.status,
                 "verified_evidence_digest": d.verified_evidence_digest,
+                "last_edited": d.last_edited,
                 "summary": _first_sentence(d),
             }
 
@@ -132,7 +133,7 @@ def assess_reliability(primary: list[Document]) -> dict:
                 unreliable_reasons.append(
                     f"{doc.title} has unknown verification freshness"
                 )
-            else:
+            elif doc.collection != "development-workspace":
                 provisional_reasons.append(
                     f"{doc.title} has no current verification baseline"
                 )
@@ -143,6 +144,7 @@ def assess_reliability(primary: list[Document]) -> dict:
                     "path": doc.rel_path,
                     "status": doc.status,
                     "verified_evidence_digest": doc.verified_evidence_digest,
+                    "last_edited": doc.last_edited,
                     "freshness": freshness.classification,
                     "working_tree_modified": working_tree_modified,
                     "reasons": list(dict.fromkeys(doc_reasons)),

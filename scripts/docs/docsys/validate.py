@@ -42,6 +42,8 @@ def _severity(code: str, collection: str, profile: str) -> str:
         "missing_related_code",
         "missing_related_docs",
         "missing_verified_evidence_digest",
+        "missing_last_edited",
+        "workspace_verification_metadata",
     }
     if profile == "editing":
         return "warning"
@@ -116,7 +118,24 @@ def metadata_findings(
                 )
             )
         digest = doc.verified_evidence_digest
-        if digest is not None and not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+        last_edited = doc.last_edited
+        if last_edited is not None and not re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}", last_edited
+        ):
+            findings.append(
+                _finding(
+                    doc,
+                    "metadata",
+                    "invalid_last_edited",
+                    "last_edited must use YYYY-MM-DD",
+                    profile,
+                )
+            )
+        if (
+            doc.collection != "development-workspace"
+            and digest is not None
+            and not re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
+        ):
             findings.append(
                 _finding(
                     doc,
@@ -126,7 +145,19 @@ def metadata_findings(
                     profile,
                 )
             )
-        if doc.status == "verified" and digest is None:
+        if doc.collection == "development-workspace" and (
+            doc.status == "verified" or digest is not None
+        ):
+            findings.append(
+                _finding(
+                    doc,
+                    "metadata",
+                    "workspace_verification_metadata",
+                    "Development Workspace does not use evidence verification",
+                    profile,
+                )
+            )
+        elif doc.status == "verified" and digest is None:
             findings.append(
                 _finding(
                     doc,
@@ -136,7 +167,11 @@ def metadata_findings(
                     profile,
                 )
             )
-        if doc.status != "verified" and digest is not None:
+        if (
+            doc.collection != "development-workspace"
+            and doc.status != "verified"
+            and digest is not None
+        ):
             findings.append(
                 _finding(
                     doc,

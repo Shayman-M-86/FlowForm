@@ -5,6 +5,7 @@ document_type: workflow
 status: verified
 authority: canonical
 verified_evidence_digest: sha256:0b98483f153f03ab4e5a7e4ff4c68d8d45e06c91fcf44257c78bbfe312feb540
+last_edited: 2026-07-27
 tags: [infrastructure, ci-cd]
 related_code:
   - "../../../../.github/workflows/deploy.yml"

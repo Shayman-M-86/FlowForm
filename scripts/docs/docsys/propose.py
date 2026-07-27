@@ -35,8 +35,8 @@ AGENT_CONTRACT = [
     "not, propose no edit and say why.",
     "If it did change, propose the smallest edit that restores accuracy, keep "
     "the document at its layer's altitude, and explain every change.",
-    "Promote a document only after checking its claims against the staged "
-    "implementation evidence.",
+    "Promote Project Knowledge only after checking its claims against staged "
+    "implementation evidence; Development Workspace does not use verification.",
     "Never invent facts to fill scaffold sections; mark missing evidence instead.",
     "Do not apply edits directly. Emit proposed edits for human review.",
 ]
@@ -57,6 +57,7 @@ def _doc_brief(doc: Document, matched_files: list[str], confidence: str) -> dict
             "status": doc.status,
             "authority": doc.authority,
             "verified_evidence_digest": doc.verified_evidence_digest,
+            "last_edited": doc.last_edited,
         },
         "impact_confidence": confidence,
         "changed_code_files": sorted(matched_files),

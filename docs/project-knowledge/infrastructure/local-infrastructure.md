@@ -5,6 +5,7 @@ document_type: workflow
 status: verified
 authority: canonical
 verified_evidence_digest: sha256:4502de4900ed8b8f89b88e4fb7f6fea232838cb77c86db6a5a6f458c97850206
+last_edited: 2026-07-27
 tags: [infrastructure, configuration]
 related_code:
   - "../../../infra/containers/strategies/dev/compose/"

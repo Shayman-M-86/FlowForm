@@ -5,6 +5,7 @@ document_type: reference
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [tooling]
 related_code: ["../../../scripts/", "../../../backend/scripts/", "../../../frontend/scripts/", "../../../infra/", "../../../tools/mcp/", "../../../.githooks/"]
 related_docs: ["Commands", "Generated files", "Scripts implementation"]

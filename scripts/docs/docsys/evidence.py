@@ -20,6 +20,7 @@ import hashlib
 import re
 import subprocess
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 from .model import (
@@ -35,6 +36,7 @@ DIGEST_PREFIX = "sha256:"
 DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _STATUS_RE = re.compile(r"(?m)^status:\s*.*$")
 _DIGEST_RE = re.compile(r"(?m)^verified_evidence_digest:\s*.*$")
+_LAST_EDITED_RE = re.compile(r"(?m)^last_edited:\s*.*$")
 _LEGACY_RE = re.compile(r"(?m)^verified_against_commit:\s*(.*)$")
 
 
@@ -137,6 +139,38 @@ class EvidenceSource:
         )
 
 
+def _today() -> str:
+    return date.today().isoformat()
+
+
+def _set_last_edited(path: Path, value: str | None = None) -> bool:
+    text = path.read_text()
+    value = value or _today()
+    replacement = f"last_edited: {value}"
+    if _LAST_EDITED_RE.search(text):
+        updated = _LAST_EDITED_RE.sub(replacement, text, count=1)
+    elif _DIGEST_RE.search(text):
+        updated = _DIGEST_RE.sub(
+            lambda match: f"{match.group(0)}\n{replacement}",
+            text,
+            count=1,
+        )
+    elif _LEGACY_RE.search(text):
+        updated = _LEGACY_RE.sub(
+            lambda match: f"{match.group(0)}\n{replacement}",
+            text,
+            count=1,
+        )
+    else:
+        raise ValueError(
+            f"{path.relative_to(ROOT)} has no verification metadata field"
+        )
+    if updated == text:
+        return False
+    path.write_text(updated)
+    return True
+
+
 def _set_metadata(path: Path, *, status: str, digest: str | None) -> None:
     text = path.read_text()
     digest_value = digest or "null"
@@ -160,6 +194,7 @@ def _set_metadata(path: Path, *, status: str, digest: str | None) -> None:
             f"{path.relative_to(ROOT)} has no verification metadata field"
         )
     path.write_text(text)
+    _set_last_edited(path)
 
 
 def _repo_path(value: str) -> Path:
@@ -216,6 +251,14 @@ def promote_staged(values: list[str]) -> int:
         doc = load_document(path)
         if doc is None:
             raise ValueError(f"{rel} has invalid front matter")
+        if doc.collection != "project-knowledge":
+            raise ValueError(
+                f"evidence verification is only available for Project Knowledge: {rel}"
+            )
+        if doc.is_generated:
+            raise ValueError(
+                f"generated documentation must be regenerated, not promoted: {rel}"
+            )
         snapshot = source.snapshot(doc)
         if not snapshot.files and not doc.is_generated:
             raise ValueError(
@@ -268,7 +311,7 @@ def check_staged(*, sync_invalidations: bool = False) -> int:
         is_impacted = any(doc.code_matches(path) for path in staged_evidence)
         if doc.rel_path not in staged_docs and not is_impacted:
             continue
-        if doc.status != "verified":
+        if doc.collection != "project-knowledge" or doc.status != "verified":
             continue
         current = doc.verified_evidence_digest
         snapshot = source.snapshot(doc)
@@ -303,6 +346,29 @@ def check_staged(*, sync_invalidations: bool = False) -> int:
     if changed:
         print("review the automatically staged documentation invalidations")
     return 1
+
+
+def sync_last_edited_staged() -> int:
+    """Set ISO last-edited dates on staged authored Markdown documents."""
+    staged_paths = sorted(
+        line
+        for line in _git_text(["diff", "--cached", "--name-only"]).splitlines()
+        if line.startswith("docs/") and line.endswith(".md")
+    )
+    updated: list[str] = []
+    for rel in staged_paths:
+        path = ROOT / rel
+        if not path.exists():  # staged deletion
+            continue
+        if _has_unstaged(rel):
+            raise ValueError(
+                f"{rel} has unstaged edits; stage a single reviewable version first"
+            )
+        if _set_last_edited(path):
+            subprocess.run(["git", "add", "--", rel], cwd=ROOT, check=True)
+            updated.append(rel)
+    print(f"last_edited is current for {len(staged_paths)} staged document(s)")
+    return 0
 
 
 def migrate_commit_baselines() -> int:
@@ -352,6 +418,11 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--sync-invalidations", action="store_true")
 
     subparsers.add_parser(
+        "sync-last-edited",
+        help="set last_edited on staged documentation",
+    )
+
+    subparsers.add_parser(
         "migrate-commit-baselines",
         help="replace legacy commit metadata using each recorded baseline",
     )
@@ -362,6 +433,8 @@ def main(argv: list[str] | None = None) -> int:
             return promote_staged(args.paths)
         if args.command == "check-staged":
             return check_staged(sync_invalidations=args.sync_invalidations)
+        if args.command == "sync-last-edited":
+            return sync_last_edited_staged()
         return migrate_commit_baselines()
     except (RuntimeError, ValueError, subprocess.CalledProcessError) as exc:
         print(f"documentation evidence error: {exc}")

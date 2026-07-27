@@ -5,6 +5,7 @@ document_type: implementation
 status: verified
 authority: canonical
 verified_evidence_digest: sha256:9d41c41b4f72d2f373107e99760b5400c86544d1551351b73b6bf4270d1ca465
+last_edited: 2026-07-27
 tags: [infrastructure, security]
 related_code:
   - "../../../../infra/containers/strategies/rehearsal/fixtures/"

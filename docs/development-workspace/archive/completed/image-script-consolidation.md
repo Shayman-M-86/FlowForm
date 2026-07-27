@@ -5,6 +5,7 @@ document_type: completed-plan
 status: draft
 authority: working
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [infrastructure, tooling]
 related_code:
   - "../../../../infra/images/"

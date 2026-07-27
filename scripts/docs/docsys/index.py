@@ -31,6 +31,7 @@ _PROMOTED = {
     "status",
     "authority",
     "verified_evidence_digest",
+    "last_edited",
     "tags",
     "related_code",
     "related_docs",
@@ -56,6 +57,7 @@ def _entry(doc: Document, docset: DocSet) -> dict:
         "children": [child.title for child in docset.children(doc)],
         "tags": sorted(doc.tags),
         "verified_evidence_digest": doc.verified_evidence_digest,
+        "last_edited": doc.last_edited,
         "code_confidence": doc.code_confidence,
         "headings": list(doc.headings),
         # Raw declarations, as written by the author (relative to the doc).

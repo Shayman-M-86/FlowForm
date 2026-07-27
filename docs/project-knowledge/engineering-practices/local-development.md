@@ -5,6 +5,7 @@ document_type: workflow
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [tooling, infrastructure]
 related_code:
   - "../../../infra/containers/strategies/dev/compose/compose.yml"

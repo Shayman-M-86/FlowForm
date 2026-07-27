@@ -5,6 +5,7 @@ document_type: implementation
 status: verified
 authority: canonical
 verified_evidence_digest: sha256:c4e18e6f60c3cf2eaa16332ef93756aa8da9eb3a0546d83ea87c1bebb7684256
+last_edited: 2026-07-27
 tags: [configuration, infrastructure]
 related_code:
   - "../../../backend/app/core/config.py"

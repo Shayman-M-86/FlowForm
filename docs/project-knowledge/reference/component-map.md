@@ -5,6 +5,7 @@ document_type: reference
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [backend, frontend, infrastructure, security]
 related_code:
   - "../../../frontend/apps/"

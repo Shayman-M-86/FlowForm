@@ -5,6 +5,7 @@ document_type: historical-review
 status: draft
 authority: historical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [security]
 related_code: []
 related_docs:

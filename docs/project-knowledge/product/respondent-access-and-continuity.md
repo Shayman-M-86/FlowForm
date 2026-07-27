@@ -5,6 +5,7 @@ document_type: domain
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [backend, security]
 related_code:
   - "../../../backend/app/domain/public_link_rules.py"

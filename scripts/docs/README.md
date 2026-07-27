@@ -4,6 +4,7 @@ document_type: implementation
 status: scaffold
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 related_code: ["generate-repository-tree.py", "validate-doc-links.py", "validate-doc-metadata.py", "docsys/"]
 related_docs: ["../../docs/project-knowledge/engineering-practices/documentation/authoring-guide.md", "../../docs/project-knowledge/engineering-practices/documentation/documentation-model.md"]
 ---

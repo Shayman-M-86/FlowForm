@@ -5,6 +5,7 @@ document_type: architecture
 status: verified
 authority: canonical
 verified_evidence_digest: sha256:4e60579a93ca2a5b217dc6ef723540d3333d98e5fecf1e780a67a74f508cbf91
+last_edited: 2026-07-27
 tags: [infrastructure, configuration]
 related_code:
   - "../../../../infra/deployment/aws/cdk/app.py"

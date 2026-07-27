@@ -5,6 +5,7 @@ document_type: reference
 status: draft
 authority: canonical
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [backend, infrastructure]
 related_code: ["../../../backend/app/logging/logging_config.py", "../../../backend/app/logging/request_logging.py", "../../../infra/containers/runtime/services/alloy/config.alloy", "../../../infra/containers/runtime/services/alloy-app/config.alloy", "../../../infra/containers/runtime/services/squid/squid.conf"]
 related_docs: ["Observability", "Runtime containers", "Distributed tracing"]

@@ -5,6 +5,7 @@ document_type: planning
 status: draft
 authority: working
 verified_evidence_digest: null
+last_edited: 2026-07-27
 tags: [infrastructure, configuration, ci-cd]
 related_code:
   - "../../../infra/deployment/aws/cdk/"

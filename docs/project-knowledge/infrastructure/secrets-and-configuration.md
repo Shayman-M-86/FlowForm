@@ -5,6 +5,7 @@ document_type: workflow
 status: verified
 authority: canonical
 verified_evidence_digest: sha256:2cfb51ed43b55b203122afc9a88117ae12034b33e7bfdda40bdc832b6153d8c4
+last_edited: 2026-07-27
 tags: [configuration, security, infrastructure]
 related_code:
   - "../../../scripts/secrets/"
