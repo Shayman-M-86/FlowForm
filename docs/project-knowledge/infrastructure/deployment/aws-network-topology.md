@@ -20,6 +20,8 @@ related_docs:
 
 # AWS network topology
 
+![AWS split-host VPC network topology](../../../assets/architecture/aws-network-topology.svg)
+
 FlowForm's full-deployment AWS environments use a split-host VPC: a public
 proxy role accepts internet traffic and provides controlled outbound access,
 while the application and database roles remain isolated from direct internet

@@ -2,10 +2,10 @@
 title: Respondent access and continuity
 aliases: ["Respondent access and continuity"]
 document_type: domain
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:25b411d514b5d7378e845a076545b3331529bec598c5df6f8325be36096cc48c
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-28
 tags: [backend, security]
 related_code:
   - "../../../backend/app/domain/public_link_rules.py"
@@ -27,6 +27,8 @@ related_docs:
 ---
 
 # Respondent access and continuity
+
+![Respondent access and continuity](../../assets/architecture/respondent-access.svg)
 
 FlowForm separates three product questions that are easy to confuse:
 

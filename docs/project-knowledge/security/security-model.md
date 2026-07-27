@@ -2,10 +2,10 @@
 title: Security model
 aliases: ["Security model"]
 document_type: architecture
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:e57be9349fda451c912d3e14910cf141351529d9b6855a72f279e549a2030aae
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-28
 tags: [backend, infrastructure, security]
 related_code:
   - "../../../backend/app/middleware/auth/"
@@ -26,6 +26,8 @@ related_docs:
 ---
 
 # Security model
+
+![Security model: distinct access paths](../../assets/architecture/security-model.svg)
 
 FlowForm separates operator access from respondent access, maps authenticated
 external identities into local authorization state, hashes respondent session
