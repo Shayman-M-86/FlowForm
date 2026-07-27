@@ -30,7 +30,7 @@ opportunistically.
 - **split into children** — promote to a folder with an index head plus child
   documents (only after debt analysis confirms multiple independent topics).
 - **regenerate** — do not copy; the generator recreates it in the new tree.
-- **archive** — move to `engineering-workspace/archive/` with minimal valid
+- **archive** — move to `development-workspace/archive/` with minimal valid
   metadata; do not repair stale links.
 - **do not migrate** — intentionally dropped (recorded with a reason).
 
@@ -47,9 +47,9 @@ acceptable; **Generator-owned** = reproduced by tooling, never hand-authored.
 | `20-domains/` | `product/`, `backend/`, `data/`, `security/` by owning subsystem |
 | `30-workflows/` | `engineering-practices/`, `infrastructure/`, or `operations/` by ownership |
 | `40-implementation/` | The subsystem branch that owns the implementation |
-| `50-decisions/` | `engineering-workspace/decisions/` |
+| `50-decisions/` | `development-workspace/decisions/` |
 | `60-reference/` | `project-knowledge/reference/` |
-| `70-planning/` | `engineering-workspace/planning/`, `technical-debt/`, or `archive/` |
+| `70-planning/` | `development-workspace/planning/`, `technical-debt/`, or `archive/` |
 | `90-generated/` | Regenerate under `project-knowledge/reference/generated/` |
 
 ## Manifest
@@ -129,9 +129,9 @@ acceptable; **Generator-owned** = reproduced by tooling, never hand-authored.
 
 | Legacy document | Destination | Action | Verification |
 | --- | --- | --- | --- |
-| `docs/50-decisions/0001-aws-staging-infrastructure-target.md` | `engineering-workspace/decisions/0001-aws-staging-infrastructure-target.md` | move unchanged | Planning only |
-| `docs/50-decisions/ADR-template.md` | `engineering-workspace/decisions/ADR-template.md` | move unchanged | Planning only |
-| `docs/50-decisions/README.md` | `engineering-workspace/decisions/decisions-index.md` | merge into another document | Planning only |
+| `docs/50-decisions/0001-aws-staging-infrastructure-target.md` | `development-workspace/decisions/0001-aws-staging-infrastructure-target.md` | move unchanged | Planning only |
+| `docs/50-decisions/ADR-template.md` | `development-workspace/decisions/ADR-template.md` | move unchanged | Planning only |
+| `docs/50-decisions/README.md` | `development-workspace/decisions/decisions-index.md` | merge into another document | Planning only |
 
 ### 60-reference/
 
@@ -151,15 +151,15 @@ acceptable; **Generator-owned** = reproduced by tooling, never hand-authored.
 
 | Legacy document | Destination | Action | Verification |
 | --- | --- | --- | --- |
-| `docs/70-planning/README.md` | `engineering-workspace/planning/planning-index.md` | merge into another document | Planning only |
-| `docs/70-planning/active/README.md` | `engineering-workspace/planning/planning-index.md` | merge into another document | Planning only |
-| `docs/70-planning/active/aws-cdk-staging-plan.md` | `engineering-workspace/planning/aws-cdk-staging-plan.md` | move | Planning only |
-| `docs/70-planning/active/docs-restructure-plan.md` | `engineering-workspace/planning/docs-restructure-plan.md` | move | Planning only |
-| `docs/70-planning/completed/README.md` | `engineering-workspace/archive/archive-index.md` | merge into another document | Planning only |
-| `docs/70-planning/completed/image-script-consolidation.md` | `engineering-workspace/archive/image-script-consolidation.md` | move | Planning only |
-| `docs/70-planning/abandoned/README.md` | `engineering-workspace/archive/archive-index.md` | merge into another document | Planning only |
-| `docs/70-planning/abandoned/Security-review-1.md` | `engineering-workspace/archive/security-review-1.md` | archive | Planning only |
-| `docs/70-planning/abandoned/Security-review-2.md` | `engineering-workspace/archive/security-review-2.md` | archive | Planning only |
+| `docs/70-planning/README.md` | `development-workspace/planning/planning-index.md` | merge into another document | Planning only |
+| `docs/70-planning/active/README.md` | `development-workspace/planning/planning-index.md` | merge into another document | Planning only |
+| `docs/70-planning/active/aws-cdk-staging-plan.md` | `development-workspace/planning/aws-cdk-staging-plan.md` | move | Planning only |
+| `docs/70-planning/active/docs-restructure-plan.md` | `development-workspace/planning/docs-restructure-plan.md` | move | Planning only |
+| `docs/70-planning/completed/README.md` | `development-workspace/archive/archive-index.md` | merge into another document | Planning only |
+| `docs/70-planning/completed/image-script-consolidation.md` | `development-workspace/archive/image-script-consolidation.md` | move | Planning only |
+| `docs/70-planning/abandoned/README.md` | `development-workspace/archive/archive-index.md` | merge into another document | Planning only |
+| `docs/70-planning/abandoned/Security-review-1.md` | `development-workspace/archive/security-review-1.md` | archive | Planning only |
+| `docs/70-planning/abandoned/Security-review-2.md` | `development-workspace/archive/security-review-2.md` | archive | Planning only |
 
 ### 90-generated/
 
@@ -219,16 +219,16 @@ All regenerated from the new tree; never copied. Destinations live under
   `reference/` and the subsystem branches instead.
 - **Phase 5 (Infrastructure pilot) — implementation complete; human gate
   pending.** Migrated all 13 Infrastructure inputs in this manifest and built a
-  19-document branch comprising the shared head, substantive deployment,
-  containers, images, and Proxmox branches, three direct configuration/workflow
-  pages, and AWS/networking/observability scaffold heads. Implementation-backed
-  pages were verified against
-  `0edae9082dc3381cc1376e8a81276bf5c7bebf88`; the three reserved branches remain
-  honest scaffolds with no verification commit. All validation profiles,
-  deterministic Infrastructure search, advisory changed-document debt, docsys
-  tests, image validation, and container invariant tests pass. The human review
-  decides whether the reserved branches are useful ownership boundaries before
-  Phase 6 begins.
+  16-document branch comprising the shared head, substantive deployment,
+  containers, images, and Proxmox branches, and three direct
+  configuration/workflow pages. Implementation-backed pages were verified
+  against `0edae9082dc3381cc1376e8a81276bf5c7bebf88`. Human review rejected
+  taxonomy-only AWS, networking, and observability scaffolds: those concerns are
+  now integrated into the overview that owns their current model and will gain
+  child branches only when independently useful content exists. All validation
+  profiles, deterministic Infrastructure search, advisory changed-document
+  debt, docsys tests, image validation, and container invariant tests pass.
+  The remaining human gate evaluates the revised overviews before Phase 6.
 
 ## Destination uniqueness check
 

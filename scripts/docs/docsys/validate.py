@@ -47,10 +47,10 @@ def _severity(code: str, collection: str, profile: str) -> str:
     if profile == "project-knowledge":
         return "error" if collection in {"project-knowledge", "root"} else "warning"
     if profile == "workspace":
-        if collection == "engineering-workspace" and code in workspace_advisory:
+        if collection == "development-workspace" and code in workspace_advisory:
             return "warning"
-        return "error" if collection in {"engineering-workspace", "root"} else "warning"
-    if collection == "engineering-workspace" and code in workspace_advisory:
+        return "error" if collection in {"development-workspace", "root"} else "warning"
+    if collection == "development-workspace" and code in workspace_advisory:
         return "warning"
     # Commit and CI treat objective structural defects as gates in both
     # collections. Maintainability debt is intentionally handled elsewhere.
@@ -195,7 +195,7 @@ def metadata_findings(
                 )
             )
         if (
-            doc.collection == "engineering-workspace"
+            doc.collection == "development-workspace"
             and doc.authority.casefold() == "canonical"
         ):
             findings.append(

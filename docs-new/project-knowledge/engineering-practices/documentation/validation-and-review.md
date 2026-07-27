@@ -2,9 +2,9 @@
 title: Documentation validation and review
 aliases: ["Documentation validation and review"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_against_commit: 316cebefe28d16b601a91a498b2038f474bdf050
+verified_against_commit: null
 tags: [meta]
 related_code:
   - "../../../../scripts/docs/docsys/"
@@ -30,7 +30,7 @@ the document's collection:
 | ------------------- | ------------------------------------------------------------------------------------ |
 | `editing`           | Advisory; everything is a warning while a document is being written.                 |
 | `project-knowledge` | Errors for Project Knowledge; other collections stay advisory.                       |
-| `workspace`         | Errors for Engineering Workspace, but optional metadata stays advisory there.        |
+| `workspace`         | Errors for Development workspace, but optional metadata stays advisory there.        |
 | `commit`            | Gates objective structural defects in both collections at commit time.               |
 | `ci`                | The CI gate; objective structural defects are errors in both collections.            |
 
@@ -41,7 +41,7 @@ claiming canonical authority, and documents placed outside the two collections.
 
 Optional workspace metadata — `aliases`, `authority`, `related_code`,
 `related_docs`, `verified_against_commit` — stays advisory for
-Engineering Workspace documents, so honest incompleteness there does not fail
+Development workspace documents, so honest incompleteness there does not fail
 CI.
 
 ## Running validation
@@ -69,6 +69,9 @@ against implementation evidence remains required.
 For each completed group, check:
 
 - every current-state claim has an implementation evidence path;
+- every folder head stands alone as a high-level explanation, with navigation
+  subordinate to its model, boundaries, and synthesis;
+- no directory exists only to reserve a future category;
 - metadata matches the document's actual maturity and scope;
 - wiki links resolve to note targets, while `related_docs` and `aliases` use the
   exact document title;

@@ -23,7 +23,7 @@ already does well and changing only what the new structure genuinely requires.
 ## Decisions locked in
 
 - **Folder naming:** drop numeric prefixes; move to semantic names under two
-  collections (`project-knowledge/`, `engineering-workspace/`).
+  collections (`project-knowledge/`, `development-workspace/`).
 - **Vocabulary:** keep the existing split — `status` = lifecycle
   (`scaffold|draft|verified`), `authority` = canonical/etc. — and **extend
   additively**. Do *not* fold the proposal's `canonical/deprecated/archived`
@@ -132,7 +132,7 @@ Build against the **current** tree so it's testable before churn.
    - (Existing checks — required keys, unique titles, alias-matches-title, tag
      vocab, status vocab, `related_docs` resolves — stay as-is.)
 3. `index.py` — emit `parent`, `children`, and `collection`
-   (`project-knowledge` | `engineering-workspace`) per entry (§12 fields).
+   (`project-knowledge` | `development-workspace`) per entry (§12 fields).
 
 Acceptance: `python3 -m docsys index` + validators pass on the *current* tree,
 with new fields populated and named-folder-head warnings listing every folder
@@ -154,16 +154,18 @@ the populated tree.
 
 ### Stage 2 — Introduce collections + folder heads (content move)
 
-- Create `docs/project-knowledge/` and `docs/engineering-workspace/`.
+- Create `docs/project-knowledge/` and `docs/development-workspace/`.
 - Move existing docs to their single structural parent:
   - `10-architecture`, `20-domains`, `40-implementation` → spread across
     `project-knowledge/{backend,frontend,data,security,infrastructure,...}`.
-  - `50-decisions` → `engineering-workspace/decisions/`.
-  - `70-planning/{active,future,completed}` → `engineering-workspace/planning/…`.
+  - `50-decisions` → `development-workspace/decisions/`.
+  - `70-planning/{active,future,completed}` → `development-workspace/planning/…`.
   - `30-workflows` → nearest subsystem, or a workflows area; update
     `context.py`'s heuristic.
-- Add `<folder-name>-index.md` to **every** folder (define subject, scope, model, children
-  intro, cross-links — not just a file list).
+- Add `<folder-name>-index.md` to every meaningful folder. Each head must stand
+  alone as the subject's high-level model—purpose, scope, boundaries, lifecycle,
+  and relationship between subcategories—not merely introduce a file list.
+  Do not create empty branches solely to reserve future taxonomy.
 - Keep titles identical across every move (identity invariant).
 - Run a link-rewrite pass for relative Markdown links + relative
   `related_code`/`related_docs` paths. Wiki links need no change.

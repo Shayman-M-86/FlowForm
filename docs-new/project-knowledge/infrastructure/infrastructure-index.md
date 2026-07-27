@@ -30,23 +30,40 @@ observability knowledge across supported platforms. Checked-in definitions and
 validation describe repository intent; they do not attest that an AWS or
 Proxmox environment is deployed or healthy.
 
-## Knowledge branches
+## Infrastructure model
 
-- [[deployment-index|Deployment documentation]] owns declared deployment
-  topology and bounded cloud-publication workflows.
-- [[containers-index|Container runtime documentation]] owns shared Compose
-  boundaries and strategy overlays.
-- [[images-index|Machine images]] owns Packer-built host images and their
-  operator workflow.
-- [[proxmox-index|Proxmox rehearsal]] owns the local rehearsal topology,
-  fixtures, setup, and telemetry path.
-- [[aws-index|AWS infrastructure]], [[networking-index|Infrastructure
-  networking]], and [[observability-index|Infrastructure observability]] are
-  reserved scaffold branches pending the human taxonomy review.
+FlowForm infrastructure separates reusable build artifacts from deployment
+topology and runtime convergence. [[images-index|Machine images]] produces
+host-image identifiers. [[deployment-index|Deployment documentation]] defines
+the AWS topology and the limited publication automation currently checked in,
+while [[proxmox-index|Proxmox rehearsal]] defines the isolated local rehearsal.
+Neither deployment path invokes Packer while creating hosts.
 
-Configuration that crosses those branches is documented directly:
-[[local-infrastructure|Local infrastructure]], [[secrets-and-configuration|Secrets
-and configuration]], and [[configuration|Configuration implementation]].
+Once a host exists, bootstrap consumes configuration and shared
+[[containers-index|container runtime]] definitions to converge its role. The
+runtime separates application and proxy responsibilities; development and
+rehearsal add their own strategy overlays rather than changing that shared
+contract invisibly.
+
+Configuration crosses each layer. [[configuration|Configuration
+implementation]] defines what the backend accepts, [[secrets-and-configuration|Secrets
+and configuration]] explains how sensitive values reach consumers, and
+[[local-infrastructure|Local infrastructure]] describes the development
+composition and its state boundaries.
+
+## Cross-cutting concerns
+
+AWS is currently part of the deployment model rather than an independent
+knowledge branch because its stacks, environment configuration, and publication
+workflows form one deployment boundary. Networking is likewise platform-owned:
+AWS network topology belongs with the CDK deployment model, while the isolated
+bridge and relay path belong with the Proxmox rehearsal.
+
+Observability configuration follows the runtime it serves. The Proxmox branch
+explains its Alloy signal path; broader operational interpretation and response
+belong with operations knowledge when that branch is migrated. These subjects
+should become child branches only if they develop a meaningful model that
+cannot be explained coherently by their current owners.
 
 ## Repository ownership
 
@@ -70,3 +87,6 @@ and configuration]], and [[configuration|Configuration implementation]].
 - [[containers-index|Container runtime documentation]]
 - [[images-index|Machine images]]
 - [[proxmox-index|Proxmox rehearsal]]
+- [[configuration|Configuration implementation]]
+- [[secrets-and-configuration|Secrets and configuration]]
+- [[local-infrastructure|Local infrastructure]]

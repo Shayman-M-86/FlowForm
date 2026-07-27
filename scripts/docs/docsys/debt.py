@@ -259,7 +259,7 @@ def analyse(
     if len(hit) < 3:
         return []
     severity = "strong_recommendation" if len(hit) >= 5 else "warning"
-    if doc.collection == "engineering-workspace" and doc.status != "verified":
+    if doc.collection == "development-workspace" and doc.status != "verified":
         severity = "information"
     confidence = round(min(0.95, 0.35 + len(hit) * 0.1), 2)
     evidence = [
@@ -331,7 +331,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--docs-root", default="docs")
     parser.add_argument(
         "--collection",
-        choices=["project-knowledge", "engineering-workspace", "legacy", "root"],
+        choices=["project-knowledge", "development-workspace", "legacy", "root"],
     )
     parser.add_argument("--changed", action="store_true")
     parser.add_argument("--history", action="store_true")

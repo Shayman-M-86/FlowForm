@@ -40,7 +40,7 @@ _AUTHORITY_MULT = {"canonical": 1.15, "reference": 1.05}
 _COLLECTION_MULT = {
     "project-knowledge": 1.12,
     "legacy": 1.0,
-    "engineering-workspace": 0.94,
+    "development-workspace": 0.94,
 }
 
 W_TITLE = 5.0
@@ -257,7 +257,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tag", help="filter by tag")
     parser.add_argument(
         "--collection",
-        choices=["project-knowledge", "engineering-workspace", "legacy", "root"],
+        choices=["project-knowledge", "development-workspace", "legacy", "root"],
     )
     parser.add_argument("--authority")
     parser.add_argument("--status", choices=["scaffold", "draft", "verified"])

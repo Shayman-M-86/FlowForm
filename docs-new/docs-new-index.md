@@ -2,23 +2,52 @@
 title: FlowForm documentation
 aliases: ["FlowForm documentation"]
 document_type: overview
-status: scaffold
+status: draft
 authority: canonical
 verified_against_commit: null
 tags: [meta]
 related_code: ["../scripts/docs/"]
-related_docs: ["Project Knowledge", "Engineering Workspace"]
+related_docs: ["Project Knowledge", "Development workspace"]
 ---
 
 # FlowForm documentation
 
-This is the parallel documentation tree being prepared for migration. Accepted
-system knowledge belongs in Project Knowledge; active engineering work belongs
-in Engineering Workspace. Until content is migrated and verified, `docs/`
-remains the populated documentation collection.
+FlowForm documentation separates what the system currently is from the work
+that may change it. The tree provides one structural home for each subject,
+while titles, related-document metadata, and wiki links connect concepts that
+cross those ownership boundaries.
 
-## Collections
+## Knowledge and ongoing work
 
-- Project Knowledge holds maintained, implementation-backed understanding.
-- Engineering Workspace holds plans, investigations, decisions, and other work
-  that may still change.
+[[project-knowledge-index|Project Knowledge]] contains maintained explanations
+of FlowForm's product behaviour, software boundaries, data and security model,
+infrastructure, operating concerns, engineering practices, and exact reference
+facts. Its claims must come from current code, tests, schemas, configuration,
+automation, or infrastructure definitions.
+
+[[development-workspace-index|Development workspace]] contains the material
+used to change that accepted understanding: decisions, plans, investigations,
+research, experiments, migrations, and technical debt. Workspace content may
+be incomplete or contested and does not become Project Knowledge merely by
+being completed.
+
+## How the documentation fits together
+
+Folder heads provide the high-level model for a subject: its responsibilities,
+boundaries, important concepts, and how its subcategories interact. Child
+documents deepen one part of that explanation. Cross-links connect adjacent
+subjects without duplicating their content. A head is therefore an overview in
+its own right, not a directory listing.
+
+Document metadata makes confidence visible. `status` distinguishes scaffolds,
+drafts, and verified pages; `authority` distinguishes accepted knowledge from
+working material; and `verified_against_commit` records the implementation
+baseline actually inspected.
+
+This tree is still being assembled in parallel. The populated `docs/` tree
+remains the current documentation until migration acceptance and cutover.
+
+## Related documents
+
+- [[project-knowledge-index|Project Knowledge]]
+- [[development-workspace-index|Development workspace]]

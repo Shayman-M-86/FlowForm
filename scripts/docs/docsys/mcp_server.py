@@ -70,7 +70,7 @@ TOOLS = [
                     "type": "string",
                     "enum": [
                         "project-knowledge",
-                        "engineering-workspace",
+                        "development-workspace",
                         "legacy",
                         "root",
                     ],
@@ -171,7 +171,7 @@ TOOLS = [
                     "type": "string",
                     "enum": [
                         "project-knowledge",
-                        "engineering-workspace",
+                        "development-workspace",
                         "legacy",
                         "root",
                     ],

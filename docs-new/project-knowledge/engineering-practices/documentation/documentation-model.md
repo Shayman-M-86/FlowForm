@@ -2,9 +2,9 @@
 title: Documentation model
 aliases: ["Documentation model"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_against_commit: 316cebefe28d16b601a91a498b2038f474bdf050
+verified_against_commit: null
 tags: [meta]
 related_code:
   - "../../../../scripts/docs/"
@@ -13,7 +13,7 @@ related_docs:
   - "Documentation authoring guide"
   - "Documentation validation and review"
   - "Project Knowledge"
-  - "Engineering Workspace"
+  - "Development workspace"
 ---
 
 # Documentation model
@@ -42,7 +42,7 @@ collections:
   understanding of FlowForm. It becomes strict at commit and CI validation
   boundaries. Documents here describe current behaviour, carry
   `authority: canonical`, and must not present proposals as established fact.
-- **Engineering Workspace** (`engineering-workspace/`) holds active work —
+- **Development workspace** (`development-workspace/`) holds active work —
   decisions, plans, investigations, migrations, and technical debt. It uses
   lighter, editing-time enforcement. Workspace documents must not claim
   canonical authority, and honest incompleteness is acceptable.
@@ -58,6 +58,16 @@ folder head; for example, `backend/backend-index.md`. The head defines that
 branch's ownership and is the structural parent of the documents and nested
 folder heads beneath it. Every non-root document therefore has exactly one
 inferable structural parent.
+
+A folder head is a substantive overview, not a table of contents. It explains
+the subject's purpose, responsibilities, boundaries, important concepts or
+lifecycle, and how its subcategories interact. Links then offer deeper detail.
+Removing the links should still leave a useful high-level understanding.
+
+Do not create a directory solely to reserve a possible future category. Add a
+branch when its head can explain a meaningful ownership boundary. A temporary
+scaffold may exist during an active migration batch, but it is unfinished work
+and cannot satisfy that batch's human acceptance gate.
 
 Cross-tree relationships use stable, globally unique titles and `related_docs`;
 the model does not introduce a second `id` identity. A file may be promoted to
@@ -90,8 +100,8 @@ the documentation root. Do not use a front-matter title as the link target when
 it differs from the filename. Use wiki links only for documents inside the
 documentation tree; refer to code with plain repository paths in backticks.
 Every document lists its most useful neighbours in `related_docs` (front matter,
-as titles) and, except for short prose-navigation pages, in a closing
-`## Related documents` section.
+as titles) and in a closing `## Related documents` section. These links
+supplement the document's explanation; they do not replace it.
 
 Linking is cheap and encouraged: link a concept the first time a section
 mentions it, and prefer linking to the document that owns the explanation over
@@ -166,4 +176,4 @@ review]] for the validation profiles and review checklist.
 - [[authoring-guide|Documentation authoring guide]]
 - [[validation-and-review|Documentation validation and review]]
 - [[project-knowledge-index|Project Knowledge]]
-- [[engineering-workspace-index|Engineering Workspace]]
+- [[development-workspace-index|Development workspace]]

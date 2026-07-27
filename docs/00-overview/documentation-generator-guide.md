@@ -55,12 +55,19 @@ current behaviour.
 
 Work in one small group of documents that share a subject and evidence boundary:
 
-1. Define what each page owns and what belongs in another layer.
+1. Define what each page owns and what belongs in another layer. Write each
+   folder head as an integrated high-level overview before distributing detail
+   among child pages.
 2. Inspect the current code, tests, schemas, configuration, CI, or infrastructure that owns each claim.
 3. Write the smallest useful explanation and link to pages that own adjacent detail.
 4. Update front matter (including the title-matching Obsidian `aliases` entry), wiki links, and `related_docs` together.
 5. Review the group for unsupported claims, repeated explanations, layer leakage, and unresolved gaps.
 6. Run the documentation validators from the repository root.
+
+A folder head must explain its subject's purpose, boundaries, key concepts or
+lifecycle, and how its subcategories interact. Review it once without following
+its links. If little useful understanding remains, it is a navigation wrapper,
+not an overview; deepen it or defer the branch.
 
 Set `verified_against_commit` to the inspected commit for implementation-backed prose. A commit value is an evidence baseline, not a substitute for review. Use `null` when a page has not been checked against a committed implementation baseline, including a scaffold, planning page, or documentation process that exists only in the working tree.
 
@@ -85,6 +92,8 @@ hand-editing generated content.
 For each completed group, check:
 
 - every current-state claim has an implementation evidence path;
+- every folder head stands alone as a high-level explanation and no directory
+  exists only to reserve a future category;
 - metadata matches the document's actual maturity and scope;
 - wiki links resolve to Obsidian note targets, while `related_docs` and `aliases` use the exact document title;
 - controlled tags add cross-cutting value and do not repeat the layer;

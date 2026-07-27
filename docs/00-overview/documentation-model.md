@@ -5,7 +5,7 @@ aliases:
 document_type: overview
 status: draft
 authority: canonical
-verified_against_commit: ad26b87e9820
+verified_against_commit: null
 tags: [meta]
 related_code:
   - "../../scripts/docs/"
@@ -48,7 +48,7 @@ single-parent knowledge tree with two explicit collections:
 
 - `project-knowledge/` contains accepted, maintained understanding and becomes
   strict at commit and CI validation boundaries;
-- `engineering-workspace/` contains active work and uses lighter editing-time
+- `development-workspace/` contains active work and uses lighter editing-time
   enforcement.
 
 Every directory containing authored Markdown in `docs-new/` has a
@@ -57,6 +57,13 @@ The head defines that branch's ownership and is the structural parent of
 documents and nested folder heads beneath it. Cross-tree
 relationships continue to use stable, globally unique titles and
 `related_docs`; the migration does not introduce a second `id` identity.
+
+Each folder head must also be a substantive overview of its subject: purpose,
+responsibilities, boundaries, important concepts or lifecycle, and the
+relationship between its subcategories. It must remain useful without its child
+links. Do not create a directory solely to reserve a possible future category;
+a scaffold used during migration is unfinished and does not satisfy the
+content-review gate.
 
 The current `status` and `authority` split is retained. A workspace document
 must not claim canonical authority. A file may be promoted to

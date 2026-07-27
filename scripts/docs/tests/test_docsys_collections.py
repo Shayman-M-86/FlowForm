@@ -86,7 +86,7 @@ class CollectionModelTests(unittest.TestCase):
     def test_workspace_optional_metadata_stays_advisory_in_ci(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             docs_root = Path(temporary) / "docs"
-            workspace = docs_root / "engineering-workspace"
+            workspace = docs_root / "development-workspace"
             workspace.mkdir(parents=True)
             (docs_root / "docs-index.md").write_text(_document("Root"))
             incomplete = _document(
@@ -100,7 +100,7 @@ class CollectionModelTests(unittest.TestCase):
                 "related_docs: []\n",
             ):
                 incomplete = incomplete.replace(optional_line, "")
-            (workspace / "engineering-workspace-index.md").write_text(incomplete)
+            (workspace / "development-workspace-index.md").write_text(incomplete)
             findings = all_findings(DocSet.load(docs_root), "ci")
 
             self.assertEqual(

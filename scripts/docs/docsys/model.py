@@ -32,7 +32,7 @@ from pathlib import Path, PurePosixPath
 ROOT = Path(__file__).resolve().parents[3]
 DOCS = ROOT / "docs"
 GENERATED_DIR = DOCS / "90-generated"
-COLLECTIONS = {"project-knowledge", "engineering-workspace"}
+COLLECTIONS = {"project-knowledge", "development-workspace"}
 
 # Front-matter vocabulary shared with the validators.
 REQUIRED_KEYS = (

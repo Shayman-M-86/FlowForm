@@ -2,9 +2,9 @@
 title: Documentation authoring guide
 aliases: ["Documentation authoring guide"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_against_commit: 316cebefe28d16b601a91a498b2038f474bdf050
+verified_against_commit: null
 tags: [meta]
 related_code:
   - "../../../../scripts/docs/"
@@ -50,7 +50,7 @@ file inspected.
 
 Use the collection and authority rules in the [[documentation-model|Documentation
 model]]. In particular, keep proposals and unresolved design in the
-[[engineering-workspace-index|Engineering Workspace]], reserve Project Knowledge
+[[development-workspace-index|Development workspace]], reserve Project Knowledge
 for current behaviour, and mark missing evidence or contradictions instead of
 turning assumptions into current behaviour. A completed plan does not
 automatically become Project Knowledge: distil its durable findings into the
@@ -60,7 +60,9 @@ owning branch from implementation evidence, then archive the plan.
 
 Work in one small group of documents that share a subject and evidence boundary:
 
-1. Define what each page owns and what belongs in another branch.
+1. Define what each page owns and what belongs in another branch. Write the
+   folder head as the integrated high-level model before distributing detail
+   among children.
 2. Inspect the current code, tests, schemas, configuration, CI, or
    infrastructure that owns each claim.
 3. Write the smallest useful explanation and link to pages that own adjacent
@@ -70,6 +72,12 @@ Work in one small group of documents that share a subject and evidence boundary:
 5. Review the group for unsupported claims, repeated explanations, ownership
    leakage, and unresolved gaps.
 6. Run the documentation validators from the repository root.
+
+For every folder head, review the prose once without following its links. It
+must explain the subject's purpose, boundaries, key concepts or lifecycle, and
+the relationship between its subcategories. A heading followed only by child
+links is navigation, not an overview. If no meaningful overview exists yet,
+defer the branch instead of preserving an empty taxonomy.
 
 Set `verified_against_commit` to the inspected commit for implementation-backed
 prose. A commit value is an evidence baseline, not a substitute for review. Use
