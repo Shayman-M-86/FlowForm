@@ -2,9 +2,9 @@
 title: Responses and encryption
 aliases: ["Responses and encryption"]
 document_type: domain
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:3a8b17c7d5c94b2d762c16c3d78787766f3b6d462f749cebb0eaf23a9bb0cce2
 last_edited: 2026-07-27
 tags: [security]
 related_code:

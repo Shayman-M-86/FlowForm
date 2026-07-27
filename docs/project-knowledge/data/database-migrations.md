@@ -2,9 +2,9 @@
 title: Database migrations
 aliases: ["Database migrations"]
 document_type: workflow
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:63b8d3bc46b00e79ae76a1852e09a47b4ffd74de7cbfe8099febeb066269bb5f
 last_edited: 2026-07-27
 tags: [backend]
 related_code:

@@ -2,9 +2,9 @@
 title: Data knowledge
 aliases: ["Data knowledge"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:06603db0c0e6d44c8d644fd81431509c4792086f9f918f0072114fd02424883e
 last_edited: 2026-07-27
 tags: [backend, security]
 related_code:
