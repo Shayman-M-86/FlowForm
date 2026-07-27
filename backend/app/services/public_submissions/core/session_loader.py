@@ -65,12 +65,36 @@ def load_current_session(
     session = _get_submission_session_orm(db, token_hash, allow_completed=allow_completed)
 
     ctx = build_session_context(
-        db, response_db, session=session, cache=cache, clients=clients,
+        db,
+        response_db,
+        session=session,
+        cache=cache,
+        clients=clients,
     )
 
     cache.sessions.write_context.put(token_hash, ctx)
 
     return ctx
+
+
+def load_current_session_record(
+    db: Session,
+    raw_resume_token: str,
+    *,
+    allow_completed: bool = False,
+) -> SubmissionSession:
+    """Load and validate only the core record for a browser resume token.
+
+    Use this for current-session discovery that does not need response-envelope
+    or cryptographic material. Answer reads and writes continue to use
+    :func:`load_current_session`.
+    """
+    token_hash = ssr.hash_browser_session_token(raw_resume_token)
+    return _get_submission_session_orm(
+        db,
+        token_hash,
+        allow_completed=allow_completed,
+    )
 
 
 def _load_cached_context(

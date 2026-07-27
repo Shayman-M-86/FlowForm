@@ -149,6 +149,7 @@ def test_submission_session_paths_are_in_openapi_spec(restored_openapi_registry:
     assert sorted(paths["/api/v1/respondent/links/resolve"]) == ["post"]
     assert "post" in paths["/api/v1/respondent/submission-sessions"]
     assert "/api/v1/respondent/submission-sessions/current" not in paths
+    assert "post" in paths["/api/v1/respondent/submission-sessions/current/resolve"]
     assert "put" in paths["/api/v1/respondent/submission-sessions/current/answers/{question_node_id}"]
     assert "post" in paths["/api/v1/respondent/submission-sessions/current/events"]
     assert "post" in paths["/api/v1/respondent/submission-sessions/current/complete"]
@@ -246,10 +247,6 @@ def test_openapi_export_covers_loaded_backend_routes(restored_openapi_registry: 
         openapi_path, _ = _flask_path_to_openapi(rule.rule)
         expected_operations.update((method.lower(), openapi_path) for method in _explicit_methods(rule))
 
-    actual_operations = {
-        (method, path)
-        for path, path_item in spec["paths"].items()
-        for method in path_item
-    }
+    actual_operations = {(method, path) for path, path_item in spec["paths"].items() for method in path_item}
 
     assert actual_operations == expected_operations

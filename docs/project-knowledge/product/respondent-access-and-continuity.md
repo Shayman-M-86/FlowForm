@@ -15,6 +15,9 @@ related_code:
   - "../../../backend/app/schema/orm/core/project_subject.py"
   - "../../../backend/app/schema/orm/core/survey_access.py"
   - "../../../backend/tests/integration/core/test_flow_matrix.py"
+  - "../../../frontend/apps/studio-app/src/lib/surveyAccessDesign.ts"
+  - "../../../frontend/apps/studio-app/src/pages/RespondPage.tsx"
+  - "../../../frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/SurveyAccessTab.tsx"
 related_docs:
   - "Product knowledge"
   - "Links and subjects"
@@ -142,6 +145,14 @@ credentials are distinct:
 | Recognition token | Recognize a returning browser within one project |
 | Browser resume token | Resume one in-progress submission session |
 | Login credential | Establish an authenticated user |
+
+The respondent frontend first offers its browser resume token together with the
+current `/respond/{token}` or `/s/{slug}` entry descriptor. If they match an
+in-progress session, the backend returns that session's pinned survey version
+without re-resolving or re-consuming the entry link. If there is no matching
+session, the frontend resolves the entry method and starts a new one. This is
+what lets a respondent revisit a single-use link after its successful first
+start.
 
 ## Boundary with submission persistence
 

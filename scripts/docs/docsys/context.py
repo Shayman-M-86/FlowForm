@@ -29,6 +29,8 @@ import re
 from dataclasses import dataclass, field
 
 from . import gitutil
+from .config import Config
+from .freshness import CURRENT, REVIEW, STALE, UNKNOWN, classify_document
 from .impact import detect_impact
 from .model import DocSet, Document
 from .query import QueryEngine
@@ -49,6 +51,7 @@ class ContextBundle:
     implementation_locations: list[str] = field(default_factory=list)
     workflows: list[Document] = field(default_factory=list)
     open_questions: list[dict] = field(default_factory=list)
+    documentation_reliability: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         def brief(d: Document) -> dict:
@@ -57,6 +60,7 @@ class ContextBundle:
                 "title": d.title,
                 "document_type": d.document_type,
                 "status": d.status,
+                "verified_against_commit": d.verified_against_commit,
                 "summary": _first_sentence(d),
             }
 
@@ -72,7 +76,102 @@ class ContextBundle:
             "neighbouring_documents": [brief(d) for d in self.neighbours],
             "implementation_locations": self.implementation_locations,
             "workflows": [brief(d) for d in self.workflows],
+            "documentation_reliability": self.documentation_reliability,
         }
+
+
+def assess_reliability(primary: list[Document]) -> dict:
+    """Summarise whether retrieved documents are safe to present as current.
+
+    This is a disclosure signal, not a factual verifier. It combines explicit
+    maturity metadata, Git working-tree state, and Docsys freshness. Agents
+    still compare material claims with implementation evidence.
+    """
+    if not primary:
+        return {
+            "assessment": "insufficient",
+            "requires_disclosure": True,
+            "message": "No relevant documentation was found for this question.",
+            "reasons": ["Docsys returned no primary documents."],
+            "affected_documents": [],
+        }
+
+    working_files = set(gitutil.changed_files().files)
+    config = Config.load()
+    affected: list[dict] = []
+    unreliable_reasons: list[str] = []
+    provisional_reasons: list[str] = []
+
+    for doc in primary:
+        freshness = classify_document(doc, config)
+        doc_reasons: list[str] = []
+        working_tree_modified = doc.rel_path in working_files
+
+        if working_tree_modified:
+            doc_reasons.append("the document has uncommitted changes")
+            unreliable_reasons.append(
+                f"{doc.title} has uncommitted changes"
+            )
+        if doc.status == "scaffold":
+            doc_reasons.append("the document is scaffold-only")
+            unreliable_reasons.append(f"{doc.title} is scaffold-only")
+        elif doc.status != "verified":
+            doc_reasons.append(f"status is {doc.status or 'missing'}")
+            provisional_reasons.append(
+                f"{doc.title} has status {doc.status or 'missing'}"
+            )
+
+        if freshness.classification in {STALE, REVIEW}:
+            doc_reasons.extend(freshness.reasons)
+            unreliable_reasons.append(
+                f"{doc.title} freshness is {freshness.classification}"
+            )
+        elif freshness.classification == UNKNOWN:
+            doc_reasons.extend(freshness.reasons)
+            if doc.status == "verified":
+                unreliable_reasons.append(
+                    f"{doc.title} has unknown verification freshness"
+                )
+            else:
+                provisional_reasons.append(
+                    f"{doc.title} has no current verification baseline"
+                )
+
+        if doc_reasons:
+            affected.append(
+                {
+                    "path": doc.rel_path,
+                    "status": doc.status,
+                    "verified_against_commit": doc.verified_against_commit,
+                    "freshness": freshness.classification,
+                    "working_tree_modified": working_tree_modified,
+                    "reasons": list(dict.fromkeys(doc_reasons)),
+                }
+            )
+
+    if unreliable_reasons:
+        assessment = "unreliable"
+        message = "I think the documentation is unreliable for this question."
+        reasons = unreliable_reasons + provisional_reasons
+    elif provisional_reasons:
+        assessment = "provisional"
+        message = (
+            "The documentation is provisional for this question and should "
+            "not be presented as verified current behaviour."
+        )
+        reasons = provisional_reasons
+    else:
+        assessment = "reliable"
+        message = "The retrieved documentation is verified and current."
+        reasons = []
+
+    return {
+        "assessment": assessment,
+        "requires_disclosure": assessment != "reliable",
+        "message": message,
+        "reasons": list(dict.fromkeys(reasons)),
+        "affected_documents": affected,
+    }
 
 
 def _first_sentence(doc: Document) -> str:
@@ -201,6 +300,7 @@ def build_context(
         implementation_locations=impl,
         workflows=workflows,
         open_questions=open_qs,
+        documentation_reliability=assess_reliability(primary),
     )
 
 
@@ -237,6 +337,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     print(f"Context for: {args.task or '(changed files)'}")
+    reliability = bundle.documentation_reliability
+    if reliability.get("requires_disclosure"):
+        print(f"\nReliability: {reliability['message']}")
+        for reason in reliability.get("reasons", []):
+            print(f"  - {reason}")
     print("\nPrimary documents:")
     for d in bundle.primary:
         print(f"  - {d.title} [{d.status}]  {d.rel_path}")

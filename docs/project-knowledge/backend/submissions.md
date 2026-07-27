@@ -12,6 +12,7 @@ related_code:
   - "../../../backend/app/schema/orm/core/submission_answer_slot.py"
   - "../../../backend/app/api/v1/respondent/submission_sessions.py"
   - "../../../backend/tests/e2e/test_submission_session_flows.py"
+  - "../../../frontend/apps/studio-app/src/pages/RespondPage.tsx"
 related_docs:
   - "Backend knowledge"
   - "Respondent access and continuity"
@@ -35,6 +36,12 @@ answer save, events, or completion. The legacy model treats answer slots as
 core pointers and response answers as encrypted data in a separate store.
 Reconciliation handles a subset of partial cross-store failures by examining
 in-progress sessions and envelope presence.
+
+On respondent page load, the browser presents its resume cookie with the
+current link token or public slug. A matching in-progress session returns its
+pinned survey and version before the entry credential is resolved again. This
+prevents a consumed single-use link from blocking continuity and prevents a
+cookie from one survey being resumed on another survey's URL.
 
 ```text
 resolve access + subject

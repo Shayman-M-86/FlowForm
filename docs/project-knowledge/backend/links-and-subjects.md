@@ -12,6 +12,8 @@ related_code:
   - "../../../backend/app/services/public_submissions/core/resolution/"
   - "../../../backend/app/schema/orm/core/project_subject.py"
   - "../../../backend/app/schema/orm/core/survey_access.py"
+  - "../../../frontend/apps/studio-app/src/lib/surveyAccessDesign.ts"
+  - "../../../frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/SurveyAccessTab.tsx"
 related_docs:
   - "Backend knowledge"
   - "Respondent access and continuity"
@@ -62,6 +64,17 @@ session-start orchestration applies subject aliases, identity attachment, and
 recognition-token actions in the core transaction. It then creates the core
 session and response envelope and consumes an assigned link as part of the
 successful start boundary.
+
+Studio exposes the same three link types enforced by the service. Private
+surveys allow participant-specific `private` and `authenticated` links but not
+general links. Link updates send only fields the operator changed, so enabling
+or disabling a link does not clear its participant assignment. Respondent URLs
+use `/respond/{token}` consistently in API responses, Studio, and invitation
+email delivery.
+
+Email delivery records `emailed_at` only when the configured email provider
+returns a message identifier. Disabled delivery returns no identifier, leaves
+the timestamp unchanged, and is shown as not sent in Studio.
 
 The domain does not authorize Studio users or persist answer values. Those
 responsibilities belong respectively to [[projects-and-access|Projects and

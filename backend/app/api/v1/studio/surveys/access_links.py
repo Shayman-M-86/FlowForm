@@ -57,7 +57,7 @@ def create_survey_access_link(project_id: int, survey_id: int):
         actor=g.actor,
     )
     site_url = current_settings().flowform.server.site_url.rstrip("/")
-    public_url = f"{site_url}/quiz/resolve?token={link.token}"
+    public_url = f"{site_url}/respond/{link.token}"
     response = CreateSurveyAccessLinkResponse(
         link=SurveyAccessLinkResponse.model_validate(link),
         url=public_url,

@@ -24,6 +24,7 @@ evidence boundary should be visible.
 1. Turn the request into a concise query naming the relevant concepts or
    domains.
 2. Call `get_task_context` with `task`, known `changed_files`, and `docs_root`.
+   Read `documentation_reliability` before using the returned pages.
 3. Read the returned primary documents with `get_document`.
 4. Read neighbouring documents only when the primary documents leave a
    material gap.
@@ -38,6 +39,31 @@ evidence boundary should be visible.
    workflows changed.
 
 Skip retrieval for spelling, formatting, and isolated mechanical renames.
+
+## Disclose reliability and control exploration
+
+For an explanation or documentation-reading request, give the smallest useful
+document-based explanation first. Treat it as provisional when Docsys says so.
+Use an initial budget of 5–10 files and 2–3 focused searches, then synthesize
+before expanding.
+
+- If `documentation_reliability.requires_disclosure` is true, surface its
+  message and reasons before presenting affected claims as current.
+- Say exactly **“I think the documentation is unreliable for this question.”**
+  when the assessment is `unreliable`, then identify the affected documents and
+  why. A draft or missing verification baseline alone is provisional; do not
+  call it a contradiction without implementation evidence.
+- For explanation-only work, ask before widening the task into a broad audit
+  once the initial budget is exhausted. Continue without asking when the user
+  already requested verification, diagnosis, or implementation and the extra
+  evidence is necessary to complete it.
+- When implementation evidence contradicts a document, report the document
+  claim and the conflicting repository evidence explicitly. If documentation
+  editing is in scope, correct the claim, set `status: draft`, and clear
+  `verified_against_commit` until the revised page is checked against a commit.
+  In read-only work, report that metadata update as required instead of editing.
+- Never silently preserve `status: verified` after finding a material
+  contradiction.
 
 ## Use and maintain documentation
 

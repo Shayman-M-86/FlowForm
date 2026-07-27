@@ -7,6 +7,8 @@ import { respondentClient, createAuthenticatedRespondentClient } from '@/api/res
 import type { components } from '@/api/generated/schema'
 
 type ResolveResponse = components['schemas']['ResolveSurveyAccessLinkResponse']
+type PublicSurveyResponse = components['schemas']['PublicSurveyResponses']
+type ResumeResponse = components['schemas']['ResumeSubmissionSessionResponse']
 type SaveAnswerRequest = components['schemas']['SaveSubmissionSessionAnswerRequest']
 
 type PageState =
@@ -18,14 +20,13 @@ type PageState =
   | { phase: 'submitting' }
   | { phase: 'complete' }
 
-interface RespondPageProps {
-  token: string
-}
+type RespondPageProps =
+  | { token: string; publicSlug?: never }
+  | { token?: never; publicSlug: string }
 
-export function RespondPage({ token }: RespondPageProps) {
+export function RespondPage({ token, publicSlug }: RespondPageProps) {
   const [state, setState] = useState<PageState>({ phase: 'loading' })
   const { isLoading: isAuthLoading, isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0()
-  const resolveData = useRef<ResolveResponse | null>(null)
   const questionNodesRef = useRef<QuestionNode[]>([])
   const sessionStartedRef = useRef(false)
   const savedAnswersRef = useRef(new Set<string>())
@@ -45,15 +46,40 @@ export function RespondPage({ token }: RespondPageProps) {
         apiClientRef.current = client
       }
 
-      let data: ResolveResponse | undefined
+      const access = token
+        ? { type: 'link_token' as const, token }
+        : { type: 'public_slug' as const, public_slug: publicSlug! }
+      let data: ResolveResponse | PublicSurveyResponse | ResumeResponse | undefined
       let error: unknown
 
       try {
-        const result = await client.POST('/api/v1/respondent/links/resolve', {
-          body: { token },
-        })
-        data = result.data
-        error = result.error
+        const resumeResult = await client.POST(
+          '/api/v1/respondent/submission-sessions/current/resolve',
+          { body: { access } },
+        )
+        if (resumeResult.data) {
+          data = resumeResult.data
+          sessionStartedRef.current = true
+        } else {
+          const resumeError = resumeResult.error as { code?: string; message?: string } | undefined
+          if (resumeError?.code && resumeError.code !== 'SESSION_NOT_FOUND') {
+            setState({
+              phase: 'error',
+              message: resumeError.message ?? 'This submission session cannot be resumed.',
+            })
+            return
+          }
+
+          const result = token
+            ? await client.POST('/api/v1/respondent/links/resolve', {
+              body: { token },
+            })
+            : await client.GET('/api/v1/respondent/surveys/{public_slug}', {
+              params: { path: { public_slug: publicSlug! } },
+            })
+          data = result.data
+          error = result.error
+        }
       } catch (err) {
         error = err
       }
@@ -63,12 +89,12 @@ export function RespondPage({ token }: RespondPageProps) {
       if (error || !data) {
         const errorBody = error as { code?: string; message?: string } | undefined
 
-        if (errorBody?.code === 'LINK_AUTH_REQUIRED') {
+        if (token && errorBody?.code === 'LINK_AUTH_REQUIRED') {
           setState({ phase: 'auth-required' })
           return
         }
 
-        if (errorBody?.code === 'LINK_PARTICIPANT_VERIFICATION_REQUIRED') {
+        if (token && errorBody?.code === 'LINK_PARTICIPANT_VERIFICATION_REQUIRED') {
           const { error: verifyError } = await client.POST(
             '/api/v1/respondent/links/verification/link',
             { body: { token } },
@@ -101,8 +127,6 @@ export function RespondPage({ token }: RespondPageProps) {
         }
       }
 
-      resolveData.current = data
-
       const schema = data.published_version?.compiled_schema as { nodes?: unknown[] } | null
       const rawNodes = schema?.nodes
       if (!rawNodes || !Array.isArray(rawNodes) || rawNodes.length === 0) {
@@ -110,19 +134,21 @@ export function RespondPage({ token }: RespondPageProps) {
         return
       }
 
-      const { error: startError } = await client.POST(
-        '/api/v1/respondent/submission-sessions',
-        { body: { access: { type: 'link_token' as const, token } } },
-      )
+      if (!sessionStartedRef.current) {
+        const { error: startError } = await client.POST(
+          '/api/v1/respondent/submission-sessions',
+          { body: { access } },
+        )
 
-      if (cancelled) return
+        if (cancelled) return
 
-      if (startError) {
-        setState({ phase: 'error', message: 'Failed to start submission session.' })
-        return
+        if (startError) {
+          setState({ phase: 'error', message: 'Failed to start submission session.' })
+          return
+        }
+
+        sessionStartedRef.current = true
       }
-
-      sessionStartedRef.current = true
 
       const surveyNodes = rawNodes.map((raw) => normalizeNode(raw as Record<string, unknown>)) as unknown as SurveyNode[]
       const questionNodes = surveyNodes.filter(
@@ -136,7 +162,7 @@ export function RespondPage({ token }: RespondPageProps) {
 
     void resolveAndStartSession()
     return () => { cancelled = true }
-  }, [token, isAuthLoading, isAuthenticated, getAccessTokenSilently])
+  }, [token, publicSlug, isAuthLoading, isAuthenticated, getAccessTokenSilently])
 
   const handleAnswerCommit = useCallback((questionKey: string, answer: QuestionAnswer) => {
     if (!sessionStartedRef.current || answer == null) return

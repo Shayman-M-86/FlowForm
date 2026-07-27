@@ -7,7 +7,8 @@ from unittest.mock import patch
 
 import tomllib
 from docsys import mcp_server
-from docsys.context import build_context
+from docsys.context import assess_reliability, build_context
+from docsys.freshness import CURRENT, Freshness
 from docsys.debt import analyse, build_report, measure
 from docsys.model import ROOT, DocSet, resolve_docs_root
 from docsys.validate import all_findings
@@ -160,6 +161,56 @@ class CollectionModelTests(unittest.TestCase):
                 "Historical encryption",
                 [doc.title for doc in history.primary],
             )
+
+    def test_task_context_discloses_unreliable_working_tree_document(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            docs_root = Path(temporary) / "docs"
+            docs_root.mkdir()
+            path = docs_root / "current.md"
+            path.write_text(_document("Current access", body="survey access"))
+            doc = DocSet.load(docs_root).docs[0]
+
+            with patch(
+                "docsys.context.gitutil.changed_files",
+                return_value=type(
+                    "Changed", (), {"files": [doc.rel_path]}
+                )(),
+            ), patch(
+                "docsys.context.classify_document",
+                return_value=Freshness(doc, CURRENT),
+            ):
+                reliability = assess_reliability([doc])
+
+            self.assertEqual(reliability["assessment"], "unreliable")
+            self.assertTrue(reliability["requires_disclosure"])
+            self.assertEqual(
+                reliability["message"],
+                "I think the documentation is unreliable for this question.",
+            )
+
+    def test_task_context_marks_clean_draft_as_provisional(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            docs_root = Path(temporary) / "docs"
+            docs_root.mkdir()
+            path = docs_root / "current.md"
+            path.write_text(
+                _document("Current access", body="survey access").replace(
+                    "status: scaffold", "status: draft"
+                )
+            )
+            doc = DocSet.load(docs_root).docs[0]
+
+            with patch(
+                "docsys.context.gitutil.changed_files",
+                return_value=type("Changed", (), {"files": []})(),
+            ), patch(
+                "docsys.context.classify_document",
+                return_value=Freshness(doc, CURRENT),
+            ):
+                reliability = assess_reliability([doc])
+
+            self.assertEqual(reliability["assessment"], "provisional")
+            self.assertTrue(reliability["requires_disclosure"])
 
     def test_parent_collection_and_profile_validation(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:

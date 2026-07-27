@@ -96,6 +96,38 @@ Python environment.
 These checks validate structure and resolution, not factual correctness. Review
 against implementation evidence remains required.
 
+## Reliability disclosure during retrieval
+
+`get_task_context` returns a `documentation_reliability` assessment for its
+primary documents. It combines status, `verified_against_commit`, freshness,
+and working-tree state so an agent does not silently present unfinished or
+changing documentation as confirmed behaviour.
+
+An agent must surface the returned message when `requires_disclosure` is true.
+A clean draft with no verification baseline is **provisional**: its explanation
+may be useful, but it is not verified. A scaffold, a materially stale page, an
+unknown verification baseline on a page marked verified, or a primary document
+with uncommitted edits is **unreliable for the current question**. The signal is
+an exploration and disclosure guard; it does not prove that a particular claim
+is false.
+
+For explanation-only requests, agents should synthesize after an initial pass
+of 5–10 files and 2–3 focused searches. They ask before widening that work into
+a broad audit. Explicit verification, diagnosis, or implementation requests may
+continue as far as necessary to produce the requested result.
+
+When repository evidence contradicts a material documentation claim:
+
+1. report the document claim and conflicting evidence;
+2. correct the page when documentation editing is in scope;
+3. set `status: draft` and clear `verified_against_commit`;
+4. re-verify the revised page against a commit before promoting it to
+   `verified`.
+
+Read-only investigations report the required metadata change without modifying
+the repository. Draft status alone is not a contradiction, and an agent must
+not claim one without implementation evidence.
+
 ## Review checklist
 
 For each completed group, check:

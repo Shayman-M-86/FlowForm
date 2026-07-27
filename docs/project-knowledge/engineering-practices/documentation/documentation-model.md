@@ -33,6 +33,12 @@ A document's `authority` identifies its role, while `status` reports its
 maturity. `verified_against_commit` records the implementation baseline used for
 meaningful claims; it does not make unchecked sections verified.
 
+When a material contradiction with implementation evidence is confirmed, the
+owning document returns to `status: draft` and its
+`verified_against_commit` is cleared until the corrected claims are checked
+against a commit. Retrieval tools expose provisional and unreliable context so
+agents can disclose uncertainty before using it.
+
 ## Two collections
 
 The documentation filesystem is a single-parent knowledge tree with two explicit

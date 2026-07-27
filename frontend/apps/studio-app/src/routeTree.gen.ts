@@ -18,6 +18,7 @@ import { Route as StudioUiTest2IndexRouteImport } from './routes/_studio/ui-test
 import { Route as StudioProjectsIndexRouteImport } from './routes/_studio/projects/index'
 import { Route as StudioAccountIndexRouteImport } from './routes/_studio/account/index'
 import { Route as StudioProjectsSlugRouteImport } from './routes/_studio/projects/$slug'
+import { Route as RespondentSSlugRouteImport } from './routes/_respondent/s/$slug'
 import { Route as RespondentRespondTokenRouteImport } from './routes/_respondent/respond/$token'
 import { Route as PublicInvitationsTokenRouteImport } from './routes/_public/invitations/$token'
 import { Route as StudioProjectsSlugIndexRouteImport } from './routes/_studio/projects/$slug/index'
@@ -78,6 +79,11 @@ const StudioProjectsSlugRoute = StudioProjectsSlugRouteImport.update({
   id: '/projects/$slug',
   path: '/projects/$slug',
   getParentRoute: () => StudioRoute,
+} as any)
+const RespondentSSlugRoute = RespondentSSlugRouteImport.update({
+  id: '/s/$slug',
+  path: '/s/$slug',
+  getParentRoute: () => RespondentRoute,
 } as any)
 const RespondentRespondTokenRoute = RespondentRespondTokenRouteImport.update({
   id: '/respond/$token',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/': typeof StudioIndexRoute
   '/invitations/$token': typeof PublicInvitationsTokenRoute
   '/respond/$token': typeof RespondentRespondTokenRoute
+  '/s/$slug': typeof RespondentSSlugRoute
   '/projects/$slug': typeof StudioProjectsSlugRouteWithChildren
   '/account/': typeof StudioAccountIndexRoute
   '/projects/': typeof StudioProjectsIndexRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/': typeof StudioIndexRoute
   '/invitations/$token': typeof PublicInvitationsTokenRoute
   '/respond/$token': typeof RespondentRespondTokenRoute
+  '/s/$slug': typeof RespondentSSlugRoute
   '/account': typeof StudioAccountIndexRoute
   '/projects': typeof StudioProjectsIndexRoute
   '/ui-test-2': typeof StudioUiTest2IndexRoute
@@ -241,6 +249,7 @@ export interface FileRoutesById {
   '/_studio/': typeof StudioIndexRoute
   '/_public/invitations/$token': typeof PublicInvitationsTokenRoute
   '/_respondent/respond/$token': typeof RespondentRespondTokenRoute
+  '/_respondent/s/$slug': typeof RespondentSSlugRoute
   '/_studio/projects/$slug': typeof StudioProjectsSlugRouteWithChildren
   '/_studio/account/': typeof StudioAccountIndexRoute
   '/_studio/projects/': typeof StudioProjectsIndexRoute
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/'
     | '/invitations/$token'
     | '/respond/$token'
+    | '/s/$slug'
     | '/projects/$slug'
     | '/account/'
     | '/projects/'
@@ -295,6 +305,7 @@ export interface FileRouteTypes {
     | '/'
     | '/invitations/$token'
     | '/respond/$token'
+    | '/s/$slug'
     | '/account'
     | '/projects'
     | '/ui-test-2'
@@ -321,6 +332,7 @@ export interface FileRouteTypes {
     | '/_studio/'
     | '/_public/invitations/$token'
     | '/_respondent/respond/$token'
+    | '/_respondent/s/$slug'
     | '/_studio/projects/$slug'
     | '/_studio/account/'
     | '/_studio/projects/'
@@ -414,6 +426,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/projects/$slug'
       preLoaderRoute: typeof StudioProjectsSlugRouteImport
       parentRoute: typeof StudioRoute
+    }
+    '/_respondent/s/$slug': {
+      id: '/_respondent/s/$slug'
+      path: '/s/$slug'
+      fullPath: '/s/$slug'
+      preLoaderRoute: typeof RespondentSSlugRouteImport
+      parentRoute: typeof RespondentRoute
     }
     '/_respondent/respond/$token': {
       id: '/_respondent/respond/$token'
@@ -557,10 +576,12 @@ const PublicRouteWithChildren =
 
 interface RespondentRouteChildren {
   RespondentRespondTokenRoute: typeof RespondentRespondTokenRoute
+  RespondentSSlugRoute: typeof RespondentSSlugRoute
 }
 
 const RespondentRouteChildren: RespondentRouteChildren = {
   RespondentRespondTokenRoute: RespondentRespondTokenRoute,
+  RespondentSSlugRoute: RespondentSSlugRoute,
 }
 
 const RespondentRouteWithChildren = RespondentRoute._addFileChildren(

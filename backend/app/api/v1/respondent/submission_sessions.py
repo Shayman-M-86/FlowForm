@@ -21,6 +21,7 @@ from app.schema.api.requests.submission_sessions import (
 )
 from app.schema.api.responses.submission_sessions import (
     CompleteSubmissionSessionResponse,
+    ResumeSubmissionSessionResponse,
     StartSubmissionSessionResponse,
     SubmissionSessionAnswerResponse,
 )
@@ -53,6 +54,24 @@ def start_submission_session():
     if raw_recognition_token is not None:
         set_recognition_cookie(raw_recognition_token)
     return response.model_dump(mode="json"), 201
+
+
+@openapi_route(
+    summary="Resume current submission session",
+    request_model=StartSubmissionSessionRequest,
+    response_model=ResumeSubmissionSessionResponse,
+    tags=["Respondent Submission Sessions"],
+    auth_required=False,
+)
+@respondent_bp.route("/submission-sessions/current/resolve", methods=["POST"])
+def resume_submission_session():
+    payload = parse(StartSubmissionSessionRequest, request)
+    response = session_management_service.resume_session(
+        get_core_db(),
+        payload=payload,
+        raw_resume_token=get_submission_session_token(),
+    )
+    return response.model_dump(mode="json"), 200
 
 
 @openapi_route(
@@ -124,7 +143,9 @@ def complete_submission_session():
     response_db = get_response_db()
 
     result = session_management_service.complete_session(
-        core_db, response_db, raw_resume_token=get_submission_session_token(),
+        core_db,
+        response_db,
+        raw_resume_token=get_submission_session_token(),
     )
     response = CompleteSubmissionSessionResponse(status="completed", completed_at=result.completed_at)
     return response.model_dump(mode="json"), 200

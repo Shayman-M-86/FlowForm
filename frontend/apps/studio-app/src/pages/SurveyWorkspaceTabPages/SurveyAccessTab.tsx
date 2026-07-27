@@ -12,7 +12,6 @@ import {
   Spinner,
   Table,
   Toast,
-  Toggle,
   Tooltip,
   type TableColumn,
 } from '@flowform/ui'
@@ -87,7 +86,6 @@ type CreateLinkFormState = {
   name: string
   assignedParticipantId: string | null
   expiresAt: string
-  requireAuthForGeneralLink: boolean
 }
 
 type PermissionPreview = { key: PermissionKey; variant: 'default' | 'warning' }
@@ -104,7 +102,7 @@ function isCreatableLinkType(entry: SurveyAccessEntry): entry is CreatableLinkTy
 }
 
 function createDefaultLinkForm(type: CreatableLinkType): CreateLinkFormState {
-  return { type, name: '', assignedParticipantId: null, expiresAt: '', requireAuthForGeneralLink: false }
+  return { type, name: '', assignedParticipantId: null, expiresAt: '' }
 }
 
 function publicLinkStatus(link: SurveyAccessLinkOut): 'active' | 'disabled' | 'expired' {
@@ -514,7 +512,13 @@ function LinkCard({
                 onClick={() => {
                   setEmailError(null)
                   sendEmail.mutate(link.id, {
-                    onSuccess: () => setEmailSent(true),
+                    onSuccess: (data) => {
+                      if (data.message_id) {
+                        setEmailSent(true)
+                      } else {
+                        setEmailError('Email delivery is disabled, so no email was sent.')
+                      }
+                    },
                     onError: (err) => {
                       const body = err as { message?: string }
                       setEmailError(body?.message ?? 'Failed to send email. Please try again.')
@@ -592,7 +596,7 @@ function LinksSection({
   const requiresParticipant = form.type !== 'general_link'
   const requiresAuth = form.type === 'authenticated_assigned_link'
   const canCreate = form.name.trim().length > 0 && (!requiresParticipant || form.assignedParticipantId != null)
-  const canAddLinks = canEdit && savedAccessMode !== 'private' && allowedCreateLinkTypes.length > 0
+  const canAddLinks = canEdit && allowedCreateLinkTypes.length > 0
 
   function openModal() {
     const type = allowedCreateLinkTypes[0]
@@ -611,7 +615,7 @@ function LinksSection({
     try {
       const result = await createLink.mutateAsync({
         name: form.name.trim(),
-        link_type: requiresAuth || form.requireAuthForGeneralLink ? 'authenticated' : form.type === 'private_invite_link' ? 'private' : 'general',
+        link_type: requiresAuth ? 'authenticated' : form.type === 'private_invite_link' ? 'private' : 'general',
         assignment_source: 'manual',
         assigned_participant_id: form.assignedParticipantId,
         expires_at: form.expiresAt ? `${form.expiresAt}T00:00:00Z` : null,
@@ -624,7 +628,7 @@ function LinksSection({
   }
 
   function handleToggle(linkId: string, isActive: boolean) {
-    updateLink.mutate({ linkId, body: { is_active: isActive, name: null, link_type: null, assignment_source: null, assigned_participant_id: null, expires_at: null } })
+    updateLink.mutate({ linkId, body: { is_active: isActive } })
   }
 
   function handleDelete(linkId: string) {
@@ -658,7 +662,7 @@ function LinksSection({
             <div className="min-w-0">
               <p className="text-sm font-semibold text-foreground">No public sharing</p>
               <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-                Private mode only allows authenticated assigned links. No general or invite links can be created.
+                Private mode allows participant-specific private invite links and authenticated assigned links. General links remain unavailable.
               </p>
             </div>
           </div>
@@ -767,7 +771,6 @@ function LinksSection({
                 ...current,
                 type: nextType,
                 assignedParticipantId: nextType === 'general_link' ? null : current.assignedParticipantId,
-                requireAuthForGeneralLink: nextType === 'general_link' ? current.requireAuthForGeneralLink : false,
               }))
             }}
           />
@@ -883,15 +886,6 @@ function LinksSection({
             </div>
           )}
 
-          {form.type === 'general_link' && (
-            <Toggle
-              label="Require sign in"
-              checked={form.requireAuthForGeneralLink}
-              onChange={(checked) => setForm((current) => ({ ...current, requireAuthForGeneralLink: checked }))}
-              hint="General links are not assigned to a participant email."
-            />
-          )}
-
           <Input
             label="Expiry date"
             type="date"
@@ -922,7 +916,7 @@ function CreatedTokenModal({ url, onClose }: { url: string | null; onClose: () =
     >
       <div className="grid gap-3">
         <p className="text-sm text-muted-foreground">
-          Copy this link now — the full token will not be shown again.
+          Copy this link now, or copy it later from the survey access page.
         </p>
         <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 overflow-hidden">
           <code className="min-w-0 flex-1 truncate text-sm block">{url}</code>

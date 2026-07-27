@@ -103,6 +103,12 @@ Tools exposed: `search_docs`, `get_document`, `get_related`,
 `docs_root`. When omitted, Docsys selects `docs/`. Set
 `FLOWFORM_DOCS_ROOT` to override that process-wide default.
 
+`get_task_context` also returns `documentation_reliability`. This disclosure
+signal combines each primary document's status, verification baseline,
+freshness, and working-tree state. Callers must surface its message when
+`requires_disclosure` is true; it does not replace checking material claims
+against implementation evidence.
+
 ## Metadata the tooling reads
 
 Beyond the required front matter, documents may declare optional linkage fields
