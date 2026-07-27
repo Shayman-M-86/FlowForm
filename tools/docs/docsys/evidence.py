@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import re
+import shlex
 import subprocess
 from dataclasses import dataclass
 from datetime import date
@@ -314,6 +315,13 @@ def check_staged(*, sync_invalidations: bool = False) -> int:
         subprocess.run(["git", "add", "--", doc.rel_path], cwd=ROOT, check=True)
         changed.append(doc.rel_path)
 
+    print()
+    print("DOCUMENTATION REVIEW REQUIRED — COMMIT STOPPED")
+    print(
+        "Staged implementation evidence no longer matches these verified "
+        "Project Knowledge documents."
+    )
+    print()
     for path in changed:
         print(f"downgraded stale documentation to draft: {path}")
     for path in blocked:
@@ -322,8 +330,39 @@ def check_staged(*, sync_invalidations: bool = False) -> int:
             f"{path} does not match its staged evidence digest"
         )
 
-    if changed:
-        print("review the automatically staged documentation invalidations")
+    paths = changed + blocked
+    quoted_paths = " ".join(shlex.quote(path) for path in paths)
+    print()
+    print("What to do next:")
+    print("  1. Review the affected staged documents:")
+    print(f"     git diff --cached -- {quoted_paths}")
+    print()
+    print("  2. Choose one outcome:")
+    print("     - If the documents are still accurate, approve and re-verify them:")
+    print(
+        "       PYTHONPATH=tools/docs python3 -m docsys evidence "
+        f"promote --staged {quoted_paths}"
+    )
+    print(
+        "     - If a document is outdated, correct it, stage it with "
+        "`git add`, then run the same promote command."
+    )
+    print(
+        "     - If verification can wait, leave automatically downgraded "
+        "documents as draft."
+    )
+    if blocked:
+        print(
+            "       For a still-verified blocked document, first set "
+            "`status: draft` and `verified_evidence_digest: null`, then stage it."
+        )
+    print()
+    print("  3. Run the commit again.")
+    print()
+    print(
+        "For a guided review, ask a coding agent to use "
+        f"$flowform-doc-verification on: {', '.join(paths)}"
+    )
     return 1
 
 

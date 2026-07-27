@@ -4,7 +4,7 @@ set -eu
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "${REPO_ROOT}"
 
-bash scripts/ci/check-openapi-contracts.sh
+LC_ALL=C.utf8 LANG=C.utf8 bash scripts/ci/check-openapi-contracts.sh
 
 # Maintain edit dates for all staged docs. Project Knowledge verification is
 # calculated from the exact implementation blobs about to be committed. If
