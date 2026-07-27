@@ -4,7 +4,7 @@ aliases: ["Documentation validation and review"]
 document_type: overview
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:f1112810cb34d3368a61d725b9d5aae5a3aa01ee176c60e05d2680e7ab930840
+verified_evidence_digest: sha256:e8562fab412362cf665bb8f06b9226f7f540c062a5057e92855db59ad75b05d6
 last_edited: 2026-07-27
 tags: [meta]
 related_code:
@@ -117,13 +117,18 @@ primary documents. It combines status, `verified_evidence_digest`, freshness,
 and working-tree state so an agent does not silently present unfinished or
 changing documentation as confirmed behaviour.
 
-An agent must surface the returned message when `requires_disclosure` is true.
+Reliability applies to the documents used in an answer. A lower-ranked draft
+candidate does not weaken a separate verified, current page that directly
+answers the question. For explanation-only requests, agents answer from those
+verified pages without re-reading their implementation evidence. They disclose
+the returned warning only when relying on an affected document.
+
 A clean draft with no verification baseline is **provisional**: its explanation
 may be useful, but it is not verified. A scaffold, a materially stale page, an
 unknown verification baseline on a page marked verified, or a primary document
-with uncommitted edits is **unreliable for the current question**. The signal is
-an exploration and disclosure guard; it does not prove that a particular claim
-is false.
+with uncommitted edits is **unreliable for the claims drawn from that page**.
+The signal is an exploration and disclosure guard; it does not prove that a
+particular claim is false.
 
 For explanation-only requests, agents should synthesize after an initial pass
 of 5–10 files and 2–3 focused searches. They ask before widening that work into

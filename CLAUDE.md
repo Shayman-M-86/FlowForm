@@ -39,10 +39,12 @@ More specific `CLAUDE.md` files override this guide within their directories.
 
 For non-trivial work where existing behaviour or project boundaries matter,
 use the `flowform-doc-context` skill and the `flowform-docs` MCP server to load
-focused context from `docs/`. Read only the relevant documents and verify their
-claims against the repository. Surface Docsys reliability warnings before
-presenting affected claims as current, and report confirmed contradictions
-instead of silently choosing one source.
+focused context from `docs/`. For explanation-only questions, verified and
+current documents are sufficient when they directly cover the answer; do not
+inspect implementation merely to reconfirm them. Treat reliability per document
+used, so unrelated draft candidates do not weaken verified sources. Inspect the
+repository when implementing, diagnosing, explicitly verifying, or resolving a
+material gap or contradiction.
 
 After behavioural or architectural changes, review the impacted documentation.
 Update only pages whose meaning changed, and regenerate generated documentation
