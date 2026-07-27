@@ -217,6 +217,18 @@ All regenerated from the new tree; never copied. Destinations live under
   dozen cross-references and force a later rebuild, violating the "preserve
   titles / do not assume links survive" discipline. They migrate with
   `reference/` and the subsystem branches instead.
+- **Phase 5 (Infrastructure pilot) — implementation complete; human gate
+  pending.** Migrated all 13 Infrastructure inputs in this manifest and built a
+  19-document branch comprising the shared head, substantive deployment,
+  containers, images, and Proxmox branches, three direct configuration/workflow
+  pages, and AWS/networking/observability scaffold heads. Implementation-backed
+  pages were verified against
+  `0edae9082dc3381cc1376e8a81276bf5c7bebf88`; the three reserved branches remain
+  honest scaffolds with no verification commit. All validation profiles,
+  deterministic Infrastructure search, advisory changed-document debt, docsys
+  tests, image validation, and container invariant tests pass. The human review
+  decides whether the reserved branches are useful ownership boundaries before
+  Phase 6 begins.
 
 ## Destination uniqueness check
 
