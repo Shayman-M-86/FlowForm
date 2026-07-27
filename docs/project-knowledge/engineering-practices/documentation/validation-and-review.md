@@ -4,7 +4,7 @@ aliases: ["Documentation validation and review"]
 document_type: overview
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:00cd8c76ae58c25ad819e6a45d1b898aa3abf6933bcf1000e6039d0f0e3553ae
+verified_evidence_digest: sha256:ce28aeb0538cbdd9cb1f25e0e3f6304c1e6233243f2e788f0ca2e75a23103cf1
 last_edited: 2026-07-27
 tags: [meta]
 related_code:
