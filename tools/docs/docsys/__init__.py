@@ -1,0 +1,40 @@
+"""FlowForm documentation tooling package (``docsys``).
+
+A small, mostly dependency-free toolkit that treats the ``docs/`` tree as a
+queryable knowledge network. It is organised as many focused, deterministic
+tools rather than one large AI-driven system:
+
+- ``model``      shared front-matter parser, document model, and glob matching
+- ``gitutil``    thin wrappers over ``git`` for diffs and commit ranges
+- ``index``      builds the active tree's ``documentation-index.json``
+- ``impact``     maps git changes onto documents via ``related_code``
+- ``evidence``   calculates verification digests from staged Git blobs
+- ``freshness``  compares recorded and current evidence digests
+- ``query``      deterministic ranked search over the index
+- ``context``    assembles the smallest useful context for a task
+- ``health``     documentation health report and dashboard generators
+- ``propose``    scaffolds reviewable, agent-assisted update proposals
+- ``cli``        a single ``python3 -m docsys`` entry point over the above
+
+The design keeps deterministic tooling first; AI is only ever used by callers
+(agents, the MCP server) for interpretation and summarisation, never inside the
+core tools. See the active tree's ``documentation-model.md`` for the conventions
+these tools enforce, and ``tools/docs/docsys/README.md`` for usage.
+"""
+
+# Bind the documented public modules so ``from docsys import index`` and
+# ``from docsys import *`` agree with this export list.
+from . import context, evidence, freshness, gitutil, health, impact, index, model, propose, query
+
+__all__ = [
+    "model",
+    "gitutil",
+    "index",
+    "impact",
+    "evidence",
+    "freshness",
+    "query",
+    "context",
+    "health",
+    "propose",
+]

@@ -4,6 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
 from app.schema.enums import SubmissionSessionStatus
 
 
@@ -21,3 +22,11 @@ class StartSubmissionSessionResponse(BaseModel):
     expires_at: datetime
     survey_version_id: int
     subject_code: str
+
+
+class ResumeSubmissionSessionResponse(BaseModel):
+    """Published survey context for the matching in-progress browser session."""
+
+    status: SubmissionSessionStatus
+    survey: SurveyResponses
+    published_version: SurveyVersionResponses

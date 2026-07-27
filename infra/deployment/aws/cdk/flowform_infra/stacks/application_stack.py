@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import cast
 
-from aws_cdk import Stack
+from aws_cdk import Duration, Stack
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_ecr as ecr
 from aws_cdk import aws_iam as iam
@@ -194,7 +194,6 @@ class ApplicationStack(Stack):
             machine_image=machine_image,
             role=cast(iam.IRole, self.proxy_role),
             security_group=network_stack.proxy_security_group,
-            associate_public_ip_address=True,
             http_tokens=ec2.HttpTokens.REQUIRED,
             http_put_response_hop_limit=2,
             block_devices=root_block_devices,
@@ -221,6 +220,23 @@ class ApplicationStack(Stack):
             http_tokens=ec2.HttpTokens.REQUIRED,
             http_put_response_hop_limit=2,
             block_devices=root_block_devices,
+        )
+
+        self.proxy_private_dns_record = route53.ARecord(
+            self,
+            "ProxyPrivateDnsRecord",
+            zone=network_stack.private_hosted_zone,
+            record_name="proxy",
+            target=route53.RecordTarget.from_ip_addresses(self.proxy_instance.instance_private_ip),
+            ttl=Duration.minutes(1),
+        )
+        self.app_private_dns_record = route53.ARecord(
+            self,
+            "AppPrivateDnsRecord",
+            zone=network_stack.private_hosted_zone,
+            record_name="app",
+            target=route53.RecordTarget.from_ip_addresses(self.app_instance.instance_private_ip),
+            ttl=Duration.minutes(1),
         )
 
         # Runtime user-data/bootstrap wiring is intentionally separate from the image. The proxy host must

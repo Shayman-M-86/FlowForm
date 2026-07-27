@@ -109,8 +109,8 @@ API tokens, or AWS credentials.
 
 ```bash
 infra/tests/images/validate.sh
-python3 scripts/docs/validate-doc-links.py
-python3 scripts/docs/validate-doc-metadata.py
+python3 tools/docs/validate-doc-links.py
+python3 tools/docs/validate-doc-metadata.py
 ```
 
 The image suite checks Packer formatting/validation, shell syntax, dispatcher

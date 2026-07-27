@@ -1,0 +1,8 @@
+{
+  "_comment": "Copy to docsys.config.json to override docsys defaults. Only keys present here are overridden. See tools/docs/docsys/config.py.",
+  "critical_doc_globs": [
+    "docs/10-architecture/security-model.md",
+    "docs/20-domains/responses-and-encryption.md"
+  ],
+  "trigger_weight": 0.6
+}

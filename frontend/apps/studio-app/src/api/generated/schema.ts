@@ -388,6 +388,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/respondent/submission-sessions/current/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume current submission session
+         * @description Resume current submission session
+         */
+        post: operations["resumeSubmissionSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/respondent/submission-sessions/current/answers/{question_node_id}": {
         parameters: {
             query?: never;
@@ -1770,6 +1790,19 @@ export interface components {
             survey_version_id: number;
             /** Subject Code */
             subject_code: string;
+        };
+        /**
+         * ResumeSubmissionSessionResponse
+         * @description Published survey context for the matching in-progress browser session.
+         */
+        ResumeSubmissionSessionResponse: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "in_progress" | "completed" | "abandoned";
+            survey: components["schemas"]["SurveyResponses"];
+            published_version: components["schemas"]["SurveyVersionResponses"];
         };
         /**
          * ChoiceAnswerValue
@@ -3645,6 +3678,7 @@ export type LinkTokenAccess = components['schemas']['LinkTokenAccess'];
 export type PublicSlugAccess = components['schemas']['PublicSlugAccess'];
 export type StartSubmissionSessionRequest = components['schemas']['StartSubmissionSessionRequest'];
 export type StartSubmissionSessionResponse = components['schemas']['StartSubmissionSessionResponse'];
+export type ResumeSubmissionSessionResponse = components['schemas']['ResumeSubmissionSessionResponse'];
 export type ChoiceAnswerValue = components['schemas']['ChoiceAnswerValue'];
 export type DateFieldAnswerValue = components['schemas']['DateFieldAnswerValue'];
 export type EmailFieldAnswerValue = components['schemas']['EmailFieldAnswerValue'];
@@ -4339,6 +4373,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StartSubmissionSessionResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    resumeSubmissionSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartSubmissionSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeSubmissionSessionResponse"];
                 };
             };
             400: components["responses"]["BadRequestError"];

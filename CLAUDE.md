@@ -1,61 +1,67 @@
-# FlowForm Claude Guide
+# FlowForm Claude guide
 
-## What Is FlowForm?
+## Project overview
 
-FlowForm is a survey platform for creating surveys, publishing them, collecting
+FlowForm is a survey platform for designing and publishing surveys, collecting
 responses, and reviewing results.
 
-- **Studio** is the authenticated dashboard for project and survey management.
-- **Public Site** is the respondent-facing form experience.
-- **Backend** is the REST API used by both apps.
+Its main user-facing areas are:
 
----
+- **Studio** for authenticated project and survey management.
+- **Public Site** for respondents completing published surveys.
+- **Backend** for the shared application behaviour and data services.
 
-## Repo Layout
+## Repository map
 
-```text
-FlowForm/
-├── backend/        Flask API - see backend/CLAUDE.md
-└── frontend/       JS monorepo - see frontend/CLAUDE.md
-    ├── apps/
-    │   ├── studio-app/     Admin dashboard - see frontend/apps/studio-app/CLAUDE.md
-    │   └── public-site/    Marketing + form-filler - see frontend/apps/public-site/CLAUDE.md
-    └── packages/           Shared libs - see frontend/packages/CLAUDE.md
-```
+| Area | Purpose | Local guidance |
+| --- | --- | --- |
+| `backend/` | Application services and API | `backend/CLAUDE.md` |
+| `frontend/` | Studio, Public Site, and shared interface packages | `frontend/CLAUDE.md` |
+| `infra/` | Environments, deployment, runtime, and supporting resources | Follow nearby documentation and scripts |
+| `scripts/` | Repository-wide development and maintenance automation | Read each entry point before running it |
+| `docs/` | Current Project Knowledge and Development Workspace | Start with `docs/docs-index.md` |
+| `tools/` | Development integrations and supporting utilities | Keep changes within the tool's boundary |
 
----
+More specific `CLAUDE.md` files override this guide within their directories.
 
-## Architecture
+## Working principles
 
-**Backend:** Flask with `uv`, PostgreSQL split into `core` and `response`
-with no cross-db SQL foreign keys — the two sides are linked via
-HMAC-derived opaque locators, and cross-db work is kept in `services/`. See
-[docs/session-encryption/](docs/session-encryption/) for the full model and
-[backend/CLAUDE.md](backend/CLAUDE.md) for backend details.
+- Treat the implementation, tests, configuration, and automation as the source
+  of truth.
+- Keep changes within the requested area and preserve unrelated work.
+- Understand the owning area before editing across boundaries.
+- Validate changes in proportion to their impact and report uncertainty
+  honestly.
+- Keep proposals and unfinished work separate from descriptions of current
+  behaviour.
 
-**Frontend:** Vite/React 19 monorepo. Studio handles authenticated survey
-management; Public Site handles form delivery and response capture.
+## Documentation
 
----
+For non-trivial work where existing behaviour or project boundaries matter,
+use the `flowform-doc-context` skill and the `flowform-docs` MCP server to load
+focused context from `docs/`. For explanation-only questions, verified and
+current documents are sufficient when they directly cover the answer; do not
+inspect implementation merely to reconfirm them. Treat reliability per document
+used, so unrelated draft candidates do not weaken verified sources. Inspect the
+repository when implementing, diagnosing, explicitly verifying, or resolving a
+material gap or contradiction.
 
-## Sub-guides
+After behavioural or architectural changes, review the impacted documentation.
+Update only pages whose meaning changed, and regenerate generated documentation
+instead of editing it manually. After reviewing implementation-backed claims,
+use `docsys evidence promote --staged` to record staged evidence for Project
+Knowledge; Development Workspace is not verified. The pre-commit hook enforces
+verification drift and checks document `last_edited` dates without modifying
+or staging files. Treat
+`old-docs/` as historical material.
 
-| Area | Guide |
-|---|---|
-| Backend (Flask, DBs, layers) | [backend/CLAUDE.md](backend/CLAUDE.md) |
-| Frontend monorepo | [frontend/CLAUDE.md](frontend/CLAUDE.md) |
-| Studio app | [frontend/apps/studio-app/CLAUDE.md](frontend/apps/studio-app/CLAUDE.md) |
-| Public site | [frontend/apps/public-site/CLAUDE.md](frontend/apps/public-site/CLAUDE.md) |
-| Shared packages | [frontend/packages/CLAUDE.md](frontend/packages/CLAUDE.md) |
+Codex and Claude provide a `docs-maintainer` specialist for bounded
+documentation work. The parent agent remains responsible for integration and
+final validation. Use the shared `flowform-doc-verification` skill when the
+user wants to select, review, approve, and promote specific Project Knowledge
+pages.
 
----
+## Handoff
 
-## Documentation context
-
-Before implementation work that touches existing FlowForm architecture,
-behaviour, workflows, or domain rules, load focused context from the
-`flowform-docs` MCP server (`get_task_context`) instead of grepping the docs
-tree or reading large parts of the repo. See [AGENTS.md](AGENTS.md) for the
-rules and the `flowform-doc-context` skill for the workflow. Code, tests,
-schemas, config, and infrastructure remain the source of truth; skip retrieval
-for trivial edits (spelling, formatting, mechanical renames).
+Summarize what changed, what was validated, and any remaining gaps or
+assumptions. Do not commit or push unless the user explicitly requests it.

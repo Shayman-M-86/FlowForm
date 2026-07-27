@@ -104,7 +104,7 @@ export const SURVEY_ACCESS_ENTRIES: Record<SurveyAccessEntry, SurveyAccessEntryD
     shortDescription: 'A reusable access link for anyone who has it.',
     details: [
       'No assigned participant email',
-      'Sign-in can be optional or off',
+      'Does not require sign-in',
       'Multiple uses can be allowed when configured',
     ],
     icon: SURVEY_ACCESS_CONCEPTS.linkOnly.icon,
@@ -146,11 +146,11 @@ export const SURVEY_ACCESS_ENTRIES: Record<SurveyAccessEntry, SurveyAccessEntryD
 export const SURVEY_ACCESS_MODES: Record<SurveyAccessMode, SurveyAccessModeDefinition> = {
   private: {
     label: 'Private',
-    shortDescription: 'Authenticated assigned links only.',
-    description: 'Private surveys require a participant-specific authenticated link.',
-    allowedEntries: ['authenticated_assigned_link'],
-    blockedEntries: ['private_invite_link', 'general_link', 'public_slug'],
-    primaryAction: null,
+    shortDescription: 'Participant-specific private or authenticated links only.',
+    description: 'Private surveys require a participant-specific link; sign-in is optional for private invites and required for authenticated links.',
+    allowedEntries: ['private_invite_link', 'authenticated_assigned_link'],
+    blockedEntries: ['general_link', 'public_slug'],
+    primaryAction: 'Create link',
     sharingLabel: 'No public sharing',
     icon: SURVEY_ACCESS_CONCEPTS.private.icon,
   },

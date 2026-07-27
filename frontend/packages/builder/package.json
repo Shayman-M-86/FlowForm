@@ -11,7 +11,7 @@
   "dependencies": {
     "@flowform/schema": "workspace:*",
     "@flowform/ui": "workspace:*",
-    "react-router-dom": "^7.14.2",
+    "react-router-dom": "^7.18.1",
     "zod": "^3.25.28"
   },
   "peerDependencies": {
@@ -22,7 +22,7 @@
   "devDependencies": {
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   }
 }

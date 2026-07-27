@@ -1,10 +1,12 @@
 """Admin survey results service: subjects, sessions, answer slots, and deletion.
 
-Authorization is the caller's responsibility (per doc 01 §1).
+Authorization is the API caller's responsibility.
 
 This module is the API surface only. Tree assembly lives in
 ``core.session_tree``, decryption in ``core.decryption``, question metadata in
 ``core.question_meta``, and export serialization in ``core.export``.
+
+See docs/project-knowledge/data/responses-and-encryption.md.
 """
 
 from __future__ import annotations
@@ -175,10 +177,7 @@ class AdminResultsService:
         survey_id: int,
         session_id: UUID,
     ) -> DeletionResult:
-        """Delete response data first, then core session.
-
-        Response-first ordering is mandatory per doc 06.
-        """
+        """Delete response data first, then the core session."""
         session = _load_session(db, survey_id=survey_id, session_id=session_id)
         session_locator, _ = resolve_existing_session_locator(
             db,

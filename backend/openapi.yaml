@@ -717,6 +717,43 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/v1/respondent/submission-sessions/current/resolve:
+    post:
+      operationId: resumeSubmissionSession
+      summary: Resume current submission session
+      description: Resume current submission session
+      tags:
+      - Respondent Submission Sessions
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartSubmissionSessionRequest'
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResumeSubmissionSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/v1/respondent/submission-sessions/current/answers/{question_node_id}:
     put:
       operationId: saveSubmissionSessionAnswer
@@ -4727,6 +4764,27 @@ components:
       - survey_version_id
       - subject_code
       title: StartSubmissionSessionResponse
+      type: object
+    ResumeSubmissionSessionResponse:
+      description: Published survey context for the matching in-progress browser session.
+      properties:
+        status:
+          enum:
+          - in_progress
+          - completed
+          - abandoned
+          title: Status
+          type: string
+          maxLength: 11
+        survey:
+          $ref: '#/components/schemas/SurveyResponses'
+        published_version:
+          $ref: '#/components/schemas/SurveyVersionResponses'
+      required:
+      - status
+      - survey
+      - published_version
+      title: ResumeSubmissionSessionResponse
       type: object
     ChoiceAnswerValue:
       additionalProperties: false

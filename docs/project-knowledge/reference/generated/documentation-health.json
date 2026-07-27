@@ -1,0 +1,102 @@
+{
+  "schema": "flowform.docsys.health/1",
+  "docs_root": "docs",
+  "repo_head": "0fa27e9f69a3c684fbbeefd9982552a45df8c6ba",
+  "document_count": 92,
+  "status_counts": {
+    "draft": 76,
+    "verified": 15,
+    "scaffold": 1
+  },
+  "type_counts": {
+    "planning-index": 8,
+    "archive-index": 1,
+    "historical-plan": 2,
+    "completed-plan": 1,
+    "historical-review": 2,
+    "decision": 1,
+    "decision-template": 1,
+    "decision-index": 1,
+    "overview": 21,
+    "planning": 1,
+    "architecture": 5,
+    "implementation": 11,
+    "domain": 9,
+    "workflow": 9,
+    "reference": 11,
+    "generated": 8
+  },
+  "freshness_counts": {
+    "current": 15,
+    "review suggested": 0,
+    "likely stale": 0,
+    "unknown": 77
+  },
+  "stale_documents": [],
+  "orphan_documents": [],
+  "heavily_connected": [
+    {
+      "title": "Development workspace",
+      "path": "docs/development-workspace/development-workspace-index.md",
+      "in": 13,
+      "out": 13
+    },
+    {
+      "title": "Project Knowledge",
+      "path": "docs/project-knowledge/project-knowledge-index.md",
+      "in": 13,
+      "out": 13
+    },
+    {
+      "title": "Reference documentation",
+      "path": "docs/project-knowledge/reference/reference-index.md",
+      "in": 11,
+      "out": 11
+    },
+    {
+      "title": "Backend knowledge",
+      "path": "docs/project-knowledge/backend/backend-index.md",
+      "in": 10,
+      "out": 10
+    },
+    {
+      "title": "Responses and encryption",
+      "path": "docs/project-knowledge/data/responses-and-encryption.md",
+      "in": 10,
+      "out": 10
+    },
+    {
+      "title": "Links and subjects",
+      "path": "docs/project-knowledge/backend/links-and-subjects.md",
+      "in": 9,
+      "out": 9
+    },
+    {
+      "title": "Infrastructure knowledge",
+      "path": "docs/project-knowledge/infrastructure/infrastructure-index.md",
+      "in": 9,
+      "out": 9
+    },
+    {
+      "title": "Respondent access and continuity",
+      "path": "docs/project-knowledge/product/respondent-access-and-continuity.md",
+      "in": 9,
+      "out": 9
+    },
+    {
+      "title": "Generated reference documentation",
+      "path": "docs/project-knowledge/reference/generated/generated-index.md",
+      "in": 9,
+      "out": 9
+    },
+    {
+      "title": "Security model",
+      "path": "docs/project-knowledge/security/security-model.md",
+      "in": 9,
+      "out": 9
+    }
+  ],
+  "open_questions": [],
+  "invalid_metadata": [],
+  "broken_links": []
+}

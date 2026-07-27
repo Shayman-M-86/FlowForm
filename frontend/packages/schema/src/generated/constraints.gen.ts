@@ -38,6 +38,10 @@ export const StartSubmissionSessionResponseConstraints = {
   expires_at: { maxLength: 35 },
 } as const;
 
+export const ResumeSubmissionSessionResponseConstraints = {
+  status: { maxLength: 11 },
+} as const;
+
 export const ChoiceAnswerValueConstraints = {
   selected: { minItems: 1, maxItems: 10 },
 } as const;

@@ -15,12 +15,19 @@ from sqlalchemy.orm import Session
 from app.cache import get_app_cache
 from app.crypto._internal.client_extension import get_crypto_clients
 from app.domain.errors import SessionNotFoundError
+from app.repositories import public_link_repo as plr
+from app.repositories import surveys_repo as sr
 from app.schema.api.requests.submission_sessions import (
     StartSubmissionSessionRequest,
 )
-from app.schema.api.responses.submission_sessions import StartSubmissionSessionResponse
+from app.schema.api.responses.submission_sessions import (
+    ResumeSubmissionSessionResponse,
+    StartSubmissionSessionResponse,
+)
+from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
 from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import SubmissionAnswerState
+from app.schema.orm.core.survey import SurveyVersion
 from app.schema.orm.core.user import User
 from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
 from app.services.public_submissions.core.actions.completion import (
@@ -32,7 +39,10 @@ from app.services.public_submissions.core.resolution.access_resolver import Acce
 from app.services.public_submissions.core.resolution.session_subject_service import SessionSubjectService
 from app.services.public_submissions.core.resolution.subject_resolver import SubjectResolver
 from app.services.public_submissions.core.resolution.subject_token import SubjectTokenService
-from app.services.public_submissions.core.session_loader import load_current_session
+from app.services.public_submissions.core.session_loader import (
+    load_current_session,
+    load_current_session_record,
+)
 from app.services.results import AnswerSaveResult
 
 if TYPE_CHECKING:
@@ -92,8 +102,57 @@ class SessionManagementService:
         Returns (session_response, raw_browser_session_token, raw_recognition_token).
         The route sets the browser-session and recognition cookies from the raw tokens.
         """
-        return self._starter().start(
-            db, response_db, payload=payload, actor=actor, recognition_token=recognition_token
+        return self._starter().start(db, response_db, payload=payload, actor=actor, recognition_token=recognition_token)
+
+    def resume_session(
+        self,
+        db: Session,
+        *,
+        payload: StartSubmissionSessionRequest,
+        raw_resume_token: str | None,
+    ) -> ResumeSubmissionSessionResponse:
+        """Return the pinned survey context for a matching browser session.
+
+        The entry descriptor prevents a cookie from one survey being resumed
+        on another survey's URL. Link state is not re-resolved: after a
+        successful start, the browser resume token is the continuity
+        credential and a single-use link may already be consumed.
+        """
+        if raw_resume_token is None:
+            raise SessionNotFoundError()
+
+        session = load_current_session_record(db, raw_resume_token)
+        access = payload.access
+        if access.type == "link_token":
+            link = plr.resolve_token(db, access.token)
+            if link is None or session.link_id != link.id:
+                raise SessionNotFoundError()
+        else:
+            survey_for_slug = sr.get_survey(
+                db,
+                project_id=session.project_id,
+                survey_id=session.survey_id,
+            )
+            if (
+                session.link_id is not None
+                or survey_for_slug is None
+                or survey_for_slug.public_slug != access.public_slug
+            ):
+                raise SessionNotFoundError()
+
+        survey = sr.get_survey(
+            db,
+            project_id=session.project_id,
+            survey_id=session.survey_id,
+        )
+        version = db.get(SurveyVersion, session.survey_version_id)
+        if survey is None or version is None or version.survey_id != survey.id:
+            raise SessionNotFoundError()
+
+        return ResumeSubmissionSessionResponse(
+            status=session.session_status,
+            survey=SurveyResponses.model_validate(survey),
+            published_version=SurveyVersionResponses.model_validate(version),
         )
 
     def complete_session(

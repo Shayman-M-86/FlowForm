@@ -1,9 +1,13 @@
 from app.schema.api.responses.submission_sessions.answers import SubmissionSessionAnswerResponse
 from app.schema.api.responses.submission_sessions.completion import CompleteSubmissionSessionResponse
-from app.schema.api.responses.submission_sessions.start import StartSubmissionSessionResponse
+from app.schema.api.responses.submission_sessions.start import (
+    ResumeSubmissionSessionResponse,
+    StartSubmissionSessionResponse,
+)
 
 __all__ = [
     "CompleteSubmissionSessionResponse",
+    "ResumeSubmissionSessionResponse",
     "StartSubmissionSessionResponse",
     "SubmissionSessionAnswerResponse",
 ]

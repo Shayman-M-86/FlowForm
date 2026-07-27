@@ -80,11 +80,13 @@ def _synth_application_stack() -> Template:
 def test_network_has_no_nat_gateway_and_app_s3_gateway_endpoint():
     template = _synth_network_stack()
     template.resource_count_is("AWS::EC2::NatGateway", 0)
+    template.resource_count_is("AWS::EC2::VPCEndpoint", 1)
     template.has_resource_properties(
         "AWS::EC2::VPCEndpoint",
         {
             "VpcEndpointType": "Gateway",
             "ServiceName": {"Fn::Join": ["", ["com.amazonaws.", {"Ref": "AWS::Region"}, ".s3"]]},
+            "RouteTableIds": [{"Ref": Match.string_like_regexp("AppIsolatedSubnetARouteTable")}],
             "PolicyDocument": {
                 "Statement": [
                     Match.object_like(
@@ -97,6 +99,100 @@ def test_network_has_no_nat_gateway_and_app_s3_gateway_endpoint():
             },
         },
     )
+
+
+def test_network_uses_one_runtime_az_and_a_second_rds_subnet_only():
+    template = _synth_network_stack()
+    rendered = template.to_json()
+    subnets = {
+        next(tag["Value"] for tag in resource["Properties"]["Tags"] if tag["Key"] == "Name"): resource["Properties"]
+        for resource in rendered["Resources"].values()
+        if resource["Type"] == "AWS::EC2::Subnet"
+    }
+
+    assert set(subnets) == {
+        "flowform-staging-proxy-public-a",
+        "flowform-staging-app-isolated-a",
+        "flowform-staging-rds-isolated-a",
+        "flowform-staging-rds-isolated-b",
+    }
+    assert subnets["flowform-staging-proxy-public-a"]["CidrBlock"] == "10.42.0.0/24"
+    assert subnets["flowform-staging-app-isolated-a"]["CidrBlock"] == "10.42.1.0/24"
+    assert subnets["flowform-staging-rds-isolated-a"]["CidrBlock"] == "10.42.2.0/24"
+    assert subnets["flowform-staging-rds-isolated-b"]["CidrBlock"] == "10.42.3.0/24"
+
+    runtime_az = subnets["flowform-staging-proxy-public-a"]["AvailabilityZone"]
+    assert subnets["flowform-staging-app-isolated-a"]["AvailabilityZone"] == runtime_az
+    assert subnets["flowform-staging-rds-isolated-a"]["AvailabilityZone"] == runtime_az
+    assert subnets["flowform-staging-rds-isolated-b"]["AvailabilityZone"] != runtime_az
+
+    template.resource_count_is("AWS::EC2::Route", 1)
+    template.has_resource_properties(
+        "AWS::EC2::Route",
+        {
+            "DestinationCidrBlock": "0.0.0.0/0",
+            "GatewayId": {"Ref": "InternetGateway"},
+            "RouteTableId": {"Ref": Match.string_like_regexp("ProxyPublicSubnetARouteTable")},
+        },
+    )
+
+
+def test_network_flow_logs_all_traffic_to_seven_day_cloudwatch_group():
+    template = _synth_network_stack()
+    template.has_resource_properties(
+        "AWS::Logs::LogGroup",
+        {
+            "LogGroupName": "/flowform/staging/vpc-flow",
+            "RetentionInDays": 7,
+        },
+    )
+    template.has_resource_properties(
+        "AWS::EC2::FlowLog",
+        {
+            "LogDestinationType": "cloud-watch-logs",
+            "LogGroupName": {"Ref": Match.string_like_regexp("VpcFlowLogGroup")},
+            "MaxAggregationInterval": 600,
+            "ResourceType": "VPC",
+            "TrafficType": "ALL",
+        },
+    )
+
+
+def test_network_private_dns_zone_and_application_records_track_instance_addresses():
+    network_template = _synth_network_stack()
+    network_template.has_resource_properties(
+        "AWS::Route53::HostedZone",
+        {
+            "Name": "internal.staging.flow-form.com.au.",
+            "VPCs": [
+                {
+                    "VPCId": {"Ref": Match.string_like_regexp("Vpc")},
+                    "VPCRegion": "ap-southeast-2",
+                }
+            ],
+        },
+    )
+
+    application_template = _synth_application_stack()
+    rendered = application_template.to_json()
+    records = {
+        resource["Properties"]["Name"]: resource["Properties"]
+        for resource in rendered["Resources"].values()
+        if resource["Type"] == "AWS::Route53::RecordSet"
+    }
+
+    assert set(records) == {
+        "app.internal.staging.flow-form.com.au.",
+        "proxy.internal.staging.flow-form.com.au.",
+    }
+    app_target = records["app.internal.staging.flow-form.com.au."]["ResourceRecords"][0]["Fn::GetAtt"]
+    proxy_target = records["proxy.internal.staging.flow-form.com.au."]["ResourceRecords"][0]["Fn::GetAtt"]
+    assert app_target[0].startswith("AppInstance")
+    assert app_target[1] == "PrivateIp"
+    assert proxy_target[0].startswith("ProxyInstance")
+    assert proxy_target[1] == "PrivateIp"
+    assert {record["TTL"] for record in records.values()} == {"60"}
+    assert {record["Type"] for record in records.values()} == {"A"}
 
 
 def test_proxy_security_group_public_http_https_only_and_squid_from_app_only():
@@ -124,6 +220,21 @@ def test_proxy_security_group_public_http_https_only_and_squid_from_app_only():
             }
         ),
     )
+    for description, port in (
+        ("App Alloy to proxy Loki gateway", 3500),
+        ("App Alloy to proxy OTLP gateway", 4317),
+    ):
+        template.has_resource_properties(
+            "AWS::EC2::SecurityGroupIngress",
+            Match.object_like(
+                {
+                    "Description": description,
+                    "FromPort": port,
+                    "SourceSecurityGroupId": Match.any_value(),
+                    "ToPort": port,
+                }
+            ),
+        )
 
 
 def test_app_and_rds_security_group_sources_are_locked_to_peer_groups():
@@ -136,6 +247,72 @@ def test_app_and_rds_security_group_sources_are_locked_to_peer_groups():
                 "FromPort": 5000,
                 "SourceSecurityGroupId": Match.any_value(),
                 "ToPort": 5000,
+            }
+        ),
+    )
+    for description, port in (
+        ("App HTTPS proxy egress through Squid", 3128),
+        ("App logs to proxy Alloy gateway", 3500),
+        ("App traces to proxy Alloy gateway", 4317),
+        ("App PostgreSQL to RDS", 5432),
+    ):
+        template.has_resource_properties(
+            "AWS::EC2::SecurityGroupEgress",
+            Match.object_like(
+                {
+                    "Description": description,
+                    "DestinationSecurityGroupId": Match.any_value(),
+                    "FromPort": port,
+                    "ToPort": port,
+                }
+            ),
+        )
+
+    rendered = template.to_json()
+    public_ingress = []
+    public_egress = []
+    for resource in rendered["Resources"].values():
+        properties = resource.get("Properties", {})
+        if resource["Type"] == "AWS::EC2::SecurityGroup":
+            public_ingress.extend(
+                rule for rule in properties.get("SecurityGroupIngress", []) if rule.get("CidrIp") == "0.0.0.0/0"
+            )
+            public_egress.extend(
+                rule for rule in properties.get("SecurityGroupEgress", []) if rule.get("CidrIp") == "0.0.0.0/0"
+            )
+        elif resource["Type"] == "AWS::EC2::SecurityGroupIngress" and properties.get("CidrIp") == "0.0.0.0/0":
+            public_ingress.append(properties)
+        elif resource["Type"] == "AWS::EC2::SecurityGroupEgress" and properties.get("CidrIp") == "0.0.0.0/0":
+            public_egress.append(properties)
+
+    assert {(rule["Description"], rule["FromPort"], rule["ToPort"]) for rule in public_ingress} == {
+        ("Public HTTP to Caddy", 80, 80),
+        ("Public HTTPS to Caddy", 443, 443),
+    }
+    assert {(rule["Description"], rule["FromPort"], rule["ToPort"]) for rule in public_egress} == {
+        ("Proxy HTTPS egress for ACME, Route53, ECR, and Squid allow-list", 443, 443)
+    }
+
+
+def test_network_management_path_is_one_eice_in_the_app_subnet():
+    template = _synth_network_stack()
+    template.resource_count_is("AWS::EC2::InstanceConnectEndpoint", 1)
+    template.has_resource_properties(
+        "AWS::EC2::InstanceConnectEndpoint",
+        {
+            "PreserveClientIp": False,
+            "SecurityGroupIds": Match.any_value(),
+            "SubnetId": {"Ref": Match.string_like_regexp("AppIsolatedSubnetASubnet")},
+        },
+    )
+    template.has_resource_properties(
+        "AWS::EC2::SecurityGroupIngress",
+        Match.object_like(
+            {
+                "Description": "EICE SSH to app",
+                "FromPort": 22,
+                "SourceSecurityGroupId": Match.any_value(),
+                "ToPort": 22,
             }
         ),
     )

@@ -5,6 +5,9 @@ import { QUERY_POLICIES } from '@/lib/query/queryPolicy'
 import type { components } from '@/api/generated/schema'
 
 export type SurveyAccessLinkOut = components['schemas']['SurveyAccessLinkResponse']
+type UpdateSurveyAccessLinkBody = Partial<
+  components['schemas']['UpdateSurveyAccessLinkRequest']
+>
 
 const linkKeys = {
   list: (projectId: number, surveyId: number) =>
@@ -50,11 +53,14 @@ export function useCreatePublicLink(projectId: number | null, surveyId: number |
 export function useUpdatePublicLink(projectId: number | null, surveyId: number | null) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ linkId, body }: { linkId: string; body: components['schemas']['UpdateSurveyAccessLinkRequest'] }) => {
+    mutationFn: async ({ linkId, body }: { linkId: string; body: UpdateSurveyAccessLinkBody }) => {
       if (projectId == null || surveyId == null) throw new Error('projectId and surveyId are required')
       const { data, error } = await apiClient.PATCH(
         '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/links/{link_id}',
-        { params: { path: { project_id: projectId, survey_id: surveyId, link_id: linkId } }, body },
+        {
+          params: { path: { project_id: projectId, survey_id: surveyId, link_id: linkId } },
+          body: body as components['schemas']['UpdateSurveyAccessLinkRequest'],
+        },
       )
       if (error) throw error
       return data
@@ -79,7 +85,8 @@ export function useSendLinkEmail(projectId: number | null, surveyId: number | nu
       if (error) throw error
       return data
     },
-    onSuccess: (_data, linkId) => {
+    onSuccess: (data, linkId) => {
+      if (!data.message_id) return
       if (projectId == null || surveyId == null) return
       queryClient.setQueryData<SurveyAccessLinkOut[]>(
         linkKeys.list(projectId, surveyId),

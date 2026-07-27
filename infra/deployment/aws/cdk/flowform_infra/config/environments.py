@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Literal, cast
 
 from aws_cdk import RemovalPolicy
+from aws_cdk import aws_logs as logs
 
 # infra/platforms/aws/cdk — where the per-env `.env.<env>` files live (gitignored).
 _CDK_ROOT = Path(__file__).resolve().parents[2]
@@ -40,6 +41,7 @@ class EnvConfig:
     # frontends run on local Vite dev servers. Compute/hosting fields below
     # (db_instance_class, auth0_public) are unused until this is True.
     full_deployment: bool
+    vpc_flow_log_retention: logs.RetentionDays
     db_instance_class: str
     # Build-time env vars for the studio-app SPA, published as SSM params by
     # the frontend stack for CI builds. None for dev (local frontend env
@@ -54,6 +56,10 @@ class EnvConfig:
     # (e.g. ("www",) for prod).
     public_site_extra_prefixes: tuple[str, ...] = ()
     studio_domain: str | None = None
+    # VPC-only service discovery zone. ApplicationStack publishes the proxy and
+    # app instance addresses here so host replacement does not change the
+    # cross-host addressing contract.
+    private_dns_zone: str | None = None
     tags: dict[str, str] = field(default_factory=dict)
     # Which security scope this env's stacks draw from — see
     # SecurityScopeConfig below. dev and staging share "nonprod".
@@ -140,6 +146,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         removal_policy=RemovalPolicy.DESTROY,
         deletion_protection=False,
         full_deployment=False,
+        vpc_flow_log_retention=logs.RetentionDays.ONE_WEEK,  # unused while full_deployment=False
         db_instance_class="db.t4g.micro",  # unused while full_deployment=False
         tags={"flowform:env": "dev"},
         security_scope="nonprod",
@@ -156,10 +163,12 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         removal_policy=RemovalPolicy.DESTROY,
         deletion_protection=False,
         full_deployment=True,
+        vpc_flow_log_retention=logs.RetentionDays.ONE_WEEK,
         db_instance_class="db.t4g.small",
         auth0_public=None,  # loaded from .env.staging by get_env_config()
         public_site_domain=f"staging.{DOMAIN_NAME}",
         studio_domain=f"studio.staging.{DOMAIN_NAME}",
+        private_dns_zone=f"internal.staging.{DOMAIN_NAME}",
         tags={"flowform:env": "staging"},
         security_scope="nonprod",
         ec2_base_ami_ssm_parameter="/flowform/staging/ec2/baseAmiId",
@@ -171,6 +180,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         removal_policy=RemovalPolicy.RETAIN,
         deletion_protection=True,
         full_deployment=True,
+        vpc_flow_log_retention=logs.RetentionDays.THREE_MONTHS,
         db_instance_class="db.t4g.medium",
         auth0_public=None,  # loaded from .env.prod by get_env_config()
         # NOTE: the apex DNS records currently point at the hand-made
@@ -180,6 +190,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         public_site_domain=DOMAIN_NAME,
         public_site_extra_prefixes=("www",),
         studio_domain=f"studio.{DOMAIN_NAME}",
+        private_dns_zone=f"internal.{DOMAIN_NAME}",
         tags={"flowform:env": "prod"},
         security_scope="prod",
         ec2_base_ami_ssm_parameter="/flowform/prod/ec2/baseAmiId",

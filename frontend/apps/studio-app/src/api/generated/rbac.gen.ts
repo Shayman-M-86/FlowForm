@@ -82,6 +82,7 @@ export const operationPermissions: Record<string, FlowFormPermission | null> = {
   resendVerification: null,
   resolveInvitation: null,
   resolveLink: null,
+  resumeSubmissionSession: null,
   revokeInvitation: "project:manage_members",
   saveSubmissionSessionAnswer: null,
   sendInvitation: "project:manage_members",

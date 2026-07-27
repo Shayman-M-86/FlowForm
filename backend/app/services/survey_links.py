@@ -128,15 +128,18 @@ class SurveyLinkService:
         site_url = current_settings().flowform.server.site_url.rstrip("/")
         survey_url = f"{site_url}/respond/{link.token}"
 
-        message_id = get_email_service().send_survey_invite({
-            "to_email": recipient_email,
-            "survey_name": survey.title,
-            "survey_url": survey_url,
-            "expires_at": link.expires_at,
-        })
+        message_id = get_email_service().send_survey_invite(
+            {
+                "to_email": recipient_email,
+                "survey_name": survey.title,
+                "survey_url": survey_url,
+                "expires_at": link.expires_at,
+            }
+        )
 
-        link.emailed_at = datetime.now(UTC)
-        commit_with_err_handle(db)
+        if message_id is not None:
+            link.emailed_at = datetime.now(UTC)
+            commit_with_err_handle(db)
 
         return message_id
 

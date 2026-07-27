@@ -1,0 +1,5773 @@
+{
+  "schema": "flowform.docsys.index/1",
+  "generated_by": "tools/docs/docsys/index.py",
+  "repo_head": "0fa27e9f69a3c684fbbeefd9982552a45df8c6ba",
+  "document_count": 92,
+  "documents": [
+    {
+      "path": "docs/development-workspace/archive/archive-index.md",
+      "title": "Engineering archive",
+      "document_type": "planning-index",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": true,
+      "parent": "Development workspace",
+      "children": [
+        "Completed workspace material",
+        "Historical security review 1",
+        "Historical security review 2"
+      ],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Engineering archive",
+        "Lifecycle boundary",
+        "Relationship to other work",
+        "Retained material",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Development workspace"
+      ],
+      "wiki_links": [
+        "planning-index",
+        "investigations-index",
+        "completed-index",
+        "security-review-1",
+        "security-review-2",
+        "development-workspace-index",
+        "planning-index",
+        "investigations-index"
+      ],
+      "neighbours": [
+        "Completed workspace material",
+        "Development workspace",
+        "Engineering investigations",
+        "Engineering migrations",
+        "Engineering planning",
+        "Historical security review 1",
+        "Historical security review 2"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Engineering archive"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/archive/completed/completed-index.md",
+      "title": "Completed workspace material",
+      "document_type": "archive-index",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": true,
+      "parent": "Engineering archive",
+      "children": [
+        "Documentation restructure plan",
+        "Documentation system migration",
+        "Image script consolidation plan"
+      ],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Completed workspace material",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Engineering archive"
+      ],
+      "wiki_links": [
+        "archive-index",
+        "image-script-consolidation",
+        "docs-restructure-plan",
+        "documentation-system-migration"
+      ],
+      "neighbours": [
+        "Documentation restructure plan",
+        "Documentation system migration",
+        "Engineering archive",
+        "Image script consolidation plan"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Completed workspace material"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/archive/completed/docs-restructure-plan.md",
+      "title": "Documentation restructure plan",
+      "document_type": "historical-plan",
+      "authority": "historical",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": false,
+      "parent": "Completed workspace material",
+      "children": [],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Documentation restructure plan",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../tools/docs/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "tools/docs/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Completed workspace material",
+        "Documentation model"
+      ],
+      "wiki_links": [
+        "completed-index",
+        "documentation-model"
+      ],
+      "neighbours": [
+        "Completed workspace material",
+        "Documentation model"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Documentation restructure plan"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/archive/completed/documentation-system-migration.md",
+      "title": "Documentation system migration",
+      "document_type": "historical-plan",
+      "authority": "historical",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": false,
+      "parent": "Completed workspace material",
+      "children": [],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Documentation system migration",
+        "Actions",
+        "Collection mapping applied",
+        "Manifest",
+        "00-overview/",
+        "10-architecture/",
+        "20-domains/",
+        "30-workflows/",
+        "40-implementation/",
+        "50-decisions/",
+        "60-reference/",
+        "70-planning/",
+        "90-generated/",
+        "Notes on judgment calls",
+        "Migration progress",
+        "Destination uniqueness check"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Completed workspace material"
+      ],
+      "wiki_links": [],
+      "neighbours": [
+        "Completed workspace material"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Documentation system migration"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/archive/completed/image-script-consolidation.md",
+      "title": "Image script consolidation plan",
+      "document_type": "completed-plan",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": false,
+      "parent": "Completed workspace material",
+      "children": [],
+      "tags": [
+        "infrastructure",
+        "tooling"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Image script consolidation plan",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../infra/images/",
+        "../../../../infra/tests/images/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/images/",
+        "infra/tests/images/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Completed workspace material"
+      ],
+      "wiki_links": [
+        "completed-index"
+      ],
+      "neighbours": [
+        "Completed workspace material"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Image script consolidation plan"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/archive/security-review-1.md",
+      "title": "Historical security review 1",
+      "document_type": "historical-review",
+      "authority": "historical",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": false,
+      "parent": "Engineering archive",
+      "children": [],
+      "tags": [
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Historical security review 1",
+        "Original snapshot",
+        "FlowForm security audit",
+        "Immediate containment recommendations",
+        "Critical or urgent exposures",
+        "Confirmed high-severity vulnerabilities",
+        "Medium-severity vulnerabilities and weaknesses",
+        "Known vulnerable dependencies",
+        "Security controls that are working",
+        "Validation and limitations",
+        "Workspace integrity"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Engineering archive"
+      ],
+      "wiki_links": [],
+      "neighbours": [
+        "Engineering archive"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Historical security review 1"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/archive/security-review-2.md",
+      "title": "Historical security review 2",
+      "document_type": "historical-review",
+      "authority": "historical",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": false,
+      "parent": "Engineering archive",
+      "children": [],
+      "tags": [
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Historical security review 2",
+        "Original snapshot",
+        "FlowForm security audit verdict",
+        "Immediate containment",
+        "Critical and High findings",
+        "Medium vulnerabilities and hardening gaps",
+        "Known vulnerable dependencies",
+        "Controls that are working",
+        "Validation and limitations"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Engineering archive"
+      ],
+      "wiki_links": [],
+      "neighbours": [
+        "Engineering archive"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Historical security review 2"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/decisions/0001-aws-staging-infrastructure-target.md",
+      "title": "ADR 0001: AWS staging infrastructure target",
+      "document_type": "decision",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": false,
+      "parent": "Engineering decisions",
+      "children": [],
+      "tags": [
+        "ci-cd",
+        "configuration",
+        "infrastructure",
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "ADR 0001: AWS staging infrastructure target",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../infra/deployment/aws/cdk/",
+        "../../../infra/deployment/bootstrap/",
+        "../../../infra/containers/",
+        "../../../infra/images/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/deployment/aws/cdk/",
+        "infra/deployment/bootstrap/",
+        "infra/containers/",
+        "infra/images/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Engineering decisions",
+        "AWS CDK staging plan"
+      ],
+      "wiki_links": [
+        "aws-cdk-staging-plan",
+        "decisions-index",
+        "aws-cdk-staging-plan"
+      ],
+      "neighbours": [
+        "AWS CDK staging plan",
+        "Engineering decisions"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "ADR 0001: AWS staging infrastructure target"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/decisions/adr-template.md",
+      "title": "ADR template",
+      "document_type": "decision-template",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": false,
+      "parent": "Engineering decisions",
+      "children": [],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "ADR template",
+        "Status",
+        "Context, decision, and consequences",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Engineering decisions"
+      ],
+      "wiki_links": [
+        "decisions-index"
+      ],
+      "neighbours": [
+        "Engineering decisions"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "ADR template"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/decisions/decisions-index.md",
+      "title": "Engineering decisions",
+      "document_type": "decision-index",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": true,
+      "parent": "Development workspace",
+      "children": [
+        "ADR 0001: AWS staging infrastructure target",
+        "ADR template"
+      ],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Engineering decisions",
+        "Boundary",
+        "Lifecycle",
+        "Current records",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Development workspace"
+      ],
+      "wiki_links": [
+        "0001-aws-staging-infrastructure-target",
+        "adr-template",
+        "development-workspace-index",
+        "research-index",
+        "investigations-index",
+        "planning-index"
+      ],
+      "neighbours": [
+        "ADR 0001: AWS staging infrastructure target",
+        "ADR template",
+        "Development workspace",
+        "Engineering experiments",
+        "Engineering investigations",
+        "Engineering migrations",
+        "Engineering planning",
+        "Engineering research"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Engineering decisions"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/development-workspace-index.md",
+      "title": "Development workspace",
+      "document_type": "overview",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": true,
+      "parent": "FlowForm documentation",
+      "children": [
+        "Engineering archive",
+        "Engineering decisions",
+        "Engineering experiments",
+        "Engineering ideas",
+        "Engineering investigations",
+        "Engineering migrations",
+        "Engineering planning",
+        "Engineering research",
+        "Technical debt workspace"
+      ],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Development workspace",
+        "Boundary and lifecycle",
+        "Work categories",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "FlowForm documentation",
+        "Project Knowledge"
+      ],
+      "wiki_links": [
+        "ideas-index",
+        "investigations-index",
+        "experiments-index",
+        "decisions-index",
+        "planning-index",
+        "migrations-index",
+        "technical-debt-index",
+        "archive-index",
+        "docs-index",
+        "project-knowledge-index"
+      ],
+      "neighbours": [
+        "Documentation authoring guide",
+        "Documentation model",
+        "Engineering archive",
+        "Engineering decisions",
+        "Engineering experiments",
+        "Engineering ideas",
+        "Engineering investigations",
+        "Engineering migrations",
+        "Engineering planning",
+        "Engineering research",
+        "FlowForm documentation",
+        "Project Knowledge",
+        "Technical debt workspace"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Development workspace"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/experiments/experiments-index.md",
+      "title": "Engineering experiments",
+      "document_type": "planning-index",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": true,
+      "parent": "Development workspace",
+      "children": [],
+      "tags": [
+        "tooling"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Engineering experiments",
+        "Boundary",
+        "Lifecycle",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Development workspace"
+      ],
+      "wiki_links": [
+        "development-workspace-index",
+        "research-index",
+        "investigations-index",
+        "decisions-index"
+      ],
+      "neighbours": [
+        "Development workspace",
+        "Engineering decisions",
+        "Engineering investigations",
+        "Engineering research"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Engineering experiments"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/ideas/ideas-index.md",
+      "title": "Engineering ideas",
+      "document_type": "planning-index",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": true,
+      "parent": "Development workspace",
+      "children": [],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Engineering ideas",
+        "Boundary",
+        "Lifecycle",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Development workspace"
+      ],
+      "wiki_links": [
+        "development-workspace-index",
+        "research-index",
+        "investigations-index",
+        "planning-index"
+      ],
+      "neighbours": [
+        "Development workspace",
+        "Engineering investigations",
+        "Engineering planning",
+        "Engineering research",
+        "Technical debt workspace"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Engineering ideas"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/investigations/investigations-index.md",
+      "title": "Engineering investigations",
+      "document_type": "planning-index",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": true,
+      "parent": "Development workspace",
+      "children": [],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Engineering investigations",
+        "Boundary",
+        "Lifecycle",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Development workspace"
+      ],
+      "wiki_links": [
+        "development-workspace-index",
+        "research-index",
+        "experiments-index",
+        "decisions-index",
+        "technical-debt-index"
+      ],
+      "neighbours": [
+        "Development workspace",
+        "Engineering archive",
+        "Engineering decisions",
+        "Engineering experiments",
+        "Engineering ideas",
+        "Engineering planning",
+        "Engineering research",
+        "Technical debt workspace"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Engineering investigations"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/migrations/migrations-index.md",
+      "title": "Engineering migrations",
+      "document_type": "planning-index",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": true,
+      "parent": "Development workspace",
+      "children": [],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Engineering migrations",
+        "Boundary",
+        "Lifecycle",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Development workspace"
+      ],
+      "wiki_links": [
+        "development-workspace-index",
+        "planning-index",
+        "decisions-index",
+        "archive-index"
+      ],
+      "neighbours": [
+        "Development workspace",
+        "Engineering archive",
+        "Engineering decisions",
+        "Engineering planning",
+        "Technical debt workspace"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Engineering migrations"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/planning/aws-cdk-staging-plan.md",
+      "title": "AWS CDK staging plan",
+      "document_type": "planning",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": false,
+      "parent": "Engineering planning",
+      "children": [],
+      "tags": [
+        "ci-cd",
+        "configuration",
+        "infrastructure"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "AWS CDK staging plan",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../infra/deployment/aws/cdk/",
+        "../../../infra/deployment/bootstrap/",
+        "../../../infra/containers/",
+        "../../../infra/images/",
+        "../../../.github/workflows/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/deployment/aws/cdk/",
+        "infra/deployment/bootstrap/",
+        "infra/containers/",
+        "infra/images/",
+        ".github/workflows/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Engineering planning",
+        "ADR 0001: AWS staging infrastructure target"
+      ],
+      "wiki_links": [
+        "0001-aws-staging-infrastructure-target",
+        "planning-index",
+        "0001-aws-staging-infrastructure-target"
+      ],
+      "neighbours": [
+        "ADR 0001: AWS staging infrastructure target",
+        "Engineering planning"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "AWS CDK staging plan"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/planning/planning-index.md",
+      "title": "Engineering planning",
+      "document_type": "planning-index",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": true,
+      "parent": "Development workspace",
+      "children": [
+        "AWS CDK staging plan"
+      ],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Engineering planning",
+        "Boundary",
+        "Lifecycle",
+        "Active plans",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Development workspace"
+      ],
+      "wiki_links": [
+        "aws-cdk-staging-plan",
+        "development-workspace-index",
+        "decisions-index",
+        "investigations-index",
+        "migrations-index",
+        "archive-index"
+      ],
+      "neighbours": [
+        "AWS CDK staging plan",
+        "Development workspace",
+        "Engineering archive",
+        "Engineering decisions",
+        "Engineering ideas",
+        "Engineering investigations",
+        "Engineering migrations",
+        "Technical debt workspace"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Engineering planning"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/research/research-index.md",
+      "title": "Engineering research",
+      "document_type": "planning-index",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": true,
+      "parent": "Development workspace",
+      "children": [],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Engineering research",
+        "Boundary",
+        "Lifecycle",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Development workspace"
+      ],
+      "wiki_links": [
+        "development-workspace-index",
+        "ideas-index",
+        "investigations-index",
+        "experiments-index",
+        "decisions-index"
+      ],
+      "neighbours": [
+        "Development workspace",
+        "Engineering decisions",
+        "Engineering experiments",
+        "Engineering ideas",
+        "Engineering investigations"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Engineering research"
+        ]
+      }
+    },
+    {
+      "path": "docs/development-workspace/technical-debt/technical-debt-index.md",
+      "title": "Technical debt workspace",
+      "document_type": "planning-index",
+      "authority": "working",
+      "status": "draft",
+      "collection": "development-workspace",
+      "is_folder_head": true,
+      "parent": "Development workspace",
+      "children": [],
+      "tags": [
+        "tooling"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Technical debt workspace",
+        "Boundary",
+        "Lifecycle",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Development workspace"
+      ],
+      "wiki_links": [
+        "development-workspace-index",
+        "ideas-index",
+        "investigations-index",
+        "planning-index",
+        "migrations-index"
+      ],
+      "neighbours": [
+        "Development workspace",
+        "Engineering ideas",
+        "Engineering investigations",
+        "Engineering migrations",
+        "Engineering planning"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Technical debt workspace"
+        ]
+      }
+    },
+    {
+      "path": "docs/docs-index.md",
+      "title": "FlowForm documentation",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "root",
+      "is_folder_head": true,
+      "parent": null,
+      "children": [
+        "Development workspace",
+        "Project Knowledge"
+      ],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "FlowForm documentation",
+        "Knowledge and ongoing work",
+        "How the documentation fits together",
+        "Related documents"
+      ],
+      "related_code": [
+        "../tools/docs/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "tools/docs/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Project Knowledge",
+        "Development workspace"
+      ],
+      "wiki_links": [
+        "project-knowledge-index",
+        "development-workspace-index",
+        "project-knowledge-index",
+        "development-workspace-index"
+      ],
+      "neighbours": [
+        "Development workspace",
+        "Project Knowledge"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "FlowForm documentation"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/backend/backend-index.md",
+      "title": "Backend knowledge",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Project Knowledge",
+      "children": [
+        "Data flows",
+        "Backend implementation documentation",
+        "Links and subjects",
+        "Projects and access",
+        "Submissions",
+        "Surveys and versioning"
+      ],
+      "tags": [
+        "backend"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Backend knowledge",
+        "Topics",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/",
+        "../../../backend/tests/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/",
+        "backend/tests/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Data flows",
+        "Backend implementation documentation"
+      ],
+      "wiki_links": [
+        "data-flows",
+        "projects-and-access",
+        "surveys-and-versioning",
+        "links-and-subjects",
+        "submissions",
+        "implementation-index",
+        "data-flows",
+        "implementation-index"
+      ],
+      "neighbours": [
+        "Backend code organization",
+        "Backend feature slices",
+        "Backend implementation documentation",
+        "Component map",
+        "Data flows",
+        "Links and subjects",
+        "Project Knowledge",
+        "Projects and access",
+        "Submissions",
+        "Surveys and versioning"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Backend knowledge"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/backend/data-flows.md",
+      "title": "Data flows",
+      "document_type": "architecture",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Backend knowledge",
+      "children": [],
+      "tags": [
+        "backend",
+        "frontend",
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Data flows",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/api/v1/",
+        "../../../backend/app/services/surveys.py",
+        "../../../backend/app/services/public_submissions/",
+        "../../../backend/app/services/results.py",
+        "../../../backend/app/crypto/",
+        "../../../backend/app/schema/orm/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/api/v1/",
+        "backend/app/services/surveys.py",
+        "backend/app/services/public_submissions/",
+        "backend/app/services/results.py",
+        "backend/app/crypto/",
+        "backend/app/schema/orm/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Backend knowledge",
+        "Surveys and versioning",
+        "Links and subjects",
+        "Submissions",
+        "Responses and encryption"
+      ],
+      "wiki_links": [
+        "submissions",
+        "responses-and-encryption",
+        "backend-index",
+        "surveys-and-versioning",
+        "links-and-subjects",
+        "submissions"
+      ],
+      "neighbours": [
+        "Backend knowledge",
+        "Component map",
+        "Links and subjects",
+        "Responses and encryption",
+        "Submissions",
+        "Surveys and versioning"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Data flows"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/backend/implementation/backend-configuration-patterns.md",
+      "title": "Backend configuration patterns",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Backend implementation documentation",
+      "children": [],
+      "tags": [
+        "backend",
+        "configuration"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Backend configuration patterns",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../backend/app/core/config.py",
+        "../../../../backend/app/core/factory.py",
+        "../../../../backend/app/aws/startup_validation.py",
+        "../../../../infra/env/",
+        "../../../../scripts/secrets/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/core/config.py",
+        "backend/app/core/factory.py",
+        "backend/app/aws/startup_validation.py",
+        "infra/env/",
+        "scripts/secrets/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Backend implementation documentation",
+        "Configuration implementation",
+        "Secrets and configuration"
+      ],
+      "wiki_links": [
+        "implementation-index",
+        "configuration",
+        "secrets-and-configuration"
+      ],
+      "neighbours": [
+        "Backend implementation documentation",
+        "Configuration implementation",
+        "Secrets and configuration"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Backend configuration patterns"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/backend/implementation/code-organization.md",
+      "title": "Backend code organization",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Backend implementation documentation",
+      "children": [],
+      "tags": [
+        "backend"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Backend code organization",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../backend/app/core/factory.py",
+        "../../../../backend/app/api/v1/",
+        "../../../../backend/app/services/",
+        "../../../../backend/app/domain/",
+        "../../../../backend/app/repositories/",
+        "../../../../backend/app/schema/",
+        "../../../../backend/app/db/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/core/factory.py",
+        "backend/app/api/v1/",
+        "backend/app/services/",
+        "backend/app/domain/",
+        "backend/app/repositories/",
+        "backend/app/schema/",
+        "backend/app/db/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Backend implementation documentation",
+        "Backend knowledge"
+      ],
+      "wiki_links": [
+        "implementation-index",
+        "feature-slices",
+        "backend-index"
+      ],
+      "neighbours": [
+        "Backend feature slices",
+        "Backend implementation documentation",
+        "Backend knowledge"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Backend code organization"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/backend/implementation/feature-slices.md",
+      "title": "Backend feature slices",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Backend implementation documentation",
+      "children": [],
+      "tags": [
+        "backend"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Backend feature slices",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../backend/app/api/v1/",
+        "../../../../backend/app/schema/api/",
+        "../../../../backend/app/services/",
+        "../../../../backend/app/repositories/",
+        "../../../../backend/openapi.yaml",
+        "../../../../scripts/ci/sync-openapi.sh"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/api/v1/",
+        "backend/app/schema/api/",
+        "backend/app/services/",
+        "backend/app/repositories/",
+        "backend/openapi.yaml",
+        "scripts/ci/sync-openapi.sh"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Backend implementation documentation",
+        "Backend code organization",
+        "Testing workflow"
+      ],
+      "wiki_links": [
+        "implementation-index",
+        "code-organization",
+        "backend-index"
+      ],
+      "neighbours": [
+        "Backend code organization",
+        "Backend implementation documentation",
+        "Backend knowledge",
+        "Testing workflow"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Backend feature slices"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/backend/implementation/implementation-index.md",
+      "title": "Backend implementation documentation",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Backend knowledge",
+      "children": [
+        "Backend configuration patterns",
+        "Backend code organization",
+        "Backend feature slices"
+      ],
+      "tags": [
+        "backend"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Backend implementation documentation",
+        "Guides",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../backend/app/",
+        "../../../../backend/tests/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/",
+        "backend/tests/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Backend knowledge",
+        "Testing workflow"
+      ],
+      "wiki_links": [
+        "code-organization",
+        "feature-slices",
+        "backend-configuration-patterns",
+        "backend-index",
+        "code-organization",
+        "feature-slices"
+      ],
+      "neighbours": [
+        "Backend code organization",
+        "Backend configuration patterns",
+        "Backend feature slices",
+        "Backend knowledge",
+        "Testing workflow"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Backend implementation documentation"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/backend/links-and-subjects.md",
+      "title": "Links and subjects",
+      "document_type": "domain",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Backend knowledge",
+      "children": [],
+      "tags": [
+        "backend",
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Links and subjects",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/services/survey_links.py",
+        "../../../backend/app/services/participants.py",
+        "../../../backend/app/services/public_submissions/core/resolution/",
+        "../../../backend/app/schema/orm/core/project_subject.py",
+        "../../../backend/app/schema/orm/core/survey_access.py",
+        "../../../frontend/apps/studio-app/src/lib/surveyAccessDesign.ts",
+        "../../../frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/SurveyAccessTab.tsx"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/services/survey_links.py",
+        "backend/app/services/participants.py",
+        "backend/app/services/public_submissions/core/resolution/",
+        "backend/app/schema/orm/core/project_subject.py",
+        "backend/app/schema/orm/core/survey_access.py",
+        "frontend/apps/studio-app/src/lib/surveyAccessDesign.ts",
+        "frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/SurveyAccessTab.tsx"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Backend knowledge",
+        "Respondent access and continuity",
+        "Identity and authentication",
+        "Submissions",
+        "Security model"
+      ],
+      "wiki_links": [
+        "respondent-access-and-continuity",
+        "projects-and-access",
+        "responses-and-encryption",
+        "backend-index",
+        "respondent-access-and-continuity",
+        "submissions",
+        "identity-and-authentication"
+      ],
+      "neighbours": [
+        "Backend knowledge",
+        "Data flows",
+        "Glossary",
+        "Identity and authentication",
+        "Projects and access",
+        "Respondent access and continuity",
+        "Responses and encryption",
+        "Security model",
+        "Submissions"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Links and subjects"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/backend/projects-and-access.md",
+      "title": "Projects and access",
+      "document_type": "domain",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Backend knowledge",
+      "children": [],
+      "tags": [
+        "backend",
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Projects and access",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/services/access/",
+        "../../../backend/app/services/projects.py",
+        "../../../backend/app/services/members.py",
+        "../../../backend/app/services/roles.py",
+        "../../../backend/app/schema/orm/core/project.py",
+        "../../../backend/app/domain/permissions.py"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/services/access/",
+        "backend/app/services/projects.py",
+        "backend/app/services/members.py",
+        "backend/app/services/roles.py",
+        "backend/app/schema/orm/core/project.py",
+        "backend/app/domain/permissions.py"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Backend knowledge",
+        "Identity and authentication",
+        "Surveys and versioning",
+        "Security model"
+      ],
+      "wiki_links": [
+        "links-and-subjects",
+        "surveys-and-versioning",
+        "submissions",
+        "backend-index",
+        "surveys-and-versioning",
+        "links-and-subjects"
+      ],
+      "neighbours": [
+        "Backend knowledge",
+        "Glossary",
+        "Identity and authentication",
+        "Links and subjects",
+        "Security model",
+        "Submissions",
+        "Surveys and versioning"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Projects and access"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/backend/submissions.md",
+      "title": "Submissions",
+      "document_type": "domain",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Backend knowledge",
+      "children": [],
+      "tags": [
+        "backend"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Submissions",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/services/public_submissions/",
+        "../../../backend/app/schema/orm/core/submission_session.py",
+        "../../../backend/app/schema/orm/core/submission_answer_slot.py",
+        "../../../backend/app/api/v1/respondent/submission_sessions.py",
+        "../../../backend/tests/e2e/test_submission_session_flows.py",
+        "../../../frontend/apps/studio-app/src/pages/RespondPage.tsx"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/services/public_submissions/",
+        "backend/app/schema/orm/core/submission_session.py",
+        "backend/app/schema/orm/core/submission_answer_slot.py",
+        "backend/app/api/v1/respondent/submission_sessions.py",
+        "backend/tests/e2e/test_submission_session_flows.py",
+        "frontend/apps/studio-app/src/pages/RespondPage.tsx"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Backend knowledge",
+        "Respondent access and continuity",
+        "Links and subjects",
+        "Surveys and versioning",
+        "Responses and encryption",
+        "Data flows"
+      ],
+      "wiki_links": [
+        "surveys-and-versioning",
+        "respondent-access-and-continuity",
+        "links-and-subjects",
+        "responses-and-encryption",
+        "backend-index",
+        "data-flows",
+        "respondent-access-and-continuity",
+        "links-and-subjects",
+        "surveys-and-versioning"
+      ],
+      "neighbours": [
+        "Backend knowledge",
+        "Data flows",
+        "Glossary",
+        "Links and subjects",
+        "Projects and access",
+        "Respondent access and continuity",
+        "Responses and encryption",
+        "Surveys and versioning"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Submissions"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/backend/surveys-and-versioning.md",
+      "title": "Surveys and versioning",
+      "document_type": "domain",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Backend knowledge",
+      "children": [],
+      "tags": [
+        "backend"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Surveys and versioning",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/services/surveys.py",
+        "../../../backend/app/domain/version_rules.py",
+        "../../../backend/app/schema/orm/core/survey.py",
+        "../../../backend/app/repositories/surveys_repo.py",
+        "../../../backend/tests/integration/core/test_survey_version_lifecycle.py"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/services/surveys.py",
+        "backend/app/domain/version_rules.py",
+        "backend/app/schema/orm/core/survey.py",
+        "backend/app/repositories/surveys_repo.py",
+        "backend/tests/integration/core/test_survey_version_lifecycle.py"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Backend knowledge",
+        "Projects and access",
+        "Builder and rules",
+        "Submissions"
+      ],
+      "wiki_links": [
+        "builder-and-rules",
+        "backend-index",
+        "projects-and-access",
+        "submissions",
+        "builder-and-rules"
+      ],
+      "neighbours": [
+        "Backend knowledge",
+        "Builder and rules",
+        "Data flows",
+        "Glossary",
+        "Projects and access",
+        "Submissions"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Surveys and versioning"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/data/data-index.md",
+      "title": "Data knowledge",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Project Knowledge",
+      "children": [
+        "Database migrations",
+        "Responses and encryption"
+      ],
+      "tags": [
+        "backend",
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Data knowledge",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/db/",
+        "../../../backend/app/schema/orm/",
+        "../../../infra/database/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/db/",
+        "backend/app/schema/orm/",
+        "infra/database/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Responses and encryption",
+        "Database migrations",
+        "Respondent access and continuity",
+        "Security knowledge"
+      ],
+      "wiki_links": [
+        "responses-and-encryption",
+        "database-migrations",
+        "respondent-access-and-continuity",
+        "security-index"
+      ],
+      "neighbours": [
+        "Database migrations",
+        "Project Knowledge",
+        "Respondent access and continuity",
+        "Responses and encryption",
+        "Security knowledge"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Data knowledge"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/data/database-migrations.md",
+      "title": "Database migrations",
+      "document_type": "workflow",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Data knowledge",
+      "children": [],
+      "tags": [
+        "backend"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Database migrations",
+        "Change boundary",
+        "Disposable-database workflow",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../infra/database/init/",
+        "../../../infra/database/flowform_*_mock_data.sql",
+        "../../../backend/app/schema/orm/",
+        "../../../backend/app/db/error_handling/",
+        "../../../backend/scripts/run-tests.sh"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/database/init/",
+        "infra/database/flowform_*_mock_data.sql",
+        "backend/app/schema/orm/",
+        "backend/app/db/error_handling/",
+        "backend/scripts/run-tests.sh"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Data knowledge",
+        "Responses and encryption",
+        "Configuration implementation"
+      ],
+      "wiki_links": [
+        "data-index",
+        "responses-and-encryption",
+        "configuration"
+      ],
+      "neighbours": [
+        "Configuration implementation",
+        "Data knowledge",
+        "Responses and encryption"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Database migrations"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/data/responses-and-encryption.md",
+      "title": "Responses and encryption",
+      "document_type": "domain",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Data knowledge",
+      "children": [],
+      "tags": [
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Responses and encryption",
+        "Storage boundary",
+        "Locator and key model",
+        "Session and envelope lifecycle",
+        "Current-answer semantics",
+        "Authorized reads and deletion",
+        "Implemented limits",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/crypto/",
+        "../../../backend/app/cache/crypto.py",
+        "../../../backend/app/repositories/response/",
+        "../../../backend/app/schema/orm/core/submission_answer_slot.py",
+        "../../../backend/app/schema/orm/core/submission_session.py",
+        "../../../backend/app/schema/orm/response/",
+        "../../../backend/app/services/public_submissions/core/actions/",
+        "../../../backend/app/services/public_submissions/core/session_loader.py",
+        "../../../backend/app/services/admin_results/",
+        "../../../backend/app/db/manager.py",
+        "../../../infra/database/init/schema/flowform_response_db_schema_v4.sql"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/crypto/",
+        "backend/app/cache/crypto.py",
+        "backend/app/repositories/response/",
+        "backend/app/schema/orm/core/submission_answer_slot.py",
+        "backend/app/schema/orm/core/submission_session.py",
+        "backend/app/schema/orm/response/",
+        "backend/app/services/public_submissions/core/actions/",
+        "backend/app/services/public_submissions/core/session_loader.py",
+        "backend/app/services/admin_results/",
+        "backend/app/db/manager.py",
+        "infra/database/init/schema/flowform_response_db_schema_v4.sql"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Data knowledge",
+        "Respondent access and continuity",
+        "Submissions",
+        "Security model",
+        "Trust boundaries"
+      ],
+      "wiki_links": [
+        "data-index",
+        "respondent-access-and-continuity",
+        "submissions",
+        "security-model",
+        "trust-boundaries"
+      ],
+      "neighbours": [
+        "Data flows",
+        "Data knowledge",
+        "Database migrations",
+        "Glossary",
+        "Links and subjects",
+        "Respondent access and continuity",
+        "Security knowledge",
+        "Security model",
+        "Submissions",
+        "Trust boundaries"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Responses and encryption"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/engineering-practices/ci-cd-implementation.md",
+      "title": "CI/CD implementation",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Engineering practices",
+      "children": [],
+      "tags": [
+        "ci-cd"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "CI/CD implementation",
+        "Ownership map",
+        "Dependency direction",
+        "Handwritten and generated outputs",
+        "Delivery boundary to recheck",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../.github/workflows/ci.yml",
+        "../../../.github/workflows/deploy.yml",
+        "../../../.github/workflows/publish-staging-images.yml",
+        "../../../scripts/ci/",
+        "../../../tools/docs/docsys/ci.py",
+        "../../../infra/deployment/aws/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/deploy.yml",
+        ".github/workflows/publish-staging-images.yml",
+        "scripts/ci/",
+        "tools/docs/docsys/ci.py",
+        "infra/deployment/aws/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Engineering practices",
+        "Continuous integration",
+        "Cloud deployment",
+        "CI workflows"
+      ],
+      "wiki_links": [
+        "engineering-practices-index",
+        "continuous-integration",
+        "cloud-deployment",
+        "ci-workflows"
+      ],
+      "neighbours": [
+        "CI workflows",
+        "Cloud deployment",
+        "Continuous integration",
+        "Engineering practices"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "CI/CD implementation"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/engineering-practices/continuous-integration.md",
+      "title": "Continuous integration",
+      "document_type": "workflow",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Engineering practices",
+      "children": [],
+      "tags": [
+        "ci-cd"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Continuous integration",
+        "Lifecycle",
+        "Evidence and boundaries",
+        "Local correspondence",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../.github/workflows/ci.yml",
+        "../../../backend/scripts/run_backend_security.sh",
+        "../../../backend/scripts/run-tests.py",
+        "../../../scripts/ci/check-openapi-contracts.sh",
+        "../../../tools/docs/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        ".github/workflows/ci.yml",
+        "backend/scripts/run_backend_security.sh",
+        "backend/scripts/run-tests.py",
+        "scripts/ci/check-openapi-contracts.sh",
+        "tools/docs/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Engineering practices",
+        "Testing workflow",
+        "CI/CD implementation",
+        "CI workflows"
+      ],
+      "wiki_links": [
+        "testing",
+        "engineering-practices-index",
+        "testing",
+        "ci-cd-implementation",
+        "ci-workflows"
+      ],
+      "neighbours": [
+        "CI workflows",
+        "CI/CD implementation",
+        "Engineering practices",
+        "Testing workflow"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Continuous integration"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/engineering-practices/documentation/architecture-principles.md",
+      "title": "Architecture principles",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Documentation practice",
+      "children": [],
+      "tags": [
+        "backend",
+        "frontend",
+        "infrastructure",
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Architecture principles",
+        "How to use these observations",
+        "Observed patterns retained from legacy material",
+        "Boundaries and follow-up",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../backend/app/",
+        "../../../../backend/openapi.yaml",
+        "../../../../frontend/apps/",
+        "../../../../frontend/packages/",
+        "../../../../frontend/scripts/generate-types.mjs",
+        "../../../../infra/deployment/aws/cdk/",
+        "../../../../infra/database/init/schema/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/",
+        "backend/openapi.yaml",
+        "frontend/apps/",
+        "frontend/packages/",
+        "frontend/scripts/generate-types.mjs",
+        "infra/deployment/aws/cdk/",
+        "infra/database/init/schema/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Engineering practices",
+        "Documentation practice",
+        "Project Knowledge",
+        "Component map",
+        "Security model"
+      ],
+      "wiki_links": [
+        "engineering-practices-index",
+        "documentation-index",
+        "project-knowledge-index",
+        "component-map",
+        "security-model"
+      ],
+      "neighbours": [
+        "Component map",
+        "Documentation practice",
+        "Engineering practices",
+        "Project Knowledge",
+        "Security model"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Architecture principles"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/engineering-practices/documentation/authoring-guide.md",
+      "title": "Documentation authoring guide",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Documentation practice",
+      "children": [],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Documentation authoring guide",
+        "Required reading order",
+        "Agent context workflow",
+        "Evidence rules",
+        "Claim classification",
+        "Repeatable process",
+        "Reference and navigation discipline",
+        "ASCII diagrams",
+        "Generated pages",
+        "Answering repository questions",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../tools/docs/",
+        "../../../../AGENTS.md"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "tools/docs/",
+        "AGENTS.md"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Documentation practice",
+        "Documentation model",
+        "Documentation validation and review"
+      ],
+      "wiki_links": [
+        "documentation-model",
+        "documentation-model",
+        "development-workspace-index",
+        "documentation-model",
+        "documentation-index",
+        "documentation-model",
+        "validation-and-review"
+      ],
+      "neighbours": [
+        "Development workspace",
+        "Documentation model",
+        "Documentation practice",
+        "Documentation validation and review"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Documentation authoring guide"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/engineering-practices/documentation/documentation-index.md",
+      "title": "Documentation practice",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Engineering practices",
+      "children": [
+        "Architecture principles",
+        "Documentation authoring guide",
+        "Documentation model",
+        "Documentation validation and review"
+      ],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Documentation practice",
+        "Governance model",
+        "Authoring and review relationship",
+        "Documents in this branch",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../tools/docs/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "tools/docs/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Engineering practices",
+        "Documentation model",
+        "Documentation authoring guide",
+        "Documentation validation and review"
+      ],
+      "wiki_links": [
+        "documentation-model",
+        "authoring-guide",
+        "validation-and-review",
+        "documentation-model",
+        "authoring-guide",
+        "validation-and-review",
+        "engineering-practices-index",
+        "documentation-model",
+        "authoring-guide",
+        "validation-and-review"
+      ],
+      "neighbours": [
+        "Architecture principles",
+        "Documentation authoring guide",
+        "Documentation model",
+        "Documentation validation and review",
+        "Engineering practices"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Documentation practice"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/engineering-practices/documentation/documentation-model.md",
+      "title": "Documentation model",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Documentation practice",
+      "children": [],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Documentation model",
+        "Source and authority",
+        "Two collections",
+        "Structural conventions",
+        "Knowledge network conventions",
+        "Titles are identifiers",
+        "Wiki links",
+        "Tags",
+        "Code linkage metadata",
+        "Update discipline",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../tools/docs/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "tools/docs/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Documentation practice",
+        "Documentation authoring guide",
+        "Documentation validation and review",
+        "Project Knowledge",
+        "Development workspace"
+      ],
+      "wiki_links": [
+        "authoring-guide",
+        "validation-and-review",
+        "documentation-index",
+        "authoring-guide",
+        "validation-and-review",
+        "project-knowledge-index",
+        "development-workspace-index"
+      ],
+      "neighbours": [
+        "Development workspace",
+        "Documentation authoring guide",
+        "Documentation health dashboard",
+        "Documentation practice",
+        "Documentation restructure plan",
+        "Documentation validation and review",
+        "Project Knowledge"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Documentation model"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/engineering-practices/documentation/validation-and-review.md",
+      "title": "Documentation validation and review",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Documentation practice",
+      "children": [],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Documentation validation and review",
+        "Validation profiles",
+        "Running validation",
+        "Reliability disclosure during retrieval",
+        "Staged verification gate",
+        "Review checklist",
+        "Debt is advisory",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../tools/docs/docsys/",
+        "../../../../tools/docs/hooks/",
+        "../../../../tools/docs/validate-agent-setup.py",
+        "../../../../.codex/hooks.json",
+        "../../../../.claude/settings.json",
+        "../../../../.agents/skills/flowform-doc-context/",
+        "../../../../.agents/skills/flowform-doc-verification/",
+        "../../../../.claude/agents/docs-maintainer.md",
+        "../../../../.claude/skills/flowform-doc-context/",
+        "../../../../.claude/skills/flowform-doc-verification/",
+        "../../../../.codex/agents/docs-maintainer.toml"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "tools/docs/docsys/",
+        "tools/docs/hooks/",
+        "tools/docs/validate-agent-setup.py",
+        ".codex/hooks.json",
+        ".claude/settings.json",
+        ".agents/skills/flowform-doc-context/",
+        ".agents/skills/flowform-doc-verification/",
+        ".claude/agents/docs-maintainer.md",
+        ".claude/skills/flowform-doc-context/",
+        ".claude/skills/flowform-doc-verification/",
+        ".codex/agents/docs-maintainer.toml"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Documentation practice",
+        "Documentation model",
+        "Documentation authoring guide"
+      ],
+      "wiki_links": [
+        "documentation-index",
+        "documentation-model",
+        "authoring-guide"
+      ],
+      "neighbours": [
+        "Documentation authoring guide",
+        "Documentation health dashboard",
+        "Documentation model",
+        "Documentation practice"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Documentation validation and review"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/engineering-practices/engineering-practices-index.md",
+      "title": "Engineering practices",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Project Knowledge",
+      "children": [
+        "CI/CD implementation",
+        "Continuous integration",
+        "Documentation practice",
+        "Local development",
+        "Testing workflow"
+      ],
+      "tags": [
+        "tooling"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Engineering practices",
+        "Role in the system",
+        "Practice areas",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Project Knowledge",
+        "Documentation practice",
+        "Architecture principles",
+        "Local development",
+        "Testing workflow",
+        "Continuous integration",
+        "CI/CD implementation"
+      ],
+      "wiki_links": [
+        "documentation-index",
+        "architecture-principles",
+        "local-development",
+        "testing",
+        "continuous-integration",
+        "ci-cd-implementation",
+        "project-knowledge-index",
+        "documentation-index",
+        "architecture-principles",
+        "local-development",
+        "testing",
+        "continuous-integration",
+        "ci-cd-implementation"
+      ],
+      "neighbours": [
+        "Architecture principles",
+        "CI/CD implementation",
+        "Continuous integration",
+        "Documentation practice",
+        "Local development",
+        "Project Knowledge",
+        "Testing workflow"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Engineering practices"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/engineering-practices/local-development.md",
+      "title": "Local development",
+      "document_type": "workflow",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Engineering practices",
+      "children": [],
+      "tags": [
+        "infrastructure",
+        "tooling"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Local development",
+        "Working model",
+        "Inputs, state, and recovery",
+        "Validation boundary",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../infra/containers/strategies/dev/compose/compose.yml",
+        "../../../infra/env/dev/",
+        "../../../scripts/secrets/fetch-dev-secrets.sh",
+        "../../../scripts/dev/load-*-mock-data.sh",
+        "../../../frontend/package.json"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/containers/strategies/dev/compose/compose.yml",
+        "infra/env/dev/",
+        "scripts/secrets/fetch-dev-secrets.sh",
+        "scripts/dev/load-*-mock-data.sh",
+        "frontend/package.json"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Engineering practices",
+        "Local infrastructure",
+        "Secrets and configuration",
+        "Testing workflow"
+      ],
+      "wiki_links": [
+        "testing",
+        "engineering-practices-index",
+        "local-infrastructure",
+        "secrets-and-configuration",
+        "testing"
+      ],
+      "neighbours": [
+        "Commands",
+        "Engineering practices",
+        "Local infrastructure",
+        "Secrets and configuration",
+        "Testing workflow"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Local development"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/engineering-practices/testing.md",
+      "title": "Testing workflow",
+      "document_type": "workflow",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Engineering practices",
+      "children": [],
+      "tags": [
+        "tooling"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Testing workflow",
+        "Test layers",
+        "Choosing and interpreting checks",
+        "Relationship to CI",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/scripts/run-tests.sh",
+        "../../../backend/scripts/run-tests.py",
+        "../../../backend/tests/",
+        "../../../backend/pyproject.toml",
+        "../../../frontend/apps/*/package.json",
+        "../../../.github/workflows/ci.yml"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/scripts/run-tests.sh",
+        "backend/scripts/run-tests.py",
+        "backend/tests/",
+        "backend/pyproject.toml",
+        "frontend/apps/*/package.json",
+        ".github/workflows/ci.yml"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Engineering practices",
+        "Local development",
+        "Continuous integration",
+        "Backend implementation documentation",
+        "Frontend implementation"
+      ],
+      "wiki_links": [
+        "continuous-integration",
+        "engineering-practices-index",
+        "local-development",
+        "continuous-integration",
+        "implementation-index",
+        "frontend-index"
+      ],
+      "neighbours": [
+        "Backend feature slices",
+        "Backend implementation documentation",
+        "Commands",
+        "Continuous integration",
+        "Engineering practices",
+        "Frontend implementation",
+        "Local development"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Testing workflow"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/frontend/frontend-index.md",
+      "title": "Frontend implementation",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Project Knowledge",
+      "children": [],
+      "tags": [
+        "frontend"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Frontend implementation",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../frontend/package.json",
+        "../../../frontend/pnpm-workspace.yaml",
+        "../../../frontend/apps/public-site/src/",
+        "../../../frontend/apps/studio-app/src/",
+        "../../../frontend/packages/",
+        "../../../frontend/scripts/generate-types.mjs"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "frontend/package.json",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/public-site/src/",
+        "frontend/apps/studio-app/src/",
+        "frontend/packages/",
+        "frontend/scripts/generate-types.mjs"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Builder and rules",
+        "Product knowledge"
+      ],
+      "wiki_links": [
+        "builder-and-rules",
+        "product-index"
+      ],
+      "neighbours": [
+        "Builder and rules",
+        "Product knowledge",
+        "Project Knowledge",
+        "Testing workflow"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Frontend implementation"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/configuration.md",
+      "title": "Configuration implementation",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Infrastructure knowledge",
+      "children": [],
+      "tags": [
+        "configuration",
+        "infrastructure"
+      ],
+      "verified_evidence_digest": "sha256:c4e18e6f60c3cf2eaa16332ef93756aa8da9eb3a0546d83ea87c1bebb7684256",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Configuration implementation",
+        "Settings and secret files",
+        "Infrastructure contract",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/core/config.py",
+        "../../../backend/app/aws/startup_validation.py",
+        "../../../infra/deployment/config/runtime-parameter-contract.json",
+        "../../../infra/deployment/bootstrap/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/core/config.py",
+        "backend/app/aws/startup_validation.py",
+        "infra/deployment/config/runtime-parameter-contract.json",
+        "infra/deployment/bootstrap/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Infrastructure knowledge",
+        "Secrets and configuration",
+        "Local infrastructure"
+      ],
+      "wiki_links": [
+        "infrastructure-index",
+        "secrets-and-configuration",
+        "local-infrastructure"
+      ],
+      "neighbours": [
+        "Backend configuration patterns",
+        "Configuration catalogue",
+        "Database migrations",
+        "Infrastructure knowledge",
+        "Local infrastructure",
+        "Secrets and configuration",
+        "Security model"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Configuration implementation"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/containers/containers-index.md",
+      "title": "Container runtime documentation",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Infrastructure knowledge",
+      "children": [
+        "Runtime containers"
+      ],
+      "tags": [
+        "backend",
+        "infrastructure"
+      ],
+      "verified_evidence_digest": "sha256:d44d410c9781be22efc0c482ff8cece91acf82bb26239bc80a2ba20e6e0e9126",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Container runtime documentation",
+        "Runtime shape",
+        "Security and state boundaries",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../infra/containers/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/containers/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Infrastructure knowledge",
+        "Runtime containers"
+      ],
+      "wiki_links": [
+        "runtime-containers",
+        "infrastructure-index",
+        "runtime-containers",
+        "deployment-index",
+        "local-infrastructure"
+      ],
+      "neighbours": [
+        "Deployment documentation",
+        "Infrastructure knowledge",
+        "Local infrastructure",
+        "Runtime containers"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Container runtime documentation"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/containers/runtime-containers.md",
+      "title": "Runtime containers",
+      "document_type": "architecture",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Container runtime documentation",
+      "children": [],
+      "tags": [
+        "backend",
+        "infrastructure"
+      ],
+      "verified_evidence_digest": "sha256:91b6754c7fa5ba494dc8bf963bdbbf7ba13662d4a4cfca74a2539a47fe40c737",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Runtime containers",
+        "Shared host runtime",
+        "Strategy overlays and bootstrap",
+        "Local variants"
+      ],
+      "related_code": [
+        "../../../../infra/containers/runtime/compose/",
+        "../../../../infra/containers/strategies/",
+        "../../../../infra/deployment/bootstrap/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/containers/runtime/compose/",
+        "infra/containers/strategies/",
+        "infra/deployment/bootstrap/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Container runtime documentation",
+        "Deployment model"
+      ],
+      "wiki_links": [
+        "deployment-model"
+      ],
+      "neighbours": [
+        "Container runtime documentation",
+        "Deployment model",
+        "Logging schema",
+        "Services and ports"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Runtime containers"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/deployment/cloud-deployment.md",
+      "title": "Cloud deployment",
+      "document_type": "workflow",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Deployment documentation",
+      "children": [],
+      "tags": [
+        "ci-cd",
+        "infrastructure"
+      ],
+      "verified_evidence_digest": "sha256:0b98483f153f03ab4e5a7e4ff4c68d8d45e06c91fcf44257c78bbfe312feb540",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Cloud deployment",
+        "Staging frontend publication",
+        "Staging runtime-image publication"
+      ],
+      "related_code": [
+        "../../../../.github/workflows/deploy.yml",
+        "../../../../.github/workflows/publish-staging-images.yml",
+        "../../../../infra/deployment/aws/scripts/publish-staging-images.sh",
+        "../../../../infra/containers/strategies/aws/image-sources.json"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        ".github/workflows/deploy.yml",
+        ".github/workflows/publish-staging-images.yml",
+        "infra/deployment/aws/scripts/publish-staging-images.sh",
+        "infra/containers/strategies/aws/image-sources.json"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Deployment documentation",
+        "Deployment model"
+      ],
+      "wiki_links": [],
+      "neighbours": [
+        "CI/CD implementation",
+        "Deployment documentation",
+        "Deployment model"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Cloud deployment"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/deployment/deployment-index.md",
+      "title": "Deployment documentation",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Infrastructure knowledge",
+      "children": [
+        "Cloud deployment",
+        "Deployment model"
+      ],
+      "tags": [
+        "ci-cd",
+        "infrastructure"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Deployment documentation",
+        "Declared environments",
+        "Publication and convergence",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../infra/deployment/",
+        "../../../../.github/workflows/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/deployment/",
+        ".github/workflows/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Infrastructure knowledge",
+        "Deployment model",
+        "Cloud deployment"
+      ],
+      "wiki_links": [
+        "deployment-model",
+        "cloud-deployment",
+        "infrastructure-index",
+        "deployment-model",
+        "cloud-deployment",
+        "images-index",
+        "containers-index",
+        "proxmox-index"
+      ],
+      "neighbours": [
+        "Cloud deployment",
+        "Container runtime documentation",
+        "Deployment model",
+        "Infrastructure knowledge",
+        "Machine images",
+        "Proxmox rehearsal"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Deployment documentation"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/deployment/deployment-model.md",
+      "title": "Deployment model",
+      "document_type": "architecture",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Deployment documentation",
+      "children": [],
+      "tags": [
+        "configuration",
+        "infrastructure"
+      ],
+      "verified_evidence_digest": "sha256:4e60579a93ca2a5b217dc6ef723540d3333d98e5fecf1e780a67a74f508cbf91",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Deployment model",
+        "Declared AWS topology",
+        "Host lifecycle boundary"
+      ],
+      "related_code": [
+        "../../../../infra/deployment/aws/cdk/app.py",
+        "../../../../infra/deployment/aws/cdk/flowform_infra/config/environments.py",
+        "../../../../infra/deployment/aws/cdk/flowform_infra/stacks/",
+        "../../../../infra/deployment/bootstrap/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/deployment/aws/cdk/app.py",
+        "infra/deployment/aws/cdk/flowform_infra/config/environments.py",
+        "infra/deployment/aws/cdk/flowform_infra/stacks/",
+        "infra/deployment/bootstrap/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Deployment documentation",
+        "Cloud deployment",
+        "Runtime containers"
+      ],
+      "wiki_links": [
+        "cloud-deployment",
+        "runtime-containers"
+      ],
+      "neighbours": [
+        "Cloud deployment",
+        "Deployment documentation",
+        "Runtime containers"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Deployment model"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/images/images-index.md",
+      "title": "Machine images",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Infrastructure knowledge",
+      "children": [
+        "Machine image building",
+        "Packer implementation"
+      ],
+      "tags": [
+        "infrastructure"
+      ],
+      "verified_evidence_digest": "sha256:7667a4ec4de0f675fd567a181cc5b598498ee170e578931eda4a11bac9eff2b4",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Machine images",
+        "Documents",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../infra/images/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/images/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Infrastructure knowledge",
+        "Machine image building",
+        "Packer implementation"
+      ],
+      "wiki_links": [
+        "machine-image-building",
+        "packer",
+        "infrastructure-index",
+        "machine-image-building",
+        "packer"
+      ],
+      "neighbours": [
+        "Deployment documentation",
+        "Infrastructure knowledge",
+        "Machine image building",
+        "Packer implementation"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Machine images"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/images/machine-image-building.md",
+      "title": "Machine image building",
+      "document_type": "workflow",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Machine images",
+      "children": [],
+      "tags": [
+        "infrastructure"
+      ],
+      "verified_evidence_digest": "sha256:fd147e99a1c4dc18268ac4134b761f1896ac02519be6f2b9e7aed16b29af360b",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Machine image building",
+        "Proxmox lineage",
+        "AWS AMI",
+        "Validation boundary",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../infra/images/scripts/",
+        "../../../../infra/images/packer/",
+        "../../../../infra/tests/images/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/images/scripts/",
+        "infra/images/packer/",
+        "infra/tests/images/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Machine images",
+        "Packer implementation"
+      ],
+      "wiki_links": [
+        "images-index",
+        "packer"
+      ],
+      "neighbours": [
+        "Machine images",
+        "Packer implementation"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Machine image building"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/images/packer.md",
+      "title": "Packer implementation",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Machine images",
+      "children": [],
+      "tags": [
+        "infrastructure"
+      ],
+      "verified_evidence_digest": "sha256:e03d2145266fc0eea8f52b8e3347e7733943631ad774aa862304c2356b4b9ca0",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Packer implementation",
+        "Build structure",
+        "Platform divergence and fixtures",
+        "Dependency boundary",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../infra/images/packer/",
+        "../../../../infra/images/scripts/",
+        "../../../../infra/images/IMAGE-CONTRACT.md"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/images/packer/",
+        "infra/images/scripts/",
+        "infra/images/IMAGE-CONTRACT.md"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Machine images",
+        "Machine image building"
+      ],
+      "wiki_links": [
+        "images-index",
+        "machine-image-building"
+      ],
+      "neighbours": [
+        "Machine image building",
+        "Machine images"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Packer implementation"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/infrastructure-index.md",
+      "title": "Infrastructure knowledge",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Project Knowledge",
+      "children": [
+        "Configuration implementation",
+        "Container runtime documentation",
+        "Deployment documentation",
+        "Machine images",
+        "Local infrastructure",
+        "Proxmox rehearsal",
+        "Secrets and configuration"
+      ],
+      "tags": [
+        "infrastructure"
+      ],
+      "verified_evidence_digest": "sha256:dd20a4e7fcfa97b188ad92dc1c4aced2809d23ca903dcc9566d26bf0e8cf6b7c",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Infrastructure knowledge",
+        "Infrastructure model",
+        "Cross-cutting concerns",
+        "Repository ownership",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../infra/containers/",
+        "../../../infra/database/",
+        "../../../infra/deployment/",
+        "../../../infra/images/",
+        "../../../infra/tests/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/containers/",
+        "infra/database/",
+        "infra/deployment/",
+        "infra/images/",
+        "infra/tests/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Project Knowledge",
+        "Deployment documentation",
+        "Container runtime documentation",
+        "Machine images",
+        "Proxmox rehearsal",
+        "Local infrastructure",
+        "Secrets and configuration",
+        "Configuration implementation"
+      ],
+      "wiki_links": [
+        "images-index",
+        "deployment-index",
+        "proxmox-index",
+        "containers-index",
+        "configuration",
+        "secrets-and-configuration",
+        "local-infrastructure",
+        "operations-index",
+        "project-knowledge-index",
+        "deployment-index",
+        "containers-index",
+        "images-index",
+        "proxmox-index",
+        "configuration",
+        "secrets-and-configuration",
+        "local-infrastructure"
+      ],
+      "neighbours": [
+        "Configuration implementation",
+        "Container runtime documentation",
+        "Deployment documentation",
+        "Local infrastructure",
+        "Machine images",
+        "Operations knowledge",
+        "Project Knowledge",
+        "Proxmox rehearsal",
+        "Secrets and configuration"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Infrastructure knowledge"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/local-infrastructure.md",
+      "title": "Local infrastructure",
+      "document_type": "workflow",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Infrastructure knowledge",
+      "children": [],
+      "tags": [
+        "configuration",
+        "infrastructure"
+      ],
+      "verified_evidence_digest": "sha256:4502de4900ed8b8f89b88e4fb7f6fea232838cb77c86db6a5a6f458c97850206",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Local infrastructure",
+        "Development stack",
+        "Test and frontend stacks",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../infra/containers/strategies/dev/compose/",
+        "../../../infra/database/",
+        "../../../frontend/docker-compose.dev.yml"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/containers/strategies/dev/compose/",
+        "infra/database/",
+        "frontend/docker-compose.dev.yml"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Infrastructure knowledge",
+        "Secrets and configuration"
+      ],
+      "wiki_links": [
+        "infrastructure-index",
+        "secrets-and-configuration"
+      ],
+      "neighbours": [
+        "Configuration implementation",
+        "Container runtime documentation",
+        "Infrastructure knowledge",
+        "Local development",
+        "Secrets and configuration",
+        "Services and ports"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Local infrastructure"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/proxmox/proxmox-index.md",
+      "title": "Proxmox rehearsal",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Infrastructure knowledge",
+      "children": [
+        "Proxmox rehearsal fixtures and egress",
+        "Proxmox rehearsal observability",
+        "Proxmox rehearsal setup"
+      ],
+      "tags": [
+        "infrastructure"
+      ],
+      "verified_evidence_digest": "sha256:568d3bd466edd76072978dfd1cdbdd1889b41422fb415717744bab57e78869c5",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Proxmox rehearsal",
+        "Topology and ownership",
+        "Operational entry point",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../infra/deployment/proxmox/terraform/",
+        "../../../../infra/deployment/proxmox/cloud-init/templates/",
+        "../../../../infra/deployment/proxmox/scripts/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/deployment/proxmox/terraform/",
+        "infra/deployment/proxmox/cloud-init/templates/",
+        "infra/deployment/proxmox/scripts/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Infrastructure knowledge",
+        "Proxmox rehearsal fixtures and egress",
+        "Proxmox rehearsal observability",
+        "Proxmox rehearsal setup"
+      ],
+      "wiki_links": [
+        "rehearsal-fixtures",
+        "rehearsal-observability",
+        "rehearsal-setup",
+        "infrastructure-index",
+        "rehearsal-fixtures",
+        "rehearsal-observability",
+        "rehearsal-setup"
+      ],
+      "neighbours": [
+        "Deployment documentation",
+        "Infrastructure knowledge",
+        "Proxmox rehearsal fixtures and egress",
+        "Proxmox rehearsal observability",
+        "Proxmox rehearsal setup"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Proxmox rehearsal"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/proxmox/rehearsal-fixtures.md",
+      "title": "Proxmox rehearsal fixtures and egress",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Proxmox rehearsal",
+      "children": [],
+      "tags": [
+        "infrastructure",
+        "security"
+      ],
+      "verified_evidence_digest": "sha256:9d41c41b4f72d2f373107e99760b5400c86544d1551351b73b6bf4270d1ca465",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Proxmox rehearsal fixtures and egress",
+        "Local fixture boundary",
+        "Egress controls and live dependency",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../infra/containers/strategies/rehearsal/fixtures/",
+        "../../../../infra/containers/strategies/rehearsal/services/squid/",
+        "../../../../infra/containers/strategies/rehearsal/services/localstack/",
+        "../../../../infra/deployment/proxmox/scripts/lib/cmd_verify.sh"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/containers/strategies/rehearsal/fixtures/",
+        "infra/containers/strategies/rehearsal/services/squid/",
+        "infra/containers/strategies/rehearsal/services/localstack/",
+        "infra/deployment/proxmox/scripts/lib/cmd_verify.sh"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Proxmox rehearsal",
+        "Proxmox rehearsal observability",
+        "Proxmox rehearsal setup"
+      ],
+      "wiki_links": [
+        "proxmox-index",
+        "rehearsal-observability",
+        "rehearsal-setup"
+      ],
+      "neighbours": [
+        "Proxmox rehearsal",
+        "Proxmox rehearsal observability",
+        "Proxmox rehearsal setup"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Proxmox rehearsal fixtures and egress"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/proxmox/rehearsal-observability.md",
+      "title": "Proxmox rehearsal observability",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Proxmox rehearsal",
+      "children": [],
+      "tags": [
+        "infrastructure",
+        "tooling"
+      ],
+      "verified_evidence_digest": "sha256:9394b4e8f66c45800bba03fa2dd3122d142a94ab6f645d13260de84e5fe3e44c",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Proxmox rehearsal observability",
+        "Operator log access",
+        "Alloy signal path",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../infra/deployment/proxmox/scripts/lib/cmd_logs.sh",
+        "../../../../infra/containers/runtime/services/alloy/",
+        "../../../../infra/containers/runtime/services/alloy-app/",
+        "../../../../infra/containers/runtime/compose/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/deployment/proxmox/scripts/lib/cmd_logs.sh",
+        "infra/containers/runtime/services/alloy/",
+        "infra/containers/runtime/services/alloy-app/",
+        "infra/containers/runtime/compose/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Proxmox rehearsal",
+        "Proxmox rehearsal fixtures and egress",
+        "Proxmox rehearsal setup"
+      ],
+      "wiki_links": [
+        "proxmox-index",
+        "rehearsal-fixtures",
+        "rehearsal-setup"
+      ],
+      "neighbours": [
+        "Proxmox rehearsal",
+        "Proxmox rehearsal fixtures and egress",
+        "Proxmox rehearsal setup"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Proxmox rehearsal observability"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/proxmox/rehearsal-setup.md",
+      "title": "Proxmox rehearsal setup",
+      "document_type": "workflow",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Proxmox rehearsal",
+      "children": [],
+      "tags": [
+        "infrastructure",
+        "tooling"
+      ],
+      "verified_evidence_digest": "sha256:3cc1f93cc619710125a2dd68e116f36c9b7a7fc5622b8764d6a576b0f8cd6771",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Proxmox rehearsal setup",
+        "Prepare local inputs",
+        "Create the host and templates",
+        "Verify, inspect, and replace",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../infra/images/scripts/image",
+        "../../../../infra/deployment/proxmox/host/setup-host.sh",
+        "../../../../infra/deployment/proxmox/terraform/",
+        "../../../../infra/deployment/proxmox/scripts/rehearsal"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/images/scripts/image",
+        "infra/deployment/proxmox/host/setup-host.sh",
+        "infra/deployment/proxmox/terraform/",
+        "infra/deployment/proxmox/scripts/rehearsal"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Proxmox rehearsal",
+        "Proxmox rehearsal fixtures and egress",
+        "Proxmox rehearsal observability"
+      ],
+      "wiki_links": [
+        "proxmox-index",
+        "rehearsal-fixtures",
+        "rehearsal-observability"
+      ],
+      "neighbours": [
+        "Proxmox rehearsal",
+        "Proxmox rehearsal fixtures and egress",
+        "Proxmox rehearsal observability"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Proxmox rehearsal setup"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/infrastructure/secrets-and-configuration.md",
+      "title": "Secrets and configuration",
+      "document_type": "workflow",
+      "authority": "canonical",
+      "status": "verified",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Infrastructure knowledge",
+      "children": [],
+      "tags": [
+        "configuration",
+        "infrastructure",
+        "security"
+      ],
+      "verified_evidence_digest": "sha256:2cfb51ed43b55b203122afc9a88117ae12034b33e7bfdda40bdc832b6153d8c4",
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Secrets and configuration",
+        "Local development secret assembly",
+        "Runtime delivery boundary",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../scripts/secrets/",
+        "../../../backend/app/core/config.py",
+        "../../../infra/containers/strategies/dev/compose/",
+        "../../../infra/deployment/bootstrap/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "scripts/secrets/",
+        "backend/app/core/config.py",
+        "infra/containers/strategies/dev/compose/",
+        "infra/deployment/bootstrap/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Infrastructure knowledge",
+        "Configuration implementation",
+        "Local infrastructure"
+      ],
+      "wiki_links": [
+        "infrastructure-index",
+        "configuration",
+        "local-infrastructure"
+      ],
+      "neighbours": [
+        "Backend configuration patterns",
+        "Configuration catalogue",
+        "Configuration implementation",
+        "Environment variables",
+        "Infrastructure knowledge",
+        "Local development",
+        "Local infrastructure"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Secrets and configuration"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/operations/observability.md",
+      "title": "Observability",
+      "document_type": "domain",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Operations knowledge",
+      "children": [],
+      "tags": [
+        "backend",
+        "infrastructure"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Observability",
+        "Signal model",
+        "Operational limits",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/logging/",
+        "../../../backend/app/tracing/",
+        "../../../backend/app/api/v1/system/health.py",
+        "../../../infra/containers/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/logging/",
+        "backend/app/tracing/",
+        "backend/app/api/v1/system/health.py",
+        "infra/containers/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Operations knowledge",
+        "Distributed tracing",
+        "Business tracing"
+      ],
+      "wiki_links": [
+        "operations-index",
+        "tracing-index",
+        "business-tracing"
+      ],
+      "neighbours": [
+        "Business tracing",
+        "Distributed tracing",
+        "Logging schema",
+        "Operations knowledge"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Observability"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/operations/operations-index.md",
+      "title": "Operations knowledge",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Project Knowledge",
+      "children": [
+        "Observability",
+        "Distributed tracing"
+      ],
+      "tags": [
+        "infrastructure"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Operations knowledge",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/logging/",
+        "../../../backend/app/tracing/",
+        "../../../infra/containers/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/logging/",
+        "backend/app/tracing/",
+        "infra/containers/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Observability",
+        "Distributed tracing"
+      ],
+      "wiki_links": [
+        "observability",
+        "tracing-index"
+      ],
+      "neighbours": [
+        "Distributed tracing",
+        "Infrastructure knowledge",
+        "Observability",
+        "Project Knowledge"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Operations knowledge"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/operations/tracing/business-tracing.md",
+      "title": "Business tracing",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Distributed tracing",
+      "children": [],
+      "tags": [
+        "backend"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Business tracing",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../backend/app/tracing/",
+        "../../../../backend/app/logging/logging_config.py",
+        "../../../../backend/app/logging/sensitive_data.py",
+        "../../../../backend/tests/unit/tracing/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/tracing/",
+        "backend/app/logging/logging_config.py",
+        "backend/app/logging/sensitive_data.py",
+        "backend/tests/unit/tracing/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Distributed tracing",
+        "Observability"
+      ],
+      "wiki_links": [
+        "tracing-index",
+        "observability"
+      ],
+      "neighbours": [
+        "Distributed tracing",
+        "Observability"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Business tracing",
+          "Tracing API"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/operations/tracing/tracing-index.md",
+      "title": "Distributed tracing",
+      "document_type": "reference",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Operations knowledge",
+      "children": [
+        "Business tracing"
+      ],
+      "tags": [
+        "backend",
+        "infrastructure"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Distributed tracing",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../backend/app/tracing/",
+        "../../../../backend/app/logging/logging_config.py",
+        "../../../../infra/containers/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/tracing/",
+        "backend/app/logging/logging_config.py",
+        "infra/containers/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Operations knowledge",
+        "Observability",
+        "Business tracing"
+      ],
+      "wiki_links": [
+        "operations-index",
+        "observability",
+        "business-tracing"
+      ],
+      "neighbours": [
+        "Business tracing",
+        "Logging schema",
+        "Observability",
+        "Operations knowledge"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Distributed tracing",
+          "Tracing"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/product/builder-and-rules.md",
+      "title": "Builder and rules",
+      "document_type": "domain",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Product knowledge",
+      "children": [],
+      "tags": [
+        "frontend"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Builder and rules",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../frontend/packages/builder/src/",
+        "../../../frontend/packages/schema/src/generated/",
+        "../../../frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/useSurveyBuilderController.ts",
+        "../../../frontend/apps/studio-app/src/pages/RespondPage.tsx",
+        "../../../backend/app/services/content.py",
+        "../../../backend/app/schema/api/requests/content/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "frontend/packages/builder/src/",
+        "frontend/packages/schema/src/generated/",
+        "frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/useSurveyBuilderController.ts",
+        "frontend/apps/studio-app/src/pages/RespondPage.tsx",
+        "backend/app/services/content.py",
+        "backend/app/schema/api/requests/content/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Product knowledge",
+        "Frontend implementation"
+      ],
+      "wiki_links": [
+        "product-index",
+        "frontend-index"
+      ],
+      "neighbours": [
+        "Frontend implementation",
+        "Product knowledge",
+        "Surveys and versioning"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Builder and rules"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/product/product-index.md",
+      "title": "Product knowledge",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Project Knowledge",
+      "children": [
+        "Builder and rules",
+        "Respondent access and continuity"
+      ],
+      "tags": [
+        "backend",
+        "frontend",
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Product knowledge",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../frontend/packages/builder/src/",
+        "../../../backend/app/services/content.py",
+        "../../../backend/app/domain/submission_access_rules.py",
+        "../../../backend/app/services/public_submissions/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "frontend/packages/builder/src/",
+        "backend/app/services/content.py",
+        "backend/app/domain/submission_access_rules.py",
+        "backend/app/services/public_submissions/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Builder and rules",
+        "Respondent access and continuity",
+        "Frontend implementation"
+      ],
+      "wiki_links": [
+        "builder-and-rules",
+        "respondent-access-and-continuity",
+        "frontend-index"
+      ],
+      "neighbours": [
+        "Builder and rules",
+        "Frontend implementation",
+        "Project Knowledge",
+        "Respondent access and continuity"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Product knowledge"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/product/respondent-access-and-continuity.md",
+      "title": "Respondent access and continuity",
+      "document_type": "domain",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Product knowledge",
+      "children": [],
+      "tags": [
+        "backend",
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Respondent access and continuity",
+        "Survey reachability",
+        "Link types and assignment",
+        "Subject authority",
+        "Recognition tokens",
+        "Boundary with submission persistence",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/domain/public_link_rules.py",
+        "../../../backend/app/domain/submission_access_rules.py",
+        "../../../backend/app/domain/survey_rules.py",
+        "../../../backend/app/services/survey_links.py",
+        "../../../backend/app/services/public_submissions/core/resolution/",
+        "../../../backend/app/schema/orm/core/project_subject.py",
+        "../../../backend/app/schema/orm/core/survey_access.py",
+        "../../../backend/tests/integration/core/test_flow_matrix.py",
+        "../../../frontend/apps/studio-app/src/lib/surveyAccessDesign.ts",
+        "../../../frontend/apps/studio-app/src/pages/RespondPage.tsx",
+        "../../../frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/SurveyAccessTab.tsx"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/domain/public_link_rules.py",
+        "backend/app/domain/submission_access_rules.py",
+        "backend/app/domain/survey_rules.py",
+        "backend/app/services/survey_links.py",
+        "backend/app/services/public_submissions/core/resolution/",
+        "backend/app/schema/orm/core/project_subject.py",
+        "backend/app/schema/orm/core/survey_access.py",
+        "backend/tests/integration/core/test_flow_matrix.py",
+        "frontend/apps/studio-app/src/lib/surveyAccessDesign.ts",
+        "frontend/apps/studio-app/src/pages/RespondPage.tsx",
+        "frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/SurveyAccessTab.tsx"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Product knowledge",
+        "Links and subjects",
+        "Submissions",
+        "Identity and authentication"
+      ],
+      "wiki_links": [
+        "links-and-subjects",
+        "submissions",
+        "responses-and-encryption",
+        "product-index",
+        "links-and-subjects",
+        "submissions",
+        "identity-and-authentication"
+      ],
+      "neighbours": [
+        "Data knowledge",
+        "Glossary",
+        "Identity and authentication",
+        "Links and subjects",
+        "Product knowledge",
+        "Responses and encryption",
+        "Security knowledge",
+        "Security model",
+        "Submissions"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Respondent access and continuity"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/project-knowledge-index.md",
+      "title": "Project Knowledge",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "FlowForm documentation",
+      "children": [
+        "Backend knowledge",
+        "Data knowledge",
+        "Engineering practices",
+        "Frontend implementation",
+        "Infrastructure knowledge",
+        "Operations knowledge",
+        "Product knowledge",
+        "Reference documentation",
+        "Security knowledge"
+      ],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Project Knowledge",
+        "System at a glance",
+        "People, systems, and stores",
+        "Responsibility model",
+        "Evidence and maturity",
+        "Where responsibility continues",
+        "Known boundary questions",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../backend/app/",
+        "../../frontend/apps/",
+        "../../frontend/packages/",
+        "../../infra/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/",
+        "frontend/apps/",
+        "frontend/packages/",
+        "infra/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "FlowForm documentation",
+        "Development workspace",
+        "Backend knowledge",
+        "Data knowledge",
+        "Security knowledge",
+        "Product knowledge",
+        "Frontend implementation",
+        "Operations knowledge",
+        "Engineering practices",
+        "Infrastructure knowledge",
+        "Reference documentation"
+      ],
+      "wiki_links": [
+        "development-workspace-index",
+        "product-index",
+        "frontend-index",
+        "backend-index",
+        "data-index",
+        "security-index",
+        "infrastructure-index",
+        "operations-index",
+        "engineering-practices-index",
+        "reference-index",
+        "docs-index",
+        "development-workspace-index",
+        "backend-index",
+        "data-index",
+        "security-index",
+        "product-index",
+        "frontend-index",
+        "engineering-practices-index",
+        "infrastructure-index",
+        "operations-index",
+        "reference-index"
+      ],
+      "neighbours": [
+        "Architecture principles",
+        "Backend knowledge",
+        "Data knowledge",
+        "Development workspace",
+        "Documentation model",
+        "Engineering practices",
+        "FlowForm documentation",
+        "Frontend implementation",
+        "Infrastructure knowledge",
+        "Operations knowledge",
+        "Product knowledge",
+        "Reference documentation",
+        "Security knowledge"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Project Knowledge"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/commands.md",
+      "title": "Commands",
+      "document_type": "reference",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Reference documentation",
+      "children": [],
+      "tags": [
+        "tooling"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Commands",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/scripts/",
+        "../../../frontend/package.json",
+        "../../../scripts/",
+        "../../../.github/workflows/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/scripts/",
+        "frontend/package.json",
+        "scripts/",
+        ".github/workflows/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Scripts catalogue",
+        "Local development",
+        "Testing workflow"
+      ],
+      "wiki_links": [
+        "scripts-catalogue",
+        "local-development",
+        "testing"
+      ],
+      "neighbours": [
+        "Local development",
+        "Scripts catalogue",
+        "Scripts implementation",
+        "Testing workflow"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Commands"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/component-map.md",
+      "title": "Component map",
+      "document_type": "reference",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Reference documentation",
+      "children": [],
+      "tags": [
+        "backend",
+        "frontend",
+        "infrastructure",
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Component map",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../frontend/apps/",
+        "../../../frontend/packages/",
+        "../../../backend/app/core/factory.py",
+        "../../../backend/app/api/v1/",
+        "../../../backend/app/services/",
+        "../../../backend/app/repositories/",
+        "../../../backend/app/schema/orm/",
+        "../../../infra/database/init/schema/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "frontend/apps/",
+        "frontend/packages/",
+        "backend/app/core/factory.py",
+        "backend/app/api/v1/",
+        "backend/app/services/",
+        "backend/app/repositories/",
+        "backend/app/schema/orm/",
+        "infra/database/init/schema/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Reference documentation",
+        "Data flows",
+        "Backend knowledge"
+      ],
+      "wiki_links": [
+        "data-flows",
+        "reference-index",
+        "repository-map",
+        "data-flows"
+      ],
+      "neighbours": [
+        "Architecture principles",
+        "Backend knowledge",
+        "Data flows",
+        "Reference documentation",
+        "Repository map"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Component map"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/configuration-catalogue.md",
+      "title": "Configuration catalogue",
+      "document_type": "reference",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Reference documentation",
+      "children": [],
+      "tags": [
+        "configuration"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Configuration catalogue",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/core/config.py",
+        "../../../backend/gunicorn.conf.py",
+        "../../../frontend/",
+        "../../../infra/",
+        "../../../.github/workflows/",
+        "../../../.vscode/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/core/config.py",
+        "backend/gunicorn.conf.py",
+        "frontend/",
+        "infra/",
+        ".github/workflows/",
+        ".vscode/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Environment variables",
+        "Configuration implementation",
+        "Secrets and configuration",
+        "Configuration index"
+      ],
+      "wiki_links": [
+        "environment-variables",
+        "configuration",
+        "secrets-and-configuration",
+        "configuration-index"
+      ],
+      "neighbours": [
+        "Configuration implementation",
+        "Configuration index",
+        "Environment variables",
+        "Secrets and configuration"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Configuration catalogue"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/environment-variables.md",
+      "title": "Environment variables",
+      "document_type": "reference",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Reference documentation",
+      "children": [],
+      "tags": [
+        "configuration"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Environment variables",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/core/config.py",
+        "../../../infra/deployment/bootstrap/",
+        "../../../infra/containers/",
+        "../../../frontend/apps/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/core/config.py",
+        "infra/deployment/bootstrap/",
+        "infra/containers/",
+        "frontend/apps/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Configuration catalogue",
+        "Secrets and configuration",
+        "Configuration index"
+      ],
+      "wiki_links": [
+        "configuration-catalogue",
+        "secrets-and-configuration",
+        "configuration-index"
+      ],
+      "neighbours": [
+        "Configuration catalogue",
+        "Configuration index",
+        "Secrets and configuration"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Environment variables"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/generated-files.md",
+      "title": "Generated files",
+      "document_type": "reference",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Reference documentation",
+      "children": [],
+      "tags": [
+        "tooling"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Generated files",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/scripts/export-openapi.sh",
+        "../../../frontend/scripts/generate-types.mjs",
+        "../../../scripts/ci/sync-openapi.sh",
+        "../../../tools/docs/",
+        "../../../scripts/secrets/generate-env-files.sh",
+        "../../../infra/images/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/scripts/export-openapi.sh",
+        "frontend/scripts/generate-types.mjs",
+        "scripts/ci/sync-openapi.sh",
+        "tools/docs/",
+        "scripts/secrets/generate-env-files.sh",
+        "infra/images/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Generated reference documentation",
+        "Scripts catalogue",
+        "Repository map"
+      ],
+      "wiki_links": [
+        "generated-index",
+        "scripts-catalogue",
+        "repository-map"
+      ],
+      "neighbours": [
+        "Generated reference documentation",
+        "Repository map",
+        "Scripts catalogue",
+        "Scripts implementation"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Generated files"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/generated/api-routes.md",
+      "title": "API routes",
+      "document_type": "generated",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Generated reference documentation",
+      "children": [],
+      "tags": [
+        "backend"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "API routes",
+        "Generator",
+        "Source files scanned",
+        "Regeneration",
+        "Manual editing policy",
+        "Routes",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Generated reference documentation",
+        "Reference documentation"
+      ],
+      "wiki_links": [
+        "generated-index",
+        "reference-index"
+      ],
+      "neighbours": [
+        "Generated reference documentation",
+        "Reference documentation"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "API routes"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/generated/ci-workflows.md",
+      "title": "CI workflows",
+      "document_type": "generated",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Generated reference documentation",
+      "children": [],
+      "tags": [
+        "ci-cd"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "CI workflows",
+        "Generator",
+        "Source files scanned",
+        "Regeneration",
+        "Manual editing policy",
+        "Workflow inventory",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Generated reference documentation",
+        "Reference documentation"
+      ],
+      "wiki_links": [
+        "generated-index",
+        "reference-index"
+      ],
+      "neighbours": [
+        "CI/CD implementation",
+        "Continuous integration",
+        "Generated reference documentation",
+        "Reference documentation"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "CI workflows"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/generated/configuration-index.md",
+      "title": "Configuration index",
+      "document_type": "generated",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Generated reference documentation",
+      "children": [],
+      "tags": [
+        "configuration"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Configuration index",
+        "Generator",
+        "Source files scanned",
+        "Regeneration",
+        "Manual editing policy",
+        "Names discovered",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Generated reference documentation",
+        "Reference documentation"
+      ],
+      "wiki_links": [
+        "generated-index",
+        "reference-index"
+      ],
+      "neighbours": [
+        "Configuration catalogue",
+        "Environment variables",
+        "Generated reference documentation",
+        "Reference documentation"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Configuration index"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/generated/dependency-map.md",
+      "title": "Dependency map",
+      "document_type": "generated",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Generated reference documentation",
+      "children": [],
+      "tags": [
+        "tooling"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Dependency map",
+        "Generator",
+        "Source files scanned",
+        "Regeneration",
+        "Manual editing policy",
+        "Manifest inventory",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Generated reference documentation",
+        "Reference documentation"
+      ],
+      "wiki_links": [
+        "generated-index",
+        "reference-index"
+      ],
+      "neighbours": [
+        "Generated reference documentation",
+        "Reference documentation"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Dependency map"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/generated/documentation-dashboard.md",
+      "title": "Documentation health dashboard",
+      "document_type": "generated",
+      "authority": "canonical",
+      "status": "scaffold",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Generated reference documentation",
+      "children": [],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Documentation health dashboard",
+        "Generator",
+        "Source files scanned",
+        "Regeneration",
+        "Manual editing policy",
+        "Verification status",
+        "Freshness",
+        "Documents to review",
+        "Heavily connected documents",
+        "Orphan documents",
+        "Unresolved questions",
+        "Invalid metadata",
+        "Broken links",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../../tools/docs/docsys/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "tools/docs/docsys/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Generated reference documentation",
+        "Documentation model",
+        "Documentation validation and review"
+      ],
+      "wiki_links": [
+        "generated-index",
+        "documentation-model",
+        "validation-and-review"
+      ],
+      "neighbours": [
+        "Documentation model",
+        "Documentation validation and review",
+        "Generated reference documentation"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Documentation health dashboard"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/generated/generated-index.md",
+      "title": "Generated reference documentation",
+      "document_type": "generated",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Reference documentation",
+      "children": [
+        "API routes",
+        "CI workflows",
+        "Configuration index",
+        "Dependency map",
+        "Documentation health dashboard",
+        "Infrastructure resources",
+        "Repository tree snapshot"
+      ],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Generated reference documentation",
+        "Generator",
+        "Source files scanned",
+        "Regeneration",
+        "Manual editing policy",
+        "Contents",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Reference documentation"
+      ],
+      "wiki_links": [
+        "api-routes",
+        "ci-workflows",
+        "configuration-index",
+        "dependency-map",
+        "infrastructure-resources",
+        "repository-tree",
+        "documentation-dashboard",
+        "generated-index",
+        "reference-index"
+      ],
+      "neighbours": [
+        "API routes",
+        "CI workflows",
+        "Configuration index",
+        "Dependency map",
+        "Documentation health dashboard",
+        "Generated files",
+        "Infrastructure resources",
+        "Reference documentation",
+        "Repository tree snapshot"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Generated reference documentation"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/generated/infrastructure-resources.md",
+      "title": "Infrastructure resources",
+      "document_type": "generated",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Generated reference documentation",
+      "children": [],
+      "tags": [
+        "infrastructure"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Infrastructure resources",
+        "Generator",
+        "Source files scanned",
+        "Regeneration",
+        "Manual editing policy",
+        "Declared infrastructure source inventory",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Generated reference documentation",
+        "Reference documentation"
+      ],
+      "wiki_links": [
+        "generated-index",
+        "reference-index"
+      ],
+      "neighbours": [
+        "Generated reference documentation",
+        "Reference documentation"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Infrastructure resources"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/generated/repository-tree.md",
+      "title": "Repository tree snapshot",
+      "document_type": "generated",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Generated reference documentation",
+      "children": [],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Repository tree snapshot",
+        "Generator",
+        "Source files scanned",
+        "Regeneration",
+        "Manual editing policy",
+        "Tree",
+        "Related documents"
+      ],
+      "related_code": [],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Generated reference documentation",
+        "Reference documentation"
+      ],
+      "wiki_links": [
+        "generated-index",
+        "reference-index"
+      ],
+      "neighbours": [
+        "Generated reference documentation",
+        "Reference documentation"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Repository tree snapshot"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/glossary.md",
+      "title": "Glossary",
+      "document_type": "reference",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Reference documentation",
+      "children": [],
+      "tags": [
+        "backend",
+        "frontend",
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Glossary",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/schema/orm/core/",
+        "../../../backend/app/schema/orm/response/",
+        "../../../backend/app/services/public_submissions/",
+        "../../../frontend/apps/studio-app/",
+        "../../../frontend/apps/public-site/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/schema/orm/core/",
+        "backend/app/schema/orm/response/",
+        "backend/app/services/public_submissions/",
+        "frontend/apps/studio-app/",
+        "frontend/apps/public-site/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Reference documentation",
+        "Projects and access",
+        "Surveys and versioning",
+        "Respondent access and continuity",
+        "Links and subjects",
+        "Submissions",
+        "Responses and encryption"
+      ],
+      "wiki_links": [
+        "reference-index",
+        "projects-and-access",
+        "surveys-and-versioning",
+        "respondent-access-and-continuity",
+        "links-and-subjects",
+        "submissions",
+        "responses-and-encryption"
+      ],
+      "neighbours": [
+        "Links and subjects",
+        "Projects and access",
+        "Reference documentation",
+        "Respondent access and continuity",
+        "Responses and encryption",
+        "Submissions",
+        "Surveys and versioning"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Glossary"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/logging-schema.md",
+      "title": "Logging schema",
+      "document_type": "reference",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Reference documentation",
+      "children": [],
+      "tags": [
+        "backend",
+        "infrastructure"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Logging schema",
+        "Intended model",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/logging/logging_config.py",
+        "../../../backend/app/logging/request_logging.py",
+        "../../../infra/containers/runtime/services/alloy/config.alloy",
+        "../../../infra/containers/runtime/services/alloy-app/config.alloy",
+        "../../../infra/containers/runtime/services/squid/squid.conf"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/logging/logging_config.py",
+        "backend/app/logging/request_logging.py",
+        "infra/containers/runtime/services/alloy/config.alloy",
+        "infra/containers/runtime/services/alloy-app/config.alloy",
+        "infra/containers/runtime/services/squid/squid.conf"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Observability",
+        "Runtime containers",
+        "Distributed tracing"
+      ],
+      "wiki_links": [
+        "observability",
+        "runtime-containers",
+        "tracing-index"
+      ],
+      "neighbours": [
+        "Distributed tracing",
+        "Observability",
+        "Runtime containers"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Logging schema",
+          "Canonical log schema"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/reference-index.md",
+      "title": "Reference documentation",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Project Knowledge",
+      "children": [
+        "Commands",
+        "Component map",
+        "Configuration catalogue",
+        "Environment variables",
+        "Generated reference documentation",
+        "Generated files",
+        "Glossary",
+        "Logging schema",
+        "Repository map",
+        "Scripts catalogue",
+        "Scripts implementation",
+        "Services and ports"
+      ],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Reference documentation",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/",
+        "../../../frontend/",
+        "../../../infra/",
+        "../../../tools/docs/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/",
+        "frontend/",
+        "infra/",
+        "tools/docs/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Glossary",
+        "Repository map",
+        "Component map"
+      ],
+      "wiki_links": [
+        "glossary",
+        "repository-map",
+        "component-map",
+        "glossary",
+        "repository-map",
+        "component-map"
+      ],
+      "neighbours": [
+        "API routes",
+        "CI workflows",
+        "Component map",
+        "Configuration index",
+        "Dependency map",
+        "Generated reference documentation",
+        "Glossary",
+        "Infrastructure resources",
+        "Project Knowledge",
+        "Repository map",
+        "Repository tree snapshot"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Reference documentation"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/repository-map.md",
+      "title": "Repository map",
+      "document_type": "reference",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Reference documentation",
+      "children": [],
+      "tags": [
+        "meta"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Repository map",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/",
+        "../../../frontend/",
+        "../../../infra/",
+        "../../../scripts/",
+        "../../../tools/mcp/",
+        "../../../.github/workflows/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/",
+        "frontend/",
+        "infra/",
+        "scripts/",
+        "tools/mcp/",
+        ".github/workflows/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Reference documentation",
+        "Component map"
+      ],
+      "wiki_links": [
+        "reference-index",
+        "component-map"
+      ],
+      "neighbours": [
+        "Component map",
+        "Generated files",
+        "Reference documentation",
+        "Scripts implementation"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Repository map"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/scripts-catalogue.md",
+      "title": "Scripts catalogue",
+      "document_type": "reference",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Reference documentation",
+      "children": [],
+      "tags": [
+        "tooling"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Scripts catalogue",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../scripts/",
+        "../../../backend/scripts/",
+        "../../../frontend/scripts/",
+        "../../../infra/",
+        "../../../tools/mcp/",
+        "../../../.githooks/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "scripts/",
+        "backend/scripts/",
+        "frontend/scripts/",
+        "infra/",
+        "tools/mcp/",
+        ".githooks/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Commands",
+        "Generated files",
+        "Scripts implementation"
+      ],
+      "wiki_links": [
+        "commands",
+        "generated-files",
+        "scripts-implementation"
+      ],
+      "neighbours": [
+        "Commands",
+        "Generated files",
+        "Scripts implementation"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Scripts catalogue"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/scripts-implementation.md",
+      "title": "Scripts implementation",
+      "document_type": "implementation",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Reference documentation",
+      "children": [],
+      "tags": [
+        "tooling"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Scripts implementation",
+        "Directory ownership",
+        "Entry points",
+        "Important modules",
+        "Dependency direction",
+        "Generated versus handwritten code",
+        "Tests and validation",
+        "Known gaps",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../scripts/",
+        "../../../backend/scripts/",
+        "../../../frontend/scripts/",
+        "../../../infra/images/scripts/",
+        "../../../infra/deployment/bootstrap/",
+        "../../../infra/deployment/proxmox/scripts/",
+        "../../../tools/mcp/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "scripts/",
+        "backend/scripts/",
+        "frontend/scripts/",
+        "infra/images/scripts/",
+        "infra/deployment/bootstrap/",
+        "infra/deployment/proxmox/scripts/",
+        "tools/mcp/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Scripts catalogue",
+        "Commands",
+        "Repository map",
+        "Generated files"
+      ],
+      "wiki_links": [
+        "scripts-catalogue",
+        "scripts-catalogue",
+        "commands",
+        "repository-map",
+        "generated-files"
+      ],
+      "neighbours": [
+        "Commands",
+        "Generated files",
+        "Repository map",
+        "Scripts catalogue"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Scripts implementation"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/reference/services-and-ports.md",
+      "title": "Services and ports",
+      "document_type": "reference",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Reference documentation",
+      "children": [],
+      "tags": [
+        "infrastructure"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Services and ports",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../infra/containers/",
+        "../../../infra/deployment/proxmox/cloud-init/",
+        "../../../frontend/docker-compose.dev.yml"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "infra/containers/",
+        "infra/deployment/proxmox/cloud-init/",
+        "frontend/docker-compose.dev.yml"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Runtime containers",
+        "Local infrastructure"
+      ],
+      "wiki_links": [
+        "runtime-containers",
+        "local-infrastructure"
+      ],
+      "neighbours": [
+        "Local infrastructure",
+        "Runtime containers"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Services and ports"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/security/identity-and-authentication.md",
+      "title": "Identity and authentication",
+      "document_type": "domain",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Security knowledge",
+      "children": [],
+      "tags": [
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Identity and authentication",
+        "Local identity boundary",
+        "Boundaries and limitations",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/middleware/auth/auth0.py",
+        "../../../backend/app/services/auth.py",
+        "../../../backend/app/services/account.py",
+        "../../../backend/app/schema/orm/core/user.py",
+        "../../../backend/tests/unit/test_auth_extension.py",
+        "../../../frontend/apps/studio-app/src/auth/passwordManagement.ts",
+        "../../../frontend/apps/studio-app/src/pages/AccountSettingsPage.tsx"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/middleware/auth/auth0.py",
+        "backend/app/services/auth.py",
+        "backend/app/services/account.py",
+        "backend/app/schema/orm/core/user.py",
+        "backend/tests/unit/test_auth_extension.py",
+        "frontend/apps/studio-app/src/auth/passwordManagement.ts",
+        "frontend/apps/studio-app/src/pages/AccountSettingsPage.tsx"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Security knowledge",
+        "Security model",
+        "Trust boundaries"
+      ],
+      "wiki_links": [
+        "security-index",
+        "security-model",
+        "trust-boundaries"
+      ],
+      "neighbours": [
+        "Links and subjects",
+        "Projects and access",
+        "Respondent access and continuity",
+        "Security knowledge",
+        "Security model",
+        "Trust boundaries"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Identity and authentication"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/security/security-index.md",
+      "title": "Security knowledge",
+      "document_type": "overview",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": true,
+      "parent": "Project Knowledge",
+      "children": [
+        "Identity and authentication",
+        "Security model",
+        "Trust boundaries"
+      ],
+      "tags": [
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Security knowledge",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/middleware/auth/",
+        "../../../backend/app/crypto/",
+        "../../../backend/app/services/access/",
+        "../../../infra/containers/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/middleware/auth/",
+        "backend/app/crypto/",
+        "backend/app/services/access/",
+        "infra/containers/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Security model",
+        "Trust boundaries",
+        "Identity and authentication",
+        "Respondent access and continuity",
+        "Responses and encryption"
+      ],
+      "wiki_links": [
+        "security-model",
+        "trust-boundaries",
+        "identity-and-authentication",
+        "respondent-access-and-continuity",
+        "responses-and-encryption"
+      ],
+      "neighbours": [
+        "Data knowledge",
+        "Identity and authentication",
+        "Project Knowledge",
+        "Respondent access and continuity",
+        "Responses and encryption",
+        "Security model",
+        "Trust boundaries"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Security knowledge"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/security/security-model.md",
+      "title": "Security model",
+      "document_type": "architecture",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Security knowledge",
+      "children": [],
+      "tags": [
+        "backend",
+        "infrastructure",
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Security model",
+        "Identity and authorization",
+        "Data, secrets, and runtime",
+        "Known limitations to retain during review",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/middleware/auth/",
+        "../../../backend/app/services/access/",
+        "../../../backend/app/services/public_submissions/",
+        "../../../backend/app/crypto/",
+        "../../../backend/app/core/config.py",
+        "../../../backend/app/middleware/rate_limit/",
+        "../../../infra/containers/",
+        "../../../infra/deployment/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/middleware/auth/",
+        "backend/app/services/access/",
+        "backend/app/services/public_submissions/",
+        "backend/app/crypto/",
+        "backend/app/core/config.py",
+        "backend/app/middleware/rate_limit/",
+        "infra/containers/",
+        "infra/deployment/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Security knowledge",
+        "Trust boundaries",
+        "Identity and authentication",
+        "Respondent access and continuity",
+        "Responses and encryption",
+        "Configuration implementation"
+      ],
+      "wiki_links": [
+        "identity-and-authentication",
+        "respondent-access-and-continuity",
+        "responses-and-encryption",
+        "security-index",
+        "trust-boundaries",
+        "identity-and-authentication",
+        "respondent-access-and-continuity",
+        "responses-and-encryption",
+        "configuration"
+      ],
+      "neighbours": [
+        "Architecture principles",
+        "Configuration implementation",
+        "Identity and authentication",
+        "Links and subjects",
+        "Projects and access",
+        "Respondent access and continuity",
+        "Responses and encryption",
+        "Security knowledge",
+        "Trust boundaries"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Security model"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/security/trust-boundaries.md",
+      "title": "Trust boundaries",
+      "document_type": "architecture",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Security knowledge",
+      "children": [],
+      "tags": [
+        "backend",
+        "infrastructure",
+        "security"
+      ],
+      "verified_evidence_digest": null,
+      "last_edited": "2026-07-27",
+      "code_confidence": "medium",
+      "headings": [
+        "Trust boundaries",
+        "Request and identity boundaries",
+        "Data and key boundaries",
+        "Runtime and deployment boundaries",
+        "Review questions",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/core/extensions.py",
+        "../../../backend/app/middleware/auth/",
+        "../../../backend/app/services/public_submissions/",
+        "../../../backend/app/db/",
+        "../../../backend/app/crypto/",
+        "../../../infra/containers/",
+        "../../../infra/deployment/"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/core/extensions.py",
+        "backend/app/middleware/auth/",
+        "backend/app/services/public_submissions/",
+        "backend/app/db/",
+        "backend/app/crypto/",
+        "infra/containers/",
+        "infra/deployment/"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Security knowledge",
+        "Security model",
+        "Identity and authentication",
+        "Responses and encryption"
+      ],
+      "wiki_links": [
+        "security-index",
+        "security-model",
+        "identity-and-authentication",
+        "responses-and-encryption"
+      ],
+      "neighbours": [
+        "Identity and authentication",
+        "Responses and encryption",
+        "Security knowledge",
+        "Security model"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Trust boundaries"
+        ]
+      }
+    }
+  ]
+}

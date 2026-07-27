@@ -1,0 +1,61 @@
+---
+title: Component map
+aliases: ["Component map"]
+document_type: reference
+status: verified
+authority: canonical
+verified_evidence_digest: sha256:76f5ad1a7fb9fbb5dac4e24e1902a07744392ba8aec0b6c0fe26c9a05dfe78d6
+last_edited: 2026-07-27
+tags: [backend, frontend, infrastructure, security]
+related_code:
+  - "../../../frontend/apps/"
+  - "../../../frontend/packages/"
+  - "../../../backend/app/core/factory.py"
+  - "../../../backend/app/api/v1/"
+  - "../../../backend/app/services/"
+  - "../../../backend/app/repositories/"
+  - "../../../backend/app/schema/orm/"
+  - "../../../infra/database/init/schema/"
+related_docs:
+  - "Reference documentation"
+  - "Data flows"
+  - "Backend knowledge"
+---
+
+# Component map
+
+This draft maps logical components and their principal dependencies. It stops
+short of file-level ownership, sequence detail, and deployment topology.
+
+| Component | Responsibility | Primary dependencies |
+| --- | --- | --- |
+| Public site | Static public product and documentation experience | shared frontend packages |
+| Studio application | Project/survey management and respondent UI surface | Auth0, backend API, shared packages |
+| Shared frontend packages | Builder, schema, UI, styles, and site-shell source shared by applications | generated backend contract where applicable |
+| Backend API | HTTP boundary and coordination of auth, policy, persistence, encryption, and email | Auth0, service dependencies, core/response stores |
+| Core data store | Identifying/admin state, survey content/access, and submission metadata | backend only |
+| Response data store | Encrypted envelopes and answer rows, separate from core SQL relations | backend only |
+
+```text
+Public Site --------> shared frontend packages <-------- Studio
+                                                           |
+                                                           | HTTP API
+                                                           v
+Auth0 <----------------------------------------------> Backend API
+                                                           |
+                                                services + policy
+                                                  /             \
+                                                 v               v
+                                           Core store      Response store
+```
+
+The core and response stores are separate boundaries. Cross-store submission
+work therefore needs explicit ordering and recovery logic, described in
+[[data-flows|Data flows]]. The diagram is a logical dependency view, not a
+guarantee of mechanically enforced layering or a deployment claim.
+
+## Related documents
+
+- [[reference-index|Reference documentation]]
+- [[repository-map|Repository map]]
+- [[data-flows|Data flows]]
