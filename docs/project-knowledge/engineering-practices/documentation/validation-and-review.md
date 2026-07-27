@@ -2,9 +2,9 @@
 title: Documentation validation and review
 aliases: ["Documentation validation and review"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:00cd8c76ae58c25ad819e6a45d1b898aa3abf6933bcf1000e6039d0f0e3553ae
 last_edited: 2026-07-27
 tags: [meta]
 related_code:

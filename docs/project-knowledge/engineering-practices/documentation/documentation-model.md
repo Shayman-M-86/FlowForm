@@ -2,9 +2,9 @@
 title: Documentation model
 aliases: ["Documentation model"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:29ed994043574393402a4982681b838c2e542a7043b90bfe402f980692a8a8d1
 last_edited: 2026-07-27
 tags: [meta]
 related_code:
