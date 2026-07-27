@@ -6,11 +6,12 @@ cd "${REPO_ROOT}"
 
 bash scripts/ci/check-openapi-contracts.sh
 
-# Verification is calculated from the exact implementation blobs about to be
-# committed. If staged code invalidates a verified page, Docsys stages an
-# honest draft status and stops the commit so the author can review it.
-PYTHONPATH=scripts/docs python3 -m docsys evidence sync-last-edited
-PYTHONPATH=scripts/docs python3 -m docsys evidence check-staged \
+# Maintain edit dates for all staged docs. Project Knowledge verification is
+# calculated from the exact implementation blobs about to be committed. If
+# staged code invalidates a verified page, Docsys stages an honest draft status
+# and stops the commit so the author can review it.
+PYTHONPATH=tools/docs python3 -m docsys evidence sync-last-edited
+PYTHONPATH=tools/docs python3 -m docsys evidence check-staged \
   --sync-invalidations
-PYTHONPATH=scripts/docs python3 -m docsys validate \
+PYTHONPATH=tools/docs python3 -m docsys validate \
   --docs-root docs --profile commit

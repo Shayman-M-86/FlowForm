@@ -8,7 +8,7 @@ verified_evidence_digest: null
 last_edited: 2026-07-27
 tags: [meta]
 related_code:
-  - "../../../../scripts/docs/"
+  - "../../../../tools/docs/"
 related_docs:
   - "Documentation practice"
   - "Documentation authoring guide"
@@ -31,9 +31,10 @@ material under `old-docs/` is context only and is never sufficient evidence by
 itself.
 
 A document's `authority` identifies its role, while `status` reports its
-maturity. `verified_evidence_digest` records the exact Git blobs used as the
-implementation baseline for meaningful claims; it does not make unchecked
-sections verified.
+maturity. In Project Knowledge, `verified_evidence_digest` records the exact
+Git blobs used as the implementation baseline for meaningful claims; it does
+not make unchecked sections verified. `last_edited` records the ISO calendar
+date on which the document last entered a commit.
 
 When a material contradiction with implementation evidence is confirmed, the
 owning document returns to `status: draft` and its
@@ -46,7 +47,7 @@ The digest is calculated from the staged blobs selected by `related_code` and
 avoids the impossible requirement for a file to contain the SHA of the same
 commit that contains the file. After semantic review, Docsys writes the digest
 automatically, allowing code, documentation, and verification metadata to land
-in one commit.
+in one commit. Evidence verification applies only to Project Knowledge.
 
 ## Two collections
 
@@ -60,7 +61,12 @@ collections:
 - **Development workspace** (`development-workspace/`) holds active work —
   decisions, plans, investigations, migrations, and technical debt. It uses
   lighter, editing-time enforcement. Workspace documents must not claim
-  canonical authority, and honest incompleteness is acceptable.
+  canonical authority, and honest incompleteness is acceptable. It does not use
+  evidence verification: workspace pages remain `draft` or `scaffold` with a
+  null digest.
+
+The pre-commit hook maintains `last_edited: YYYY-MM-DD` for staged documents in
+both collections. Authors and agents do not update that date by hand.
 
 Membership is derived from the physical tree: the first path segment under the
 documentation root selects the collection. A document outside both collections
@@ -176,7 +182,7 @@ keep:
 | `exclusions`      | Paths or globs to subtract from the matched set, so a broad `related_code` directory can skip noisy sub-paths.                                           |
 | `code_confidence` | `high`, `medium`, or `low`; weights how strongly a matched change implicates the document.                                                              |
 
-The documentation tooling under `scripts/docs/docsys/` reads these fields to
+The documentation tooling under `tools/docs/docsys/` reads these fields to
 build the documentation index, detect impacted documents, and check freshness.
 The tooling never edits documents; it identifies what to review. Generated
 documents record their generator and sources instead of prose evidence, and are

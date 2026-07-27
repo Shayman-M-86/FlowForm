@@ -12,7 +12,7 @@ related_code:
   - "../../../backend/scripts/run_backend_security.sh"
   - "../../../backend/scripts/run-tests.py"
   - "../../../scripts/ci/check-openapi-contracts.sh"
-  - "../../../scripts/docs/"
+  - "../../../tools/docs/"
 related_docs: ["Engineering practices", "Testing workflow", "CI/CD implementation", "CI workflows"]
 ---
 

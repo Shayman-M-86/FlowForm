@@ -97,6 +97,12 @@ class CollectionModelTests(unittest.TestCase):
         claude_skill = (
             ROOT / ".claude/skills/flowform-doc-context/SKILL.md"
         ).read_text()
+        codex_verification_skill = (
+            ROOT / ".agents/skills/flowform-doc-verification/SKILL.md"
+        ).read_text()
+        claude_verification_skill = (
+            ROOT / ".claude/skills/flowform-doc-verification/SKILL.md"
+        ).read_text()
         codex_agent = tomllib.loads(
             (ROOT / ".codex/agents/docs-maintainer.toml").read_text()
         )
@@ -105,6 +111,7 @@ class CollectionModelTests(unittest.TestCase):
         ).read_text()
 
         self.assertEqual(codex_skill, claude_skill)
+        self.assertEqual(codex_verification_skill, claude_verification_skill)
         self.assertEqual(codex_agent["name"], "docs-maintainer")
         self.assertEqual(codex_agent["model"], "gpt-5.6-terra")
         self.assertIn("name: docs-maintainer", claude_agent)
@@ -348,6 +355,34 @@ class CollectionModelTests(unittest.TestCase):
                 },
             )
             self.assertTrue(all(item.severity == "warning" for item in findings))
+
+    def test_workspace_verification_is_advisory_not_a_gate(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            docs_root = Path(temporary) / "docs"
+            workspace = docs_root / "development-workspace"
+            workspace.mkdir(parents=True)
+            (docs_root / "docs-index.md").write_text(_document("Root"))
+            document = _document("Workspace", authority="working").replace(
+                "status: scaffold", "status: verified"
+            ).replace(
+                "verified_evidence_digest: null",
+                f"verified_evidence_digest: sha256:{'a' * 64}",
+            )
+            (workspace / "development-workspace-index.md").write_text(document)
+
+            findings = all_findings(DocSet.load(docs_root), "commit")
+            verification = [
+                item
+                for item in findings
+                if item.code == "workspace_verification_metadata"
+            ]
+
+            self.assertEqual(len(verification), 1)
+            self.assertEqual(verification[0].severity, "warning")
+            self.assertFalse(
+                any(item.severity == "error" for item in findings),
+                findings,
+            )
 
     def test_empty_debt_path_filter_selects_no_documents(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:

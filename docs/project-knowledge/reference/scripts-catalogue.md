@@ -22,7 +22,7 @@ does not determine inclusion.
 | --- | --- | --- |
 | CI contracts | `scripts/ci/` | OpenAPI drift checks and contract generation. |
 | Local development | `scripts/dev/` | Bootstrap, hook install, and mock-data loading. |
-| Documentation | `scripts/docs/` | Documentation generation and validation. |
+| Documentation | `tools/docs/` | Documentation generation and validation. |
 | Local configuration | `scripts/secrets/` | Development/test configuration preparation. |
 | Backend | `backend/scripts/` | Test runner, OpenAPI export, health, integrity, and security helpers. |
 | Frontend | `frontend/scripts/` | Frontend contract artifact generation. |

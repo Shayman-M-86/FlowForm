@@ -46,7 +46,7 @@ language/runtime tools --> generated artifacts or external side effects
 
 - `scripts/ci/` coordinates OpenAPI contract generation and drift checks;
   `scripts/dev/` owns local bootstrap and mock-data loading;
-  `scripts/secrets/` owns local configuration material; `scripts/docs/` owns
+  `scripts/secrets/` owns local configuration material; `tools/docs/` owns
   documentation generation, validation, Docsys, and vault synchronization.
 - `backend/scripts/` owns backend tests, health, security, OpenAPI export, and
   database-rule checks. `frontend/scripts/` owns frontend contract generation.
@@ -61,7 +61,7 @@ language/runtime tools --> generated artifacts or external side effects
 Primary coordination entries include `scripts/ci/sync-openapi.sh`,
 `scripts/dev/bootstrap-dev-and-load-mocks.sh`,
 `scripts/secrets/fetch-dev-secrets.sh`, and the validators under
-`scripts/docs/`. Application-specific entries include
+`tools/docs/`. Application-specific entries include
 `backend/scripts/run-tests.sh` and `frontend/scripts/generate-types.mjs`.
 Image build, host bootstrap, Proxmox verification, and rehearsal image-push
 scripts can change external state; their headers and linked workflows define
@@ -77,7 +77,7 @@ their preconditions.
 - `scripts/secrets/generate_secrets.py` creates non-overwriting development and
   test values; `fetch-dev-secrets.sh` assembles the development runtime secret
   directory from local and AWS-owned sources.
-- `scripts/docs/docsys/` supplies the CLI and MCP server for context, impact,
+- `tools/docs/docsys/` supplies the CLI and MCP server for context, impact,
   freshness, search, validation, and health queries.
 - `infra/images/scripts/image` is the image operator entry point, while
   `infra/images/scripts/lib/packer-project.sh` assembles selected Packer sources

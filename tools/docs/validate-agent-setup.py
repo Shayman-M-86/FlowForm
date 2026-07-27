@@ -15,6 +15,7 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILL_NAME = "flowform-doc-context"
+VERIFICATION_SKILL_NAME = "flowform-doc-verification"
 AGENT_NAME = "docs-maintainer"
 
 
@@ -86,6 +87,41 @@ def validate() -> list[str]:
         errors,
     )
 
+    verification_codex_path = (
+        ROOT / ".agents" / "skills" / VERIFICATION_SKILL_NAME / "SKILL.md"
+    )
+    verification_claude_path = (
+        ROOT / ".claude" / "skills" / VERIFICATION_SKILL_NAME / "SKILL.md"
+    )
+    for path in (verification_codex_path, verification_claude_path):
+        _require(
+            path.is_file(),
+            f"missing skill: {path.relative_to(ROOT)}",
+            errors,
+        )
+    if verification_codex_path.is_file() and verification_claude_path.is_file():
+        _require(
+            verification_codex_path.read_text()
+            == verification_claude_path.read_text(),
+            "Codex and Claude flowform-doc-verification skills differ",
+            errors,
+        )
+        try:
+            verification_metadata = _front_matter(verification_codex_path)
+        except ValueError as exc:
+            errors.append(str(exc))
+            verification_metadata = {}
+        _require(
+            verification_metadata.get("name") == VERIFICATION_SKILL_NAME,
+            f"skill name must be {VERIFICATION_SKILL_NAME!r}",
+            errors,
+        )
+        _require(
+            set(verification_metadata) == {"name", "description"},
+            "verification skill front matter must contain only name and description",
+            errors,
+        )
+
     openai_yaml_path = (
         ROOT / ".agents" / "skills" / SKILL_NAME / "agents" / "openai.yaml"
     )
@@ -101,6 +137,33 @@ def validate() -> list[str]:
             _require(
                 expected in openai_yaml,
                 f"Codex openai.yaml missing {expected!r}",
+                errors,
+            )
+
+    verification_openai_yaml = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / VERIFICATION_SKILL_NAME
+        / "agents"
+        / "openai.yaml"
+    )
+    _require(
+        verification_openai_yaml.is_file(),
+        "missing verification-skill openai.yaml",
+        errors,
+    )
+    if verification_openai_yaml.is_file():
+        openai_yaml = verification_openai_yaml.read_text()
+        for expected in (
+            "display_name:",
+            "short_description:",
+            f"${VERIFICATION_SKILL_NAME}",
+            'value: "flowform-docs"',
+        ):
+            _require(
+                expected in openai_yaml,
+                f"verification openai.yaml missing {expected!r}",
                 errors,
             )
 
@@ -157,6 +220,7 @@ def validate() -> list[str]:
 
     try:
         codex_config = tomllib.loads((ROOT / ".codex/config.toml").read_text())
+        codex_hooks = json.loads((ROOT / ".codex/hooks.json").read_text())
         claude_mcp = json.loads((ROOT / ".mcp.json").read_text())
         claude_settings = json.loads((ROOT / ".claude/settings.json").read_text())
     except (OSError, json.JSONDecodeError, tomllib.TOMLDecodeError) as exc:
@@ -179,6 +243,42 @@ def validate() -> list[str]:
         "Claude does not allow the read-only flowform-docs MCP tools",
         errors,
     )
+
+    codex_hook_map = codex_hooks.get("hooks", {})
+    claude_hook_map = claude_settings.get("hooks", {})
+    _require(
+        codex_hook_map == claude_hook_map,
+        "Codex and Claude hook configurations differ",
+        errors,
+    )
+    hook_commands = [
+        hook.get("command", "")
+        for groups in codex_hook_map.values()
+        for group in groups
+        for hook in group.get("hooks", [])
+    ]
+    _require(
+        len(hook_commands) == 3,
+        "Codex and Claude must share exactly three configured hooks",
+        errors,
+    )
+    _require(
+        all("tools/docs/hooks/" in command for command in hook_commands),
+        "all agent hooks must use tools/docs/hooks",
+        errors,
+    )
+    compatibility_hooks = list((ROOT / ".claude/hooks").glob("*.py"))
+    _require(
+        all(
+            "TARGET =" in path.read_text()
+            and '"tools"' in path.read_text()
+            and '"hooks"' in path.read_text()
+            and "os.execv" in path.read_text()
+            for path in compatibility_hooks
+        ),
+        ".claude/hooks may contain only forwarders to tools/docs/hooks",
+        errors,
+    )
     return errors
 
 
@@ -189,8 +289,8 @@ def main() -> int:
             print(f"ERROR: {error}", file=sys.stderr)
         return 1
     print(
-        "agent documentation setup valid: shared skill, documentation maintainers, "
-        "and matching flowform-docs MCP configuration"
+        "agent documentation setup valid: shared skills, documentation maintainers, "
+        "matching flowform-docs MCP configuration, and shared hooks"
     )
     return 0
 

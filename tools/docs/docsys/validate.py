@@ -157,6 +157,18 @@ def metadata_findings(
                     profile,
                 )
             )
+        elif doc.collection != "project-knowledge" and (
+            doc.status == "verified" or digest is not None
+        ):
+            findings.append(
+                _finding(
+                    doc,
+                    "metadata",
+                    "verification_outside_project_knowledge",
+                    "evidence verification is reserved for Project Knowledge",
+                    profile,
+                )
+            )
         elif doc.status == "verified" and digest is None:
             findings.append(
                 _finding(
@@ -168,7 +180,7 @@ def metadata_findings(
                 )
             )
         if (
-            doc.collection != "development-workspace"
+            doc.collection == "project-knowledge"
             and doc.status != "verified"
             and digest is not None
         ):

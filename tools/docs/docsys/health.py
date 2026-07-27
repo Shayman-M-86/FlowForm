@@ -180,7 +180,7 @@ def render_dashboard(health: dict) -> str:
         f"last_edited: {date.today().isoformat()}",
         "tags: [meta]",
         "related_code:",
-        '  - "../../../../scripts/docs/docsys/"',
+        '  - "../../../../tools/docs/docsys/"',
         "related_docs:",
         '  - "Generated reference documentation"',
         '  - "Documentation model"',
@@ -191,14 +191,14 @@ def render_dashboard(health: dict) -> str:
         "",
         "Generated snapshot of documentation health. Do not edit by hand; "
         "regenerate with "
-        "`PYTHONPATH=scripts/docs python3 -m docsys health`.",
+        "`PYTHONPATH=tools/docs python3 -m docsys health`.",
         "",
         "> Generated-document scaffold: this file is reproducible from repository "
-        "contents via `scripts/docs/docsys/health.py`.",
+        "contents via `tools/docs/docsys/health.py`.",
         "",
         "## Generator",
         "",
-        "`scripts/docs/docsys/health.py` renders this dashboard and its "
+        "`tools/docs/docsys/health.py` renders this dashboard and its "
         "machine-readable JSON companion.",
         "",
         "## Source files scanned",
@@ -208,7 +208,7 @@ def render_dashboard(health: dict) -> str:
         "",
         "## Regeneration",
         "",
-        "Run `PYTHONPATH=scripts/docs python3 -m docsys health` from the "
+        "Run `PYTHONPATH=tools/docs python3 -m docsys health` from the "
         "repository root.",
         "",
         "## Manual editing policy",

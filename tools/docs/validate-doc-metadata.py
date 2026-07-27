@@ -28,7 +28,7 @@ REQUIRED = ["title", "document_type", "status", "authority",
             "related_docs"]
 ALLOWED_STATUS = {"scaffold", "draft", "verified"}
 ALLOWED_CONFIDENCE = {"high", "medium", "low"}
-# Optional tooling fields (consumed by scripts/docs/docsys/): related_code may
+# Optional tooling fields (consumed by tools/docs/docsys/): related_code may
 # use directories and globs; change_triggers/exclusions extend or subtract the
 # matched code set; code_confidence weights impact/freshness. See the
 # documentation model for the contract.
@@ -90,12 +90,17 @@ for path in sorted(DOCS.rglob("*.md")):
             r"\d{4}-\d{2}-\d{2}", str(last_edited)):
         issues.append(f"{rel}: last_edited must use YYYY-MM-DD")
     is_workspace = str(rel).startswith("docs/development-workspace/")
-    if not is_workspace and digest not in (None, "null") and not re.fullmatch(
+    is_project_knowledge = str(rel).startswith("docs/project-knowledge/")
+    if is_project_knowledge and digest not in (None, "null") and not re.fullmatch(
             r"sha256:[0-9a-f]{64}", str(digest)):
         issues.append(
             f"{rel}: verified_evidence_digest must be null or "
             "sha256:<64 lowercase hex>")
-    if not is_workspace:
+    if not is_workspace and not is_project_knowledge and (
+            status == "verified" or digest not in (None, "null")):
+        issues.append(
+            f"{rel}: evidence verification is reserved for Project Knowledge")
+    if is_project_knowledge:
         if status == "verified" and digest in (None, "null"):
             issues.append(f"{rel}: verified documents require an evidence digest")
         if status != "verified" and digest not in (None, "null"):

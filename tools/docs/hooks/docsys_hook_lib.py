@@ -3,7 +3,7 @@
 
 These helpers glue Claude Code's hook lifecycle to the existing ``docsys``
 tooling. They do NOT reimplement impact detection, git diffing, or the document
-model — that logic lives in ``scripts/docs/docsys/`` and is imported here.
+model — that logic lives in ``tools/docs/docsys/`` and is imported here.
 
 State model
 -----------
@@ -29,9 +29,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Repo root: .claude/hooks/docsys_hook_lib.py -> parents[2].
-ROOT = Path(__file__).resolve().parents[2]
-DOCSYS_PATH = ROOT / "scripts" / "docs"
+# Repo root: tools/docs/hooks/docsys_hook_lib.py -> parents[3].
+ROOT = Path(__file__).resolve().parents[3]
+DOCSYS_PATH = ROOT / "tools" / "docs"
 STATE_DIR = ROOT / ".docsys" / "hook-state"
 
 # Implementation surfaces whose changes can plausibly affect canonical docs.
@@ -222,7 +222,7 @@ def detect_impacted_docs(impl_files: list[str]) -> list[dict]:
     if str(DOCSYS_PATH) not in sys.path:
         sys.path.insert(0, str(DOCSYS_PATH))
     try:
-        # docsys lives under scripts/docs, added to sys.path above at runtime;
+        # docsys lives under tools/docs, added to sys.path above at runtime;
         # static analysers cannot see it, hence the ignores.
         from docsys.impact import detect_impact  # type: ignore[import-not-found]  # noqa: E402
         from docsys.model import DocSet  # type: ignore[import-not-found]  # noqa: E402

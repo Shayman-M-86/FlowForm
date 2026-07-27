@@ -47,13 +47,16 @@ instead of silently choosing one source.
 After behavioural or architectural changes, review the impacted documentation.
 Update only pages whose meaning changed, and regenerate generated documentation
 instead of editing it manually. After reviewing implementation-backed claims,
-use `docsys evidence promote --staged` to record their staged evidence; the
-pre-commit hook enforces verification drift. Treat `old-docs/` as historical
-material.
+use `docsys evidence promote --staged` to record staged evidence for Project
+Knowledge; Development Workspace is not verified. The pre-commit hook enforces
+verification drift and maintains document `last_edited` dates. Treat
+`old-docs/` as historical material.
 
 Codex and Claude provide a `docs-maintainer` specialist for bounded
 documentation work. The parent agent remains responsible for integration and
-final validation.
+final validation. Use the shared `flowform-doc-verification` skill when the
+user wants to select, review, approve, and promote specific Project Knowledge
+pages.
 
 ## Handoff
 

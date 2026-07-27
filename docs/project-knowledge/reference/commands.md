@@ -28,7 +28,7 @@ invocation and precondition is reverified against the current checkout.
 | Frontend builds | `cd frontend && pnpm run build:studio` / `pnpm run build:site` |
 | Studio tests | `cd frontend && pnpm --filter @flowform/studio-app test` |
 | API contract generation/check | `bash scripts/ci/sync-openapi.sh` / `--check` |
-| Documentation output | `PYTHONPATH=scripts/docs python3 -m docsys index` and `... docsys health` |
+| Documentation output | `PYTHONPATH=tools/docs python3 -m docsys index` and `... docsys health` |
 
 Shell/Python entry points under `scripts/`, `backend/scripts/`, and `infra/`
 own their behaviour; package aliases are owned by the nearest `package.json`;

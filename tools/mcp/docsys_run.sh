@@ -4,7 +4,7 @@
 # Exposes the deterministic docsys documentation tools (search_docs,
 # get_document, get_related, get_task_context, get_impacted_docs,
 # check_freshness, documentation_debt, doc_health) over MCP stdio. It reuses
-# the existing scripts/docs/docsys package; it does not reimplement anything.
+# the existing tools/docs/docsys package; it does not reimplement anything.
 #
 # The server is standard-library only, so no virtualenv or dependency install
 # is required — just a Python 3 interpreter.
@@ -24,9 +24,9 @@ cd "$REPO_ROOT"
 if [[ "${1:-}" == "tools" || "${1:-}" == "list-tools" ]]; then
     printf '%s\n%s\n' \
         '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
-        | PYTHONPATH="$REPO_ROOT/scripts/docs" python3 -m docsys.mcp_server \
+        | PYTHONPATH="$REPO_ROOT/tools/docs" python3 -m docsys.mcp_server \
         | python3 -c 'import sys, json; [print(t["name"]) for t in json.loads(sys.stdin.readline())["result"]["tools"]]'
     exit 0
 fi
 
-exec env PYTHONPATH="$REPO_ROOT/scripts/docs" python3 -m docsys.mcp_server "$@"
+exec env PYTHONPATH="$REPO_ROOT/tools/docs" python3 -m docsys.mcp_server "$@"

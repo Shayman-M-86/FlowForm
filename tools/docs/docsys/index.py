@@ -83,7 +83,7 @@ def build_index(docset: DocSet | None = None) -> dict:
     entries.sort(key=lambda e: e["path"])
     return {
         "schema": "flowform.docsys.index/1",
-        "generated_by": "scripts/docs/docsys/index.py",
+        "generated_by": "tools/docs/docsys/index.py",
         "repo_head": gitutil.current_commit(),
         "document_count": len(entries),
         "documents": entries,

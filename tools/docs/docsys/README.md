@@ -68,6 +68,9 @@ python3 -m docsys freshness
 # After semantic review, record the exact staged implementation evidence.
 python3 -m docsys evidence promote --staged docs/path.md
 
+# Maintain dates on staged documents (normally called by pre-commit).
+python3 -m docsys evidence sync-last-edited
+
 # Pre-commit check; automatically stages honest verification invalidations.
 python3 -m docsys evidence check-staged --sync-invalidations
 
@@ -92,8 +95,8 @@ python3 -m docsys propose --base origin/main --markdown
 ```
 
 > Note: because these are packaged modules, either run with the package on the
-> path (`PYTHONPATH=scripts/docs python3 -m docsys ...`) or from within
-> `scripts/docs/`. CI uses the `PYTHONPATH` form.
+> path (`PYTHONPATH=tools/docs python3 -m docsys ...`) or from within
+> `tools/docs/`. CI uses the `PYTHONPATH` form.
 
 ## MCP server
 
@@ -102,7 +105,7 @@ JSON-RPC over stdio directly, with no third-party dependency.
 
 ```sh
 claude mcp add flowform-docs -- \
-  env PYTHONPATH=scripts/docs python3 -m docsys.mcp_server
+  env PYTHONPATH=tools/docs python3 -m docsys.mcp_server
 ```
 
 Tools exposed: `search_docs`, `get_document`, `get_related`,
@@ -134,24 +137,30 @@ Beyond the required front matter, documents may declare optional linkage fields
 is the SHA-256 digest of the staged Git blobs selected by `related_code` and
 `change_triggers`, after `exclusions`. Documentation content is excluded, so
 implementation, documentation, and verification metadata can be committed
-together without a self-referential commit SHA.
+together without a self-referential commit SHA. This applies only to Project
+Knowledge; Development Workspace does not use evidence verification.
+
+`last_edited` uses `YYYY-MM-DD`. The pre-commit hook updates it automatically
+for every staged document in either collection. Partially staged documents are
+blocked so this metadata update never stages unrelated prose.
 
 ## Configuration
 
-Optional. Copy `scripts/docs/docsys.config.example.json` to
-`scripts/docs/docsys.config.json` and override only the keys you need:
+Optional. Copy `tools/docs/docsys.config.example.json` to
+`tools/docs/docsys.config.json` and override only the keys you need:
 
 - `critical_doc_globs` — documents whose impact-but-not-modified state fails
   the CI `docs-review` job (empty by default, so CI never fails on docs).
 
 ## Commit integration
 
-The repository Git pre-commit hook checks verified documents affected by staged
-implementation changes against the staged index, then runs the `commit`
-validation profile. A mismatch is downgraded to `draft`, staged, and reported;
-the current commit attempt stops so the author can review it. Promotion is
-never automatic because factual review is semantic. This verification workflow
-is intentionally not part of CI.
+The repository Git pre-commit hook first maintains `last_edited`, then checks
+verified Project Knowledge affected by staged implementation changes against
+the staged index and runs the `commit` validation profile. A mismatch is
+downgraded to `draft`, staged, and reported; the current commit attempt stops so
+the author can review it. Promotion is never automatic because factual review
+is semantic. Development Workspace bypasses verification. This verification
+workflow is intentionally not part of CI.
 
 ## Relationship to the existing validators
 

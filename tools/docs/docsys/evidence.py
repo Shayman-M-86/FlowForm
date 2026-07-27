@@ -9,8 +9,8 @@ the staged implementation evidence named by ``related_code`` and
 Commands:
 
     python3 -m docsys evidence promote --staged docs/path.md [...]
+    python3 -m docsys evidence sync-last-edited
     python3 -m docsys evidence check-staged --sync-invalidations
-    python3 -m docsys evidence migrate-commit-baselines
 """
 
 from __future__ import annotations
@@ -37,7 +37,6 @@ DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _STATUS_RE = re.compile(r"(?m)^status:\s*.*$")
 _DIGEST_RE = re.compile(r"(?m)^verified_evidence_digest:\s*.*$")
 _LAST_EDITED_RE = re.compile(r"(?m)^last_edited:\s*.*$")
-_LEGACY_RE = re.compile(r"(?m)^verified_against_commit:\s*(.*)$")
 
 
 def _git_bytes(args: list[str]) -> bytes:
@@ -155,12 +154,6 @@ def _set_last_edited(path: Path, value: str | None = None) -> bool:
             text,
             count=1,
         )
-    elif _LEGACY_RE.search(text):
-        updated = _LEGACY_RE.sub(
-            lambda match: f"{match.group(0)}\n{replacement}",
-            text,
-            count=1,
-        )
     else:
         raise ValueError(
             f"{path.relative_to(ROOT)} has no verification metadata field"
@@ -183,12 +176,6 @@ def _set_metadata(path: Path, *, status: str, digest: str | None) -> None:
             text,
             count=1,
         )
-    elif _LEGACY_RE.search(text):
-        text = _LEGACY_RE.sub(
-            f"verified_evidence_digest: {digest_value}",
-            text,
-            count=1,
-        )
     else:
         raise ValueError(
             f"{path.relative_to(ROOT)} has no verification metadata field"
@@ -206,15 +193,6 @@ def _repo_path(value: str) -> Path:
     if path.suffix != ".md":
         raise ValueError(f"verification target must be Markdown: {value}")
     return path
-
-
-def _is_staged(repo_path: str) -> bool:
-    staged = set(
-        line
-        for line in _git_text(["diff", "--cached", "--name-only"]).splitlines()
-        if line
-    )
-    return repo_path in staged
 
 
 def _has_unstaged(repo_path: str) -> bool:
@@ -242,12 +220,13 @@ def promote_staged(values: list[str]) -> int:
     for value in values:
         path = _repo_path(value)
         rel = path.relative_to(ROOT).as_posix()
-        if not _is_staged(rel):
-            raise ValueError(f"stage the document before verification: {rel}")
         if _has_unstaged(rel):
             raise ValueError(
                 f"{rel} has unstaged edits; stage a single reviewable version first"
             )
+        # A clean document may be selected for fresh verification. Promotion
+        # itself changes and stages its metadata, so a dummy content edit is
+        # neither necessary nor desirable.
         doc = load_document(path)
         if doc is None:
             raise ValueError(f"{rel} has invalid front matter")
@@ -371,35 +350,6 @@ def sync_last_edited_staged() -> int:
     return 0
 
 
-def migrate_commit_baselines() -> int:
-    """Replace legacy commit metadata while preserving its evidence baseline."""
-    docset = DocSet.load()
-    sources: dict[str, EvidenceSource] = {}
-    migrated = 0
-
-    for doc in docset.docs:
-        if "verified_against_commit" not in doc.front_matter:
-            continue
-        legacy = doc.front_matter.get("verified_against_commit")
-        digest: str | None = None
-        if doc.status == "verified" and legacy not in (None, "", "null"):
-            ref = str(legacy)
-            if ref not in sources:
-                sources[ref] = EvidenceSource.from_ref(ref)
-            source = sources[ref]
-            snapshot = source.snapshot(doc)
-            if not snapshot.files and not doc.is_generated:
-                raise ValueError(
-                    f"{doc.rel_path} resolves no evidence files at {ref}"
-                )
-            digest = snapshot.digest
-        _set_metadata(doc.path, status=doc.status, digest=digest)
-        migrated += 1
-
-    print(f"migrated {migrated} documents to evidence digests")
-    return 0
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="docsys evidence")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -422,11 +372,6 @@ def main(argv: list[str] | None = None) -> int:
         help="set last_edited on staged documentation",
     )
 
-    subparsers.add_parser(
-        "migrate-commit-baselines",
-        help="replace legacy commit metadata using each recorded baseline",
-    )
-
     args = parser.parse_args(argv)
     try:
         if args.command == "promote":
@@ -435,7 +380,7 @@ def main(argv: list[str] | None = None) -> int:
             return check_staged(sync_invalidations=args.sync_invalidations)
         if args.command == "sync-last-edited":
             return sync_last_edited_staged()
-        return migrate_commit_baselines()
+        raise ValueError(f"unknown evidence command: {args.command}")
     except (RuntimeError, ValueError, subprocess.CalledProcessError) as exc:
         print(f"documentation evidence error: {exc}")
         return 1

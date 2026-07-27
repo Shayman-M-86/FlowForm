@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SessionStart hook: capture the task's base commit for the Stop hook.
+"""Shared SessionStart hook: capture the task's base commit for the Stop hook.
 
 Records the repository HEAD at the start of the session so the Stop hook can
 diff against a stable starting point when deciding whether implementation

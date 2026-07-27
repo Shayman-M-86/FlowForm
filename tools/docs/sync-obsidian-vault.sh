@@ -16,8 +16,8 @@ set -Eeuo pipefail
 # lives in the vault ROOT, one level above this docs/ subfolder.
 #
 # Usage:
-#   scripts/docs/sync-obsidian-vault.sh          # sync
-#   scripts/docs/sync-obsidian-vault.sh --dry-run # show what would change
+#   tools/docs/sync-obsidian-vault.sh          # sync
+#   tools/docs/sync-obsidian-vault.sh --dry-run # show what would change
 
 REPO_DOCS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../docs" && pwd)"
 VAULT_DOCS="${OBSIDIAN_VAULT_DOCS:-/mnt/c/Users/Shayman/Documents/FlowForm-vault/docs}"

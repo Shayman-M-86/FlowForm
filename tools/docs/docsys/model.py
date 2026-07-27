@@ -5,7 +5,7 @@ This module is the single place that understands the shape of a FlowForm
 documentation file, so every other tool in ``docsys`` sees documents the same
 way. It is intentionally dependency-free (no PyYAML): it parses the canonical
 front-matter shape used across ``docs/`` — the same shape the existing
-``scripts/docs/validate-doc-*.py`` validators parse — extended with the
+``tools/docs/validate-doc-*.py`` validators parse — extended with the
 optional tooling fields described in the documentation model:
 
 - ``related_code``    list of repo paths, directories, or globs (relative to
@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 
 # Resolve the repository root from this file's location:
-# scripts/docs/docsys/model.py -> parents[3] is the repo root.
+# tools/docs/docsys/model.py -> parents[3] is the repo root.
 ROOT = Path(__file__).resolve().parents[3]
 DOCS = ROOT / "docs"
 GENERATED_DIR = DOCS / "90-generated"

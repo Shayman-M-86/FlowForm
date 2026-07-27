@@ -14,7 +14,7 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-GENERATOR = "scripts/docs/generate-reference-docs.py"
+GENERATOR = "tools/docs/generate-reference-docs.py"
 
 
 def tracked(prefix: str = "") -> list[Path]:
@@ -152,7 +152,7 @@ def infrastructure() -> str:
 
 
 def generated_index() -> str:
-    content = markdown("Generated reference documentation", ["meta"], [GENERATOR, "scripts/docs/generate-repository-tree.py", "scripts/docs/docsys/"],
+    content = markdown("Generated reference documentation", ["meta"], [GENERATOR, "tools/docs/generate-repository-tree.py", "tools/docs/docsys/"],
                     "## Contents\n\nThis branch contains reproducible inventories and Docsys discovery snapshots. It does not own explanatory architecture.\n\n- [[api-routes|API routes]]\n- [[ci-workflows|CI workflows]]\n- [[configuration-index|Configuration index]]\n- [[dependency-map|Dependency map]]\n- [[infrastructure-resources|Infrastructure resources]]\n- [[repository-tree|Repository tree snapshot]]\n- [[documentation-dashboard|Documentation health dashboard]]")
     return content.replace('related_docs: ["Generated reference documentation", "Reference documentation"]',
                            'related_docs: ["Reference documentation"]')

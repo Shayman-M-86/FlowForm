@@ -2,7 +2,7 @@
 """Tooling configuration for ``docsys``.
 
 Defaults are chosen so every tool works with zero configuration. A repository
-may override them by adding ``scripts/docs/docsys.config.json``; only the keys
+may override them by adding ``tools/docs/docsys.config.json``; only the keys
 present are overridden. This keeps the deterministic tools self-contained while
 allowing a project to, for example, mark a documentation area as CI-critical.
 """
@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 from .model import ROOT
 
-CONFIG_PATH = ROOT / "scripts" / "docs" / "docsys.config.json"
+CONFIG_PATH = ROOT / "tools" / "docs" / "docsys.config.json"
 
 
 @dataclass

@@ -7,7 +7,7 @@ authority: canonical
 verified_evidence_digest: null
 last_edited: 2026-07-27
 tags: [meta]
-related_code: ["../scripts/docs/"]
+related_code: ["../tools/docs/"]
 related_docs: ["Project Knowledge", "Development workspace"]
 ---
 
@@ -59,7 +59,9 @@ its own right, not a directory listing.
 Document metadata makes confidence visible. `status` distinguishes scaffolds,
 drafts, and verified pages; `authority` distinguishes accepted knowledge from
 working material; and `verified_evidence_digest` records the staged
-implementation evidence actually inspected.
+implementation evidence actually inspected for Project Knowledge.
+`last_edited` is maintained by the pre-commit workflow for both collections.
+Development Workspace remains unverified working material.
 
 The previous documentation tree is retained under
 `old-docs/documentation-v1/` as historical input. It is not a source of

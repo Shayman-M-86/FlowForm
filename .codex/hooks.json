@@ -6,7 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json; print(json.load(sys.stdin).get('file_path',''))\"); case \"$FILE\" in *.py) if [ -x /tmp/flowform-venv/bin/ruff ]; then VIRTUAL_ENV=/tmp/flowform-venv /tmp/flowform-venv/bin/ruff check --fix \"$FILE\" 2>/dev/null; fi ;; esac"
+            "command": "python3 /home/shayman86/my-repos/FlowForm/tools/docs/hooks/post_tool_python_quality.py",
+            "statusMessage": "py_compile + ruff --fix"
           }
         ]
       }
@@ -16,7 +17,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/shayman86/my-repos/FlowForm/.claude/hooks/session_start_capture_base.py"
+            "command": "python3 /home/shayman86/my-repos/FlowForm/tools/docs/hooks/session_start_capture_base.py",
+            "statusMessage": "docsys: capture base commit"
           }
         ]
       }
@@ -26,7 +28,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/shayman86/my-repos/FlowForm/.claude/hooks/stop_doc_impact_review.py"
+            "command": "python3 /home/shayman86/my-repos/FlowForm/tools/docs/hooks/stop_doc_impact_review.py",
+            "statusMessage": "docsys: documentation impact review"
           }
         ]
       }

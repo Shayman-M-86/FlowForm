@@ -8,11 +8,16 @@ verified_evidence_digest: null
 last_edited: 2026-07-27
 tags: [meta]
 related_code:
-  - "../../../../scripts/docs/docsys/"
-  - "../../../../scripts/docs/validate-agent-setup.py"
+  - "../../../../tools/docs/docsys/"
+  - "../../../../tools/docs/hooks/"
+  - "../../../../tools/docs/validate-agent-setup.py"
+  - "../../../../.codex/hooks.json"
+  - "../../../../.claude/settings.json"
   - "../../../../.agents/skills/flowform-doc-context/"
+  - "../../../../.agents/skills/flowform-doc-verification/"
   - "../../../../.claude/agents/docs-maintainer.md"
   - "../../../../.claude/skills/flowform-doc-context/"
+  - "../../../../.claude/skills/flowform-doc-verification/"
   - "../../../../.codex/agents/docs-maintainer.toml"
 related_docs:
   - "Documentation practice"
@@ -46,9 +51,12 @@ documents with no inferable structural parent, duplicate titles, unresolved
 claiming canonical authority, and documents placed outside the two collections.
 
 Optional workspace metadata — `aliases`, `authority`, `related_code`,
-`related_docs`, `verified_evidence_digest` — stays advisory for
+`related_docs`, `verified_evidence_digest`, `last_edited` — stays advisory for
 Development workspace documents, so honest incompleteness there does not fail
 CI.
+
+Evidence verification is not a Development Workspace gate. Workspace pages
+remain working material rather than being promoted to `verified`.
 
 ```text
 authored documentation
@@ -70,29 +78,34 @@ authored documentation
 Validate the collection tree and review advisory debt from the repository root:
 
 ```sh
-PYTHONPATH=scripts/docs python3 -m docsys validate \
+PYTHONPATH=tools/docs python3 -m docsys validate \
   --docs-root docs --profile ci
-PYTHONPATH=scripts/docs python3 -m docsys debt \
+PYTHONPATH=tools/docs python3 -m docsys debt \
   --docs-root docs --changed --suggest-splits
 ```
 
 Run the documentation tooling's own tests when changing `docsys`:
 
 ```sh
-PYTHONPATH=scripts/docs python3 -m unittest discover -s scripts/docs/tests -v
+PYTHONPATH=tools/docs python3 -m unittest discover -s tools/docs/tests -v
 ```
 
 When changing agent skills, documentation-maintainer definitions, or MCP registration,
 run the dependency-free shared validator:
 
 ```sh
-python3 scripts/docs/validate-agent-setup.py
+python3 tools/docs/validate-agent-setup.py
 ```
 
 It verifies that Codex and Claude carry the same documentation-context skill,
-that both expose a `docs-maintainer`, and that both launch the same
+the same user-approval verification skill, a `docs-maintainer`, and the same
 `flowform-docs` MCP server. It does not depend on PyYAML or a preconfigured
 Python environment.
+
+Codex and Claude also use the same three hook events and the same implementations
+under `tools/docs/hooks/`: session baseline capture, lightweight Python
+post-edit quality checks, and non-blocking documentation-impact review at task
+completion. Agent configuration contains only pointers to those shared scripts.
 
 These checks validate structure and resolution, not factual correctness. Review
 against implementation evidence remains required.
@@ -117,7 +130,7 @@ of 5–10 files and 2–3 focused searches. They ask before widening that work i
 a broad audit. Explicit verification, diagnosis, or implementation requests may
 continue as far as necessary to produce the requested result.
 
-When repository evidence contradicts a material documentation claim:
+When repository evidence contradicts a material Project Knowledge claim:
 
 1. report the document claim and conflicting evidence;
 2. correct the page when documentation editing is in scope;
@@ -132,16 +145,22 @@ not claim one without implementation evidence.
 
 ## Staged verification gate
 
-The Git pre-commit hook compares affected verified documents with the exact
-implementation blobs in the staged index. When a staged code change invalidates
-a digest, Docsys changes that document to `draft`, clears the digest, stages the
-metadata update, and stops the commit attempt for review. It never promotes a
-document: an agent or author must first perform the semantic evidence review and
-run `docsys evidence promote --staged`.
+The Git pre-commit hook compares affected verified Project Knowledge documents
+with the exact implementation blobs in the staged index. When a staged code
+change invalidates a digest, Docsys changes that document to `draft`, clears the
+digest, stages the metadata update, and stops the commit attempt for review. It
+never promotes a document: an agent or author must first perform the semantic
+evidence review and run `docsys evidence promote --staged`.
 
 This keeps the workflow to one final commit. The digest is stable because it
 excludes documentation content, avoiding a self-reference to the commit being
 created. The gate is local pre-commit automation and is not repeated in CI.
+Development Workspace documents bypass it entirely.
+
+Before that check, the hook sets `last_edited` to the current `YYYY-MM-DD` date
+for every staged Markdown document under `docs/` and re-stages the metadata.
+Partially staged documents are rejected so the date cannot accidentally pull
+unstaged prose into the commit.
 
 ## Review checklist
 

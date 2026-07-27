@@ -86,21 +86,23 @@ before expanding.
 7. Do not create empty branches or taxonomy-only scaffolds. Change generators
    instead of hand-editing generated documentation.
 8. Update front matter, code linkage, cross-links, and affected navigation with
-   the content change. Keep status and `verified_evidence_digest` honest.
+   the content change. Keep Project Knowledge status and evidence metadata
+   honest. The pre-commit hook maintains `last_edited`.
 9. Run the relevant Docsys validation profile, link and metadata checks, and
    documentation-tool tests before reporting completion.
 10. Do not commit independently unless the user explicitly asks.
 
 ## Verify a documentation update
 
-Verification is a semantic review followed by deterministic automation:
+Project Knowledge verification is a semantic review followed by deterministic
+automation. Development Workspace does not use evidence verification.
 
 1. Check the document's current-state claims against its declared
    implementation evidence.
 2. Stage the implementation and documentation changes that belong in one
    commit.
 3. Promote each reviewed document with
-   `PYTHONPATH=scripts/docs python3 -m docsys evidence promote --staged
+   `PYTHONPATH=tools/docs python3 -m docsys evidence promote --staged
    docs/path.md`. Docsys writes the staged evidence digest and re-stages the
    document; do not calculate or paste a digest manually.
 4. Let the Git pre-commit hook compare verified pages with the exact staged
@@ -110,7 +112,8 @@ Verification is a semantic review followed by deterministic automation:
 
 This permits implementation, documentation, and verification metadata to land
 in one commit. The hook validates deterministic evidence; it does not replace
-the semantic review required before promotion.
+the semantic review required before promotion. It also updates `last_edited` on
+every staged document in either collection.
 
 ## Supporting tools
 

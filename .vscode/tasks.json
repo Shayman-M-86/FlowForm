@@ -38,7 +38,7 @@
     {
         "label": "docs: auto-sync vault",
         "type": "shell",
-        "command": "while true; do bash scripts/docs/sync-obsidian-vault.sh || true; sleep 600; done",
+        "command": "while true; do bash tools/docs/sync-obsidian-vault.sh || true; sleep 600; done",
         "options": {
             "cwd": "${workspaceFolder}"
         },

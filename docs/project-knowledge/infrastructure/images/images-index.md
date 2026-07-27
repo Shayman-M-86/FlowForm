@@ -2,9 +2,9 @@
 title: Machine images
 aliases: ["Machine images"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:7667a4ec4de0f675fd567a181cc5b598498ee170e578931eda4a11bac9eff2b4
+verified_evidence_digest: null
 last_edited: 2026-07-27
 tags: [infrastructure]
 related_code:

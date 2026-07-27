@@ -19,7 +19,7 @@ tools rather than one large AI-driven system:
 The design keeps deterministic tooling first; AI is only ever used by callers
 (agents, the MCP server) for interpretation and summarisation, never inside the
 core tools. See the active tree's ``documentation-model.md`` for the conventions
-these tools enforce, and ``scripts/docs/docsys/README.md`` for usage.
+these tools enforce, and ``tools/docs/docsys/README.md`` for usage.
 """
 
 # Bind the documented public modules so ``from docsys import index`` and

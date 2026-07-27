@@ -11,7 +11,7 @@ related_code:
   - "../../../backend/"
   - "../../../frontend/"
   - "../../../infra/"
-  - "../../../scripts/docs/"
+  - "../../../tools/docs/"
 related_docs:
   - "Glossary"
   - "Repository map"

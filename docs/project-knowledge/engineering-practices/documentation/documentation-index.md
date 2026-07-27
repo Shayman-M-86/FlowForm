@@ -8,7 +8,7 @@ verified_evidence_digest: null
 last_edited: 2026-07-27
 tags: [meta]
 related_code:
-  - "../../../../scripts/docs/"
+  - "../../../../tools/docs/"
 related_docs:
   - "Engineering practices"
   - "Documentation model"

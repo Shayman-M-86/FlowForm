@@ -24,7 +24,7 @@ Tools exposed:
 
 Register with a client, e.g. Claude Code:
 
-    claude mcp add flowform-docs -- python3 scripts/docs/docsys/mcp_server.py
+    claude mcp add flowform-docs -- python3 tools/docs/docsys/mcp_server.py
 
 Every tool loads a fresh :class:`DocSet` per call so results always reflect the
 current working tree; the documentation set is small enough that this is cheap.

@@ -12,7 +12,7 @@ related_code:
   - "../../../.github/workflows/deploy.yml"
   - "../../../.github/workflows/publish-staging-images.yml"
   - "../../../scripts/ci/"
-  - "../../../scripts/docs/docsys/ci.py"
+  - "../../../tools/docs/docsys/ci.py"
   - "../../../infra/deployment/aws/"
 related_docs: ["Engineering practices", "Continuous integration", "Cloud deployment", "CI workflows"]
 ---

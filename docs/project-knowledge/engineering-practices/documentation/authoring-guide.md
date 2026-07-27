@@ -8,7 +8,7 @@ verified_evidence_digest: null
 last_edited: 2026-07-27
 tags: [meta]
 related_code:
-  - "../../../../scripts/docs/"
+  - "../../../../tools/docs/"
   - "../../../../AGENTS.md"
 related_docs:
   - "Documentation practice"
@@ -69,6 +69,11 @@ evidence review. For parallel work, assign non-overlapping document and
 evidence boundaries; the parent agent retains responsibility for integrated
 links, navigation, and final validation.
 
+The shared `flowform-doc-verification` skill handles user-directed verification
+of specific Project Knowledge pages. It presents a small candidate list, checks
+only obvious evidence, shows the selected document and findings for approval,
+and promotes it only after explicit approval.
+
 ## Evidence rules
 
 Start with the source that owns the claim. Use tests to confirm contracts and
@@ -113,11 +118,11 @@ the relationship between its subcategories. A heading followed only by child
 links is navigation, not an overview. If no meaningful overview exists yet,
 defer the branch instead of preserving an empty taxonomy.
 
-After checking the claims, stage the implementation and documentation changes,
-then run:
+For reviewed Project Knowledge, stage the implementation and documentation
+changes, then run:
 
 ```sh
-PYTHONPATH=scripts/docs python3 -m docsys evidence promote --staged \
+PYTHONPATH=tools/docs python3 -m docsys evidence promote --staged \
   docs/path-to-reviewed-document.md
 ```
 
@@ -127,6 +132,11 @@ document. Do not paste a digest manually. Leave the field `null` for an
 unreviewed draft or scaffold. The pre-commit hook checks affected verified pages
 against the same staged snapshot and stops after staging any required downgrade
 to `draft`.
+
+Do not promote Development Workspace pages. They are intentionally working
+material and do not use evidence verification. The pre-commit hook updates
+`last_edited: YYYY-MM-DD` on staged documents in either collection, so authors
+should not maintain that field manually.
 
 ## Reference and navigation discipline
 

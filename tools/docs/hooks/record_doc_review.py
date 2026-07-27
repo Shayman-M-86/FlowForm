@@ -10,12 +10,12 @@ succeeds (and a later, different change requests a fresh review).
 This never edits documentation. It only stores the agent's review decision.
 
 Usage:
-    python3 .claude/hooks/record_doc_review.py \\
+    python3 tools/docs/hooks/record_doc_review.py \\
         --updated "Responses and encryption" \\
         --unchanged "Submissions=Internal refactor preserved documented behaviour."
 
     # or supply the whole record as JSON on stdin / via --json:
-    python3 .claude/hooks/record_doc_review.py --json '{"reviewed": true, ...}'
+    python3 tools/docs/hooks/record_doc_review.py --json '{"reviewed": true, ...}'
 
 At least one of --updated / --unchanged / --json is required. The most recent
 session with a pending review is used unless --session is given.

@@ -146,7 +146,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"\nimport sys, json, subprocess, os\ndata = json.load(sys.stdin)\nf = data.get('tool_input', {}).get('file_path', '')\nif not f.endswith('.py'): sys.exit(0)\nbackend = '/home/shayman86/my-repos/FlowForm/backend'\nif not f.startswith(backend): sys.exit(0)\nsubprocess.run(['uv', 'run', '--extra', 'dev', 'python', '-m', 'py_compile', f], cwd=backend, capture_output=True)\nsubprocess.run(['uv', 'run', '--extra', 'dev', 'ruff', 'check', '--fix', '--unfixable', 'F401,F811', f], cwd=backend, capture_output=True)\n\"",
+            "command": "python3 /home/shayman86/my-repos/FlowForm/tools/docs/hooks/post_tool_python_quality.py",
             "statusMessage": "py_compile + ruff --fix"
           }
         ]
@@ -157,7 +157,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/shayman86/my-repos/FlowForm/.claude/hooks/session_start_capture_base.py",
+            "command": "python3 /home/shayman86/my-repos/FlowForm/tools/docs/hooks/session_start_capture_base.py",
             "statusMessage": "docsys: capture base commit"
           }
         ]
@@ -168,7 +168,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/shayman86/my-repos/FlowForm/.claude/hooks/stop_doc_impact_review.py",
+            "command": "python3 /home/shayman86/my-repos/FlowForm/tools/docs/hooks/stop_doc_impact_review.py",
             "statusMessage": "docsys: documentation impact review"
           }
         ]
