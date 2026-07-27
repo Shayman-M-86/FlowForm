@@ -3,8 +3,8 @@
 API-facing entry point. Routes in api/v1/public.py call this service directly.
 Delegates access-method logic to core/access_resolver.py.
 
-Docs: docs/Policies and Services/Flows/Public-slug-flow.md
-      docs/Policies and Services/Flows/Authenticated-link-access-Flow.md
+Docs: docs/project-knowledge/product/respondent-access-and-continuity.md
+      docs/project-knowledge/backend/links-and-subjects.md
 """
 
 from __future__ import annotations
@@ -134,7 +134,7 @@ class SurveyResolveService:
         self._participant_service.verify_participant_for_user(db, participant=participant, user=actor)
 
         # Reconcile browser recognition token against assigned subject.
-        # Docs: Authenticated-link-access-Flow.md §5 — Recognition token reconciliation
+        # Docs: respondent-access-and-continuity.md, "Subject authority".
         token_lookup = (
             self._token_service.lookup(db, project_id=link.project_id, raw_token=recognition_token)
             if recognition_token is not None

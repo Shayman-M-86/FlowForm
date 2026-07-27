@@ -1,8 +1,8 @@
 {
   "schema": "flowform.docsys.index/1",
   "generated_by": "scripts/docs/docsys/index.py",
-  "repo_head": "2789a307570ff8d9769dc23b6ce78d939ad7435d",
-  "document_count": 91,
+  "repo_head": "70e4196790305f6a16dc4ecf376ae42f2a5505a6",
+  "document_count": 92,
   "documents": [
     {
       "path": "docs/development-workspace/archive/archive-index.md",
@@ -1474,15 +1474,17 @@
       "exclusions_resolved": [],
       "related_docs": [
         "Backend knowledge",
+        "Respondent access and continuity",
         "Identity and authentication",
         "Submissions",
         "Security model"
       ],
       "wiki_links": [
-        "identity-and-authentication",
+        "respondent-access-and-continuity",
         "projects-and-access",
-        "submissions",
+        "responses-and-encryption",
         "backend-index",
+        "respondent-access-and-continuity",
         "submissions",
         "identity-and-authentication"
       ],
@@ -1492,6 +1494,8 @@
         "Glossary",
         "Identity and authentication",
         "Projects and access",
+        "Respondent access and continuity",
+        "Responses and encryption",
         "Security model",
         "Submissions"
       ],
@@ -1609,6 +1613,7 @@
       "exclusions_resolved": [],
       "related_docs": [
         "Backend knowledge",
+        "Respondent access and continuity",
         "Links and subjects",
         "Surveys and versioning",
         "Responses and encryption",
@@ -1616,10 +1621,12 @@
       ],
       "wiki_links": [
         "surveys-and-versioning",
+        "respondent-access-and-continuity",
         "links-and-subjects",
         "responses-and-encryption",
         "backend-index",
         "data-flows",
+        "respondent-access-and-continuity",
         "links-and-subjects",
         "surveys-and-versioning"
       ],
@@ -1629,6 +1636,7 @@
         "Glossary",
         "Links and subjects",
         "Projects and access",
+        "Respondent access and continuity",
         "Responses and encryption",
         "Surveys and versioning"
       ],
@@ -1742,16 +1750,19 @@
       "related_docs": [
         "Responses and encryption",
         "Database migrations",
+        "Respondent access and continuity",
         "Security knowledge"
       ],
       "wiki_links": [
         "responses-and-encryption",
         "database-migrations",
+        "respondent-access-and-continuity",
         "security-index"
       ],
       "neighbours": [
         "Database migrations",
         "Project Knowledge",
+        "Respondent access and continuity",
         "Responses and encryption",
         "Security knowledge"
       ],
@@ -1838,15 +1849,23 @@
       "code_confidence": "medium",
       "headings": [
         "Responses and encryption",
-        "Data and key boundaries",
-        "Lifecycle",
-        "Limits and review needs",
+        "Storage boundary",
+        "Locator and key model",
+        "Session and envelope lifecycle",
+        "Current-answer semantics",
+        "Authorized reads and deletion",
+        "Implemented limits",
         "Related documents"
       ],
       "related_code": [
         "../../../backend/app/crypto/",
+        "../../../backend/app/cache/crypto.py",
+        "../../../backend/app/repositories/response/",
+        "../../../backend/app/schema/orm/core/submission_answer_slot.py",
+        "../../../backend/app/schema/orm/core/submission_session.py",
         "../../../backend/app/schema/orm/response/",
         "../../../backend/app/services/public_submissions/core/actions/",
+        "../../../backend/app/services/public_submissions/core/session_loader.py",
         "../../../backend/app/services/admin_results/",
         "../../../backend/app/db/manager.py",
         "../../../infra/database/init/schema/flowform_response_db_schema_v4.sql"
@@ -1855,8 +1874,13 @@
       "exclusions": [],
       "related_code_resolved": [
         "backend/app/crypto/",
+        "backend/app/cache/crypto.py",
+        "backend/app/repositories/response/",
+        "backend/app/schema/orm/core/submission_answer_slot.py",
+        "backend/app/schema/orm/core/submission_session.py",
         "backend/app/schema/orm/response/",
         "backend/app/services/public_submissions/core/actions/",
+        "backend/app/services/public_submissions/core/session_loader.py",
         "backend/app/services/admin_results/",
         "backend/app/db/manager.py",
         "infra/database/init/schema/flowform_response_db_schema_v4.sql"
@@ -1865,11 +1889,15 @@
       "exclusions_resolved": [],
       "related_docs": [
         "Data knowledge",
+        "Respondent access and continuity",
+        "Submissions",
         "Security model",
         "Trust boundaries"
       ],
       "wiki_links": [
         "data-index",
+        "respondent-access-and-continuity",
+        "submissions",
         "security-model",
         "trust-boundaries"
       ],
@@ -1877,6 +1905,9 @@
         "Data flows",
         "Data knowledge",
         "Database migrations",
+        "Glossary",
+        "Links and subjects",
+        "Respondent access and continuity",
         "Security knowledge",
         "Security model",
         "Submissions",
@@ -3905,10 +3936,13 @@
       "is_folder_head": true,
       "parent": "Project Knowledge",
       "children": [
-        "Builder and rules"
+        "Builder and rules",
+        "Respondent access and continuity"
       ],
       "tags": [
-        "frontend"
+        "backend",
+        "frontend",
+        "security"
       ],
       "verified_against_commit": null,
       "code_confidence": "medium",
@@ -3918,32 +3952,120 @@
       ],
       "related_code": [
         "../../../frontend/packages/builder/src/",
-        "../../../backend/app/services/content.py"
+        "../../../backend/app/services/content.py",
+        "../../../backend/app/domain/submission_access_rules.py",
+        "../../../backend/app/services/public_submissions/"
       ],
       "change_triggers": [],
       "exclusions": [],
       "related_code_resolved": [
         "frontend/packages/builder/src/",
-        "backend/app/services/content.py"
+        "backend/app/services/content.py",
+        "backend/app/domain/submission_access_rules.py",
+        "backend/app/services/public_submissions/"
       ],
       "change_triggers_resolved": [],
       "exclusions_resolved": [],
       "related_docs": [
         "Builder and rules",
+        "Respondent access and continuity",
         "Frontend implementation"
       ],
       "wiki_links": [
         "builder-and-rules",
+        "respondent-access-and-continuity",
         "frontend-index"
       ],
       "neighbours": [
         "Builder and rules",
         "Frontend implementation",
-        "Project Knowledge"
+        "Project Knowledge",
+        "Respondent access and continuity"
       ],
       "extra_metadata": {
         "aliases": [
           "Product knowledge"
+        ]
+      }
+    },
+    {
+      "path": "docs/project-knowledge/product/respondent-access-and-continuity.md",
+      "title": "Respondent access and continuity",
+      "document_type": "domain",
+      "authority": "canonical",
+      "status": "draft",
+      "collection": "project-knowledge",
+      "is_folder_head": false,
+      "parent": "Product knowledge",
+      "children": [],
+      "tags": [
+        "backend",
+        "security"
+      ],
+      "verified_against_commit": null,
+      "code_confidence": "medium",
+      "headings": [
+        "Respondent access and continuity",
+        "Survey reachability",
+        "Link types and assignment",
+        "Subject authority",
+        "Recognition tokens",
+        "Boundary with submission persistence",
+        "Related documents"
+      ],
+      "related_code": [
+        "../../../backend/app/domain/public_link_rules.py",
+        "../../../backend/app/domain/submission_access_rules.py",
+        "../../../backend/app/domain/survey_rules.py",
+        "../../../backend/app/services/survey_links.py",
+        "../../../backend/app/services/public_submissions/core/resolution/",
+        "../../../backend/app/schema/orm/core/project_subject.py",
+        "../../../backend/app/schema/orm/core/survey_access.py",
+        "../../../backend/tests/integration/core/test_flow_matrix.py"
+      ],
+      "change_triggers": [],
+      "exclusions": [],
+      "related_code_resolved": [
+        "backend/app/domain/public_link_rules.py",
+        "backend/app/domain/submission_access_rules.py",
+        "backend/app/domain/survey_rules.py",
+        "backend/app/services/survey_links.py",
+        "backend/app/services/public_submissions/core/resolution/",
+        "backend/app/schema/orm/core/project_subject.py",
+        "backend/app/schema/orm/core/survey_access.py",
+        "backend/tests/integration/core/test_flow_matrix.py"
+      ],
+      "change_triggers_resolved": [],
+      "exclusions_resolved": [],
+      "related_docs": [
+        "Product knowledge",
+        "Links and subjects",
+        "Submissions",
+        "Identity and authentication"
+      ],
+      "wiki_links": [
+        "links-and-subjects",
+        "submissions",
+        "responses-and-encryption",
+        "product-index",
+        "links-and-subjects",
+        "submissions",
+        "identity-and-authentication"
+      ],
+      "neighbours": [
+        "Data knowledge",
+        "Glossary",
+        "Identity and authentication",
+        "Links and subjects",
+        "Product knowledge",
+        "Responses and encryption",
+        "Security knowledge",
+        "Security model",
+        "Submissions"
+      ],
+      "extra_metadata": {
+        "aliases": [
+          "Respondent access and continuity"
         ]
       }
     },
@@ -4828,20 +4950,26 @@
         "Reference documentation",
         "Projects and access",
         "Surveys and versioning",
+        "Respondent access and continuity",
         "Links and subjects",
-        "Submissions"
+        "Submissions",
+        "Responses and encryption"
       ],
       "wiki_links": [
         "reference-index",
         "projects-and-access",
         "surveys-and-versioning",
+        "respondent-access-and-continuity",
         "links-and-subjects",
-        "submissions"
+        "submissions",
+        "responses-and-encryption"
       ],
       "neighbours": [
         "Links and subjects",
         "Projects and access",
         "Reference documentation",
+        "Respondent access and continuity",
+        "Responses and encryption",
         "Submissions",
         "Surveys and versioning"
       ],
@@ -5291,6 +5419,7 @@
       "neighbours": [
         "Links and subjects",
         "Projects and access",
+        "Respondent access and continuity",
         "Security knowledge",
         "Security model",
         "Trust boundaries"
@@ -5344,18 +5473,21 @@
         "Security model",
         "Trust boundaries",
         "Identity and authentication",
+        "Respondent access and continuity",
         "Responses and encryption"
       ],
       "wiki_links": [
         "security-model",
         "trust-boundaries",
         "identity-and-authentication",
+        "respondent-access-and-continuity",
         "responses-and-encryption"
       ],
       "neighbours": [
         "Data knowledge",
         "Identity and authentication",
         "Project Knowledge",
+        "Respondent access and continuity",
         "Responses and encryption",
         "Security model",
         "Trust boundaries"
@@ -5418,15 +5550,18 @@
         "Security knowledge",
         "Trust boundaries",
         "Identity and authentication",
+        "Respondent access and continuity",
         "Responses and encryption",
         "Configuration implementation"
       ],
       "wiki_links": [
         "identity-and-authentication",
+        "respondent-access-and-continuity",
         "responses-and-encryption",
         "security-index",
         "trust-boundaries",
         "identity-and-authentication",
+        "respondent-access-and-continuity",
         "responses-and-encryption",
         "configuration"
       ],
@@ -5436,6 +5571,7 @@
         "Identity and authentication",
         "Links and subjects",
         "Projects and access",
+        "Respondent access and continuity",
         "Responses and encryption",
         "Security knowledge",
         "Trust boundaries"

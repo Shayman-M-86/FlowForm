@@ -14,6 +14,7 @@ related_code:
   - "../../../backend/app/schema/orm/core/survey_access.py"
 related_docs:
   - "Backend knowledge"
+  - "Respondent access and continuity"
   - "Identity and authentication"
   - "Submissions"
   - "Security model"
@@ -21,42 +22,54 @@ related_docs:
 
 # Links and subjects
 
-This draft owns respondent entry credentials and project-scoped pseudonymous
-subjects. It separates a survey link or browser-recognition credential from the
-subject record that gives a respondent continuity across attempts. Studio
-identity and membership are outside this domain.
+This domain implements [[respondent-access-and-continuity|Respondent access and
+continuity]]. It separates survey reachability from subject resolution and keeps
+both separate from submission persistence. Studio membership and permissions
+are outside this boundary.
 
-The legacy model distinguishes general, private, and authenticated survey links;
-participants associate an enrolled subject with an identity; and a recognition
-token lets a returning browser resolve a subject. Access resolution combines
-link state, expiry, assignment, authentication, and subject evidence before a
-submission session is created. The source paths above are the evidence boundary
-for re-verification of these details.
+Access resolution validates publication, response-store availability, survey
+visibility, and the current state of a public slug or link. General links are
+unassigned and reusable. Private and authenticated links carry a participant
+assignment and are single-use; authenticated links additionally require the
+logged-in actor to match the participant's linked identity.
 
 ```text
-public / private / authenticated link
-                  |
-          validate state and policy
-                  |
-        +---------+----------+
-        |                    |
- recognition token     authenticated participant
-        |                    |
-        +---------+----------+
-                  v
-        project-scoped subject
-                  |
-                  v
-          submission session
+slug or link --> AccessResolver --> access grant
+                                      |
+recognition cookie --> token lookup --+
+                                      |
+logged-in identity -------------------+
+                                      v
+                               SubjectResolver
+                                      |
+                       +--------------+--------------+
+                       |                             |
+                 subject writes                token action
+                       |                             |
+                       +--------------+--------------+
+                                      v
+                               SessionStarter
 ```
 
-The domain selects access and subject context. It does not authorize Studio
-users, create encrypted envelopes, or persist answers. Those responsibilities
-belong respectively to [[identity-and-authentication|Identity and authentication]],
-[[projects-and-access|Projects and access]], and [[submissions|Submissions]].
+For open access, subject resolution prefers a logged-in project identity, then
+a valid project recognition token, then a new anonymous subject. For assigned
+access, the assigned participant subject wins. When evidence converges on two
+subjects, the weaker record is pointed at the canonical subject and the browser
+token can be rotated to preserve future continuity.
+
+Subject resolution returns the final subject and required effects. The
+session-start orchestration applies subject aliases, identity attachment, and
+recognition-token actions in the core transaction. It then creates the core
+session and response envelope and consumes an assigned link as part of the
+successful start boundary.
+
+The domain does not authorize Studio users or persist answer values. Those
+responsibilities belong respectively to [[projects-and-access|Projects and
+access]] and [[responses-and-encryption|Responses and encryption]].
 
 ## Related documents
 
 - [[backend-index|Backend knowledge]]
+- [[respondent-access-and-continuity|Respondent access and continuity]]
 - [[submissions|Submissions]]
 - [[identity-and-authentication|Identity and authentication]]

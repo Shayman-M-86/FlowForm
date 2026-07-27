@@ -1,6 +1,6 @@
-"""End-to-end flow matrix tests.
+"""End-to-end respondent access and subject-continuity matrix tests.
 
-One test per row of docs/Policies-and-Services/implementation/flow-matrix.md.
+One test per supported access and subject-evidence combination.
 All tests run through SessionStarter.start() so they exercise the full
 orchestration path: access resolution → subject resolution → token action →
 session creation → link consumption.
@@ -8,15 +8,9 @@ session creation → link consumption.
 Rejection tests assert the domain error raised by AccessResolver before
 subject resolution begins.
 
-Stop condition: if any test would need behavior not yet implemented, skip it
-with a comment rather than implement service-level changes here.
-
 Docs:
-  implementation/flow-matrix.md
-  Flows/Public-slug-flow.md
-  Flows/General-Link-Flow.md
-  Flows/Private-link-access-Flow.md
-  Flows/Authenticated-link-access-Flow.md
+  docs/project-knowledge/product/respondent-access-and-continuity.md
+  docs/project-knowledge/backend/links-and-subjects.md
 """
 from __future__ import annotations
 

@@ -19,6 +19,7 @@ related_docs:
   - "Security knowledge"
   - "Trust boundaries"
   - "Identity and authentication"
+  - "Respondent access and continuity"
   - "Responses and encryption"
   - "Configuration implementation"
 ---
@@ -56,7 +57,9 @@ middleware validates bearer credentials, while local users and access services
 apply project and survey authorization. Public and link-based respondent access
 uses a separate policy path; possession of an active survey-link credential can
 grant the access allowed by its type and state. See [[identity-and-authentication|Identity
-and authentication]] for the identity lifecycle.
+and authentication]] for the identity lifecycle and
+[[respondent-access-and-continuity|Respondent access and continuity]] for the
+product policy.
 
 Respondent session and recognition credentials are represented by hashes in core
 data and are returned to browsers as scoped cookies. Browser safety still needs
@@ -93,5 +96,6 @@ or a complete threat model.
 - [[security-index|Security knowledge]]
 - [[trust-boundaries|Trust boundaries]]
 - [[identity-and-authentication|Identity and authentication]]
+- [[respondent-access-and-continuity|Respondent access and continuity]]
 - [[responses-and-encryption|Responses and encryption]]
 - [[configuration|Configuration implementation]]

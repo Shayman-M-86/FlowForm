@@ -1,5 +1,6 @@
-"""Answer save orchestration following the exact 12-step sequence from doc 03.
+"""Validate, encrypt, and persist the current answer for one session slot.
 
+See docs/project-knowledge/data/responses-and-encryption.md.
 Also provides the question-viewed event helper.
 """
 
@@ -45,11 +46,7 @@ def _answer_value_to_json(answer_value: AnswerValueInput) -> dict[str, Any] | No
 
 
 class AnswerSaveService:
-    """Service for orchestrating the 12-step answer save sequence.
-
-    Handles encryption, validation, and persistence of survey answers with
-    proper session management and duplicate detection.
-    """
+    """Encrypt and persist current survey answers for active sessions."""
 
     def save_answer(
         self,

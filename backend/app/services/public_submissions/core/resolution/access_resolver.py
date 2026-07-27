@@ -1,10 +1,7 @@
 """Resolve respondent access to a survey via public slug or link token.
 
-Docs: docs/Policies and Services/Flows/Public-slug-flow.md
-      docs/Policies and Services/Flows/General-Link-Flow.md
-      docs/Policies and Services/Flows/Private-link-access-Flow.md
-      docs/Policies and Services/Flows/Authenticated-link-access-Flow.md
-      docs/Policies and Services/Flows/shared/resolve-link-token.md
+Docs: docs/project-knowledge/product/respondent-access-and-continuity.md
+      docs/project-knowledge/backend/links-and-subjects.md
 """
 from __future__ import annotations
 
@@ -85,7 +82,7 @@ class AccessResolver:
     def resolve_public_slug(self, db: Session, *, public_slug: str) -> SubmissionAccessGrant:
         """Validate slug, check visibility=public, check published version.
 
-        Docs: Public-slug-flow.md §1
+        Docs: respondent-access-and-continuity.md, "Survey reachability".
         """
         survey = ensure_present(
             sr.get_by_public_slug(db, public_slug=public_slug),
@@ -123,7 +120,7 @@ class AccessResolver:
         """Run all link state checks, fetch survey, check published version.
 
         Shared by General, Private, Authenticated flows.
-        Docs: shared/resolve-link-token.md
+        Docs: respondent-access-and-continuity.md, "Link types and assignment".
         """
         survey = ensure_present(
             sr.get_survey(db, project_id=link.project_id, survey_id=link.survey_id),

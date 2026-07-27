@@ -13,6 +13,7 @@ related_code:
 related_docs:
   - "Responses and encryption"
   - "Database migrations"
+  - "Respondent access and continuity"
   - "Security knowledge"
 ---
 
@@ -48,4 +49,5 @@ pages own the cryptographic response boundary and the schema-change workflow.
 
 - [[responses-and-encryption|Responses and encryption]]
 - [[database-migrations|Database migrations]]
+- [[respondent-access-and-continuity|Respondent access and continuity]]
 - [[security-index|Security knowledge]]

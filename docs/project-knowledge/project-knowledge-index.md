@@ -109,8 +109,8 @@ against a committed implementation baseline.
 
 ## Where responsibility continues
 
-- [[product-index|Product knowledge]] owns survey-building concepts and
-  user-visible rules.
+- [[product-index|Product knowledge]] owns survey-building, respondent-access,
+  continuity, and other user-visible rules.
 - [[frontend-index|Frontend implementation]] and [[backend-index|Backend
   knowledge]] own browser and API/application responsibilities.
 - [[data-index|Data knowledge]] and [[security-index|Security knowledge]] own

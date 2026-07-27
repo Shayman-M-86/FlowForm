@@ -1,10 +1,10 @@
 {
   "schema": "flowform.docsys.health/1",
   "docs_root": "docs",
-  "repo_head": "2789a307570ff8d9769dc23b6ce78d939ad7435d",
-  "document_count": 91,
+  "repo_head": "70e4196790305f6a16dc4ecf376ae42f2a5505a6",
+  "document_count": 92,
   "status_counts": {
-    "draft": 74,
+    "draft": 75,
     "verified": 16,
     "scaffold": 1
   },
@@ -21,7 +21,7 @@
     "planning": 1,
     "architecture": 5,
     "implementation": 11,
-    "domain": 8,
+    "domain": 9,
     "workflow": 9,
     "reference": 11,
     "generated": 8
@@ -30,7 +30,7 @@
     "current": 15,
     "review suggested": 0,
     "likely stale": 1,
-    "unknown": 75
+    "unknown": 76
   },
   "stale_documents": [
     {
@@ -40,12 +40,12 @@
       "document_type": "overview",
       "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
       "classification": "likely stale",
-      "commit_distance": 3,
+      "commit_distance": 4,
       "changed_owned_files": [
         ".github/workflows/ci.yml"
       ],
       "reasons": [
-        "3 commit(s) since verification",
+        "4 commit(s) since verification",
         "1 owned file(s) changed across 1/2 declared code areas"
       ]
     }
@@ -77,8 +77,26 @@
       "out": 10
     },
     {
+      "title": "Responses and encryption",
+      "path": "docs/project-knowledge/data/responses-and-encryption.md",
+      "in": 10,
+      "out": 10
+    },
+    {
+      "title": "Links and subjects",
+      "path": "docs/project-knowledge/backend/links-and-subjects.md",
+      "in": 9,
+      "out": 9
+    },
+    {
       "title": "Infrastructure knowledge",
       "path": "docs/project-knowledge/infrastructure/infrastructure-index.md",
+      "in": 9,
+      "out": 9
+    },
+    {
+      "title": "Respondent access and continuity",
+      "path": "docs/project-knowledge/product/respondent-access-and-continuity.md",
       "in": 9,
       "out": 9
     },
@@ -89,28 +107,10 @@
       "out": 9
     },
     {
-      "title": "Engineering decisions",
-      "path": "docs/development-workspace/decisions/decisions-index.md",
-      "in": 8,
-      "out": 8
-    },
-    {
-      "title": "Engineering investigations",
-      "path": "docs/development-workspace/investigations/investigations-index.md",
-      "in": 8,
-      "out": 8
-    },
-    {
-      "title": "Engineering planning",
-      "path": "docs/development-workspace/planning/planning-index.md",
-      "in": 8,
-      "out": 8
-    },
-    {
       "title": "Security model",
       "path": "docs/project-knowledge/security/security-model.md",
-      "in": 8,
-      "out": 8
+      "in": 9,
+      "out": 9
     }
   ],
   "open_questions": [],

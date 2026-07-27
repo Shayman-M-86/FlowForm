@@ -15,6 +15,7 @@ related_docs:
   - "Security model"
   - "Trust boundaries"
   - "Identity and authentication"
+  - "Respondent access and continuity"
   - "Responses and encryption"
 ---
 
@@ -31,7 +32,9 @@ The security model gives the integrated control and limitation view. Trust
 boundaries identify where authority or sensitive data crosses components and
 what remains trusted at each crossing. Identity and authentication owns the
 Auth0-to-local-user lifecycle. Data knowledge owns persistence and encrypted
-responses, which this branch links to rather than duplicating.
+responses. Product knowledge owns respondent link and continuity semantics.
+This branch connects those responsibilities without duplicating their detailed
+rules.
 
 ```text
 browser / operator / respondent
@@ -54,4 +57,5 @@ browser / operator / respondent
 - [[security-model|Security model]]
 - [[trust-boundaries|Trust boundaries]]
 - [[identity-and-authentication|Identity and authentication]]
+- [[respondent-access-and-continuity|Respondent access and continuity]]
 - [[responses-and-encryption|Responses and encryption]]

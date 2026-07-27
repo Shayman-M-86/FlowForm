@@ -63,7 +63,7 @@ def decrypt_answer_current(
     nonce: bytes,
     context: AnswerContext,
 ) -> DecryptedAnswerPayload:
-    """Decrypt a stored answer revision for admin viewing."""
+    """Decrypt a stored current answer for admin viewing."""
     aad = build_aad(context)
     raw = decrypt_answer(ciphertext, context.dek, nonce, aad)
     parsed = parse_plaintext_payload(raw)

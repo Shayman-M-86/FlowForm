@@ -14,6 +14,7 @@ related_code:
   - "../../../backend/tests/e2e/test_submission_session_flows.py"
 related_docs:
   - "Backend knowledge"
+  - "Respondent access and continuity"
   - "Links and subjects"
   - "Surveys and versioning"
   - "Responses and encryption"
@@ -57,6 +58,7 @@ create session + response envelope
 
 The boundary does not define survey content or Studio results authorization.
 See [[surveys-and-versioning|Surveys and versioning]],
+[[respondent-access-and-continuity|Respondent access and continuity]],
 [[links-and-subjects|Links and subjects]], and
 [[responses-and-encryption|Responses and encryption]].
 
@@ -64,5 +66,6 @@ See [[surveys-and-versioning|Surveys and versioning]],
 
 - [[backend-index|Backend knowledge]]
 - [[data-flows|Data flows]]
+- [[respondent-access-and-continuity|Respondent access and continuity]]
 - [[links-and-subjects|Links and subjects]]
 - [[surveys-and-versioning|Surveys and versioning]]
