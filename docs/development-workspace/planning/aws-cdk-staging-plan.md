@@ -5,7 +5,7 @@ document_type: planning
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-07-28
 tags: [infrastructure, configuration, ci-cd]
 related_code:
   - "../../../infra/deployment/aws/cdk/"
@@ -39,15 +39,17 @@ a retained-data cutover, or that a source-complete stack has been deployed.
 | Target decision | Recorded in ADR 0001 | Not applicable |
 | Security and registry | Implemented | Last recorded as deployed on 2026-07-24 |
 | Image publication | Implemented and exercised through GitHub OIDC | Four-image digest manifest recorded by the earlier execution slice |
-| Network | Four-subnet design implemented and covered by CDK assertions | Deployment and live verification not confirmed |
+| Network | Four-subnet design implemented and covered by CDK assertions | Deployed and verified on 2026-07-27 |
 | Database | Placeholder only | Not deployed |
 | Application compute | EC2 resource skeleton exists; convergence/bootstrap is incomplete | Not ready to deploy |
 | Frontend | Substantial CDK and deployment support exists | Outside the immediate infrastructure slice |
 | Observability | Placeholder CDK stack | Not deployed |
 
-The live network status could not be refreshed on 2026-07-27 because the local
-AWS CLI session had expired. Re-authenticate and inspect CloudFormation before
-treating the Network stack as absent or present.
+`FlowForm-Staging-Network` reached `CREATE_COMPLETE` on 2026-07-27. Live AWS
+inspection confirmed its subnets, routes, endpoint boundary, private zone, flow
+logs, Instance Connect Endpoint, and security groups. A post-deployment CDK
+diff reported no differences, and CloudFormation drift detection reported
+`IN_SYNC` with zero drifted resources.
 
 Image vulnerability triage is deliberately deferred while the staging
 infrastructure is assembled. It remains a release-readiness gate and must not
@@ -100,9 +102,10 @@ App EC2 in isolated subnet A ----> RDS in isolated subnet A
 
 ## Immediate next execution slice
 
-The next slice is to deploy and prove `FlowForm-Staging-Network`, then implement
-`DatabaseStack`. Do not begin application-host deployment merely because the
-EC2 resources synthesize: their bootstrap and convergence path is incomplete.
+The Network portion of Phase 3 is complete. The next slice is to implement,
+review, deploy, and prove `DatabaseStack`. Do not begin application-host
+deployment merely because the EC2 resources synthesize: their bootstrap and
+convergence path is incomplete.
 
 ### 1. Land the source through the staging workflow
 
@@ -115,57 +118,40 @@ Continue the established branch boundary:
    checkout.
 
 The image-publication workflow already uses the protected staging identity.
-Creating a general CDK deployment workflow is not required before the first
-Network deployment; operator deployment remains the controlled path for this
-slice.
+Creating a general CDK deployment workflow is not required before the Database
+deployment; operator deployment remains the controlled path for this slice.
 
-### 2. Re-authenticate and inspect before deploying
+### Completed Network deployment evidence
 
-From `infra/deployment/aws/cdk/`:
+Live inspection on 2026-07-27 confirmed:
 
-```bash
-aws login
-aws cloudformation describe-stacks \
-  --region ap-southeast-2 \
-  --stack-name FlowForm-Staging-Network
-```
+- `FlowForm-Staging-Network` is `CREATE_COMPLETE`.
+- The four intended subnets exist:
+  - proxy public A: `10.42.0.0/24` in `ap-southeast-2a`
+  - app isolated A: `10.42.1.0/24` in `ap-southeast-2a`
+  - RDS isolated A: `10.42.2.0/24` in `ap-southeast-2a`
+  - RDS isolated B: `10.42.3.0/24` in `ap-southeast-2b`
+- Only the proxy route table has a `0.0.0.0/0` Internet Gateway route.
+- The app route table alone has the S3 prefix-list route through the available
+  S3 gateway endpoint.
+- No NAT Gateway or paid interface endpoint exists.
+- The S3 endpoint policy grants only `s3:GetObject` on the regional ECR
+  starport layer bucket.
+- The private Route 53 zone is associated only with the staging VPC.
+- The VPC flow log is active, delivery is successful, all traffic is selected,
+  and `/flowform/staging/vpc-flow` has seven-day retention.
+- The EC2 Instance Connect Endpoint is complete in the app subnet.
+- Public ingress is limited to proxy TCP 80/443; app, RDS, Squid, Alloy, and
+  management paths use the intended peer security groups.
+- A post-deployment CDK diff found no differences.
+- CloudFormation drift detection reported `IN_SYNC` with zero drifted
+  resources.
 
-If the stack does not exist, review and deploy it:
+Private DNS resolution, actual ECR layer routing, Squid service access, and
+emitted cross-host flow records still require the real runtime instances and
+remain Phase 4 checks.
 
-```bash
-npx cdk diff -c env=staging FlowForm-Staging-Network
-npx cdk deploy -c env=staging FlowForm-Staging-Network
-```
-
-Keep approval enabled and inspect the CloudFormation change set. If the stack
-already exists, compare it with the merged staging source before deciding
-whether an update is required.
-
-### 3. Prove the deployed network boundary
-
-Record deployed evidence for:
-
-- Exactly four subnets with the intended CIDRs:
-  - proxy public A: `10.42.0.0/24`
-  - app isolated A: `10.42.1.0/24`
-  - RDS isolated A: `10.42.2.0/24`
-  - RDS isolated B: `10.42.3.0/24`
-- Only the proxy subnet has a default Internet Gateway route.
-- No NAT Gateway and no paid interface endpoint exist.
-- The S3 gateway endpoint is associated only with the application subnet route
-  table and has the intended ECR layer-bucket read policy.
-- The private Route 53 zone is associated with the staging VPC.
-- The VPC flow log is active and targets
-  `/flowform/staging/vpc-flow`.
-- Security-group paths match the declared proxy, application, RDS, Alloy, DNS,
-  NTP, S3, and EC2 Instance Connect Endpoint flows.
-
-Do not create temporary hosts solely to prove runtime behaviour. Private DNS
-resolution, actual ECR layer routing, Squid service access, and emitted
-cross-host flow records belong to the compute phase when the real instances
-exist.
-
-### 4. Implement `DatabaseStack`
+### 2. Implement `DatabaseStack`
 
 After network proof, replace the placeholder with:
 

@@ -2,17 +2,17 @@
 title: Deployment model
 aliases: ["Deployment model"]
 document_type: architecture
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:4e60579a93ca2a5b217dc6ef723540d3333d98e5fecf1e780a67a74f508cbf91
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-28
 tags: [infrastructure, configuration]
 related_code:
   - "../../../../infra/deployment/aws/cdk/app.py"
   - "../../../../infra/deployment/aws/cdk/flowform_infra/config/environments.py"
   - "../../../../infra/deployment/aws/cdk/flowform_infra/stacks/"
   - "../../../../infra/deployment/bootstrap/"
-related_docs: ["Deployment documentation", "Cloud deployment", "Runtime containers"]
+related_docs: ["Deployment documentation", "AWS network topology", "Cloud deployment", "Runtime containers"]
 ---
 
 # Deployment model
@@ -53,6 +53,11 @@ network, registry, security, and database stacks; the frontend stack depends on
 its certificate and security stacks; observability depends on application.
 The frontend certificate stack is explicitly configured for `us-east-1`, while
 the remaining environment stacks use the environment region.
+
+[[aws-network-topology|AWS network topology]] owns the full-deployment VPC,
+subnet, route, endpoint, private-discovery, management, flow-log, and
+security-group structure. Keeping those details in one network page avoids
+turning this stack-level model into a second, incomplete network definition.
 
 The infrastructure configuration specifies a Packer-built EC2 base-image
 reference through an SSM parameter, with an optional direct AMI override and a
