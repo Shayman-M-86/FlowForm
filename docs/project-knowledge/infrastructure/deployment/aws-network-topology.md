@@ -2,9 +2,9 @@
 title: AWS network topology
 aliases: ["AWS network topology"]
 document_type: architecture
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:334774882bbb4a769f28a537fb0a409c060ea5445ae388e23c4bae9aa98aeaf4
 last_edited: 2026-07-28
 tags: [infrastructure, security]
 related_code:

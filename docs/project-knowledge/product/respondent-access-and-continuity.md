@@ -2,9 +2,9 @@
 title: Respondent access and continuity
 aliases: ["Respondent access and continuity"]
 document_type: domain
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:25b411d514b5d7378e845a076545b3331529bec598c5df6f8325be36096cc48c
 last_edited: 2026-07-28
 tags: [backend, security]
 related_code:

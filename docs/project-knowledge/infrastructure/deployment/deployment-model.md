@@ -2,9 +2,9 @@
 title: Deployment model
 aliases: ["Deployment model"]
 document_type: architecture
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:4e60579a93ca2a5b217dc6ef723540d3333d98e5fecf1e780a67a74f508cbf91
 last_edited: 2026-07-28
 tags: [infrastructure, configuration]
 related_code:

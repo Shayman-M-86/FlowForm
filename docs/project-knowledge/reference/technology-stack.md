@@ -2,9 +2,9 @@
 title: Technology stack
 aliases: ["Technology stack", "Tech stack"]
 document_type: reference
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:24cc50dd86c0ae6a18c8e55c2d76e34185e0cddeaad21992dc8f6c7890d3c503
 last_edited: 2026-07-28
 tags: [backend, frontend, infrastructure, tooling]
 related_code:
