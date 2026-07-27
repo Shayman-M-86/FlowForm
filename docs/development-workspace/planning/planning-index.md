@@ -5,7 +5,7 @@ document_type: planning-index
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-07-28
 tags: [meta]
 related_code: []
 related_docs: ["Development workspace"]
@@ -50,6 +50,12 @@ objective --> scope --> sequence --> validation --> implementation
 
 - [[aws-cdk-staging-plan|AWS CDK staging plan]] sequences proposed staging
   delivery work.
+- [[aws-database-roles-and-bootstrap|AWS database roles and bootstrap design]]
+  records how the existing PostgreSQL identity and initialization assets can be
+  adapted for retained RDS.
+- [[aws-database-stack-configuration|AWS DatabaseStack staging configuration]]
+  records the proposed RDS service settings, lifecycle, monitoring, and delivery
+  gates.
 
 ## Related documents
 

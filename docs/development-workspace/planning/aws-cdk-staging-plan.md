@@ -16,6 +16,8 @@ related_code:
 related_docs:
   - "Engineering planning"
   - "ADR 0001: AWS staging infrastructure target"
+  - "AWS database roles and bootstrap design"
+  - "AWS DatabaseStack staging configuration"
 ---
 
 # AWS CDK staging plan
@@ -309,3 +311,5 @@ production cutover remain separate work.
 
 - [[planning-index|Engineering planning]]
 - [[0001-aws-staging-infrastructure-target|ADR 0001: AWS staging infrastructure target]]
+- [[aws-database-roles-and-bootstrap|AWS database roles and bootstrap design]]
+- [[aws-database-stack-configuration|AWS DatabaseStack staging configuration]]
