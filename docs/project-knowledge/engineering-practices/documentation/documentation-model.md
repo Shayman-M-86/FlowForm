@@ -4,7 +4,7 @@ aliases: ["Documentation model"]
 document_type: overview
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:29ed994043574393402a4982681b838c2e542a7043b90bfe402f980692a8a8d1
+verified_evidence_digest: sha256:afa3193dd854d63536115c0e650ff16673da74d1174d20e50bf75e914b567121
 last_edited: 2026-07-27
 tags: [meta]
 related_code:

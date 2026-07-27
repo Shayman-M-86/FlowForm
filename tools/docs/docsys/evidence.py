@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
+from .impact import detect_impact
 from .model import (
     ROOT,
     DocSet,
@@ -279,7 +280,13 @@ def check_staged(*, sync_invalidations: bool = False) -> int:
     staged_evidence = {
         path for path in staged_paths if not path.startswith("docs/")
     }
+    impact_by_doc = {
+        item.doc.rel_path: item
+        for item in detect_impact(sorted(staged_evidence), docset)
+    }
     mismatches: list[Document] = []
+    refreshed: list[str] = []
+    skipped_refresh: list[str] = []
 
     for worktree_doc in docset.docs:
         doc = (
@@ -288,18 +295,47 @@ def check_staged(*, sync_invalidations: bool = False) -> int:
             and _has_unstaged(worktree_doc.rel_path)
             else worktree_doc
         )
-        is_impacted = any(doc.code_matches(path) for path in staged_evidence)
-        if doc.rel_path not in staged_docs and not is_impacted:
+        impact = impact_by_doc.get(doc.rel_path)
+        if doc.rel_path not in staged_docs and impact is None:
             continue
         if doc.collection != "project-knowledge" or doc.status != "verified":
             continue
         current = doc.verified_evidence_digest
         snapshot = source.snapshot(doc)
-        if current != snapshot.digest:
-            mismatches.append(doc)
+        if current == snapshot.digest:
+            continue
+        if (
+            doc.rel_path not in staged_docs
+            and impact is not None
+            and impact.confidence != "high"
+        ):
+            if _has_unstaged(doc.rel_path):
+                skipped_refresh.append(doc.rel_path)
+                continue
+            _set_metadata(doc.path, status="verified", digest=snapshot.digest)
+            subprocess.run(
+                ["git", "add", "--", doc.rel_path],
+                cwd=ROOT,
+                check=True,
+            )
+            refreshed.append(doc.rel_path)
+            continue
+        mismatches.append(doc)
+
+    for path in refreshed:
+        print(
+            "refreshed verified evidence after a lower-confidence impact: "
+            f"{path}"
+        )
+    for path in skipped_refresh:
+        print(
+            "left lower-confidence evidence unchanged because the document "
+            f"has unstaged edits: {path}"
+        )
 
     if not mismatches:
-        print("staged documentation evidence is current")
+        if not refreshed and not skipped_refresh:
+            print("staged documentation evidence is current")
         return 0
 
     changed: list[str] = []

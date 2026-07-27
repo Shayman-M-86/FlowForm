@@ -81,16 +81,20 @@ def _match_kind(pattern: str) -> str:
 def _confidence_for(doc: Document, matches: list[Match]) -> tuple[str, list[str]]:
     reasons: list[str] = []
     best = "low"
-    kinds = {m.kind for m in matches}
-    sources = {m.source for m in matches}
-
-    if "exact" in kinds and "related_code" in sources:
+    if any(
+        match.kind == "exact" and match.source == "related_code"
+        for match in matches
+    ):
         best = "high"
         reasons.append("a file named directly in related_code changed")
-    elif {"directory", "glob"} & kinds and "related_code" in sources:
+    elif any(
+        match.kind in {"directory", "glob"}
+        and match.source == "related_code"
+        for match in matches
+    ):
         best = "medium"
         reasons.append("a directory or glob in related_code changed")
-    elif "change_triggers" in sources:
+    elif any(match.source == "change_triggers" for match in matches):
         best = "low"
         reasons.append("only a change_triggers pattern matched")
 

@@ -8,7 +8,12 @@ from unittest.mock import patch
 import tomllib
 from docsys import mcp_server
 from docsys.context import assess_reliability, build_context
-from docsys.evidence import EvidenceEntry, EvidenceSource
+from docsys.evidence import (
+    EvidenceEntry,
+    EvidenceSource,
+    check_staged,
+)
+from docsys.impact import detect_impact
 from docsys.freshness import CURRENT, Freshness
 from docsys.debt import analyse, build_report, measure
 from docsys.model import ROOT, DocSet, resolve_docs_root
@@ -36,6 +41,149 @@ related_docs: []
 
 
 class CollectionModelTests(unittest.TestCase):
+    def test_impact_confidence_distinguishes_exact_and_broad_matches(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            area = Path(temporary)
+            docs_root = area / "docs"
+            project = docs_root / "project-knowledge"
+            project.mkdir(parents=True)
+            code_dir = area / "implementation"
+            code_dir.mkdir()
+            exact_path = code_dir / "exact.py"
+            broad_path = code_dir / "broad.py"
+
+            (project / "exact.md").write_text(
+                _document("Exact")
+                .replace("status: scaffold", "status: draft")
+                .replace(
+                    "related_code: []",
+                    'related_code: ["../../implementation/exact.py"]',
+                )
+            )
+            (project / "broad.md").write_text(
+                _document("Broad")
+                .replace("status: scaffold", "status: draft")
+                .replace(
+                    "related_code: []",
+                    'related_code: ["../../implementation/"]',
+                )
+            )
+            docset = DocSet.load(docs_root)
+
+            impacts = {
+                item.doc.title: item.confidence
+                for item in detect_impact(
+                    [
+                        exact_path.relative_to(ROOT).as_posix(),
+                        broad_path.relative_to(ROOT).as_posix(),
+                    ],
+                    docset,
+                )
+            }
+
+            self.assertEqual(impacts["Exact"], "high")
+            self.assertEqual(impacts["Broad"], "medium")
+
+    def test_staged_evidence_auto_refreshes_broad_impact(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            area = Path(temporary)
+            docs_root = area / "docs"
+            project = docs_root / "project-knowledge"
+            project.mkdir(parents=True)
+            code_path = area / "implementation" / "changed.py"
+            code_path.parent.mkdir()
+            doc_path = project / "broad.md"
+            doc_path.write_text(
+                _document("Broad")
+                .replace("status: scaffold", "status: verified")
+                .replace(
+                    "verified_evidence_digest: null",
+                    f"verified_evidence_digest: sha256:{'a' * 64}",
+                )
+                .replace(
+                    "related_code: []",
+                    'related_code: ["../../implementation/"]',
+                )
+            )
+            code_rel = code_path.relative_to(ROOT).as_posix()
+            source = EvidenceSource(
+                {
+                    code_rel: EvidenceEntry(code_rel, "100644", "b" * 40),
+                },
+                "staged index",
+            )
+
+            with patch(
+                "docsys.evidence.EvidenceSource.from_index",
+                return_value=source,
+            ), patch(
+                "docsys.evidence.DocSet.load",
+                return_value=DocSet.load(docs_root),
+            ), patch(
+                "docsys.evidence._git_text",
+                return_value=f"{code_rel}\n",
+            ), patch(
+                "docsys.evidence._has_unstaged",
+                return_value=False,
+            ), patch("docsys.evidence.subprocess.run"):
+                result = check_staged(sync_invalidations=True)
+
+            refreshed = DocSet.load(docs_root).docs[0]
+            self.assertEqual(result, 0)
+            self.assertEqual(refreshed.status, "verified")
+            self.assertNotEqual(
+                refreshed.verified_evidence_digest,
+                f"sha256:{'a' * 64}",
+            )
+
+    def test_staged_evidence_invalidates_exact_impact(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            area = Path(temporary)
+            docs_root = area / "docs"
+            project = docs_root / "project-knowledge"
+            project.mkdir(parents=True)
+            code_path = area / "implementation.py"
+            doc_path = project / "exact.md"
+            doc_path.write_text(
+                _document("Exact")
+                .replace("status: scaffold", "status: verified")
+                .replace(
+                    "verified_evidence_digest: null",
+                    f"verified_evidence_digest: sha256:{'a' * 64}",
+                )
+                .replace(
+                    "related_code: []",
+                    'related_code: ["../../implementation.py"]',
+                )
+            )
+            code_rel = code_path.relative_to(ROOT).as_posix()
+            source = EvidenceSource(
+                {
+                    code_rel: EvidenceEntry(code_rel, "100644", "b" * 40),
+                },
+                "staged index",
+            )
+
+            with patch(
+                "docsys.evidence.EvidenceSource.from_index",
+                return_value=source,
+            ), patch(
+                "docsys.evidence.DocSet.load",
+                return_value=DocSet.load(docs_root),
+            ), patch(
+                "docsys.evidence._git_text",
+                return_value=f"{code_rel}\n",
+            ), patch(
+                "docsys.evidence._has_unstaged",
+                return_value=False,
+            ), patch("docsys.evidence.subprocess.run"):
+                result = check_staged(sync_invalidations=True)
+
+            invalidated = DocSet.load(docs_root).docs[0]
+            self.assertEqual(result, 1)
+            self.assertEqual(invalidated.status, "draft")
+            self.assertIsNone(invalidated.verified_evidence_digest)
+
     def test_evidence_digest_changes_only_for_matching_blobs(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             area = Path(temporary)
