@@ -2,9 +2,9 @@
 title: Environment variables
 aliases: ["Environment variables"]
 document_type: reference
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:05f8b3d085e11b1daff15b992515ae00fc53474f3745d6b252a621d328a9bd06
 last_edited: 2026-07-27
 tags: [configuration]
 related_code: ["../../../backend/app/core/config.py", "../../../infra/deployment/bootstrap/", "../../../infra/containers/", "../../../frontend/apps/"]

@@ -2,9 +2,9 @@
 title: Backend code organization
 aliases: ["Backend code organization"]
 document_type: implementation
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:6200c0862f36d9fda4bbe9b78e08b1e545c4ff24c0c47eb2e9199401b9fc0cb3
 last_edited: 2026-07-27
 tags: [backend]
 related_code:

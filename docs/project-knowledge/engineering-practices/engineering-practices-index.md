@@ -2,12 +2,17 @@
 title: Engineering practices
 aliases: ["Engineering practices"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:964e640f650b0b48240fc19c5af5c7eb76037cc75e62351f87c0b61ba8564b20
 last_edited: 2026-07-27
 tags: [tooling]
-related_code: []
+related_code:
+  - "../../../tools/docs/"
+  - "../../../.github/workflows/"
+  - "../../../backend/scripts/"
+  - "../../../frontend/package.json"
+  - "../../../infra/env/dev/"
 related_docs:
   - "Project Knowledge"
   - "Documentation practice"

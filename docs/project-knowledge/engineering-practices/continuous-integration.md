@@ -2,9 +2,9 @@
 title: Continuous integration
 aliases: ["Continuous integration"]
 document_type: workflow
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:e3502fd92602a3b849487f2206ffb72bf1956b02d34aefaaf333f085dfe0bc34
 last_edited: 2026-07-27
 tags: [ci-cd]
 related_code:

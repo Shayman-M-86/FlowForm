@@ -2,9 +2,9 @@
 title: Backend feature slices
 aliases: ["Backend feature slices"]
 document_type: implementation
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:1341271d646459f6a9958d1dec6f3aef1a07519701cfc2c26e4668795935568a
 last_edited: 2026-07-27
 tags: [backend]
 related_code:

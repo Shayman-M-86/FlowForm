@@ -2,9 +2,9 @@
 title: Scripts catalogue
 aliases: ["Scripts catalogue"]
 document_type: reference
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:ef47b7ab1934c1fed9284a6f670c3d6f951f8af4a96621031e9416bc154102cb
 last_edited: 2026-07-27
 tags: [tooling]
 related_code: ["../../../scripts/", "../../../backend/scripts/", "../../../frontend/scripts/", "../../../infra/", "../../../tools/mcp/", "../../../.githooks/"]

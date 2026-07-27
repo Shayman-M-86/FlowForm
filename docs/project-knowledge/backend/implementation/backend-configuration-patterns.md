@@ -2,9 +2,9 @@
 title: Backend configuration patterns
 aliases: ["Backend configuration patterns"]
 document_type: implementation
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:d6f000d202e5f7252518f1aa07d2eaae1433cd6f7be4b2aa58a54154b76b6dc2
 last_edited: 2026-07-27
 tags: [backend, configuration]
 related_code:

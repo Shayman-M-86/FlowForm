@@ -2,9 +2,9 @@
 title: Local development
 aliases: ["Local development"]
 document_type: workflow
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:535b1dde6dcea6d952ca454c42134177de28f254be0e9f2599dac51f84e7205e
 last_edited: 2026-07-27
 tags: [tooling, infrastructure]
 related_code:

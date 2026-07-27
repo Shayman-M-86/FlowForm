@@ -2,9 +2,9 @@
 title: Frontend implementation
 aliases: ["Frontend implementation"]
 document_type: implementation
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:22d1aedfc7f85a6292c04d6cd02dcebbd961fad806a72f2847bff347772fc59c
 last_edited: 2026-07-27
 tags: [frontend]
 related_code:

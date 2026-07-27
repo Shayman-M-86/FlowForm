@@ -2,9 +2,9 @@
 title: Documentation authoring guide
 aliases: ["Documentation authoring guide"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:d377102676bbe51ae869d0d41694cde7bbf88944aeef06876ba823c5f7eb22ed
 last_edited: 2026-07-27
 tags: [meta]
 related_code:

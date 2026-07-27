@@ -3,9 +3,9 @@ title: Scripts implementation
 aliases:
   - "Scripts implementation"
 document_type: implementation
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:0e6fd028cd93463d853234a42ecd4db5e6446b6987b31556a6db85e054dd1ef7
 last_edited: 2026-07-27
 tags: [tooling]
 related_code:

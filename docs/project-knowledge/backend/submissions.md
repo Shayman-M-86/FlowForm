@@ -2,9 +2,9 @@
 title: Submissions
 aliases: ["Submissions"]
 document_type: domain
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:b5c0528d921b131c22eb45ae84ee05a6feaf61d1016992a02d645a03a5071855
 last_edited: 2026-07-27
 tags: [backend]
 related_code:

@@ -2,9 +2,9 @@
 title: Projects and access
 aliases: ["Projects and access"]
 document_type: domain
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:93ac1b4b36e700d1a529efa7bfdd51e92e4104d612fa1c8a16dbb05eb9c03f87
 last_edited: 2026-07-27
 tags: [backend, security]
 related_code:

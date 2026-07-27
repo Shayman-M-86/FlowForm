@@ -2,9 +2,9 @@
 title: Data flows
 aliases: ["Data flows"]
 document_type: architecture
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:ab96f8630c4a9115d7db3c1d0246750f07f29f9e7b6c9861956145f10b3fbaf0
 last_edited: 2026-07-27
 tags: [backend, frontend, security]
 related_code:

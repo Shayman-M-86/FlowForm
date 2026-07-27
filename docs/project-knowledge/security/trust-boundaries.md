@@ -2,9 +2,9 @@
 title: Trust boundaries
 aliases: ["Trust boundaries"]
 document_type: architecture
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:9916241e555d0ab00a609c81ba4a213fa198eec05b777b9c6e5fd3149bf848d6
 last_edited: 2026-07-27
 tags: [backend, infrastructure, security]
 related_code:

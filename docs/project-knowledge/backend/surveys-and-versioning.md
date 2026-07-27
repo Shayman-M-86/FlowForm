@@ -2,9 +2,9 @@
 title: Surveys and versioning
 aliases: ["Surveys and versioning"]
 document_type: domain
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:5ffc2c087690e3874569b6c9ac61128056edc10ec5206dd79aef4af41be4f7e0
 last_edited: 2026-07-27
 tags: [backend]
 related_code:

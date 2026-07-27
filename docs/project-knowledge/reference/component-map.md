@@ -2,9 +2,9 @@
 title: Component map
 aliases: ["Component map"]
 document_type: reference
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:76f5ad1a7fb9fbb5dac4e24e1902a07744392ba8aec0b6c0fe26c9a05dfe78d6
 last_edited: 2026-07-27
 tags: [backend, frontend, infrastructure, security]
 related_code:

@@ -2,9 +2,9 @@
 title: Configuration catalogue
 aliases: ["Configuration catalogue"]
 document_type: reference
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:8ce1e3b841ded4982d9b521ce8f0f3fe47d81c09925b42c96abc266d8d2d7b40
 last_edited: 2026-07-27
 tags: [configuration]
 related_code: ["../../../backend/app/core/config.py", "../../../backend/gunicorn.conf.py", "../../../frontend/", "../../../infra/", "../../../.github/workflows/", "../../../.vscode/"]

@@ -2,9 +2,9 @@
 title: Backend implementation documentation
 aliases: ["Backend implementation documentation"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:298f3197dd243737b7d6391dfcc61d8dfe566dda58d6a0fbc79096d25a8149d7
 last_edited: 2026-07-27
 tags: [backend]
 related_code:

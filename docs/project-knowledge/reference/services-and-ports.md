@@ -2,9 +2,9 @@
 title: Services and ports
 aliases: ["Services and ports"]
 document_type: reference
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:e8057744b5910b8ef70fdf80f5362265fd3250a9b1b76b33a8b131c02bf2bcee
 last_edited: 2026-07-27
 tags: [infrastructure]
 related_code: ["../../../infra/containers/", "../../../infra/deployment/proxmox/cloud-init/", "../../../frontend/docker-compose.dev.yml"]

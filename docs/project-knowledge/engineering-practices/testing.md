@@ -2,9 +2,9 @@
 title: Testing workflow
 aliases: ["Testing workflow"]
 document_type: workflow
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:7d04698e1873a94f2884fd1de2776b789b2e9dd1a2d47f98761f78df41f9efd1
 last_edited: 2026-07-27
 tags: [tooling]
 related_code:

@@ -2,9 +2,9 @@
 title: Generated files
 aliases: ["Generated files"]
 document_type: reference
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:4cd01763d36c2aa77e11b17f0579af26d4f544adad893fb9dd852316748b14b3
 last_edited: 2026-07-27
 tags: [tooling]
 related_code: ["../../../backend/scripts/export-openapi.sh", "../../../frontend/scripts/generate-types.mjs", "../../../scripts/ci/sync-openapi.sh", "../../../tools/docs/", "../../../scripts/secrets/generate-env-files.sh", "../../../infra/images/"]

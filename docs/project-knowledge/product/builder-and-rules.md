@@ -2,9 +2,9 @@
 title: Builder and rules
 aliases: ["Builder and rules"]
 document_type: domain
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:8527d0906207a16a9bd9e69c9308baabfff6eff48ac4f1f02615de1c40b70b6f
 last_edited: 2026-07-27
 tags: [frontend]
 related_code:

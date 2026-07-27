@@ -2,9 +2,9 @@
 title: Infrastructure knowledge
 aliases: ["Infrastructure knowledge"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:2030b87b0f4063cba6ed6eccfc84dafd342a5ce37eb0899cf9c5a83f455f92e6
 last_edited: 2026-07-27
 tags: [infrastructure]
 related_code:

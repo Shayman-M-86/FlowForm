@@ -2,9 +2,9 @@
 title: Project Knowledge
 aliases: ["Project Knowledge"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:2857d9b6c0e22fa3c14fd60c130ea7e4d772399f4c7e28d69fa91719d5b6f4a4
 last_edited: 2026-07-27
 tags: [meta]
 related_code:

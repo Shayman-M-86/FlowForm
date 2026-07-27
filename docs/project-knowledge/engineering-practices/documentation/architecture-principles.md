@@ -2,9 +2,9 @@
 title: Architecture principles
 aliases: ["Architecture principles"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:fd95f751837dbaa6bbc11670ebc623b3df25985b31da62f4a5017e77e11289a9
 last_edited: 2026-07-27
 tags: [backend, frontend, infrastructure, security]
 related_code:

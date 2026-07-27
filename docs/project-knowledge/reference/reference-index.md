@@ -2,9 +2,9 @@
 title: Reference documentation
 aliases: ["Reference documentation"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:34a04bf88bd886adaae01f7c9d8c625e1d04f198719df92a98837cbac1cf6191
 last_edited: 2026-07-27
 tags: [meta]
 related_code:

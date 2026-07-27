@@ -2,9 +2,9 @@
 title: Repository map
 aliases: ["Repository map"]
 document_type: reference
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:9cd8e27b595f0250f2dec02f17ae950f8fd81250056e562cd2dc6fc95166fdfd
 last_edited: 2026-07-27
 tags: [meta]
 related_code:
