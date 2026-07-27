@@ -2,9 +2,9 @@
 title: Distributed tracing
 aliases: ["Distributed tracing", "Tracing"]
 document_type: reference
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:a49aef7dae3a0ba2ba55e5ba08b2b02e1741d6f4edf00669ba00f2afd16752dd
 last_edited: 2026-07-27
 tags: [backend, infrastructure]
 related_code:

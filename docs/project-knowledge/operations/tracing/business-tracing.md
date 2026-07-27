@@ -2,9 +2,9 @@
 title: Business tracing
 aliases: ["Business tracing", "Tracing API"]
 document_type: implementation
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:d41e90e2f1540dbc89eabb7da9d6f44dbbc96ba69664f57b6ba2e9f5d91a20d4
 last_edited: 2026-07-27
 tags: [backend]
 related_code:

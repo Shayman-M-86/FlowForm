@@ -2,9 +2,9 @@
 title: Operations knowledge
 aliases: ["Operations knowledge"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:e74ecc9f33ef453b21f678c16a8bf805516fed59e48bdf3aab8853d9f0e9f697
 last_edited: 2026-07-27
 tags: [infrastructure]
 related_code:

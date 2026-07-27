@@ -2,9 +2,9 @@
 title: Observability
 aliases: ["Observability"]
 document_type: domain
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
+verified_evidence_digest: sha256:b4736fed7b8665d779bc5ff1541de54fca329dcb8b4daab7821c369d5e41e6d7
 last_edited: 2026-07-27
 tags: [backend, infrastructure]
 related_code:
