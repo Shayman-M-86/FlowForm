@@ -29,6 +29,8 @@ Everything here is standard-library only, so it runs anywhere `python3` does.
 | `context.py` | Smallest useful documentation context for a task / change |
 | `retrieve.py` | Single-document and related-document retrieval |
 | `validate.py` | Structured metadata/link findings (dashboard + programmatic use) |
+| `markdown_ast.py` | Source-positioned structural Markdown parser |
+| `debt.py` | Advisory complexity metrics and split-candidate analysis |
 | `health.py` | Health report + generated `documentation-dashboard.md` |
 | `propose.py` | Reviewable, agent-assisted update proposal packets |
 | `ci.py` | CI documentation-review step (report + optional critical gate) |
@@ -63,6 +65,13 @@ python3 -m docsys freshness
 
 # Ranked deterministic search.
 python3 -m docsys query "response encryption locator"
+python3 -m docsys search "networking" \
+  --docs-root docs-new --collection project-knowledge
+
+# Collection-aware structural validation and advisory debt analysis.
+python3 -m docsys validate --docs-root docs-new --profile editing
+python3 -m docsys validate --docs-root docs-new --profile commit
+python3 -m docsys debt --docs-root docs-new --changed --suggest-splits
 
 # Smallest useful context for a task or a set of changed files.
 python3 -m docsys context --task "add a new survey question type"
@@ -91,6 +100,8 @@ claude mcp add flowform-docs -- \
 
 Tools exposed: `search_docs`, `get_document`, `get_related`,
 `get_task_context`, `get_impacted_docs`, `check_freshness`, `doc_health`.
+The server also exposes `documentation_debt`; search and debt accept an
+optional `docs_root` while the parallel migration is in progress.
 
 ## Metadata the tooling reads
 
@@ -117,11 +128,11 @@ Optional. Copy `scripts/docs/docsys.config.example.json` to
 
 ## CI integration
 
-The `docs-review` job in `.github/workflows/ci.yml` validates documentation
-structure, then posts a documentation-impact comment on pull requests
-identifying affected documents and whether they were modified in the PR. It is
-advisory: it fails only when a configured critical document is impacted but
-left unmodified.
+The `documentation` job in `.github/workflows/ci.yml` runs the dependency-free
+unit tests, validates `docs-new/` with the strict `ci` profile, and prints an
+advisory debt report. Debt findings never fail the initial rollout. The legacy
+standalone validators are not wired into this job while pre-existing abandoned
+review files remain outside their canonical front-matter and link conventions.
 
 ## Relationship to the existing validators
 

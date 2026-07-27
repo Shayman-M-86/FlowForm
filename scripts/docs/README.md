@@ -16,7 +16,7 @@ Provides lightweight, dependency-free scripts for generating and validating the 
 
 `generate-repository-tree.py` regenerates `docs/90-generated/repository-tree.md`. `validate-doc-links.py` checks that `[[wiki links]]` resolve to Obsidian note filenames or shortest unique note paths and that relative Markdown links resolve on disk. `validate-doc-metadata.py` checks required front-matter keys, title-matching Obsidian aliases, allowed status values, global title uniqueness, the controlled tag vocabulary, and `related_docs` resolution.
 
-The `docsys/` package builds on the same conventions to offer a documentation index, impact detection, freshness checks, deterministic search, task-context assembly, a health dashboard, reviewable update proposals, and an MCP server. See `docsys/README.md`. Run it as `python3 -m docsys <command>` (with `scripts/docs/` on `PYTHONPATH`).
+The `docsys/` package builds on the same conventions to offer a documentation index, impact detection, freshness checks, deterministic search, task-context assembly, collection-aware validation, advisory documentation-debt analysis, a health dashboard, reviewable update proposals, and an MCP server. See `docsys/README.md`. Run it as `python3 -m docsys <command>` (with `scripts/docs/` on `PYTHONPATH`).
 
 ## Conventions enforced
 

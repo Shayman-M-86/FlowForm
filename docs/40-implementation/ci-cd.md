@@ -56,6 +56,10 @@ they validate.
 
 - Backend jobs run dependency/source security checks, Ruff/Pyright, and the
   Docker-based pytest suite with coverage.
+- The documentation job unit-tests `docsys`, strictly validates the parallel
+  `docs-new/` collections, and emits an advisory debt report. Debt findings do
+  not fail the job. The legacy standalone validators are not yet part of this
+  Actions job.
 - A path-filter job controls frontend audit, Studio lint/test/build, public-site
   lint/build, and contract checks.
 - The contract job verifies backend OpenAPI export and all checked-in frontend
@@ -86,9 +90,9 @@ parameters.
 ## Generated versus handwritten code
 
 Workflow YAML, the image source manifest, and helper scripts are handwritten.
-CI produces coverage, CDK diff, and documentation-impact artifacts; frontend
-deployment produces application `dist/` trees and remote S3/CloudFront side
-effects. Image publication produces ECR manifests and a generated
+CI produces coverage and CDK diff artifacts plus documentation-debt log output;
+frontend deployment produces application `dist/` trees and remote
+S3/CloudFront side effects. Image publication produces ECR manifests and a generated
 `staging-image-release.json` workflow artifact. OpenAPI and frontend contract
 files are checked-in generated artifacts whose drift is tested. The linked
 generated CI-workflow page is still a scaffold and does not replace direct
@@ -98,8 +102,8 @@ workflow inspection.
 
 Each job invokes the implementation-owned command: backend pytest/Ruff/Pyright
 and security helpers, frontend pnpm audit/ESLint/Vitest/builds, OpenAPI drift,
-CDK pytest/Ruff/Pyright/synth/diff, and documentation metadata/link/impact
-checks. Backend and CDK pytest suppress captured output in CI. Disposable test
+CDK pytest/Ruff/Pyright/synth/diff, and the `docs-new/` collection gate.
+Backend and CDK pytest suppress captured output in CI. Disposable test
 credentials are masked before services start, only explicitly allowlisted
 non-secret repository variables reach the backend-test environment, backend
 failures report Compose service status without printing or uploading raw

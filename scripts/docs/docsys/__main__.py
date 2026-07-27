@@ -9,6 +9,8 @@ Subcommands map to the focused tools in this package:
     query       ranked deterministic search over documentation
     context     assemble minimal task/change context
     health      regenerate the documentation health report + dashboard
+    validate    collection-aware structural validation profiles
+    debt        advisory maintainability and split-candidate analysis
     propose     scaffold reviewable, agent-assisted update proposals
 
 Each subcommand also runs standalone (``python3 -m docsys.impact ...``); this
@@ -24,9 +26,12 @@ _COMMANDS = {
     "impact": "docsys.impact",
     "freshness": "docsys.freshness",
     "query": "docsys.query",
+    "search": "docsys.query",
     "context": "docsys.context",
     "health": "docsys.health",
     "propose": "docsys.propose",
+    "validate": "docsys.validate",
+    "debt": "docsys.debt",
 }
 
 

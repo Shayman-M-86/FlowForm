@@ -99,6 +99,19 @@ python3 scripts/docs/validate-doc-links.py
 python3 scripts/docs/validate-doc-metadata.py
 ```
 
+For work under `docs-new/`, also run the collection-aware gate and advisory
+debt report:
+
+```sh
+PYTHONPATH=scripts/docs python3 -m docsys validate \
+  --docs-root docs-new --profile ci
+PYTHONPATH=scripts/docs python3 -m docsys debt \
+  --docs-root docs-new --changed --suggest-splits
+```
+
+Debt findings identify maintainability pressure; they do not establish that a
+document is incorrect and do not fail the initial rollout.
+
 These checks validate structure and resolution, not factual correctness.
 
 ## Answering repository questions

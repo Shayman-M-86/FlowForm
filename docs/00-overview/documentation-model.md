@@ -40,6 +40,36 @@ A document's `authority` identifies its role, while `status` reports its maturit
 | `70-planning/`       | Hold temporary plans, proposals, unfinished work, and unresolved design.                                                 | Planning content is not current architecture.                             |
 | `90-generated/`      | Hold reproducible repository-derived output.                                                                             | State the generator and sources; do not edit generated sections manually. |
 
+## Parallel collection-model migration
+
+`docs-new/` is the implementation scaffold for the next documentation model.
+It does not replace this populated `docs/` tree yet. Its filesystem is a
+single-parent knowledge tree with two explicit collections:
+
+- `project-knowledge/` contains accepted, maintained understanding and becomes
+  strict at commit and CI validation boundaries;
+- `engineering-workspace/` contains active work and uses lighter editing-time
+  enforcement.
+
+Every directory containing authored Markdown in `docs-new/` has a
+`<folder-name>-index.md` folder head; for example, `backend/backend-index.md`.
+The head defines that branch's ownership and is the structural parent of
+documents and nested folder heads beneath it. Cross-tree
+relationships continue to use stable, globally unique titles and
+`related_docs`; the migration does not introduce a second `id` identity.
+
+The current `status` and `authority` split is retained. A workspace document
+must not claim canonical authority. A file may be promoted to
+`topic/topic-index.md` when it develops independently useful children, while
+keeping its title stable. Generated indexes and reports remain derived output and never
+become the authored source of truth.
+
+`docsys validate` applies shared rules through collection-aware profiles:
+`editing`, `project-knowledge`, `workspace`, `commit`, and `ci`. The first is
+advisory; commit and CI profiles gate objective structural defects.
+`docsys debt` separately reports maintainability and split candidates. Debt
+findings are advisory and do not make an otherwise valid document fail.
+
 ## Knowledge network conventions
 
 The documentation is a connected network, not a collection of independent files. Three conventions build that network.
@@ -98,6 +128,15 @@ Run the current Stage 1 documentation checks from the repository root:
 ```sh
 python3 scripts/docs/validate-doc-links.py
 python3 scripts/docs/validate-doc-metadata.py
+```
+
+Validate the parallel collection scaffold independently:
+
+```sh
+PYTHONPATH=scripts/docs python3 -m docsys validate \
+  --docs-root docs-new --profile ci
+PYTHONPATH=scripts/docs python3 -m docsys debt \
+  --docs-root docs-new --collection project-knowledge
 ```
 
 These checks cover local Markdown link targets, `[[wiki link]]` resolution, required front-matter fields, Obsidian title aliases, global title uniqueness, `related_docs` resolution, and the tag vocabulary. They do not establish that prose claims are correct; review against implementation evidence remains required.

@@ -31,12 +31,17 @@ import math
 import re
 from dataclasses import dataclass, field
 
-from .model import DocSet, Document, strip_code
+from .model import DocSet, Document, resolve_docs_root, strip_code
 
 _TOKEN_RE = re.compile(r"[A-Za-z0-9_]+")
 
 _STATUS_MULT = {"verified": 1.25, "draft": 1.05, "scaffold": 0.7}
 _AUTHORITY_MULT = {"canonical": 1.15, "reference": 1.05}
+_COLLECTION_MULT = {
+    "project-knowledge": 1.12,
+    "legacy": 1.0,
+    "engineering-workspace": 0.94,
+}
 
 W_TITLE = 5.0
 W_HEADING = 3.0
@@ -73,6 +78,7 @@ class ScoredDoc:
             "title": self.doc.title,
             "document_type": self.doc.document_type,
             "authority": self.doc.authority,
+            "collection": self.doc.collection,
             "status": self.doc.status,
             "tags": sorted(self.doc.tags),
             "score": round(self.score, 3),
@@ -136,6 +142,9 @@ class QueryEngine:
         doc_type: str | None = None,
         tag: str | None = None,
         min_status: str | None = None,
+        collection: str | None = None,
+        authority: str | None = None,
+        status: str | None = None,
     ) -> list[ScoredDoc]:
         terms = set(tokenize(query))
         phrase = query.strip().lower()
@@ -146,6 +155,12 @@ class QueryEngine:
             if doc_type and doc.document_type != doc_type:
                 continue
             if tag and tag not in doc.tags:
+                continue
+            if collection and doc.collection != collection:
+                continue
+            if authority and doc.authority != authority:
+                continue
+            if status and doc.status != status:
                 continue
             if min_status and status_rank.get(doc.status, 0) < status_rank.get(
                 min_status, 0
@@ -207,6 +222,7 @@ class QueryEngine:
             # Status/authority multipliers reward documents with real claims.
             score *= _STATUS_MULT.get(doc.status, 1.0)
             score *= _AUTHORITY_MULT.get(doc.authority, 1.0)
+            score *= _COLLECTION_MULT.get(doc.collection, 1.0)
 
             # Small centrality boost for well-connected documents.
             backlinks = self._backlink_count.get(rel, 0)
@@ -240,6 +256,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--type", dest="doc_type", help="filter by document_type")
     parser.add_argument("--tag", help="filter by tag")
     parser.add_argument(
+        "--collection",
+        choices=["project-knowledge", "engineering-workspace", "legacy", "root"],
+    )
+    parser.add_argument("--authority")
+    parser.add_argument("--status", choices=["scaffold", "draft", "verified"])
+    parser.add_argument("--docs-root", default="docs")
+    parser.add_argument(
         "--min-status",
         choices=["scaffold", "draft", "verified"],
         help="minimum status",
@@ -247,12 +270,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
-    results = search(
+    engine = QueryEngine(DocSet.load(resolve_docs_root(args.docs_root)))
+    results = engine.search(
         " ".join(args.query),
         limit=args.limit,
         doc_type=args.doc_type,
         tag=args.tag,
         min_status=args.min_status,
+        collection=args.collection,
+        authority=args.authority,
+        status=args.status,
     )
     if args.json:
         print(json.dumps([r.as_dict() for r in results], indent=2))

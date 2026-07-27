@@ -18,6 +18,7 @@ def _brief(doc: Document) -> dict:
         "document_type": doc.document_type,
         "status": doc.status,
         "authority": doc.authority,
+        "collection": doc.collection,
     }
 
 

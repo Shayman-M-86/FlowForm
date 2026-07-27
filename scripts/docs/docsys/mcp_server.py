@@ -35,9 +35,10 @@ import sys
 
 from . import freshness as freshness_mod
 from . import health as health_mod
+from .debt import build_report as build_debt_report
 from .context import build_context
 from .impact import impact_report
-from .model import DocSet
+from .model import DocSet, resolve_docs_root
 from .query import QueryEngine
 from .retrieve import get_document, get_related
 
@@ -64,6 +65,19 @@ TOOLS = [
                 "min_status": {
                     "type": "string",
                     "enum": ["scaffold", "draft", "verified"],
+                },
+                "collection": {
+                    "type": "string",
+                    "enum": [
+                        "project-knowledge",
+                        "engineering-workspace",
+                        "legacy",
+                        "root",
+                    ],
+                },
+                "docs_root": {
+                    "type": "string",
+                    "description": "repository-relative docs root (default docs)",
                 },
             },
             "required": ["query"],
@@ -145,6 +159,29 @@ TOOLS = [
         },
     },
     {
+        "name": "documentation_debt",
+        "description": (
+            "Advisory structural complexity metrics and explainable split "
+            "candidates. Findings do not fail validation."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "collection": {
+                    "type": "string",
+                    "enum": [
+                        "project-knowledge",
+                        "engineering-workspace",
+                        "legacy",
+                        "root",
+                    ],
+                },
+                "docs_root": {"type": "string"},
+                "suggest_splits": {"type": "boolean", "default": False},
+            },
+        },
+    },
+    {
         "name": "doc_health",
         "description": (
             "Documentation health snapshot: status/freshness counts, stale "
@@ -159,13 +196,14 @@ TOOLS = [
 
 
 def _tool_search(args: dict) -> dict:
-    engine = QueryEngine(DocSet.load())
+    engine = QueryEngine(DocSet.load(resolve_docs_root(args.get("docs_root"))))
     results = engine.search(
         args["query"],
         limit=int(args.get("limit", 8)),
         doc_type=args.get("type"),
         tag=args.get("tag"),
         min_status=args.get("min_status"),
+        collection=args.get("collection"),
     )
     return {"results": [r.as_dict() for r in results]}
 
@@ -212,6 +250,15 @@ def _tool_health(args: dict) -> dict:
     return health_mod.build_health()
 
 
+def _tool_debt(args: dict) -> dict:
+    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
+    return build_debt_report(
+        docset,
+        collection=args.get("collection"),
+        suggest_splits=bool(args.get("suggest_splits")),
+    )
+
+
 HANDLERS = {
     "search_docs": _tool_search,
     "get_document": _tool_get_document,
@@ -219,6 +266,7 @@ HANDLERS = {
     "get_task_context": _tool_task_context,
     "get_impacted_docs": _tool_impacted,
     "check_freshness": _tool_freshness,
+    "documentation_debt": _tool_debt,
     "doc_health": _tool_health,
 }
 

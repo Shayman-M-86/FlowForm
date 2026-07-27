@@ -157,8 +157,11 @@ def impact_report(
     diff = gitutil.changed_files(base, head)
     # Documentation edits themselves are reported separately so a reviewer can
     # see whether impacted docs were already touched in the same change.
-    code_changes = [f for f in diff.files if not f.startswith("docs/")]
-    doc_changes = [f for f in diff.files if f.startswith("docs/")]
+    documentation_prefixes = ("docs/", "docs-new/")
+    code_changes = [
+        f for f in diff.files if not f.startswith(documentation_prefixes)
+    ]
+    doc_changes = [f for f in diff.files if f.startswith(documentation_prefixes)]
     impacted = detect_impact(code_changes, docset)
 
     changed_doc_paths = set(doc_changes)

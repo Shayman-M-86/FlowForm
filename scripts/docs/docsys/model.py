@@ -32,6 +32,7 @@ from pathlib import Path, PurePosixPath
 ROOT = Path(__file__).resolve().parents[3]
 DOCS = ROOT / "docs"
 GENERATED_DIR = DOCS / "90-generated"
+COLLECTIONS = {"project-knowledge", "engineering-workspace"}
 
 # Front-matter vocabulary shared with the validators.
 REQUIRED_KEYS = (
@@ -209,6 +210,7 @@ class Document:
 
     path: Path
     rel_path: str
+    docs_dir: Path
     front_matter: dict
     body: str
     headings: list[str] = field(default_factory=list)
@@ -243,6 +245,24 @@ class Document:
         return list(self.front_matter.get("related_docs") or [])
 
     @property
+    def collection(self) -> str:
+        """Collection membership derived from the physical tree."""
+        relative = self.path.relative_to(self.docs_dir)
+        if len(relative.parts) == 1:
+            return "root"
+        return (
+            relative.parts[0]
+            if relative.parts[0] in COLLECTIONS
+            else "legacy"
+        )
+
+    @property
+    def is_folder_head(self) -> bool:
+        return self.path.name.casefold() == folder_head_path(
+            self.path.parent
+        ).name.casefold()
+
+    @property
     def verified_against_commit(self) -> str | None:
         v = self.front_matter.get("verified_against_commit")
         return None if v in (None, "", "null") else str(v)
@@ -254,8 +274,10 @@ class Document:
 
     @property
     def is_generated(self) -> bool:
-        return self.document_type == "generated" or self.rel_path.startswith(
-            "docs/90-generated/"
+        return (
+            self.document_type == "generated"
+            or "/90-generated/" in f"/{self.rel_path}"
+            or "/reference/generated/" in f"/{self.rel_path}"
         )
 
     def code_matches(self, repo_path: str) -> bool:
@@ -279,7 +301,28 @@ def _resolve_patterns(doc_path: Path, values) -> list[str]:
     return out
 
 
-def load_document(path: Path) -> Document | None:
+def resolve_docs_root(value: str | Path | None = None) -> Path:
+    """Resolve a repository-relative documentation root."""
+    if value is None:
+        return DOCS
+    path = Path(value)
+    return (path if path.is_absolute() else ROOT / path).resolve()
+
+
+def generated_dir_for(docs_dir: Path) -> Path:
+    """Select the generated-output area for the legacy or collection model."""
+    docs_dir = docs_dir.resolve()
+    if (docs_dir / "project-knowledge").exists():
+        return docs_dir / "project-knowledge" / "reference" / "generated"
+    return docs_dir / "90-generated"
+
+
+def folder_head_path(directory: Path) -> Path:
+    """Return the convention-based head path for a documentation directory."""
+    return directory / f"{directory.name}-index.md"
+
+
+def load_document(path: Path, docs_dir: Path = DOCS) -> Document | None:
     """Load and fully parse a single documentation file.
 
     Returns ``None`` for files without valid front matter, so callers can skip
@@ -294,6 +337,7 @@ def load_document(path: Path) -> Document | None:
     return Document(
         path=path,
         rel_path=rel,
+        docs_dir=docs_dir.resolve(),
         front_matter=fm,
         body=body,
         headings=extract_headings(body),
@@ -312,9 +356,17 @@ class DocSet:
     single time per invocation.
     """
 
-    def __init__(self, docs: list[Document]):
+    def __init__(
+        self,
+        docs: list[Document],
+        docs_dir: Path = DOCS,
+        unparsed_paths: list[Path] | None = None,
+    ):
         self.docs = docs
+        self.docs_dir = docs_dir.resolve()
+        self.unparsed_paths = list(unparsed_paths or [])
         self._by_rel = {d.rel_path: d for d in docs}
+        self._by_abs = {d.path.resolve(): d for d in docs}
         self._by_title = {}
         stem_counts: dict[str, int] = {}
         for d in docs:
@@ -324,18 +376,29 @@ class DocSet:
         for d in docs:
             if d.title:
                 self._by_title[d.title.casefold()] = d
-            target = (d.path.stem if stem_counts[d.path.stem.casefold()] == 1
-                      else d.path.relative_to(DOCS).with_suffix("").as_posix())
+            target = (
+                d.path.stem
+                if stem_counts[d.path.stem.casefold()] == 1
+                else d.path.relative_to(self.docs_dir).with_suffix("").as_posix()
+            )
             self._by_wiki_target[target.casefold()] = d
 
     @classmethod
     def load(cls, docs_dir: Path = DOCS) -> "DocSet":
+        docs_dir = docs_dir.resolve()
         docs = []
+        unparsed_paths = []
         for path in sorted(docs_dir.rglob("*.md")):
-            doc = load_document(path)
+            doc = load_document(path, docs_dir)
             if doc is not None:
                 docs.append(doc)
-        return cls(docs)
+            else:
+                unparsed_paths.append(path)
+        return cls(docs, docs_dir, unparsed_paths)
+
+    @property
+    def uses_collection_model(self) -> bool:
+        return any((self.docs_dir / name).is_dir() for name in COLLECTIONS)
 
     def by_title(self, title: str) -> Document | None:
         return self._by_title.get(title.casefold())
@@ -345,6 +408,29 @@ class DocSet:
 
     def resolve_wiki(self, target: str) -> Document | None:
         return self._by_wiki_target.get(target.casefold())
+
+    def inferred_parent(self, doc: Document) -> Document | None:
+        """Infer the nearest structural parent from directory heads."""
+        if doc.path.parent == self.docs_dir and doc.is_folder_head:
+            return None
+        directory = doc.path.parent.parent if doc.is_folder_head else doc.path.parent
+        while directory == self.docs_dir or self.docs_dir in directory.parents:
+            parent = self._by_abs.get(folder_head_path(directory).resolve())
+            if parent is not None and parent.rel_path != doc.rel_path:
+                return parent
+            if directory == self.docs_dir:
+                break
+            directory = directory.parent
+        return None
+
+    def children(self, doc: Document) -> list[Document]:
+        """Return immediate structural children in stable path order."""
+        return [
+            candidate
+            for candidate in self.docs
+            if (parent := self.inferred_parent(candidate)) is not None
+            and parent.rel_path == doc.rel_path
+        ]
 
     def neighbours(self, doc: Document) -> list[Document]:
         """Documents connected to ``doc`` by wiki links or related_docs.

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Build the machine-readable documentation index.
 
-Scans the documentation tree and emits a single JSON file,
-``docs/90-generated/documentation-index.json``, that is the primary API every
-other tool and AI agent uses instead of re-scanning ``docs/``. Each entry
+Scans a documentation tree and emits a single JSON index in that tree's
+generated-output directory. Each entry
 captures the front matter, resolved code patterns, headings, and the wiki-link
 graph for one document.
 
@@ -20,9 +19,9 @@ import json
 from pathlib import Path
 
 from . import gitutil
-from .model import GENERATED_DIR, ROOT, DocSet, Document
+from .model import ROOT, DocSet, Document, generated_dir_for, resolve_docs_root
 
-INDEX_PATH = GENERATED_DIR / "documentation-index.json"
+INDEX_PATH = generated_dir_for(resolve_docs_root()) / "documentation-index.json"
 
 # Front-matter fields excluded from the flat `metadata` echo because they get
 # dedicated, normalised fields in the entry.
@@ -43,6 +42,7 @@ _PROMOTED = {
 
 def _entry(doc: Document, docset: DocSet) -> dict:
     resolved_neighbours = [n.title for n in docset.neighbours(doc)]
+    parent = docset.inferred_parent(doc)
     extra = {k: v for k, v in doc.front_matter.items() if k not in _PROMOTED}
     return {
         "path": doc.rel_path,
@@ -50,6 +50,10 @@ def _entry(doc: Document, docset: DocSet) -> dict:
         "document_type": doc.document_type,
         "authority": doc.authority,
         "status": doc.status,
+        "collection": doc.collection,
+        "is_folder_head": doc.is_folder_head,
+        "parent": parent.title if parent else None,
+        "children": [child.title for child in docset.children(doc)],
         "tags": sorted(doc.tags),
         "verified_against_commit": doc.verified_against_commit,
         "code_confidence": doc.code_confidence,
@@ -84,27 +88,38 @@ def build_index(docset: DocSet | None = None) -> dict:
     }
 
 
-def write_index(index: dict | None = None) -> Path:
-    """Write the index to ``docs/90-generated/documentation-index.json``."""
-    index = index or build_index()
-    GENERATED_DIR.mkdir(parents=True, exist_ok=True)
-    INDEX_PATH.write_text(json.dumps(index, indent=2, sort_keys=False) + "\n")
-    return INDEX_PATH
+def write_index(
+    index: dict | None = None, docs_dir: Path | None = None
+) -> Path:
+    """Write the index to the selected root's generated-output directory."""
+    docs_dir = resolve_docs_root(docs_dir)
+    index = index or build_index(DocSet.load(docs_dir))
+    path = generated_dir_for(docs_dir) / "documentation-index.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(index, indent=2, sort_keys=False) + "\n")
+    return path
 
 
-def load_index() -> dict | None:
+def load_index(docs_dir: Path | None = None) -> dict | None:
     """Load a previously written index, or ``None`` if it does not exist."""
-    if not INDEX_PATH.exists():
+    path = generated_dir_for(resolve_docs_root(docs_dir)) / "documentation-index.json"
+    if not path.exists():
         return None
     try:
-        return json.loads(INDEX_PATH.read_text())
+        return json.loads(path.read_text())
     except (json.JSONDecodeError, OSError):
         return None
 
 
 def main(argv: list[str] | None = None) -> int:
-    index = build_index()
-    path = write_index(index)
+    import argparse
+
+    parser = argparse.ArgumentParser(prog="docsys index")
+    parser.add_argument("--docs-root", default="docs")
+    args = parser.parse_args(argv)
+    docs_dir = resolve_docs_root(args.docs_root)
+    index = build_index(DocSet.load(docs_dir))
+    path = write_index(index, docs_dir)
     print(f"wrote {path.relative_to(ROOT)} ({index['document_count']} documents)")
     return 0
 

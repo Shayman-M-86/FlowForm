@@ -46,6 +46,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  documentation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test documentation tooling
+        env:
+          PYTHONPATH: scripts/docs
+        run: python3 -m unittest discover -s scripts/docs/tests -v
+      - name: Validate parallel documentation collections
+        env:
+          PYTHONPATH: scripts/docs
+        run: >-
+          python3 -m docsys validate
+          --docs-root docs-new
+          --profile ci
+      - name: Report documentation debt (advisory)
+        env:
+          PYTHONPATH: scripts/docs
+        run: >-
+          python3 -m docsys debt
+          --docs-root docs-new
+          --format text
+
   backend-security:
     runs-on: ubuntu-latest
     permissions:

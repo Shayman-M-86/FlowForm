@@ -11,7 +11,7 @@ related_code:
   - "../../../scripts/docs/"
   - "../../../.claude/hooks/"
 related_docs:
-  - "../../00-overview/documentation-model.md"
+  - "Documentation model"
 ---
 
 # Documentation restructure plan (tree + graph)
@@ -33,6 +33,13 @@ already does well and changing only what the new structure genuinely requires.
   "preserve the ID on move" guarantee is already provided by stable, unique
   titles, which the validator enforces. This is a deliberate simplification of
   the proposal.
+- **Migration root:** build and validate the new model in parallel under
+  `docs-new/`; do not move or weaken the populated `docs/` collection until
+  the scaffold and tooling are proven.
+- **Enforcement:** share validation rules and vary severity by collection and
+  profile. Editing remains advisory; objective commit/CI defects can block.
+- **Maintainability:** documentation debt and split-candidate findings remain
+  separate from correctness validation and advisory during the initial rollout.
 
 ## What is kept unchanged (do not rebuild)
 
@@ -62,7 +69,7 @@ freshness engines.
 | Stable `id` field | Title = identity | Drop `id`; enforce title stability (already validated) |
 | `related:` by id | `related_docs:` by title | Keep `related_docs`; wording only |
 | `status` absorbs canonical/etc. | `status` + separate `authority` | Keep split (locked decision) |
-| Every folder has `index.md` | No folder-head concept; `rglob("*.md")` | **New**: recognise + require `index.md` |
+| Every folder has a head | No folder-head concept; `rglob("*.md")` | **New**: recognise + require `<folder-name>-index.md` |
 | `parent`/`children` from tree | Not derived | **New**: derive from filesystem |
 | Backlinks/tag/type indexes generated | Only impact/freshness/health generated | **New**: backlink + facet generators |
 
@@ -99,24 +106,27 @@ every stage.
 
 ### Stage 0 — Freeze conventions (governing doc)
 
-- Update `documentation-model.md` to describe: two collections, `index.md`
+- Update `documentation-model.md` to describe: two collections,
+  `<folder-name>-index.md`
   folder heads, single-parent-from-filesystem, title-as-identity, file→folder
   promotion, the additive vocabulary policy.
 - This doc is the source the validators encode; changing it first prevents the
   validators and the docs from disagreeing mid-migration.
 
-### Stage 1 — Tooling: understand `index.md` + parent/child (no content moved yet)
+### Stage 1 — Tooling: understand named folder heads + parent/child (no content moved yet)
 
 Build against the **current** tree so it's testable before churn.
 
 1. `model.py`
-   - Mark each `index.md` as its folder's head; add `Document.is_folder_head`.
-   - Derive `parent_rel` (nearest ancestor `index.md`, or collection root) and
+   - Mark each `<folder-name>-index.md` as its folder's head; add
+     `Document.is_folder_head`.
+   - Derive `parent_rel` (nearest ancestor folder head, or collection root) and
      `children` (docs whose parent is this head).
    - Add these to `DocSet`.
 2. `validate.py` + standalone `validate-doc-metadata.py` (keep the two in sync —
    the standalone one is the CI gate):
-   - Every directory containing Markdown has an `index.md`.
+   - Every directory containing Markdown has a matching
+     `<folder-name>-index.md`.
    - Optional `parent:` field must match the inferred parent (fail on conflict).
    - No document lists itself in `related_docs`.
    - (Existing checks — required keys, unique titles, alias-matches-title, tag
@@ -125,8 +135,22 @@ Build against the **current** tree so it's testable before churn.
    (`project-knowledge` | `engineering-workspace`) per entry (§12 fields).
 
 Acceptance: `python3 -m docsys index` + validators pass on the *current* tree,
-with new fields populated and (initially) `index.md`-missing warnings listing
-every folder that will need a head.
+with new fields populated and named-folder-head warnings listing every folder
+that will need a head.
+
+The first implementation runs this acceptance against `docs-new/` using
+`--docs-root docs-new`, preserving the legacy validators and MCP defaults for
+the populated tree.
+
+### Stage 1b — Collection-aware enforcement and search
+
+- Derive collection membership from the physical tree.
+- Add `editing`, `project-knowledge`, `workspace`, `commit`, and `ci`
+  validation profiles.
+- Keep normal editing informational; reserve blocking severity for explicit
+  validation boundaries.
+- Add collection filters and visible collection labels to deterministic search.
+- Keep the existing stop hook non-blocking during implementation.
 
 ### Stage 2 — Introduce collections + folder heads (content move)
 
@@ -138,7 +162,7 @@ every folder that will need a head.
   - `70-planning/{active,future,completed}` → `engineering-workspace/planning/…`.
   - `30-workflows` → nearest subsystem, or a workflows area; update
     `context.py`'s heuristic.
-- Add `index.md` to **every** folder (define subject, scope, model, children
+- Add `<folder-name>-index.md` to **every** folder (define subject, scope, model, children
   intro, cross-links — not just a file list).
 - Keep titles identical across every move (identity invariant).
 - Run a link-rewrite pass for relative Markdown links + relative
@@ -152,7 +176,7 @@ files (use `git mv`); no broken links reported.
 ### Stage 3 — Metadata pass (additive)
 
 - Add any new `document_type` values the new structure needs (e.g. `overview`
-  for `index.md` heads) — extend the vocab, don't replace it.
+  for folder heads) — extend the vocab, don't replace it.
 - Fill `related_code` / `related_docs` where the move surfaced gaps.
 - Leave `status`/`authority` semantics exactly as they are.
 
@@ -167,6 +191,16 @@ files (use `git mv`); no broken links reported.
 
 Acceptance: outputs regenerate deterministically; a `--check` mode fails CI if
 regeneration would change committed output.
+
+### Stage 5 — Documentation debt analysis
+
+- Parse Markdown into source-positioned structural nodes.
+- Collect deterministic size, heading, section, list, code, link, and
+  code-linkage metrics.
+- Apply document-type and collection-aware split signals.
+- Support changed-document analysis, optional Git history, JSON output, and
+  advisory split suggestions.
+- Keep all findings non-blocking during the first rollout.
 
 ---
 

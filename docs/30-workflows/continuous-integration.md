@@ -54,8 +54,9 @@ older one. There is no manual-dispatch trigger.
 
 ## Ordered steps
 
-1. Run backend dependency and Bandit checks. In parallel, classify changed
-   frontend and API-contract paths.
+1. Validate the parallel `docs-new/` collection model and run its
+   dependency-free tooling tests. In parallel, run backend dependency and
+   Bandit checks and classify changed frontend and API-contract paths.
 2. After backend security passes, run backend Ruff and Pyright in one job and
    the Docker/PostgreSQL pytest suite with coverage in another.
 3. When frontend paths changed, install with lifecycle scripts disabled and run
@@ -65,18 +66,15 @@ older one. There is no manual-dispatch trigger.
    regenerate TypeScript contracts, and fail on tracked drift.
 5. Run CDK pytest, Ruff, and Pyright; synthesize dev and perform a template-only
    staging diff. Internal pull requests receive an updated diff comment.
-6. On pull requests, validate documentation metadata and links, calculate
-   impacted documents, upload the JSON report, and update a PR comment.
-
 ## Inputs and outputs
 
 Inputs are the checked-out commit, lockfiles, GitHub variables, generated
 throwaway test credentials, and the changed-path set. Outputs are job logs,
 push-only backend coverage artifacts, a staging CDK diff comment when
-credentials are available, and the pull-request documentation-impact report.
-CI does not print or upload raw backend service logs, publish an application, or
-deploy CDK stacks. On backend-test failure it reports only Compose service
-status.
+credentials are available, and an advisory documentation-debt summary in the
+job log. CI does not print or upload raw backend service logs, publish an
+application, or deploy CDK stacks. On backend-test failure it reports only
+Compose service status.
 
 ## Failure behaviour
 
@@ -107,6 +105,9 @@ bash scripts/ci/check-openapi-contracts.sh
 (cd infra/deployment/aws/cdk && uv sync --frozen --extra dev && npm ci && uv run pytest -q && uv run ruff check flowform_infra tests app.py && uv run pyright && npx --no-install cdk synth -c env=dev --quiet)
 python3 scripts/docs/validate-doc-metadata.py
 python3 scripts/docs/validate-doc-links.py
+PYTHONPATH=scripts/docs python3 -m unittest discover -s scripts/docs/tests -v
+PYTHONPATH=scripts/docs python3 -m docsys validate --docs-root docs-new --profile ci
+PYTHONPATH=scripts/docs python3 -m docsys debt --docs-root docs-new
 ```
 
 The local commands need their own credentials, configuration, and test-secret
