@@ -32,6 +32,19 @@ verification; archive the plan if its active coordination role has ended.
 Incomplete or cancelled plans remain useful when their status and blockers are
 plainly stated.
 
+```text
+decision + evidence
+        |
+        v
+objective --> scope --> sequence --> validation --> implementation
+                                                      |
+                                   +------------------+----------------+
+                                   |                                   |
+                              verified outcome                    incomplete work
+                                   |                                   |
+                          Project Knowledge                         revise / archive
+```
+
 ## Active plans
 
 - [[aws-cdk-staging-plan|AWS CDK staging plan]] sequences proposed staging

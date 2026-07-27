@@ -1,7 +1,7 @@
 {
   "schema": "flowform.docsys.health/1",
   "docs_root": "docs",
-  "repo_head": "09c3f21b653a619b8cf8d1b1422d90b816fe9848",
+  "repo_head": "2789a307570ff8d9769dc23b6ce78d939ad7435d",
   "document_count": 91,
   "status_counts": {
     "draft": 74,
@@ -27,12 +27,29 @@
     "generated": 8
   },
   "freshness_counts": {
-    "current": 16,
+    "current": 15,
     "review suggested": 0,
-    "likely stale": 0,
+    "likely stale": 1,
     "unknown": 75
   },
-  "stale_documents": [],
+  "stale_documents": [
+    {
+      "path": "docs/project-knowledge/infrastructure/deployment/deployment-index.md",
+      "title": "Deployment documentation",
+      "status": "verified",
+      "document_type": "overview",
+      "verified_against_commit": "0edae9082dc3381cc1376e8a81276bf5c7bebf88",
+      "classification": "likely stale",
+      "commit_distance": 3,
+      "changed_owned_files": [
+        ".github/workflows/ci.yml"
+      ],
+      "reasons": [
+        "3 commit(s) since verification",
+        "1 owned file(s) changed across 1/2 declared code areas"
+      ]
+    }
+  ],
   "orphan_documents": [],
   "heavily_connected": [
     {

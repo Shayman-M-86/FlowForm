@@ -23,6 +23,20 @@ backend/database Compose project with separate frontend development servers.
 The exact setup remains draft until commands and secret-delivery assumptions
 are rechecked against the current checkout.
 
+```text
+source + local configuration + runtime secrets
+                    |
+          +---------+---------+
+          |                   |
+          v                   v
+ backend + databases    frontend dev servers
+      in Compose         Studio / Public Site
+          |                   |
+          +---------+---------+
+                    v
+              local smoke checks
+```
+
 ## Working model
 
 Legacy workflow first obtains an AWS login and assembles required development

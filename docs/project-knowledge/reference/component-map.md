@@ -35,15 +35,17 @@ short of file-level ownership, sequence detail, and deployment topology.
 | Core data store | Identifying/admin state, survey content/access, and submission metadata | backend only |
 | Response data store | Encrypted envelopes and answer rows, separate from core SQL relations | backend only |
 
-```mermaid
-flowchart TD
-  PublicSite[Public site] --> Shared[Shared frontend packages]
-  Studio[Studio application] --> Shared
-  Studio -->|HTTP API| API[Flask backend]
-  API --> Services[Services and policy]
-  Services --> Core[(Core store)]
-  Services --> Response[(Response store)]
-  API <--> Auth0[Auth0]
+```text
+Public Site --------> shared frontend packages <-------- Studio
+                                                           |
+                                                           | HTTP API
+                                                           v
+Auth0 <----------------------------------------------> Backend API
+                                                           |
+                                                services + policy
+                                                  /             \
+                                                 v               v
+                                           Core store      Response store
 ```
 
 The core and response stores are separate boundaries. Cross-store submission

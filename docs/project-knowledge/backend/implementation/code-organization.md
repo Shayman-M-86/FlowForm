@@ -32,6 +32,18 @@ service or domain policy, then a repository and the appropriate ORM/session.
 Core and response persistence are separate. A feature that touches both needs
 explicit sequencing and recovery behaviour rather than assuming one transaction.
 
+```text
+transport                    application                    persistence
++----------------+          +------------------+          +----------------+
+| routes         |--------->| services         |--------->| repositories   |
+| API schemas    |          | domain policy    |          | ORM models     |
++----------------+          +------------------+          +----------------+
+        \                         |                              /
+         +------------------------+-----------------------------+
+                                  |
+                    shared core / middleware / crypto
+```
+
 When extending the application, keep HTTP parsing out of services, persistence
 queries out of routes, and feature policy out of shared assembly modules. Add a
 new package only for a durable cohesive responsibility; otherwise extend the

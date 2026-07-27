@@ -25,6 +25,17 @@ being written or marked complete. Distil an accepted, implementation-backed
 outcome into Project Knowledge when appropriate; otherwise keep the document
 here, revise it as work changes, or retain it in the archive for traceability.
 
+```text
+idea --> research --> investigation --> decision --> plan --> implementation
+  \          \              \              \          \            |
+   \          +----------> experiment ------+          \           |
+    \                                                     \         v
+     +----------------------> archive <---------------------+   Project Knowledge
+                                ^                              verified outcome
+                                |
+                         inactive workspace work
+```
+
 ## Work categories
 
 Early possibilities begin in [[ideas-index|Engineering ideas]]. Research and

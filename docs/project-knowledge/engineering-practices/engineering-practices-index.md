@@ -25,6 +25,13 @@ documentation, development and testing workflow, continuous integration,
 repository conventions, and other practices that apply across more than one
 product or infrastructure subsystem.
 
+```text
+understand --> change --> focused checks --> broader validation --> review
+     ^                                                        |
+     |                                                        v
+documentation context <--- record evidence <--- accepted outcome
+```
+
 ## Role in the system
 
 Subsystem documentation explains what a component owns and how it behaves.

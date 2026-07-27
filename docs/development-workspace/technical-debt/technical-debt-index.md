@@ -32,6 +32,18 @@ evidence current; archive resolved or superseded records when they no longer
 need active tracking. Update Project Knowledge separately when the resolution
 changes maintained system understanding.
 
+```text
+observed liability
+       |
+       v
+ evidence + impact + ownership
+       |
+       +--> accept explicitly
+       +--> investigate further
+       +--> remediation plan --> implementation --> verify --> close
+       +--> invalid / superseded -----------------------------> archive
+```
+
 ## Related documents
 
 - [[development-workspace-index|Development workspace]]

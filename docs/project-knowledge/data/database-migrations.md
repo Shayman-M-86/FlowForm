@@ -45,8 +45,27 @@ application contract where integrity-error handling maps them to domain errors.
    enforcement.
 4. Recreate a disposable database so PostgreSQL initialization runs from an
    empty data directory, then run the backend test workflow. The repository's
-   standard clean rebuild entry point is `bash backend/scripts/run-tests.sh
-   --clean-rebuild --ai`.
+standard clean rebuild entry point is `bash backend/scripts/run-tests.sh
+--clean-rebuild --ai`.
+
+```text
+schema SQL + grants/templates
+             |
+             +--> ORM / API / service alignment
+             |
+             +--> fixture and test updates
+             |
+             v
+      recreate empty database
+             |
+             v
+      initialization executes
+             |
+             v
+          test suite
+
+retained data --> separate designed and authorized migration path
+```
 
 Editing an initialization schema and restarting an existing PostgreSQL volume
 does not apply the change: the official entrypoint initializes only an empty

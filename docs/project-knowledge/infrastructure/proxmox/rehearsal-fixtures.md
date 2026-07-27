@@ -22,6 +22,19 @@ related_docs:
 Owns the local fixture and egress boundary used by the Proxmox rehearsal. It
 describes checked-in configuration, not the live state of a fixture.
 
+```text
+App VM
+  |
+  +--> Squid on Proxy VM --> allowed external Auth0 domains
+  |
+  +--> Squid on Proxy VM --> TLS shim on Fixtures VM
+                                  |
+                                  +--> LocalStack
+                                  +--> private registry
+
+direct App VM egress to these destinations is expected to fail.
+```
+
 ## Local fixture boundary
 
 VM 230 runs LocalStack, a TLS shim, and the private registry. LocalStack is

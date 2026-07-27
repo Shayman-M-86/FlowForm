@@ -33,6 +33,22 @@ proxy, private application role, constrained runtime containers, and secrets
 delivery paths. These are controls visible in source and configuration, not a
 claim that a live deployment has every declared control applied.
 
+```text
+operator browser -- Auth0 token --> backend authentication
+                                         |
+                                         v
+                                  local authorization
+                                         |
+respondent browser -- link/cookie ------>+------> submission policy
+                                         |
+                         +---------------+---------------+
+                         |                               |
+                    Core store                    Response store
+                identity + metadata             encrypted answers
+                         \                               /
+                          +------ trusted backend ------+
+```
+
 ## Identity and authorization
 
 Auth0 is the external identity provider for authenticated flows. Backend auth

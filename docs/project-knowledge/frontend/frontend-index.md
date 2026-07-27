@@ -25,6 +25,23 @@ backend client integration, and the respondent experience. Shared builder,
 schema, UI, style, and site-shell packages provide reusable capabilities without
 depending back on application modules.
 
+```text
+                         frontend workspace
+                                |
+              +-----------------+-----------------+
+              |                                   |
+          Studio app                         Public Site
+ authenticated management              public/respondent entry
+              |                                   |
+              +-----------------+-----------------+
+                                |
+       builder / schema / UI / styles / site-shell packages
+                                |
+                     generated API contracts
+                                |
+                            Backend API
+```
+
 Studio mounts identity, query, theme, and routing providers at its entry point.
 It owns protected application navigation and typed API access. The builder
 package provides authoring and form-filler surfaces used across frontend

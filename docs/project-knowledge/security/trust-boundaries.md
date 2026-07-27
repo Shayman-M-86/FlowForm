@@ -30,6 +30,18 @@ browser and external identity provider, proxy and backend, backend and its two
 data stores, backend and AWS key/secret services, and operator or respondent
 requests into local access policy.
 
+```text
+[Browser] --credentials/input--> [Proxy] --normalized request--> [Backend]
+                                                                  |
+                           +------------------+--------------------+----------+
+                           |                  |                               |
+                           v                  v                               v
+                     [Core store]      [Response store]             [KMS / secrets]
+                     identity/data      encrypted data                 key material
+
+Every arrow is a validation, authorization, or confidentiality boundary.
+```
+
 ## Request and identity boundaries
 
 Authenticated requests bring an Auth0 credential to backend middleware, which

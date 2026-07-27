@@ -22,6 +22,17 @@ also configure Alloy collection and forwarding. These are useful operational
 signals, not evidence that a deployed environment has working dashboards,
 alerts, retention, or a tested on-call response.
 
+```text
+request
+  |
+  +--> request ID ----------+
+  +--> structured logs -----+--> Alloy / configured transport --> log backend
+  +--> trace + spans -------+--> Alloy / configured transport --> trace backend
+  +--> liveness/readiness -------------------------------> health consumer
+
+correlation connects signals; it does not prove delivery or retention.
+```
+
 ## Signal model
 
 The logging package owns application formatting, filtering, request context,

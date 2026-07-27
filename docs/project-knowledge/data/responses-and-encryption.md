@@ -43,6 +43,23 @@ are derived with a separately versioned linkage secret. Runtime key and locator
 caches reduce remote reads and unwraps, which means plaintext material can be
 present in backend worker memory while in use.
 
+```text
+KMS key
+   |
+   v
+wrapped survey key
+   |
+   v
+wrapped session key
+   |
+   +--> encrypt answer + nonce + associated data
+   |              |
+   |              v
+   |         ciphertext in response store
+   |
+linkage secret --> opaque session / answer locators
+```
+
 ## Lifecycle
 
 When a submission session begins, application services derive a session locator,
@@ -52,6 +69,20 @@ Authorized result paths start from core authorization and metadata, resolve the
 response-side material, and decrypt it in the backend. Individual-session
 deletion is coordinated across the two stores rather than protected by one
 database transaction.
+
+```text
+Core authorization + metadata
+              |
+       derive opaque locator
+              |
+              v
+      Response envelope/answer
+              |
+       unwrap key + decrypt
+              |
+              v
+     authorized backend result
+```
 
 ## Limits and review needs
 

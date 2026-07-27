@@ -31,6 +31,22 @@ research, experiments, migrations, and technical debt. Workspace content may
 be incomplete or contested and does not become Project Knowledge merely by
 being completed.
 
+```text
+                         FlowForm documentation
+                                  |
+                 +----------------+----------------+
+                 |                                 |
+        Project Knowledge                 Development Workspace
+     accepted current understanding        work that may change it
+                 |                                 |
+   product / code / operations       ideas / evidence / decisions / plans
+                 |                                 |
+                 +---------------+-----------------+
+                                 |
+                  verified outcomes flow back into
+                         maintained knowledge
+```
+
 ## How the documentation fits together
 
 Folder heads provide the high-level model for a subject: its responsibilities,

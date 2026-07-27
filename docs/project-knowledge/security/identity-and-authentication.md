@@ -28,6 +28,21 @@ This page owns that identity lifecycle. Project and survey permissions are a
 separate authorization concern, and respondent recognition or survey links are
 not substitutes for an Auth0 operator identity.
 
+```text
+Studio browser
+      |
+      v
+Auth0 login --> bearer credential --> backend verification
+                                          |
+                                          v
+                                local user resolution
+                                          |
+                                          v
+                          project / survey authorization
+
+respondent link or cookie --> separate respondent policy path
+```
+
 ## Local identity boundary
 
 Auth middleware extracts and validates bearer credentials for the configured

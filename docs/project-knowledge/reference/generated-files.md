@@ -16,6 +16,19 @@ Generated output is refreshed through its owner; a committed snapshot is not
 the primary source. Inspect the generator and scanned inputs, then run its
 drift check where available.
 
+```text
+maintained source + generator
+            |
+            v
+       generated output
+            |
+      drift / validation check
+            |
+            +--> commit when repository-owned
+            +--> keep local when environment-specific
+            +--> discard when transient
+```
+
 | Output family | Generator/source | Policy |
 | --- | --- | --- |
 | `backend/openapi.yaml` | `backend/scripts/export-openapi.sh` | Committed contract; regenerate and review drift. |

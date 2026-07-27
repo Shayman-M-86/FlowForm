@@ -25,6 +25,20 @@ This draft records the configuration boundary centred on
 settings model and be supplied to the application assembly path, rather than
 being read from the environment at a route or service call site.
 
+```text
+environment / secret file
+           |
+           v
+     typed settings
+           |
+     startup validation
+           |
+           v
+  application factory
+           |
+ extensions / services / clients
+```
+
 The legacy implementation guide describes nested environment configuration,
 typed validation, secret-file support, and startup validation for selected
 external dependencies. Group a new value with the responsibility that owns it;

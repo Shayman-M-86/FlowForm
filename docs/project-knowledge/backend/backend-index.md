@@ -28,6 +28,22 @@ identity, cryptography, and generated API references are owned by their
 respective branches; this branch links to them instead of duplicating their
 details.
 
+```text
+Studio / respondent / system clients
+                 |
+                 v
+        routes + API schemas
+                 |
+                 v
+       authorization + services
+             /          \
+            v            v
+       core metadata   response coordination
+            |            |
+            v            v
+       Core store     Response store
+```
+
 Core and response stores are independent persistence boundaries. Consequently,
 workflows that span them need explicit sequencing, compensation, or
 reconciliation rather than a distributed database transaction. Pages remain

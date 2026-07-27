@@ -32,6 +32,16 @@ their dependencies. Catalogue pages provide exact commands, configuration,
 environment, ports, and scripts. Generated pages are reproducible snapshots,
 not hand-authored authority.
 
+```text
+                         Reference documentation
+                                   |
+          +------------------------+------------------------+
+          |                        |                        |
+     orientation               catalogues               generated
+ glossary / repo map     commands / config / ports    reproducible snapshots
+   / component map         / scripts / variables      from repository sources
+```
+
 When reference entries conflict with code, tests, configuration, or regenerated
 output, those implementation sources prevail. Authored entries remain draft
 until checked against a committed evidence baseline.

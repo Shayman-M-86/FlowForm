@@ -24,6 +24,15 @@ logfmt, and journal text are normalized into queryable logfmt. Keep indexed
 labels low-cardinality: request IDs and unbounded paths belong in parsed fields,
 not Loki labels.
 
+```text
+backend JSON ----+
+Caddy JSON ------+
+Squid tokens ----+--> Alloy parsing/normalization --> log transport --> Loki
+journal text ----+              |
+Alloy logfmt ----+              +--> low-cardinality labels
+                                +--> request-specific parsed fields
+```
+
 | Class | Fields retained from the legacy schema |
 | --- | --- |
 | Labels | `service_name`/`service`, lowercase `level`, `environment`, `platform`, `host_role`, `method` |

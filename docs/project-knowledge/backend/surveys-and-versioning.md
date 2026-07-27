@@ -31,6 +31,20 @@ selects the active version, and establishes response-store/encryption
 prerequisites. A submission session captures the selected published version, so
 later authoring does not alter an in-progress attempt.
 
+```text
+survey
+  |
+  v
+draft version --edit--> draft version --publish--> published snapshot
+                                                   |
+                                                   +--> active version
+                                                   |
+                                                   +--> submission session
+                                                        pins this snapshot
+
+published snapshot --replace/archive--> historical immutable version
+```
+
 Project permissions control who may perform these operations, while respondent
 entry and answer persistence are separate boundaries. The service, repository,
 ORM, SQL, and lifecycle-test paths in the front matter identify the source to

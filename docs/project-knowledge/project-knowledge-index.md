@@ -50,6 +50,18 @@ authorization, survey, and submission metadata. A separate response store holds
 encrypted response material. Infrastructure and operations provide the runtime,
 deployment, configuration, and observability surfaces around those components.
 
+```text
+Studio user ----------------+
+                            |
+Respondent --> Browser UI --+--> Backend API --> Core store
+                            |         |
+Auth0 ----------------------+         +---------> Response store
+                                      |
+                                      +---------> KMS / secrets / email
+
+Infrastructure runs the components; operations carries their runtime signals.
+```
+
 ## People, systems, and stores
 
 | Actor or dependency | Role in the system |

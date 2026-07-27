@@ -31,6 +31,17 @@ action, further research or experiment, a decision, a plan, or a debt record.
 Archive it once inactive while preserving the evidence boundary. Update Project
 Knowledge separately if an accepted current-state claim is warranted.
 
+```text
+bounded question
+      |
+      v
+inspect evidence --> findings --> no action / more research / experiment
+                                      |          |             |
+                                      +------> decision / plan / debt
+                                                     |
+                                             archive investigation
+```
+
 ## Related documents
 
 - [[development-workspace-index|Development workspace]]

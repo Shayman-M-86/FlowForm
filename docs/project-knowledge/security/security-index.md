@@ -33,6 +33,22 @@ what remains trusted at each crossing. Identity and authentication owns the
 Auth0-to-local-user lifecycle. Data knowledge owns persistence and encrypted
 responses, which this branch links to rather than duplicating.
 
+```text
+browser / operator / respondent
+              |
+       identity or access proof
+              |
+              v
+     backend policy boundary
+       /        |         \
+      v         v          v
+ core data  response data  external key/secret services
+      \         |          /
+       +--------+---------+
+                |
+        deployment/runtime controls
+```
+
 ## Related documents
 
 - [[security-model|Security model]]

@@ -33,6 +33,24 @@ complete runtime configuration; integrate frontend/DNS; add observability and
 recovery; and build the staging delivery pipeline. Each phase requires source
 review and deployed evidence before being considered complete.
 
+```text
+accept target
+    |
+registry + security contracts
+    |
+network + data resources
+    |
+self-converging compute
+    |
+runtime configuration
+    |
+frontend + DNS
+    |
+observability + recovery
+    |
+staging delivery pipeline
+```
+
 Its baseline and completion claims have not been checked against the current
 implementation. Consult linked source paths and current infrastructure
 knowledge before making implementation decisions.

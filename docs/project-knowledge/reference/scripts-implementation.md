@@ -28,6 +28,19 @@ Maps script families to their implementation ownership and execution
 boundaries. The scripts themselves remain the source of truth for arguments,
 preconditions, and side effects.
 
+```text
+repository workflows
+   |
+   +--> scripts/            shared CI, dev, docs, and secret tasks
+   +--> backend/scripts/    backend checks and contracts
+   +--> frontend/scripts/   frontend contract generation
+   +--> infra/**/scripts/   platform-owned operator actions
+   +--> tools/mcp/          development integrations
+   |
+   v
+language/runtime tools --> generated artifacts or external side effects
+```
+
 ## Directory ownership
 
 - `scripts/ci/` coordinates OpenAPI contract generation and drift checks;

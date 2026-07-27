@@ -25,6 +25,20 @@ the core side, while response envelopes and encrypted answer values belong on
 the response side. Application code coordinates crossings between those stores;
 the separate schemas do not make a backend compromise harmless.
 
+```text
+                    trusted backend process
+                      /                 \
+                     v                   v
+              Core persistence     Response persistence
+              ----------------     --------------------
+              identity             opaque locators
+              access               encrypted envelopes
+              survey structure     encrypted answers
+              session metadata
+
+                  no database-level cross-store join
+```
+
 The branch also records how schema changes are handled. The checked-in database
 assets initialize empty disposable databases, while an incremental migration and
 rollback process for retained environments is not established here. Detailed

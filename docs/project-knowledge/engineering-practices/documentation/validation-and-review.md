@@ -49,6 +49,21 @@ Optional workspace metadata — `aliases`, `authority`, `related_code`,
 Development workspace documents, so honest incompleteness there does not fail
 CI.
 
+```text
+authored documentation
+          |
+          +--> metadata and parent checks
+          +--> title and link resolution
+          +--> collection/authority rules
+          +--> generated-file policy
+          |
+          v
+ editing --> project/workspace --> commit --> CI
+ warnings       scoped gates       gate     gate
+          |
+          +--> advisory debt and human content review
+```
+
 ## Running validation
 
 Validate the collection tree and review advisory debt from the repository root:

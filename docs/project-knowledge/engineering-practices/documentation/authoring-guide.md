@@ -35,6 +35,24 @@ Before changing documentation:
 Do not use `old-docs/` as a source of current facts. It is historical material
 whose claims require fresh implementation evidence.
 
+```text
+task
+  |
+  v
+focused Docsys context --> target document + neighbours
+  |                                  |
+  v                                  v
+implementation evidence ------> write/update claims
+                                      |
+                         metadata + links + navigation
+                                      |
+                                      v
+                             validate and review
+                                      |
+                                      v
+                              report remaining gaps
+```
+
 ## Agent context workflow
 
 Codex and Claude share the `flowform-doc-context` skill and the
@@ -108,6 +126,20 @@ titles, `aliases`, `related_docs`, tags, and code paths. Wiki-link targets use
 the actual note filename (or shortest distinguishing path), while their display
 text and `related_docs` use the document title. When changing a filename or
 title, run the validators immediately so unresolved links do not spread.
+
+## ASCII diagrams
+
+Use a fenced `text` diagram when it makes a boundary, sequence, lifecycle,
+ownership map, or dependency direction easier to understand than prose alone.
+Keep diagrams ASCII-only, at most 100 columns wide, and small enough to read
+without horizontal scrolling. Introduce their meaning in nearby prose and keep
+the prose authoritative; a diagram is a summary, not the only statement of a
+rule.
+
+Prefer arrows for sequence, branching lines for alternatives, and boxes or
+trees for ownership. Do not turn flat catalogues into diagrams when a table is
+clearer. Review a diagram whenever the behaviour or boundary it represents
+changes.
 
 ## Generated pages
 

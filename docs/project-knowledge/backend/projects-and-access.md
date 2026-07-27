@@ -34,6 +34,19 @@ effective permission set before protected Studio operations proceed. Project
 creation establishes the initial administrative relationship and a response
 store context.
 
+```text
+authenticated user
+        |
+        v
+ project membership --> project role --> named permissions
+        |                                   |
+        |                                   v
+        +--> survey membership --> survey role
+                                            |
+                                            v
+                                  protected Studio action
+```
+
 This page does not define survey versions, answer storage, or access tokens.
 Those boundaries are described by [[surveys-and-versioning|Surveys and versioning]],
 [[submissions|Submissions]], and the security branch. This page remains draft

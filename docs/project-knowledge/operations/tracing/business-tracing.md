@@ -21,6 +21,18 @@ top of OpenTelemetry instrumentation. Its purpose is to show a bounded business
 operation and important checkpoints without spreading telemetry-provider calls
 through services or exporting response, credential, or identity data.
 
+```text
+business action span
+   |
+   +--> bounded fields: stable, filterable properties
+   |
+   +--> events: ordered checkpoints
+   |
+   +--> child provider spans: HTTP / database / AWS
+   |
+   +--> trace ID bridges to filtered logs
+```
+
 The public surface has three roles: an action opens a named operation span,
 fields describe stable properties of that span, and events record moments where
 order or presence matters. Fields are for bounded dimensions an operator might

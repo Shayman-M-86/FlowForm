@@ -23,6 +23,22 @@ repository-wide command. It joins focused local checks during implementation
 with the broadest relevant backend, frontend, contract, infrastructure, and
 documentation gates before review or merge.
 
+```text
+changed ownership boundary
+           |
+           v
+focused unit / component check
+           |
+           v
+lint / types / build / contract check
+           |
+           v
+broadest applicable integration suite
+           |
+           v
+hosted CI or deployed verification where required
+```
+
 ## Test layers
 
 - Backend tests run through `backend/scripts/run-tests.sh`, which prepares a

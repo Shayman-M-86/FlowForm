@@ -28,6 +28,20 @@ is introduced, and how a feature crosses route, schema, service, repository,
 and contract boundaries. Product behaviour belongs in the parent backend domain
 pages; generated API artifacts belong to reference/generated documentation.
 
+```text
+HTTP request
+    |
+ route + API schema
+    |
+ service / domain policy
+    |
+ repository
+    |
+ ORM / database session
+    |
+ core or response store
+```
+
 ## Guides
 
 - [[code-organization|Backend code organization]]

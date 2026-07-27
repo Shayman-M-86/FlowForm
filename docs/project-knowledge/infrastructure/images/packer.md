@@ -22,6 +22,21 @@ provisioners, and generated manifests. `infra/images/scripts/image` selects an
 operation and assembles the needed nested HCL into a temporary flat Packer
 project, because Packer loads a directory non-recursively.
 
+```text
+sources + builds + variables + provisioners
+                    |
+             image dispatcher
+                    |
+                    v
+          temporary flat HCL project
+                    |
+                    v
+               Packer build
+             /              \
+            v                v
+     image artifact      generated manifest
+```
+
 ## Build structure
 
 - `sources/aws.pkr.hcl` defines the AWS golden source; `sources/proxmox.pkr.hcl`

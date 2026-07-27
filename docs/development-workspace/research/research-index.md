@@ -30,6 +30,20 @@ Use research to sharpen ideas, initiate investigations, design experiments, or
 support a decision. Preserve limitations and source freshness when handing it
 off. Archive inactive research that remains useful for later reasoning.
 
+```text
+sources + repository evidence
+             |
+             v
+          research
+        /    |    \
+       v     v     v
+investigation  experiment  decision support
+       \         |         /
+        +--------+--------+
+                 |
+          archive when inactive
+```
+
 ## Related documents
 
 - [[development-workspace-index|Development workspace]]

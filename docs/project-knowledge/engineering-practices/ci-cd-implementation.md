@@ -22,6 +22,19 @@ This page maps continuous-integration and delivery responsibilities to checked-i
 locations. It does not attest to a successful hosted run, deployed environment,
 or production release; those claims need workflow-run and deployment evidence.
 
+```text
+                           repository change
+                                  |
+                    +-------------+-------------+
+                    |                           |
+                    v                           v
+              CI validation              delivery workflows
+       tests / lint / contracts       frontend / images / infra
+                    |                           |
+                    v                           v
+             validation evidence          remote side effects
+```
+
 ## Ownership map
 
 `.github/workflows/ci.yml` owns pull-request and branch validation.

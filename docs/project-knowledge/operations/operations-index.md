@@ -25,6 +25,18 @@ Observability describes the application and runtime signals as one operational
 model. The tracing branch narrows that model to propagation, transport,
 correlation, and application-owned business spans.
 
+```text
+running application
+   |       |       |
+   v       v       v
+ logs    health   traces
+   |               |
+   +------> collection/transport
+                    |
+                    v
+          external operational systems
+```
+
 ## Related documents
 
 - [[observability|Observability]]

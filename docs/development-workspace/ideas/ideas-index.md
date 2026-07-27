@@ -29,6 +29,13 @@ poses a bounded question, or to planning after an agreed direction exists.
 Discarded or superseded ideas can move to the archive when their history remains
 useful; otherwise they need no artificial promotion.
 
+```text
+                   +--> research
+idea --clarify---->+--> investigation
+                   +--> planning (direction already agreed)
+                   +--> archive / discard
+```
+
 ## Related documents
 
 - [[development-workspace-index|Development workspace]]

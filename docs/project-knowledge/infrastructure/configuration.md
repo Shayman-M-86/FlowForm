@@ -24,6 +24,21 @@ environment variables using Pydantic's underscore nesting, requires
 `FLOWFORM_ENV` to be `dev`, `test`, or `prod`, and turns Pydantic failures into
 the application's configuration error.
 
+```text
+environment variables + secret files
+                  |
+                  v
+         typed settings model
+                  |
+        validation and defaults
+                  |
+                  v
+        application + AWS clients
+                  |
+                  v
+           runtime services
+```
+
 ## Settings and secret files
 
 The model accepts a complete database URL or the required database parts. A

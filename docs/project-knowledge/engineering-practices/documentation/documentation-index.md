@@ -23,6 +23,18 @@ documentation model: the rules a document must satisfy to enter Project
 Knowledge, how agents and scripts author from implementation evidence, and how
 the `docsys` tooling gates structure while keeping maintainability advisory.
 
+```text
+Documentation model
+        |
+        v
+Authoring guide --> evidence-backed document --> validation profiles
+        ^                    |                         |
+        |                    v                         v
+focused Docsys context   knowledge graph        review + debt signals
+        |                                              |
+        +---------------- maintained updates <---------+
+```
+
 ## Governance model
 
 Documentation quality has three separate parts. Structure gives every subject

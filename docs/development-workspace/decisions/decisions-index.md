@@ -30,6 +30,22 @@ When an accepted outcome has durable implementation-backed consequences,
 distil those consequences into Project Knowledge. Superseded and rejected
 decisions remain useful historical records and may later move to the archive.
 
+```text
+evidence + options + constraints
+              |
+              v
+          proposed decision
+          /       |       \
+     accepted  rejected  superseded
+         |         |         |
+      planning     +---------+----> archive
+         |
+   implemented + verified
+         |
+         v
+  Project Knowledge
+```
+
 ## Current records
 
 - [[0001-aws-staging-infrastructure-target|ADR 0001: AWS staging infrastructure target]]

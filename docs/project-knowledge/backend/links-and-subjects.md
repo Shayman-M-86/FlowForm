@@ -33,6 +33,23 @@ link state, expiry, assignment, authentication, and subject evidence before a
 submission session is created. The source paths above are the evidence boundary
 for re-verification of these details.
 
+```text
+public / private / authenticated link
+                  |
+          validate state and policy
+                  |
+        +---------+----------+
+        |                    |
+ recognition token     authenticated participant
+        |                    |
+        +---------+----------+
+                  v
+        project-scoped subject
+                  |
+                  v
+          submission session
+```
+
 The domain selects access and subject context. It does not authorize Studio
 users, create encrypted envelopes, or persist answers. Those responsibilities
 belong respectively to [[identity-and-authentication|Identity and authentication]],

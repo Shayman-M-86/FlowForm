@@ -20,6 +20,19 @@ the shared split-host runtime, and the Proxmox rehearsal. Their differing
 networks, mounts, and credentials are intentional variants rather than proof
 of a common live deployment.
 
+```text
+internet/LAN
+    |
+    v
+Proxy host: Caddy + Squid + Alloy
+    | ingress       | egress/telemetry
+    v               ^
+App host: backend + Alloy
+    |
+    v
+external database placement supplied by environment
+```
+
 ## Shared host runtime
 
 The shared runtime is split into two Compose projects. The proxy project runs

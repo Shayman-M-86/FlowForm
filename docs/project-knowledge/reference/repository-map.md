@@ -22,6 +22,22 @@ related_docs:
 
 This draft is an orientation map, not a runtime or deployment specification.
 
+```text
+FlowForm/
+|-- backend/            application services and API
+|-- frontend/
+|   |-- apps/           deployable browser experiences
+|   `-- packages/       shared frontend capabilities
+|-- infra/
+|   |-- containers/     runtime composition
+|   |-- database/       schemas and initialization
+|   |-- images/         reusable machine images
+|   `-- deployment/     AWS, Proxmox, and bootstrap
+|-- scripts/            repository automation
+|-- docs/               maintained knowledge and workspace
+`-- tools/              development integrations
+```
+
 | Area | Responsibility | Useful entry points |
 | --- | --- | --- |
 | `backend/` | Python/Flask application, API, services, persistence mappings, tests, and OpenAPI contract | `wsgi.py`, `app/core/factory.py`, `app/api/v1/`, `tests/` |

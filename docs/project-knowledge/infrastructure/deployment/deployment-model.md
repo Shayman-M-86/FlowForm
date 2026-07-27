@@ -29,6 +29,20 @@ values per environment, and gives staging and production distinct public and
 private DNS names. These are synthesis inputs, not evidence that the resources
 exist in an AWS account.
 
+```text
+environment configuration
+       |
+       +--> dev ------> security scope only
+       |
+       +--> staging --+
+       |              |
+       +--> prod -----+--> full deployment
+                           |
+          +----------------+---------------------------+
+          |        |        |        |        |        |
+       network  registry  database  app    frontend  observability
+```
+
 ## Declared AWS topology
 
 For full-deployment environments, the CDK app composes independent stacks for

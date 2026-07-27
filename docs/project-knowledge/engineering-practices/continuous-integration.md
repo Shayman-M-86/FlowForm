@@ -22,6 +22,21 @@ checks a proposed or pushed change through documentation, backend, frontend,
 contract, and infrastructure jobs. Deployment is separate; a CI definition is
 not evidence that a particular commit was validated or released.
 
+```text
+push / pull request
+        |
+        v
+documentation + security + changed-path classification
+        |
+        +--> backend checks
+        +--> frontend checks
+        +--> contract drift
+        +--> infrastructure checks
+        |
+        v
+validation evidence (not deployment)
+```
+
 ## Lifecycle
 
 Legacy material describes CI for pushes and pull requests targeting `main` and

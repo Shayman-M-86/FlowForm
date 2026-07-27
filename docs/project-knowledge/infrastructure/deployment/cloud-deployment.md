@@ -20,6 +20,16 @@ Two AWS publication workflows are checked in. Neither is a full application
 deployment: neither applies CDK, changes active runtime image parameters, runs
 database migrations, or restarts an application host.
 
+```text
+green CI on staging ------------------> frontend publication
+manual staging dispatch --------------> runtime-image publication
+        |                                      |
+        v                                      v
+S3 + CloudFront assets                 ECR images + digest manifest
+
+Neither path performs host rollout or full environment convergence.
+```
+
 ## Staging frontend publication
 
 `.github/workflows/deploy.yml` deploys the two frontend builds to the staging

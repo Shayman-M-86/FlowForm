@@ -31,6 +31,21 @@ mistaking generated output or a deployment detail for an authoritative source.
 An observed pattern is not a guarantee that every module follows it, nor does it
 provide the rationale, alternatives, or exception policy of a decision record.
 
+```text
+product behaviour
+       |
+       v
+application boundary --> domain/service policy --> persistence boundary
+       |                         |
+       v                         v
+public contract            data constraints
+       |
+       v
+generated consumers
+
+deployment and operations surround these layers; they do not redefine them.
+```
+
 ## Observed patterns retained from legacy material
 
 - The backend separates HTTP routes and schemas from orchestration, domain

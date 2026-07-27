@@ -30,6 +30,18 @@ Use a result to inform an investigation, decision, or plan. If no follow-up is
 needed, retain it for traceability and archive it when no longer active. Only
 implementation-backed, accepted consequences belong in Project Knowledge.
 
+```text
+question --> conditions --> trial --> observations --> limitations
+                                                   |
+                                                   v
+                                      investigation / decision / plan
+                                                   |
+                                      accepted implemented consequence
+                                                   |
+                                                   v
+                                          Project Knowledge
+```
+
 ## Related documents
 
 - [[development-workspace-index|Development workspace]]

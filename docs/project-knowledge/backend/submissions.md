@@ -35,6 +35,26 @@ core pointers and response answers as encrypted data in a separate store.
 Reconciliation handles a subset of partial cross-store failures by examining
 in-progress sessions and envelope presence.
 
+```text
+resolve access + subject
+          |
+          v
+create session + response envelope
+          |
+          v
+      in progress
+       /   |    \
+      v    v     v
+ answer  event  resume
+      \    |     /
+       \   |    /
+        complete ------> completed
+           |
+     partial failure
+           v
+      reconciliation --> recover / abandon
+```
+
 The boundary does not define survey content or Studio results authorization.
 See [[surveys-and-versioning|Surveys and versioning]],
 [[links-and-subjects|Links and subjects]], and

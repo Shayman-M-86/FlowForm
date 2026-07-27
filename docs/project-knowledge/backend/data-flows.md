@@ -35,6 +35,22 @@ boundary map, not an endpoint or field catalogue.
 | Results access | Studio user | survey/session metadata | ciphertext is read through the authorized service boundary |
 | Recovery | reconciliation work | incomplete sessions may be marked abandoned | envelope presence is checked |
 
+```text
+Studio authoring ------------------------------------+
+   |                                                  |
+   v                                                  |
+Core: project -> survey -> draft -> published version |
+   |                                                  |
+   +--> respondent access -> submission session ------+
+                              |
+                    +---------+---------+
+                    |                   |
+                    v                   v
+              Core metadata      encrypted response data
+                    \                   /
+                     +---- results ----+
+```
+
 The legacy design records no SQL join between the two stores. Cross-store
 references use derived opaque locators, so a workflow must explicitly order its
 commits and handle partial failure. [[submissions|Submissions]] owns the

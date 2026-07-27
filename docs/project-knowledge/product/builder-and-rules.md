@@ -31,6 +31,26 @@ and controls respondent progress. Backend content services and request schemas
 validate and persist version-scoped content, but frontend execution remains an
 important part of the respondent rule behaviour.
 
+```text
+question nodes + rule nodes
+            |
+            v
+      authored draft graph
+            |
+        publish/compile
+            |
+            v
+     published runtime graph
+            |
+   +--------+---------+
+   |                  |
+show / require     jump / terminate
+   |                  |
+   +--------+---------+
+            v
+    respondent progress
+```
+
 Publishing and authorization are adjacent lifecycle boundaries rather than
 responsibilities of the builder alone. The product also needs continued review
 of graph validation, loop/missing-target handling, partial draft-save recovery,

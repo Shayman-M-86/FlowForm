@@ -18,7 +18,7 @@ related_docs:
 
 # ADR 0001: AWS staging infrastructure target
 
-This migrated decision records the intended first AWS staging environment. Its
+This decision records the intended first AWS staging environment. Its
 original status was accepted on 2026-07-23, but this workspace copy is not an
 implementation or live-deployment attestation.
 
@@ -28,6 +28,20 @@ logical core/response databases, controlled proxy egress, private ECR images,
 environment configuration, file-backed secrets, and bootstrap convergence.
 It favours a low-cost single-host/single-AZ staging posture over production
 availability.
+
+```text
+public internet
+      |
+      v
+ public proxy host ----controlled egress----> approved external services
+      |
+      v
+ private application host ----> private PostgreSQL service
+      |                               |
+      |                         core + response databases
+      v
+ private image/configuration/secret sources
+```
 
 Explicit exclusions include a NAT gateway, application load balancer,
 orchestrator, RDS Proxy, broad paid interface-endpoint set, public application

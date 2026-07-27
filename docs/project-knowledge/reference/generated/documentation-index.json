@@ -1,7 +1,7 @@
 {
   "schema": "flowform.docsys.index/1",
   "generated_by": "scripts/docs/docsys/index.py",
-  "repo_head": "09c3f21b653a619b8cf8d1b1422d90b816fe9848",
+  "repo_head": "2789a307570ff8d9769dc23b6ce78d939ad7435d",
   "document_count": 91,
   "documents": [
     {
@@ -2117,6 +2117,7 @@
         "Claim classification",
         "Repeatable process",
         "Reference and navigation discipline",
+        "ASCII diagrams",
         "Generated pages",
         "Answering repository questions",
         "Related documents"

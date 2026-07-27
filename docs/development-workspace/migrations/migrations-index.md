@@ -31,6 +31,16 @@ risks as the work progresses. On completion, update the appropriate maintained
 documentation from implementation evidence, then archive the migration record
 when it no longer governs active work.
 
+```text
+known start --> transition steps --> compatibility window --> target state
+     |                |                     |                    |
+ evidence       validation gates       rollback boundary     completion evidence
+                                                               |
+                                              update maintained documentation
+                                                               |
+                                                        archive record
+```
+
 ## Related documents
 
 - [[development-workspace-index|Development workspace]]

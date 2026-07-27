@@ -20,6 +20,16 @@ and rules, while respondents traverse the published content through the shared
 filler. Product meaning here is connected to, but distinct from, the frontend
 component and API implementation that realizes it.
 
+```text
+author intent --> draft survey --> published version --> respondent journey
+      |                |                  |                    |
+ questions + rules   builder UI       stable content        form filler
+      \                |                  |                    /
+       +---------------+------------------+-------------------+
+                               |
+                         product behaviour
+```
+
 ## Related documents
 
 - [[builder-and-rules|Builder and rules]]

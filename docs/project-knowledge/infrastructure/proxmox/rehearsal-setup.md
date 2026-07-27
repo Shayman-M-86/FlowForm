@@ -24,6 +24,20 @@ Proxmox rehearsal. It requires a workstation with the repository, Docker,
 Terraform, Packer, and SSH access to the Proxmox host; it is not a claim that
 those prerequisites are installed or configured on any particular machine.
 
+```text
+prepare local inputs
+        |
+setup private host bridge
+        |
+prepare/build templates
+        |
+Terraform creates four VMs
+        |
+sync secrets + converge guests + publish images
+        |
+verify services, egress, TLS, database, and clocks
+```
+
 ## Prepare local inputs
 
 Create the gitignored Packer source and Proxmox variable files from their

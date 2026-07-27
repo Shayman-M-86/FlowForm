@@ -22,6 +22,20 @@ runtime and rehearsal stacks. Development starts two PostgreSQL services and a
 source-mounted backend; the frontend Compose definition starts frontend
 containers only.
 
+```text
+development
+  |
+  +--> Compose: backend + core PostgreSQL + response PostgreSQL
+  |
+  +--> separate frontend Compose/dev servers
+  |
+  +--> named volumes: database data + backend environment
+
+test
+  |
+  +--> isolated Compose network and disposable test services
+```
+
 ## Development stack
 
 Validate and start the stack with its ignored environment file:

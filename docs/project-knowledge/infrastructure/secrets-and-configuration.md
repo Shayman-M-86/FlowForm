@@ -24,6 +24,21 @@ variables and file-backed values. Development and production require the Auth0
 management secret to be configured by file and require its startup validation;
 the test environment is the explicit exception.
 
+```text
+secret sources
+  |-- local generated database values
+  |-- authenticated remote application values
+  |
+  v
+tmpfs runtime secret directory
+  |
+  v
+read-only container secret mounts
+  |
+  v
+typed backend configuration
+```
+
 ## Local development secret assembly
 
 Generate missing machine-local database passwords, then fetch persistent

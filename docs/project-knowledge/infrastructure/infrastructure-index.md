@@ -30,6 +30,27 @@ observability knowledge across supported platforms. Checked-in definitions and
 validation describe repository intent; they do not attest that an AWS or
 Proxmox environment is deployed or healthy.
 
+```text
+machine-image build
+        |
+        v
+ reusable image identifier
+        |
+        +---------------------+
+        |                     |
+        v                     v
+   AWS deployment       Proxmox rehearsal
+        |                     |
+        +----------+----------+
+                   v
+          host bootstrap
+                   |
+                   v
+       shared container runtime
+                   |
+          configuration + secrets
+```
+
 ## Infrastructure model
 
 FlowForm infrastructure separates reusable build artifacts from deployment

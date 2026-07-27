@@ -21,6 +21,23 @@ local rehearsal with comparable runtime roles. GitHub workflows currently
 publish selected frontend assets and runtime images, but do not perform a full
 backend deployment.
 
+```text
+declarations                  artifacts
+    |                            |
+    v                            v
+CDK / Terraform shape      frontend / runtime images
+    |                            |
+    +-------------+--------------+
+                  v
+        configuration + secrets
+                  |
+                  v
+           host convergence
+                  |
+                  v
+             live verification
+```
+
 ## Declared environments
 
 The AWS model distinguishes development from full-deployment environments.

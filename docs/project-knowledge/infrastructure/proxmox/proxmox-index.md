@@ -29,6 +29,21 @@ not evidence of a healthy deployed rehearsal or an AWS deployment.
 Terraform clones the proxy and app VMs from golden template `9000`; the
 LocalStack and PostgreSQL VMs use fixture templates `9001` and `9002`.
 
+```text
+                        LAN / operator
+                              |
+                        Proxy VM (210)
+                    vmbr0 + private vmbr10
+                              |
+              +---------------+----------------+
+              |               |                |
+              v               v                v
+        App VM (220)    Fixtures VM (230)   DB VM (240)
+        backend/Alloy   LocalStack/registry  PostgreSQL
+              |
+              +---- controlled egress through Proxy VM
+```
+
 | VMID | Role | Private address | Network boundary |
 | --- | --- | --- | --- |
 | 210 | Proxy | `10.10.10.10/24` | Also has static LAN address `192.168.70.63/22` on `vmbr0`. |

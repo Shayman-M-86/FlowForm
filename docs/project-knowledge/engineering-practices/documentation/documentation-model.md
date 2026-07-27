@@ -51,6 +51,21 @@ Membership is derived from the physical tree: the first path segment under the
 documentation root selects the collection. A document outside both collections
 is invalid once the collection model is active.
 
+```text
+docs/
+|-- docs-index.md
+|-- project-knowledge/          canonical current understanding
+|   |-- project-knowledge-index.md
+|   `-- <subject>/<subject>-index.md
+`-- development-workspace/     working and historical change material
+    |-- development-workspace-index.md
+    `-- <work-type>/<work-type>-index.md
+
+folder head --> child documents --> nested folder heads
+      |                |
+      +---- one structural parent for every authored document
+```
+
 ## Structural conventions
 
 Every directory containing authored Markdown has a `<folder-name>-index.md`

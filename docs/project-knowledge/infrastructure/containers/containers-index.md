@@ -19,6 +19,21 @@ software or supporting services. Shared runtime Compose files define the
 deployed application and proxy roles. Strategy directories adapt those roles
 for development, test, AWS-oriented deployment, and the Proxmox rehearsal.
 
+```text
+buildable container images
+           |
+           v
+shared runtime definitions
+     /              \
+    v                v
+ app host role    proxy host role
+    |                |
+    +--------+-------+
+             |
+   environment strategy overlays
+   dev / test / AWS / rehearsal
+```
+
 ## Runtime shape
 
 The shared deployment model uses two host-level Compose projects. The

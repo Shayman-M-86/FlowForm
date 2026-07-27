@@ -23,6 +23,20 @@ Owns the checked-in log access and Alloy configuration for the Proxmox
 rehearsal. It does not attest that Grafana Cloud credentials are available or
 that signals are currently being delivered.
 
+```text
+App backend logs/traces
+          |
+      app Alloy
+          |
+          v
+Proxy Alloy <----- proxy/container/host logs
+    |    |
+    |    +----> configured trace endpoint
+    +---------> configured log endpoint
+
+operator --> rehearsal logs --> selected guest/container
+```
+
 ## Operator log access
 
 `rehearsal logs` reaches a selected guest through the temporary private-bridge

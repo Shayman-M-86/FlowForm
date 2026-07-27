@@ -21,6 +21,16 @@ Use this workflow when a reusable host image must change. It is separate from
 application deployment: Packer creates image artifacts, while Terraform and
 CDK consume completed identifiers.
 
+```text
+prepare source --> validate configuration --> build --> verify artifact
+                                                         |
+                            +----------------------------+----------------+
+                            |                                             |
+                       Proxmox template                           AWS AMI publication
+                            |                                             |
+                     Terraform consumes                           CDK/hosts consume
+```
+
 ## Proxmox lineage
 
 Create local ignored configuration from the provided examples, then run the

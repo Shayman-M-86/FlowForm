@@ -21,6 +21,22 @@ OpenTelemetry data, and container-side Alloy configuration relays that data to
 the configured external endpoint. It also owns trace-to-log correlation rather
 than the wider logging and health model.
 
+```text
+incoming trace context
+          |
+          v
+HTTP/server instrumentation
+          |
+          +--> database / AWS spans
+          |
+          +--> FlowForm business spans
+          |
+          v
+OpenTelemetry exporter --> Alloy --> configured trace destination
+          |
+          +--> trace/span IDs in matching application logs
+```
+
 Backend tracing configuration controls whether instrumentation/export is active,
 the collector endpoint, sampling, and service identity. The logging formatter
 can expose active trace and span identifiers, allowing an operator to pivot

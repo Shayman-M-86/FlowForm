@@ -22,6 +22,20 @@ does not invoke Packer. The `image` dispatcher under `infra/images/scripts/`
 is the operator entry point for preparation, builds, verification, artifacts,
 and AWS publication.
 
+```text
+source image
+    |
+    v
+shared golden build
+    |
+    +--> AWS AMI --------------------> SSM image identifier
+    |
+    +--> Proxmox golden template ----> runtime host clones
+              |
+              +--> LocalStack fixture template
+              +--> PostgreSQL fixture template
+```
+
 The shared golden image is an Amazon Linux 2023 runtime host with Docker,
 Docker Compose, AWS CLI, common host configuration, verification, and cleanup.
 It excludes application code, runtime configuration, secrets, and runtime
