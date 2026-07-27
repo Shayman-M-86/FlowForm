@@ -145,12 +145,18 @@ not claim one without implementation evidence.
 
 ## Staged verification gate
 
-The Git pre-commit hook compares affected verified Project Knowledge documents
-with the exact implementation blobs in the staged index. When a staged code
-change invalidates a digest, Docsys changes that document to `draft`, clears the
-digest, stages the metadata update, and stops the commit attempt for review. It
-never promotes a document: an agent or author must first perform the semantic
-evidence review and run `docsys evidence promote --staged`.
+The Git pre-commit hook uses Docsys impact confidence before comparing affected
+verified Project Knowledge documents with the exact implementation blobs in the
+staged index. An exact file named in `related_code` is high confidence: when
+that change invalidates a digest, Docsys changes the document to `draft`, clears
+the digest, stages the metadata update, and stops the commit attempt for review.
+Broader directory, glob, and `change_triggers` matches keep their verified
+status; the hook refreshes their evidence digest and allows the commit to
+continue. A document edited in the same commit is always checked regardless of
+impact confidence.
+
+The hook never promotes an invalidated document: an agent or author must first
+perform the semantic evidence review and run `docsys evidence promote --staged`.
 
 This keeps the workflow to one final commit. The digest is stable because it
 excludes documentation content, avoiding a self-reference to the commit being
