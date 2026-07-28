@@ -9,12 +9,15 @@ last_edited: 2026-07-28
 tags: [infrastructure, security, configuration]
 related_code:
   - "../../../infra/deployment/aws/cdk/flowform_infra/stacks/database_stack.py"
+  - "../../../infra/deployment/aws/cdk/flowform_infra/stacks/database_bootstrap_stack.py"
+  - "../../../infra/deployment/aws/cdk/flowform_infra/database_bootstrap/"
   - "../../../infra/deployment/aws/cdk/flowform_infra/stacks/security_stack.py"
   - "../../../infra/deployment/aws/cdk/flowform_infra/stacks/application_stack.py"
   - "../../../infra/deployment/aws/scripts/bootstrap-database.sh"
   - "../../../infra/deployment/aws/scripts/publish-staging-images.sh"
   - "../../../infra/images/packer/provisioners/common/install-runtime-assets.sh"
   - "../../../infra/database/init/aws/"
+  - "../../../infra/database/init/schema/"
   - "../../../infra/database/init/templates/"
   - "../../../backend/app/db/iam_auth.py"
 related_docs:
@@ -28,17 +31,20 @@ related_docs:
 # AWS IAM database authentication loose threads
 
 > Working checklist for the work still required to make RDS IAM database
-> authentication function end to end. It records outstanding items and what has
-> been implemented in source; nothing here has been deployed to AWS.
+> authentication function end to end. Network, RDS, and the baseline database
+> bootstrap are deployed; application-host IAM authentication and later
+> migration execution remain outstanding.
 
-The source work is done: the backend, the application bootstrap, the CDK
-resources, the golden image, and the RDS bootstrap runner all implement the IAM
-path. What remains is deploying it in the right order, an intentional secret
-migration, and the shared container-path cleanups.
+The source work is largely done: the backend, application bootstrap, CDK
+resources, golden image, and RDS bootstrap runner implement the IAM path. The
+database bootstrap has run against staging. What remains is the application
+host connection, later migration execution, an intentional secret migration,
+and shared container-path cleanup.
 
 ## Done
 
-Implemented in source and locally validated. None of it is deployed.
+Implemented in source and locally validated. Network, RDS, and database
+bootstrap items in this list are deployed to staging.
 
 - **Backend auth mode.** `DatabaseSettings.auth_mode` selects `password` or
   `iam` per database, rejects a static credential supplied alongside `iam`, and
@@ -55,12 +61,18 @@ Implemented in source and locally validated. None of it is deployed.
   `flowform_response_app` by resource ID. The policy is created in
   `DatabaseStack` rather than added to the role in `SecurityStack`, because the
   reverse forms a stack dependency cycle.
-- **RDS bootstrap runner.** `infra/deployment/aws/scripts/bootstrap-database.sh`
-  plus `infra/database/init/aws/` create the databases, roles, schemas, grants,
-  and `GRANT rds_iam`. Validated against PostgreSQL 17: all objects owned by
-  `flowform_owner`, `PUBLIC` holds no `CONNECT`, neither runtime role has a
-  stored password, each reaches only its own database, all steps idempotent,
-  and the verifier fails correctly when isolation is broken.
+- **RDS bootstrap boundary.** `DatabaseStack` now owns only persistent RDS
+  infrastructure. The context-gated `DatabaseBootstrapStack` owns one
+  idempotent VPC Lambda and its security groups. The operator script deploys
+  that helper, creates one tagged temporary Secrets Manager interface endpoint,
+  invokes the Lambda, checks its sanitized result, and requests endpoint
+  deletion. A helper failure cannot roll back RDS.
+- **RDS bootstrap contents.** The Lambda's packaged SQL creates
+  `flowform_owner`, `flowform_migrator`, both runtime roles, both logical
+  databases, application schemas, the current authoritative baseline tables,
+  default privileges, and `GRANT rds_iam`. It records a version/checksum and
+  verifies the exact table sets, ownership, privileges, isolation, and catalog
+  state. Later schema evolution remains a separate migration operation.
 - **Backend SSM parameters.** `ApplicationStack` publishes the backend runtime
   group under `/flowform/<scope>/backend/`, including both auth modes set to
   `iam`, the RDS endpoint, and explicit CORS origins. Parameter names come from
@@ -77,10 +89,11 @@ Implemented in source and locally validated. None of it is deployed.
   static private addresses, because deriving each from the other's instance
   forms a CloudFormation cycle.
 
-The runner also resolves the boundary question the roles design left open: the
-SQL is AWS-specific and lives beside the shared assets, while the deployment
-concerns (endpoint discovery, credentials, ordering, live checks) live under
-the AWS deployment scripts. The shared schema snapshots are reused verbatim.
+The runner also resolves the boundary question the roles design left open:
+AWS-specific database SQL lives under `infra/database/init/aws/`, shared
+application schema snapshots live under `infra/database/init/schema/`, and the
+Lambda packages both. Helper deployment, temporary endpoint management,
+invocation, and cleanup remain under the AWS deployment scripts.
 
 ## Blocking threads
 
@@ -94,8 +107,9 @@ something the next reads.
 
 ```text
 1. image build && image publish        -> AMI id in /flowform/<env>/ec2/baseAmiId
-2. cdk deploy Network, Database        -> VPC and RDS exist
-3. bootstrap-database.sh --apply       -> databases, roles, rds_iam grants
+2. cdk deploy Network, Database        -> VPC and persistent RDS exist
+3. bootstrap-database.sh --apply       -> helper, temporary endpoint,
+                                          databases, roles, rds_iam grants
 4. publish-staging-images.sh publish
    publish-staging-images.sh promote   -> BACKEND_IMAGE / ALLOY_IMAGE in SSM
 5. cdk deploy Application              -> hosts boot and converge
@@ -115,13 +129,13 @@ unexecuted ordering in a script fixes assumptions that have never been tested;
 the release pipeline in Phase 8 of the staging plan is where it belongs once
 proven.
 
-### 1. Deploy and run the bootstrap against real RDS
+### 1. Deploy and run the bootstrap against real RDS — resolved
 
-`DatabaseStack` has never deployed successfully; the earlier attempt rolled
-back on the parameter-group value and the stack was deleted. The runner has
-therefore never contacted a real instance. Its AWS-facing logic — endpoint
-discovery, admin-secret retrieval, and the live IAM connection checks — is
-unexercised.
+The retired CloudFormation custom-resource attempt rolled RDS back after its
+controller failed. The replacement persistent `DatabaseStack` and separate
+operator-invoked helper are now deployed. Temporary endpoint creation, secret
+retrieval, baseline schema load, PostgreSQL verification, repeat invocation,
+and endpoint cleanup have all completed successfully against staging.
 
 ## Non-blocking threads
 
@@ -149,14 +163,13 @@ administrator. The AWS runner proves the correct ordering — create objects
 under `SET ROLE flowform_owner`. Development and rehearsal remain affected until
 this is carried across.
 
-### 5. Decide whether `flowform_migrator` is still wanted
+### 5. Choose the AWS migration execution identity
 
-The roles design proposes a dedicated migration identity. The AWS runner does
-not create one: it provisions empty databases as `flowform_admin` and is not a
-migration path. Under IAM the migrator could be an IAM identity rather than a
-new stored credential, but only if migrations run from something holding an AWS
-identity. That is a constraint on where migrations execute, not just how they
-authenticate, and it should be settled before the role is added.
+Bootstrap now creates `flowform_migrator` as a passwordless IAM-authenticated
+database role and grants it membership of `flowform_owner`. No AWS principal
+yet has `rds-db:connect` permission for that role. Choose where migrations run,
+then grant that one AWS identity the exact database-user permission. This is a
+constraint on the execution environment, not merely on PostgreSQL.
 
 ### 6. Add `REVOKE CONNECT ... FROM PUBLIC` to the container path
 
@@ -168,10 +181,10 @@ runs both in one cluster and is exposed.
 
 ### 7. Prove a token-authenticated connection from the application host
 
-The runner's live checks prove the database accepts IAM tokens. They do not
-prove the backend's `do_connect` path works against real RDS from the app
-instance. That remains the final integration check and cannot be done in
-LocalStack Community.
+The bootstrap verifier checks `rds_iam` membership and the PostgreSQL catalog;
+it does not open an IAM-token connection. The backend's `do_connect` path must
+be exercised against real RDS from the app instance. That remains the final
+integration check and cannot be done in LocalStack Community.
 
 ### 8. Correct the SCRAM acceptance-gate wording
 

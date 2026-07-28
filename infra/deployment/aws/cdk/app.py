@@ -5,6 +5,7 @@ import aws_cdk as cdk
 
 from flowform_infra.config import get_env_config, get_security_scope
 from flowform_infra.stacks.application_stack import ApplicationStack
+from flowform_infra.stacks.database_bootstrap_stack import DatabaseBootstrapStack
 from flowform_infra.stacks.database_stack import DatabaseStack
 from flowform_infra.stacks.frontend_cert_stack import FrontendCertStack
 from flowform_infra.stacks.frontend_stack import FrontendStack
@@ -71,6 +72,21 @@ if env_config.full_deployment:
     )
     database_stack.add_dependency(network_stack)
     database_stack.add_dependency(security_stack)
+
+    if str(app.node.try_get_context("databaseBootstrap")).lower() == "true":
+        database_bootstrap_stack = DatabaseBootstrapStack(
+            app,
+            f"{name_prefix}-DatabaseBootstrap",
+            env_config=env_config,
+            network_stack=network_stack,
+            database_stack=database_stack,
+            kms_key=security_stack.kms_key,
+            env=cdk_env,
+        )
+        database_bootstrap_stack.add_dependency(network_stack)
+        database_bootstrap_stack.add_dependency(database_stack)
+        database_bootstrap_stack.add_dependency(security_stack)
+        all_stacks.append(database_bootstrap_stack)
 
     application_stack = ApplicationStack(
         app,

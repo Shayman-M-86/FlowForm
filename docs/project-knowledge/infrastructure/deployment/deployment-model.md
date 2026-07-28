@@ -11,7 +11,8 @@ related_code:
   - "../../../../infra/deployment/aws/cdk/app.py"
   - "../../../../infra/deployment/aws/cdk/flowform_infra/config/environments.py"
   - "../../../../infra/deployment/aws/cdk/flowform_infra/stacks/"
-  - "../../../../infra/deployment/bootstrap/"
+  - "../../../../infra/deployment/aws/cdk/flowform_infra/database_bootstrap/"
+  - "../../../../infra/deployment/aws/scripts/"
 related_docs: ["Deployment documentation", "AWS network topology", "Cloud deployment", "Runtime containers"]
 ---
 
@@ -75,13 +76,24 @@ auth modes to be `iam` and does not materialise database passwords, while
 for the password files. The scripts also support an endpoint override for the
 rehearsal path.
 
-CDK provisions the database service; the database contents are a separate
-remote operation. `infra/deployment/aws/scripts/bootstrap-database.sh` creates
-the logical databases, roles, schemas, and grants by connecting to the RDS
-endpoint, using the SQL in `infra/database/init/aws/` alongside the shared
-schema snapshots. It provisions empty databases and is not a migration path.
-The container entrypoint under `infra/database/init/templates/` remains the
-development and rehearsal path.
+The persistent `DatabaseStack` provisions only RDS and its direct supporting
+resources. Database bootstrap is an explicit operation outside that stack, so a
+bootstrap failure cannot roll back or delete the database. When selected with
+the `databaseBootstrap=true` CDK context, a separate
+`DatabaseBootstrapStack` deploys an idempotent Lambda in the isolated app
+subnet. `infra/deployment/aws/scripts/bootstrap-database.sh` deploys that helper,
+creates one temporary Secrets Manager interface endpoint, invokes the Lambda,
+checks its sanitized result, and requests endpoint deletion on success,
+failure, or interruption.
+
+The Lambda packages AWS-specific SQL from `infra/database/init/aws/` and the
+authoritative schema snapshots from `infra/database/init/schema/`. It creates
+the logical databases, roles, baseline application tables, grants, and a
+bootstrap-history record, then verifies exact table sets, ownership, privileges,
+and isolation. Later schema evolution remains a separate migration path. The
+helper stack may remain deployed for future bootstrap versions without
+retaining the paid interface endpoint. The container entrypoint under
+`infra/database/init/templates/` remains the development and rehearsal path.
 
 The CDK application stack does not provide an implementation-backed, complete
 release workflow in this document: applying CDK, choosing a published image,

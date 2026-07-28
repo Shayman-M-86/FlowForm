@@ -13,7 +13,7 @@ related_code:
   - "../../../infra/deployment/aws/cdk/flowform_infra/constructs/"
   - "../../../infra/deployment/aws/cdk/flowform_infra/stacks/"
   - "../../../infra/deployment/aws/cdk/tests/"
-  - "../../../infra/deployment/bootstrap/"
+  - "../../../infra/deployment/aws/scripts/"
   - "../../../.github/workflows/"
 related_docs:
   - "Engineering planning"
@@ -92,6 +92,7 @@ fails closed when any of those values is absent.
 | Registry | Not created | `FlowForm-Staging-Registry` | `FlowForm-Prod-Registry` | Staging recorded deployed on 2026-07-24; production source only |
 | Network | Not created | `FlowForm-Staging-Network` | `FlowForm-Prod-Network` | Staging deployed and live verified on 2026-07-27; production source only |
 | Database | Not created | `FlowForm-Staging-Database` | `FlowForm-Prod-Database` | Source implemented and asserted; neither environment recorded deployed |
+| Database bootstrap helper | Not created | `FlowForm-Staging-DatabaseBootstrap` | `FlowForm-Prod-DatabaseBootstrap` | Optional context-gated source; not part of ordinary synthesis or deployment |
 | Application | Not created | `FlowForm-Staging-Application` | `FlowForm-Prod-Application` | Resource skeleton only; bootstrap is incomplete and deployment is not ready |
 | Frontend certificate | Not created | `FlowForm-Staging-FrontendCert` | `FlowForm-Prod-FrontendCert` | Source implemented; live state is not established by the active plan |
 | Frontend | Not created | `FlowForm-Staging-Frontend` | `FlowForm-Prod-Frontend` | Source implemented; live CDK state is not established by the active plan |
@@ -112,13 +113,14 @@ Security
   `-- frontend deploy role ---> Frontend
 
 Network
-  |-- VPC/subnets/SGs --------> Database
+  |-- VPC/subnets/SGs --------> Database, optional bootstrap helper
   `-- VPC/subnets/SGs/zone ---> Application
 
 Registry
   `-- repository references --> Application
 
 Database
+  |-- endpoint/secret --------> optional bootstrap helper
   `-- deployment dependency --> Application
 
 Frontend certificate
@@ -319,7 +321,9 @@ security groups only establish reachability.
 ### Exclusions
 
 - No NAT Gateway.
-- No paid VPC interface endpoints.
+- No continuously deployed paid VPC interface endpoints. The database
+  bootstrap operation may create one temporary, tagged Secrets Manager
+  endpoint and must request its deletion before returning.
 - No Application Load Balancer.
 - No public application or RDS route.
 - No duplicate proxy or application subnets for high availability.
@@ -331,6 +335,8 @@ security groups only establish reachability.
 
 - One private RDS PostgreSQL instance.
 - PostgreSQL `17.9`, explicitly pinned.
+- RDS Extended Support enrollment explicitly disabled; deployment must fail
+  rather than silently enter paid Extended Support after standard support ends.
 - PostgreSQL parameter family `postgres17`.
 - `db.t4g.small`.
 - Single-AZ placement in `ap-southeast-2a`.
@@ -350,7 +356,9 @@ security groups only establish reachability.
 - IAM database authentication enabled; the two runtime identities authenticate
   with short-lived tokens and hold no stored password.
 - PostgreSQL and upgrade log exports.
-- Database Insights Standard and Performance Insights with seven-day history.
+- Database Insights Standard and Performance Insights with the no-additional-
+  cost seven-day history.
+- Enhanced Monitoring explicitly disabled (`MonitoringInterval: 0`).
 - Tag copying to snapshots.
 - Automatic minor-version upgrades during maintenance.
 - No automatic major-version upgrade and no immediate application of changes.
@@ -375,22 +383,26 @@ Staging retains automated backups and takes a final snapshot on deletion or
 replacement. Production retains the DB resource and enables deletion
 protection. Neither environment is designed for Multi-AZ.
 
-### Exclusions and later bootstrap
+### Bootstrap boundary and remaining exclusions
 
-The stack does not create:
+`DatabaseStack` contains no Lambda, custom resource, Step Functions state
+machine, or interface endpoint. Its success depends only on persistent RDS
+infrastructure. It exposes the managed administrative secret and non-secret
+endpoint as constructs but does not publish secret values.
 
-- the `flowform_core` and `flowform_response` logical databases;
-- migration, owner, or application PostgreSQL roles;
-- grants, schemas, tables, or extensions;
-- application connection-pool settings;
-- IAM database authentication;
-- RDS Proxy;
-- Enhanced Monitoring;
-- a dedicated Performance Insights KMS key.
+The optional, context-gated `DatabaseBootstrapStack` contains one idempotent
+private Lambda and dedicated Lambda/endpoint security groups. It does not own
+RDS and does not invoke the Lambda through CloudFormation. The operator script
+deploys or updates the helper, creates one tagged Secrets Manager interface
+endpoint, invokes and verifies bootstrap, then requests endpoint deletion in
+its exit path. Bootstrap failure therefore cannot roll back the database.
 
-Those database-content responsibilities remain a controlled migration/bootstrap
-operation. The CDK stack exposes the managed administrative secret and
-non-secret endpoint as constructs but does not publish secret values.
+Bootstrap creates the two logical databases, owner/migration/runtime roles,
+IAM grants, extensions, application schemas, the authoritative core and
+response baseline tables, default privileges, and its version record. It does
+not perform later schema migrations. RDS Proxy, Enhanced Monitoring,
+application connection-pool settings, and a dedicated Performance Insights KMS
+key remain excluded.
 
 ## Application stack
 
@@ -573,7 +585,7 @@ The current target deliberately excludes:
 - horizontal application scaling;
 - RDS Proxy;
 - Multi-AZ RDS;
-- paid VPC interface endpoints;
+- continuously deployed paid VPC interface endpoints;
 - public application or database instances;
 - static GitHub AWS credentials;
 - automatic schema creation through CloudFormation custom resources.

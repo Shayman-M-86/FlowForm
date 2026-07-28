@@ -40,10 +40,12 @@
             "**/node_modules/**",
             "**/tools/mcp/**",
             "${workspaceFolder:frontend}/**",
-            "**/on_hold/**"
+            "**/on_hold/**",
+            "**/cdk.out/**",
         ],
         "python.analysis.ignore": [
-            "**/on_hold/**"
+            "**/on_hold/**",
+            "**/cdk.out/**",
         ],
         "python-hover.diagnostics.enabled": false,
         "python-hover.ui.showBadges": false,
@@ -61,6 +63,7 @@
             "**/.mypy_cache": true,
             "**/.ruff_cache": true,
             "**/.coverage": true,
+            "**/cdk.out": true,
         },
         "files.watcherExclude": {
             "**/.git/objects/**": true,
@@ -73,7 +76,8 @@
             "**/.ruff_cache/**": true,
             "**/node_modules/**": true,
             "**/cloud-init/**": true,
-            "**/on_hold/**": true
+            "**/on_hold/**": true,
+            "**/cdk.out/**": true
         },
         "search.exclude": {
             "**/.venv": true,
@@ -84,7 +88,8 @@
             "**/.ruff_cache": true,
             "**/node_modules": true,
             "**/cloud-init/**": true,
-            "**/on_hold/**": true
+            "**/on_hold/**": true,
+            "**/cdk.out/**": true
         },
         "files.associations": {
             "**/infra/deployment/proxmox/cloud-init/templates/*.yaml.tftpl": "terraform"

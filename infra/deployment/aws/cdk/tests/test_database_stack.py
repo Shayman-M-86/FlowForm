@@ -52,6 +52,7 @@ def test_staging_database_is_private_single_az_postgresql_17_9():
             "DBInstanceIdentifier": "flowform-staging-postgres",
             "Engine": "postgres",
             "EngineVersion": "17.9",
+            "EngineLifecycleSupport": "open-source-rds-extended-support-disabled",
             "DBInstanceClass": "db.t4g.small",
             "AvailabilityZone": Match.any_value(),
             "MultiAZ": False,
@@ -137,9 +138,15 @@ def test_iam_connect_is_granted_only_for_the_two_app_users():
     """The grant must not permit connecting as flowform_admin."""
     template = _synth_database_stack()
     policies = template.find_resources("AWS::IAM::Policy")
-    assert len(policies) == 1
+    matching_statements = [
+        statement
+        for policy in policies.values()
+        for statement in policy["Properties"]["PolicyDocument"]["Statement"]
+        if statement["Action"] == "rds-db:connect"
+    ]
+    assert len(matching_statements) == 1
 
-    statements = next(iter(policies.values()))["Properties"]["PolicyDocument"]["Statement"]
+    statements = matching_statements
     assert len(statements) == 1
     assert statements[0]["Action"] == "rds-db:connect"
     assert statements[0]["Effect"] == "Allow"
@@ -188,6 +195,7 @@ def test_staging_database_has_seven_day_backups_logs_and_standard_insights():
             "DatabaseInsightsMode": "standard",
             "EnablePerformanceInsights": True,
             "PerformanceInsightsRetentionPeriod": 7,
+            "MonitoringInterval": 0,
         },
     )
     template.resource_properties_count_is(
@@ -245,3 +253,11 @@ def test_prod_database_uses_protected_single_az_retained_configuration():
         {"RetentionInDays": 90},
         2,
     )
+
+
+def test_database_stack_has_no_bootstrap_runtime_or_custom_resource():
+    template = _synth_database_stack()
+    template.resource_count_is("AWS::Lambda::Function", 0)
+    template.resource_count_is("AWS::StepFunctions::StateMachine", 0)
+    template.resource_count_is("AWS::EC2::VPCEndpoint", 0)
+    assert not any(resource["Type"].startswith("Custom::") for resource in template.to_json()["Resources"].values())

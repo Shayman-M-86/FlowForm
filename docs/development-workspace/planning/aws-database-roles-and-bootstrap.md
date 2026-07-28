@@ -8,7 +8,10 @@ verified_evidence_digest: null
 last_edited: 2026-07-28
 tags: [infrastructure, security, configuration]
 related_code:
+  - "../../../infra/deployment/aws/cdk/flowform_infra/database_bootstrap/"
+  - "../../../infra/deployment/aws/cdk/flowform_infra/stacks/database_bootstrap_stack.py"
   - "../../../infra/database/init/aws/"
+  - "../../../infra/database/init/schema/"
   - "../../../infra/database/init/templates/"
   - "../../../infra/deployment/aws/scripts/bootstrap-database.sh"
   - "../../../infra/deployment/bootstrap/bootstrap-db.sh"
@@ -21,10 +24,10 @@ related_docs:
 
 # AWS database roles and bootstrap design
 
-> Working design note. The AWS path described here is implemented in source but
-> has never run against a deployed RDS instance. Outstanding work is tracked in
-> [[aws-iam-database-auth-loose-threads|AWS IAM database authentication loose
-> threads]].
+> Working design note. The AWS bootstrap path is implemented and has run
+> successfully against staging RDS. Outstanding runtime IAM and later-migration
+> work is tracked in [[aws-iam-database-auth-loose-threads|AWS IAM database
+> authentication loose threads]].
 
 Most of this document's original proposal has been implemented. What remains
 here is the identity model, the reuse boundary that the implementation settled,
@@ -36,15 +39,17 @@ and the decisions still open.
 | --- | --- | --- |
 | `flowform_admin` | RDS administration, bootstrap, recovery | RDS-managed password in Secrets Manager |
 | `flowform_owner` | Owns schemas and application objects | `NOLOGIN` |
+| `flowform_migrator` | Owns migration sessions and assumes `flowform_owner` | IAM token only; no stored password |
 | `flowform_core_app` | Runtime access to core data | IAM token only; no stored password |
 | `flowform_response_app` | Runtime access to response data | IAM token only; no stored password |
 
 ```text
-CDK / RDS --> flowform_admin
-                  |
-                  +--> databases, extensions, owner, runtime roles
-                  |
-                  +--> creates application objects under SET ROLE flowform_owner
+RDS master secret --> bootstrap Lambda --> flowform_admin
+                                            |
+                                            +--> databases, extensions, roles
+                                            +--> baseline tables, schemas, grants
+
+flowform_migrator --------> assumes flowform_owner for later schema changes
 
 flowform_core_app ---------> flowform_core only
 flowform_response_app -----> flowform_response only
@@ -56,28 +61,33 @@ uses IAM.
 
 ## Reuse boundary
 
-The implementation settled the question this document originally left open. The
-split is not development-versus-AWS; it is **disposable-versus-retained**.
-Rehearsal and development can drop and recreate a cluster, so their runner can
-assume run-once-on-empty semantics. RDS cannot.
-
-That difference lives entirely in the runner. It does not live in the schema
-definitions, which are reused verbatim.
+The implementation settled the question this document originally left open.
+Development and rehearsal can drop and recreate a cluster and continue to use
+the shared container templates. The retained RDS path uses a small, versioned
+bootstrap package that loads the authoritative core and response schema
+snapshots when their application schemas are empty. Subsequent schema evolution
+remains migration work.
 
 ```text
-infra/database/init/
-  |
-  +-- schema/         shared, reused verbatim by both paths
-  +-- templates/      container entrypoint path (dev, rehearsal)
-  +-- aws/            RDS SQL: roles, databases, schema load, grants, verify
+infra/database/init/templates/
+                      container entrypoint path (development and rehearsal)
+
+infra/database/init/aws/
+                      AWS role, grant, and verification SQL
+
+infra/database/init/schema/
+                      shared authoritative core and response baseline schemas
+
+infra/deployment/aws/cdk/flowform_infra/database_bootstrap/bootstrap/
+                      Lambda orchestration that packages both SQL inputs
 
 infra/deployment/aws/scripts/bootstrap-database.sh
-                      remote runner: endpoint, credentials, ordering, checks
+                      helper deployment, temporary endpoint, invocation, cleanup
 ```
 
 Deployment concerns stay under the AWS deployment tree, mirroring how Proxmox
-keeps its Terraform and scripts together. Database logic stays beside the other
-database assets.
+keeps its Terraform and scripts together. AWS bootstrap logic stays with the
+helper that executes it.
 
 ## Constraints the implementation had to satisfy
 
@@ -85,39 +95,36 @@ Recorded because they are not obvious and will resurface in any rework:
 
 - **`flowform_admin` is `rds_superuser`, not a superuser.** It must be granted
   membership of `flowform_owner` to set default privileges on its behalf.
-- **`pgcrypto` must be created before `SET ROLE`.** `flowform_owner` cannot
-  create extensions.
-- **`search_path` must retain `public` during the schema load.** The schema
-  files call `gen_random_uuid` and `gen_random_bytes`; dropping `public` fails
-  at the first column default that uses one.
-- **The shared schema snapshots use unguarded `CREATE TABLE`.** They cannot be
-  re-applied to a populated schema, so the AWS runner skips the load when
-  application objects already exist. It provisions empty databases; it is not a
-  migration path.
 - **`REVOKE CONNECT ... FROM PUBLIC` must precede the per-role grants.** While
   `PUBLIC` holds `CONNECT`, every role in the cluster reaches both databases.
+- **Baseline bootstrap and later migrations are separate.** Bootstrap creates
+  extensions, roles, databases, schemas, the current baseline application
+  tables, default privileges, and its own version record. A migration runner
+  must evolve an already-bootstrapped schema.
+- **The RDS master secret is bootstrap-only.** The Lambda reads it through a
+  temporary Secrets Manager interface endpoint. Runtime and migration
+  identities use IAM authentication.
 
 ## Object ownership
 
-The container templates set `search_path`, load the schema, then reassert
-ownership of the *schema* only. Objects inside it stay owned by the
-initialization administrator, and `ALTER DEFAULT PRIVILEGES FOR ROLE
-flowform_owner` then applies to a role that owns nothing, so future tables
-receive no grants.
+The bootstrap creates each application schema with `flowform_owner` as owner,
+loads the authoritative baseline while executing as that role, and grants
+`flowform_migrator` membership of it. It records default table and sequence
+privileges for the runtime identity in each schema. The later migration runner
+must assume `flowform_owner` before changing application objects so those
+ownership and default-privilege rules continue to take effect.
 
-The AWS runner avoids this by creating objects under `SET ROLE flowform_owner`
-and asserting ownership afterwards. Local validation confirmed all core and
-response tables and sequences owned by `flowform_owner`.
-
-The container path still has the defect. Backporting it is tracked as a loose
-thread.
+The container path still creates application objects as its initialization
+administrator rather than under `flowform_owner`. Backporting the ownership
+model remains a loose thread.
 
 ## Open decisions
 
-- **`flowform_migrator`.** Not implemented. The AWS runner provisions empty
-  databases as `flowform_admin`. Under IAM the migrator could be an IAM
-  identity rather than a new stored credential, but only if migrations run from
-  something holding an AWS identity — a constraint on where migrations execute.
+- **Migration execution identity.** The PostgreSQL `flowform_migrator` role is
+  implemented, has no password, holds `rds_iam`, and can assume
+  `flowform_owner`. No AWS principal yet has `rds-db:connect` permission for
+  that database role, so the migration execution environment still needs to be
+  chosen.
 - **Password handling on the container path.** The rendered-SQL mechanism still
   substitutes passwords into generated SQL. IAM removes the AWS runtime
   passwords but not the development or rehearsal ones.
@@ -128,14 +135,14 @@ thread.
 
 ## Verification
 
-The AWS runner proves, against a real PostgreSQL cluster: owner is `NOLOGIN`;
-runtime identities are low privilege, hold `rds_iam`, and have no stored
-password; `PUBLIC` holds no `CONNECT`; each runtime identity reaches only its
-own database; and every step is idempotent. The verifier was negative-tested by
-breaking isolation deliberately.
+The bootstrap implementation and its CDK boundaries are locally tested and have
+run successfully against staging RDS. Its packaged verifier checks role
+properties, `rds_iam` membership, database ownership, removal of public
+`CONNECT`, exact baseline table sets, table ownership, runtime table and
+sequence privileges, schema ownership, and cross-schema access.
 
 Still unproven: a token-authenticated connection from the application host
-through the backend's connection path, which requires deployed infrastructure.
+through the backend's connection path and the later migration runner.
 
 ## Related documents
 

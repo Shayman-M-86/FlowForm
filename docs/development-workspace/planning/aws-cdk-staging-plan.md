@@ -73,8 +73,10 @@ responsibility boundaries rather than copying its shims:
   RDS subnet in Availability Zone A.
 - A second isolated RDS subnet in Availability Zone B only because an RDS DB
   subnet group must span two Availability Zones.
-- No NAT Gateway, Application Load Balancer, orchestrator, RDS Proxy, or paid
-  VPC interface endpoints in the initial staging environment.
+- No NAT Gateway, Application Load Balancer, orchestrator, RDS Proxy, or
+  continuously deployed paid VPC interface endpoints in the initial staging
+  environment. The explicit database-bootstrap operation may create one
+  temporary, tagged Secrets Manager endpoint and must remove it afterward.
 - One S3 gateway endpoint for ECR layer traffic.
 - AWS service API traffic from the private app host travels through the Squid
   allowlist and the proxy host's Internet Gateway path.
@@ -193,10 +195,11 @@ stack outputs required for its existing subnets and security group. Review and
 merge this source through the staging workflow, then deploy and verify the live
 stack before marking the data portion of Phase 3 complete.
 
-The database host is not the schema. A later controlled migration/bootstrap
-step must create the two logical databases, separate core and response users,
-their grants, and `pgcrypto`, then prove that neither application user can
-access the other database.
+The database host is not the schema. The separate controlled bootstrap step now
+creates the two logical databases, separate core and response users, baseline
+application tables, grants, and `pgcrypto`, then verifies ownership,
+privileges, and cross-database isolation. Later schema evolution remains an
+explicit migration operation.
 
 ## Completed phases
 

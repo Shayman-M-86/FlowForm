@@ -12,11 +12,11 @@ from flowform_infra.stacks.network_stack import NetworkStack
 
 
 class DatabaseStack(Stack):
-    """Private RDS PostgreSQL instance for the core/response database split.
+    """Persistent private RDS PostgreSQL infrastructure.
 
     CDK owns the server, managed master credential, encryption, networking,
-    backup, and logging contracts. Logical databases, roles, schemas, and
-    migrations remain a separate controlled release operation.
+    backup, and logging contracts. Logical databases, PostgreSQL roles, schemas,
+    and migrations remain separate controlled operations.
     """
 
     POSTGRES_ENGINE_VERSION = "17.9"
@@ -92,6 +92,9 @@ class DatabaseStack(Stack):
             db_instance_identifier=database_identifier,
             engine="postgres",
             engine_version=self.POSTGRES_ENGINE_VERSION,
+            # Fail creation after PostgreSQL leaves standard support instead of
+            # silently enrolling the instance in chargeable Extended Support.
+            engine_lifecycle_support="open-source-rds-extended-support-disabled",
             db_instance_class=env_config.db_instance_class,
             allocated_storage=str(env_config.db_allocated_storage_gib),
             max_allocated_storage=env_config.db_max_allocated_storage_gib,
@@ -125,7 +128,12 @@ class DatabaseStack(Stack):
             auto_minor_version_upgrade=True,
             apply_immediately=False,
             enable_cloudwatch_logs_exports=["postgresql", "upgrade"],
+            # Enhanced Monitoring is intentionally disabled. Standard RDS
+            # CloudWatch metrics remain available without a monitoring role.
+            monitoring_interval=0,
             database_insights_mode="standard",
+            # Seven-day Performance Insights history is the no-additional-cost
+            # Standard tier; longer paid retention is not configured.
             enable_performance_insights=True,
             performance_insights_retention_period=7,
         )
